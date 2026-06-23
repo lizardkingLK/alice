@@ -12,6 +12,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.5.7",
     "@repo/ui": "workspace:*",
     "next": "16.2.0",
     "react": "^19.2.0",
