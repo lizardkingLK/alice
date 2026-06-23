@@ -8,6 +8,7 @@
     "ignoreDeprecations": "6.0",
     "rootDir": "src",
     "outDir": "dist",
+    "rootDir": "./src",
     "strictNullChecks": true
   },
   "include": ["src"],
