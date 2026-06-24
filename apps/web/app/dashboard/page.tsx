@@ -1,11 +1,11 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+import { auth, clerkClient } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 
 export default async function DashboardPage() {
   const { userId } = await auth();
 
   if (!userId) {
-    redirect("/");
+    redirect('/');
   }
 
   const client = await clerkClient();
@@ -14,13 +14,13 @@ export default async function DashboardPage() {
 
   const role = user.publicMetadata.role;
 
-  if (role === "admin") {
-    redirect("/admin");
+  if (role === 'admin') {
+    redirect('/admin');
   }
 
-  if (role === "manager") {
-    redirect("/manager");
+  if (role === 'manager') {
+    redirect('/manager');
   }
 
-  redirect("/member");
+  redirect('/member');
 }

@@ -1,7 +1,7 @@
-@import "tailwindcss";
-@import "../../../packages/ui/globals.css";
+@import 'tailwindcss';
+@import '../../../packages/ui/globals.css';
 
-@source "../../../packages/ui/src/**/*.{ts,tsx}";
+@source '../../../packages/ui/src/**/*.{ts,tsx}';
 
 @layer base {
   * {

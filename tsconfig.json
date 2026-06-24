@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "ignoreDeprecations": "5.0",
     "paths": {
       "@repo/ui/*": ["./packages/ui/src/*"]
     }

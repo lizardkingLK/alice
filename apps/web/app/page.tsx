@@ -4,10 +4,10 @@ import './globals.css';
 
 export default function Home() {
   return (
-    <main className="flex flex-col justify-center items-center h-[calc(100vh)]">
+    <main className="flex h-[calc(100vh)] flex-col items-center justify-center">
       <section>
         <h1 className="text-8xl font-bold">Jira Teams</h1>
-        <h2 className="text-center text-4xl ">A Jira Clone</h2>
+        <h2 className="text-center text-4xl">A Jira Clone</h2>
       </section>
       <section className="flex gap-4 p-4">
         <Button variant="outline" className="cursor-pointer">

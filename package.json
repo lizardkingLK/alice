@@ -5,7 +5,7 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "format": "prettier --write --cache \"**/*.{ts,tsx,md,js,jsx,json,css}\"",
     "check-types": "turbo run check-types",
     "web": "pnpm --filter web",
     "api": "pnpm --filter api",
@@ -13,6 +13,11 @@
     "ui:add": "pnpm dlx shadcn@latest add -c ./packages/ui",
     "commit": "cz",
     "prepare": "husky"
+  },
+  "config": {
+    "commitizen": {
+      "path": "@commitlint/cz-commitlint"
+    }
   },
   "lint-staged": {
     "apps/web/**/*.{ts,tsx,js,jsx}": [
@@ -25,20 +30,16 @@
       "pnpm --filter @repo/ui lint --"
     ]
   },
-  "config": {
-    "commitizen": {
-      "path": "@commitlint/cz-commitlint"
-    }
-  },
   "devDependencies": {
     "@commitlint/cli": "^21.0.2",
     "@commitlint/config-conventional": "^21.0.2",
-    "@commitlint/cz-commitlint": "^21.0.1",
+    "@commitlint/cz-commitlint": "^21.1.0",
     "commitizen": "^4.3.2",
     "cz-conventional-changelog": "^3.3.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
     "prettier": "^3.7.4",
+    "prettier-plugin-tailwindcss": "^0.8.0",
     "turbo": "^2.9.18",
     "typescript": "5.9.2"
   },

@@ -1,5 +1,5 @@
-import express, { } from 'express'
-import cors from 'cors'
+import express from 'express';
+import cors from 'cors';
 import { startServer } from './server';
 import { clerkMiddleware } from '@clerk/express';
 import healthRouter from './routes/api/health';
@@ -16,8 +16,9 @@ app.use('/api/health', healthRouter);
 app.use('/api/users', usersRouter);
 
 startServer().then((port) => {
-    app.listen(port, () => {
-        console.log(`info. API backend actively listening on http://localhost:${port}`);
-    });
+  app.listen(port, () => {
+    console.log(
+      `info. API backend actively listening on http://localhost:${port}`
+    );
+  });
 });
-

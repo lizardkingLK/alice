@@ -27,10 +27,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "pnpm"
+          cache: 'pnpm'
 
       - name: Install workspace Dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Run Types Checkout
+        run: pnpm check-types
 
       - name: Lint Codebase via Turborepo
         run: pnpm turbo lint
@@ -56,7 +59,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "pnpm"
+          cache: 'pnpm'
 
       - name: Install Workspace Dependencies
         run: pnpm install --frozen-lockfile
@@ -97,7 +100,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "pnpm"
+          cache: 'pnpm'
 
       - name: Install Workspace Dependencies
         run: pnpm install --frozen-lockfile

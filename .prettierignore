@@ -1,0 +1,16 @@
+# Dependency folders
+node_modules
+**/node_modules
+
+# Build artifacts and frameworks caches
+.next
+**/out
+**/dist
+**/build
+.turbo
+**/.eslintcache
+package-lock.json
+pnpm-lock.yaml
+
+# System files
+.vscode
