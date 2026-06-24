@@ -42,3 +42,12 @@ globs: **/*
 
 - Workspaces must resolve their testing cycles locally using `pnpm turbo test` seamlessly.
 - Never write code changes that expect automated Vercel branch builds outside the explicit `deploy.yml` pipeline framework.
+
+## Update environement variables conveniently
+
+- First update `sample.env` by appending newly required key values by mentioning them in the patterns below where necessary.
+```
+NEXT_PUBLIC_NEW_KEY=YOUR_NEXT_PUBLIC_NEW_KEY
+NEW_NOT_PUBLISHABLE_KEY=YOUR_NEW_NOT_PUBLISHABLE_KEY
+```
+- Await permission to append the keys to `local.env`.
