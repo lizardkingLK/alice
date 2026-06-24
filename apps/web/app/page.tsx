@@ -1,17 +1,6 @@
-import { SignInButton } from "@clerk/nextjs";
+import { SignInButton, UserButton, SignOutButton } from '@clerk/nextjs';
 import { Button } from '@repo/ui/components/ui/button';
-
-export function HomePageComponent() {
-  return (
-    <div>
-      <h1>Welcome</h1>
-
-      <SignInButton mode="modal">
-        <button>Login</button>
-      </SignInButton>
-    </div>
-  );
-}
+import './globals.css';
 
 export default function Home() {
   return (
@@ -24,9 +13,15 @@ export default function Home() {
         <Button variant="outline" className="cursor-pointer">
           Sign Up
         </Button>
-        <Button className="cursor-pointer">
-          Dashboard
-        </Button>
+        <Button className="cursor-pointer">Dashboard</Button>
+      </section>
+      <section>
+        <SignOutButton>
+          <SignInButton />
+        </SignOutButton>
+        <SignInButton>
+          <UserButton />
+        </SignInButton>
       </section>
     </main>
   );
