@@ -1,17 +1,14 @@
-import js from '@eslint/js';
-import tseslint from 'typescript-eslint';
 import globals from 'globals';
+import { config as baseConfig } from "@repo/eslint-config/base";
 
 export default [
     {
         ignores: ['dist/**', 'node_modules/**', 'coverage/**'],
     },
-    js.configs.recommended,
-    ...tseslint.configs.recommended,
+    ...baseConfig,
     {
         files: ['**/*.ts'],
         languageOptions: {
-            parser: tseslint.parser,
             globals: {
                 ...globals.node,
             },
