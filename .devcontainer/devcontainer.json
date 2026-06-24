@@ -1,0 +1,9 @@
+{
+  "name": "Node.js & TypeScript",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:4-24-trixie",
+  // "features": {},
+  // "forwardPorts": [],
+  "postCreateCommand": "pnpm install"
+  // "customizations": {},
+  // "remoteUser": "root"
+}
