@@ -21,7 +21,7 @@ jobs:
       - name: Install Pnpm Core Engine
         uses: pnpm/action-setup@v3
         with:
-          version: 9
+          version: 9.0.0
 
       - name: Initialize Structured Node Environment
         uses: actions/setup-node@v4
