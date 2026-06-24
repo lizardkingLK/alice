@@ -1,4 +1,17 @@
+import { SignInButton } from "@clerk/nextjs";
 import { Button } from '@repo/ui/components/ui/button';
+
+export function HomePageComponent() {
+  return (
+    <div>
+      <h1>Welcome</h1>
+
+      <SignInButton mode="modal">
+        <button>Login</button>
+      </SignInButton>
+    </div>
+  );
+}
 
 export default function Home() {
   return (
