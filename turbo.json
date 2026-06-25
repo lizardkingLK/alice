@@ -12,11 +12,11 @@
     "dev": {
       "cache": false,
       "persistent": true,
-      "env": ["CLERK_PUBLISHABLE_KEY", "CLERK_SECRET_KEY"]
+      "env": ["CLERK_PUBLISHABLE_KEY", "CLERK_SECRET_KEY","NOVU_SECRET_KEY"]
     },
     "lint": {
       "dependsOn": ["^lint"],
-      "env": ["CLERK_PUBLISHABLE_KEY", "CLERK_SECRET_KEY"]
+      "env": ["CLERK_PUBLISHABLE_KEY", "CLERK_SECRET_KEY","NOVU_SECRET_KEY"]
     },
     "test": {
       "dependsOn": ["build"]

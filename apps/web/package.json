@@ -13,6 +13,10 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
+    "@novu/nextjs": "^3.17.0",
+    "@repo/ui": "workspace:*",
+    "@clerk/nextjs": "^7.5.7",
+    "@base-ui/react": "^1.6.0",
     "@clerk/nextjs": "^7.5.7",
     "@repo/ui": "workspace:*",
     "@supabase/supabase-js": "^2.108.2",

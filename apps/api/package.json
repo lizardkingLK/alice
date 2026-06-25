@@ -21,6 +21,12 @@
     "dotenv": "^17.4.2",
     "express": "^4.22.2",
     "multer": "^2.2.0"
+    "@novu/api": "^3.17.0",
+    "cors": "^2.8.5",
+    "detect-port": "^2.1.0",
+    "dotenv": "^17.4.2",
+    "express": "^4.21.2",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
