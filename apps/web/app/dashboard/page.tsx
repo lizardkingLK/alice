@@ -1,5 +1,7 @@
-import { redirect } from 'next/navigation';
 import { getUser } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import { DashboardOverview } from '@/components/dashboard/dashboard-overview';
+import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 
 export default async function DashboardPage() {
   const user = await getUser();
@@ -9,9 +11,11 @@ export default async function DashboardPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-6">
-      <h1 className="text-3xl font-semibold">Dashboard</h1>
-      <p className="text-muted-foreground text-sm">Signed in as {user.email}</p>
-    </main>
+    <DashboardShell
+      title="Dashboard"
+      description="Track your work and team activity at a glance."
+    >
+      <DashboardOverview />
+    </DashboardShell>
   );
 }

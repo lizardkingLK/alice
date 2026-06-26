@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getUser } from '../../lib/auth';
+import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 
-export default async function AdminDashboard() {
+export default async function AdminPage() {
   const user = await getUser();
 
   if (!user) {
@@ -10,5 +11,14 @@ export default async function AdminDashboard() {
 
   // TODO: enforce custom RBAC role check once application roles are stored in the database.
 
-  return <h1>Admin Dashboard</h1>;
+  return (
+    <DashboardShell
+      title="Admin"
+      description="Organization settings and project administration."
+    >
+      <div className="text-muted-foreground flex h-40 items-center justify-center rounded-lg border border-dashed text-sm">
+        Admin workspace — content coming soon.
+      </div>
+    </DashboardShell>
+  );
 }

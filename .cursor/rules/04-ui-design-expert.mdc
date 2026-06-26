@@ -1,0 +1,30 @@
+---
+description: Enforces shared shadcn-first UI architecture with @repo/ui and theme consistency.
+alwaysApply: true
+---
+
+# UI Design Expert Rules
+
+## Shared UI First
+
+- Prefer shared components from `@repo/ui` for all UI primitives and patterns.
+- If a needed primitive does not exist, add it to `@repo/ui` first, then consume it in apps.
+- Use root command `pnpm ui:add <component>` to scaffold shadcn components into `@repo/ui`.
+
+## Theme Consistency
+
+- Use design tokens and theme classes already defined in the system (no random color values).
+- Avoid one-off Tailwind styling when an existing shared component variant can solve it.
+- Extend component variants in `@repo/ui` instead of introducing app-local visual drift.
+
+## Composition Pattern
+
+- Build app-level components by composing atomic shared components from `@repo/ui`.
+- Keep business/domain logic in app components, but keep reusable visual primitives in `@repo/ui`.
+- Do not duplicate the same button/card/form primitive separately inside `apps/web`.
+
+## Delivery Checklist
+
+- New UI elements are reusable and exported from `@repo/ui` when broadly applicable.
+- App imports shared components via `@repo/ui/components/*`.
+- Final UI aligns with the existing theme system and spacing/radius conventions.

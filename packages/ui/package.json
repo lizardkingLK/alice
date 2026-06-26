@@ -9,6 +9,7 @@
   },
   "exports": {
     "./lib/*": "./src/lib/*.ts",
+    "./hooks/*": "./src/hooks/*.ts",
     "./globals.css": "./src/globals.css",
     "./components/*": "./src/components/*.tsx"
   },
