@@ -1,6 +1,6 @@
 ---
-description: Activates when editing user roles, access control lists, middleware authentication, or permission systems. Primarily uses clerkjs for authentication and authorization.
-globs: apps/api/src/middleware/auth*, apps/api/src/routes/user*, **/types/roles.ts
+description: Activates when editing user roles, access control lists, middleware authentication, or permission systems. Uses Supabase Auth for identity; custom RBAC lives in application data.
+globs: apps/api/src/middleware/auth*, apps/api/src/middlewares/auth/**, apps/api/src/routes/user*, apps/web/lib/auth*, apps/web/lib/supabase/**, **/types/roles.ts
 ---
 
 # Role: Security & Identity Management Agent
@@ -9,19 +9,26 @@ You are an expert Identity Access Management (IAM) agent. Your primary objective
 
 ## Core Directives
 
-1. **Role Mapping & Logic**:
-   - Enforce enum or strict literal types for roles: `'ADMINISTRATOR' | 'PROJECT_MANAGER' | 'MEMBER'`.
-   - Never write hardcoded string permissions. Use modular middleware checks (e.g., `checkRole(['ADMIN'])`).
+1. **Authentication vs Authorization**:
+   - Use Supabase Auth for identity only (sign-in, sessions, JWT verification).
+   - Do not store application roles in Supabase Auth user metadata for authorization decisions.
+   - Implement custom RBAC in application-owned database tables and enforce it in route/API guards.
 
-2. **Quick Seeding for Testing**:
-   - Provide concrete, copy-pasteable TypeScript blocks to assign specific roles to target test users via the workspace console.
-   - Example contract: `await assignRoleToUser({ userId: "123", role: "ADMINISTRATOR" })`.
+2. **Role Mapping & Logic**:
+   - Enforce enum or strict literal types for roles: `'admin' | 'manager' | 'member'`.
+   - Never write hardcoded string permissions. Use modular middleware checks (e.g., `checkRole(['admin'])`).
 
-3. **Security Auditing**:
+3. **Supabase SSR (Next.js web)**:
+   - Use `@supabase/ssr` with browser, server, and middleware clients.
+   - Always call `supabase.auth.getUser()` for server-side auth checks (never trust `getSession()` alone).
+   - Follow Supabase docs: https://supabase.com/docs/guides/auth/server-side/nextjs
+
+4. **API JWT verification**:
+   - Read `Authorization: Bearer <token>` and validate with `supabase.auth.getUser(token)`.
+   - Attach verified `userId` to the request for downstream handlers.
+
+5. **Security Auditing**:
    - Ensure every updated user record validates inputs using strong types or schema checkers (like Zod) before mutation occurs.
-
-4. **Follow Documentation**
-   - Adhere to clerk.js documentation and best practices at "https://clerk.com/docs/reference/nextjs/overview" as it is the primary authentication library in use. Using authentication allowed for single predefined organization.
 
 ## Zod Validation Pattern (Mandatory)
 

@@ -1,27 +1,25 @@
-import { SignInButton, UserButton, SignOutButton } from '@clerk/nextjs';
+import Link from 'next/link';
 import { Button } from '@repo/ui/components/ui/button';
+import { AuthControls } from '@/components/auth/auth-controls';
+import { getUser } from '@/lib/auth';
 import './globals.css';
 
-export default function Home() {
+export default async function Home() {
+  const user = await getUser();
+
   return (
     <main className="flex h-[calc(100vh)] flex-col items-center justify-center">
+      <section className="absolute top-0 right-0 p-4">
+        <AuthControls email={user?.email} />
+      </section>
       <section>
         <h1 className="text-8xl font-bold">Jira Teams</h1>
         <h2 className="text-center text-4xl">A Jira Clone</h2>
       </section>
       <section className="flex gap-4 p-4">
-        <Button variant="outline" className="cursor-pointer">
-          Sign Up
+        <Button asChild className="cursor-pointer">
+          <Link href="/dashboard">Dashboard</Link>
         </Button>
-        <Button className="cursor-pointer">Dashboard</Button>
-      </section>
-      <section>
-        <SignOutButton>
-          <SignInButton />
-        </SignOutButton>
-        <SignInButton>
-          <UserButton />
-        </SignInButton>
       </section>
     </main>
   );

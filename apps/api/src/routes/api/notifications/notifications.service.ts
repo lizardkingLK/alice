@@ -1,4 +1,4 @@
-import { novu } from "./novu.client";
+import { novu } from '../../../lib/novu.client';
 
 export class NotificationsService {
   async ensureSubscriber(subscriberId: string, email?: string) {
@@ -14,11 +14,11 @@ export class NotificationsService {
     title?: string;
   }) {
     await novu.trigger({
-      workflowId: "alice",
+      workflowId: 'alice',
       to: { subscriberId: params.subscriberId },
       payload: {
         message: params.message,
-        title: params.title ?? "Notification",
+        title: params.title ?? 'Notification',
       },
     });
   }

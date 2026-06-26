@@ -26,8 +26,12 @@ globs: **/*
 ### Before you finish
 
 - Run ESLint on touched files and resolve errors (and warnings you introduced).
+- Run `pnpm format` from the repository root to apply Prettier formatting to changed files (`ts`, `tsx`, `js`, `jsx`, `json`, `css`, `md`).
 
-## Error Handling Patterns (Mandatory)
+## Code Style & Formatting
+
+- Always use the root script: `pnpm format` (do not run Prettier ad hoc per package unless the user asks).
+- Format after substantive edits and before considering a task complete, alongside lint/type checks.
 
 - Never use local try/catch blocks in Express controller functions.
 - Wrap all asynchronous express routes with the `catchAsync` utility function.

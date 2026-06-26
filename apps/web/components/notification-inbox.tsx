@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { Inbox } from "@novu/nextjs";
-import { useEffect, useState } from "react";
-import { getSubscriberId } from "@/lib/subscriber-id";
+import { Inbox } from '@novu/nextjs';
+import { useEffect, useState } from 'react';
+import { getSubscriberId } from '@/lib/subscriber-id';
 
 export function NotificationInbox() {
-  const [subscriberId, setSubscriberId] = useState("");
+  const [subscriberId, setSubscriberId] = useState('');
 
   useEffect(() => {
     setSubscriberId(getSubscriberId());

@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
-if (!process.env.CLERK_SECRET_KEY) {
+if (!process.env.PORT) {
   dotenv.config({ path: path.resolve(process.cwd(), '.env') });
   console.log(
     '\x1b[36m%s\x1b[0m',
