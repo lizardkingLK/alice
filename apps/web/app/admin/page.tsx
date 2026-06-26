@@ -1,16 +1,14 @@
-// export default function AdminDashboard() {
-//   return <h1>Admin Dashboard</h1>;
-// }
-
 import { redirect } from 'next/navigation';
-import { getUserRole } from '../../lib/auth';
+import { getUser } from '../../lib/auth';
 
 export default async function AdminDashboard() {
-  const role = await getUserRole();
+  const user = await getUser();
 
-  if (role !== 'admin') {
-    redirect('/');
+  if (!user) {
+    redirect('/login');
   }
+
+  // TODO: enforce custom RBAC role check once application roles are stored in the database.
 
   return <h1>Admin Dashboard</h1>;
 }

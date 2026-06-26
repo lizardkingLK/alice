@@ -184,8 +184,8 @@ Planned environment variables:
 Components are imported from `@repo/ui`:
 
 ```typescript
-import { Button } from "@repo/ui/components/ui/button";
-import { cn } from "@repo/ui/lib/utils";
+import { Button } from '@repo/ui/components/ui/button';
+import { cn } from '@repo/ui/lib/utils';
 ```
 
 **Local development**

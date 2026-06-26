@@ -1,4 +1,4 @@
-import { NotificationInbox } from "./notification-inbox";
+import { NotificationInbox } from './notification-inbox';
 
 export function AppHeader() {
   return (

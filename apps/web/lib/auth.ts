@@ -1,13 +1,21 @@
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { createClient } from '@/lib/supabase/server';
 
+export async function getUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return user;
+}
+
+/** Custom RBAC: load role from application database once implemented. */
 export async function getUserRole() {
-  const { userId } = await auth();
+  const user = await getUser();
 
-  if (!userId) return null;
+  if (!user) {
+    return null;
+  }
 
-  const client = await clerkClient();
-
-  const user = await client.users.getUser(userId);
-
-  return user.publicMetadata.role;
+  return null;
 }

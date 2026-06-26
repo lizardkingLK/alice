@@ -1,26 +1,17 @@
-import { auth, clerkClient } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
+import { getUser } from '@/lib/auth';
 
 export default async function DashboardPage() {
-  const { userId } = await auth();
+  const user = await getUser();
 
-  if (!userId) {
-    redirect('/');
+  if (!user) {
+    redirect('/login');
   }
 
-  const client = await clerkClient();
-
-  const user = await client.users.getUser(userId);
-
-  const role = user.publicMetadata.role;
-
-  if (role === 'admin') {
-    redirect('/admin');
-  }
-
-  if (role === 'manager') {
-    redirect('/manager');
-  }
-
-  redirect('/member');
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-6">
+      <h1 className="text-3xl font-semibold">Dashboard</h1>
+      <p className="text-muted-foreground text-sm">Signed in as {user.email}</p>
+    </main>
+  );
 }

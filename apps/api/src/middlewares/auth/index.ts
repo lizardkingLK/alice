@@ -1,21 +1,40 @@
 import { Request, Response, NextFunction } from 'express';
-import { getAuth } from '@clerk/express';
+import { createClient } from '@supabase/supabase-js';
 
-export function requireApiAuth(
-  req: Request,
+export type AuthenticatedRequest = Request & {
+  userId?: string;
+};
+
+export async function requireApiAuth(
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
-): void {
-  console.log(true);
-  const authState = getAuth(req);
-  console.log(authState);
+): Promise<void> {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ')
+    ? authHeader.slice(7)
+    : undefined;
 
-  if (!authState.userId) {
-    res.status(401).json({
-      error: 'Unauthorized',
-    });
+  if (!token) {
+    res.status(401).json({ error: 'Unauthorized' });
     return;
   }
 
+  const supabase = createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_ANON_KEY!
+  );
+
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser(token);
+
+  if (error || !user) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  req.userId = user.id;
   next();
 }
