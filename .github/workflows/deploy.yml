@@ -2,9 +2,9 @@ name: Continuous Integration & Vercel deployment
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
-    branches: [main]
+    branches: [main, dev]
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -41,18 +41,29 @@ jobs:
       - name: Run Test Suite via Turborepo
         run: pnpm turbo test
 
+  sonar_quality_gate:
+    name: Execute SonarCloud Scan
+    needs: validate_and_test
+    if: github.base_ref == 'dev' || github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Execute SonarCloud Scan
         uses: sonarsource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          args: "-Dsonar.projectKey=lizardkingLK_alice -Dsonar.organization=lizardkinglk -Dsonar.host.url=https://sonarcloud.io -Dsonar.qualitygate.wait=true -Dsonar.coverage.exclusions=**/*"
+          args: '-Dsonar.projectKey=lizardkingLK_alice -Dsonar.organization=lizardkinglk -Dsonar.host.url=https://sonarcloud.io -Dsonar.qualitygate.wait=true -Dsonar.coverage.exclusions=**/*'
 
   deploy_backend_api:
     name: Deploy Express API to Vercel
     needs: validate_and_test
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source Code
@@ -91,7 +102,7 @@ jobs:
   deploy_frontend_web:
     name: Deploy Web Frontend to Vercel
     needs: validate_and_test
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source Code
