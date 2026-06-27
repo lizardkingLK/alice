@@ -1,7 +1,7 @@
 export const trueRandom: () => number | undefined = () => {
-    const array = new Uint32Array(1);
+  const array = new Uint32Array(1);
 
-    globalThis.crypto.getRandomValues(array);
+  globalThis.crypto.getRandomValues(array);
 
-    return array[0];
-}
+  return array[0];
+};

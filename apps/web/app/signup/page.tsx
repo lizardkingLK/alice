@@ -8,7 +8,9 @@ type SignUpPageProps = {
   searchParams: Promise<{ error?: string }>;
 };
 
-export default async function SignUpPage({ searchParams }: SignUpPageProps) {
+export default async function SignUpPage({
+  searchParams,
+}: Readonly<SignUpPageProps>) {
   const { error } = await searchParams;
 
   return (

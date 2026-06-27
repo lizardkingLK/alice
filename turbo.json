@@ -15,7 +15,8 @@
         "NOVU_SECRET_KEY",
         "SUPABASE_URL",
         "SUPABASE_SERVICE_ROLE_KEY",
-        "SUPABASE_ANON_KEY"
+        "SUPABASE_ANON_KEY",
+        "FRONTEND_URL"
       ]
     },
     "lint": {

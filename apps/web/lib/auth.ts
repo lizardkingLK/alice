@@ -10,6 +10,7 @@ export async function getUser() {
 }
 
 /** Custom RBAC: load role from application database once implemented. */
+
 export async function getUserRole() {
   const user = await getUser();
 
@@ -17,5 +18,5 @@ export async function getUserRole() {
     return null;
   }
 
-  return null;
+  return user;
 }

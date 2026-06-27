@@ -1,29 +1,20 @@
-import './utils/preload';
+import './config/preload';
 
 import express from 'express';
-import cors from 'cors';
-import { startServer } from './utils/server';
 
-// routes
-import healthRouter from './routes/api/health/health.route';
-import usersRouter from './routes/api/users/users.route';
-import uploadRouter from './routes/api/files/files.route';
-import notificationsRouter from './routes/api/notifications/notifications.route';
+import startServer from './config/server';
+import corsConfig from './config/cors';
+import routesConfig from './config/routing';
 
 const app = express();
+app.disable('x-powered-by');
 
-app.use(cors());
+app.use(corsConfig);
 app.use(express.json());
+app.use(routesConfig);
 
-app.use('/api/health', healthRouter);
-app.use('/api/users', usersRouter);
-app.use('/api/files', uploadRouter);
-app.use('/api/notifications', notificationsRouter);
-
-startServer().then((port) => {
-  app.listen(port, () => {
-    console.log(
-      `info. API backend actively listening on http://localhost:${port}`
-    );
-  });
-});
+const listen = (port: number) =>
+  app.listen(port, () =>
+    console.log(`info. listening on http://localhost:${port}`)
+  );
+startServer().then(listen);

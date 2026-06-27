@@ -38,7 +38,9 @@ const parsed = mergedSchema.safeParse(processEnv);
 let data: EnvSchemaType;
 
 if (process.env.GITHUB_ACTIONS === 'true') {
-  console.log('info. ci environment detected. skipping environment variable validation.');
+  console.log(
+    'info. ci environment detected. skipping environment variable validation.'
+  );
   data = mock;
 } else {
   if (parsed.success === false) {
@@ -47,7 +49,9 @@ if (process.env.GITHUB_ACTIONS === 'true') {
       'error. invalid or missing environment variables:\n',
       z.treeifyError(parsed.error)
     );
-    throw new Error('error. build terminated due to invalid environment variables.');
+    throw new Error(
+      'error. build terminated due to invalid environment variables.'
+    );
   }
 
   data = parsed.data;

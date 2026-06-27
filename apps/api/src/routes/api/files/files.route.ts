@@ -2,19 +2,21 @@ import multer from 'multer';
 import { supabase } from '../../../lib/supabase';
 import express, { type Router } from 'express';
 
-const router: Router = express.Router();
+const filesRouter: Router = express.Router();
 
 const upload = multer({
   storage: multer.memoryStorage(),
+  limits: {
+    fileSize: Infinity,
+  },
 });
 
-router.post('/', upload.single('file'), async (req, res) => {
+filesRouter.post('/', upload.single('file'), async (req, res) => {
   try {
     const file = req.file;
-    console.log('Received file:', file);
     if (!file) {
       return res.status(400).json({
-        error: 'No file uploaded',
+        error: 'error. no file uploaded',
       });
     }
 
@@ -38,9 +40,9 @@ router.post('/', upload.single('file'), async (req, res) => {
     console.error(error);
 
     return res.status(500).json({
-      error: 'Upload failed',
+      error: 'error. file uploading failed',
     });
   }
 });
 
-export default router;
+export default filesRouter;

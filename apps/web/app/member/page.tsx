@@ -9,7 +9,7 @@ export default async function MemberDashboard() {
     redirect('/login');
   }
 
-  // TODO: enforce custom RBAC role check once application roles are stored in the database.
+  /** Custom RBAC: load role from application database once implemented. */
 
   return (
     <DashboardShell

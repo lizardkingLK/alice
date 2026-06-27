@@ -1,8 +1,8 @@
 import detectPort from 'detect-port';
 
-const TARGET_PORT = parseInt(process.env.PORT || '3001', 10);
+const TARGET_PORT = Number.parseInt(process.env.PORT || '3001', 10);
 
-export async function startServer() {
+export default async function startServer() {
   try {
     const availablePort = await detectPort(TARGET_PORT);
     if (availablePort !== TARGET_PORT) {

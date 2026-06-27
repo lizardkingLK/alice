@@ -8,7 +8,7 @@ type AuthControlsProps = {
   email?: string | null;
 };
 
-export function AuthControls({ email }: AuthControlsProps) {
+export function AuthControls({ email }: Readonly<AuthControlsProps>) {
   if (email) {
     return (
       <section className="flex items-center gap-4">
