@@ -23,6 +23,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@repo/ui/components/ui/tooltip';
+import { trueRandom } from '@repo/ui/utils';
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = '16rem';
@@ -103,8 +104,8 @@ function SidebarProvider({
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    globalThis.addEventListener('keydown', handleKeyDown);
+    return () => globalThis.removeEventListener('keydown', handleKeyDown);
   }, [toggleSidebar]);
 
   // We add a state so that we can do data-state='expanded' or 'collapsed'.
@@ -588,7 +589,7 @@ function SidebarMenuSkeleton({
 }) {
   // Random width between 50 to 90%.
   const [width] = React.useState(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`;
+    return `${Math.floor(trueRandom()! * 40) + 50}%`;
   });
 
   return (

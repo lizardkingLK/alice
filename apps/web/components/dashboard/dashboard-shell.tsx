@@ -18,7 +18,7 @@ export function DashboardShell({
   description,
   user,
   children,
-}: DashboardShellProps) {
+}: Readonly<DashboardShellProps>) {
   return (
     <TooltipProvider>
       <SidebarProvider>

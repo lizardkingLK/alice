@@ -24,7 +24,7 @@ type DashboardPageMetaProps = {
 export function DashboardPageMeta({
   title,
   description,
-}: DashboardPageMetaProps) {
+}: Readonly<DashboardPageMetaProps>) {
   return (
     <div className="flex min-w-0 flex-1 items-center gap-3">
       <Breadcrumb>

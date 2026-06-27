@@ -3,12 +3,13 @@
 const STORAGE_KEY = 'alice_subscriber_id';
 
 export function getSubscriberId(): string {
-  if (typeof window === 'undefined') return '';
+  if (typeof globalThis === 'undefined') return '';
 
-  let id = window.localStorage.getItem(STORAGE_KEY);
+  let id = globalThis.localStorage.getItem(STORAGE_KEY);
   if (!id) {
     id = crypto.randomUUID();
-    window.localStorage.setItem(STORAGE_KEY, id);
+    globalThis.localStorage.setItem(STORAGE_KEY, id);
   }
+
   return id;
 }

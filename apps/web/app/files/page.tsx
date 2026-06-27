@@ -13,7 +13,6 @@ export default function UploadPage() {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/files`,
       {
-        // TODO: use a routed server action instead
         method: 'POST',
         body: formData,
       }
