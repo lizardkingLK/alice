@@ -3,7 +3,6 @@ import { SidebarInset, SidebarProvider } from '@repo/ui/components/ui/sidebar';
 import { TooltipProvider } from '@repo/ui/components/ui/tooltip';
 import { DashboardHeader } from './dashboard-header';
 import { DashboardSidebar } from './dashboard-sidebar';
-import { AuthControls } from '../auth/auth-controls';
 import { User } from '@supabase/supabase-js';
 
 type DashboardShellProps = {
@@ -24,10 +23,11 @@ export function DashboardShell({
       <SidebarProvider>
         <DashboardSidebar />
         <SidebarInset>
-          <DashboardHeader title={title} description={description} />
-          <section className="absolute top-0 right-0 p-4">
-            <AuthControls email={user?.email} />
-          </section>
+          <DashboardHeader
+            title={title}
+            description={description}
+            user={user}
+          />
           <div className="flex flex-1 flex-col overflow-y-auto p-6">
             {children}
           </div>

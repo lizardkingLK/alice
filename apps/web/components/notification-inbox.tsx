@@ -11,14 +11,21 @@ export function NotificationInbox() {
     setSubscriberId(getSubscriberId());
   }, []);
 
-  if (!subscriberId || !process.env.NEXT_PUBLIC_NOVU_APP_ID) {
+  if (!subscriberId) {
     return null;
   }
 
   return (
     <Inbox
-      applicationIdentifier={process.env.NEXT_PUBLIC_NOVU_APP_ID}
-      subscriberId={subscriberId}
+      applicationIdentifier={process.env.NEXT_PUBLIC_NOVU_APP_ID!}
+      subscriberId={process.env.NEXT_PUBLIC_NOVU_SUBSCRIBER_ID!}
+      socketUrl="wss://socket.novu.co"
+      appearance={{
+        variables: {
+          colorPrimary: '#DD2450',
+          colorForeground: '#0E121B',
+        },
+      }}
     />
   );
 }

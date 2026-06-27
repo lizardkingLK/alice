@@ -2,8 +2,7 @@ import { NotificationInbox } from './notification-inbox';
 
 export function AppHeader() {
   return (
-    <header className="flex items-center justify-between border-b px-6 py-4">
-      <span className="font-semibold">Alice</span>
+    <header className="flex items-center justify-between p-4">
       <NotificationInbox />
     </header>
   );

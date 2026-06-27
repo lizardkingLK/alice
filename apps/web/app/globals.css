@@ -1,18 +1,4 @@
-@import 'tailwindcss';
 @import '../../../packages/ui/globals.css';
 
+@source './src/**/*.{ts,tsx}';
 @source '../../../packages/ui/src/**/*.{ts,tsx}';
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-  }
-
-  html {
-    @apply font-sans;
-  }
-}

@@ -12,7 +12,7 @@ export default async function DashboardPage() {
 
   return (
     <DashboardShell
-      title="Dashboard"
+      title="Home"
       description="Track your work and team activity at a glance."
       user={user}
     >
