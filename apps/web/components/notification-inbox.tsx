@@ -11,11 +11,13 @@ export function NotificationInbox() {
     setSubscriberId(getSubscriberId());
   }, []);
 
-  if (!subscriberId) return null;
+  if (!subscriberId || !process.env.NEXT_PUBLIC_NOVU_APP_ID) {
+    return null;
+  }
 
   return (
     <Inbox
-      applicationIdentifier={process.env.NEXT_PUBLIC_NOVU_APP_ID!}
+      applicationIdentifier={process.env.NEXT_PUBLIC_NOVU_APP_ID}
       subscriberId={subscriberId}
     />
   );
