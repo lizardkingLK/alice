@@ -1,9 +1,10 @@
 'use server';
 
+import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getDbUser } from '../../lib/auth';
-import { headers } from 'next/headers';
+import { buildAuthCallbackUrl, resolveRequestOrigin } from '@/lib/auth-redirect';
 import { z } from 'zod';
 
 const createUserSchema = z.object({
@@ -18,7 +19,7 @@ export type ActionState = {
 };
 
 export async function createUser(
-  prevState: ActionState | null,
+  _prevState: ActionState | null,
   formData: FormData
 ): Promise<ActionState> {
   const name = formData.get('name') as string;
@@ -68,8 +69,9 @@ export async function createUser(
     }
 
     const headersList = await headers();
-    const origin = headersList.get('origin') || 'http://localhost:3000';
-    const redirectToUrl = `${origin}/auth/callback?next=/reset-password`;
+    const requestOrigin = headersList.get('origin') ?? 'http://localhost:3000';
+    const origin = resolveRequestOrigin(requestOrigin);
+    const redirectToUrl = buildAuthCallbackUrl(origin, '/reset-password');
 
     // Invite the user in Supabase Auth
     const { data: inviteData, error: inviteError } =

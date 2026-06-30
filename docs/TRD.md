@@ -60,6 +60,10 @@ Both apps deploy to Vercel. The API runs as Vercel Serverless Functions. Protect
 - `app/favicon.ico`, `app/icon.svg`, `app/apple-icon.png`, `app/opengraph-image.png` — file-based metadata assets
 - `app/admin/page.tsx`, `app/manager/page.tsx`, `app/member/page.tsx` — role dashboards (RBAC guards planned)
 - `app/instruments/page.tsx` — typed Supabase data example
+- `app/users/page.tsx` — user registry and management UI
+- `app/users/actions.ts` — invite, create registry row, activate/deactivate
+- `app/auth/callback/route.ts` — OAuth/invite code exchange
+- `app/reset-password/page.tsx` — set password after invite or recovery
 - `lib/auth.ts` — `getUser()` via `supabase.auth.getUser()`
 - `lib/supabase/server.ts` — SSR Supabase client (`createServerClient` + `@repo/types`)
 - `lib/supabase/client.ts` — browser Supabase client
@@ -94,7 +98,7 @@ Both apps deploy to Vercel. The API runs as Vercel Serverless Functions. Protect
 **packages/eslint-config** — shared ESLint configs  
 **packages/typescript-config** — shared TypeScript configs
 
-See also: `docs/guidelines/DATABASE.md` (operational runbook), `docs/guidelines/DEBUGGING.md` (IDE debug configs), `docs/guidelines/SEO.md` (search metadata and crawler policy), `docs/authorization/` (auth and RBAC plans).
+See also: `docs/guidelines/DATABASE.md` (operational runbook), `docs/guidelines/DEBUGGING.md` (IDE debug configs), `docs/guidelines/SEO.md` (search metadata and crawler policy), `docs/features/users/` (user management), `docs/authorization/` (auth and RBAC plans).
 
 ## 4. Technology Stack
 
@@ -289,7 +293,9 @@ One Supabase project serves both development and production. Migrations must be 
 - `/dashboard` — authenticated dashboard hub
 - `/admin`, `/manager`, `/member` — role dashboards (auth required; RBAC guards planned)
 - `/instruments` — example typed Supabase query page
+- `/users` — user registry (auth required; admin-only RBAC for mutations — see `docs/features/users/USER_MANAGEMENT.md`)
 - `/files` — file upload utility (authenticated)
+- `/reset-password` — set password after invite or recovery link
 
 ### 9.1 SEO and crawler policy
 
@@ -413,6 +419,7 @@ pnpm commit               # conventional commit (interactive)
 - Database engineering packages (`@repo/db`, `@repo/types`)
 - Prisma schema, baseline migration, and migration scripts for Supabase
 - Supabase client type generation and typed SDK usage in web (`@repo/types`)
+- User management with Supabase invite emails and `public.users` registry (`docs/features/users/`)
 - Idempotent database seeding (`pnpm db seed`)
 - Prisma schema validation in CI (`pnpm db validate`)
 - Migration status gate on `main` deploy (`pnpm db migrate:status`)
@@ -424,8 +431,7 @@ pnpm commit               # conventional commit (interactive)
 
 **Not yet implemented**
 
-- Forgot-password / password-reset flow (see `docs/authorization/FORGOT_PASSWORD_AUTH_PLAN.md`)
+- Strict admin-only **route/UI** guard for `/users` (Server Actions already enforce admin)
 - Project and issue domain routes and services
-- Admin UI for role assignment
 - Zod request validation on API routes
-- Full custom RBAC in database tables (see `docs/authorization/RBAC_AUTHORIZATION_SKELETON.md`)
+- Full custom RBAC in database tables — page-level guards (see `docs/authorization/RBAC_AUTHORIZATION_SKELETON.md`)

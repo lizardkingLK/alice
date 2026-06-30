@@ -23,14 +23,14 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     if (state.success) {
       const timer = setTimeout(() => {
-        router.push('/dashboard');
+        router.push('/login?reset=success');
       }, 1500);
       return () => clearTimeout(timer);
     }
   }, [state.success, router]);
 
   return (
-    <main className="from-background via-muted/50 to-background flex min-h-screen items-center justify-center bg-gradient-to-br p-6">
+    <main className="from-background via-muted/50 to-background flex min-h-screen items-center justify-center bg-linear-to-br p-6">
       <div className="border-border bg-card/60 w-full max-w-md space-y-6 rounded-2xl border p-8 shadow-2xl backdrop-blur-md transition-all duration-300">
         <div className="space-y-2 text-center">
           <div className="bg-primary/10 text-primary border-primary/20 mx-auto flex h-12 w-12 items-center justify-center rounded-full border shadow-sm">
@@ -79,14 +79,14 @@ export default function ResetPasswordPage() {
           {state.success && (
             <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3.5 text-sm text-emerald-500">
               <CheckCircle className="h-4 w-4 shrink-0" />
-              <span>Password updated! Redirecting...</span>
+              <span>Password updated! Redirecting to sign in...</span>
             </div>
           )}
 
           <Button
             type="submit"
             disabled={isPending || state.success}
-            className="h-11 w-full cursor-pointer bg-gradient-to-r from-violet-600 to-indigo-600 font-semibold text-white shadow-md transition-all duration-300 hover:from-violet-700 hover:to-indigo-700 hover:shadow-lg"
+            className="h-11 w-full cursor-pointer bg-linear-to-r from-violet-600 to-indigo-600 font-semibold text-white shadow-md transition-all duration-300 hover:from-violet-700 hover:to-indigo-700 hover:shadow-lg"
           >
             {isPending ? (
               <>
@@ -94,7 +94,7 @@ export default function ResetPasswordPage() {
                 Updating Password...
               </>
             ) : (
-              'Set Password & Log In'
+              'Set Password'
             )}
           </Button>
         </form>

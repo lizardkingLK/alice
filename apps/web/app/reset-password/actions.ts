@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 
@@ -51,6 +52,9 @@ export async function resetPassword(
         error: error.message,
       };
     }
+
+    await supabase.auth.signOut();
+    revalidatePath('/', 'layout');
 
     return {
       success: true,

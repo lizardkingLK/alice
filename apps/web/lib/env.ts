@@ -12,6 +12,7 @@ const clientSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   NEXT_PUBLIC_NOVU_APP_ID: z.string().min(1),
   NEXT_PUBLIC_NOVU_SUBSCRIBER_ID: z.string().min(1),
+  NEXT_PUBLIC_SITE_URL: z.url().optional(),
 });
 
 const mergedSchema = serverSchema.extend(clientSchema.shape);
@@ -37,6 +38,7 @@ const processEnv = {
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   NEXT_PUBLIC_NOVU_APP_ID: process.env.NEXT_PUBLIC_NOVU_APP_ID,
   NEXT_PUBLIC_NOVU_SUBSCRIBER_ID: process.env.NEXT_PUBLIC_NOVU_SUBSCRIBER_ID,
+  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
 };
 
 const parsed = mergedSchema.safeParse(processEnv);

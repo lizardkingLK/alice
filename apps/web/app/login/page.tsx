@@ -5,13 +5,14 @@ import { Label } from '@repo/ui/components/ui/label';
 import { login } from '@/app/auth/actions';
 
 type LoginPageProps = {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; reset?: string }>;
 };
 
 export default async function LoginPage({
   searchParams,
 }: Readonly<LoginPageProps>) {
-  const { error } = await searchParams;
+  const { error, reset } = await searchParams;
+  const resetSuccess = reset === 'success';
 
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
@@ -22,6 +23,12 @@ export default async function LoginPage({
             Access your Jira Teams workspace
           </p>
         </div>
+
+        {resetSuccess ? (
+          <output className="text-sm text-emerald-600">
+            Your password has been reset. Sign in with your new password.
+          </output>
+        ) : null}
 
         {error ? (
           <p className="text-destructive text-sm" role="alert">
@@ -41,7 +48,15 @@ export default async function LoginPage({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              <Link
+                href="/forgot-password"
+                className="text-muted-foreground text-xs underline-offset-4 hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <Input
               id="password"
               name="password"
