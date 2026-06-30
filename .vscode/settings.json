@@ -8,9 +8,5 @@
   "sonarlint.connectedMode.project": {
     "connectionId": "lizardkinglk_alice",
     "projectKey": "lizardkingLK_alice"
-  },
-  "sonarlint.analyzerProperties": {
-    "sonar.exclusions": "**/node_modules/**,**/.next/**,**/dist/**,**/generated/**,**/prisma/migrations/**"
-  },
-  "sonarlint.disableTelemetry": true
+  }
 }

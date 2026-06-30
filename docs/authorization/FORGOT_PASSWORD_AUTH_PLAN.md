@@ -42,18 +42,18 @@ sequenceDiagram
 
 ## 3. Routes and Files (proposed)
 
-| Route | Type | Purpose |
-|-------|------|---------|
-| `/forgot-password` | RSC page | Email form → Server Action |
-| `/auth/callback` | Route Handler | Exchange auth code, set session cookies |
-| `/reset-password` | RSC page | New password form (requires recovery session) |
+| Route              | Type          | Purpose                                       |
+| ------------------ | ------------- | --------------------------------------------- |
+| `/forgot-password` | RSC page      | Email form → Server Action                    |
+| `/auth/callback`   | Route Handler | Exchange auth code, set session cookies       |
+| `/reset-password`  | RSC page      | New password form (requires recovery session) |
 
-| File | Purpose |
-|------|---------|
-| `app/forgot-password/page.tsx` | UI: email input, submit, generic success message |
-| `app/reset-password/page.tsx` | UI: new password + confirm, submit |
-| `app/auth/callback/route.ts` | `exchangeCodeForSession` via server Supabase client |
-| `app/auth/actions.ts` | Add `requestPasswordReset`, `updatePassword` Server Actions |
+| File                           | Purpose                                                     |
+| ------------------------------ | ----------------------------------------------------------- |
+| `app/forgot-password/page.tsx` | UI: email input, submit, generic success message            |
+| `app/reset-password/page.tsx`  | UI: new password + confirm, submit                          |
+| `app/auth/callback/route.ts`   | `exchangeCodeForSession` via server Supabase client         |
+| `app/auth/actions.ts`          | Add `requestPasswordReset`, `updatePassword` Server Actions |
 
 Reuse `@repo/ui` primitives (`Button`, `Input`, `Label`, `Card`) per UI design rules.
 
@@ -106,25 +106,25 @@ Before testing or deploying:
 
 ## 6. Environment Variables
 
-| Variable | Where | Notes |
-|----------|-------|-------|
-| `NEXT_PUBLIC_SUPABASE_URL` | web | Already required |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | web | Already required |
-| `NEXT_PUBLIC_SITE_URL` (optional) | web | Canonical origin for `redirectTo` in production |
+| Variable                          | Where | Notes                                           |
+| --------------------------------- | ----- | ----------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`        | web   | Already required                                |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`   | web   | Already required                                |
+| `NEXT_PUBLIC_SITE_URL` (optional) | web   | Canonical origin for `redirectTo` in production |
 
 Add to `apps/web/sample.env` and `lib/env.ts` when implemented.
 
 ## 7. Security Considerations
 
-| Risk | Mitigation |
-|------|------------|
-| Email enumeration | Show the same success message whether or not the email is registered (Supabase default behaviour for `resetPasswordForEmail`) |
-| Open redirect | Only allow `next` paths that are relative (`/reset-password`), never arbitrary URLs |
-| Service role exposure | Never use `SUPABASE_SERVICE_ROLE_KEY` in forgot-password flow |
-| Session fixation | Use `@supabase/ssr` callback handler; let SDK manage cookie rotation |
-| Weak passwords | Validate client-side for UX; Supabase enforces server-side policy |
-| Rate limiting | Rely on Supabase Auth rate limits; monitor abuse in dashboard |
-| CSRF on Server Actions | Next.js Server Actions include built-in protection |
+| Risk                   | Mitigation                                                                                                                    |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Email enumeration      | Show the same success message whether or not the email is registered (Supabase default behaviour for `resetPasswordForEmail`) |
+| Open redirect          | Only allow `next` paths that are relative (`/reset-password`), never arbitrary URLs                                           |
+| Service role exposure  | Never use `SUPABASE_SERVICE_ROLE_KEY` in forgot-password flow                                                                 |
+| Session fixation       | Use `@supabase/ssr` callback handler; let SDK manage cookie rotation                                                          |
+| Weak passwords         | Validate client-side for UX; Supabase enforces server-side policy                                                             |
+| Rate limiting          | Rely on Supabase Auth rate limits; monitor abuse in dashboard                                                                 |
+| CSRF on Server Actions | Next.js Server Actions include built-in protection                                                                            |
 
 ## 8. UX Requirements
 
@@ -146,14 +146,14 @@ None for v1. Password reset is web-only via Supabase Auth. The API continues to 
 
 ## 11. Rollout Plan
 
-| Phase | Tasks |
-|-------|--------|
-| 1 | Supabase redirect URL config (local + prod) |
-| 2 | `/auth/callback` route handler |
-| 3 | `/forgot-password` page + `requestPasswordReset` action |
-| 4 | `/reset-password` page + `updatePassword` action |
-| 5 | Login page link + env updates (`sample.env`, `lib/env.ts`) |
-| 6 | Manual test: full flow local → staging → production |
+| Phase | Tasks                                                      |
+| ----- | ---------------------------------------------------------- |
+| 1     | Supabase redirect URL config (local + prod)                |
+| 2     | `/auth/callback` route handler                             |
+| 3     | `/forgot-password` page + `requestPasswordReset` action    |
+| 4     | `/reset-password` page + `updatePassword` action           |
+| 5     | Login page link + env updates (`sample.env`, `lib/env.ts`) |
+| 6     | Manual test: full flow local → staging → production        |
 
 ## 12. Test Plan
 
