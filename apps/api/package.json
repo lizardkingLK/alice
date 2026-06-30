@@ -10,7 +10,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "lint": "eslint --max-warnings 0",
-    "checktypes": "tsc --noEmit",
+    "checktypes": "tsc --noEmit -p tsconfig.eslint.json",
     "test": "vitest"
   },
   "dependencies": {
