@@ -1,7 +1,7 @@
 {
   "$schema": "https://v2-10-0.turborepo.dev/schema.json",
   "ui": "tui",
-  "globalEnv": ["PORT", "GITHUB_ACTIONS"],
+  "globalEnv": ["PORT", "GITHUB_ACTIONS", "NODE_ENV"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

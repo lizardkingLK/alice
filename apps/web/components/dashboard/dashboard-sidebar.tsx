@@ -27,6 +27,7 @@ import {
 
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { href: '/users', label: 'Users', icon: Users },
   { href: '/member', label: 'My Work', icon: CircleDot },
   { href: '/manager', label: 'Team', icon: Users },
   { href: '/admin', label: 'Projects', icon: FolderKanban },
@@ -85,7 +86,8 @@ export function DashboardSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton disabled tooltip="Coming soon">
                   <Settings />
-                  <span>Settings</span>
+                  <span>Settings
+                  </span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

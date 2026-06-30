@@ -1,22 +1,48 @@
+import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
 
-export async function getUser() {
+export const getUser = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  return user;
-}
+  if (!user || !user.email) {
+    return null;
+  }
 
-/** Custom RBAC: load role from application database once implemented. */
+  // Check if user is active in the application database
+  const { data: dbUser } = await supabase
+    .from('users')
+    .select('active')
+    .eq('email', user.email)
+    .single();
 
-export async function getUserRole() {
-  const user = await getUser();
-
-  if (!user) {
+  if (dbUser && !dbUser.active) {
     return null;
   }
 
   return user;
-}
+});
+
+export const getDbUser = cache(async () => {
+  const user = await getUser();
+  if (!user || !user.email) {
+    return null;
+  }
+
+  const supabase = await createClient();
+  const { data: dbUser } = await supabase
+    .from('users')
+    .select()
+    .eq('email', user.email)
+    .single();
+
+  return dbUser;
+});
+
+export const getUserRole = cache(async () => {
+  const dbUser = await getDbUser();
+  return dbUser?.role ?? null;
+});
+
