@@ -34,15 +34,11 @@ export const config = [
     },
   },
   {
-    ignores: ['dist/**'],
-  },
-  {
-    files: ['**/*.ts', '**/*.tsx', '**/*.mts', '**/*.cts'],
-    languageOptions: {
-      parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
+    ignores: [
+      'dist/**',
+      '**/.next/**',
+      '**/generated/**',
+      '**/prisma/migrations/**',
+    ],
   },
 ];

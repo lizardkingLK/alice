@@ -4,5 +4,13 @@
     "cwd": "${workspaceFolder}"
   },
   "js/ts.preferences.importModuleSpecifier": "non-relative",
-  "js/ts.tsdk.path": "node_modules/typescript/lib"
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
+  "sonarlint.connectedMode.project": {
+    "connectionId": "lizardkinglk_alice",
+    "projectKey": "lizardkingLK_alice"
+  },
+  "sonarlint.analyzerProperties": {
+    "sonar.exclusions": "**/node_modules/**,**/.next/**,**/dist/**,**/generated/**,**/prisma/migrations/**"
+  },
+  "sonarlint.disableTelemetry": true
 }
