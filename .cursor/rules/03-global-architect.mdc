@@ -37,6 +37,8 @@ globs: **/*
 - Always use the root script: `pnpm format` (do not run Prettier ad hoc per package unless the user asks).
 - Format after substantive edits and before considering a task complete, alongside lint/type checks.
 - Never use local try/catch blocks in Express controller functions.
+- For logging and caught error throwings throughout the whole repository use the below rule.
+Add prefixes info, warn, error with the formatting "prefix. the message is here".
 
 ## Vercel Deployment Rules
 

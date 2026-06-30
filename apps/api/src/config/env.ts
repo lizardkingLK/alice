@@ -1,20 +1,24 @@
 import { z } from 'zod';
 
-const mock: EnvSchemaType = {
-  PORT: 5000,
-  FRONTEND_URL: 'http://localhost:3000',
-  SUPABASE_URL: 'https://supabase.co',
-  SUPABASE_ANON_KEY: 'mock',
-  SUPABASE_SERVICE_ROLE_KEY: 'mock',
-};
-
 const serverSchema = z.object({
   PORT: z.coerce.number(),
   FRONTEND_URL: z.string().min(1),
   SUPABASE_URL: z.url(),
   SUPABASE_ANON_KEY: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+  NOVU_SECRET_KEY: z.string().min(1),
 });
+
+type EnvSchemaType = z.infer<typeof serverSchema>;
+
+const mock: EnvSchemaType = {
+  PORT: 5000,
+  FRONTEND_URL: 'http://localhost:3000',
+  SUPABASE_URL: 'https://supabase.co',
+  SUPABASE_ANON_KEY: 'mock',
+  SUPABASE_SERVICE_ROLE_KEY: 'mock',
+  NOVU_SECRET_KEY: 'mock',
+};
 
 const processEnv = {
   PORT: process.env.PORT,
@@ -22,9 +26,8 @@ const processEnv = {
   SUPABASE_URL: process.env.SUPABASE_URL,
   SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  NOVU_SECRET_KEY: process.env.NOVU_SECRET_KEY,
 };
-
-type EnvSchemaType = z.infer<typeof serverSchema>;
 
 let data: EnvSchemaType;
 

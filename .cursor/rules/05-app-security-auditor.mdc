@@ -1,0 +1,12 @@
+---
+description: Enforces searching for security vulnerabile areas for various rules.
+alwaysApply: true
+---
+
+# Basic security appliances
+
+## Environment variables in `env.ts` files
+
+- Check if client components uses server side environment variables to avoid exposing.
+- Reason in depth of what areas going to affect as with the found exposed key values.
+- Since NEXT_PUBLIC_ keys are safe to handle on the frontend non public keys are to be focused on.

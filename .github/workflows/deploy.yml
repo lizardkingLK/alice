@@ -41,6 +41,9 @@ jobs:
       - name: Run Test Suite via Turborepo
         run: pnpm turbo test
 
+      - name: Validate Prisma schema
+        run: pnpm db validate
+
   sonar_quality_gate:
     name: Execute SonarCloud Scan
     needs: validate_and_test
@@ -60,9 +63,35 @@ jobs:
         with:
           args: '-Dsonar.projectKey=lizardkingLK_alice -Dsonar.organization=lizardkinglk -Dsonar.host.url=https://sonarcloud.io -Dsonar.qualitygate.wait=true -Dsonar.coverage.exclusions=**/*'
 
+  validate_database:
+    name: Validate Postgresql for Up-to-date
+    needs: validate_and_test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Install Pnpm Core Engine
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
+
+      - name: Initialize Structured Node Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install workspace Dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Check migration status against database
+        run: pnpm db migrate:status
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+
   deploy_backend_api:
     name: Deploy Express API to Vercel
-    needs: validate_and_test
+    needs: [validate_and_test, validate_database]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
@@ -101,7 +130,7 @@ jobs:
 
   deploy_frontend_web:
     name: Deploy Web Frontend to Vercel
-    needs: validate_and_test
+    needs: [validate_and_test, validate_database]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:

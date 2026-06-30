@@ -12,6 +12,8 @@
     "api": "pnpm --filter api",
     "ui": "pnpm --filter ./packages/ui",
     "ui:add": "pnpm dlx shadcn@latest add -c ./packages/ui",
+    "db": "pnpm --filter ./packages/db",
+    "types": "pnpm --filter ./packages/types",
     "commit": "cz",
     "prepare": "husky"
   },
@@ -29,7 +31,14 @@
     ],
     "packages/ui/**/*.{ts,tsx,js,jsx}": [
       "pnpm --filter @repo/ui lint --"
-    ]
+    ],
+    "packages/db/**/*.{ts,tsx,js,jsx,mjs}": [
+      "pnpm --filter @repo/db lint --"
+    ],
+    "packages/types/{eslint.config.mjs,src/index.ts}": [
+      "pnpm --filter @repo/types lint --"
+    ],
+    "packages/types/src/generated/**/*.ts": []
   },
   "devDependencies": {
     "@commitlint/cli": "^21.0.2",

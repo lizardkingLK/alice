@@ -27,6 +27,17 @@
     },
     "checktypes": {
       "dependsOn": ["^checktypes"]
+    },
+    "validate": {
+      "cache": false
+    },
+    "seed": {
+      "cache": false,
+      "env": ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]
+    },
+    "generate": {
+      "cache": false,
+      "env": ["DATABASE_URL", "DIRECT_URL"]
     }
   }
 }

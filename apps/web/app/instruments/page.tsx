@@ -1,9 +1,12 @@
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { Skeleton } from '@repo/ui/components/ui/skeleton';
+import type { Tables } from '@repo/types';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { getUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
+
+type Instrument = Tables<'instruments'>;
 
 function InstrumentsSkeleton() {
   return (
@@ -16,23 +19,18 @@ function InstrumentsSkeleton() {
 async function InstrumentsData() {
   const supabase = await createClient();
 
-  // 1. Log the session status to confirm the server sees your user
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  console.log('Is Server authenticated?', !!session);
-
-  // 2. Fetch data and capture any hidden errors
   const { data: instruments, error } = await supabase
     .from('instruments')
     .select();
 
   if (error) {
-    console.error('Supabase Database Error:', error.message);
+    console.error('error. supabase database error:', error.message);
     return <p>Error loading data: {error.message}</p>;
   }
 
-  return <pre>{JSON.stringify(instruments, null, 2)}</pre>;
+  const rows: Instrument[] = instruments ?? [];
+
+  return <pre>{JSON.stringify(rows, null, 2)}</pre>;
 }
 
 export default async function InstrumentsPage() {
