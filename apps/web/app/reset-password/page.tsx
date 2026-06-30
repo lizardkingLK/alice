@@ -14,7 +14,10 @@ const initialState: ResetState = {
 };
 
 export default function ResetPasswordPage() {
-  const [state, formAction, isPending] = useActionState(resetPassword, initialState);
+  const [state, formAction, isPending] = useActionState(
+    resetPassword,
+    initialState
+  );
   const router = useRouter();
 
   useEffect(() => {
@@ -27,15 +30,16 @@ export default function ResetPasswordPage() {
   }, [state.success, router]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-muted/50 to-background p-6">
-      <div 
-      className="border-border bg-card/60 backdrop-blur-md w-full max-w-md space-y-6 rounded-2xl border p-8 shadow-2xl transition-all duration-300">
+    <main className="from-background via-muted/50 to-background flex min-h-screen items-center justify-center bg-gradient-to-br p-6">
+      <div className="border-border bg-card/60 w-full max-w-md space-y-6 rounded-2xl border p-8 shadow-2xl backdrop-blur-md transition-all duration-300">
         <div className="space-y-2 text-center">
-          <div className="mx-auto bg-primary/10 text-primary flex h-12 w-12 items-center justify-center rounded-full border border-primary/20 shadow-sm">
+          <div className="bg-primary/10 text-primary border-primary/20 mx-auto flex h-12 w-12 items-center justify-center rounded-full border shadow-sm">
             <KeyRound className="h-6 w-6 animate-pulse" />
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Set New Password</h1>
-          <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+          <h1 className="text-3xl font-extrabold tracking-tight">
+            Set New Password
+          </h1>
+          <p className="text-muted-foreground mx-auto max-w-xs text-sm">
             Choose a strong password to secure your workspace account.
           </p>
         </div>
@@ -73,7 +77,7 @@ export default function ResetPasswordPage() {
           )}
 
           {state.success && (
-            <div className="text-emerald-500 bg-emerald-500/10 border-emerald-500/20 flex items-center gap-2 rounded-lg border p-3.5 text-sm">
+            <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3.5 text-sm text-emerald-500">
               <CheckCircle className="h-4 w-4 shrink-0" />
               <span>Password updated! Redirecting...</span>
             </div>
@@ -82,7 +86,7 @@ export default function ResetPasswordPage() {
           <Button
             type="submit"
             disabled={isPending || state.success}
-            className="w-full cursor-pointer bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold h-11 shadow-md hover:shadow-lg transition-all duration-300"
+            className="h-11 w-full cursor-pointer bg-gradient-to-r from-violet-600 to-indigo-600 font-semibold text-white shadow-md transition-all duration-300 hover:from-violet-700 hover:to-indigo-700 hover:shadow-lg"
           >
             {isPending ? (
               <>

@@ -18,7 +18,10 @@ export type ActionState = {
   error: string | null;
 };
 
-export async function createUser(prevState: ActionState | null, formData: FormData): Promise<ActionState> {
+export async function createUser(
+  prevState: ActionState | null,
+  formData: FormData
+): Promise<ActionState> {
   const name = formData.get('name') as string;
   const email = formData.get('email') as string;
   const role = formData.get('role') as string;
@@ -70,16 +73,14 @@ export async function createUser(prevState: ActionState | null, formData: FormDa
     const redirectToUrl = `${origin}/auth/callback?next=/reset-password`;
 
     // Invite the user in Supabase Auth
-    const { data: inviteData, error: inviteError } = await adminSupabase.auth.admin.inviteUserByEmail(
-      validation.data.email,
-      {
+    const { data: inviteData, error: inviteError } =
+      await adminSupabase.auth.admin.inviteUserByEmail(validation.data.email, {
         redirectTo: redirectToUrl,
         data: {
           name: validation.data.name,
           role: validation.data.role,
         },
-      }
-    );
+      });
 
     if (inviteError) {
       return {
@@ -120,7 +121,8 @@ export async function createUser(prevState: ActionState | null, formData: FormDa
       error: null,
     };
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'An unexpected error occurred.';
+    const message =
+      err instanceof Error ? err.message : 'An unexpected error occurred.';
     return {
       success: false,
       error: message,
@@ -128,7 +130,10 @@ export async function createUser(prevState: ActionState | null, formData: FormDa
   }
 }
 
-export async function toggleUserActive(userId: string, active: boolean): Promise<ActionState> {
+export async function toggleUserActive(
+  userId: string,
+  active: boolean
+): Promise<ActionState> {
   const currentUser = await getDbUser();
   if (!currentUser) {
     return {
@@ -168,12 +173,18 @@ export async function toggleUserActive(userId: string, active: boolean): Promise
     }
 
     // 2. Ban/unban in Supabase Auth to prevent logins
-    const { error: authError } = await adminSupabase.auth.admin.updateUserById(userId, {
-      ban_duration: active ? 'none' : '87600h',
-    });
+    const { error: authError } = await adminSupabase.auth.admin.updateUserById(
+      userId,
+      {
+        ban_duration: active ? 'none' : '87600h',
+      }
+    );
 
     if (authError) {
-      console.error('Failed to update ban status in Supabase Auth:', authError.message);
+      console.error(
+        'Failed to update ban status in Supabase Auth:',
+        authError.message
+      );
     }
 
     revalidatePath('/users');
@@ -182,11 +193,11 @@ export async function toggleUserActive(userId: string, active: boolean): Promise
       error: null,
     };
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'An unexpected error occurred.';
+    const message =
+      err instanceof Error ? err.message : 'An unexpected error occurred.';
     return {
       success: false,
       error: message,
     };
   }
 }
-

@@ -1,19 +1,25 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@repo/ui/components/ui/card';
 import { toggleUserActive } from './actions';
 import { UserForm } from './user-form';
-import { 
-  Users, 
-  Mail, 
-  Shield, 
-  Calendar, 
-  UserCheck, 
-  UserX, 
-  Loader2, 
+import {
+  Users,
+  Mail,
+  Shield,
+  Calendar,
+  UserCheck,
+  UserX,
+  Loader2,
   AlertTriangle,
-  UserPlus
+  UserPlus,
 } from 'lucide-react';
 import type { Tables } from '@repo/types';
 
@@ -44,7 +50,10 @@ function getAvatarPlaceholder(name: string) {
     .slice(0, 2);
 }
 
-export function UserRegistry({ users, currentUserId }: Readonly<UserRegistryProps>) {
+export function UserRegistry({
+  users,
+  currentUserId,
+}: Readonly<UserRegistryProps>) {
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [deactivatingUser, setDeactivatingUser] = useState<DbUser | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -84,102 +93,119 @@ export function UserRegistry({ users, currentUserId }: Readonly<UserRegistryProp
 
   return (
     <>
-      <Card className="border-border bg-card/50 backdrop-blur-md shadow-lg relative">
+      <Card className="border-border bg-card/50 relative shadow-lg backdrop-blur-md">
         {error && (
-          <div className="absolute top-4 right-4 left-4 z-10 text-destructive bg-destructive/10 border-destructive/20 flex items-center gap-2 rounded-lg border p-3 text-sm">
+          <div className="text-destructive bg-destructive/10 border-destructive/20 absolute top-4 right-4 left-4 z-10 flex items-center gap-2 rounded-lg border p-3 text-sm">
             <AlertTriangle className="h-4 w-4 shrink-0" />
             <span>{error}</span>
-            <button 
-              onClick={() => setError(null)} 
-              className="ml-auto text-xs hover:underline focus:outline-none cursor-pointer"
+            <button
+              onClick={() => setError(null)}
+              className="ml-auto cursor-pointer text-xs hover:underline focus:outline-none"
             >
               Dismiss
             </button>
           </div>
         )}
 
-        <CardHeader className="pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <CardHeader className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <CardTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight">
               <Users className="text-primary h-5 w-5" />
               User Registry
             </CardTitle>
             <CardDescription className="text-muted-foreground text-sm">
-              View all registered team members, their system roles, and activation status.
+              View all registered team members, their system roles, and
+              activation status.
             </CardDescription>
           </div>
           <button
             onClick={() => setIsAddUserOpen(true)}
-            className="cursor-pointer inline-flex items-center justify-center rounded-md h-9 px-4 text-xs shadow-md hover:shadow-lg transition-all duration-300"
+            className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md px-4 text-xs shadow-md transition-all duration-300 hover:shadow-lg"
           >
-            <UserPlus className="h-3.5 w-3.5 mr-1.5" />
+            <UserPlus className="mr-1.5 h-3.5 w-3.5" />
             Add User
           </button>
         </CardHeader>
         <CardContent>
           {users.length === 0 ? (
             <div className="text-muted-foreground flex h-60 flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-sm">
-              <Users className="h-8 w-8 stroke-1 text-muted-foreground/50 animate-bounce" />
+              <Users className="text-muted-foreground/50 h-8 w-8 animate-bounce stroke-1" />
               <p>No registered users found in database.</p>
-              <p className="text-xs text-muted-foreground/75">Create one using the button to get started.</p>
+              <p className="text-muted-foreground/75 text-xs">
+                Create one using the button to get started.
+              </p>
             </div>
           ) : (
             <div className="divide-border divide-y">
               {users.map((usr) => {
                 const isSelf = usr.id === currentUserId;
-                const isDeactivating = isPending && deactivatingUser?.id === usr.id;
+                const isDeactivating =
+                  isPending && deactivatingUser?.id === usr.id;
                 return (
                   <div
                     key={usr.id}
-                    className="group flex flex-col justify-between gap-4 py-4 sm:flex-row sm:items-center first:pt-0 last:pb-0"
+                    className="group flex flex-col justify-between gap-4 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold border shadow-sm transition-all duration-300 group-hover:scale-105 ${
-                        usr.active 
-                          ? 'bg-primary/10 text-primary border-primary/20' 
-                          : 'bg-muted text-muted-foreground border-muted-foreground/20'
-                      }`}>
+                      <div
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-semibold shadow-sm transition-all duration-300 group-hover:scale-105 ${
+                          usr.active
+                            ? 'bg-primary/10 text-primary border-primary/20'
+                            : 'bg-muted text-muted-foreground border-muted-foreground/20'
+                        }`}
+                      >
                         {getAvatarPlaceholder(usr.name)}
                       </div>
                       <div className="min-w-0">
-                        <h4 className={`text-sm font-semibold leading-none transition-colors flex items-center gap-2 ${
-                          usr.active ? 'text-foreground group-hover:text-primary' : 'text-muted-foreground line-through'
-                        }`}>
+                        <h4
+                          className={`flex items-center gap-2 text-sm leading-none font-semibold transition-colors ${
+                            usr.active
+                              ? 'text-foreground group-hover:text-primary'
+                              : 'text-muted-foreground line-through'
+                          }`}
+                        >
                           {usr.name}
                           {isSelf && (
-                            <span className="text-[10px] bg-primary/25 border border-primary/30 text-primary px-1.5 py-0.2 rounded-full normal-case tracking-normal">
+                            <span className="bg-primary/25 border-primary/30 text-primary py-0.2 rounded-full border px-1.5 text-[10px] tracking-normal normal-case">
                               You
                             </span>
                           )}
                         </h4>
-                        <span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                        <span className="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
                           <Mail className="h-3 w-3" />
                           <span className="truncate">{usr.email}</span>
                         </span>
                       </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 pl-13 sm:pl-0">
-                      <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold uppercase tracking-wider ${getRoleBadgeStyles(usr.role)}`}>
+                    <div className="flex flex-wrap items-center gap-2 pl-13 sm:gap-4 sm:pl-0">
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold tracking-wider uppercase ${getRoleBadgeStyles(usr.role)}`}
+                      >
                         <Shield className="h-3 w-3" />
                         {usr.role}
                       </span>
-                      
-                      <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold uppercase tracking-wider ${
-                        usr.active 
-                          ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
-                          : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
-                      }`}>
+
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold tracking-wider uppercase ${
+                          usr.active
+                            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
+                            : 'border-rose-500/20 bg-rose-500/10 text-rose-500'
+                        }`}
+                      >
                         {usr.active ? 'Active' : 'Inactive'}
                       </span>
 
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <span className="text-muted-foreground flex items-center gap-1 text-xs">
                         <Calendar className="h-3 w-3" />
                         <span>
-                          {new Date(usr.created_at).toLocaleDateString(undefined, {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
+                          {new Date(usr.created_at).toLocaleDateString(
+                            undefined,
+                            {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            }
+                          )}
                         </span>
                       </span>
 
@@ -187,10 +213,10 @@ export function UserRegistry({ users, currentUserId }: Readonly<UserRegistryProp
                         <button
                           disabled={isPending}
                           onClick={() => handleToggleActive(usr)}
-                          className={`cursor-pointer inline-flex items-center justify-center rounded-md h-8 px-3 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                            usr.active 
-                              ? 'bg-rose-500/10 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-500/20' 
-                              : 'bg-emerald-500/10 hover:bg-emerald-600 text-emerald-600 hover:text-white border border-emerald-500/20'
+                          className={`focus-visible:ring-ring inline-flex h-8 cursor-pointer items-center justify-center rounded-md px-3 text-xs font-medium transition-all focus-visible:ring-2 focus-visible:outline-none ${
+                            usr.active
+                              ? 'border border-rose-500/20 bg-rose-500/10 text-rose-600 hover:bg-rose-600 hover:text-white'
+                              : 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-600 hover:text-white'
                           }`}
                         >
                           {isDeactivating && (
@@ -198,13 +224,13 @@ export function UserRegistry({ users, currentUserId }: Readonly<UserRegistryProp
                           )}
                           {!isDeactivating && usr.active && (
                             <>
-                              <UserX className="h-3 w-3 mr-1" />
+                              <UserX className="mr-1 h-3 w-3" />
                               Deactivate
                             </>
                           )}
                           {!isDeactivating && !usr.active && (
                             <>
-                              <UserCheck className="h-3 w-3 mr-1" />
+                              <UserCheck className="mr-1 h-3 w-3" />
                               Activate
                             </>
                           )}
@@ -221,41 +247,48 @@ export function UserRegistry({ users, currentUserId }: Readonly<UserRegistryProp
 
       {/* Confirmation Modal */}
       {deactivatingUser && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div 
-            className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
+          <div
+            className="bg-card border-border animate-in fade-in zoom-in-95 w-full max-w-md overflow-hidden rounded-xl border shadow-2xl duration-200"
             role="dialog"
             aria-modal="true"
           >
             <div className="p-6">
-              <div className="flex items-center gap-3 text-rose-500 mb-3">
-                <div className="bg-rose-500/10 p-2 rounded-full border border-rose-500/20">
+              <div className="mb-3 flex items-center gap-3 text-rose-500">
+                <div className="rounded-full border border-rose-500/20 bg-rose-500/10 p-2">
                   <AlertTriangle className="h-6 w-6" />
                 </div>
-                <h3 className="text-lg font-bold text-foreground">Confirm Deactivation</h3>
+                <h3 className="text-foreground text-lg font-bold">
+                  Confirm Deactivation
+                </h3>
               </div>
-              
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Are you sure you want to deactivate <strong className="text-foreground">{deactivatingUser.name}</strong> ({deactivatingUser.email})?
+
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Are you sure you want to deactivate{' '}
+                <strong className="text-foreground">
+                  {deactivatingUser.name}
+                </strong>{' '}
+                ({deactivatingUser.email})?
               </p>
-              <p className="text-xs text-muted-foreground/80 mt-2 bg-muted/50 p-2.5 rounded-lg border border-border/40">
-                They will immediately lose access to their dashboard, workspace resources, and any active sessions.
+              <p className="text-muted-foreground/80 bg-muted/50 border-border/40 mt-2 rounded-lg border p-2.5 text-xs">
+                They will immediately lose access to their dashboard, workspace
+                resources, and any active sessions.
               </p>
 
               {error && (
-                <div className="mt-4 text-destructive bg-destructive/10 border-destructive/20 flex items-center gap-2 rounded-lg border p-3 text-xs">
+                <div className="text-destructive bg-destructive/10 border-destructive/20 mt-4 flex items-center gap-2 rounded-lg border p-3 text-xs">
                   <AlertTriangle className="h-4 w-4 shrink-0" />
                   <span>{error}</span>
                 </div>
               )}
             </div>
 
-            <div className="bg-muted/40 border-t border-border px-6 py-4 flex justify-end gap-3">
+            <div className="bg-muted/40 border-border flex justify-end gap-3 border-t px-6 py-4">
               <button
                 type="button"
                 disabled={isPending}
                 onClick={() => setDeactivatingUser(null)}
-                className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-xs font-semibold text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
+                className="border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex h-9 cursor-pointer items-center justify-center rounded-md border px-4 text-xs font-semibold shadow-sm transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -263,11 +296,11 @@ export function UserRegistry({ users, currentUserId }: Readonly<UserRegistryProp
                 type="button"
                 disabled={isPending}
                 onClick={confirmDeactivation}
-                className="inline-flex h-9 items-center justify-center rounded-md bg-rose-600 hover:bg-rose-700 px-4 text-xs font-semibold text-white shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
+                className="focus-visible:ring-ring inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-rose-600 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-rose-700 focus-visible:ring-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
               >
                 {isPending ? (
                   <>
-                    <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
+                    <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
                     Deactivating...
                   </>
                 ) : (
@@ -281,11 +314,11 @@ export function UserRegistry({ users, currentUserId }: Readonly<UserRegistryProp
 
       {/* Add User Modal */}
       {isAddUserOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <UserForm 
-              onClose={() => setIsAddUserOpen(false)} 
-              onSuccess={() => setIsAddUserOpen(false)} 
+        <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
+          <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
+            <UserForm
+              onClose={() => setIsAddUserOpen(false)}
+              onSuccess={() => setIsAddUserOpen(false)}
             />
           </div>
         </div>
@@ -293,4 +326,3 @@ export function UserRegistry({ users, currentUserId }: Readonly<UserRegistryProp
     </>
   );
 }
-

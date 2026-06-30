@@ -6,7 +6,12 @@ export async function GET(request: Request) {
   const code = searchParams.get('code');
   const next = searchParams.get('next') ?? '/dashboard';
 
-  console.log('info. auth callback received with code:', code, 'and next:', next);
+  console.log(
+    'info. auth callback received with code:',
+    code,
+    'and next:',
+    next
+  );
   console.log('info. request code:', code);
 
   if (code) {
@@ -27,5 +32,7 @@ export async function GET(request: Request) {
   }
 
   // return the user to an error page with instructions
-  return NextResponse.redirect(`${origin}/login?error=Could not authenticate session`);
+  return NextResponse.redirect(
+    `${origin}/login?error=Could not authenticate session`
+  );
 }

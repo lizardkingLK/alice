@@ -4,7 +4,13 @@ import { useActionState, useEffect, useRef } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@repo/ui/components/ui/card';
 import { createUser, ActionState } from './actions';
 import { UserPlus, Loader2, AlertCircle, CheckCircle, X } from 'lucide-react';
 
@@ -19,7 +25,10 @@ interface UserFormProps {
 }
 
 export function UserForm({ onClose, onSuccess }: Readonly<UserFormProps>) {
-  const [state, formAction, isPending] = useActionState(createUser, initialState);
+  const [state, formAction, isPending] = useActionState(
+    createUser,
+    initialState
+  );
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -38,7 +47,7 @@ export function UserForm({ onClose, onSuccess }: Readonly<UserFormProps>) {
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          className="hover:bg-muted text-muted-foreground hover:text-foreground absolute top-4 right-4 cursor-pointer rounded-full p-1.5 transition-colors"
           aria-label="Close modal"
         >
           <X className="h-4 w-4" />
@@ -57,37 +66,43 @@ export function UserForm({ onClose, onSuccess }: Readonly<UserFormProps>) {
       <CardContent>
         <form ref={formRef} action={formAction} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-sm font-medium">Full Name</Label>
+            <Label htmlFor="name" className="text-sm font-medium">
+              Full Name
+            </Label>
             <Input
               id="name"
               name="name"
               placeholder="Erlich Bachman"
               required
-              className="bg-background/80 focus-visible:ring-primary h-10 border-input transition-colors focus:border-primary"
+              className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-medium">Email Address</Label>
+            <Label htmlFor="email" className="text-sm font-medium">
+              Email Address
+            </Label>
             <Input
               id="email"
               name="email"
               type="email"
               placeholder="erlich@bachmanity.com"
               required
-              className="bg-background/80 focus-visible:ring-primary h-10 border-input transition-colors focus:border-primary"
+              className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="role" className="text-sm font-medium">Workspace Role</Label>
+            <Label htmlFor="role" className="text-sm font-medium">
+              Workspace Role
+            </Label>
             <div className="relative">
               <select
                 id="role"
                 name="role"
                 required
                 defaultValue="member"
-                className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary flex h-10 w-full rounded-md border px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="member">Member</option>
                 <option value="manager">Manager</option>
@@ -104,7 +119,7 @@ export function UserForm({ onClose, onSuccess }: Readonly<UserFormProps>) {
           )}
 
           {state.success && (
-            <div className="text-emerald-500 bg-emerald-500/10 border-emerald-500/20 flex items-center gap-2 rounded-lg border p-3 text-sm">
+            <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-500">
               <CheckCircle className="h-4 w-4 shrink-0" />
               <span>User added successfully! Sending invitation...</span>
             </div>
@@ -116,7 +131,7 @@ export function UserForm({ onClose, onSuccess }: Readonly<UserFormProps>) {
                 type="button"
                 disabled={isPending || state.success}
                 onClick={onClose}
-                className="w-1/3 cursor-pointer rounded-md border border-input bg-background hover:bg-accent text-foreground font-semibold shadow-sm transition-all duration-300 flex items-center justify-center text-sm"
+                className="border-input bg-background hover:bg-accent text-foreground flex w-1/3 cursor-pointer items-center justify-center rounded-md border text-sm font-semibold shadow-sm transition-all duration-300"
               >
                 Cancel
               </button>

@@ -7,11 +7,11 @@ import { createClient } from '@/lib/supabase/server';
 export async function login(formData: FormData) {
   const supabase = await createClient();
 
- const emailEntry = formData.get('email');
-const passwordEntry = formData.get('password');
+  const emailEntry = formData.get('email');
+  const passwordEntry = formData.get('password');
 
-const email = typeof emailEntry === 'string' ? emailEntry : '';
-const password = typeof passwordEntry === 'string' ? passwordEntry : '';
+  const email = typeof emailEntry === 'string' ? emailEntry : '';
+  const password = typeof passwordEntry === 'string' ? passwordEntry : '';
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
@@ -26,11 +26,11 @@ const password = typeof passwordEntry === 'string' ? passwordEntry : '';
 export async function signUp(formData: FormData) {
   const supabase = await createClient();
 
-const emailEntry = formData.get('email');
-const passwordEntry = formData.get('password');
+  const emailEntry = formData.get('email');
+  const passwordEntry = formData.get('password');
 
-const email = typeof emailEntry === 'string' ? emailEntry : '';
-const password = typeof passwordEntry === 'string' ? passwordEntry : '';
+  const email = typeof emailEntry === 'string' ? emailEntry : '';
+  const password = typeof passwordEntry === 'string' ? passwordEntry : '';
 
   const { error } = await supabase.auth.signUp({ email, password });
 

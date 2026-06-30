@@ -1,8 +1,12 @@
 {
-  "debug.javascript.autoAttachFilter": "onlyWithFlag",
+"debug.javascript.autoAttachFilter": "onlyWithFlag",
   "debug.javascript.terminalOptions": {
     "cwd": "${workspaceFolder}"
   },
   "js/ts.preferences.importModuleSpecifier": "non-relative",
-  "js/ts.tsdk.path": "node_modules/typescript/lib"
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
+  "sonarlint.connectedMode.project": {
+    "connectionId": "lizardkinglk_alice",
+    "projectKey": "lizardkingLK_alice"
+  }
 }

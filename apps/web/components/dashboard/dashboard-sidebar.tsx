@@ -86,8 +86,7 @@ export function DashboardSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton disabled tooltip="Coming soon">
                   <Settings />
-                  <span>Settings
-                  </span>
+                  <span>Settings</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

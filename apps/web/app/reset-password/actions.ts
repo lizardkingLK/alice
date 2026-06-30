@@ -5,7 +5,9 @@ import { z } from 'zod';
 
 const resetPasswordSchema = z
   .object({
-    password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+    password: z
+      .string()
+      .min(6, { message: 'Password must be at least 6 characters.' }),
     confirmPassword: z.string().min(6),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -25,7 +27,10 @@ export async function resetPassword(
   const password = formData.get('password') as string;
   const confirmPassword = formData.get('confirmPassword') as string;
 
-  const validation = resetPasswordSchema.safeParse({ password, confirmPassword });
+  const validation = resetPasswordSchema.safeParse({
+    password,
+    confirmPassword,
+  });
 
   if (!validation.success) {
     return {
@@ -52,7 +57,8 @@ export async function resetPassword(
       error: null,
     };
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'An unexpected error occurred.';
+    const message =
+      err instanceof Error ? err.message : 'An unexpected error occurred.';
     return {
       success: false,
       error: message,

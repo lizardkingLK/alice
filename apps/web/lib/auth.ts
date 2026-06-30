@@ -45,4 +45,3 @@ export const getUserRole = cache(async () => {
   const dbUser = await getDbUser();
   return dbUser?.role ?? null;
 });
-
