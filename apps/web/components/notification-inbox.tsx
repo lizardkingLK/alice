@@ -15,10 +15,17 @@ export function NotificationInbox() {
     return null;
   }
 
+  const applicationIdentifier = process.env.NEXT_PUBLIC_NOVU_APP_ID;
+  const configuredSubscriberId = process.env.NEXT_PUBLIC_NOVU_SUBSCRIBER_ID;
+
+  if (!applicationIdentifier || !configuredSubscriberId) {
+    return null;
+  }
+
   return (
     <Inbox
-      applicationIdentifier={process.env.NEXT_PUBLIC_NOVU_APP_ID!}
-      subscriberId={process.env.NEXT_PUBLIC_NOVU_SUBSCRIBER_ID!}
+      applicationIdentifier={applicationIdentifier}
+      subscriberId={configuredSubscriberId}
       socketUrl="wss://socket.novu.co"
       appearance={{
         variables: {

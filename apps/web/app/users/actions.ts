@@ -4,7 +4,10 @@ import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getDbUser } from '../../lib/auth';
-import { buildAuthCallbackUrl, resolveRequestOrigin } from '@/lib/auth-redirect';
+import {
+  buildAuthCallbackUrl,
+  resolveRequestOrigin,
+} from '@/lib/auth-redirect';
 import { z } from 'zod';
 
 const createUserSchema = z.object({
