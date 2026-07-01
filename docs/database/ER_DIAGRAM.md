@@ -2,16 +2,17 @@
 
 ## Document metadata
 
-| Field        | Value                                                           |
-| ------------ | --------------------------------------------------------------- |
-| Project      | Alice (1BT Project Management System / Jira Teams)              |
-| Source       | `1BT-JIRA Task Breakdown with Team Assignments.xlsx` (MVP 1–4)  |
-| Status       | Proposed — derived from task/API descriptions, not yet migrated |
-| Last updated | 2026-06-25                                                      |
+| Field        | Value                                                              |
+| ------------ | ------------------------------------------------------------------ |
+| Project      | Alice (1BT Project Management System / Jira Teams)                 |
+| Source       | `1BT-JIRA Task Breakdown with Team Assignments.xlsx` (MVP 1–4)     |
+| Status       | Implemented — `init_jira_domain` + `add_audit_metadata` migrations |
+| Last updated | 2026-06-25                                                         |
 
 Related:
 
 - `docs/guidelines/DATABASE.md` — migrations and workflow
+- `docs/database/AUDIT_COLUMNS.md` — audit column conventions and `@repo/types/audit` helpers
 - `docs/features/users/USER_MANAGEMENT.md` — `public.users` (partially implemented)
 - `docs/authorization/RBAC_AUTHORIZATION_SKELETON.md` — authorization rollout
 
@@ -28,6 +29,7 @@ Related:
 | Work item hierarchy | Self-referential `parent_id` for Epic → Story → Task (WI-07)                               |
 | Rich text           | `work_items.description` stored as JSON document (WI-02)                                   |
 | Soft delete         | `projects.deleted_at` for soft delete; hard delete is Admin-only (PROJ-04)                 |
+| Audit metadata      | All tables: `created_by`, `created_at`, `updated_by`, `updated_at`; see below              |
 
 ---
 
@@ -67,8 +69,12 @@ erDiagram
         string name
         string role "admin|manager|member"
         boolean active
+        string status "RecordStatus"
         string profile_picture "nullable"
+        uuid created_by FK "nullable"
         timestamptz created_at
+        uuid updated_by FK "nullable"
+        timestamptz updated_at
     }
 
     PROJECTS {
@@ -79,15 +85,22 @@ erDiagram
         uuid owner_id FK
         date start_date
         date end_date
-        string status
+        string status "ProjectStatus"
         timestamptz deleted_at "soft delete"
+        uuid created_by FK "nullable"
         timestamptz created_at
+        uuid updated_by FK "nullable"
+        timestamptz updated_at
     }
 
     PROJECT_MEMBERS {
         uuid project_id PK,FK
         uuid user_id PK,FK
-        timestamptz joined_at
+        string status "RecordStatus"
+        uuid created_by FK "nullable"
+        timestamptz created_at
+        uuid updated_by FK "nullable"
+        timestamptz updated_at
     }
 
     TEAMS {
@@ -96,7 +109,11 @@ erDiagram
         text description
         uuid manager_id FK
         string tech_stack
+        string status "RecordStatus"
+        uuid created_by FK "nullable"
         timestamptz created_at
+        uuid updated_by FK "nullable"
+        timestamptz updated_at
     }
 
     TEAM_MEMBERS {
@@ -107,6 +124,11 @@ erDiagram
         int capacity
         int allocation
         uuid reporting_line FK "nullable"
+        string status "RecordStatus"
+        uuid created_by FK "nullable"
+        timestamptz created_at
+        uuid updated_by FK "nullable"
+        timestamptz updated_at
     }
 
     SPRINTS {
@@ -116,9 +138,12 @@ erDiagram
         text goal
         date start_date
         date end_date
-        string status "planned|active|closed"
+        string status "SprintStatus"
         json summary_report "nullable, on close"
+        uuid created_by FK "nullable"
         timestamptz created_at
+        uuid updated_by FK "nullable"
+        timestamptz updated_at
     }
 
     WORK_ITEMS {
@@ -131,11 +156,13 @@ erDiagram
         string priority
         json description "rich text JSON"
         uuid assignee_id FK "nullable"
-        uuid reporter_id FK
+        uuid reporter_id FK "nullable"
         date due_date "nullable"
         int story_points "nullable"
-        string status "Draft|New|ToDo|InProgress|Testing|Done"
+        string status "WorkItemStatus"
+        uuid created_by FK "nullable"
         timestamptz created_at
+        uuid updated_by FK "nullable"
         timestamptz updated_at
     }
 
@@ -146,7 +173,10 @@ erDiagram
         uuid parent_id FK "nullable, threaded"
         text content
         boolean edited
+        string status "RecordStatus"
+        uuid created_by FK "nullable"
         timestamptz created_at
+        uuid updated_by FK "nullable"
         timestamptz updated_at
     }
 
@@ -158,7 +188,11 @@ erDiagram
         string storage_path
         int file_size
         string mime_type
-        timestamptz uploaded_at
+        string status "RecordStatus"
+        uuid created_by FK "nullable"
+        timestamptz created_at
+        uuid updated_by FK "nullable"
+        timestamptz updated_at
     }
 
     NOTIFICATIONS {
@@ -168,7 +202,11 @@ erDiagram
         text message
         uuid related_item_id "work item / project ref"
         boolean read_status
+        string status "RecordStatus"
+        uuid created_by FK "nullable"
         timestamptz created_at
+        uuid updated_by FK "nullable"
+        timestamptz updated_at
     }
 ```
 
@@ -210,14 +248,29 @@ users ──1:N──► notifications
 
 ## Implementation status
 
-| Entity                   | In `schema.prisma` today                |
-| ------------------------ | --------------------------------------- |
-| `instruments`            | Yes (dev baseline; seed update pending) |
-| `users`                  | Yes — migrated in `init_jira_domain`    |
-| `projects`               | Yes — migrated in `init_jira_domain`    |
-| `teams`, `sprints`, etc. | Yes — migrated in `init_jira_domain`    |
+| Entity                   | In `schema.prisma` today                        |
+| ------------------------ | ----------------------------------------------- |
+| `instruments`            | Yes — dev baseline with full audit columns      |
+| `users`                  | Yes — `init_jira_domain` + `add_audit_metadata` |
+| `projects`               | Yes — `init_jira_domain` + `add_audit_metadata` |
+| `teams`, `sprints`, etc. | Yes — `init_jira_domain` + `add_audit_metadata` |
 
 When implementing, add tables via `packages/db/prisma/schema.prisma` and `pnpm db create:migrate:win <name>`. Each migration appends Supabase grants automatically (see `docs/guidelines/DATABASE.md`).
+
+---
+
+## Audit metadata
+
+Every table includes:
+
+| Column       | Type        | Notes                                        |
+| ------------ | ----------- | -------------------------------------------- |
+| `created_by` | UUID FK     | Nullable → `users.id`, `ON DELETE SET NULL`  |
+| `created_at` | timestamptz | Defaults to `now()`                          |
+| `updated_by` | UUID FK     | Nullable → `users.id`, `ON DELETE SET NULL`  |
+| `updated_at` | timestamptz | Set on write via `@repo/types/audit` helpers |
+
+Full reference: [`AUDIT_COLUMNS.md`](./AUDIT_COLUMNS.md).
 
 ---
 
@@ -226,4 +279,4 @@ When implementing, add tables via `packages/db/prisma/schema.prisma` and `pnpm d
 - Should `teams` link to `projects`, or remain org-wide?
 - Store sprint summary as JSON on `sprints`, or a separate `sprint_reports` table?
 - Should `notifications.related_item_id` use a polymorphic `(entity_type, entity_id)` pair?
-- Add `user_activity` / audit log table for PROF-04, or derive from existing events?
+- Add `user_activity` / audit log table for PROF-04, or derive from existing `created_by` / `updated_by` columns?

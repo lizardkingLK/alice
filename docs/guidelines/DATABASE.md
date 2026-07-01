@@ -1,6 +1,6 @@
 # Database workflow
 
-See also: [`docs/database/ER_DIAGRAM.md`](../database/ER_DIAGRAM.md) — proposed entity model from the 1BT-JIRA task breakdown.
+See also: [`docs/database/ER_DIAGRAM.md`](../database/ER_DIAGRAM.md) — entity model from the 1BT-JIRA task breakdown. [`docs/database/AUDIT_COLUMNS.md`](../database/AUDIT_COLUMNS.md) — audit metadata conventions and helpers.
 
 ## Packages
 
@@ -73,6 +73,20 @@ type Instrument = Tables<'instruments'>;
 ```
 
 Add `@repo/types` as a dependency in `web` or `api` when you adopt typed clients.
+
+For inserts and updates, spread audit helpers from `@repo/types/audit` (see [`AUDIT_COLUMNS.md`](../database/AUDIT_COLUMNS.md)):
+
+```typescript
+import { auditCreate, auditUpdate } from '@repo/types/audit';
+
+await supabase
+  .from('teams')
+  .insert({ name, manager_id, ...auditCreate(actorId) });
+await supabase
+  .from('teams')
+  .update({ name, ...auditUpdate(actorId) })
+  .eq('id', teamId);
+```
 
 ## CI
 

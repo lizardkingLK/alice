@@ -3,6 +3,7 @@
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { auditCreate, userActiveAuditUpdate } from '@/lib/audit';
 import { getDbUser } from '../../lib/auth';
 import {
   buildAuthCallbackUrl,
@@ -108,6 +109,7 @@ export async function createUser(
       email: validation.data.email,
       role: validation.data.role,
       active: true,
+      ...auditCreate(currentUser.id),
     });
 
     if (dbError) {
@@ -166,7 +168,7 @@ export async function toggleUserActive(
     // 1. Update public.users status
     const { error: dbError } = await adminSupabase
       .from('users')
-      .update({ active })
+      .update(userActiveAuditUpdate(currentUser.id, active))
       .eq('id', userId);
 
     if (dbError) {

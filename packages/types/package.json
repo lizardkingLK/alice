@@ -5,6 +5,7 @@
   "private": true,
   "exports": {
     ".": "./src/index.ts",
+    "./audit": "./src/audit.ts",
     "./database": "./src/generated/supabase/database.types.ts"
   },
   "scripts": {

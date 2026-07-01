@@ -47,6 +47,9 @@ importers:
       '@novu/api':
         specifier: ^3.17.0
         version: 3.17.0
+      '@repo/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@supabase/supabase-js':
         specifier: ^2.108.2
         version: 2.108.2
@@ -205,6 +208,9 @@ importers:
       '@repo/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
+      '@repo/types':
+        specifier: workspace:*
+        version: link:../types
       '@repo/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config

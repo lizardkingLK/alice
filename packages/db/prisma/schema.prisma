@@ -8,6 +8,13 @@ enum UserRole {
   member
 }
 
+enum RecordStatus {
+  active
+  inactive
+  archived
+  deleted
+}
+
 enum ProjectStatus {
   active
   archived
@@ -53,19 +60,36 @@ enum NotificationType {
 
 /// Dev baseline table — seed data updated separately.
 model instruments {
-  id   BigInt @id @default(autoincrement())
-  name String
+  id         BigInt       @id @default(autoincrement())
+  name       String
+  status     RecordStatus @default(active)
+  created_by String?      @db.Uuid
+  created_at DateTime     @default(now()) @db.Timestamptz(6)
+  updated_by String?      @db.Uuid
+  updated_at DateTime     @updatedAt @db.Timestamptz(6)
+
+  created_by_user users? @relation("InstrumentCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users? @relation("InstrumentUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
 }
 
 /// App profile + RBAC. `id` matches Supabase `auth.users.id` (set on invite, no DB default).
 model users {
-  id              String   @id @db.Uuid
-  email           String   @unique
+  id              String       @id @db.Uuid
+  email           String       @unique
   name            String
-  role            UserRole @default(member)
-  active          Boolean  @default(true)
+  role            UserRole     @default(member)
+  active          Boolean      @default(true)
+  status          RecordStatus @default(active)
   profile_picture String?
-  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  created_by      String?      @db.Uuid
+  created_at      DateTime     @default(now()) @db.Timestamptz(6)
+  updated_by      String?      @db.Uuid
+  updated_at      DateTime     @updatedAt @db.Timestamptz(6)
+
+  creator       users?  @relation("UserCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  created_users users[] @relation("UserCreatedBy")
+  updater       users?  @relation("UserUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+  updated_users users[] @relation("UserUpdatedBy")
 
   owned_projects      projects[]        @relation("ProjectOwner")
   project_memberships project_members[]
@@ -74,9 +98,30 @@ model users {
   reporting_lines     team_members[]    @relation("ReportingLine")
   assigned_work_items work_items[]      @relation("WorkItemAssignee")
   reported_work_items work_items[]      @relation("WorkItemReporter")
-  comments            comments[]
-  attachments         attachments[]
-  notifications       notifications[]
+  comments            comments[]        @relation("CommentAuthor")
+  attachments         attachments[]     @relation("AttachmentUploader")
+
+  created_instruments     instruments[]     @relation("InstrumentCreatedBy")
+  updated_instruments     instruments[]     @relation("InstrumentUpdatedBy")
+  created_projects        projects[]        @relation("ProjectCreatedBy")
+  updated_projects        projects[]        @relation("ProjectUpdatedBy")
+  created_project_members project_members[] @relation("ProjectMemberCreatedBy")
+  updated_project_members project_members[] @relation("ProjectMemberUpdatedBy")
+  created_teams           teams[]           @relation("TeamCreatedBy")
+  updated_teams           teams[]           @relation("TeamUpdatedBy")
+  created_team_members    team_members[]    @relation("TeamMemberCreatedBy")
+  updated_team_members    team_members[]    @relation("TeamMemberUpdatedBy")
+  created_sprints         sprints[]         @relation("SprintCreatedBy")
+  updated_sprints         sprints[]         @relation("SprintUpdatedBy")
+  created_work_items      work_items[]      @relation("WorkItemCreatedBy")
+  updated_work_items      work_items[]      @relation("WorkItemUpdatedBy")
+  created_comments        comments[]        @relation("CommentCreatedBy")
+  updated_comments        comments[]        @relation("CommentUpdatedBy")
+  created_attachments     attachments[]     @relation("AttachmentCreatedBy")
+  updated_attachments     attachments[]     @relation("AttachmentUpdatedBy")
+  notifications           notifications[]
+  created_notifications   notifications[]   @relation("NotificationCreatedBy")
+  updated_notifications   notifications[]   @relation("NotificationUpdatedBy")
 }
 
 model projects {
@@ -89,49 +134,73 @@ model projects {
   end_date    DateTime?     @db.Date
   status      ProjectStatus @default(active)
   deleted_at  DateTime?     @db.Timestamptz(6)
+  created_by  String?       @db.Uuid
   created_at  DateTime      @default(now()) @db.Timestamptz(6)
+  updated_by  String?       @db.Uuid
+  updated_at  DateTime      @updatedAt @db.Timestamptz(6)
 
-  owner      users             @relation("ProjectOwner", fields: [owner_id], references: [id])
-  members    project_members[]
-  sprints    sprints[]
-  work_items work_items[]
+  owner           users             @relation("ProjectOwner", fields: [owner_id], references: [id])
+  created_by_user users?            @relation("ProjectCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users?            @relation("ProjectUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+  members         project_members[]
+  sprints         sprints[]
+  work_items      work_items[]
 }
 
 model project_members {
-  project_id String   @db.Uuid
-  user_id    String   @db.Uuid
-  joined_at  DateTime @default(now()) @db.Timestamptz(6)
+  project_id String       @db.Uuid
+  user_id    String       @db.Uuid
+  status     RecordStatus @default(active)
+  created_by String?      @db.Uuid
+  created_at DateTime     @default(now()) @db.Timestamptz(6)
+  updated_by String?      @db.Uuid
+  updated_at DateTime     @updatedAt @db.Timestamptz(6)
 
-  project projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  user    users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  project         projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  user            users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  created_by_user users?   @relation("ProjectMemberCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users?   @relation("ProjectMemberUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
 
   @@id([project_id, user_id])
 }
 
 model teams {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String
   description String?
-  manager_id  String   @db.Uuid
+  manager_id  String       @db.Uuid
   tech_stack  String?
-  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  status      RecordStatus @default(active)
+  created_by  String?      @db.Uuid
+  created_at  DateTime     @default(now()) @db.Timestamptz(6)
+  updated_by  String?      @db.Uuid
+  updated_at  DateTime     @updatedAt @db.Timestamptz(6)
 
-  manager users          @relation("TeamManager", fields: [manager_id], references: [id])
-  members team_members[]
+  manager         users          @relation("TeamManager", fields: [manager_id], references: [id])
+  created_by_user users?         @relation("TeamCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users?         @relation("TeamUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+  members         team_members[]
 }
 
 model team_members {
-  team_id        String  @db.Uuid
-  user_id        String  @db.Uuid
+  team_id        String       @db.Uuid
+  user_id        String       @db.Uuid
   role           String?
   seniority      String?
   capacity       Int?
   allocation     Int?
-  reporting_line String? @db.Uuid
+  reporting_line String?      @db.Uuid
+  status         RecordStatus @default(active)
+  created_by     String?      @db.Uuid
+  created_at     DateTime     @default(now()) @db.Timestamptz(6)
+  updated_by     String?      @db.Uuid
+  updated_at     DateTime     @updatedAt @db.Timestamptz(6)
 
   team            teams  @relation(fields: [team_id], references: [id], onDelete: Cascade)
   user            users  @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  reports_to_user users? @relation("ReportingLine", fields: [reporting_line], references: [id])
+  reports_to_user users? @relation("ReportingLine", fields: [reporting_line], references: [id], onDelete: SetNull)
+  created_by_user users? @relation("TeamMemberCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users? @relation("TeamMemberUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
 
   @@id([team_id, user_id])
 }
@@ -145,10 +214,15 @@ model sprints {
   end_date       DateTime     @db.Date
   status         SprintStatus @default(planned)
   summary_report Json?
+  created_by     String?      @db.Uuid
   created_at     DateTime     @default(now()) @db.Timestamptz(6)
+  updated_by     String?      @db.Uuid
+  updated_at     DateTime     @updatedAt @db.Timestamptz(6)
 
-  project    projects     @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  work_items work_items[]
+  project         projects     @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  created_by_user users?       @relation("SprintCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users?       @relation("SprintUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+  work_items      work_items[]
 }
 
 /// Backlog = rows where `sprint_id` IS NULL.
@@ -162,51 +236,66 @@ model work_items {
   priority     WorkItemPriority @default(medium)
   description  Json?
   assignee_id  String?          @db.Uuid
-  reporter_id  String           @db.Uuid
+  reporter_id  String?          @db.Uuid
   due_date     DateTime?        @db.Date
   story_points Int?
   status       WorkItemStatus   @default(New)
+  created_by   String?          @db.Uuid
   created_at   DateTime         @default(now()) @db.Timestamptz(6)
+  updated_by   String?          @db.Uuid
   updated_at   DateTime         @updatedAt @db.Timestamptz(6)
 
-  project     projects      @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  sprint      sprints?      @relation(fields: [sprint_id], references: [id], onDelete: SetNull)
-  parent      work_items?   @relation("WorkItemHierarchy", fields: [parent_id], references: [id], onDelete: SetNull)
-  children    work_items[]  @relation("WorkItemHierarchy")
-  assignee    users?        @relation("WorkItemAssignee", fields: [assignee_id], references: [id], onDelete: SetNull)
-  reporter    users         @relation("WorkItemReporter", fields: [reporter_id], references: [id])
-  comments    comments[]
-  attachments attachments[]
+  project         projects     @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  sprint          sprints?     @relation(fields: [sprint_id], references: [id], onDelete: SetNull)
+  parent          work_items?  @relation("WorkItemHierarchy", fields: [parent_id], references: [id], onDelete: SetNull)
+  children        work_items[] @relation("WorkItemHierarchy")
+  assignee        users?       @relation("WorkItemAssignee", fields: [assignee_id], references: [id], onDelete: SetNull)
+  reporter        users?       @relation("WorkItemReporter", fields: [reporter_id], references: [id], onDelete: SetNull)
+  created_by_user users?       @relation("WorkItemCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users?       @relation("WorkItemUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+  comments        comments[]
+  attachments     attachments[]
 }
 
 model comments {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  work_item_id String   @db.Uuid
-  author_id    String   @db.Uuid
-  parent_id    String?  @db.Uuid
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  work_item_id String       @db.Uuid
+  author_id    String       @db.Uuid
+  parent_id    String?      @db.Uuid
   content      String
-  edited       Boolean  @default(false)
-  created_at   DateTime @default(now()) @db.Timestamptz(6)
-  updated_at   DateTime @updatedAt @db.Timestamptz(6)
+  edited       Boolean      @default(false)
+  status       RecordStatus @default(active)
+  created_by   String?      @db.Uuid
+  created_at   DateTime     @default(now()) @db.Timestamptz(6)
+  updated_by   String?      @db.Uuid
+  updated_at   DateTime     @updatedAt @db.Timestamptz(6)
 
-  work_item work_items @relation(fields: [work_item_id], references: [id], onDelete: Cascade)
-  author    users      @relation(fields: [author_id], references: [id])
-  parent    comments?  @relation("CommentThread", fields: [parent_id], references: [id], onDelete: Cascade)
-  replies   comments[] @relation("CommentThread")
+  work_item       work_items @relation(fields: [work_item_id], references: [id], onDelete: Cascade)
+  author          users      @relation("CommentAuthor", fields: [author_id], references: [id])
+  parent          comments?  @relation("CommentThread", fields: [parent_id], references: [id], onDelete: Cascade)
+  replies         comments[] @relation("CommentThread")
+  created_by_user users?     @relation("CommentCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users?     @relation("CommentUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
 }
 
 model attachments {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  work_item_id String   @db.Uuid
-  uploader_id  String   @db.Uuid
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  work_item_id String       @db.Uuid
+  uploader_id  String       @db.Uuid
   file_name    String
   storage_path String
   file_size    Int
   mime_type    String
-  uploaded_at  DateTime @default(now()) @db.Timestamptz(6)
+  status       RecordStatus @default(active)
+  created_by   String?      @db.Uuid
+  created_at   DateTime     @default(now()) @db.Timestamptz(6)
+  updated_by   String?      @db.Uuid
+  updated_at   DateTime     @updatedAt @db.Timestamptz(6)
 
-  work_item work_items @relation(fields: [work_item_id], references: [id], onDelete: Cascade)
-  uploader  users      @relation(fields: [uploader_id], references: [id])
+  work_item       work_items @relation(fields: [work_item_id], references: [id], onDelete: Cascade)
+  uploader        users      @relation("AttachmentUploader", fields: [uploader_id], references: [id])
+  created_by_user users?     @relation("AttachmentCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users?     @relation("AttachmentUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
 }
 
 model notifications {
@@ -216,7 +305,13 @@ model notifications {
   message         String
   related_item_id String?          @db.Uuid
   read_status     Boolean          @default(false)
+  status          RecordStatus     @default(active)
+  created_by      String?          @db.Uuid
   created_at      DateTime         @default(now()) @db.Timestamptz(6)
+  updated_by      String?          @db.Uuid
+  updated_at      DateTime         @updatedAt @db.Timestamptz(6)
 
-  user users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user            users  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  created_by_user users? @relation("NotificationCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users? @relation("NotificationUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
 }

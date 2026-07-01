@@ -1,5 +1,6 @@
 import 'dotenv/config';
 
+import { auditCreate, auditCreateWithoutStatus } from '@repo/types/audit';
 import { createClient } from '@supabase/supabase-js';
 
 import { env } from './env.js';
@@ -96,6 +97,7 @@ async function ensureAuthUser(user: SeedUser): Promise<string> {
 
 async function seedUsers(): Promise<UserIds> {
   const ids = {} as UserIds;
+  let adminId: string | undefined;
 
   for (const user of SEED_USERS) {
     const authId = await ensureAuthUser(user);
@@ -108,8 +110,13 @@ async function seedUsers(): Promise<UserIds> {
 
     if (existing) {
       ids[user.email] = existing.id;
+      if (user.role === 'admin') {
+        adminId = existing.id;
+      }
       continue;
     }
+
+    const actorId = adminId ?? authId;
 
     const { error } = await supabase.from('users').insert({
       id: authId,
@@ -117,6 +124,7 @@ async function seedUsers(): Promise<UserIds> {
       name: user.name,
       role: user.role,
       active: true,
+      ...auditCreate(actorId),
     });
 
     if (error) {
@@ -124,12 +132,15 @@ async function seedUsers(): Promise<UserIds> {
     }
 
     ids[user.email] = authId;
+    if (user.role === 'admin') {
+      adminId = authId;
+    }
   }
 
   return ids;
 }
 
-async function seedInstruments(): Promise<void> {
+async function seedInstruments(actorId: string): Promise<void> {
   for (const name of DEFAULT_INSTRUMENTS) {
     const { data: existing } = await supabase
       .from('instruments')
@@ -141,7 +152,9 @@ async function seedInstruments(): Promise<void> {
       continue;
     }
 
-    const { error } = await supabase.from('instruments').insert({ name });
+    const { error } = await supabase
+      .from('instruments')
+      .insert({ name, ...auditCreate(actorId) });
 
     if (error) {
       throw new Error(`Failed to seed instrument "${name}": ${error.message}`);
@@ -149,7 +162,7 @@ async function seedInstruments(): Promise<void> {
   }
 }
 
-async function seedTeam(userIds: UserIds): Promise<string> {
+async function seedTeam(userIds: UserIds, actorId: string): Promise<string> {
   const managerId = userIds['manager@alice.dev'];
 
   const { data: existing } = await supabase
@@ -169,6 +182,7 @@ async function seedTeam(userIds: UserIds): Promise<string> {
       description: 'Core platform squad for Alice JIRA',
       manager_id: managerId,
       tech_stack: 'Next.js, Express, Supabase',
+      ...auditCreate(actorId),
     })
     .select('id')
     .single();
@@ -182,7 +196,8 @@ async function seedTeam(userIds: UserIds): Promise<string> {
 
 async function seedTeamMembers(
   teamId: string,
-  userIds: UserIds
+  userIds: UserIds,
+  actorId: string
 ): Promise<void> {
   const members = [
     {
@@ -218,6 +233,7 @@ async function seedTeamMembers(
     const { error } = await supabase.from('team_members').insert({
       team_id: teamId,
       ...member,
+      ...auditCreate(actorId),
     });
 
     if (error) {
@@ -226,7 +242,7 @@ async function seedTeamMembers(
   }
 }
 
-async function seedProject(userIds: UserIds): Promise<string> {
+async function seedProject(userIds: UserIds, actorId: string): Promise<string> {
   const ownerId = userIds['admin@alice.dev'];
 
   const { data: existing } = await supabase
@@ -249,6 +265,7 @@ async function seedProject(userIds: UserIds): Promise<string> {
       start_date: '2026-06-01',
       end_date: '2026-12-31',
       status: 'active',
+      ...auditCreateWithoutStatus(actorId),
     })
     .select('id')
     .single();
@@ -262,7 +279,8 @@ async function seedProject(userIds: UserIds): Promise<string> {
 
 async function seedProjectMembers(
   projectId: string,
-  userIds: UserIds
+  userIds: UserIds,
+  actorId: string
 ): Promise<void> {
   for (const email of Object.keys(userIds) as (keyof UserIds)[]) {
     const userId = userIds[email];
@@ -281,6 +299,7 @@ async function seedProjectMembers(
     const { error } = await supabase.from('project_members').insert({
       project_id: projectId,
       user_id: userId,
+      ...auditCreate(actorId),
     });
 
     if (error) {
@@ -289,7 +308,10 @@ async function seedProjectMembers(
   }
 }
 
-async function seedSprints(projectId: string): Promise<{
+async function seedSprints(
+  projectId: string,
+  actorId: string
+): Promise<{
   activeSprintId: string;
   plannedSprintId: string;
 }> {
@@ -327,7 +349,11 @@ async function seedSprints(projectId: string): Promise<{
 
     const { data, error } = await supabase
       .from('sprints')
-      .insert({ project_id: projectId, ...sprint })
+      .insert({
+        project_id: projectId,
+        ...sprint,
+        ...auditCreateWithoutStatus(actorId),
+      })
       .select('id')
       .single();
 
@@ -349,6 +375,7 @@ async function seedSprints(projectId: string): Promise<{
 async function ensureWorkItem(
   projectId: string,
   title: string,
+  actorId: string,
   values: Record<string, unknown>
 ): Promise<string> {
   const { data: existing } = await supabase
@@ -362,15 +389,17 @@ async function ensureWorkItem(
     return existing.id;
   }
 
-  const now = new Date().toISOString();
+  const reporterId =
+    typeof values.reporter_id === 'string' ? values.reporter_id : actorId;
+  const auditActor = reporterId ?? actorId;
 
   const { data, error } = await supabase
     .from('work_items')
     .insert({
       project_id: projectId,
       title,
-      updated_at: now,
       ...values,
+      ...auditCreateWithoutStatus(auditActor),
     })
     .select('id')
     .single();
@@ -390,22 +419,28 @@ async function seedWorkItems(
   const adminId = userIds['admin@alice.dev'];
   const memberId = userIds['member@alice.dev'];
 
-  const epicId = await ensureWorkItem(projectId, 'User Management Epic', {
-    type: 'Epic',
-    priority: 'high',
-    status: 'InProgress',
-    reporter_id: adminId,
-    description: {
-      type: 'doc',
-      content: [
-        { type: 'paragraph', text: 'Epic for admin user management flows.' },
-      ],
-    },
-  });
+  const epicId = await ensureWorkItem(
+    projectId,
+    'User Management Epic',
+    adminId,
+    {
+      type: 'Epic',
+      priority: 'high',
+      status: 'InProgress',
+      reporter_id: adminId,
+      description: {
+        type: 'doc',
+        content: [
+          { type: 'paragraph', text: 'Epic for admin user management flows.' },
+        ],
+      },
+    }
+  );
 
   const storyId = await ensureWorkItem(
     projectId,
     'Admin user registry screen',
+    adminId,
     {
       type: 'Story',
       priority: 'high',
@@ -428,20 +463,26 @@ async function seedWorkItems(
     }
   );
 
-  const taskId = await ensureWorkItem(projectId, 'Wire user list to Supabase', {
-    type: 'Task',
-    priority: 'medium',
-    status: 'ToDo',
-    parent_id: storyId,
-    sprint_id: sprintIds.activeSprintId,
-    assignee_id: memberId,
-    reporter_id: adminId,
-    story_points: 3,
-  });
+  const taskId = await ensureWorkItem(
+    projectId,
+    'Wire user list to Supabase',
+    adminId,
+    {
+      type: 'Task',
+      priority: 'medium',
+      status: 'ToDo',
+      parent_id: storyId,
+      sprint_id: sprintIds.activeSprintId,
+      assignee_id: memberId,
+      reporter_id: adminId,
+      story_points: 3,
+    }
+  );
 
   const backlogId = await ensureWorkItem(
     projectId,
     'Kanban drag-and-drop board',
+    adminId,
     {
       type: 'Story',
       priority: 'medium',
@@ -483,7 +524,7 @@ async function seedComments(
       work_item_id: workItemId,
       author_id: authorId,
       content,
-      updated_at: new Date().toISOString(),
+      ...auditCreate(authorId),
     })
     .select('id')
     .single();
@@ -518,7 +559,7 @@ async function seedCommentReply(
     author_id: authorId,
     parent_id: parentId,
     content,
-    updated_at: new Date().toISOString(),
+    ...auditCreate(authorId),
   });
 
   if (error) {
@@ -550,6 +591,7 @@ async function seedAttachment(
     storage_path: 'seed/user-flow-diagram.png',
     file_size: 245_760,
     mime_type: 'image/png',
+    ...auditCreate(uploaderId),
   });
 
   if (error) {
@@ -573,7 +615,8 @@ type NotificationSeed = {
 
 async function seedNotifications(
   userIds: UserIds,
-  relatedItemId: string
+  relatedItemId: string,
+  actorId: string
 ): Promise<void> {
   const notifications: NotificationSeed[] = [
     {
@@ -604,7 +647,9 @@ async function seedNotifications(
       continue;
     }
 
-    const { error } = await supabase.from('notifications').insert(notification);
+    const { error } = await supabase
+      .from('notifications')
+      .insert({ ...notification, ...auditCreate(actorId) });
 
     if (error) {
       throw new Error(`Failed to seed notification: ${error.message}`);
@@ -615,20 +660,21 @@ async function seedNotifications(
 async function main(): Promise<void> {
   console.log('info. seeding users and auth accounts...');
   const userIds = await seedUsers();
+  const adminId = userIds['admin@alice.dev'];
 
   console.log('info. seeding instruments...');
-  await seedInstruments();
+  await seedInstruments(adminId);
 
   console.log('info. seeding team...');
-  const teamId = await seedTeam(userIds);
-  await seedTeamMembers(teamId, userIds);
+  const teamId = await seedTeam(userIds, adminId);
+  await seedTeamMembers(teamId, userIds, adminId);
 
   console.log('info. seeding project...');
-  const projectId = await seedProject(userIds);
-  await seedProjectMembers(projectId, userIds);
+  const projectId = await seedProject(userIds, adminId);
+  await seedProjectMembers(projectId, userIds, adminId);
 
   console.log('info. seeding sprints...');
-  const sprintIds = await seedSprints(projectId);
+  const sprintIds = await seedSprints(projectId, adminId);
 
   console.log('info. seeding work items...');
   const workItems = await seedWorkItems(projectId, sprintIds, userIds);
@@ -644,7 +690,7 @@ async function main(): Promise<void> {
     commentId
   );
   await seedAttachment(workItems.storyId, userIds['member@alice.dev']);
-  await seedNotifications(userIds, workItems.storyId);
+  await seedNotifications(userIds, workItems.storyId, adminId);
 
   console.log('info. seed completed.');
   console.log(

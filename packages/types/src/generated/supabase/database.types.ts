@@ -44,32 +44,44 @@ export type Database = {
       };
       attachments: {
         Row: {
+          created_at: string;
+          created_by: string | null;
           file_name: string;
           file_size: number;
           id: string;
           mime_type: string;
+          status: Database['public']['Enums']['RecordStatus'];
           storage_path: string;
-          uploaded_at: string;
+          updated_at: string;
+          updated_by: string | null;
           uploader_id: string;
           work_item_id: string;
         };
         Insert: {
+          created_at?: string;
+          created_by?: string | null;
           file_name: string;
           file_size: number;
           id?: string;
           mime_type: string;
+          status?: Database['public']['Enums']['RecordStatus'];
           storage_path: string;
-          uploaded_at?: string;
+          updated_at?: string;
+          updated_by?: string | null;
           uploader_id: string;
           work_item_id: string;
         };
         Update: {
+          created_at?: string;
+          created_by?: string | null;
           file_name?: string;
           file_size?: number;
           id?: string;
           mime_type?: string;
+          status?: Database['public']['Enums']['RecordStatus'];
           storage_path?: string;
-          uploaded_at?: string;
+          updated_at?: string;
+          updated_by?: string | null;
           uploader_id?: string;
           work_item_id?: string;
         };
@@ -80,93 +92,141 @@ export type Database = {
           author_id: string;
           content: string;
           created_at: string;
+          created_by: string | null;
           edited: boolean;
           id: string;
           parent_id: string | null;
+          status: Database['public']['Enums']['RecordStatus'];
           updated_at: string;
+          updated_by: string | null;
           work_item_id: string;
         };
         Insert: {
           author_id: string;
           content: string;
           created_at?: string;
+          created_by?: string | null;
           edited?: boolean;
           id?: string;
           parent_id?: string | null;
+          status?: Database['public']['Enums']['RecordStatus'];
           updated_at?: string;
+          updated_by?: string | null;
           work_item_id: string;
         };
         Update: {
           author_id?: string;
           content?: string;
           created_at?: string;
+          created_by?: string | null;
           edited?: boolean;
           id?: string;
           parent_id?: string | null;
+          status?: Database['public']['Enums']['RecordStatus'];
           updated_at?: string;
+          updated_by?: string | null;
           work_item_id?: string;
         };
         Relationships: [];
       };
       instruments: {
         Row: {
+          created_at: string;
+          created_by: string | null;
           id: number;
           name: string;
+          status: Database['public']['Enums']['RecordStatus'];
+          updated_at: string;
+          updated_by: string | null;
         };
         Insert: {
+          created_at?: string;
+          created_by?: string | null;
           id?: never;
           name: string;
+          status?: Database['public']['Enums']['RecordStatus'];
+          updated_at?: string;
+          updated_by?: string | null;
         };
         Update: {
+          created_at?: string;
+          created_by?: string | null;
           id?: never;
           name?: string;
+          status?: Database['public']['Enums']['RecordStatus'];
+          updated_at?: string;
+          updated_by?: string | null;
         };
         Relationships: [];
       };
       notifications: {
         Row: {
           created_at: string;
+          created_by: string | null;
           id: string;
           message: string;
           read_status: boolean;
           related_item_id: string | null;
+          status: Database['public']['Enums']['RecordStatus'];
           type: Database['public']['Enums']['NotificationType'];
+          updated_at: string;
+          updated_by: string | null;
           user_id: string;
         };
         Insert: {
           created_at?: string;
+          created_by?: string | null;
           id?: string;
           message: string;
           read_status?: boolean;
           related_item_id?: string | null;
+          status?: Database['public']['Enums']['RecordStatus'];
           type: Database['public']['Enums']['NotificationType'];
+          updated_at?: string;
+          updated_by?: string | null;
           user_id: string;
         };
         Update: {
           created_at?: string;
+          created_by?: string | null;
           id?: string;
           message?: string;
           read_status?: boolean;
           related_item_id?: string | null;
+          status?: Database['public']['Enums']['RecordStatus'];
           type?: Database['public']['Enums']['NotificationType'];
+          updated_at?: string;
+          updated_by?: string | null;
           user_id?: string;
         };
         Relationships: [];
       };
       project_members: {
         Row: {
-          joined_at: string;
+          created_at: string;
+          created_by: string | null;
           project_id: string;
+          status: Database['public']['Enums']['RecordStatus'];
+          updated_at: string;
+          updated_by: string | null;
           user_id: string;
         };
         Insert: {
-          joined_at?: string;
+          created_at?: string;
+          created_by?: string | null;
           project_id: string;
+          status?: Database['public']['Enums']['RecordStatus'];
+          updated_at?: string;
+          updated_by?: string | null;
           user_id: string;
         };
         Update: {
-          joined_at?: string;
+          created_at?: string;
+          created_by?: string | null;
           project_id?: string;
+          status?: Database['public']['Enums']['RecordStatus'];
+          updated_at?: string;
+          updated_by?: string | null;
           user_id?: string;
         };
         Relationships: [];
@@ -174,6 +234,7 @@ export type Database = {
       projects: {
         Row: {
           created_at: string;
+          created_by: string | null;
           deleted_at: string | null;
           description: string | null;
           end_date: string | null;
@@ -183,9 +244,12 @@ export type Database = {
           owner_id: string;
           start_date: string | null;
           status: Database['public']['Enums']['ProjectStatus'];
+          updated_at: string;
+          updated_by: string | null;
         };
         Insert: {
           created_at?: string;
+          created_by?: string | null;
           deleted_at?: string | null;
           description?: string | null;
           end_date?: string | null;
@@ -195,9 +259,12 @@ export type Database = {
           owner_id: string;
           start_date?: string | null;
           status?: Database['public']['Enums']['ProjectStatus'];
+          updated_at?: string;
+          updated_by?: string | null;
         };
         Update: {
           created_at?: string;
+          created_by?: string | null;
           deleted_at?: string | null;
           description?: string | null;
           end_date?: string | null;
@@ -207,12 +274,15 @@ export type Database = {
           owner_id?: string;
           start_date?: string | null;
           status?: Database['public']['Enums']['ProjectStatus'];
+          updated_at?: string;
+          updated_by?: string | null;
         };
         Relationships: [];
       };
       sprints: {
         Row: {
           created_at: string;
+          created_by: string | null;
           end_date: string;
           goal: string | null;
           id: string;
@@ -221,9 +291,12 @@ export type Database = {
           start_date: string;
           status: Database['public']['Enums']['SprintStatus'];
           summary_report: Json | null;
+          updated_at: string;
+          updated_by: string | null;
         };
         Insert: {
           created_at?: string;
+          created_by?: string | null;
           end_date: string;
           goal?: string | null;
           id?: string;
@@ -232,9 +305,12 @@ export type Database = {
           start_date: string;
           status?: Database['public']['Enums']['SprintStatus'];
           summary_report?: Json | null;
+          updated_at?: string;
+          updated_by?: string | null;
         };
         Update: {
           created_at?: string;
+          created_by?: string | null;
           end_date?: string;
           goal?: string | null;
           id?: string;
@@ -243,6 +319,8 @@ export type Database = {
           start_date?: string;
           status?: Database['public']['Enums']['SprintStatus'];
           summary_report?: Json | null;
+          updated_at?: string;
+          updated_by?: string | null;
         };
         Relationships: [];
       };
@@ -250,28 +328,43 @@ export type Database = {
         Row: {
           allocation: number | null;
           capacity: number | null;
+          created_at: string;
+          created_by: string | null;
           reporting_line: string | null;
           role: string | null;
           seniority: string | null;
+          status: Database['public']['Enums']['RecordStatus'];
           team_id: string;
+          updated_at: string;
+          updated_by: string | null;
           user_id: string;
         };
         Insert: {
           allocation?: number | null;
           capacity?: number | null;
+          created_at?: string;
+          created_by?: string | null;
           reporting_line?: string | null;
           role?: string | null;
           seniority?: string | null;
+          status?: Database['public']['Enums']['RecordStatus'];
           team_id: string;
+          updated_at?: string;
+          updated_by?: string | null;
           user_id: string;
         };
         Update: {
           allocation?: number | null;
           capacity?: number | null;
+          created_at?: string;
+          created_by?: string | null;
           reporting_line?: string | null;
           role?: string | null;
           seniority?: string | null;
+          status?: Database['public']['Enums']['RecordStatus'];
           team_id?: string;
+          updated_at?: string;
+          updated_by?: string | null;
           user_id?: string;
         };
         Relationships: [];
@@ -279,27 +372,39 @@ export type Database = {
       teams: {
         Row: {
           created_at: string;
+          created_by: string | null;
           description: string | null;
           id: string;
           manager_id: string;
           name: string;
+          status: Database['public']['Enums']['RecordStatus'];
           tech_stack: string | null;
+          updated_at: string;
+          updated_by: string | null;
         };
         Insert: {
           created_at?: string;
+          created_by?: string | null;
           description?: string | null;
           id?: string;
           manager_id: string;
           name: string;
+          status?: Database['public']['Enums']['RecordStatus'];
           tech_stack?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
         };
         Update: {
           created_at?: string;
+          created_by?: string | null;
           description?: string | null;
           id?: string;
           manager_id?: string;
           name?: string;
+          status?: Database['public']['Enums']['RecordStatus'];
           tech_stack?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
         };
         Relationships: [];
       };
@@ -307,29 +412,41 @@ export type Database = {
         Row: {
           active: boolean;
           created_at: string;
+          created_by: string | null;
           email: string;
           id: string;
           name: string;
           profile_picture: string | null;
           role: Database['public']['Enums']['UserRole'];
+          status: Database['public']['Enums']['RecordStatus'];
+          updated_at: string;
+          updated_by: string | null;
         };
         Insert: {
           active?: boolean;
           created_at?: string;
+          created_by?: string | null;
           email: string;
           id: string;
           name: string;
           profile_picture?: string | null;
           role?: Database['public']['Enums']['UserRole'];
+          status?: Database['public']['Enums']['RecordStatus'];
+          updated_at?: string;
+          updated_by?: string | null;
         };
         Update: {
           active?: boolean;
           created_at?: string;
+          created_by?: string | null;
           email?: string;
           id?: string;
           name?: string;
           profile_picture?: string | null;
           role?: Database['public']['Enums']['UserRole'];
+          status?: Database['public']['Enums']['RecordStatus'];
+          updated_at?: string;
+          updated_by?: string | null;
         };
         Relationships: [];
       };
@@ -337,53 +454,59 @@ export type Database = {
         Row: {
           assignee_id: string | null;
           created_at: string;
+          created_by: string | null;
           description: Json | null;
           due_date: string | null;
           id: string;
           parent_id: string | null;
           priority: Database['public']['Enums']['WorkItemPriority'];
           project_id: string;
-          reporter_id: string;
+          reporter_id: string | null;
           sprint_id: string | null;
           status: Database['public']['Enums']['WorkItemStatus'];
           story_points: number | null;
           title: string;
           type: Database['public']['Enums']['WorkItemType'];
           updated_at: string;
+          updated_by: string | null;
         };
         Insert: {
           assignee_id?: string | null;
           created_at?: string;
+          created_by?: string | null;
           description?: Json | null;
           due_date?: string | null;
           id?: string;
           parent_id?: string | null;
           priority?: Database['public']['Enums']['WorkItemPriority'];
           project_id: string;
-          reporter_id: string;
+          reporter_id?: string | null;
           sprint_id?: string | null;
           status?: Database['public']['Enums']['WorkItemStatus'];
           story_points?: number | null;
           title: string;
           type: Database['public']['Enums']['WorkItemType'];
           updated_at?: string;
+          updated_by?: string | null;
         };
         Update: {
           assignee_id?: string | null;
           created_at?: string;
+          created_by?: string | null;
           description?: Json | null;
           due_date?: string | null;
           id?: string;
           parent_id?: string | null;
           priority?: Database['public']['Enums']['WorkItemPriority'];
           project_id?: string;
-          reporter_id?: string;
+          reporter_id?: string | null;
           sprint_id?: string | null;
           status?: Database['public']['Enums']['WorkItemStatus'];
           story_points?: number | null;
           title?: string;
           type?: Database['public']['Enums']['WorkItemType'];
           updated_at?: string;
+          updated_by?: string | null;
         };
         Relationships: [];
       };
@@ -402,6 +525,7 @@ export type Database = {
         | 'mention'
         | 'sprint'
         | 'due_date';
+      RecordStatus: 'active' | 'inactive' | 'archived' | 'deleted';
       ProjectStatus: 'active' | 'archived';
       SprintStatus: 'planned' | 'active' | 'closed';
       UserRole: 'admin' | 'manager' | 'member';
@@ -552,6 +676,7 @@ export const Constants = {
         'sprint',
         'due_date',
       ],
+      RecordStatus: ['active', 'inactive', 'archived', 'deleted'],
       ProjectStatus: ['active', 'archived'],
       SprintStatus: ['planned', 'active', 'closed'],
       UserRole: ['admin', 'manager', 'member'],

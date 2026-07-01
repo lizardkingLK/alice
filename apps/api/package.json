@@ -14,6 +14,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@repo/types": "workspace:*",
     "@supabase/supabase-js": "^2.108.2",
     "cors": "^2.8.5",
     "detect-port": "^2.1.0",
