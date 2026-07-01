@@ -2,17 +2,221 @@ datasource db {
   provider = "postgresql"
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+enum UserRole {
+  admin
+  manager
+  member
+}
+
+enum ProjectStatus {
+  active
+  archived
+}
+
+enum SprintStatus {
+  planned
+  active
+  closed
+}
+
+enum WorkItemType {
+  Epic
+  Story
+  Task
+}
+
+enum WorkItemStatus {
+  Draft
+  New
+  ToDo
+  InProgress
+  Testing
+  Done
+}
+
+enum WorkItemPriority {
+  lowest
+  low
+  medium
+  high
+  highest
+}
+
+enum NotificationType {
+  assign
+  status_change
+  comment
+  mention
+  sprint
+  due_date
+}
+
+/// Dev baseline table — seed data updated separately.
 model instruments {
   id   BigInt @id @default(autoincrement())
   name String
 }
 
+/// App profile + RBAC. `id` matches Supabase `auth.users.id` (set on invite, no DB default).
 model users {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email      String   @unique
-  name       String
-  role       String   @default("member")
-  active     Boolean  @default(true)
-  created_at DateTime @default(now()) @db.Timestamptz(6)
+  id              String   @id @db.Uuid
+  email           String   @unique
+  name            String
+  role            UserRole @default(member)
+  active          Boolean  @default(true)
+  profile_picture String?
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  owned_projects      projects[]        @relation("ProjectOwner")
+  project_memberships project_members[]
+  managed_teams       teams[]           @relation("TeamManager")
+  team_memberships    team_members[]
+  reporting_lines     team_members[]    @relation("ReportingLine")
+  assigned_work_items work_items[]      @relation("WorkItemAssignee")
+  reported_work_items work_items[]      @relation("WorkItemReporter")
+  comments            comments[]
+  attachments         attachments[]
+  notifications       notifications[]
+}
+
+model projects {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  key         String        @unique
+  description String?
+  owner_id    String        @db.Uuid
+  start_date  DateTime?     @db.Date
+  end_date    DateTime?     @db.Date
+  status      ProjectStatus @default(active)
+  deleted_at  DateTime?     @db.Timestamptz(6)
+  created_at  DateTime      @default(now()) @db.Timestamptz(6)
+
+  owner      users             @relation("ProjectOwner", fields: [owner_id], references: [id])
+  members    project_members[]
+  sprints    sprints[]
+  work_items work_items[]
+}
+
+model project_members {
+  project_id String   @db.Uuid
+  user_id    String   @db.Uuid
+  joined_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  project projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  user    users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([project_id, user_id])
+}
+
+model teams {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  description String?
+  manager_id  String   @db.Uuid
+  tech_stack  String?
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  manager users          @relation("TeamManager", fields: [manager_id], references: [id])
+  members team_members[]
+}
+
+model team_members {
+  team_id        String  @db.Uuid
+  user_id        String  @db.Uuid
+  role           String?
+  seniority      String?
+  capacity       Int?
+  allocation     Int?
+  reporting_line String? @db.Uuid
+
+  team            teams  @relation(fields: [team_id], references: [id], onDelete: Cascade)
+  user            users  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  reports_to_user users? @relation("ReportingLine", fields: [reporting_line], references: [id])
+
+  @@id([team_id, user_id])
+}
+
+model sprints {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id     String       @db.Uuid
+  name           String
+  goal           String?
+  start_date     DateTime     @db.Date
+  end_date       DateTime     @db.Date
+  status         SprintStatus @default(planned)
+  summary_report Json?
+  created_at     DateTime     @default(now()) @db.Timestamptz(6)
+
+  project    projects     @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  work_items work_items[]
+}
+
+/// Backlog = rows where `sprint_id` IS NULL.
+model work_items {
+  id           String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id   String           @db.Uuid
+  sprint_id    String?          @db.Uuid
+  parent_id    String?          @db.Uuid
+  title        String
+  type         WorkItemType
+  priority     WorkItemPriority @default(medium)
+  description  Json?
+  assignee_id  String?          @db.Uuid
+  reporter_id  String           @db.Uuid
+  due_date     DateTime?        @db.Date
+  story_points Int?
+  status       WorkItemStatus   @default(New)
+  created_at   DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime         @updatedAt @db.Timestamptz(6)
+
+  project     projects      @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  sprint      sprints?      @relation(fields: [sprint_id], references: [id], onDelete: SetNull)
+  parent      work_items?   @relation("WorkItemHierarchy", fields: [parent_id], references: [id], onDelete: SetNull)
+  children    work_items[]  @relation("WorkItemHierarchy")
+  assignee    users?        @relation("WorkItemAssignee", fields: [assignee_id], references: [id], onDelete: SetNull)
+  reporter    users         @relation("WorkItemReporter", fields: [reporter_id], references: [id])
+  comments    comments[]
+  attachments attachments[]
+}
+
+model comments {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  work_item_id String   @db.Uuid
+  author_id    String   @db.Uuid
+  parent_id    String?  @db.Uuid
+  content      String
+  edited       Boolean  @default(false)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @updatedAt @db.Timestamptz(6)
+
+  work_item work_items @relation(fields: [work_item_id], references: [id], onDelete: Cascade)
+  author    users      @relation(fields: [author_id], references: [id])
+  parent    comments?  @relation("CommentThread", fields: [parent_id], references: [id], onDelete: Cascade)
+  replies   comments[] @relation("CommentThread")
+}
+
+model attachments {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  work_item_id String   @db.Uuid
+  uploader_id  String   @db.Uuid
+  file_name    String
+  storage_path String
+  file_size    Int
+  mime_type    String
+  uploaded_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  work_item work_items @relation(fields: [work_item_id], references: [id], onDelete: Cascade)
+  uploader  users      @relation(fields: [uploader_id], references: [id])
+}
+
+model notifications {
+  id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id         String           @db.Uuid
+  type            NotificationType
+  message         String
+  related_item_id String?          @db.Uuid
+  read_status     Boolean          @default(false)
+  created_at      DateTime         @default(now()) @db.Timestamptz(6)
+
+  user users @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }

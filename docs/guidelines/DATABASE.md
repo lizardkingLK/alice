@@ -1,5 +1,7 @@
 # Database workflow
 
+See also: [`docs/database/ER_DIAGRAM.md`](../database/ER_DIAGRAM.md) — proposed entity model from the 1BT-JIRA task breakdown.
+
 ## Packages
 
 | Package                | Role                                                                |
@@ -23,9 +25,10 @@ Env vars are validated via `packages/db/src/env.ts` on `pnpm db checktypes`, `pn
 ```bash
 pnpm db validate          # Prisma schema lint — no DB connection (runs in CI)
 pnpm db migrate:deploy    # Apply pending migrations
+pnpm db migrate:reset     # Drop all tables and re-apply migrations (dev only)
 pnpm db migrate:status    # Check DB matches migrations (needs DIRECT_URL)
 pnpm db generate          # Regenerate Supabase types into @repo/types
-pnpm db seed              # Idempotent seed data
+pnpm db seed              # Idempotent seed data (see below)
 pnpm db create:migrate <name>  # Create migration → deploy → generate → seed
 ```
 
@@ -35,6 +38,29 @@ pnpm db create:migrate <name>  # Create migration → deploy → generate → se
 2. `pnpm db create:migrate add_my_table`
 3. Review generated SQL under `packages/db/prisma/migrations/`
 4. Commit migration + updated `packages/types/src/generated/supabase/database.types.ts`
+
+## Supabase grants
+
+Prisma creates objects as `postgres`. The Supabase Data API (`anon`, `authenticated`, `service_role`) needs explicit grants on `public` or seed and client queries fail with `permission denied for schema public`.
+
+- Baseline: `0_init_supabase` includes grants from `prisma/sql/supabase_grants.sql`
+- `create:migrate` appends the same grants block to every new migration
+- After `migrate:reset`, grants are reapplied automatically via migrations
+
+## Seed data (`pnpm db seed`)
+
+Idempotent dev sample data in `packages/db/src/seed.ts`:
+
+| Entity     | Sample                                                                                         |
+| ---------- | ---------------------------------------------------------------------------------------------- |
+| Users      | `admin@alice.dev`, `manager@alice.dev`, `member@alice.dev` (+ matching Supabase Auth accounts) |
+| Project    | `ALICE` — Alice Platform                                                                       |
+| Team       | Platform Team (manager + member)                                                               |
+| Sprints    | Sprint 1 (active), Sprint 2 (planned)                                                          |
+| Work items | Epic → Story → Task in sprint; one backlog story                                               |
+| Other      | Comments (threaded), attachment, notifications                                                 |
+
+Dev password: set `SEED_USER_PASSWORD` in `packages/db/.env` (see `sample.env`).
 
 ## Using types in apps
 

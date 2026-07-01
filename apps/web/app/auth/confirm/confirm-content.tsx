@@ -58,7 +58,7 @@ export default function ConfirmContent() {
   };
 
   return (
-    <main className="from-background via-muted/50 to-background flex min-h-screen items-center justify-center bg-gradient-to-br p-6">
+    <main className="from-background via-muted/50 to-background flex min-h-screen items-center justify-center bg-linear-to-br p-6">
       <Card className="border-border bg-card/60 w-full max-w-md shadow-2xl backdrop-blur-md transition-all duration-300">
         <CardHeader className="space-y-1.5 pb-4 text-center">
           <div className="bg-primary/10 text-primary border-primary/20 mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full border shadow-sm">

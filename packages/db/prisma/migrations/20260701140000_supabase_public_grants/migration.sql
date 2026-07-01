@@ -1,15 +1,4 @@
--- CreateSchema
-CREATE SCHEMA IF NOT EXISTS "public";
-
--- CreateTable
-CREATE TABLE "instruments" (
-    "id" BIGSERIAL NOT NULL,
-    "name" TEXT NOT NULL,
-
-    CONSTRAINT "instruments_pkey" PRIMARY KEY ("id")
-);
-
--- Supabase Data API grants (see prisma/sql/supabase_grants.sql)
+-- Restore Supabase Data API access (see prisma/sql/supabase_grants.sql)
 GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;
 
 GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, service_role;
@@ -25,4 +14,3 @@ ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT SELECT, INSERT
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO postgres, anon, authenticated, service_role;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON ROUTINES TO postgres, service_role;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT EXECUTE ON ROUTINES TO anon, authenticated;
-

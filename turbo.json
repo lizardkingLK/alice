@@ -42,7 +42,7 @@
     },
     "seed": {
       "cache": false,
-      "env": ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]
+      "env": ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SEED_USER_PASSWORD"]
     },
     "generate": {
       "cache": false,
