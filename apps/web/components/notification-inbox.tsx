@@ -2,6 +2,11 @@
 
 import { Inbox } from '@novu/nextjs';
 import { useEffect, useState } from 'react';
+import {
+  getNovuAppId,
+  getNovuSubscriberId,
+  hasNovuConfig,
+} from '@/lib/env-public';
 import { getSubscriberId } from '@/lib/subscriber-id';
 
 export function NotificationInbox() {
@@ -11,14 +16,15 @@ export function NotificationInbox() {
     setSubscriberId(getSubscriberId());
   }, []);
 
-  if (!subscriberId) {
-    return null;
-  }
+  const applicationIdentifier = getNovuAppId();
+  const configuredSubscriberId = getNovuSubscriberId();
 
-  const applicationIdentifier = process.env.NEXT_PUBLIC_NOVU_APP_ID;
-  const configuredSubscriberId = process.env.NEXT_PUBLIC_NOVU_SUBSCRIBER_ID;
-
-  if (!applicationIdentifier || !configuredSubscriberId) {
+  if (
+    !subscriberId ||
+    !hasNovuConfig() ||
+    !applicationIdentifier ||
+    !configuredSubscriberId
+  ) {
     return null;
   }
 

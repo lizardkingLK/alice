@@ -18,16 +18,20 @@ function readEnv(key: string): string | undefined {
   return trimmed;
 }
 
-const publicSchema = z.object({
+const requiredPublicSchema = z.object({
   NEXT_PUBLIC_API_URL: z.url(),
   NEXT_PUBLIC_SUPABASE_URL: z.url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
-  NEXT_PUBLIC_NOVU_APP_ID: z.string().min(1).optional(),
-  NEXT_PUBLIC_NOVU_SUBSCRIBER_ID: z.string().min(1).optional(),
-  NEXT_PUBLIC_SITE_URL: z.url().optional(),
 });
 
-export type PublicEnv = z.infer<typeof publicSchema>;
+const optionalPublicSchema = z.object({
+  NEXT_PUBLIC_SITE_URL: z.url().optional(),
+  NEXT_PUBLIC_NOVU_APP_ID: z.string().min(1).optional(),
+  NEXT_PUBLIC_NOVU_SUBSCRIBER_ID: z.string().min(1).optional(),
+});
+
+export type PublicEnv = z.infer<typeof requiredPublicSchema> &
+  z.infer<typeof optionalPublicSchema>;
 
 const mockPublic: PublicEnv = {
   NEXT_PUBLIC_API_URL: 'http://localhost:3001',
@@ -35,16 +39,24 @@ const mockPublic: PublicEnv = {
   NEXT_PUBLIC_SUPABASE_ANON_KEY: 'mock-anon-key',
 };
 
-function buildPublicEnvInput() {
-  const input: Record<string, string | undefined> = {
+function buildRequiredEnvInput() {
+  return {
     NEXT_PUBLIC_API_URL: readEnv('NEXT_PUBLIC_API_URL'),
     NEXT_PUBLIC_SUPABASE_URL: readEnv('NEXT_PUBLIC_SUPABASE_URL'),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: readEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
   };
+}
 
+function buildOptionalEnvInput() {
+  const input: Record<string, string | undefined> = {};
+
+  const siteUrl = readEnv('NEXT_PUBLIC_SITE_URL');
   const novuAppId = readEnv('NEXT_PUBLIC_NOVU_APP_ID');
   const novuSubscriberId = readEnv('NEXT_PUBLIC_NOVU_SUBSCRIBER_ID');
-  const siteUrl = readEnv('NEXT_PUBLIC_SITE_URL');
+
+  if (siteUrl) {
+    input.NEXT_PUBLIC_SITE_URL = siteUrl;
+  }
 
   if (novuAppId) {
     input.NEXT_PUBLIC_NOVU_APP_ID = novuAppId;
@@ -52,10 +64,6 @@ function buildPublicEnvInput() {
 
   if (novuSubscriberId) {
     input.NEXT_PUBLIC_NOVU_SUBSCRIBER_ID = novuSubscriberId;
-  }
-
-  if (siteUrl) {
-    input.NEXT_PUBLIC_SITE_URL = siteUrl;
   }
 
   return input;
@@ -67,13 +75,38 @@ function formatEnvIssues(error: z.ZodError): string {
     .join('; ');
 }
 
+function warnOptionalEnv(): void {
+  const siteUrl = readEnv('NEXT_PUBLIC_SITE_URL');
+  const novuAppId = readEnv('NEXT_PUBLIC_NOVU_APP_ID');
+  const novuSubscriberId = readEnv('NEXT_PUBLIC_NOVU_SUBSCRIBER_ID');
+  const serviceRoleKey = readEnv('SUPABASE_SERVICE_ROLE_KEY');
+
+  if (!siteUrl) {
+    console.warn(
+      'warn. NEXT_PUBLIC_SITE_URL is not set. Auth email links will use the request origin instead.'
+    );
+  }
+
+  if (!novuAppId || !novuSubscriberId) {
+    console.warn(
+      'warn. Novu is not fully configured (NEXT_PUBLIC_NOVU_APP_ID / NEXT_PUBLIC_NOVU_SUBSCRIBER_ID). Notification inbox will be hidden.'
+    );
+  }
+
+  if (!serviceRoleKey) {
+    console.warn(
+      'warn. SUPABASE_SERVICE_ROLE_KEY is not set. Server-side admin features (e.g. user management) will be unavailable.'
+    );
+  }
+}
+
 function requiredEnvHints(): string {
   return [
     'Set these in Vercel → Project → Settings → Environment Variables (Production + Preview):',
-    '- NEXT_PUBLIC_API_URL (e.g. https://your-api.vercel.app)',
-    '- NEXT_PUBLIC_SUPABASE_URL (e.g. https://xxxx.supabase.co)',
-    '- NEXT_PUBLIC_SUPABASE_ANON_KEY (Supabase anon/public key)',
-    'Remove empty or YOUR_* placeholder values for optional vars (Novu, SITE_URL).',
+    '- NEXT_PUBLIC_API_URL',
+    '- NEXT_PUBLIC_SUPABASE_URL',
+    '- NEXT_PUBLIC_SUPABASE_ANON_KEY',
+    'Optional (warn only): NEXT_PUBLIC_SITE_URL, NEXT_PUBLIC_NOVU_*, SUPABASE_SERVICE_ROLE_KEY (server secret in Vercel, not in sample.env).',
   ].join(' ');
 }
 
@@ -85,13 +118,13 @@ function parsePublicEnv(): PublicEnv {
     return mockPublic;
   }
 
-  const parsed = publicSchema.safeParse(buildPublicEnvInput());
+  const required = requiredPublicSchema.safeParse(buildRequiredEnvInput());
 
-  if (!parsed.success) {
-    const details = formatEnvIssues(parsed.error);
+  if (!required.success) {
+    const details = formatEnvIssues(required.error);
     console.error(
       '\x1b[31m%s\x1b[0m',
-      'error. invalid or missing environment variables:\n',
+      'error. invalid or missing required environment variables:\n',
       details,
       '\n',
       requiredEnvHints()
@@ -101,7 +134,22 @@ function parsePublicEnv(): PublicEnv {
     );
   }
 
-  return parsed.data;
+  const optional = optionalPublicSchema.safeParse(buildOptionalEnvInput());
+  const optionalData = optional.success ? optional.data : {};
+
+  if (!optional.success) {
+    console.warn(
+      'warn. optional public environment variables are invalid and will be ignored:\n',
+      formatEnvIssues(optional.error)
+    );
+  }
+
+  warnOptionalEnv();
+
+  return {
+    ...required.data,
+    ...optionalData,
+  };
 }
 
 export const env = parsePublicEnv();
@@ -115,9 +163,13 @@ export function getServiceRoleKey(): string {
 
   if (!key) {
     throw new Error(
-      'error. SUPABASE_SERVICE_ROLE_KEY is required for server-side admin operations.'
+      'error. SUPABASE_SERVICE_ROLE_KEY is required for this operation. Add it as a server-only secret in Vercel (not NEXT_PUBLIC_).'
     );
   }
 
   return key;
+}
+
+export function getOptionalSiteUrl(): string | undefined {
+  return env.NEXT_PUBLIC_SITE_URL;
 }
