@@ -1,5 +1,7 @@
 import { Novu } from '@novu/api';
 
+import { env } from '../config/env';
+
 export const novu = new Novu({
-  secretKey: process.env.NOVU_SECRET_KEY!,
+  secretKey: env.NOVU_SECRET_KEY,
 });

@@ -9,6 +9,7 @@ import {
   Settings,
   Users,
   Music,
+  Timer,
 } from 'lucide-react';
 import { cn } from '@repo/ui/lib/utils';
 import {
@@ -26,10 +27,12 @@ import {
 
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { href: '/users', label: 'Users', icon: Users },
   { href: '/member', label: 'My Work', icon: CircleDot },
   { href: '/manager', label: 'Team', icon: Users },
   { href: '/admin', label: 'Projects', icon: FolderKanban },
   { href: '/instruments', label: 'Instruments', icon: Music },
+  { href: '/sprints', label: 'Sprint', icon: Timer },
 ] as const;
 
 export function DashboardSidebar() {

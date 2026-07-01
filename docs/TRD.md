@@ -3,8 +3,8 @@
 ## Jira Teams — Project Management Platform
 
 **Project:** Alice (Jira Teams)  
-**Version:** 1.1  
-**Last Updated:** June 23, 2026  
+**Version:** 1.3  
+**Last Updated:** June 30, 2026  
 **Status:** In development
 
 ## 1. Purpose
@@ -13,15 +13,15 @@ This document describes the technical architecture and implementation of Alice (
 
 ## 2. System Overview
 
-Alice is a pnpm + Turborepo monorepo. The browser loads the Next.js web app (`apps/web`). The web app authenticates users via Clerk and can call the Express API (`apps/api`) using `NEXT_PUBLIC_API_URL`. Application data will be stored in Supabase (PostgreSQL) once integrated.
+Alice is a pnpm + Turborepo monorepo. The browser loads the Next.js web app (`apps/web`). Users authenticate via Supabase Auth (email/password). The web app calls the Express API (`apps/api`) using `NEXT_PUBLIC_API_URL` with a Supabase JWT. Application data is stored in Supabase (PostgreSQL).
 
-Both apps deploy to Vercel. The API runs as Vercel Serverless Functions with Clerk middleware on every request.
+Both apps deploy to Vercel. The API runs as Vercel Serverless Functions. Protected API routes validate the Supabase access token via `requireApiAuth`.
 
 ## 3. Repository Structure
 
 **Root**
 
-- `package.json` — workspace scripts (`dev`, `build`, `lint`, `test`, `commit`, `ui:add`)
+- `package.json` — workspace scripts (`dev`, `build`, `lint`, `test`, `commit`, `ui:add`, `db`, `types`)
 - `turbo.json` — Turborepo task configuration
 - `pnpm-workspace.yaml` — workspace packages under `apps/*` and `packages/*`
 - `tsconfig.json` — root path alias for `@repo/ui/*`
@@ -31,23 +31,45 @@ Both apps deploy to Vercel. The API runs as Vercel Serverless Functions with Cle
 
 **apps/api**
 
-- `src/index.ts` — Express app entry, CORS, JSON parsing, Clerk middleware, route mounting
-- `src/server.ts` — port detection for local development
-- `src/routes/api/health/index.ts` — health check router
-- `src/routes/api/users/index.ts` — users router with protected endpoint
-- `src/middlewares/auth/index.ts` — `requireApiAuth` middleware
+- `src/index.ts` — Express app entry, CORS, JSON parsing, route mounting
+- `src/config/preload.ts` — loads `.env` and validates env via `src/config/env.ts`
+- `src/config/server.ts` — port detection for local development
+- `src/routes/api/health/health.route.ts` — health check router
+- `src/routes/api/users/users.route.ts` — users router with protected endpoint
+- `src/routes/api/files/files.route.ts` — file upload router
+- `src/routes/api/notifications/notifications.route.ts` — Novu notifications router
+- `src/middlewares/auth/index.ts` — `requireApiAuth` (Supabase JWT verification)
+- `src/lib/supabase.ts` — service-role Supabase client for server tasks
 - `vercel.json` — Vercel serverless routing (all requests to `src/index.ts`)
 
 **apps/web**
 
-- `app/page.tsx` — home page with Clerk auth controls
-- `app/layout.tsx` — root layout with `ClerkProvider`
-- `app/dashboard/page.tsx` — role-based redirect hub
-- `app/admin/page.tsx` — admin-only dashboard
-- `app/manager/page.tsx` — manager-only dashboard
-- `app/member/page.tsx` — member-only dashboard
-- `lib/auth.ts` — `getUserRole()` helper reading Clerk `publicMetadata.role`
-- `proxy.ts` — Clerk middleware for Next.js (replaces traditional `middleware.ts`)
+- `app/page.tsx` — home page with auth controls
+- `app/about/page.tsx`, `app/contact/page.tsx` — public marketing pages
+- `app/login/page.tsx` — email/password sign-in form
+- `app/signup/page.tsx` — registration form
+- `app/auth/actions.ts` — Server Actions: `login`, `signUp`, `signOut`
+- `app/dashboard/page.tsx` — authenticated dashboard hub
+- `app/dashboard/layout.tsx` — dashboard segment layout with `robots: noindex`
+- `app/admin/layout.tsx`, `app/manager/layout.tsx`, `app/member/layout.tsx` — role dashboard layouts with `robots: noindex`
+- `app/instruments/layout.tsx`, `app/files/layout.tsx` — internal route layouts with `robots: noindex`
+- `app/robots.ts` — `/robots.txt` (crawler allow/disallow rules)
+- `app/sitemap.ts` — `/sitemap.xml` (public routes only)
+- `app/shared/values.ts` — `baseUrl`, `appTitle`, `appDescription` for metadata
+- `app/config/fonts.ts` — font configuration for root layout
+- `app/favicon.ico`, `app/icon.svg`, `app/apple-icon.png`, `app/opengraph-image.png` — file-based metadata assets
+- `app/admin/page.tsx`, `app/manager/page.tsx`, `app/member/page.tsx` — role dashboards (RBAC guards planned)
+- `app/instruments/page.tsx` — typed Supabase data example
+- `app/users/page.tsx` — user registry and management UI
+- `app/users/actions.ts` — invite, create registry row, activate/deactivate
+- `app/auth/callback/route.ts` — OAuth/invite code exchange
+- `app/reset-password/page.tsx` — set password after invite or recovery
+- `lib/auth.ts` — `getUser()` via `supabase.auth.getUser()`
+- `lib/supabase/server.ts` — SSR Supabase client (`createServerClient` + `@repo/types`)
+- `lib/supabase/client.ts` — browser Supabase client
+- `lib/supabase/middleware.ts` — session refresh in middleware
+- `lib/env.ts` — Zod env validation (loaded from `next.config.js` at build)
+- `proxy.ts` — Next.js middleware entry (`updateSession`); replaces traditional `middleware.ts`
 - `sample.env` — environment variable template
 
 **packages/ui**
@@ -56,8 +78,27 @@ Both apps deploy to Vercel. The API runs as Vercel Serverless Functions with Cle
 - Utility: `src/lib/utils.ts` (`cn` helper)
 - Styles: `src/globals.css` (exported as `@repo/ui/globals.css`)
 
+**packages/db** (`@repo/db`)
+
+- `prisma/schema.prisma` — schema source of truth (introspected from Supabase; e.g. `instruments`)
+- `prisma/migrations/` — versioned SQL migrations (baseline: `0_init_supabase`)
+- `prisma.config.ts` — Prisma 7 config (`DIRECT_URL`, migration path, seed command)
+- `src/seed.ts` — idempotent seed scripts (Supabase service role)
+- `src/env.ts` — Zod validation for db package env vars
+- `script_create_migrate.sh` — create migration from schema diff, deploy, regenerate types, seed
+- `script_generate_types.sh` — `supabase gen types` into `@repo/types`
+- `sample.env` — `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+
+**packages/types** (`@repo/types`)
+
+- `src/generated/supabase/database.types.ts` — generated Supabase client types (committed, overwritten on `pnpm db generate`)
+- `src/index.ts` — re-exports `Database`, `Tables`, `TablesInsert`, `TablesUpdate`, `Enums`
+- Consumed by `apps/web` and `apps/api` for typed Supabase SDK clients; apps do not import `@repo/db`
+
 **packages/eslint-config** — shared ESLint configs  
 **packages/typescript-config** — shared TypeScript configs
+
+See also: `docs/guidelines/DATABASE.md` (operational runbook), `docs/guidelines/DEBUGGING.md` (IDE debug configs), `docs/guidelines/SEO.md` (search metadata and crawler policy), `docs/features/users/` (user management), `docs/authorization/` (auth and RBAC plans).
 
 ## 4. Technology Stack
 
@@ -73,72 +114,144 @@ Both apps deploy to Vercel. The API runs as Vercel Serverless Functions with Cle
 - Next.js 16.2 (App Router)
 - React 19.2
 - Tailwind CSS 4.3
-- `@clerk/nextjs` ^7.5.7
+- `@supabase/ssr` + `@supabase/supabase-js`
+- `@repo/types` for typed Supabase clients
 - shadcn/ui components via `@repo/ui`
 - Vitest for tests
 
 **Backend (`apps/api`)**
 
-- Express.js 4.19
-- `@clerk/express` ^2.1.31
+- Express.js 4.22
+- `@supabase/supabase-js` (JWT verification in `requireApiAuth`)
 - cors, express.json middleware
 - Vitest for tests
 
 **Database**
 
-- Supabase (PostgreSQL) — planned, not yet integrated in source code
+- Supabase (PostgreSQL) for application data and auth
+- Prisma 7 for schema management and SQL migrations (`@repo/db`)
+- Supabase CLI for client type generation (`@repo/types`)
+- Runtime data access via `@supabase/ssr` (web) and `@supabase/supabase-js` (api) — not Prisma Client in apps
 
 **Hosting and CI**
 
 - Vercel (web and api as separate projects)
 - GitHub Actions (lint, test, deploy on `main`)
 
-## 5. Authentication — Clerk
+## 5. Authentication — Supabase Auth
+
+Identity is handled by Supabase Auth. Authorization (roles, permissions) will live in application database tables — not in Supabase Auth user metadata. See `docs/authorization/RBAC_AUTHORIZATION_SKELETON.md`.
 
 ### Web app
 
-- `ClerkProvider` wraps the app in `app/layout.tsx`.
-- `proxy.ts` exports `clerkMiddleware()` with a matcher for all non-static routes.
-- `lib/auth.ts` provides `getUserRole()` which reads `user.publicMetadata.role` from the Clerk user object.
+- `@supabase/ssr` provides browser, server, and middleware clients.
+- `proxy.ts` calls `updateSession()` on each request to refresh the session cookie.
+- Server-side checks use `supabase.auth.getUser()` (never trust `getSession()` alone).
+- `app/auth/actions.ts` Server Actions handle `signInWithPassword`, `signUp`, and `signOut`.
+- Typed clients: `createServerClient<Database>()` / `createBrowserClient<Database>()` from `@repo/types`.
 
 **Environment variables (`apps/web/sample.env`):**
 
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_URL` (server-only)
+- `SUPABASE_ANON_KEY` (server-only)
+- `SUPABASE_SERVICE_ROLE_KEY` (server-only; never import in client components)
 - `NEXT_PUBLIC_API_URL`
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
-- `CLERK_SECRET_KEY`
+
+**Planned:** forgot-password flow — see `docs/authorization/FORGOT_PASSWORD_AUTH_PLAN.md`.
 
 ### API
 
-- `clerkMiddleware()` is applied globally in `src/index.ts`.
-- `requireApiAuth` in `src/middlewares/auth/index.ts` uses `getAuth(req)` from `@clerk/express` and returns 401 if `userId` is missing.
+- `requireApiAuth` reads `Authorization: Bearer <access_token>`.
+- Validates the token with `supabase.auth.getUser(token)` using the anon key.
+- Attaches `userId` (`auth.users.id`) to the request for downstream handlers.
+- No global auth middleware; protection is per-route via `requireApiAuth`.
 
-## 6. Role-Based Access
+### Session and API access
 
-Roles are stored as lowercase strings in Clerk user `publicMetadata.role`:
+- Web stores session in HTTP-only cookies managed by `@supabase/ssr`.
+- API calls from the browser must send the Supabase access token in the `Authorization` header when calling protected endpoints.
+
+## 6. Role-Based Access (planned)
+
+Custom RBAC will be stored in Supabase application tables, not in Supabase Auth metadata.
+
+**Intended roles:**
 
 - `admin` — `/admin`
 - `manager` — `/manager`
 - `member` — `/member`
 
-**Flow:**
+**Current state:**
 
-1. User visits `/dashboard`.
-2. Server reads `userId` via `auth()`; unauthenticated users redirect to `/`.
-3. Server fetches the Clerk user and reads `publicMetadata.role`.
-4. User is redirected to `/admin`, `/manager`, or `/member` (defaults to `/member` if role is not admin or manager).
+- `getUser()` returns the Supabase user or `null`.
+- Dashboard routes (`/dashboard`, `/admin`, `/manager`, `/member`) require authentication only.
+- Role guards and `/dashboard` role routing are not yet wired to database RBAC.
 
-Each role page independently calls `getUserRole()` and redirects to `/` if the role does not match.
+Each role page will call a shared authorization helper and redirect unauthorized users once RBAC tables exist.
 
-## 7. Database — Supabase
+## 7. Database — Supabase and `@repo/db`
 
-Supabase (PostgreSQL) is the intended database for application data. It is referenced in project rules but not yet present in the codebase (no Prisma schema, migrations, or Supabase client).
+Supabase (PostgreSQL) stores application data. Identity uses Supabase Auth. Structural changes are owned by `@repo/db`; compile-time contracts live in `@repo/types`; runtime queries use the Supabase SDK in apps.
 
-Planned environment variables:
+### Package responsibilities
 
-- `DATABASE_URL`
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
+| Package                | Role                                                                          |
+| ---------------------- | ----------------------------------------------------------------------------- |
+| `@repo/db`             | Prisma schema, SQL migrations, seeds, type-generation scripts, env validation |
+| `@repo/types`          | Generated Supabase `Database` types only (no Prisma client types)             |
+| `apps/web`, `apps/api` | Supabase SDK for reads/writes; import `@repo/types` for typing only           |
+
+Apps must not import `@repo/db`. Prisma is a migration and data-engineering tool, not the application ORM.
+
+### Schema and migrations
+
+- **Schema:** `packages/db/prisma/schema.prisma`
+- **Migrations:** `packages/db/prisma/migrations/` (forward-only SQL)
+- **Baseline:** `0_init_supabase` captures the existing `instruments` table imported from Supabase
+- **Connection:** `DIRECT_URL` (non-pooled, port 5432) for `migrate` and `generate`; configured in `prisma.config.ts`
+- **Create flow:** edit `schema.prisma` → `pnpm db create:migrate <name>` → review SQL → commits include migration + regenerated types
+
+`script_create_migrate.sh` diffs `--from-migrations` to `schema.prisma`, runs `migrate deploy`, regenerates types, and runs seed.
+
+### Type generation
+
+- Command: `pnpm db generate` (root shorthand for `@repo/db`)
+- Output: `packages/types/src/generated/supabase/database.types.ts` (fully overwritten each run)
+- Tool: `supabase gen types typescript --db-url "$DIRECT_URL"`
+- Apps use `createClient<Database>()` and `Tables<'table_name'>` from `@repo/types`
+
+### Seeding
+
+- Script: `packages/db/src/seed.ts` (registered in `prisma.config.ts`)
+- Command: `pnpm db seed`
+- Pattern: idempotent check-before-insert (safe on the shared dev/prod database)
+- Auth: `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` from `packages/db/.env`
+
+### Validation and status checks
+
+| Command                  | Purpose                                           | DB connection       |
+| ------------------------ | ------------------------------------------------- | ------------------- |
+| `pnpm db validate`       | `prisma validate` — schema syntax and consistency | No                  |
+| `pnpm db checktypes`     | Zod env check + TypeScript on db package          | No (env mock in CI) |
+| `pnpm db migrate:status` | Pending vs applied migrations                     | Yes (`DIRECT_URL`)  |
+| `pnpm db migrate:deploy` | Apply pending migrations                          | Yes (`DIRECT_URL`)  |
+
+Env vars for `@repo/db` are validated in `packages/db/src/env.ts` (Zod). CI skips strict env validation when `GITHUB_ACTIONS=true`.
+
+### Environment variables (`packages/db/sample.env`)
+
+- `DATABASE_URL` — pooled Postgres URL (runtime / future use)
+- `DIRECT_URL` — direct Postgres URL for migrations and type generation
+- `SUPABASE_URL` — Supabase project URL (seeding)
+- `SUPABASE_SERVICE_ROLE_KEY` — service role key (seeding only; never exposed to web client)
+
+Application-level Supabase vars remain in `apps/web/sample.env` and `apps/api/sample.env`.
+
+### Single-database constraint
+
+One Supabase project serves both development and production. Migrations must be additive. Seeds must remain idempotent. Avoid destructive `db push` or truncate-and-reload patterns.
 
 ## 8. API
 
@@ -147,12 +260,12 @@ Planned environment variables:
 - Base path: `/api`
 - JSON request and response bodies
 - CORS enabled globally
-- Clerk middleware applied to all requests
+- Supabase JWT validation on protected routes via `requireApiAuth`
 
 **Implemented endpoints**
 
 - `GET /api/health` — public. Returns `{ "status": "ok", "runtime": "express" }`.
-- `GET /api/users/api/secure` — protected by `requireApiAuth`. Returns `{ "message": "Welcome to your private dashboard!" }`. Returns 401 with `{ "error": "Unauthorized", "message": "..." }` when unauthenticated.
+- `GET /api/users/api/secure` — protected by `requireApiAuth`. Returns `{ "message": "Welcome to your private dashboard!" }`. Returns 401 when the Bearer token is missing or invalid.
 
 **Route mounting (`src/index.ts`)**
 
@@ -173,11 +286,36 @@ Planned environment variables:
 
 **Routes**
 
-- `/` — home page ("Jira Teams", "A Jira Clone") with Sign Up, Dashboard buttons and Clerk `SignInButton`, `SignOutButton`, `UserButton`
-- `/dashboard` — authenticated role router
-- `/admin` — admin dashboard (role guard)
-- `/manager` — manager dashboard (role guard)
-- `/member` — member dashboard (role guard)
+- `/` — home page ("Jira Teams") with Sign In / Sign Up controls
+- `/about`, `/contact` — public marketing pages
+- `/login` — email/password sign-in (Server Action)
+- `/signup` — registration (Server Action)
+- `/dashboard` — authenticated dashboard hub
+- `/admin`, `/manager`, `/member` — role dashboards (auth required; RBAC guards planned)
+- `/instruments` — example typed Supabase query page
+- `/users` — user registry (auth required; admin-only RBAC for mutations — see `docs/features/users/USER_MANAGEMENT.md`)
+- `/files` — file upload utility (authenticated)
+- `/reset-password` — set password after invite or recovery link
+
+### 9.1 SEO and crawler policy
+
+Public pages are discoverable via `sitemap.ts` and default root metadata. Authenticated, role-restricted, and internal routes are excluded from indexing using a two-layer policy:
+
+1. **`robots.ts`** — `allow: '/'`; `disallow` for `/dashboard`, `/admin`, `/manager`, `/member`, `/instruments`, `/files`, and query-string URLs (`/*?*`).
+2. **Route metadata** — forbidden segments export `robots: { index: false, follow: false }` in their `layout.tsx`.
+
+**Central config:** `apps/web/app/shared/values.ts` (`baseUrl`, `appTitle`, `appTitleTemplate`, `appDescription`).
+
+**Metadata routes:**
+
+- `GET /robots.txt` — from `app/robots.ts`
+- `GET /sitemap.xml` — from `app/sitemap.ts` (currently `/`, `/about`, `/contact`, `/login`, `/signup`)
+
+**File-based assets:** `favicon.ico`, `icon.svg`, `apple-icon.png`, `opengraph-image.png` under `app/`.
+
+**Forbidden from sitemap and crawlers:** `/dashboard`, `/admin`, `/manager`, `/member`, `/instruments`, `/files`, and query-string URLs.
+
+Operational guide: `docs/guidelines/SEO.md`. Agent rules: `.cursor/rules/06-seo-optimizer.mdc`.
 
 **Shared UI**
 
@@ -207,15 +345,20 @@ import { cn } from '@repo/ui/lib/utils';
 
 **CI/CD (`.github/workflows/deploy.yml`)**
 
-On push and pull request to `main`:
+On push and pull request to `main` and `dev`:
 
+- `pnpm checktypes`
 - `pnpm turbo lint`
 - `pnpm turbo test`
+- `pnpm db validate` (Prisma schema — no database secret required)
 
 On push to `main` only (after validation passes):
 
+- `validate_database` job — `pnpm db migrate:status` (requires `DIRECT_URL` secret)
 - Deploy `apps/api` to Vercel
 - Deploy `apps/web` to Vercel
+
+SonarCloud quality gate runs on `dev` branch after validation.
 
 **Required GitHub secrets**
 
@@ -223,6 +366,8 @@ On push to `main` only (after validation passes):
 - `VERCEL_ORG_ID`
 - `VERCEL_PROJECT_ID_API`
 - `VERCEL_PROJECT_ID_WEB`
+- `DIRECT_URL` (migration status check on `main` deploy)
+- `SONAR_TOKEN` (SonarCloud on `dev`)
 
 ## 11. Development Workflow
 
@@ -230,7 +375,7 @@ On push to `main` only (after validation passes):
 
 - Node.js ≥ 18
 - pnpm 9.x
-- Clerk application with publishable and secret keys
+- Supabase project (URL, anon key, service role key for server tasks)
 - Optional: Dev Container (`.devcontainer/devcontainer.json`)
 
 **Commands (run from repository root)**
@@ -245,6 +390,12 @@ pnpm turbo test           # run all tests
 pnpm turbo checktypes
 pnpm turbo build
 pnpm ui:add <component>   # add shadcn component to @repo/ui
+pnpm db validate          # validate Prisma schema (no DB)
+pnpm db migrate:deploy    # apply pending migrations
+pnpm db migrate:status    # check migration sync with database
+pnpm db generate          # regenerate Supabase types into @repo/types
+pnpm db seed              # run idempotent seeds
+pnpm db create:migrate <name>  # create + deploy migration, generate types, seed
 pnpm commit               # conventional commit (interactive)
 ```
 
@@ -259,18 +410,28 @@ pnpm commit               # conventional commit (interactive)
 **Implemented**
 
 - Turborepo monorepo with pnpm workspaces
-- Clerk authentication on web and API
-- Role-based dashboard routing (admin, manager, member)
+- Supabase Auth on web (login, signup, sign-out, session middleware)
+- Supabase JWT verification on API (`requireApiAuth`)
+- Dashboard shell and role route scaffolding (admin, manager, member)
 - Express API with modular routes and auth middleware
 - Next.js frontend with home page and role dashboards
 - Shared UI package (`@repo/ui`)
+- Database engineering packages (`@repo/db`, `@repo/types`)
+- Prisma schema, baseline migration, and migration scripts for Supabase
+- Supabase client type generation and typed SDK usage in web (`@repo/types`)
+- User management with Supabase invite emails and `public.users` registry (`docs/features/users/`)
+- Idempotent database seeding (`pnpm db seed`)
+- Prisma schema validation in CI (`pnpm db validate`)
+- Migration status gate on `main` deploy (`pnpm db migrate:status`)
 - Dev Container configuration
 - ESLint, Prettier, Husky, Commitlint, Commitizen
 - GitHub Actions CI and Vercel deployment
+- SEO metadata (root layout, file-based icons/OG image, `robots.ts`, `sitemap.ts`)
+- Crawler exclusion for protected routes (`robots.ts` disallow + layout `noindex` on `/dashboard`, `/admin`, `/manager`, `/member`, `/instruments`, `/files`)
 
 **Not yet implemented**
 
-- Supabase schema and data access from the API
+- Strict admin-only **route/UI** guard for `/users` (Server Actions already enforce admin)
 - Project and issue domain routes and services
-- Admin UI for assigning roles (roles are set in Clerk `publicMetadata` manually)
 - Zod request validation on API routes
+- Full custom RBAC in database tables — page-level guards (see `docs/authorization/RBAC_AUTHORIZATION_SKELETON.md`)

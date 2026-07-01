@@ -1,24 +1,22 @@
 import type { Metadata } from 'next';
-import localFont from 'next/font/local';
-import './globals.css';
-import { Inter } from 'next/font/google';
-import { cn } from '@repo/ui/lib/utils';
+import {
+  appDescription,
+  appTitle,
+  appTitleTemplate,
+  baseUrl,
+} from '@/app/shared/values';
 import React from 'react';
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
-
-const geistSans = localFont({
-  src: './fonts/GeistVF.woff',
-  variable: '--font-geist-sans',
-});
-const geistMono = localFont({
-  src: './fonts/GeistMonoVF.woff',
-  variable: '--font-geist-mono',
-});
+import { cn } from '@repo/ui/lib/utils';
+import { geistMono, geistSans, inter } from '@/app/config/fonts';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Jira Teams',
-  description: 'A Jira Clone',
+  metadataBase: new URL(baseUrl),
+  title: {
+    default: appTitle,
+    template: appTitleTemplate,
+  },
+  description: appDescription,
 };
 
 export default function RootLayout({

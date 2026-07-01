@@ -4,26 +4,28 @@
 
 - Project: Alice (Jira Teams)
 - Area: Web Authorization (`apps/web`)
-- Version: 0.1 (Draft)
+- Version: 0.2 (Draft)
 - Status: Proposed
 - Owner: TBD
-- Last Updated: 2026-06-25
+- Last Updated: 2026-06-28
 
 ## 1. Understood Requirements
 
 This document captures the agreed direction:
 
-- Keep Clerk for authentication only (sign-in/session identity).
-- Remove authorization dependency on Clerk role/organization metadata.
-- Implement custom RBAC in application-owned data models.
+- Use **Supabase Auth** for authentication only (sign-in, sessions, JWT identity).
+- Do **not** store application roles in Supabase Auth `user_metadata` for authorization decisions.
+- Implement custom RBAC in application-owned database tables.
 - Add route-level authorization checks to decide whether a signed-in user can access a requested page.
 - Add dashboard access checks to block outside users from internal workspace routes.
 
+Related: `FORGOT_PASSWORD_AUTH_PLAN.md` (password recovery). User invites use the same `/reset-password` route — see `docs/features/users/USER_MANAGEMENT.md`.
+
 ## 2. Problem Statement
 
-- Current role checks were tied to vendor metadata and increase lock-in.
 - Authorization rules must be portable, explicit, and owned by this codebase.
 - Access decisions need a single standard pattern for all protected routes.
+- Identity (`auth.users.id`) comes from Supabase; permissions come from app tables.
 
 ## 3. Scope
 
@@ -42,7 +44,7 @@ This document captures the agreed direction:
 
 ## 4. Terminology
 
-- **Authenticated User:** Identity verified by Clerk.
+- **Authenticated User:** Identity verified by Supabase Auth (`supabase.auth.getUser()`).
 - **Authorized User:** Authenticated user allowed by app RBAC policy.
 - **Outside User:** Signed-in identity without internal membership permission.
 - **Role:** Named permission grouping (example: `admin`, `manager`, `member`).
@@ -50,8 +52,8 @@ This document captures the agreed direction:
 
 ## 5. Proposed Architecture (Skeleton)
 
-- Auth source: Clerk user/session ID.
-- Authorization source: App database tables.
+- Auth source: Supabase Auth user ID (`user.id` UUID).
+- Authorization source: App database tables (Supabase / `@repo/db` migrations).
 - Decision point: Shared server-side guard functions used by routes/layouts.
 - Enforcement layer:
   - Page-level route guard.
@@ -70,6 +72,10 @@ This document captures the agreed direction:
 ## 9. Error Handling and UX (Skeleton)
 
 ## 10. Security Considerations (Skeleton)
+
+- Never use `user_metadata` JWT claims for authorization (user-editable).
+- Use `getUser()` on the server, not `getSession()` alone.
+- API routes validate Bearer tokens via `requireApiAuth`.
 
 ## 11. Rollout Plan (Skeleton)
 

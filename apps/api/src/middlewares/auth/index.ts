@@ -1,5 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
+import { env } from '../../config/env';
 import { createClient } from '@supabase/supabase-js';
+import type { NextFunction, Request, Response } from 'express';
 
 export type AuthenticatedRequest = Request & {
   userId?: string;
@@ -20,10 +21,7 @@ export async function requireApiAuth(
     return;
   }
 
-  const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!
-  );
+  const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
 
   const {
     data: { user },

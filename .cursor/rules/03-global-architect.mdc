@@ -32,6 +32,10 @@ globs: **/*
 
 - For frontend UI work, follow `.cursor/rules/04-ui-design-expert.mdc` (shared `@repo/ui` shadcn components, theme tokens, composition patterns).
 
+## SEO
+
+- For metadata, sitemap, robots, and crawler exclusion in `apps/web`, follow `.cursor/rules/06-seo-optimizer.mdc` and `docs/guidelines/SEO.md`.
+
 ## Code Style & Formatting
 
 - Always use the root script: `pnpm format` (do not run Prettier ad hoc per package unless the user asks).
@@ -39,6 +43,7 @@ globs: **/*
 - Never use local try/catch blocks in Express controller functions.
 - For logging and caught error throwings throughout the whole repository use the below rule.
 Add prefixes info, warn, error with the formatting "prefix. the message is here".
+- Never use single line comments as the suffix of a line. Always write the comment first and statements under.
 
 ## Vercel Deployment Rules
 

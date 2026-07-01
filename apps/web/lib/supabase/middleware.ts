@@ -1,8 +1,14 @@
 import type { Database } from '@repo/types';
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { redirectAuthCodeToCallback } from '@/lib/auth-redirect';
 
 export async function updateSession(request: NextRequest) {
+  const authCodeRedirect = redirectAuthCodeToCallback(request);
+  if (authCodeRedirect) {
+    return authCodeRedirect;
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

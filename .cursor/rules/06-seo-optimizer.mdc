@@ -1,0 +1,92 @@
+---
+description: Enforces SEO metadata, sitemap, robots, and crawler exclusion for protected routes in apps/web.
+globs: apps/web/app/**, apps/web/app/robots.ts, apps/web/app/sitemap.ts
+---
+
+# SEO Optimizer Rules
+
+Follow `docs/guidelines/SEO.md` for the full operational guide. These rules apply whenever adding or changing routes, metadata, or crawler-facing files in `apps/web`.
+
+## Central configuration
+
+- Keep site-wide SEO constants in `apps/web/app/shared/values.ts`: `baseUrl`, `appTitle`, `appTitleTemplate`, `appDescription`.
+- Never hardcode production URLs in `robots.ts`, `sitemap.ts`, or page metadata — import from `values.ts`.
+- Root layout (`apps/web/app/layout.tsx`) owns `metadataBase`, default `title`, and `description`. Page-level metadata only overrides what differs.
+
+## File-based metadata assets
+
+Place Next.js [file-based metadata](https://nextjs.org/docs/app/api-reference/file-conventions/metadata) under `apps/web/app/`:
+
+| File | Purpose |
+| ---- | ------- |
+| `favicon.ico` | Browser tab icon |
+| `icon.svg` | Scalable app icon |
+| `apple-icon.png` | iOS home-screen icon |
+| `opengraph-image.png` | Default Open Graph / social preview image |
+
+Do not duplicate these in `public/` unless a non-App-Router consumer requires it.
+
+## Crawler route policy
+
+Routes fall into two classes. **Never** put forbidden routes in `sitemap.ts`.
+
+### Public (indexable)
+
+Marketing and entry pages intended for search discovery:
+
+- `/`
+- `/about`
+- `/contact`
+- `/login`
+- `/signup`
+
+New public marketing pages must be added to `sitemap.ts` with an appropriate `changeFrequency` and `priority`.
+
+### Forbidden (no indexing)
+
+Authenticated, role-restricted, or internal routes must stay out of search results:
+
+- `/dashboard` — authenticated hub
+- `/admin`, `/manager`, `/member` — role dashboards
+- `/instruments` — internal data example
+- `/files` — authenticated upload utility
+- Any future route behind auth, RBAC, or intended for signed-in users only
+- URLs with query strings (`/*?*` — filter/search/session state)
+
+When adding a forbidden route, apply **both** defenses:
+
+1. **`robots.ts`** — add a `disallow` entry for the path prefix.
+2. **Route layout metadata** — export `robots: { index: false, follow: false }` in the route's `layout.tsx` (preferred) or `page.tsx` if no layout exists.
+
+Example (`apps/web/app/dashboard/layout.tsx`):
+
+```typescript
+export const metadata: Metadata = {
+  title: 'Dashboard',
+  robots: { index: false, follow: false },
+};
+```
+
+`robots.txt` alone is not sufficient — page-level `robots` metadata is the authoritative signal when content is accidentally linked externally.
+
+## `robots.ts` and `sitemap.ts`
+
+- `apps/web/app/robots.ts` — `allow: '/'`, `disallow` all forbidden prefixes, reference `${baseUrl}/sitemap.xml`.
+- `apps/web/app/sitemap.ts` — only public routes; use `baseUrl` from `values.ts`.
+- Keep `disallow` paths in `robots.ts` synchronized with the forbidden-route list above and any new protected routes.
+
+## Page metadata conventions
+
+- Use the root `title.template` (`%s | Jira Teams`) — set only the segment in child pages: `title: 'About'`.
+- Public pages may add `description`, `openGraph`, and `twitter` overrides when the default root description is insufficient.
+- Do not set `robots: { index: true }` on forbidden routes.
+- Do not use `noindex` on public marketing pages unless there is an explicit product reason.
+
+## Delivery checklist
+
+- [ ] Route classified as public or forbidden.
+- [ ] Forbidden routes: `disallow` in `robots.ts` + `robots: { index: false, follow: false }` in layout/page metadata.
+- [ ] Public routes: entry in `sitemap.ts` when appropriate.
+- [ ] Titles and descriptions use `values.ts` constants where shared.
+- [ ] No secrets or user-specific data in metadata or OG images.
+- [ ] Verify locally: `/robots.txt` and `/sitemap.xml` reflect changes.

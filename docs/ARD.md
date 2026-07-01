@@ -3,8 +3,8 @@
 ## Jira Teams — Project Management Platform
 
 **Project:** Alice (Jira Teams)  
-**Version:** 1.1  
-**Last Updated:** June 23, 2026  
+**Version:** 1.2  
+**Last Updated:** June 30, 2026  
 **Status:** In development
 
 ## 1. Executive Summary
@@ -45,6 +45,8 @@ The project is a Turborepo monorepo with a Next.js frontend (`apps/web`), an Exp
 - Conventional Commits enforced via Husky, Commitlint, and Commitizen.
 - Dev Container configuration (`.devcontainer/devcontainer.json`).
 - Root script `pnpm ui:add` for adding shadcn components to `@repo/ui`.
+- Public marketing pages at `/about` and `/contact`.
+- SEO foundation: site metadata, `robots.txt`, `sitemap.xml`, favicon/OG assets, and crawler exclusion for `/dashboard`.
 
 **Not yet implemented**
 
@@ -97,6 +99,11 @@ Users without a matching role are redirected to `/` when visiting a role-specifi
   - Separate Vercel projects for `apps/api` and `apps/web`.
   - Status: Done.
 
+- **OPS-4:** As a product owner, I want public pages discoverable by search engines while authenticated areas stay private.
+  - `sitemap.xml` lists public routes (`/`, `/about`, `/contact`, `/login`, `/signup`).
+  - `robots.txt` disallows protected paths; forbidden routes use `noindex` page metadata.
+  - Status: Done.
+
 ### Planned (not yet in codebase)
 
 - **PROJ-1:** As a project manager, I want to create a project so that work is grouped.
@@ -121,6 +128,7 @@ Users without a matching role are redirected to `/` when visiting a role-specifi
 - **NFR-4:** Secrets are stored in environment variables, not in source control.
 - **NFR-5:** The API is deployed as Vercel Serverless Functions (stateless; no in-memory persistence).
 - **NFR-6:** Commits follow Conventional Commits via `pnpm commit`.
+- **NFR-7:** Public marketing and entry pages shall be indexable by search engines; authenticated dashboards, role-specific areas, and internal utilities shall not appear in search results (enforced via `robots.txt`, `sitemap.xml` curation, and per-route `noindex` metadata — see `docs/guidelines/SEO.md`).
 
 ## 8. Assumptions & Dependencies
 
