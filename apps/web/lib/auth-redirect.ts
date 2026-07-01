@@ -16,12 +16,14 @@ export function resolveSafeRedirectPath(
   return next;
 }
 
+import { getOptionalSiteUrl } from '@/lib/env';
+
 /**
  * Resolves the request origin for Supabase redirectTo URLs.
  * Prefers NEXT_PUBLIC_SITE_URL when set, otherwise the request Origin header.
  */
 export function resolveRequestOrigin(requestOrigin: string): string {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  const siteUrl = getOptionalSiteUrl();
   if (siteUrl) {
     return siteUrl.replace(/\/$/, '');
   }
