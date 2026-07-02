@@ -1,12 +1,11 @@
 'use client';
 
-import { useActionState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useActionState } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { resetPassword, ResetState } from './actions';
-import { KeyRound, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { KeyRound, Loader2, AlertCircle } from 'lucide-react';
 
 const initialState: ResetState = {
   success: false,
@@ -18,16 +17,6 @@ export default function ResetPasswordPage() {
     resetPassword,
     initialState
   );
-  const router = useRouter();
-
-  useEffect(() => {
-    if (state.success) {
-      const timer = setTimeout(() => {
-        router.push('/login?reset=success');
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [state.success, router]);
 
   return (
     <main className="from-background via-muted/50 to-background flex min-h-screen items-center justify-center bg-linear-to-br p-6">
@@ -76,16 +65,9 @@ export default function ResetPasswordPage() {
             </div>
           )}
 
-          {state.success && (
-            <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3.5 text-sm text-emerald-500">
-              <CheckCircle className="h-4 w-4 shrink-0" />
-              <span>Password updated! Redirecting to sign in...</span>
-            </div>
-          )}
-
           <Button
             type="submit"
-            disabled={isPending || state.success}
+            disabled={isPending}
             className="h-11 w-full cursor-pointer bg-linear-to-r font-semibold text-white shadow-md transition-all duration-300 hover:shadow-lg"
           >
             {isPending ? (
