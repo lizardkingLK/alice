@@ -120,7 +120,7 @@ export function UserRegistry({
           </div>
           <button
             onClick={() => setIsAddUserOpen(true)}
-            className="bg-primary text-primary-foreground hover:bg-primary/95 shadow-md hover:shadow-lg inline-flex h-10 cursor-pointer items-center justify-center rounded-md px-4 text-xs font-semibold transition-all duration-300"
+            className="bg-primary text-primary-foreground hover:bg-primary/95 inline-flex h-10 cursor-pointer items-center justify-center rounded-md px-4 text-xs font-semibold shadow-md transition-all duration-300 hover:shadow-lg"
           >
             <UserPlus className="mr-1.5 h-3.5 w-3.5" />
             Add User
@@ -250,7 +250,7 @@ export function UserRegistry({
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
           <dialog
             open
-            className="relative block bg-card border-border animate-in fade-in zoom-in-95 w-full max-w-md overflow-hidden rounded-xl border shadow-2xl duration-200"
+            className="bg-card border-border animate-in fade-in zoom-in-95 relative block w-full max-w-md overflow-hidden rounded-xl border shadow-2xl duration-200"
             aria-modal="true"
           >
             <div className="p-6">

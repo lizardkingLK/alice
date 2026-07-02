@@ -10,10 +10,13 @@ import type { Tables } from '@repo/types';
 
 const projectSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  key: z.string()
+  key: z
+    .string()
     .min(2, { message: 'Key must be at least 2 characters.' })
     .max(10, { message: 'Key must be at most 10 characters.' })
-    .regex(/^[A-Z0-9]+$/, { message: 'Key must contain only uppercase letters and numbers.' }),
+    .regex(/^[A-Z0-9]+$/, {
+      message: 'Key must contain only uppercase letters and numbers.',
+    }),
   description: z.string().nullable().optional(),
   owner_id: z.uuid({ message: 'Please select a valid owner.' }),
   start_date: z.string().or(z.null()).optional(),
@@ -37,7 +40,10 @@ async function checkManagePermission(): Promise<
   }
 
   if (currentUser.role !== 'admin' && currentUser.role !== 'manager') {
-    return { allowed: false, error: 'Unauthorized. Only admins and managers can manage projects.' };
+    return {
+      allowed: false,
+      error: 'Unauthorized. Only admins and managers can manage projects.',
+    };
   }
 
   return { allowed: true, currentUser };
@@ -54,11 +60,11 @@ export async function createProject(
 
   const name = formData.get('name') as string;
   const key = (formData.get('key') as string)?.toUpperCase();
-  const description = formData.get('description') as string || null;
+  const description = (formData.get('description') as string) || null;
   const owner_id = formData.get('owner_id') as string;
-  const start_date = formData.get('start_date') as string || null;
-  const end_date = formData.get('end_date') as string || null;
-  const status = formData.get('status') as 'active' | 'archived' || 'active';
+  const start_date = (formData.get('start_date') as string) || null;
+  const end_date = (formData.get('end_date') as string) || null;
+  const status = (formData.get('status') as 'active' | 'archived') || 'active';
 
   const validation = projectSchema.safeParse({
     name,
@@ -121,7 +127,8 @@ export async function createProject(
   } catch (err) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : 'An unexpected error occurred.',
+      error:
+        err instanceof Error ? err.message : 'An unexpected error occurred.',
     };
   }
 }
@@ -138,11 +145,11 @@ export async function updateProject(
 
   const name = formData.get('name') as string;
   const key = (formData.get('key') as string)?.toUpperCase();
-  const description = formData.get('description') as string || null;
+  const description = (formData.get('description') as string) || null;
   const owner_id = formData.get('owner_id') as string;
-  const start_date = formData.get('start_date') as string || null;
-  const end_date = formData.get('end_date') as string || null;
-  const status = formData.get('status') as 'active' | 'archived' || 'active';
+  const start_date = (formData.get('start_date') as string) || null;
+  const end_date = (formData.get('end_date') as string) || null;
+  const status = (formData.get('status') as 'active' | 'archived') || 'active';
 
   const validation = projectSchema.safeParse({
     name,
@@ -208,12 +215,15 @@ export async function updateProject(
   } catch (err) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : 'An unexpected error occurred.',
+      error:
+        err instanceof Error ? err.message : 'An unexpected error occurred.',
     };
   }
 }
 
-export async function softDeleteProject(projectId: string): Promise<ActionState> {
+export async function softDeleteProject(
+  projectId: string
+): Promise<ActionState> {
   const permission = await checkManagePermission();
   if (!permission.allowed) {
     return { success: false, error: permission.error ?? 'Unauthorized' };
@@ -239,7 +249,8 @@ export async function softDeleteProject(projectId: string): Promise<ActionState>
   } catch (err) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : 'An unexpected error occurred.',
+      error:
+        err instanceof Error ? err.message : 'An unexpected error occurred.',
     };
   }
 }
@@ -270,19 +281,26 @@ export async function restoreProject(projectId: string): Promise<ActionState> {
   } catch (err) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : 'An unexpected error occurred.',
+      error:
+        err instanceof Error ? err.message : 'An unexpected error occurred.',
     };
   }
 }
 
-export async function hardDeleteProject(projectId: string): Promise<ActionState> {
+export async function hardDeleteProject(
+  projectId: string
+): Promise<ActionState> {
   const currentUser = await getDbUser();
   if (!currentUser) {
     return { success: false, error: 'Not authenticated.' };
   }
 
   if (currentUser.role !== 'admin') {
-    return { success: false, error: 'Unauthorized. Only administrators can permanently delete projects.' };
+    return {
+      success: false,
+      error:
+        'Unauthorized. Only administrators can permanently delete projects.',
+    };
   }
 
   try {
@@ -301,7 +319,8 @@ export async function hardDeleteProject(projectId: string): Promise<ActionState>
   } catch (err) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : 'An unexpected error occurred.',
+      error:
+        err instanceof Error ? err.message : 'An unexpected error occurred.',
     };
   }
 }

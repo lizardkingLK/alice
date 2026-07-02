@@ -1,47 +1,22 @@
-'use client';
+import { DashboardShell } from '@/components/dashboard/dashboard-shell';
+import UploadFiles from '@/components/files/upload-form';
+import { getUser } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
-import { useState } from 'react';
+export default async function UploadPage() {
+  const user = await getUser();
 
-export default function UploadPage() {
-  const [file, setFile] = useState<File | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
-
-  const uploadFile = async () => {
-    if (!file) {
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/files`,
-      {
-        method: 'POST',
-        body: formData,
-      }
-    );
-
-    const data = (await response.json()) as { error?: string; path?: string };
-
-    if (!response.ok) {
-      setStatus(data.error ?? 'Upload failed');
-      return;
-    }
-
-    setStatus(`Uploaded: ${data.path ?? 'ok'}`);
-  };
+  if (!user) {
+    redirect('/login');
+  }
 
   return (
-    <div>
-      <input
-        type="file"
-        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-      />
-      <button type="button" onClick={uploadFile}>
-        Upload
-      </button>
-      {status ? <p>{status}</p> : null}
-    </div>
+    <DashboardShell
+      title="Files"
+      description="Upload files to be used in attachments."
+      user={user}
+    >
+      <UploadFiles />
+    </DashboardShell>
   );
 }

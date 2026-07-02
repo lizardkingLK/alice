@@ -51,12 +51,15 @@ export function ProjectRegistry({
   const [filterTab, setFilterTab] = useState<'active' | 'archived'>('active');
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<DbProject | null>(null);
-  const [projectToDelete, setProjectToDelete] = useState<DbProject | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<DbProject | null>(
+    null
+  );
   const [deleteMode, setDeleteMode] = useState<'soft' | 'hard'>('soft');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const isManagerOrAdmin = currentUserRole === 'admin' || currentUserRole === 'manager';
+  const isManagerOrAdmin =
+    currentUserRole === 'admin' || currentUserRole === 'manager';
   const isAdmin = currentUserRole === 'admin';
 
   // Filter projects based on search query and soft-delete status
@@ -148,7 +151,7 @@ export function ProjectRegistry({
 
       {/* Control Bar */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 max-w-md">
+        <div className="relative max-w-md flex-1">
           <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <input
             type="text"
@@ -161,10 +164,10 @@ export function ProjectRegistry({
 
         <div className="flex items-center gap-2">
           {/* Tabs */}
-          <div className="bg-muted/50 border-border inline-flex h-10 items-center justify-center rounded-md border p-1 text-muted-foreground">
+          <div className="bg-muted/50 border-border text-muted-foreground inline-flex h-10 items-center justify-center rounded-md border p-1">
             <button
               onClick={() => setFilterTab('active')}
-              className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-xs font-semibold ring-offset-background transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 ${
+              className={`ring-offset-background inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 ${
                 filterTab === 'active'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'hover:text-foreground'
@@ -174,7 +177,7 @@ export function ProjectRegistry({
             </button>
             <button
               onClick={() => setFilterTab('archived')}
-              className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-xs font-semibold ring-offset-background transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 ${
+              className={`ring-offset-background inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 ${
                 filterTab === 'archived'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'hover:text-foreground'
@@ -190,7 +193,7 @@ export function ProjectRegistry({
                 setProjectToEdit(null);
                 setIsAddProjectOpen(true);
               }}
-              className="bg-primary text-primary-foreground hover:bg-primary/95 shadow-md hover:shadow-lg inline-flex h-10 cursor-pointer items-center justify-center rounded-md px-4 text-xs font-semibold transition-all duration-300"
+              className="bg-primary text-primary-foreground hover:bg-primary/95 inline-flex h-10 cursor-pointer items-center justify-center rounded-md px-4 text-xs font-semibold shadow-md transition-all duration-300 hover:shadow-lg"
             >
               <Plus className="mr-1.5 h-4 w-4" />
               Add Project
@@ -238,13 +241,13 @@ export function ProjectRegistry({
                         <h4 className="text-foreground group-hover:text-primary flex items-center gap-2 text-sm leading-none font-semibold transition-colors">
                           {proj.name}
                           {proj.status === 'archived' && (
-                            <span className="bg-amber-500/10 border-amber-500/20 text-amber-600 text-[10px] rounded-full border px-1.5 py-0.2 tracking-normal font-semibold uppercase">
+                            <span className="py-0.2 rounded-full border border-amber-500/20 bg-amber-500/10 px-1.5 text-[10px] font-semibold tracking-normal text-amber-600 uppercase">
                               Archived
                             </span>
                           )}
                         </h4>
                         {proj.description && (
-                          <p className="text-muted-foreground text-xs line-clamp-1">
+                          <p className="text-muted-foreground line-clamp-1 text-xs">
                             {proj.description}
                           </p>
                         )}
@@ -252,10 +255,12 @@ export function ProjectRegistry({
                           <Shield className="h-3 w-3" />
                           <span>
                             Owner:{' '}
-                            <strong className="text-foreground">{ownerName}</strong>
+                            <strong className="text-foreground">
+                              {ownerName}
+                            </strong>
                             {ownerEmail && ` (${ownerEmail})`}
                             {isOwnerSelf && (
-                              <span className="bg-primary/25 border-primary/30 text-primary ml-1.5 rounded-full border px-1.5 py-0.2 text-[9px] font-semibold tracking-normal uppercase">
+                              <span className="bg-primary/25 border-primary/30 text-primary py-0.2 ml-1.5 rounded-full border px-1.5 text-[9px] font-semibold tracking-normal uppercase">
                                 You
                               </span>
                             )}
@@ -308,7 +313,7 @@ export function ProjectRegistry({
                               <button
                                 disabled={isPending}
                                 onClick={() => handleSoftDelete(proj)}
-                                className="border-rose-500/20 bg-rose-500/10 text-rose-600 hover:bg-rose-600 hover:text-white focus-visible:ring-ring flex h-8 cursor-pointer items-center justify-center rounded-md border px-3 text-xs font-semibold shadow-sm transition-all focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
+                                className="focus-visible:ring-ring flex h-8 cursor-pointer items-center justify-center rounded-md border border-rose-500/20 bg-rose-500/10 px-3 text-xs font-semibold text-rose-600 shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
                               >
                                 Delete
                               </button>
@@ -320,7 +325,7 @@ export function ProjectRegistry({
                               <button
                                 disabled={isPending}
                                 onClick={() => handleRestore(proj)}
-                                className="border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-600 hover:text-white focus-visible:ring-ring flex h-8 cursor-pointer items-center justify-center rounded-md border px-3 text-xs font-semibold shadow-sm transition-all focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
+                                className="focus-visible:ring-ring flex h-8 cursor-pointer items-center justify-center rounded-md border border-emerald-500/20 bg-emerald-500/10 px-3 text-xs font-semibold text-emerald-600 shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
                               >
                                 <RefreshCw className="mr-1 h-3 w-3" />
                                 Restore
@@ -330,7 +335,7 @@ export function ProjectRegistry({
                               <button
                                 disabled={isPending}
                                 onClick={() => handleHardDelete(proj)}
-                                className="border-rose-500/20 bg-rose-500/10 text-rose-600 hover:bg-rose-600 hover:text-white focus-visible:ring-ring flex h-8 cursor-pointer items-center justify-center rounded-md border px-3 text-xs font-semibold shadow-sm transition-all focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
+                                className="focus-visible:ring-ring flex h-8 cursor-pointer items-center justify-center rounded-md border border-rose-500/20 bg-rose-500/10 px-3 text-xs font-semibold text-rose-600 shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
                               >
                                 <Trash2 className="mr-1 h-3 w-3" />
                                 Purge
@@ -379,7 +384,7 @@ export function ProjectRegistry({
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
           <dialog
             open
-            className="relative block bg-card border-border animate-in fade-in zoom-in-95 w-full max-w-md overflow-hidden rounded-xl border shadow-2xl duration-200"
+            className="bg-card border-border animate-in fade-in zoom-in-95 relative block w-full max-w-md overflow-hidden rounded-xl border shadow-2xl duration-200"
             aria-modal="true"
           >
             <div className="p-6">
@@ -388,13 +393,19 @@ export function ProjectRegistry({
                   <AlertTriangle className="h-6 w-6" />
                 </div>
                 <h3 className="text-foreground text-lg font-bold">
-                  {deleteMode === 'soft' ? 'Archive Project' : 'Permanently Delete Project'}
+                  {deleteMode === 'soft'
+                    ? 'Archive Project'
+                    : 'Permanently Delete Project'}
                 </h3>
               </div>
 
               <p className="text-muted-foreground text-sm leading-relaxed">
-                Are you sure you want to {deleteMode === 'soft' ? 'archive' : 'permanently delete'}{' '}
-                <strong className="text-foreground">{projectToDelete.name} ({projectToDelete.key})</strong>?
+                Are you sure you want to{' '}
+                {deleteMode === 'soft' ? 'archive' : 'permanently delete'}{' '}
+                <strong className="text-foreground">
+                  {projectToDelete.name} ({projectToDelete.key})
+                </strong>
+                ?
               </p>
               <p className="text-muted-foreground/80 bg-muted/50 border-border/40 mt-2 rounded-lg border p-2.5 text-xs">
                 {deleteMode === 'soft'

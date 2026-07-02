@@ -12,7 +12,14 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import { createProject, updateProject, ActionState } from './actions';
-import { FolderPlus, FolderEdit, Loader2, AlertCircle, CheckCircle, X } from 'lucide-react';
+import {
+  FolderPlus,
+  FolderEdit,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+  X,
+} from 'lucide-react';
 import type { Tables } from '@repo/types';
 
 type DbUser = Tables<'users'>;
@@ -81,7 +88,7 @@ export function ProjectForm({
   }
 
   return (
-    <Card className="relative border border-border bg-card text-card-foreground shadow-2xl transition-all duration-300">
+    <Card className="border-border bg-card text-card-foreground relative border shadow-2xl transition-all duration-300">
       {onClose && (
         <button
           type="button"
@@ -136,7 +143,7 @@ export function ProjectForm({
                 required
                 maxLength={10}
                 defaultValue={projectToEdit?.key ?? ''}
-                className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors uppercase"
+                className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 uppercase transition-colors"
               />
             </div>
           </div>
@@ -166,7 +173,9 @@ export function ProjectForm({
                 defaultValue={projectToEdit?.owner_id ?? ''}
                 className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
               >
-                <option value="" disabled>Select Owner...</option>
+                <option value="" disabled>
+                  Select Owner...
+                </option>
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.name} ({u.email})

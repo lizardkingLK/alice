@@ -14,7 +14,8 @@
         "NEXT_PUBLIC_NOVU_APP_ID",
         "NEXT_PUBLIC_NOVU_SUBSCRIBER_ID",
         "NEXT_PUBLIC_SITE_URL",
-        "SUPABASE_SERVICE_ROLE_KEY"
+        "SUPABASE_SERVICE_ROLE_KEY",
+        "STORAGE_BUCKET_NAME"
       ]
     },
     "dev": {

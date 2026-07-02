@@ -1,3 +1,4 @@
+import './config/load-env';
 import './config/preload';
 
 import express from 'express';
@@ -10,7 +11,7 @@ const app = express();
 app.disable('x-powered-by');
 
 app.use(corsConfig);
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 app.use(routesConfig);
 
 const listen = (port: number) =>

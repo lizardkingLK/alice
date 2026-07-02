@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { resolveSafeRedirectPath } from '@/lib/auth-redirect';
 import { ensurePublicUser } from '@/lib/ensure-public-user';
-import { createClient } from '@/lib/supabase/server';
+import { createServerClient } from '@supabase/ssr';
+import type { Database } from '@repo/types';
 
 function buildRedirectUrl(request: Request, path: string): string {
   const { origin } = new URL(request.url);
@@ -24,8 +25,30 @@ export async function GET(request: Request) {
   const code = searchParams.get('code');
   const next = resolveSafeRedirectPath(searchParams.get('next'));
 
-  if (code) {
-    const supabase = await createClient();
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (code && url && anonKey) {
+    const redirectUrl = buildRedirectUrl(request, next);
+    const response = NextResponse.redirect(redirectUrl);
+
+    const supabase = createServerClient<Database>(url, anonKey, {
+      cookies: {
+        getAll() {
+          const cookieHeader = request.headers.get('cookie') ?? '';
+          return cookieHeader.split(';').map((c) => {
+            const [name, ...value] = c.trim().split('=');
+            return { name: name?.trim() ?? '', value: value.join('=') };
+          });
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
+    });
+
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
@@ -42,7 +65,7 @@ export async function GET(request: Request) {
         }
       }
 
-      return NextResponse.redirect(buildRedirectUrl(request, next));
+      return response;
     }
   }
 
@@ -50,6 +73,8 @@ export async function GET(request: Request) {
   const errorPath = isRecoveryFlow
     ? '/forgot-password?error=expired'
     : '/login?error=Could not authenticate session';
+
+  console.error('Error during authentication callback::::::', errorPath);
 
   return NextResponse.redirect(buildRedirectUrl(request, errorPath));
 }

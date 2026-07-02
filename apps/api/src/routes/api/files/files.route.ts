@@ -1,22 +1,20 @@
-import multer from 'multer';
+import multer, { Multer } from 'multer';
 import express, { type Router } from 'express';
 
 import { supabase } from '../../../lib/supabase';
 
 const filesRouter: Router = express.Router();
 
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
-
-const upload = multer({
+const upload: Multer = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: MAX_FILE_SIZE_BYTES!,
+    // eslint-disable-next-line sonarjs/content-length
+    fileSize: 10 * 1024 * 1024,
   },
 });
 
 filesRouter.post('/', upload.single('file'), async (req, res) => {
   const file = req.file;
-
   if (!file) {
     res.status(400).json({
       error: 'error. no file uploaded',
@@ -24,10 +22,19 @@ filesRouter.post('/', upload.single('file'), async (req, res) => {
     return;
   }
 
+  console.log(file);
+
+  if (!process.env.STORAGE_BUCKET_NAME) {
+    res.status(500).json({
+      error: 'error. configuration erorr on server',
+    });
+    return;
+  }
+
   const fileName = `${Date.now()}-${file.originalname}`;
 
   const { data, error } = await supabase.storage
-    .from('jira-files')
+    .from(process.env.STORAGE_BUCKET_NAME)
     .upload(fileName, file.buffer, {
       contentType: file.mimetype,
     });

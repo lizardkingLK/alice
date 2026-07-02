@@ -1,5 +1,5 @@
 {
-  "debug.javascript.autoAttachFilter": "onlyWithFlag",
+  "debug.javascript.autoAttachFilter": "disabled",
   "debug.javascript.terminalOptions": {
     "cwd": "${workspaceFolder}"
   },
