@@ -90,7 +90,7 @@ export default function ConfirmContent() {
                 <button
                   disabled={isPending}
                   onClick={handleVerify}
-                  className="flex h-11 w-full cursor-pointer items-center justify-center rounded-md bg-gradient-to-r from-violet-600 to-indigo-600 font-semibold text-white shadow-md transition-all duration-300 hover:from-violet-700 hover:to-indigo-700 hover:shadow-lg"
+                  className="flex h-11 w-full cursor-pointer items-center justify-center rounded-md bg-linear-to-r from-violet-600 to-indigo-600 font-semibold text-white shadow-md transition-all duration-300 hover:from-violet-700 hover:to-indigo-700 hover:shadow-lg"
                 >
                   {isPending ? (
                     <>

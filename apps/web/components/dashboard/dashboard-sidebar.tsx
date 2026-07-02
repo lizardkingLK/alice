@@ -10,6 +10,7 @@ import {
   Users,
   Music,
   Timer,
+  Files,
 } from 'lucide-react';
 import { cn } from '@repo/ui/lib/utils';
 import {
@@ -32,7 +33,8 @@ const navItems = [
   { href: '/manager', label: 'Team', icon: Users },
   { href: '/admin', label: 'Projects', icon: FolderKanban },
   { href: '/instruments', label: 'Instruments', icon: Music },
-  { href: '/sprints', label: 'Sprint', icon: Timer },
+  { href: '/sprints', label: 'Sprints', icon: Timer },
+  { href: '/files', label: 'Files', icon: Files },
 ] as const;
 
 export function DashboardSidebar() {
