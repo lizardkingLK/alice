@@ -6,7 +6,7 @@
   "js/ts.preferences.importModuleSpecifier": "non-relative",
   "js/ts.tsdk.path": "node_modules/typescript/lib",
   "sonarlint.connectedMode.project": {
-    "connectionId": "lizardkinglk_alice",
+    "connectionId": "lizardkinglk",
     "projectKey": "lizardkingLK_alice"
   }
 }

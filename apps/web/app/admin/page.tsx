@@ -25,12 +25,17 @@ export default async function AdminPage() {
   // Fetch all active users to populate the Project Owner choices
   const { data: usersData, error: usersError } = await supabase
     .from('users')
-    .select('id, name, email, active, role, status, profile_picture, created_by, created_at, updated_by, updated_at')
+    .select(
+      'id, name, email, active, role, status, profile_picture, created_by, created_at, updated_by, updated_at'
+    )
     .eq('active', true)
     .order('name', { ascending: true });
 
   if (usersError) {
-    console.error('error. supabase database error fetching users:', usersError.message);
+    console.error(
+      'error. supabase database error fetching users:',
+      usersError.message
+    );
   }
 
   // Fetch all projects including soft-deleted ones (which have deleted_at set)
@@ -43,7 +48,10 @@ export default async function AdminPage() {
     .order('created_at', { ascending: false });
 
   if (projectsError) {
-    console.error('error. supabase database error fetching projects:', projectsError.message);
+    console.error(
+      'error. supabase database error fetching projects:',
+      projectsError.message
+    );
   }
 
   const projectsList = (projectsData as unknown as DbProject[]) ?? [];
