@@ -22,7 +22,7 @@ export type ResetState = {
 };
 
 export async function resetPassword(
-  prevState: ResetState | null,
+  _prevState: ResetState | null,
   formData: FormData
 ): Promise<ResetState> {
   const password = formData.get('password') as string;

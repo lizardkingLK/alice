@@ -86,7 +86,7 @@ export default function ResetPasswordPage() {
           <Button
             type="submit"
             disabled={isPending || state.success}
-            className="h-11 w-full cursor-pointer bg-linear-to-r from-violet-600 to-indigo-600 font-semibold text-white shadow-md transition-all duration-300 hover:from-violet-700 hover:to-indigo-700 hover:shadow-lg"
+            className="h-11 w-full cursor-pointer bg-linear-to-r font-semibold text-white shadow-md transition-all duration-300 hover:shadow-lg"
           >
             {isPending ? (
               <>

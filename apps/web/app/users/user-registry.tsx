@@ -68,10 +68,10 @@ export function UserRegistry({
       // Activate immediately
       startTransition(async () => {
         const result = await toggleUserActive(user.id, true);
-        if (!result.success) {
-          setError(result.error || 'Failed to activate user.');
-        } else {
+        if (result.success) {
           setError(null);
+        } else {
+          setError(result.error || 'Failed to activate user.');
         }
       });
     }
@@ -82,18 +82,18 @@ export function UserRegistry({
 
     startTransition(async () => {
       const result = await toggleUserActive(deactivatingUser.id, false);
-      if (!result.success) {
-        setError(result.error || 'Failed to deactivate user.');
-      } else {
+      if (result.success) {
         setDeactivatingUser(null);
         setError(null);
+      } else {
+        setError(result.error || 'Failed to deactivate user.');
       }
     });
   };
 
   return (
     <>
-      <Card className="border-border bg-card/50 relative shadow-lg backdrop-blur-md">
+      <Card className="border-border bg-card/50 relative backdrop-blur-md">
         {error && (
           <div className="text-destructive bg-destructive/10 border-destructive/20 absolute top-4 right-4 left-4 z-10 flex items-center gap-2 rounded-lg border p-3 text-sm">
             <AlertTriangle className="h-4 w-4 shrink-0" />
@@ -120,7 +120,7 @@ export function UserRegistry({
           </div>
           <button
             onClick={() => setIsAddUserOpen(true)}
-            className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md px-4 text-xs shadow-md transition-all duration-300 hover:shadow-lg"
+            className="bg-primary text-primary-foreground hover:bg-primary/95 inline-flex h-10 cursor-pointer items-center justify-center rounded-md px-4 text-xs font-semibold shadow-md transition-all duration-300 hover:shadow-lg"
           >
             <UserPlus className="mr-1.5 h-3.5 w-3.5" />
             Add User
@@ -248,9 +248,9 @@ export function UserRegistry({
       {/* Confirmation Modal */}
       {deactivatingUser && (
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
-          <div
-            className="bg-card border-border animate-in fade-in zoom-in-95 w-full max-w-md overflow-hidden rounded-xl border shadow-2xl duration-200"
-            role="dialog"
+          <dialog
+            open
+            className="bg-card border-border animate-in fade-in zoom-in-95 relative block w-full max-w-md overflow-hidden rounded-xl border shadow-2xl duration-200"
             aria-modal="true"
           >
             <div className="p-6">
@@ -308,7 +308,7 @@ export function UserRegistry({
                 )}
               </button>
             </div>
-          </div>
+          </dialog>
         </div>
       )}
 

@@ -3,11 +3,29 @@
   "configurations": [
     {
       "name": "Web: Next.js (server)",
-      "type": "node-terminal",
+      "type": "node",
       "request": "launch",
-      "command": "pnpm dev",
+      "program": "${workspaceFolder}/apps/web/node_modules/next/dist/bin/next",
+      "args": ["dev"],
       "cwd": "${workspaceFolder}/apps/web",
-      "envFile": "${workspaceFolder}/apps/web/.env"
+      "env": {
+        "NODE_OPTIONS": ""
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "presentation": {
+        "group": "fullstack",
+        "order": 1
+      },
+      "skipFiles": [
+        "<node_internals>/**",
+        "**/node_modules/**",
+        "${workspaceFolder}/apps/web/.next/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ]
     },
     {
       "name": "Web: Next.js (client)",
@@ -18,13 +36,27 @@
     },
     {
       "name": "Web: Next.js (full stack)",
-      "type": "node-terminal",
+      "type": "node",
       "request": "launch",
-      "command": "pnpm dev",
+      "program": "${workspaceFolder}/apps/web/node_modules/next/dist/bin/next",
+      "args": ["dev"],
       "cwd": "${workspaceFolder}/apps/web",
-      "envFile": "${workspaceFolder}/apps/web/.env",
+      "env": {
+        "NODE_OPTIONS": ""
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": [
+        "<node_internals>/**",
+        "**/node_modules/**",
+        "${workspaceFolder}/apps/web/.next/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ],
       "serverReadyAction": {
-        "pattern": "(https?://localhost:3000)",
+        "pattern": "(https?://localhost:\\d+)",
         "uriFormat": "%s",
         "action": "debugWithChrome"
       }
@@ -36,9 +68,17 @@
       "program": "${workspaceFolder}/apps/api/src/index.ts",
       "cwd": "${workspaceFolder}/apps/api",
       "envFile": "${workspaceFolder}/apps/api/.env",
+      "env": {
+        "NODE_OPTIONS": ""
+      },
       "runtimeArgs": ["--import", "tsx"],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
+      "presentation": {
+        "group": "fullstack",
+        "order": 2,
+        "focus": true
+      },
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
       "resolveSourceMapLocations": [
         "${workspaceFolder}/**",
@@ -65,6 +105,9 @@
       "program": "${workspaceFolder}/packages/db/src/seed.ts",
       "cwd": "${workspaceFolder}/packages/db",
       "envFile": "${workspaceFolder}/packages/db/.env",
+      "env": {
+        "NODE_OPTIONS": ""
+      },
       "runtimeArgs": ["--import", "tsx"],
       "console": "integratedTerminal",
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]

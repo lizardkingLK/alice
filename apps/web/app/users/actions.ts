@@ -4,7 +4,7 @@ import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { auditCreate, userActiveAuditUpdate } from '@/lib/audit';
-import { getDbUser } from '../../lib/auth';
+import { getDbUser } from '@/lib/auth';
 import {
   buildAuthCallbackUrl,
   resolveRequestOrigin,

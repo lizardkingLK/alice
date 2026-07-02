@@ -10,25 +10,27 @@ Cursor uses the same debugger as VS Code. Configurations live in `.vscode/launch
 
 ## Available configurations
 
-| Configuration                 | Debug target                                                   |
-| ----------------------------- | -------------------------------------------------------------- |
-| **Web: Next.js (server)**     | RSC, Server Actions, route handlers, `lib/supabase/server.ts`  |
-| **Web: Next.js (client)**     | Client components (`'use client'`) via Chrome                  |
-| **Web: Next.js (full stack)** | Server + auto-opens Chrome when dev server is ready            |
-| **API: Express**              | Express routes, middleware, services (`apps/api`)              |
-| **API: attach**               | Attach to a Node process started with `--inspect` on port 9229 |
-| **DB: seed**                  | `packages/db/src/seed.ts`                                      |
-| **Full stack: Web + API**     | Runs web and API debuggers together                            |
+| Configuration                 | Debug target                                                                                                      |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Web: Next.js (server)**     | RSC, Server Actions, route handlers, `lib/supabase/server.ts` (launches `next dev` via Node — no `node-terminal`) |
+| **Web: Next.js (client)**     | Client components (`'use client'`) via Chrome                                                                     |
+| **Web: Next.js (full stack)** | Server + auto-opens Chrome when dev server is ready                                                               |
+| **API: Express**              | Express routes, middleware, services (`apps/api`)                                                                 |
+| **API: attach**               | Attach to a Node process started with `--inspect` on port 9229                                                    |
+| **DB: seed**                  | `packages/db/src/seed.ts`                                                                                         |
+| **Full stack: Web + API**     | Runs web and API debuggers together — opens **two** integrated-terminal tabs                                      |
 
 ## Per-app requirements
 
-Each configuration sets its own `cwd` and `envFile`:
+Each configuration sets its own `cwd`. Env loading differs by app:
 
-| App     | Working directory | Env file           |
-| ------- | ----------------- | ------------------ |
-| Web     | `apps/web`        | `apps/web/.env`    |
-| API     | `apps/api`        | `apps/api/.env`    |
-| DB seed | `packages/db`     | `packages/db/.env` |
+| App     | Working directory | Env loading                                                                                                                            |
+| ------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Web     | `apps/web`        | Next.js loads `.env.local` / `.env` from `cwd` automatically — no `envFile` in launch.json (avoids ENOENT if only `.env.local` exists) |
+| API     | `apps/api`        | `envFile`: `apps/api/.env` (copy from `sample.env`)                                                                                    |
+| DB seed | `packages/db`     | `envFile`: `packages/db/.env` (copy from `sample.env`)                                                                                 |
+
+For web, copy `apps/web/sample.env` → `apps/web/.env.local` before debugging.
 
 ## Monorepo notes
 
@@ -65,9 +67,12 @@ Workspace project binding: `.vscode/settings.json` + `.sonarcloud.properties`. C
 
 ## Troubleshooting
 
-| Issue                           | Fix                                                                               |
-| ------------------------------- | --------------------------------------------------------------------------------- |
-| Breakpoints stay grey / unbound | Start the matching debug config first; ensure source maps and `cwd` match the app |
-| API port not 3001               | API uses `detect-port`; check terminal output for the actual port                 |
-| Next.js client config fails     | Start dev server first, or use **full stack** config                              |
-| Env vars missing at runtime     | Ensure the app `.env` file exists for that configuration's `envFile`              |
+| Issue                                         | Fix                                                                                                                                                                                                            |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Debugger fails immediately (ENOENT / envFile) | Web configs no longer use `envFile`; ensure `apps/web/.env.local` exists. API/DB need their `.env` files.                                                                                                      |
+| `Cannot find module ... bootloader.js`        | Caused by `node-terminal` + stale `NODE_OPTIONS` from VS Code/Cursor debug. Web configs use `type: "node"` instead. Close old debug terminals, reload the window, or run `$env:NODE_OPTIONS=""` in PowerShell. |
+| Breakpoints stay grey / unbound               | Start the matching debug config first; ensure source maps and `cwd` match the app                                                                                                                              |
+| API port not 3001                             | API uses `detect-port`; check terminal output for the actual port                                                                                                                                              |
+| API not visible when debugging                | Use **Full stack: Web + API** (not Web alone). Check the second terminal tab for `info. listening on http://localhost:...`. If it exits immediately, fix `apps/api/.env` (copy from `sample.env`).             |
+| Next.js client config fails                   | Start dev server first, or use **full stack** config                                                                                                                                                           |
+| Env vars missing at runtime                   | Ensure the app `.env` file exists for that configuration's `envFile`                                                                                                                                           |

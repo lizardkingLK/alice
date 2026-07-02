@@ -13,7 +13,7 @@ export default async function SprintsPage() {
 
   return (
     <DashboardShell
-      title="Sprint"
+      title="Sprints"
       description="Plan and track team sprints."
       user={user}
     >

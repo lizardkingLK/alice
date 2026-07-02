@@ -7,7 +7,7 @@ export const getUser = cache(async () => {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || !user.email) {
+  if (!user?.email) {
     return null;
   }
 
@@ -27,7 +27,7 @@ export const getUser = cache(async () => {
 
 export const getDbUser = cache(async () => {
   const user = await getUser();
-  if (!user || !user.email) {
+  if (!user?.email) {
     return null;
   }
 

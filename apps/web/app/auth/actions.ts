@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { buildAuthCallbackUrl, getAuthOrigin } from '@/lib/auth-redirect';
+import { ensurePublicUser } from '@/lib/ensure-public-user';
 import { createClient } from '@/lib/supabase/server';
 
 const requestPasswordResetSchema = z.object({
@@ -23,6 +24,18 @@ export async function login(formData: FormData) {
 
   if (error) {
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    const { error: profileError } = await ensurePublicUser(user);
+    if (profileError) {
+      const errorContent = `Could not create user profile: ${profileError}`;
+      redirect(`/login?error=${encodeURIComponent(errorContent)}`);
+    }
   }
 
   revalidatePath('/', 'layout');
@@ -49,6 +62,14 @@ export async function signUp(formData: FormData) {
 
   if (error) {
     redirect(`/signup?error=${encodeURIComponent(error.message)}`);
+  }
+
+  if (data.user) {
+    const { error: profileError } = await ensurePublicUser(data.user);
+    if (profileError) {
+      const errorContent = `Could not create user profile: ${profileError}`;
+      redirect(`/signup?error=${encodeURIComponent(errorContent)}`);
+    }
   }
 
   if (data.user && !data.session) {
