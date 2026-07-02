@@ -11,7 +11,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@repo/ui/components/ui/card';
-import { createProject, updateProject, ActionState } from './actions';
+import { createProject, updateProject } from './actions';
+import type { ActionState } from '@/lib/server-actions';
 import {
   FolderPlus,
   FolderEdit,

@@ -19,8 +19,6 @@ import {
 import { getDbUser } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-export type { ActionState };
-
 // eslint-disable-next-line no-unused-vars
 type MutationAction = (actorId: string) => Promise<ActionState>;
 

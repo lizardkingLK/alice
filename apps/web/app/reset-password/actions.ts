@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 
@@ -55,11 +56,7 @@ export async function resetPassword(
 
     await supabase.auth.signOut();
     revalidatePath('/', 'layout');
-
-    return {
-      success: true,
-      error: null,
-    };
+    redirect('/?reset=success');
   } catch (err) {
     const message =
       err instanceof Error ? err.message : 'An unexpected error occurred.';
