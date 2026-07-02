@@ -22,8 +22,6 @@ filesRouter.post('/', upload.single('file'), async (req, res) => {
     return;
   }
 
-  console.log(file);
-
   if (!process.env.STORAGE_BUCKET_NAME) {
     res.status(500).json({
       error: 'error. configuration erorr on server',

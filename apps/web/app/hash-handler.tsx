@@ -7,7 +7,6 @@ export function HashHandler() {
   const router = useRouter();
 
   useEffect(() => {
-    console.log('HashHandler useEffect triggered');
     if (globalThis.window !== undefined) {
       const hash = globalThis.window.location.hash;
       let hasRedirected = false;

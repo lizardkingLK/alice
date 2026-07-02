@@ -7,8 +7,6 @@ export const getUser = cache(async () => {
     data: { user },
   } = await supabase.auth.getUser();
 
-  console.log('user is ', user);
-
   if (!user?.email) {
     return null;
   }

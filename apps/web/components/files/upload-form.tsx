@@ -7,8 +7,6 @@ export default function UploadFiles() {
   const [status, setStatus] = useState<string | null>(null);
 
   const uploadFile = async () => {
-    console.log('uploading file');
-
     if (!file) {
       return;
     }
