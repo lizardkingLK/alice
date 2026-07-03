@@ -1,7 +1,7 @@
+import { DashboardOverview } from '@/app/dashboard/_components/dashboard-overview';
+import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { getUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
-import { DashboardOverview } from '@/components/dashboard/dashboard-overview';
-import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 
 export default async function DashboardPage() {
   const user = await getUser();

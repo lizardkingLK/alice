@@ -11,9 +11,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@repo/ui/components/ui/card';
-import { createUser, updateUser, ActionState } from './actions';
 import { UserPlus, Loader2, AlertCircle, CheckCircle, X } from 'lucide-react';
 import type { Tables } from '@repo/types';
+import { ActionState } from '@/lib/server-actions';
+import { createUser, updateUser } from '@/app/users/actions';
 
 type DbUser = Tables<'users'>;
 
@@ -28,7 +29,11 @@ interface UserFormProps {
   readonly onSuccess?: () => void;
 }
 
-export function UserForm({ user, onClose, onSuccess }: Readonly<UserFormProps>) {
+export function UserForm({
+  user,
+  onClose,
+  onSuccess,
+}: Readonly<UserFormProps>) {
   const isEdit = !!user;
   const [state, formAction, isPending] = useActionState(
     isEdit ? updateUser : createUser,

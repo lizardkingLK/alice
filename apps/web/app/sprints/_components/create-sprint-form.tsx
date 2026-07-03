@@ -15,7 +15,13 @@ import { cn } from '@repo/ui/lib/utils';
 import { createSprint, type Sprint } from '@/lib/api-client';
 import { createClient } from '@/lib/supabase/client';
 import type { Tables } from '@repo/types';
-import { Loader2, X, CalendarPlus, CheckCircle, AlertCircle } from 'lucide-react';
+import {
+  Loader2,
+  X,
+  CalendarPlus,
+  CheckCircle,
+  AlertCircle,
+} from 'lucide-react';
 
 type CreateSprintFormProps = {
   className?: string;
@@ -133,7 +139,12 @@ export function CreateSprintForm({
   }, [isSuccess, onSuccess]);
 
   return (
-    <Card className={cn("relative border border-gray-200 bg-white text-gray-900 shadow-xl transition-all duration-300 hover:shadow-2xl", className)}>
+    <Card
+      className={cn(
+        'relative border border-gray-200 bg-white text-gray-900 shadow-xl transition-all duration-300 hover:shadow-2xl',
+        className
+      )}
+    >
       {onClose && (
         <button
           type="button"
@@ -223,7 +234,7 @@ export function CreateSprintForm({
                 'flex items-center gap-2 rounded-lg border p-3 text-sm',
                 isError
                   ? 'text-destructive bg-destructive/10 border-destructive/20'
-                  : 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'
+                  : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
               )}
             >
               {isError ? (

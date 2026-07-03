@@ -1,9 +1,9 @@
 import { redirect } from 'next/navigation';
-import { SprintsWorkspace } from '@/components/sprints/sprints-workspace';
-import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { getUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import type { Sprint } from '@/lib/api-client';
+import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
+import { SprintsWorkspace } from '@/app/sprints/_components/sprints-workspace';
 
 const dbStatusToResponseMap = {
   planned: 'Not Started',
@@ -43,7 +43,10 @@ export default async function SprintsPage() {
     .order('start_date', { ascending: false });
 
   if (error) {
-    console.error('error. supabase database error fetching sprints:', error.message);
+    console.error(
+      'error. supabase database error fetching sprints:',
+      error.message
+    );
   }
 
   const sprintsList: Sprint[] = (
@@ -77,4 +80,3 @@ export default async function SprintsPage() {
     </DashboardShell>
   );
 }
-

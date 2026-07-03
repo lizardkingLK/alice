@@ -7,7 +7,7 @@ import {
 } from '@/app/shared/values';
 import React from 'react';
 import { cn } from '@repo/ui/lib/utils';
-import { geistMono, geistSans, inter } from '@/app/config/fonts';
+import { geistMono, geistSans, inter } from '@/app/_config/fonts';
 import './globals.css';
 
 export const metadata: Metadata = {

@@ -31,7 +31,7 @@ const navItems = [
   { href: '/users', label: 'Users', icon: Users },
   { href: '/member', label: 'My Work', icon: CircleDot },
   { href: '/manager', label: 'Team', icon: Users },
-  { href: '/admin', label: 'Projects', icon: FolderKanban },
+  { href: '/projects', label: 'Projects', icon: FolderKanban },
   { href: '/instruments', label: 'Instruments', icon: Music },
   { href: '/sprints', label: 'Sprints', icon: Timer },
   { href: '/files', label: 'Files', icon: Files },

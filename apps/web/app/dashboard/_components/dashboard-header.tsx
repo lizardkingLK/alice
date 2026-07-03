@@ -1,8 +1,8 @@
 import { SidebarTrigger } from '@repo/ui/components/ui/sidebar';
 import { DashboardPageMeta } from './dashboard-page-meta';
-import { AuthControls } from '../auth/auth-controls';
 import { User } from '@supabase/supabase-js';
-import { AppHeader } from '../app-header';
+import { AuthControls } from '@/app/dashboard/_components/dashboard-auth';
+import { NotificationInbox } from '@/app/dashboard/_components/dashboard-notifications';
 
 type DashboardHeaderProps = {
   title: string;
@@ -20,7 +20,7 @@ export function DashboardHeader({
       <SidebarTrigger className="-ml-1" />
       <DashboardPageMeta title={title} description={description} />
       <section>
-        <AppHeader />
+        <NotificationInbox />
       </section>
       <section>
         <AuthControls email={user?.email} />

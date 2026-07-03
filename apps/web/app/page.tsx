@@ -1,7 +1,7 @@
-import { AuthControls } from '@/components/auth/auth-controls';
 import { getUser } from '@/lib/auth';
 import Link from 'next/link';
 import { Button } from '@repo/ui/components/ui/button';
+import { AuthControls } from '@/app/dashboard/_components/dashboard-auth';
 import './globals.css';
 
 type HomeProps = {

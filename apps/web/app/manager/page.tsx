@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getUser } from '@/lib/auth';
-import { DashboardShell } from '@/components/dashboard/dashboard-shell';
+import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 
 export default async function ManagerDashboard() {
   const user = await getUser();

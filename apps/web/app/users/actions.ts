@@ -18,7 +18,7 @@ const createUserSchema = z.object({
 });
 
 const updateUserSchema = z.object({
-  id: z.string().uuid({ message: 'Invalid user ID.' }),
+  id: z.uuid({ message: 'Invalid user ID.' }),
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   role: z.enum(['admin', 'manager', 'member']),
 });
@@ -279,7 +279,10 @@ export async function updateUser(
     );
 
     if (authError) {
-      console.error('Failed to update user in Supabase Auth:', authError.message);
+      console.error(
+        'Failed to update user in Supabase Auth:',
+        authError.message
+      );
     }
 
     revalidatePath('/users');

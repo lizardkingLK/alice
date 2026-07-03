@@ -51,7 +51,6 @@ export function AuthControls({ email }: Readonly<AuthControlsProps>) {
   if (email) {
     return (
       <section className="flex items-center gap-4">
-        {/* <span className="text-muted-foreground text-sm">{email}</span> */}
         <UserProfile />
       </section>
     );

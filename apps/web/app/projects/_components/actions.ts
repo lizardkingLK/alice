@@ -63,7 +63,7 @@ export async function createProject(
       return actionFailure(`Database insertion failed: ${error.message}`);
     }
 
-    revalidatePath('/admin');
+    revalidatePath('/projects');
     return { ...actionSuccess(), projectId: data.id };
   });
 }
@@ -94,7 +94,7 @@ export async function updateProject(
       return actionFailure(`Database update failed: ${error.message}`);
     }
 
-    revalidatePath('/admin');
+    revalidatePath('/projects');
     return actionSuccess();
   });
 }
@@ -113,7 +113,7 @@ export async function softDeleteProject(
     );
 
     if (result.success) {
-      revalidatePath('/admin');
+      revalidatePath('/projects');
     }
 
     return result;
@@ -132,7 +132,7 @@ export async function restoreProject(projectId: string): Promise<ActionState> {
     );
 
     if (result.success) {
-      revalidatePath('/admin');
+      revalidatePath('/projects');
     }
 
     return result;
@@ -164,7 +164,7 @@ export async function hardDeleteProject(
       return actionFailure(error.message);
     }
 
-    revalidatePath('/admin');
+    revalidatePath('/projects');
     return actionSuccess();
   } catch (err) {
     return unexpectedActionError(err);

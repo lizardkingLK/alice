@@ -1,15 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { CreateSprintForm } from '@/components/sprints/create-sprint-form';
-import { SprintList } from '@/components/sprints/sprint-list';
 import { listSprints, type Sprint } from '@/lib/api-client';
+import { SprintList } from '@/app/sprints/_components/sprint-list';
+import { CreateSprintForm } from '@/app/sprints/_components/create-sprint-form';
 
 interface SprintsWorkspaceProps {
   readonly initialSprints: Sprint[];
 }
 
-export function SprintsWorkspace({ initialSprints }: Readonly<SprintsWorkspaceProps>) {
+export function SprintsWorkspace({
+  initialSprints,
+}: Readonly<SprintsWorkspaceProps>) {
   const [sprints, setSprints] = useState<Sprint[]>(initialSprints);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);

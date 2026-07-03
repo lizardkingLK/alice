@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
+    "vercel-build": "pnpm --filter @repo/types build",
     "start": "node dist/index.js",
     "lint": "eslint --max-warnings 0",
     "checktypes": "tsc --noEmit -p tsconfig.eslint.json",

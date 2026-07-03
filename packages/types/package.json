@@ -6,18 +6,19 @@
   "exports": {
     ".": {
       "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "default": "./dist/index.js"
     },
     "./audit": {
       "types": "./src/audit.ts",
-      "default": "./src/audit.ts"
+      "default": "./dist/audit.js"
     },
     "./database": {
       "types": "./src/generated/supabase/database.types.ts",
-      "default": "./src/generated/supabase/database.types.ts"
+      "default": "./dist/generated/supabase/database.types.js"
     }
   },
   "scripts": {
+    "build": "tsc",
     "lint": "eslint . --max-warnings 0 --no-warn-ignored",
     "checktypes": "tsc --noEmit"
   },

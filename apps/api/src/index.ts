@@ -6,12 +6,13 @@ import express from 'express';
 import startServer from './config/server';
 import corsConfig from './config/cors';
 import routesConfig from './config/routing';
+import jsonConfig from './config/json';
 
 const app = express();
 app.disable('x-powered-by');
 
 app.use(corsConfig);
-app.use(express.json({ limit: '50mb' }));
+app.use(jsonConfig);
 app.use(routesConfig);
 
 const listen = (port: number) =>

@@ -1,4 +1,7 @@
-import { projectsRepository, type ProjectRowWithOwner } from './projects.repository';
+import {
+  projectsRepository,
+  type ProjectRowWithOwner,
+} from './projects.repository';
 
 export class ProjectsService {
   async listProjects(): Promise<ProjectRowWithOwner[]> {

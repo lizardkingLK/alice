@@ -47,7 +47,6 @@ New public marketing pages must be added to `sitemap.ts` with an appropriate `ch
 Authenticated, role-restricted, or internal routes must stay out of search results:
 
 - `/dashboard` — authenticated hub
-- `/admin`, `/manager`, `/member` — role dashboards
 - `/instruments` — internal data example
 - `/files` — authenticated upload utility
 - Any future route behind auth, RBAC, or intended for signed-in users only

@@ -2,16 +2,16 @@ import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { Skeleton } from '@repo/ui/components/ui/skeleton';
 import type { Tables } from '@repo/types';
-import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { getUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
+import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 
 type Instrument = Tables<'instruments'>;
 
 function InstrumentsSkeleton() {
   return (
     <div className="space-y-3">
-      <Skeleton className="h-48 w-48" />
+      <Skeleton className="h-full w-full" />
     </div>
   );
 }

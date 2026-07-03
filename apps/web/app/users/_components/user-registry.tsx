@@ -8,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@repo/ui/components/ui/card';
-import { toggleUserActive } from './actions';
 import { UserForm } from './user-form';
 import {
   Users,
@@ -22,6 +21,7 @@ import {
   UserPlus,
 } from 'lucide-react';
 import type { Tables } from '@repo/types';
+import { toggleUserActive } from '@/app/users/actions';
 
 type DbUser = Tables<'users'>;
 

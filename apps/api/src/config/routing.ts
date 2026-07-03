@@ -8,11 +8,11 @@ import projectsRouter from '../routes/api/projects/projects.route';
 
 const routesConfig: Router = Router();
 
-routesConfig.use('/api/health', healthRouter);
-routesConfig.use('/api/users', usersRouter);
+routesConfig.use('/', healthRouter);
 routesConfig.use('/api/files', filesRouter);
 routesConfig.use('/api/notifications', notificationsRouter);
-routesConfig.use('/api/sprints', sprintsRouter);
 routesConfig.use('/api/projects', projectsRouter);
+routesConfig.use('/api/sprints', sprintsRouter);
+routesConfig.use('/api/users', usersRouter);
 
 export default routesConfig;

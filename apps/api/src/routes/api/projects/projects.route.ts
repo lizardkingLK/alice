@@ -1,5 +1,8 @@
 import { Router } from 'express';
-import { requireApiAuth, type AuthenticatedRequest } from '../../../middlewares/auth';
+import {
+  requireApiAuth,
+  type AuthenticatedRequest,
+} from '../../../middlewares/auth';
 import { projectsService } from './projects.service';
 
 const projectsRouter: Router = Router();
@@ -7,7 +10,7 @@ const projectsRouter: Router = Router();
 projectsRouter.get(
   '/',
   requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
+  async (_req: AuthenticatedRequest, res) => {
     try {
       const projects = await projectsService.listProjects();
       res.json({ projects });

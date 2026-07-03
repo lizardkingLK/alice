@@ -1,16 +1,16 @@
 import { redirect } from 'next/navigation';
 import { getUser, getDbUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
-import { DashboardShell } from '@/components/dashboard/dashboard-shell';
-import { ProjectRegistry } from './project-registry';
 import type { Tables } from '@repo/types';
+import { ProjectRegistry } from '@/app/projects/_components/project-registry';
+import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 
 type DbUser = Tables<'users'>;
 type DbProject = Tables<'projects'> & {
   owner?: Pick<DbUser, 'id' | 'name' | 'email'> | null;
 };
 
-export default async function AdminPage() {
+export default async function ProjectsPage() {
   const user = await getUser();
 
   if (!user) {
@@ -39,25 +39,34 @@ export default async function AdminPage() {
   }
 
   // Fetch all projects including soft-deleted ones via Express API
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   const token = session?.access_token;
 
   let projectsList: DbProject[] = [];
 
   if (token) {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects`, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        next: { revalidate: 0 },
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/projects`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          next: { revalidate: 0 },
+        }
+      );
+
       if (response.ok) {
         const data = (await response.json()) as { projects?: DbProject[] };
         projectsList = data.projects ?? [];
       } else {
-        console.error('Failed to fetch projects from API:', response.statusText);
+        console.error(
+          'Failed to fetch projects from API:',
+          response.statusText
+        );
       }
     } catch (err) {
       console.error('Error fetching projects from API:', err);
@@ -68,8 +77,8 @@ export default async function AdminPage() {
 
   return (
     <DashboardShell
-      title="Admin"
-      description="Organization settings and project administration."
+      title="Projects"
+      description="Organize project administration."
       user={user}
     >
       <div className="w-full">

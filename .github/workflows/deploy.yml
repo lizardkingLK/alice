@@ -110,8 +110,11 @@ jobs:
           node-version: 20
           cache: 'pnpm'
 
-      - name: Install Workspace Dependencies
+      - name: Install workspace Dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build shared types package
+        run: pnpm turbo build --filter=@repo/types
 
       - name: Install Global Vercel CLI Execution Agent
         run: pnpm install --global vercel@latest --ignore-scripts
@@ -151,6 +154,9 @@ jobs:
 
       - name: Install Workspace Dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build shared types package
+        run: pnpm turbo build --filter=@repo/types
 
       - name: Install Global Vercel CLI Execution Agent
         run: pnpm install --global vercel@latest --ignore-scripts

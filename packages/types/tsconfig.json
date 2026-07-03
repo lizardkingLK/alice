@@ -7,9 +7,11 @@
     "types": ["node"],
     "strict": true,
     "skipLibCheck": true,
-    "noEmit": true,
-    "rootDir": "src"
+    "rootDir": "src",
+    "outDir": "./dist",
+    "declaration": true,
+    "emitDeclarationOnly": false
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules"]
 }

@@ -6,7 +6,7 @@ await jiti.import('./lib/env');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['@repo/ui'],
+  transpilePackages: ['@repo/ui', '@repo/types'],
 };
 
 export default nextConfig;

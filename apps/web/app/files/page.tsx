@@ -1,5 +1,5 @@
-import { DashboardShell } from '@/components/dashboard/dashboard-shell';
-import UploadFiles from '@/components/files/upload-form';
+import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
+import UploadFiles from '@/app/files/_components/upload-form';
 import { getUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 
