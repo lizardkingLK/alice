@@ -177,11 +177,13 @@ export function ProjectForm({
                 <option value="" disabled>
                   Select Owner...
                 </option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name} ({u.email})
-                  </option>
-                ))}
+                {users
+                  .filter((u) => u.role === 'manager')
+                  .map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name} ({u.email})
+                    </option>
+                  ))}
               </select>
             </div>
 

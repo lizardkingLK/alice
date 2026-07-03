@@ -4,9 +4,18 @@
   "type": "module",
   "private": true,
   "exports": {
-    ".": "./src/index.ts",
-    "./audit": "./src/audit.ts",
-    "./database": "./src/generated/supabase/database.types.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./audit": {
+      "types": "./src/audit.ts",
+      "default": "./src/audit.ts"
+    },
+    "./database": {
+      "types": "./src/generated/supabase/database.types.ts",
+      "default": "./src/generated/supabase/database.types.ts"
+    }
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0 --no-warn-ignored",

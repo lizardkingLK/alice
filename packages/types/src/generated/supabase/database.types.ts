@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -66,7 +66,7 @@ export type Database = {
           mime_type: string;
           status?: Database['public']['Enums']['RecordStatus'];
           storage_path: string;
-          updated_at?: string;
+          updated_at: string;
           updated_by?: string | null;
           uploader_id: string;
           work_item_id: string;
@@ -85,7 +85,89 @@ export type Database = {
           uploader_id?: string;
           work_item_id?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'attachments_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'attachments_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'attachments_uploader_id_fkey';
+            columns: ['uploader_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'attachments_work_item_id_fkey';
+            columns: ['work_item_id'];
+            isOneToOne: false;
+            referencedRelation: 'work_items';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      attributes: {
+        Row: {
+          content: Json;
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          id: string;
+          status: Database['public']['Enums']['RecordStatus'];
+          updated_at: string;
+          updated_by: string | null;
+          work_item_types: Database['public']['Enums']['WorkItemType'][] | null;
+        };
+        Insert: {
+          content: Json;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          id?: string;
+          status?: Database['public']['Enums']['RecordStatus'];
+          updated_at: string;
+          updated_by?: string | null;
+          work_item_types?:
+            Database['public']['Enums']['WorkItemType'][] | null;
+        };
+        Update: {
+          content?: Json;
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          id?: string;
+          status?: Database['public']['Enums']['RecordStatus'];
+          updated_at?: string;
+          updated_by?: string | null;
+          work_item_types?:
+            Database['public']['Enums']['WorkItemType'][] | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'attributes_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'attributes_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       comments: {
         Row: {
@@ -110,7 +192,7 @@ export type Database = {
           id?: string;
           parent_id?: string | null;
           status?: Database['public']['Enums']['RecordStatus'];
-          updated_at?: string;
+          updated_at: string;
           updated_by?: string | null;
           work_item_id: string;
         };
@@ -127,7 +209,43 @@ export type Database = {
           updated_by?: string | null;
           work_item_id?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'comments_author_id_fkey';
+            columns: ['author_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'comments_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'comments_parent_id_fkey';
+            columns: ['parent_id'];
+            isOneToOne: false;
+            referencedRelation: 'comments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'comments_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'comments_work_item_id_fkey';
+            columns: ['work_item_id'];
+            isOneToOne: false;
+            referencedRelation: 'work_items';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       instruments: {
         Row: {
@@ -142,22 +260,37 @@ export type Database = {
         Insert: {
           created_at?: string;
           created_by?: string | null;
-          id?: never;
+          id?: number;
           name: string;
           status?: Database['public']['Enums']['RecordStatus'];
-          updated_at?: string;
+          updated_at: string;
           updated_by?: string | null;
         };
         Update: {
           created_at?: string;
           created_by?: string | null;
-          id?: never;
+          id?: number;
           name?: string;
           status?: Database['public']['Enums']['RecordStatus'];
           updated_at?: string;
           updated_by?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'instruments_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'instruments_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       notifications: {
         Row: {
@@ -182,7 +315,7 @@ export type Database = {
           related_item_id?: string | null;
           status?: Database['public']['Enums']['RecordStatus'];
           type: Database['public']['Enums']['NotificationType'];
-          updated_at?: string;
+          updated_at: string;
           updated_by?: string | null;
           user_id: string;
         };
@@ -199,7 +332,29 @@ export type Database = {
           updated_by?: string | null;
           user_id?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'notifications_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'notifications_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'notifications_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       project_members: {
         Row: {
@@ -216,7 +371,7 @@ export type Database = {
           created_by?: string | null;
           project_id: string;
           status?: Database['public']['Enums']['RecordStatus'];
-          updated_at?: string;
+          updated_at: string;
           updated_by?: string | null;
           user_id: string;
         };
@@ -229,7 +384,36 @@ export type Database = {
           updated_by?: string | null;
           user_id?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'project_members_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'project_members_project_id_fkey';
+            columns: ['project_id'];
+            isOneToOne: false;
+            referencedRelation: 'projects';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'project_members_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'project_members_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       projects: {
         Row: {
@@ -259,7 +443,7 @@ export type Database = {
           owner_id: string;
           start_date?: string | null;
           status?: Database['public']['Enums']['ProjectStatus'];
-          updated_at?: string;
+          updated_at: string;
           updated_by?: string | null;
         };
         Update: {
@@ -277,7 +461,29 @@ export type Database = {
           updated_at?: string;
           updated_by?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'projects_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'projects_owner_id_fkey';
+            columns: ['owner_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'projects_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       sprints: {
         Row: {
@@ -305,7 +511,7 @@ export type Database = {
           start_date: string;
           status?: Database['public']['Enums']['SprintStatus'];
           summary_report?: Json | null;
-          updated_at?: string;
+          updated_at: string;
           updated_by?: string | null;
         };
         Update: {
@@ -322,7 +528,29 @@ export type Database = {
           updated_at?: string;
           updated_by?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'sprints_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'sprints_project_id_fkey';
+            columns: ['project_id'];
+            isOneToOne: false;
+            referencedRelation: 'projects';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'sprints_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       team_members: {
         Row: {
@@ -349,7 +577,7 @@ export type Database = {
           seniority?: string | null;
           status?: Database['public']['Enums']['RecordStatus'];
           team_id: string;
-          updated_at?: string;
+          updated_at: string;
           updated_by?: string | null;
           user_id: string;
         };
@@ -367,7 +595,43 @@ export type Database = {
           updated_by?: string | null;
           user_id?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'team_members_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'team_members_reporting_line_fkey';
+            columns: ['reporting_line'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'team_members_team_id_fkey';
+            columns: ['team_id'];
+            isOneToOne: false;
+            referencedRelation: 'teams';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'team_members_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'team_members_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       teams: {
         Row: {
@@ -391,7 +655,7 @@ export type Database = {
           name: string;
           status?: Database['public']['Enums']['RecordStatus'];
           tech_stack?: string | null;
-          updated_at?: string;
+          updated_at: string;
           updated_by?: string | null;
         };
         Update: {
@@ -406,7 +670,29 @@ export type Database = {
           updated_at?: string;
           updated_by?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'teams_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'teams_manager_id_fkey';
+            columns: ['manager_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'teams_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       users: {
         Row: {
@@ -432,7 +718,7 @@ export type Database = {
           profile_picture?: string | null;
           role?: Database['public']['Enums']['UserRole'];
           status?: Database['public']['Enums']['RecordStatus'];
-          updated_at?: string;
+          updated_at: string;
           updated_by?: string | null;
         };
         Update: {
@@ -448,7 +734,22 @@ export type Database = {
           updated_at?: string;
           updated_by?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'users_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'users_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       work_items: {
         Row: {
@@ -486,7 +787,7 @@ export type Database = {
           story_points?: number | null;
           title: string;
           type: Database['public']['Enums']['WorkItemType'];
-          updated_at?: string;
+          updated_at: string;
           updated_by?: string | null;
         };
         Update: {
@@ -508,7 +809,57 @@ export type Database = {
           updated_at?: string;
           updated_by?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'work_items_assignee_id_fkey';
+            columns: ['assignee_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'work_items_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'work_items_parent_id_fkey';
+            columns: ['parent_id'];
+            isOneToOne: false;
+            referencedRelation: 'work_items';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'work_items_project_id_fkey';
+            columns: ['project_id'];
+            isOneToOne: false;
+            referencedRelation: 'projects';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'work_items_reporter_id_fkey';
+            columns: ['reporter_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'work_items_sprint_id_fkey';
+            columns: ['sprint_id'];
+            isOneToOne: false;
+            referencedRelation: 'sprints';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'work_items_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
       };
     };
     Views: {
@@ -525,18 +876,13 @@ export type Database = {
         | 'mention'
         | 'sprint'
         | 'due_date';
-      RecordStatus: 'active' | 'inactive' | 'archived' | 'deleted';
       ProjectStatus: 'active' | 'archived';
+      RecordStatus: 'active' | 'inactive' | 'archived' | 'deleted';
       SprintStatus: 'planned' | 'active' | 'closed';
       UserRole: 'admin' | 'manager' | 'member';
       WorkItemPriority: 'lowest' | 'low' | 'medium' | 'high' | 'highest';
       WorkItemStatus:
-        | 'Draft'
-        | 'New'
-        | 'ToDo'
-        | 'InProgress'
-        | 'Testing'
-        | 'Done';
+        'Draft' | 'New' | 'ToDo' | 'InProgress' | 'Testing' | 'Done';
       WorkItemType: 'Epic' | 'Story' | 'Task';
     };
     CompositeTypes: {
@@ -556,12 +902,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -583,13 +929,12 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -608,13 +953,12 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -633,13 +977,12 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema['Enums']
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    keyof DefaultSchema['Enums'] | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -652,11 +995,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema['CompositeTypes']
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -676,8 +1019,8 @@ export const Constants = {
         'sprint',
         'due_date',
       ],
-      RecordStatus: ['active', 'inactive', 'archived', 'deleted'],
       ProjectStatus: ['active', 'archived'],
+      RecordStatus: ['active', 'inactive', 'archived', 'deleted'],
       SprintStatus: ['planned', 'active', 'closed'],
       UserRole: ['admin', 'manager', 'member'],
       WorkItemPriority: ['lowest', 'low', 'medium', 'high', 'highest'],

@@ -28,6 +28,7 @@ type DbUser = Tables<'users'>;
 interface UserRegistryProps {
   readonly users: DbUser[];
   readonly currentUserId?: string | null;
+  readonly currentUserRole?: string | null;
 }
 
 function getRoleBadgeStyles(role: string) {
@@ -53,11 +54,15 @@ function getAvatarPlaceholder(name: string) {
 export function UserRegistry({
   users,
   currentUserId,
+  currentUserRole,
 }: Readonly<UserRegistryProps>) {
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<DbUser | null>(null);
   const [deactivatingUser, setDeactivatingUser] = useState<DbUser | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  console.log('Current User Role:-------->', currentUserRole);
 
   const handleToggleActive = (user: DbUser) => {
     if (user.active) {
@@ -118,13 +123,15 @@ export function UserRegistry({
               activation status.
             </CardDescription>
           </div>
-          <button
-            onClick={() => setIsAddUserOpen(true)}
-            className="bg-primary text-primary-foreground hover:bg-primary/95 inline-flex h-10 cursor-pointer items-center justify-center rounded-md px-4 text-xs font-semibold shadow-md transition-all duration-300 hover:shadow-lg"
-          >
-            <UserPlus className="mr-1.5 h-3.5 w-3.5" />
-            Add User
-          </button>
+          {currentUserRole === 'admin' && (
+            <button
+              onClick={() => setIsAddUserOpen(true)}
+              className="bg-primary text-primary-foreground hover:bg-primary/95 inline-flex h-10 cursor-pointer items-center justify-center rounded-md px-4 text-xs font-semibold shadow-md transition-all duration-300 hover:shadow-lg"
+            >
+              <UserPlus className="mr-1.5 h-3.5 w-3.5" />
+              Add User
+            </button>
+          )}
         </CardHeader>
         <CardContent>
           {users.length === 0 ? (
@@ -209,7 +216,17 @@ export function UserRegistry({
                         </span>
                       </span>
 
-                      {!isSelf && (
+                      {currentUserRole === 'admin' && (
+                        <button
+                          disabled={isPending}
+                          onClick={() => setEditingUser(usr)}
+                          className="border-input bg-background hover:bg-accent text-foreground focus-visible:ring-ring inline-flex h-8 cursor-pointer items-center justify-center rounded-md border px-3 text-xs font-medium transition-all focus-visible:ring-2 focus-visible:outline-none"
+                        >
+                          Edit
+                        </button>
+                      )}
+
+                      {currentUserRole === 'admin' && !isSelf && (
                         <button
                           disabled={isPending}
                           onClick={() => handleToggleActive(usr)}
@@ -319,6 +336,19 @@ export function UserRegistry({
             <UserForm
               onClose={() => setIsAddUserOpen(false)}
               onSuccess={() => setIsAddUserOpen(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {editingUser && (
+        <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
+          <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
+            <UserForm
+              user={editingUser}
+              onClose={() => setEditingUser(null)}
+              onSuccess={() => setEditingUser(null)}
             />
           </div>
         </div>

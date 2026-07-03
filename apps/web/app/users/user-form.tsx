@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useRef } from 'react';
+import { useActionState, useEffect, useRef, ReactNode } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
@@ -11,8 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@repo/ui/components/ui/card';
-import { createUser, ActionState } from './actions';
+import { createUser, updateUser, ActionState } from './actions';
 import { UserPlus, Loader2, AlertCircle, CheckCircle, X } from 'lucide-react';
+import type { Tables } from '@repo/types';
+
+type DbUser = Tables<'users'>;
 
 const initialState: ActionState = {
   success: false,
@@ -20,13 +23,15 @@ const initialState: ActionState = {
 };
 
 interface UserFormProps {
+  readonly user?: DbUser;
   readonly onClose?: () => void;
   readonly onSuccess?: () => void;
 }
 
-export function UserForm({ onClose, onSuccess }: Readonly<UserFormProps>) {
+export function UserForm({ user, onClose, onSuccess }: Readonly<UserFormProps>) {
+  const isEdit = !!user;
   const [state, formAction, isPending] = useActionState(
-    createUser,
+    isEdit ? updateUser : createUser,
     initialState
   );
   const formRef = useRef<HTMLFormElement>(null);
@@ -40,6 +45,20 @@ export function UserForm({ onClose, onSuccess }: Readonly<UserFormProps>) {
       return () => clearTimeout(timer);
     }
   }, [state.success, onSuccess]);
+
+  let submitButtonText: ReactNode;
+  if (isPending) {
+    submitButtonText = (
+      <>
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        {isEdit ? 'Saving Changes...' : 'Adding User...'}
+      </>
+    );
+  } else if (isEdit) {
+    submitButtonText = 'Save Changes';
+  } else {
+    submitButtonText = 'Add User';
+  }
 
   return (
     <Card className="relative border border-gray-200 bg-white text-gray-900 shadow-xl transition-all duration-300 hover:shadow-2xl">
@@ -57,14 +76,18 @@ export function UserForm({ onClose, onSuccess }: Readonly<UserFormProps>) {
       <CardHeader className="space-y-1.5 pb-4">
         <CardTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight">
           <UserPlus className="text-primary h-5 w-5 animate-pulse" />
-          Add New User
+          {isEdit ? 'Edit User Details' : 'Add New User'}
         </CardTitle>
         <CardDescription className="text-muted-foreground text-sm">
-          Register a new team member and assign them a workspace role.
+          {isEdit
+            ? "Update team member's workspace role and profile details."
+            : 'Register a new team member and assign them a workspace role.'}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form ref={formRef} action={formAction} className="space-y-4">
+          {isEdit && <input type="hidden" name="id" value={user.id} />}
+
           <div className="space-y-2">
             <Label htmlFor="name" className="text-sm font-medium">
               Full Name
@@ -74,6 +97,7 @@ export function UserForm({ onClose, onSuccess }: Readonly<UserFormProps>) {
               name="name"
               placeholder="Erlich Bachman"
               required
+              defaultValue={user?.name}
               className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
             />
           </div>
@@ -87,8 +111,10 @@ export function UserForm({ onClose, onSuccess }: Readonly<UserFormProps>) {
               name="email"
               type="email"
               placeholder="erlich@bachmanity.com"
-              required
-              className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
+              required={!isEdit}
+              defaultValue={user?.email}
+              disabled={isEdit}
+              className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors disabled:opacity-50"
             />
           </div>
 
@@ -101,7 +127,7 @@ export function UserForm({ onClose, onSuccess }: Readonly<UserFormProps>) {
                 id="role"
                 name="role"
                 required
-                defaultValue="member"
+                defaultValue={user?.role ?? 'member'}
                 className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="member">Member</option>
@@ -121,7 +147,11 @@ export function UserForm({ onClose, onSuccess }: Readonly<UserFormProps>) {
           {state.success && (
             <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-500">
               <CheckCircle className="h-4 w-4 shrink-0" />
-              <span>User added successfully! Sending invitation...</span>
+              <span>
+                {isEdit
+                  ? 'User details updated successfully!'
+                  : 'User added successfully! Sending invitation...'}
+              </span>
             </div>
           )}
 
@@ -141,14 +171,7 @@ export function UserForm({ onClose, onSuccess }: Readonly<UserFormProps>) {
               disabled={isPending || state.success}
               className={`${onClose ? 'w-2/3' : 'w-full'}`}
             >
-              {isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Adding User...
-                </>
-              ) : (
-                'Add User'
-              )}
+              {submitButtonText}
             </Button>
           </div>
         </form>

@@ -3,7 +3,7 @@
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { auditCreate, userActiveAuditUpdate } from '@/lib/audit';
+import { auditCreate, auditUpdate, userActiveAuditUpdate } from '@/lib/audit';
 import { getDbUser } from '@/lib/auth';
 import {
   buildAuthCallbackUrl,
@@ -14,6 +14,12 @@ import { z } from 'zod';
 const createUserSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   email: z.email({ message: 'Please enter a valid email address.' }),
+  role: z.enum(['admin', 'manager', 'member']),
+});
+
+const updateUserSchema = z.object({
+  id: z.string().uuid({ message: 'Invalid user ID.' }),
+  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   role: z.enum(['admin', 'manager', 'member']),
 });
 
@@ -191,6 +197,89 @@ export async function toggleUserActive(
         'Failed to update ban status in Supabase Auth:',
         authError.message
       );
+    }
+
+    revalidatePath('/users');
+    return {
+      success: true,
+      error: null,
+    };
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : 'An unexpected error occurred.';
+    return {
+      success: false,
+      error: message,
+    };
+  }
+}
+
+export async function updateUser(
+  _prevState: ActionState | null,
+  formData: FormData
+): Promise<ActionState> {
+  const id = formData.get('id') as string;
+  const name = formData.get('name') as string;
+  const role = formData.get('role') as string;
+
+  const validation = updateUserSchema.safeParse({ id, name, role });
+
+  if (!validation.success) {
+    return {
+      success: false,
+      error: validation.error.issues[0]?.message ?? 'Invalid input data.',
+    };
+  }
+
+  // Verify the currently logged-in user is an admin
+  const currentUser = await getDbUser();
+  if (!currentUser) {
+    return {
+      success: false,
+      error: 'Not authenticated.',
+    };
+  }
+
+  if (currentUser.role !== 'admin') {
+    return {
+      success: false,
+      error: 'Unauthorized. Only administrators can edit users.',
+    };
+  }
+
+  try {
+    const adminSupabase = createAdminClient();
+
+    // 1. Update public.users database table
+    const { error: dbError } = await adminSupabase
+      .from('users')
+      .update({
+        name: validation.data.name,
+        role: validation.data.role,
+        ...auditUpdate(currentUser.id),
+      })
+      .eq('id', validation.data.id);
+
+    if (dbError) {
+      return {
+        success: false,
+        error: `Database update failed: ${dbError.message}`,
+      };
+    }
+
+    // 2. Update metadata in Supabase Auth so it is in sync
+    const { error: authError } = await adminSupabase.auth.admin.updateUserById(
+      validation.data.id,
+      {
+        user_metadata: {
+          name: validation.data.name,
+          role: validation.data.role,
+        },
+      }
+    );
+
+    if (authError) {
+      console.error('Failed to update user in Supabase Auth:', authError.message);
     }
 
     revalidatePath('/users');

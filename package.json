@@ -41,16 +41,16 @@
     "packages/types/src/generated/**/*.ts": []
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.0.2",
-    "@commitlint/config-conventional": "^21.0.2",
-    "@commitlint/cz-commitlint": "^21.1.0",
+    "@commitlint/cli": "^21.2.0",
+    "@commitlint/config-conventional": "^21.2.0",
+    "@commitlint/cz-commitlint": "^21.2.0",
     "commitizen": "^4.3.2",
     "cz-conventional-changelog": "^3.3.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
-    "prettier": "^3.7.4",
+    "prettier": "^3.9.4",
     "prettier-plugin-tailwindcss": "^0.8.0",
-    "turbo": "^2.10.0",
+    "turbo": "^2.10.2",
     "typescript": "5.9.2"
   },
   "packageManager": "pnpm@9.0.0",

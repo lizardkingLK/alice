@@ -182,7 +182,7 @@ export function ProjectRegistry({
                   : 'hover:text-foreground'
               }`}
             >
-              Archived & Deleted
+              Archived
             </button>
           </div>
 
@@ -334,7 +334,7 @@ export function ProjectRegistry({
                               <button
                                 disabled={isPending}
                                 onClick={() => handleHardDelete(proj)}
-                                className="focus-visible:ring-ring flex h-8 cursor-pointer items-center justify-center rounded-md border border-rose-500/20 bg-rose-500/10 px-3 text-xs font-semibold text-rose-600 shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
+                                className="focus-visible:ring-ring flex h-9 cursor-pointer items-center justify-center rounded-md border border-rose-500/20 bg-rose-500/10 px-3 text-xs font-semibold text-rose-600 shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
                               >
                                 <Trash2 className="mr-1 h-3 w-3" />
                                 Purge
@@ -400,11 +400,11 @@ export function ProjectRegistry({
 
               <p className="text-muted-foreground text-sm leading-relaxed">
                 Are you sure you want to
-                {deleteMode === 'soft' ? 'archive' : 'permanently delete'}
+                {deleteMode === 'soft' ? ' archive ' : ' permanently delete '}
                 <strong className="text-foreground">
                   {projectToDelete.name} ({projectToDelete.key})
                 </strong>
-                {'?'}
+                {' ?'}
               </p>
               <p className="text-muted-foreground/80 bg-muted/50 border-border/40 mt-2 rounded-lg border p-2.5 text-xs">
                 {deleteMode === 'soft'

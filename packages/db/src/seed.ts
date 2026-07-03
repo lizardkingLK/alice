@@ -1,6 +1,9 @@
 import 'dotenv/config';
 
-import { auditCreate, auditCreateWithoutStatus } from '@repo/types/audit';
+import {
+  auditCreate,
+  auditCreateWithoutStatus,
+} from '../../types/src/audit.js';
 import { createClient } from '@supabase/supabase-js';
 
 import { env } from './env.js';
@@ -602,12 +605,7 @@ async function seedAttachment(
 type NotificationSeed = {
   user_id: string;
   type:
-    | 'assign'
-    | 'sprint'
-    | 'status_change'
-    | 'comment'
-    | 'mention'
-    | 'due_date';
+    'assign' | 'sprint' | 'status_change' | 'comment' | 'mention' | 'due_date';
   message: string;
   related_item_id: string;
   read_status: boolean;
