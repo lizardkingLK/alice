@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { getUser } from '../../lib/auth';
+import { getDbUser, getUser } from '../../lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import type { Tables } from '@repo/types';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
@@ -13,6 +13,9 @@ export default async function UsersDashboard() {
   if (!user) {
     redirect('/login');
   }
+
+  const dbUser = await getDbUser();
+  const currentUserRole = dbUser?.role ?? 'member';
 
   const supabase = await createClient();
   const { data: dbUsers, error } = await supabase
@@ -33,7 +36,11 @@ export default async function UsersDashboard() {
       user={user}
     >
       <div className="w-full">
-        <UserRegistry users={usersList} currentUserId={user.id} />
+        <UserRegistry
+          users={usersList}
+          currentUserId={user.id}
+          currentUserRole={currentUserRole}
+        />
       </div>
     </DashboardShell>
   );

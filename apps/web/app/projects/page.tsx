@@ -58,6 +58,7 @@ export default async function ProjectsPage() {
           next: { revalidate: 0 },
         }
       );
+
       if (response.ok) {
         const data = (await response.json()) as { projects?: DbProject[] };
         projectsList = data.projects ?? [];

@@ -10,7 +10,7 @@ const projectsRouter: Router = Router();
 projectsRouter.get(
   '/',
   requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
+  async (_req: AuthenticatedRequest, res) => {
     try {
       const projects = await projectsService.listProjects();
       res.json({ projects });
