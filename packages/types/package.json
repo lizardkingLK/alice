@@ -1,19 +1,21 @@
 {
   "name": "@repo/types",
   "version": "0.0.0",
-  "type": "module",
   "private": true,
   "exports": {
     ".": {
       "types": "./src/index.ts",
+      "require": "./dist/index.js",
       "default": "./dist/index.js"
     },
     "./audit": {
       "types": "./src/audit.ts",
+      "require": "./dist/audit.js",
       "default": "./dist/audit.js"
     },
     "./database": {
       "types": "./src/generated/supabase/database.types.ts",
+      "require": "./dist/generated/supabase/database.types.js",
       "default": "./dist/generated/supabase/database.types.js"
     }
   },
