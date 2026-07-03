@@ -18,6 +18,7 @@ const createUserSchema = z.object({
 });
 
 const updateUserSchema = z.object({
+
   id: z.uuid({ message: 'Invalid user ID.' }),
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   role: z.enum(['admin', 'manager', 'member']),

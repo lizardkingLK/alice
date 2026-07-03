@@ -1,9 +1,6 @@
-import dotenv from 'dotenv';
 import { defineConfig } from 'prisma/config';
 
 import './src/env.js';
-
-dotenv.config({ quiet: true });
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',

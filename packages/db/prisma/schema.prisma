@@ -122,6 +122,8 @@ model users {
   notifications           notifications[]
   created_notifications   notifications[]   @relation("NotificationCreatedBy")
   updated_notifications   notifications[]   @relation("NotificationUpdatedBy")
+  created_attributes      attributes[]      @relation("AttributeCreatedBy")
+  updated_attributes      attributes[]      @relation("AttributeUpdatedBy")
 }
 
 model projects {
@@ -145,6 +147,21 @@ model projects {
   members         project_members[]
   sprints         sprints[]
   work_items      work_items[]
+}
+
+model attributes {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  work_item_types WorkItemType[]
+  content         Json
+  status          RecordStatus   @default(active)
+  deleted_at      DateTime?      @db.Timestamptz(6)
+  created_by      String?        @db.Uuid
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_by      String?        @db.Uuid
+  updated_at      DateTime       @updatedAt @db.Timestamptz(6)
+
+  created_by_user users? @relation("AttributeCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users? @relation("AttributeUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
 }
 
 model project_members {
@@ -245,14 +262,14 @@ model work_items {
   updated_by   String?          @db.Uuid
   updated_at   DateTime         @updatedAt @db.Timestamptz(6)
 
-  project         projects     @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  sprint          sprints?     @relation(fields: [sprint_id], references: [id], onDelete: SetNull)
-  parent          work_items?  @relation("WorkItemHierarchy", fields: [parent_id], references: [id], onDelete: SetNull)
-  children        work_items[] @relation("WorkItemHierarchy")
-  assignee        users?       @relation("WorkItemAssignee", fields: [assignee_id], references: [id], onDelete: SetNull)
-  reporter        users?       @relation("WorkItemReporter", fields: [reporter_id], references: [id], onDelete: SetNull)
-  created_by_user users?       @relation("WorkItemCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
-  updated_by_user users?       @relation("WorkItemUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+  project         projects      @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  sprint          sprints?      @relation(fields: [sprint_id], references: [id], onDelete: SetNull)
+  parent          work_items?   @relation("WorkItemHierarchy", fields: [parent_id], references: [id], onDelete: SetNull)
+  children        work_items[]  @relation("WorkItemHierarchy")
+  assignee        users?        @relation("WorkItemAssignee", fields: [assignee_id], references: [id], onDelete: SetNull)
+  reporter        users?        @relation("WorkItemReporter", fields: [reporter_id], references: [id], onDelete: SetNull)
+  created_by_user users?        @relation("WorkItemCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users?        @relation("WorkItemUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
   comments        comments[]
   attachments     attachments[]
 }
