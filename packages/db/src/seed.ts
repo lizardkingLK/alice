@@ -602,12 +602,7 @@ async function seedAttachment(
 type NotificationSeed = {
   user_id: string;
   type:
-    | 'assign'
-    | 'sprint'
-    | 'status_change'
-    | 'comment'
-    | 'mention'
-    | 'due_date';
+    'assign' | 'sprint' | 'status_change' | 'comment' | 'mention' | 'due_date';
   message: string;
   related_item_id: string;
   read_status: boolean;
