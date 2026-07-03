@@ -15,19 +15,25 @@ import { cn } from '@repo/ui/lib/utils';
 import { createSprint, type Sprint } from '@/lib/api-client';
 import { createClient } from '@/lib/supabase/client';
 import type { Tables } from '@repo/types';
+import { Loader2, X, CalendarPlus, CheckCircle, AlertCircle } from 'lucide-react';
 
 type CreateSprintFormProps = {
   className?: string;
   onSprintCreated?: Dispatch<Sprint>;
+  onClose?: () => void;
+  onSuccess?: () => void;
 };
 
 export function CreateSprintForm({
   className,
   onSprintCreated,
+  onClose,
+  onSuccess,
 }: Readonly<CreateSprintFormProps>) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const [projects, setProjects] = useState<Tables<'projects'>[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
@@ -103,6 +109,7 @@ export function CreateSprintForm({
         endDate,
       });
 
+      setIsSuccess(true);
       onSprintCreated?.(sprint);
       setMessage(`Sprint "${sprint.name}" created.`);
       form.reset();
@@ -116,11 +123,34 @@ export function CreateSprintForm({
     }
   };
 
+  useEffect(() => {
+    if (isSuccess) {
+      const timer = setTimeout(() => {
+        onSuccess?.();
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [isSuccess, onSuccess]);
+
   return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle>Create Sprint</CardTitle>
-        <CardDescription>
+    <Card className={cn("relative border border-gray-200 bg-white text-gray-900 shadow-xl transition-all duration-300 hover:shadow-2xl", className)}>
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className="hover:bg-muted text-muted-foreground hover:text-foreground absolute top-4 right-4 cursor-pointer rounded-full p-1.5 transition-colors"
+          aria-label="Close modal"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      )}
+
+      <CardHeader className="space-y-1.5 pb-4">
+        <CardTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight">
+          <CalendarPlus className="text-primary h-5 w-5 animate-pulse" />
+          Create Sprint
+        </CardTitle>
+        <CardDescription className="text-muted-foreground text-sm">
           Plan a new sprint with a name, goal, project and date range.
         </CardDescription>
       </CardHeader>
@@ -188,19 +218,49 @@ export function CreateSprintForm({
           </div>
 
           {message ? (
-            <output
+            <div
               className={cn(
-                'block text-sm',
-                isError ? 'text-destructive' : 'text-muted-foreground'
+                'flex items-center gap-2 rounded-lg border p-3 text-sm',
+                isError
+                  ? 'text-destructive bg-destructive/10 border-destructive/20'
+                  : 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'
               )}
             >
-              {message}
-            </output>
+              {isError ? (
+                <AlertCircle className="h-4 w-4 shrink-0" />
+              ) : (
+                <CheckCircle className="h-4 w-4 shrink-0" />
+              )}
+              <span>{message}</span>
+            </div>
           ) : null}
 
-          <Button type="submit" disabled={isSubmitting} className="w-full">
-            {isSubmitting ? 'Creating…' : 'Create Sprint'}
-          </Button>
+          <div className="flex gap-3 pt-2">
+            {onClose && (
+              <button
+                type="button"
+                disabled={isSubmitting || isSuccess}
+                onClick={onClose}
+                className="border-input bg-background hover:bg-accent text-foreground flex w-1/3 cursor-pointer items-center justify-center rounded-md border text-sm font-semibold shadow-sm transition-all duration-300"
+              >
+                Cancel
+              </button>
+            )}
+            <Button
+              type="submit"
+              disabled={isSubmitting || isSuccess}
+              className={`${onClose ? 'w-2/3' : 'w-full'}`}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Sprint'
+              )}
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>

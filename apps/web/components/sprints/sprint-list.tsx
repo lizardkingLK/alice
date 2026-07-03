@@ -17,6 +17,7 @@ import {
 } from '@repo/ui/components/ui/dropdown-menu';
 import { cn } from '@repo/ui/lib/utils';
 import { updateSprintStatus, type Sprint } from '@/lib/api-client';
+import { Plus, Calendar } from 'lucide-react';
 
 type SprintListProps = {
   sprints: Sprint[];
@@ -25,17 +26,18 @@ type SprintListProps = {
   onRetry?: () => void;
   // eslint-disable-next-line no-unused-vars
   onSprintUpdated?: (sprint: Sprint) => void;
+  onAddSprint?: () => void;
 };
 
 const STATUS_STYLES = {
   'Not Started':
-    'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200 border-zinc-200 dark:border-zinc-700',
+    'border-rose-500/20 bg-rose-500/10 text-rose-500 dark:border-rose-500/30 dark:bg-rose-500/20 dark:text-rose-400',
   Ongoing:
-    'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+    'border-blue-500/20 bg-blue-500/10 text-blue-500 dark:border-blue-500/30 dark:bg-blue-500/20 dark:text-blue-400',
   Completed:
-    'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+    'border-emerald-500/20 bg-emerald-500/10 text-emerald-500 dark:border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-400',
   Archived:
-    'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+    'border-amber-500/20 bg-amber-500/10 text-amber-500 dark:border-amber-500/30 dark:bg-amber-500/20 dark:text-amber-400',
 } as const;
 
 const STATUSES = ['Not Started', 'Ongoing', 'Completed', 'Archived'] as const;
@@ -72,7 +74,7 @@ export function SprintStatusDropdown({
           type="button"
           disabled={isUpdating}
           className={cn(
-            'inline-flex cursor-pointer items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors focus:outline-none disabled:opacity-50',
+            'inline-flex cursor-pointer items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold tracking-wider uppercase transition-colors focus:outline-none disabled:opacity-50',
             STATUS_STYLES[sprint.status]
           )}
         >
@@ -121,14 +123,30 @@ export function SprintList({
   error = null,
   onRetry,
   onSprintUpdated,
+  onAddSprint,
 }: Readonly<SprintListProps>) {
   return (
-    <Card className="h-full">
-      <CardHeader>
-        <CardTitle>Sprints</CardTitle>
-        <CardDescription>
-          Active and upcoming sprints for your workspace.
-        </CardDescription>
+    <Card className="border-border bg-card/50 relative backdrop-blur-md">
+      <CardHeader className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
+          <CardTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight">
+            <Calendar className="text-primary h-5 w-5" />
+            Sprints
+          </CardTitle>
+          <CardDescription className="text-muted-foreground text-sm">
+            Active and upcoming sprints for your workspace.
+          </CardDescription>
+        </div>
+        {onAddSprint && (
+          <button
+            type="button"
+            onClick={onAddSprint}
+            className="bg-primary text-primary-foreground hover:bg-primary/95 inline-flex h-10 cursor-pointer items-center justify-center rounded-md px-4 text-xs font-semibold shadow-md transition-all duration-300 hover:shadow-lg"
+          >
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
+            Add Sprint
+          </button>
+        )}
       </CardHeader>
       <CardContent>
         {isLoading ? (

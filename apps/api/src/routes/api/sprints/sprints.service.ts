@@ -5,12 +5,21 @@ import {
   type SprintRow,
 } from './sprints.repository';
 
+const dbStatusToResponseMap: Record<
+  'planned' | 'active' | 'closed',
+  'Not Started' | 'Ongoing' | 'Completed' | 'Archived'
+> = {
+  planned: 'Not Started',
+  active: 'Ongoing',
+  closed: 'Completed',
+};
+
 function toSprintResponse(row: SprintRowWithProject): SprintResponse {
   return {
     id: row.id,
     name: row.name,
     goal: row.goal,
-    status: row.status as 'Not Started' | 'Ongoing' | 'Completed' | 'Archived',
+    status: dbStatusToResponseMap[row.status] || 'Not Started',
     startDate: row.start_date,
     endDate: row.end_date,
     createdBy: row.created_by ?? '',
