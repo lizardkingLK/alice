@@ -43,7 +43,6 @@ export class SprintsRepository {
     return data as unknown as SprintRowWithProject;
   }
 
-  
   async listByUser(userId: string): Promise<SprintRowWithProject[]> {
     const { data, error } = await supabase
       .from('sprints')

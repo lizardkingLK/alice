@@ -43,8 +43,6 @@ export class SprintsService {
       createdBy: userId,
     });
 
-    console.log('Created sprint:', row);
-
     return toSprintResponse(row);
   }
 

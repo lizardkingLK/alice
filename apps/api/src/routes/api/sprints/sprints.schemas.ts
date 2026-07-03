@@ -8,8 +8,7 @@ export const createSprintBodySchema = z
   .object({
     name: z.string().trim().min(1, 'Name is required').max(200),
     goal: z.string().trim().max(2000).nullable().optional(),
-    // eslint-disable-next-line sonarjs/deprecation
-    projectId: z.string().uuid('Project ID must be a valid UUID'),
+    projectId: z.uuid('Project ID must be a valid UUID'),
     startDate: dateStringSchema,
     endDate: dateStringSchema,
   })

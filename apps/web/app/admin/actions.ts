@@ -19,15 +19,15 @@ import {
 import { getDbUser } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-
+// eslint-disable-next-line no-unused-vars
+type MutationAction = (actorId: string) => Promise<ActionState>;
 
 async function runProjectMutation<T extends ActionState>(
-  // eslint-disable-next-line no-unused-vars
-  mutate: (actorId: string) => Promise<T>
-): Promise<T> {
+  mutate: MutationAction
+) {
   const permission = await requireProjectManager();
   if (!permission.allowed) {
-    return actionFailure(permission.error) as T;
+    return actionFailure(permission.error);
   }
 
   try {
@@ -64,7 +64,7 @@ export async function createProject(
     }
 
     revalidatePath('/admin');
-    return { success: true, error: null, projectId: data?.id };
+    return { ...actionSuccess(), projectId: data.id };
   });
 }
 

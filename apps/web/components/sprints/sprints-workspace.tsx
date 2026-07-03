@@ -26,7 +26,7 @@ export function SprintsWorkspace() {
   }, []);
 
   useEffect(() => {
-    void refreshSprints();
+    refreshSprints();
   }, [refreshSprints]);
 
   const handleSprintCreated = (sprint: Sprint) => {

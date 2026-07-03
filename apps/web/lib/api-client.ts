@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
+import { RequestInit } from 'next/dist/server/web/spec-extension/request';
 
 export type Sprint = {
   id: string;

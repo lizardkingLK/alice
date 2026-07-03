@@ -77,8 +77,11 @@ export async function requireApiAuth(
         return;
       }
     }
-  } catch (dbEx) {
-    console.error('Exception during public user profile check/creation:', dbEx);
+  } catch (error) {
+    console.error(
+      'Exception during public user profile check/creation:',
+      error
+    );
     res.status(500).json({ error: 'Failed to verify user profile' });
     return;
   }

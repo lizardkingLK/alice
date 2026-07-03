@@ -138,8 +138,8 @@ export function CreateSprintForm({
               {projects.map((proj) => (
                 <option key={proj.id} value={proj.id}>
                   {proj.name} ({proj.key})
-                  </option>
-                ))}
+                </option>
+              ))}
               {projects.length === 0 && (
                 <option value="" disabled>
                   No active projects found.
