@@ -19,28 +19,28 @@ import {
 import { getDbUser } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-// eslint-disable-next-line no-unused-vars
-type MutationAction = (actorId: string) => Promise<ActionState>;
 
-async function runProjectMutation(
-  mutate: MutationAction
-): Promise<ActionState> {
+
+async function runProjectMutation<T extends ActionState>(
+  // eslint-disable-next-line no-unused-vars
+  mutate: (actorId: string) => Promise<T>
+): Promise<T> {
   const permission = await requireProjectManager();
   if (!permission.allowed) {
-    return actionFailure(permission.error);
+    return actionFailure(permission.error) as T;
   }
 
   try {
     return await mutate(permission.currentUser.id);
   } catch (err) {
-    return unexpectedActionError(err);
+    return unexpectedActionError(err) as T;
   }
 }
 
 export async function createProject(
   _prevState: ActionState | null,
   formData: FormData
-): Promise<ActionState> {
+): Promise<ActionState & { projectId?: string }> {
   return runProjectMutation(async (actorId) => {
     const parsed = parseProjectForm(formData);
     if (!parsed.ok) {
@@ -53,16 +53,18 @@ export async function createProject(
     }
 
     const adminSupabase = createAdminClient();
-    const { error } = await adminSupabase
+    const { data, error } = await adminSupabase
       .from('projects')
-      .insert(buildProjectInsert(parsed.data, actorId));
+      .insert(buildProjectInsert(parsed.data, actorId))
+      .select('id')
+      .single();
 
     if (error) {
       return actionFailure(`Database insertion failed: ${error.message}`);
     }
 
     revalidatePath('/admin');
-    return actionSuccess();
+    return { success: true, error: null, projectId: data?.id };
   });
 }
 

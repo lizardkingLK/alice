@@ -1,6 +1,9 @@
 import 'dotenv/config';
 
-import { auditCreate, auditCreateWithoutStatus } from '@repo/types/audit';
+import {
+  auditCreate,
+  auditCreateWithoutStatus,
+} from '../../types/src/audit.js';
 import { createClient } from '@supabase/supabase-js';
 
 import { env } from './env.js';

@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation';
-import { CreateSprintForm } from '@/components/sprints/create-sprint-form';
-import { SprintList } from '@/components/sprints/sprint-list';
+import { SprintsWorkspace } from '@/components/sprints/sprints-workspace';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { getUser } from '@/lib/auth';
 
@@ -17,10 +16,7 @@ export default async function SprintsPage() {
       description="Plan and track team sprints."
       user={user}
     >
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,22rem)_1fr]">
-        <CreateSprintForm />
-        <SprintList />
-      </div>
+      <SprintsWorkspace />
     </DashboardShell>
   );
 }
