@@ -7,15 +7,16 @@
     "lint": "eslint . --max-warnings 0",
     "check:env": "tsx src/env.ts",
     "checktypes": "pnpm run check:env && tsc --noEmit",
+    "validate": "prisma validate",
+    "create:migrate": "bash ./script_create_migrate.sh",
+    "create:migrate:win": "powershell -NoProfile -ExecutionPolicy Bypass -File ./script_create_migrate.ps1",
+    "rollback:migrate": "bash ./script_rollback_migrate.sh",
+    "seed": "tsx src/seed.ts",
     "generate": "bash ./script_generate_types.sh",
     "generate:win": "powershell -NoProfile -ExecutionPolicy Bypass -File ./script_generate_types.ps1",
-    "validate": "prisma validate",
     "migrate:deploy": "prisma migrate deploy",
     "migrate:reset": "prisma migrate reset --force",
-    "migrate:status": "prisma migrate status",
-    "create:migrate:win": "powershell -NoProfile -ExecutionPolicy Bypass -File ./script_create_migrate.ps1",
-    "seed": "tsx src/seed.ts",
-    "create:migrate": "bash ./script_create_migrate.sh"
+    "migrate:status": "prisma migrate status"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",

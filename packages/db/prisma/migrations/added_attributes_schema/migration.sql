@@ -4,177 +4,162 @@ CREATE TYPE "RecordStatus" AS ENUM ('active', 'inactive', 'archived', 'deleted')
 -- DropForeignKey
 ALTER TABLE "work_items" DROP CONSTRAINT "work_items_reporter_id_fkey";
 
--- attachments: migrate uploaded_at -> created_at, add audit columns
-ALTER TABLE "attachments"
-ADD COLUMN "created_at" TIMESTAMPTZ(6),
-ADD COLUMN "created_by" UUID,
-ADD COLUMN "status" "RecordStatus" NOT NULL DEFAULT 'active',
-ADD COLUMN "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-ADD COLUMN "updated_by" UUID;
+-- AlterTable
+ALTER TABLE "attachments" DROP COLUMN "uploaded_at",
+ADD COLUMN     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN     "created_by" UUID,
+ADD COLUMN     "status" "RecordStatus" NOT NULL DEFAULT 'active',
+ADD COLUMN     "updated_at" TIMESTAMPTZ(6) NOT NULL,
+ADD COLUMN     "updated_by" UUID;
 
-UPDATE "attachments"
-SET
-  "created_at" = COALESCE("uploaded_at", CURRENT_TIMESTAMP),
-  "created_by" = "uploader_id";
+-- AlterTable
+ALTER TABLE "comments" ADD COLUMN     "created_by" UUID,
+ADD COLUMN     "status" "RecordStatus" NOT NULL DEFAULT 'active',
+ADD COLUMN     "updated_by" UUID;
 
-ALTER TABLE "attachments"
-ALTER COLUMN "created_at" SET NOT NULL,
-ALTER COLUMN "created_at" SET DEFAULT CURRENT_TIMESTAMP;
+-- AlterTable
+ALTER TABLE "instruments" ADD COLUMN     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN     "created_by" UUID,
+ADD COLUMN     "status" "RecordStatus" NOT NULL DEFAULT 'active',
+ADD COLUMN     "updated_at" TIMESTAMPTZ(6) NOT NULL,
+ADD COLUMN     "updated_by" UUID;
 
-ALTER TABLE "attachments" DROP COLUMN "uploaded_at";
+-- AlterTable
+ALTER TABLE "notifications" ADD COLUMN     "created_by" UUID,
+ADD COLUMN     "status" "RecordStatus" NOT NULL DEFAULT 'active',
+ADD COLUMN     "updated_at" TIMESTAMPTZ(6) NOT NULL,
+ADD COLUMN     "updated_by" UUID;
 
--- comments
-ALTER TABLE "comments"
-ADD COLUMN "created_by" UUID,
-ADD COLUMN "status" "RecordStatus" NOT NULL DEFAULT 'active',
-ADD COLUMN "updated_by" UUID;
+-- AlterTable
+ALTER TABLE "project_members" DROP COLUMN "joined_at",
+ADD COLUMN     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN     "created_by" UUID,
+ADD COLUMN     "status" "RecordStatus" NOT NULL DEFAULT 'active',
+ADD COLUMN     "updated_at" TIMESTAMPTZ(6) NOT NULL,
+ADD COLUMN     "updated_by" UUID;
 
-UPDATE "comments"
-SET "created_by" = "author_id"
-WHERE "created_by" IS NULL;
+-- AlterTable
+ALTER TABLE "projects" ADD COLUMN     "created_by" UUID,
+ADD COLUMN     "updated_at" TIMESTAMPTZ(6) NOT NULL,
+ADD COLUMN     "updated_by" UUID;
 
--- instruments
-ALTER TABLE "instruments"
-ADD COLUMN "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-ADD COLUMN "created_by" UUID,
-ADD COLUMN "status" "RecordStatus" NOT NULL DEFAULT 'active',
-ADD COLUMN "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-ADD COLUMN "updated_by" UUID;
+-- AlterTable
+ALTER TABLE "sprints" ADD COLUMN     "created_by" UUID,
+ADD COLUMN     "updated_at" TIMESTAMPTZ(6) NOT NULL,
+ADD COLUMN     "updated_by" UUID;
 
--- notifications
-ALTER TABLE "notifications"
-ADD COLUMN "created_by" UUID,
-ADD COLUMN "status" "RecordStatus" NOT NULL DEFAULT 'active',
-ADD COLUMN "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-ADD COLUMN "updated_by" UUID;
+-- AlterTable
+ALTER TABLE "team_members" ADD COLUMN     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN     "created_by" UUID,
+ADD COLUMN     "status" "RecordStatus" NOT NULL DEFAULT 'active',
+ADD COLUMN     "updated_at" TIMESTAMPTZ(6) NOT NULL,
+ADD COLUMN     "updated_by" UUID;
 
-UPDATE "notifications"
-SET "updated_at" = COALESCE("created_at", CURRENT_TIMESTAMP);
+-- AlterTable
+ALTER TABLE "teams" ADD COLUMN     "created_by" UUID,
+ADD COLUMN     "status" "RecordStatus" NOT NULL DEFAULT 'active',
+ADD COLUMN     "updated_at" TIMESTAMPTZ(6) NOT NULL,
+ADD COLUMN     "updated_by" UUID;
 
--- project_members: migrate joined_at -> created_at
-ALTER TABLE "project_members"
-ADD COLUMN "created_at" TIMESTAMPTZ(6),
-ADD COLUMN "created_by" UUID,
-ADD COLUMN "status" "RecordStatus" NOT NULL DEFAULT 'active',
-ADD COLUMN "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-ADD COLUMN "updated_by" UUID;
+-- AlterTable
+ALTER TABLE "users" ADD COLUMN     "created_by" UUID,
+ADD COLUMN     "status" "RecordStatus" NOT NULL DEFAULT 'active',
+ADD COLUMN     "updated_at" TIMESTAMPTZ(6) NOT NULL,
+ADD COLUMN     "updated_by" UUID;
 
-UPDATE "project_members"
-SET "created_at" = COALESCE("joined_at", CURRENT_TIMESTAMP);
-
-ALTER TABLE "project_members"
-ALTER COLUMN "created_at" SET NOT NULL,
-ALTER COLUMN "created_at" SET DEFAULT CURRENT_TIMESTAMP;
-
-ALTER TABLE "project_members" DROP COLUMN "joined_at";
-
--- projects
-ALTER TABLE "projects"
-ADD COLUMN "created_by" UUID,
-ADD COLUMN "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-ADD COLUMN "updated_by" UUID;
-
-UPDATE "projects"
-SET
-  "created_by" = "owner_id",
-  "updated_at" = COALESCE("created_at", CURRENT_TIMESTAMP);
-
--- sprints
-ALTER TABLE "sprints"
-ADD COLUMN "created_by" UUID,
-ADD COLUMN "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-ADD COLUMN "updated_by" UUID;
-
-UPDATE "sprints"
-SET "updated_at" = COALESCE("created_at", CURRENT_TIMESTAMP);
-
--- team_members
-ALTER TABLE "team_members"
-ADD COLUMN "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-ADD COLUMN "created_by" UUID,
-ADD COLUMN "status" "RecordStatus" NOT NULL DEFAULT 'active',
-ADD COLUMN "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-ADD COLUMN "updated_by" UUID;
-
--- teams
-ALTER TABLE "teams"
-ADD COLUMN "created_by" UUID,
-ADD COLUMN "status" "RecordStatus" NOT NULL DEFAULT 'active',
-ADD COLUMN "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-ADD COLUMN "updated_by" UUID;
-
-UPDATE "teams"
-SET
-  "created_by" = "manager_id",
-  "updated_at" = COALESCE("created_at", CURRENT_TIMESTAMP);
-
--- users
-ALTER TABLE "users"
-ADD COLUMN "created_by" UUID,
-ADD COLUMN "status" "RecordStatus" NOT NULL DEFAULT 'active',
-ADD COLUMN "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-ADD COLUMN "updated_by" UUID;
-
-UPDATE "users"
-SET
-  "status" = CASE WHEN "active" THEN 'active'::"RecordStatus" ELSE 'inactive'::"RecordStatus" END,
-  "updated_at" = COALESCE("created_at", CURRENT_TIMESTAMP);
-
--- work_items
-ALTER TABLE "work_items"
-ADD COLUMN "created_by" UUID,
-ADD COLUMN "updated_by" UUID,
+-- AlterTable
+ALTER TABLE "work_items" ADD COLUMN     "created_by" UUID,
+ADD COLUMN     "updated_by" UUID,
 ALTER COLUMN "reporter_id" DROP NOT NULL;
 
-UPDATE "work_items"
-SET "created_by" = "reporter_id"
-WHERE "created_by" IS NULL AND "reporter_id" IS NOT NULL;
+-- CreateTable
+CREATE TABLE "attributes" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "work_item_types" "WorkItemType"[],
+    "content" JSONB NOT NULL,
+    "status" "RecordStatus" NOT NULL DEFAULT 'active',
+    "deleted_at" TIMESTAMPTZ(6),
+    "created_by" UUID,
+    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_by" UUID,
+    "updated_at" TIMESTAMPTZ(6) NOT NULL,
+
+    CONSTRAINT "attributes_pkey" PRIMARY KEY ("id")
+);
 
 -- AddForeignKey
 ALTER TABLE "instruments" ADD CONSTRAINT "instruments_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "instruments" ADD CONSTRAINT "instruments_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "users" ADD CONSTRAINT "users_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "users" ADD CONSTRAINT "users_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "projects" ADD CONSTRAINT "projects_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "projects" ADD CONSTRAINT "projects_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
+ALTER TABLE "attributes" ADD CONSTRAINT "attributes_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "attributes" ADD CONSTRAINT "attributes_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "project_members" ADD CONSTRAINT "project_members_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "project_members" ADD CONSTRAINT "project_members_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "teams" ADD CONSTRAINT "teams_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "teams" ADD CONSTRAINT "teams_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "team_members" ADD CONSTRAINT "team_members_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "team_members" ADD CONSTRAINT "team_members_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "sprints" ADD CONSTRAINT "sprints_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "sprints" ADD CONSTRAINT "sprints_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "work_items" ADD CONSTRAINT "work_items_reporter_id_fkey" FOREIGN KEY ("reporter_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "work_items" ADD CONSTRAINT "work_items_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "work_items" ADD CONSTRAINT "work_items_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "comments" ADD CONSTRAINT "comments_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "comments" ADD CONSTRAINT "comments_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "attachments" ADD CONSTRAINT "attachments_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "attachments" ADD CONSTRAINT "attachments_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "notifications" ADD CONSTRAINT "notifications_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "notifications" ADD CONSTRAINT "notifications_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- Restore Supabase Data API access after Prisma DDL.
