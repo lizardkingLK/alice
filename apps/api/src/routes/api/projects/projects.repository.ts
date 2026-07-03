@@ -34,7 +34,7 @@ export class ProjectsRepository {
       throw new Error('Failed to list projects');
     }
 
-    return data ?? [];
+    return (data as unknown) as ProjectRowWithOwner[];
   }
 }
 
