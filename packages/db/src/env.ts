@@ -9,7 +9,7 @@ const packageRoot = path.resolve(
   '..'
 );
 
-dotenv.config({ path: path.join(packageRoot, '.env') });
+dotenv.config({ path: path.join(packageRoot, '.env'), quiet: true });
 
 const serverSchema = z.object({
   DATABASE_URL: z.string().min(1),

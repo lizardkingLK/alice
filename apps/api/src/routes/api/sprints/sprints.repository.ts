@@ -31,6 +31,7 @@ export class SprintsRepository {
         end_date: input.endDate,
         created_by: input.createdBy,
         project_id: input.projectId,
+        updated_at: new Date().toISOString(),
       })
       .select('*, project:projects(id, name, key)')
       .single();

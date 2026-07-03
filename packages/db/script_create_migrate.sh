@@ -18,11 +18,6 @@ if [[ $# -lt 1 ]]; then
   exit 1
 fi
 
-if [[ -z "${DIRECT_URL:-}" ]]; then
-  echo "error. DIRECT_URL is required in packages/db/.env (used by prisma.config.ts)." >&2
-  exit 1
-fi
-
 migration="$1"
 migration_dir="prisma/migrations/${migration}"
 
@@ -52,6 +47,8 @@ cat /tmp/prisma_migration_diff.sql prisma/sql/supabase_grants.sql > "${migration
 
 echo "info. created ${migration_dir}/migration.sql"
 echo "info. review the SQL before continuing."
+
+# pause and wait press enter to continue
 
 pnpm exec prisma migrate deploy
 bash ./script_generate_types.sh

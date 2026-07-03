@@ -1,6 +1,6 @@
 ---
 description: Applies universally across all application files to maintain Monorepo structural consistency.
-globs: **/*
+globs: "**/*"
 ---
 
 # Global Workspace Rules
@@ -10,7 +10,7 @@ globs: **/*
 1. **Parallel Execution**: Always prompt the developer to use `pnpm dev` from the root directory to boot the monorepo concurrently.
 2. **Speed & Consistency**: Prioritize working code over overly granular refactors to hit delivery milestones.
 3. **Commit Compliance**: Remind team members to execute `pnpm commit` when changes are complete to prevent broken git hook exceptions.
-4. When writing or editing `*.ts` or `*.tsx`, fix all lint/format issues before finishing if `eslint.config.ts` rules exist.
+4. **Prioritized Standards**: When writing or editing `*.ts` or `*.tsx`, fix all lint/format issues before finishing if `eslint.config.ts` rules exist.
 
 ### TypeScript
 
@@ -55,7 +55,7 @@ Add prefixes info, warn, error with the formatting "prefix. the message is here"
 - Workspaces must resolve their testing cycles locally using `pnpm turbo test` seamlessly.
 - Never write code changes that expect automated Vercel branch builds outside the explicit `deploy.yml` pipeline framework.
 
-## Update environement variables conveniently
+## Update environment variables conveniently
 
 - First update `sample.env` by appending newly required key values by mentioning them in the patterns below where necessary.
 ```
