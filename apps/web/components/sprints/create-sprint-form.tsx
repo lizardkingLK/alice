@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState, type Dispatch } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Card,
@@ -12,53 +12,108 @@ import {
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { cn } from '@repo/ui/lib/utils';
+import { createSprint, type Sprint } from '@/lib/api-client';
+import { createClient } from '@/lib/supabase/client';
+import type { Tables } from '@repo/types';
 
 type CreateSprintFormProps = {
   className?: string;
+  onSprintCreated?: Dispatch<Sprint>;
 };
 
 export function CreateSprintForm({
   className,
+  onSprintCreated,
 }: Readonly<CreateSprintFormProps>) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
+
+  const [projects, setProjects] = useState<Tables<'projects'>[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    // Fetch active projects
+    supabase
+      .from('projects')
+      .select('*')
+      .eq('status', 'active')
+      .is('deleted_at', null)
+      .order('name', { ascending: true })
+      .then(
+        ({ data }) => {
+          if (data) {
+            setProjects(data);
+            if (data.length > 0 && data[0]) {
+              setSelectedProjectId(data[0].id);
+            }
+          }
+        },
+        (error) => {
+          console.error('Error fetching active projects:', error);
+        }
+      );
+  }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    const form = event.currentTarget;
+
     setIsSubmitting(true);
     setMessage(null);
+    setIsError(false);
 
-    const formData = new FormData(event.currentTarget);
-    const name = String(formData.get('name') ?? '').trim();
-    const goal = String(formData.get('goal') ?? '').trim();
-    const startDate = String(formData.get('startDate') ?? '');
-    const endDate = String(formData.get('endDate') ?? '');
+    const formData = new FormData(form);
+    const name = (formData.get('name') as string | null)?.trim() ?? '';
+    const goal = (formData.get('goal') as string | null)?.trim() ?? '';
+    const startDate =
+      (formData.get('startDate') as string | null)?.trim() ?? '';
+    const endDate = (formData.get('endDate') as string | null)?.trim() ?? '';
 
     if (!name || !startDate || !endDate) {
       setMessage('Name, start date, and end date are required.');
+      setIsError(true);
       setIsSubmitting(false);
       return;
     }
 
     if (endDate < startDate) {
       setMessage('End date must be on or after the start date.');
+      setIsError(true);
       setIsSubmitting(false);
       return;
     }
 
-    // UI-only for now — backend wiring comes next.
-    console.info('info. sprint create payload:', {
-      name,
-      goal: goal || null,
-      startDate,
-      endDate,
-    });
+    try {
+      if (!selectedProjectId) {
+        setMessage('A project must be selected.');
+        setIsError(true);
+        setIsSubmitting(false);
+        return;
+      }
 
-    setMessage(
-      'Sprint form is ready. Saving will be enabled once the API is connected.'
-    );
-    event.currentTarget.reset();
-    setIsSubmitting(false);
+      const sprint = await createSprint({
+        name,
+        goal: goal || null,
+        projectId: selectedProjectId,
+        startDate,
+        endDate,
+      });
+
+      onSprintCreated?.(sprint);
+      setMessage(`Sprint "${sprint.name}" created.`);
+      form.reset();
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to create sprint.';
+      setMessage(errorMessage);
+      setIsError(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -66,11 +121,33 @@ export function CreateSprintForm({
       <CardHeader>
         <CardTitle>Create Sprint</CardTitle>
         <CardDescription>
-          Plan a new sprint with a name, goal, and date range.
+          Plan a new sprint with a name, goal, project and date range.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="sprint-project">Project</Label>
+            <select
+              id="sprint-project"
+              value={selectedProjectId}
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+              required
+              className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+            >
+              {projects.map((proj) => (
+                <option key={proj.id} value={proj.id}>
+                  {proj.name} ({proj.key})
+                </option>
+              ))}
+              {projects.length === 0 && (
+                <option value="" disabled>
+                  No active projects found.
+                </option>
+              )}
+            </select>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="sprint-name">Sprint name</Label>
             <Input
@@ -111,9 +188,14 @@ export function CreateSprintForm({
           </div>
 
           {message ? (
-            <p className="text-muted-foreground text-sm" role="status">
+            <output
+              className={cn(
+                'block text-sm',
+                isError ? 'text-destructive' : 'text-muted-foreground'
+              )}
+            >
               {message}
-            </p>
+            </output>
           ) : null}
 
           <Button type="submit" disabled={isSubmitting} className="w-full">

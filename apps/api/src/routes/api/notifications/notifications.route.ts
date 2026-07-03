@@ -18,14 +18,20 @@ notificationsRouter.post('/send', async (req, res) => {
 
   const { subscriberId, message, title } = parsed.data;
 
-  await notificationsService.ensureSubscriber(subscriberId);
-  await notificationsService.sendInAppNotification({
-    subscriberId,
-    message,
-    title,
-  });
+  try {
+    await notificationsService.ensureSubscriber(subscriberId);
+    await notificationsService.sendInAppNotification({
+      subscriberId,
+      message,
+      title,
+    });
 
-  res.json({ success: true });
+    res.json({ success: true });
+  } catch (error) {
+    const messageStr =
+      error instanceof Error ? error.message : 'Failed to send notification';
+    res.status(500).json({ error: messageStr });
+  }
 });
 
 export default notificationsRouter;
