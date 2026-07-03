@@ -1,9 +1,9 @@
 import { redirect } from 'next/navigation';
 import { getUser, getDbUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
-import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { ProjectRegistry } from './project-registry';
 import type { Tables } from '@repo/types';
+import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 
 type DbUser = Tables<'users'>;
 type DbProject = Tables<'projects'> & {
