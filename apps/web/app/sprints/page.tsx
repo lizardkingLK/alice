@@ -80,4 +80,3 @@ export default async function SprintsPage() {
     </DashboardShell>
   );
 }
-
