@@ -1,4 +1,4 @@
-import { baseUrl } from '@/app/shared/values';
+import { baseUrl } from '@/app/_shared/values';
 import { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {

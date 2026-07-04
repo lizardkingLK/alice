@@ -6,7 +6,7 @@ import {
   getNovuAppId,
   getNovuSubscriberId,
   hasNovuConfig,
-} from '@/lib/env-public';
+} from '@/lib/env/env-public';
 import { getSubscriberId } from '@/lib/subscriber-id';
 
 export function NotificationInbox() {

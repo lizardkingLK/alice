@@ -62,8 +62,6 @@ export function UserRegistry({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  console.log('Current User Role:-------->', currentUserRole);
-
   const handleToggleActive = (user: DbUser) => {
     if (user.active) {
       // Trigger confirmation modal for deactivation

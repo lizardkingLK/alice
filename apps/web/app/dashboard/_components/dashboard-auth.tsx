@@ -11,17 +11,38 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
 import { Book, User, UserIcon } from 'lucide-react';
+import Image from 'next/image';
+import { cn } from '@repo/ui/lib/utils';
 
 type AuthControlsProps = {
   email?: string | null;
+  meta?: { avatar_url?: string };
 };
 
-const UserProfile = () => {
+type UserProfileProps = {
+  image?: string;
+};
+
+const UserProfile = ({ image }: Readonly<UserProfileProps>) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon">
-          <User />
+        <Button
+          variant="outline"
+          size="icon"
+          className={cn(image ? 'rounded-full' : '', 'cursor-pointer')}
+        >
+          {image ? (
+            <Image
+              alt="profile_picture"
+              src={image}
+              width={50}
+              height={50}
+              className="rounded-full"
+            />
+          ) : (
+            <User />
+          )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
@@ -47,11 +68,11 @@ const UserProfile = () => {
   );
 };
 
-export function AuthControls({ email }: Readonly<AuthControlsProps>) {
+export function AuthControls({ email, meta }: Readonly<AuthControlsProps>) {
   if (email) {
     return (
       <section className="flex items-center gap-4">
-        <UserProfile />
+        <UserProfile image={meta?.avatar_url} />
       </section>
     );
   }

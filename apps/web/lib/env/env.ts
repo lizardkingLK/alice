@@ -80,6 +80,9 @@ function warnOptionalEnv(): void {
   const novuAppId = readEnv('NEXT_PUBLIC_NOVU_APP_ID');
   const novuSubscriberId = readEnv('NEXT_PUBLIC_NOVU_SUBSCRIBER_ID');
   const serviceRoleKey = readEnv('SUPABASE_SERVICE_ROLE_KEY');
+  const externalAuthKey = readEnv(
+    'SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET'
+  );
 
   if (!siteUrl) {
     console.warn(
@@ -96,6 +99,12 @@ function warnOptionalEnv(): void {
   if (!serviceRoleKey) {
     console.warn(
       'warn. SUPABASE_SERVICE_ROLE_KEY is not set. Server-side admin features (e.g. user management) will be unavailable.'
+    );
+  }
+
+  if (!externalAuthKey) {
+    console.warn(
+      'warn. SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET is not set. Sign Up using Google will be unavailable.'
     );
   }
 }
