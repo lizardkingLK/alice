@@ -16,7 +16,7 @@ export function resolveSafeRedirectPath(
   return next;
 }
 
-import { getOptionalSiteUrl } from '@/lib/env';
+import { getOptionalSiteUrl } from '@/lib/env/env';
 
 /**
  * Resolves the request origin for Supabase redirectTo URLs.
