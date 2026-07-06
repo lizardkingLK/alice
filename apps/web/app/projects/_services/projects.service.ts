@@ -15,3 +15,55 @@ export async function getProjectList(): Promise<ProjectListRow[]> {
   });
   return data.projects;
 }
+
+export type CreateProjectInput = Omit<
+  Tables<'projects'>,
+  'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'created_by' | 'updated_by'
+>;
+
+export type UpdateProjectInput = Partial<CreateProjectInput>;
+
+export async function createProject(input: CreateProjectInput): Promise<Tables<'projects'>> {
+  const data = await apiFetch<{ project: Tables<'projects'> }>(apiProjects, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  return data.project;
+}
+
+export async function updateProject(
+  id: string,
+  input: UpdateProjectInput
+): Promise<Tables<'projects'>> {
+  const data = await apiFetch<{ project: Tables<'projects'> }>(`${apiProjects}/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  });
+  return data.project;
+}
+
+export async function softDeleteProject(id: string): Promise<Tables<'projects'>> {
+  const data = await apiFetch<{ project: Tables<'projects'> }>(
+    `${apiProjects}/${id}/soft-delete`,
+    {
+      method: 'PATCH',
+    }
+  );
+  return data.project;
+}
+
+export async function restoreProject(id: string): Promise<Tables<'projects'>> {
+  const data = await apiFetch<{ project: Tables<'projects'> }>(
+    `${apiProjects}/${id}/restore`,
+    {
+      method: 'PATCH',
+    }
+  );
+  return data.project;
+}
+
+export async function hardDeleteProject(id: string): Promise<void> {
+  await apiFetch<void>(`${apiProjects}/${id}`, {
+    method: 'DELETE',
+  });
+}

@@ -14,3 +14,5 @@ export {
   userActiveAuditUpdate,
   type RecordStatus,
 } from './audit.js';
+
+export * from './projects.js';
