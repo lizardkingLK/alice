@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { SprintList } from '@/app/sprints/_components/sprint-list';
-import { CreateSprintForm } from '@/app/sprints/_components/create-sprint-form';
-import { EditSprintForm } from '@/app/sprints/_components/edit-sprint-form';
+import { SprintForm } from '@/app/sprints/_components/sprint-form';
 import { listSprints, Sprint } from '@/app/sprints/_services/sprints.service';
 
 interface SprintsWorkspaceProps {
@@ -66,8 +65,8 @@ export function SprintsWorkspace({
       {isAddSprintOpen && (
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
           <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
-            <CreateSprintForm
-              onSprintCreated={handleSprintCreated}
+            <SprintForm
+              onSprintUpdated={handleSprintCreated}
               onClose={() => setIsAddSprintOpen(false)}
               onSuccess={() => setIsAddSprintOpen(false)}
             />
@@ -78,7 +77,7 @@ export function SprintsWorkspace({
       {editingSprint && (
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
           <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
-            <EditSprintForm
+            <SprintForm
               sprintId={editingSprint.id}
               onSprintUpdated={handleSprintUpdated}
               onClose={() => setEditingSprint(null)}

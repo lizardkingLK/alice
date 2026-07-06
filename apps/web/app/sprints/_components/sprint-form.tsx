@@ -16,16 +16,17 @@ import type { Tables } from '@repo/types';
 import {
   Loader2,
   X,
+  CalendarPlus,
   CalendarCog,
   CheckCircle,
   AlertCircle,
 } from 'lucide-react';
-import { getSprint, updateSprint, Sprint } from '../_services/sprints.service';
+import { createSprint, getSprint, updateSprint, Sprint } from '../_services/sprints.service';
 import { apiFetch } from '@/lib/api/api-client';
 
-type EditSprintFormProps = {
+type SprintFormProps = {
   className?: string;
-  sprintId: string;
+  sprintId?: string;
   // eslint-disable-next-line no-unused-vars
   onSprintUpdated?: (sprint: Sprint) => void;
   onClose?: () => void;
@@ -38,7 +39,7 @@ function validateSprintForm(
   endDate: string,
   selectedProjectId: string
 ): string | null {
-  if (!name || !startDate || !endDate) {
+  if (!name.trim() || !startDate || !endDate) {
     return 'Name, start date, and end date are required.';
   }
   if (endDate < startDate) {
@@ -50,16 +51,73 @@ function validateSprintForm(
   return null;
 }
 
-// eslint-disable-next-line sonarjs/cognitive-complexity
-export function EditSprintForm({
+function filterAndSortProjects(projects: Tables<'projects'>[]): Tables<'projects'>[] {
+  return projects
+    .filter((p: Tables<'projects'>) => p.status === 'active' && !p.deleted_at)
+    .sort((a: Tables<'projects'>, b: Tables<'projects'>) => a.name.localeCompare(b.name));
+}
+
+function renderProjectOptions(
+  isLoadingProjects: boolean,
+  projects: Tables<'projects'>[]
+) {
+  if (isLoadingProjects) {
+    return (
+      <option value="" disabled>
+        Loading projects...
+      </option>
+    );
+  }
+  if (projects.length === 0) {
+    return (
+      <option value="" disabled>
+        No active projects found.
+      </option>
+    );
+  }
+  return projects.map((proj: Tables<'projects'>) => (
+    <option key={proj.id} value={proj.id}>
+      {proj.name} ({proj.key})
+    </option>
+  ));
+}
+
+interface FormAlertMessageProps {
+  message: string | null;
+  isError: boolean;
+}
+
+function FormAlertMessage({ message, isError }: Readonly<FormAlertMessageProps>) {
+  if (!message) return null;
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-2 rounded-lg border p-3 text-sm',
+        isError
+          ? 'text-destructive bg-destructive/10 border-destructive/20'
+          : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
+      )}
+    >
+      {isError ? (
+        <AlertCircle className="h-4 w-4 shrink-0" />
+      ) : (
+        <CheckCircle className="h-4 w-4 shrink-0" />
+      )}
+      <span>{message}</span>
+    </div>
+  );
+}
+
+export function SprintForm({
   className,
   sprintId,
   onSprintUpdated,
   onClose,
   onSuccess,
-}: Readonly<EditSprintFormProps>) {
+}: Readonly<SprintFormProps>) {
+  const isEditMode = !!sprintId;
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoadingSprint, setIsLoadingSprint] = useState(true);
+  const [isLoadingSprint, setIsLoadingSprint] = useState(isEditMode);
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -78,10 +136,12 @@ export function EditSprintForm({
     apiFetch<{ projects: Tables<'projects'>[] }>('/api/projects')
       .then((data: { projects: Tables<'projects'>[] }) => {
         if (data.projects) {
-          const activeProjects = data.projects
-            .filter((p: Tables<'projects'>) => p.status === 'active' && !p.deleted_at)
-            .sort((a: Tables<'projects'>, b: Tables<'projects'>) => a.name.localeCompare(b.name));
+          const activeProjects = filterAndSortProjects(data.projects);
           setProjects(activeProjects);
+          // If in create mode and we have active projects, pre-select the first one
+          if (!sprintId && activeProjects.length > 0 && activeProjects[0]) {
+            setSelectedProjectId(activeProjects[0].id);
+          }
         }
       })
       .catch((error: unknown) => {
@@ -90,9 +150,9 @@ export function EditSprintForm({
       .finally(() => {
         setIsLoadingProjects(false);
       });
-  }, []);
+  }, [sprintId]);
 
-  // Fetch sprint details
+  // Fetch sprint details if in edit mode
   useEffect(() => {
     if (!sprintId) return;
     setIsLoadingSprint(true);
@@ -130,20 +190,29 @@ export function EditSprintForm({
     }
 
     try {
-      const updated = await updateSprint(sprintId, {
-        name,
-        goal: goal || null,
+      const sprintData = {
+        name: name.trim(),
+        goal: goal.trim() || null,
         projectId: selectedProjectId,
         startDate,
         endDate,
-      });
+      };
+
+      let result: Sprint;
+      if (sprintId) {
+        result = await updateSprint(sprintId, sprintData);
+        setMessage(`Sprint "${result.name}" updated.`);
+      } else {
+        result = await createSprint(sprintData);
+        setMessage(`Sprint "${result.name}" created.`);
+      }
 
       setIsSuccess(true);
-      onSprintUpdated?.(updated);
-      setMessage(`Sprint "${updated.name}" updated.`);
+      onSprintUpdated?.(result);
     } catch (error) {
+      const modeText = sprintId ? 'update' : 'create';
       const errorMessage =
-        error instanceof Error ? error.message : 'Failed to update sprint.';
+        error instanceof Error ? error.message : `Failed to ${modeText} sprint.`;
       setMessage(errorMessage);
       setIsError(true);
     } finally {
@@ -160,25 +229,16 @@ export function EditSprintForm({
     }
   }, [isSuccess, onSuccess]);
 
-  let projectOptions = null;
-  if (isLoadingProjects) {
-    projectOptions = (
-      <option value="" disabled>
-        Loading projects...
-      </option>
-    );
-  } else if (projects.length === 0) {
-    projectOptions = (
-      <option value="" disabled>
-        No active projects found.
-      </option>
+  let submitButtonContent;
+  if (isSubmitting) {
+    submitButtonContent = (
+      <>
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        {sprintId ? 'Saving...' : 'Creating...'}
+      </>
     );
   } else {
-    projectOptions = projects.map((proj: Tables<'projects'>) => (
-      <option key={proj.id} value={proj.id}>
-        {proj.name} ({proj.key})
-      </option>
-    ));
+    submitButtonContent = sprintId ? 'Save Changes' : 'Create Sprint';
   }
 
   return (
@@ -201,11 +261,17 @@ export function EditSprintForm({
 
       <CardHeader className="space-y-1.5 pb-4">
         <CardTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight">
-          <CalendarCog className="text-primary h-5 w-5" />
-          Edit Sprint
+          {sprintId ? (
+            <CalendarCog className="text-primary h-5 w-5" />
+          ) : (
+            <CalendarPlus className="text-primary h-5 w-5 animate-pulse" />
+          )}
+          {sprintId ? 'Edit Sprint' : 'Create Sprint'}
         </CardTitle>
         <CardDescription className="text-muted-foreground text-sm">
-          Update the name, goal, project and date range of this sprint.
+          {sprintId
+            ? 'Update the name, goal, project and date range of this sprint.'
+            : 'Plan a new sprint with a name, goal, project and date range.'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -226,7 +292,7 @@ export function EditSprintForm({
                 disabled={isLoadingProjects}
                 className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50"
               >
-                {projectOptions}
+                {renderProjectOptions(isLoadingProjects, projects)}
               </select>
             </div>
 
@@ -282,23 +348,7 @@ export function EditSprintForm({
               </div>
             </div>
 
-            {message ? (
-              <div
-                className={cn(
-                  'flex items-center gap-2 rounded-lg border p-3 text-sm',
-                  isError
-                    ? 'text-destructive bg-destructive/10 border-destructive/20'
-                    : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
-                )}
-              >
-                {isError ? (
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                ) : (
-                  <CheckCircle className="h-4 w-4 shrink-0" />
-                )}
-                <span>{message}</span>
-              </div>
-            ) : null}
+            <FormAlertMessage message={message} isError={isError} />
 
             <div className="flex gap-3 pt-2">
               {onClose && (
@@ -316,14 +366,7 @@ export function EditSprintForm({
                 disabled={isSubmitting || isSuccess}
                 className={`${onClose ? 'w-2/3' : 'w-full'}`}
               >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  'Save Changes'
-                )}
+                {submitButtonContent}
               </Button>
             </div>
           </form>
