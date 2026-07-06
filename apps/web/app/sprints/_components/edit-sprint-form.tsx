@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState, type ChangeEvent } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Card,
@@ -12,7 +12,7 @@ import {
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { cn } from '@repo/ui/lib/utils';
-import { apiFetch } from '@/lib/api-client';
+import { apiFetch } from '../../../lib/api-client';
 import type { Tables } from '@repo/types';
 import {
   Loader2,
@@ -21,7 +21,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from 'lucide-react';
-import { getSprint, updateSprint, Sprint } from '@/app/sprints/_services/sprints.service';
+import { getSprint, updateSprint, Sprint } from '../_services/sprints.service';
 
 type EditSprintFormProps = {
   className?: string;
@@ -76,15 +76,15 @@ export function EditSprintForm({
   useEffect(() => {
     setIsLoadingProjects(true);
     apiFetch<{ projects: Tables<'projects'>[] }>('/api/projects')
-      .then((data) => {
+      .then((data: { projects: Tables<'projects'>[] }) => {
         if (data.projects) {
           const activeProjects = data.projects
-            .filter((p) => p.status === 'active' && !p.deleted_at)
-            .sort((a, b) => a.name.localeCompare(b.name));
+            .filter((p: Tables<'projects'>) => p.status === 'active' && !p.deleted_at)
+            .sort((a: Tables<'projects'>, b: Tables<'projects'>) => a.name.localeCompare(b.name));
           setProjects(activeProjects);
         }
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         console.error('Error fetching active projects:', error);
       })
       .finally(() => {
@@ -97,14 +97,14 @@ export function EditSprintForm({
     if (!sprintId) return;
     setIsLoadingSprint(true);
     getSprint(sprintId)
-      .then((sprint) => {
+      .then((sprint: Sprint) => {
         setName(sprint.name);
         setGoal(sprint.goal ?? '');
         setStartDate(sprint.startDate);
         setEndDate(sprint.endDate);
         setSelectedProjectId(sprint.project?.id ?? '');
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         const errorMessage = error instanceof Error ? error.message : 'Failed to load sprint.';
         setMessage(errorMessage);
         setIsError(true);
@@ -174,7 +174,7 @@ export function EditSprintForm({
       </option>
     );
   } else {
-    projectOptions = projects.map((proj) => (
+    projectOptions = projects.map((proj: Tables<'projects'>) => (
       <option key={proj.id} value={proj.id}>
         {proj.name} ({proj.key})
       </option>
@@ -221,7 +221,7 @@ export function EditSprintForm({
               <select
                 id="sprint-project"
                 value={selectedProjectId}
-                onChange={(e) => setSelectedProjectId(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLSelectElement>) => setSelectedProjectId(e.target.value)}
                 required
                 disabled={isLoadingProjects}
                 className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50"
@@ -236,7 +236,7 @@ export function EditSprintForm({
                 id="sprint-name"
                 name="name"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                 placeholder="Sprint 1"
                 required
               />
@@ -248,7 +248,7 @@ export function EditSprintForm({
                 id="sprint-goal"
                 name="goal"
                 value={goal}
-                onChange={(e) => setGoal(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setGoal(e.target.value)}
                 rows={3}
                 placeholder="What should this sprint achieve?"
                 className={cn(
@@ -265,7 +265,7 @@ export function EditSprintForm({
                   name="startDate"
                   type="date"
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)}
                   required
                 />
               </div>
@@ -276,7 +276,7 @@ export function EditSprintForm({
                   name="endDate"
                   type="date"
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value)}
                   required
                 />
               </div>

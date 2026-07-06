@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState, type Dispatch } from 'react';
+import { FormEvent, useEffect, useState, type Dispatch, type ChangeEvent } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Card,
@@ -12,7 +12,7 @@ import {
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { cn } from '@repo/ui/lib/utils';
-import { apiFetch } from '@/lib/api-client';
+import { apiFetch } from '../../../lib/api-client';
 import type { Tables } from '@repo/types';
 import {
   Loader2,
@@ -21,7 +21,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from 'lucide-react';
-import { createSprint, Sprint } from '@/app/sprints/_services/sprints.service';
+import { createSprint, Sprint } from '../_services/sprints.service';
 
 type CreateSprintFormProps = {
   className?: string;
@@ -49,18 +49,18 @@ export function CreateSprintForm({
     // Fetch active projects via API
     setIsLoadingProjects(true);
     apiFetch<{ projects: Tables<'projects'>[] }>('/api/projects')
-      .then((data) => {
+      .then((data: { projects: Tables<'projects'>[] }) => {
         if (data.projects) {
           const activeProjects = data.projects
-            .filter((p) => p.status === 'active' && !p.deleted_at)
-            .sort((a, b) => a.name.localeCompare(b.name));
+            .filter((p: Tables<'projects'>) => p.status === 'active' && !p.deleted_at)
+            .sort((a: Tables<'projects'>, b: Tables<'projects'>) => a.name.localeCompare(b.name));
           setProjects(activeProjects);
           if (activeProjects.length > 0 && activeProjects[0]) {
             setSelectedProjectId(activeProjects[0].id);
           }
         }
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         console.error('Error fetching active projects via API:', error);
       })
       .finally(() => {
@@ -151,7 +151,7 @@ export function CreateSprintForm({
       </option>
     );
   } else {
-    projectOptions = projects.map((proj) => (
+    projectOptions = projects.map((proj: Tables<'projects'>) => (
       <option key={proj.id} value={proj.id}>
         {proj.name} ({proj.key})
       </option>
@@ -192,7 +192,7 @@ export function CreateSprintForm({
             <select
               id="sprint-project"
               value={selectedProjectId}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLSelectElement>) => setSelectedProjectId(e.target.value)}
               required
               disabled={isLoadingProjects}
               className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50"
