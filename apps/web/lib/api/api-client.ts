@@ -1,11 +1,12 @@
-import { createClient } from '@/lib/supabase/server';
+import { getAPIUrl } from '@/lib/api/api-url';
+import { createClient } from '@/lib/supabase/client';
 
 type ApiErrorResponse = {
   error: unknown;
 };
 
 async function getAccessToken(): Promise<string> {
-  const supabase = await createClient();
+  const supabase = createClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -35,7 +36,7 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const token = await getAccessToken();
 
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${path}`, {
+  const response = await fetch(`${getAPIUrl()}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',

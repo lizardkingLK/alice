@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/api-client.server';
+import { apiFetch } from '@/lib/api/api-client.server';
 import { Tables } from '@repo/types';
 
 type DbUser = Tables<'users'>;
