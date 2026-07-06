@@ -16,8 +16,11 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
 import { cn } from '@repo/ui/lib/utils';
-import { updateSprintStatus, type Sprint } from '@/lib/api-client';
 import { Plus, Calendar } from 'lucide-react';
+import {
+  Sprint,
+  updateSprintStatus,
+} from '@/app/sprints/_services/sprints.service';
 
 type SprintListProps = {
   sprints: Sprint[];

@@ -1,11 +1,11 @@
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 
 type ApiErrorResponse = {
   error: unknown;
 };
 
 async function getAccessToken(): Promise<string> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();

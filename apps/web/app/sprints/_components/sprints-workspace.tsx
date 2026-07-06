@@ -1,9 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { listSprints, type Sprint } from '@/lib/api-client';
 import { SprintList } from '@/app/sprints/_components/sprint-list';
 import { CreateSprintForm } from '@/app/sprints/_components/create-sprint-form';
+import { listSprints, Sprint } from '@/app/sprints/_services/sprints.service';
 
 interface SprintsWorkspaceProps {
   readonly initialSprints: Sprint[];
