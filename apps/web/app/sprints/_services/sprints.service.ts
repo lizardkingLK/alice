@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/api-client';
+import { apiFetch } from '@/lib/api/api-client';
 import { Tables } from '@repo/types';
 
 type DbSprint = Tables<'sprints'>;

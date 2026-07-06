@@ -6,6 +6,12 @@ Jira Teams is a cost-effective and feature-rich solution as an alternative for t
 
 ## Dev Guidelines
 
+### Documentation
+
+Take a look at `./docs` directory
+
+### First time setup
+
 ### Installing all apps
 
 ```bash

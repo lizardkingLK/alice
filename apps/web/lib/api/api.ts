@@ -1,20 +1,9 @@
-import { createClient } from '@/lib/supabase/client';
-
 type ApiErrorResponse = {
   error: unknown;
 };
 
-async function getAccessToken(): Promise<string> {
-  const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session?.access_token) {
-    throw new Error('You must be signed in to perform this action.');
-  }
-
-  return session.access_token;
+function getAPIUrl() {
+  return process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL;
 }
 
 function getApiErrorMessage(data: unknown): string {
@@ -29,13 +18,12 @@ function getApiErrorMessage(data: unknown): string {
     : 'Request failed. Please try again.';
 }
 
-export async function apiFetch<T>(
+export async function getResponse<T>(
   path: string,
+  token: string,
   init?: RequestInit
 ): Promise<T> {
-  const token = await getAccessToken();
-
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${path}`, {
+  const response = await fetch(`${getAPIUrl()}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
