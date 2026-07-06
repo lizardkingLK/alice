@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
 import { cn } from '@repo/ui/lib/utils';
-import { Plus, Calendar } from 'lucide-react';
+import { Plus, Calendar, Pencil } from 'lucide-react';
 import {
   Sprint,
   updateSprintStatus,
@@ -30,6 +30,8 @@ type SprintListProps = {
   // eslint-disable-next-line no-unused-vars
   onSprintUpdated?: (sprint: Sprint) => void;
   onAddSprint?: () => void;
+  // eslint-disable-next-line no-unused-vars
+  onEditSprint?: (sprint: Sprint) => void;
 };
 
 const STATUS_STYLES = {
@@ -127,6 +129,7 @@ export function SprintList({
   onRetry,
   onSprintUpdated,
   onAddSprint,
+  onEditSprint,
 }: Readonly<SprintListProps>) {
   return (
     <Card className="border-border bg-card/50 relative backdrop-blur-md">
@@ -208,9 +211,25 @@ export function SprintList({
                     <span className="font-medium">{sprint.project.name}</span>
                   </p>
                 ) : null}
-                {sprint.goal ? (
-                  <p className="text-muted-foreground text-sm">{sprint.goal}</p>
-                ) : null}
+                <div className="flex items-center justify-between gap-4">
+                  {sprint.goal ? (
+                    <p className="text-muted-foreground text-sm">{sprint.goal}</p>
+                  ) : (
+                    <div />
+                  )}
+                  {onEditSprint && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => onEditSprint(sprint)}
+                      className="text-muted-foreground hover:text-foreground shrink-0"
+                      aria-label="Edit Sprint"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </li>
             ))}
           </ul>

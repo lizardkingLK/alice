@@ -7,6 +7,7 @@ import {
 import {
   createSprintBodySchema,
   updateSprintStatusSchema,
+  updateSprintBodySchema,
 } from './sprints.schemas';
 import { sprintsService } from './sprints.service';
 
@@ -85,6 +86,49 @@ sprintsRouter.patch(
         error instanceof Error
           ? error.message
           : 'Failed to update sprint status';
+      res.status(500).json({ error: message });
+    }
+  }
+);
+
+sprintsRouter.get(
+  '/:id',
+  requireApiAuth,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const sprint = await sprintsService.getSprint(req.userId!, req.params.id!);
+      if (!sprint) {
+        return res.status(404).json({ error: 'Sprint not found' });
+      }
+      res.json({ sprint });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to get sprint';
+      res.status(500).json({ error: message });
+    }
+  }
+);
+
+sprintsRouter.patch(
+  '/:id',
+  requireApiAuth,
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = updateSprintBodySchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      return res.status(400).json({ error: z.treeifyError(parsed.error) });
+    }
+
+    try {
+      const sprint = await sprintsService.updateSprint(
+        req.userId!,
+        req.params.id!,
+        parsed.data
+      );
+      res.json({ sprint });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to update sprint';
       res.status(500).json({ error: message });
     }
   }

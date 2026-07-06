@@ -1,4 +1,8 @@
-import type { CreateSprintBody, SprintResponse } from './sprints.schemas';
+import type {
+  CreateSprintBody,
+  SprintResponse,
+  UpdateSprintBody,
+} from './sprints.schemas';
 import {
   sprintsRepository,
   type SprintRowWithProject,
@@ -66,6 +70,33 @@ export class SprintsService {
     status: SprintRow['status']
   ): Promise<SprintResponse> {
     const row = await sprintsRepository.updateStatus(userId, sprintId, status);
+    return toSprintResponse(row);
+  }
+
+  async getSprint(
+    userId: string,
+    sprintId: string
+  ): Promise<SprintResponse | null> {
+    const row = await sprintsRepository.findById(userId, sprintId);
+    return row ? toSprintResponse(row) : null;
+  }
+
+  async updateSprint(
+    userId: string,
+    sprintId: string,
+    input: UpdateSprintBody
+  ): Promise<SprintResponse> {
+    const goal =
+      input.goal === undefined || input.goal === '' ? null : input.goal;
+
+    const row = await sprintsRepository.update(userId, sprintId, {
+      name: input.name,
+      goal,
+      startDate: input.startDate,
+      endDate: input.endDate,
+      projectId: input.projectId,
+    });
+
     return toSprintResponse(row);
   }
 }

@@ -25,6 +25,21 @@ export const updateSprintStatusSchema = z.object({
 
 export type UpdateSprintStatusBody = z.infer<typeof updateSprintStatusSchema>;
 
+export const updateSprintBodySchema = z
+  .object({
+    name: z.string().trim().min(1, 'Name is required').max(200),
+    goal: z.string().trim().max(2000).nullable().optional(),
+    projectId: z.uuid('Project ID must be a valid UUID'),
+    startDate: dateStringSchema,
+    endDate: dateStringSchema,
+  })
+  .refine((data) => data.endDate >= data.startDate, {
+    message: 'End date must be on or after the start date',
+    path: ['endDate'],
+  });
+
+export type UpdateSprintBody = z.infer<typeof updateSprintBodySchema>;
+
 export type SprintResponse = {
   id: string;
   name: string;

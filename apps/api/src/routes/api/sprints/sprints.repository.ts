@@ -79,6 +79,59 @@ export class SprintsRepository {
 
     return data as unknown as SprintRowWithProject;
   }
+
+  async findById(
+    userId: string,
+    sprintId: string
+  ): Promise<SprintRowWithProject | null> {
+    const { data, error } = await supabase
+      .from('sprints')
+      .select('*, project:projects(id, name, key)')
+      .eq('id', sprintId)
+      .eq('created_by', userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('error. failed to find sprint:', error.message);
+      throw new Error('Failed to find sprint');
+    }
+
+    return data as unknown as SprintRowWithProject | null;
+  }
+
+  async update(
+    userId: string,
+    sprintId: string,
+    input: {
+      name: string;
+      goal: string | null;
+      startDate: string;
+      endDate: string;
+      projectId: string;
+    }
+  ): Promise<SprintRowWithProject> {
+    const { data, error } = await supabase
+      .from('sprints')
+      .update({
+        name: input.name,
+        goal: input.goal,
+        start_date: input.startDate,
+        end_date: input.endDate,
+        project_id: input.projectId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', sprintId)
+      .eq('created_by', userId)
+      .select('*, project:projects(id, name, key)')
+      .single();
+
+    if (error) {
+      console.error('error. failed to update sprint:', error.message);
+      throw new Error('Failed to update sprint');
+    }
+
+    return data as unknown as SprintRowWithProject;
+  }
 }
 
 export const sprintsRepository = new SprintsRepository();

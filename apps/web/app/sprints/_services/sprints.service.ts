@@ -95,3 +95,20 @@ export async function updateSprintStatus(
 
   return data.sprint;
 }
+
+export async function getSprint(id: string): Promise<Sprint> {
+  const data = await apiFetch<{ sprint: Sprint }>(`${apiSprints}/${id}`);
+  return data.sprint;
+}
+
+export async function updateSprint(
+  id: string,
+  input: CreateSprintInput
+): Promise<Sprint> {
+  const data = await apiFetch<{ sprint: Sprint }>(`${apiSprints}/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+
+  return data.sprint;
+}

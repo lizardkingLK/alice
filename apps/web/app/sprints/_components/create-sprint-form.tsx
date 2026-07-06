@@ -12,7 +12,7 @@ import {
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { cn } from '@repo/ui/lib/utils';
-import { createClient } from '@/lib/supabase/client';
+import { apiFetch } from '@/lib/api-client';
 import type { Tables } from '@repo/types';
 import {
   Loader2,
@@ -43,30 +43,29 @@ export function CreateSprintForm({
 
   const [projects, setProjects] = useState<Tables<'projects'>[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [isLoadingProjects, setIsLoadingProjects] = useState(true);
 
   useEffect(() => {
-    const supabase = createClient();
-
-    // Fetch active projects
-    supabase
-      .from('projects')
-      .select('*')
-      .eq('status', 'active')
-      .is('deleted_at', null)
-      .order('name', { ascending: true })
-      .then(
-        ({ data }) => {
-          if (data) {
-            setProjects(data);
-            if (data.length > 0 && data[0]) {
-              setSelectedProjectId(data[0].id);
-            }
+    // Fetch active projects via API
+    setIsLoadingProjects(true);
+    apiFetch<{ projects: Tables<'projects'>[] }>('/api/projects')
+      .then((data) => {
+        if (data.projects) {
+          const activeProjects = data.projects
+            .filter((p) => p.status === 'active' && !p.deleted_at)
+            .sort((a, b) => a.name.localeCompare(b.name));
+          setProjects(activeProjects);
+          if (activeProjects.length > 0 && activeProjects[0]) {
+            setSelectedProjectId(activeProjects[0].id);
           }
-        },
-        (error) => {
-          console.error('Error fetching active projects:', error);
         }
-      );
+      })
+      .catch((error) => {
+        console.error('Error fetching active projects via API:', error);
+      })
+      .finally(() => {
+        setIsLoadingProjects(false);
+      });
   }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -138,6 +137,27 @@ export function CreateSprintForm({
     }
   }, [isSuccess, onSuccess]);
 
+  let projectOptions = null;
+  if (isLoadingProjects) {
+    projectOptions = (
+      <option value="" disabled>
+        Loading projects...
+      </option>
+    );
+  } else if (projects.length === 0) {
+    projectOptions = (
+      <option value="" disabled>
+        No active projects found.
+      </option>
+    );
+  } else {
+    projectOptions = projects.map((proj) => (
+      <option key={proj.id} value={proj.id}>
+        {proj.name} ({proj.key})
+      </option>
+    ));
+  }
+
   return (
     <Card
       className={cn(
@@ -174,18 +194,10 @@ export function CreateSprintForm({
               value={selectedProjectId}
               onChange={(e) => setSelectedProjectId(e.target.value)}
               required
-              className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+              disabled={isLoadingProjects}
+              className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50"
             >
-              {projects.map((proj) => (
-                <option key={proj.id} value={proj.id}>
-                  {proj.name} ({proj.key})
-                </option>
-              ))}
-              {projects.length === 0 && (
-                <option value="" disabled>
-                  No active projects found.
-                </option>
-              )}
+              {projectOptions}
             </select>
           </div>
 
