@@ -21,7 +21,7 @@ import {
   UserPlus,
 } from 'lucide-react';
 import type { Tables } from '@repo/types';
-import { toggleUserActive } from '@/app/users/actions';
+import { toggleUserActive } from './actions';
 
 type DbUser = Tables<'users'>;
 
