@@ -12,7 +12,7 @@ import {
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { cn } from '@repo/ui/lib/utils';
-import { apiFetch } from '../../../lib/api-client';
+import { apiFetch } from '@/lib/api-client';
 import type { Tables } from '@repo/types';
 import {
   Loader2,
