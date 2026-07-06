@@ -12,7 +12,6 @@ import {
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { cn } from '@repo/ui/lib/utils';
-import { createSprint, type Sprint } from '@/lib/api-client';
 import { createClient } from '@/lib/supabase/client';
 import type { Tables } from '@repo/types';
 import {
@@ -22,6 +21,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from 'lucide-react';
+import { createSprint, Sprint } from '@/app/sprints/_services/sprints.service';
 
 type CreateSprintFormProps = {
   className?: string;

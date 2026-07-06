@@ -9,10 +9,16 @@
 ## Codebase Guidelines
 
 1. **Monorepo Architecture**: Always check if code should be placed in a shared package (under `packages/*`) or an application (under `apps/*`).
+
 2. **Separation of Concerns**: Always prefer to implement client code in web app and backend code in api app for CRUD operations
+
 3. **Usage of queries**: Always use prefetch using Server Side Rendering or Server components rather than using client components
+
 4. **Task Execution**: Do not run individual app scripts manually. Always use `pnpm turbo run <task>` (or your equivalent package manager syntax) from the root.
-5. **Backend Patterns**: When writing Express code, use strict TypeScript, explicit Request/Response types, and separate business logic from routes. 
+
+5. **Frontend Patterns**: When writing api calls to the backend derive types from @packages/types for database types to use as types and mutate with typescript utility functions instead of manually declaring full types for those payload and response DTOs.
+
+6. **Backend Patterns**: When writing Express code, use strict TypeScript, explicit Request/Response types, and separate business logic from routes. 
 i.e. 
 - Using individual routers `app.use('/users', userRouter)`
 - Using services with repository pattern with following folder structure
@@ -22,8 +28,9 @@ i.e.
   - users.service.ts
   - users.repository.ts
 ```
-6. **Imports**: Keep dependencies local to the package/app `package.json` where they are used.
 
-7. **Documentation**: Always escape glob patterns accurately so the parsing does not break.
+7. **Imports**: Keep dependencies local to the package/app `package.json` where they are used.
+
+8. **Documentation**: Always escape glob patterns accurately so the parsing does not break.
 i.e.:
 - [**/*] is wrong and ["**/*"] is correct. (Ignore the square braces and notice the double quotes)

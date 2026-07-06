@@ -15,8 +15,8 @@ app.use(corsConfig);
 app.use(jsonConfig);
 app.use(routesConfig);
 
-const listen = (port: number) =>
+startServer().then((port: number) =>
   app.listen(port, () =>
     console.log(`info. listening on http://localhost:${port}`)
-  );
-startServer().then(listen);
+  )
+);

@@ -10,6 +10,7 @@ const nextConfig = {
   images: {
     remotePatterns: [new URL('https://lh3.googleusercontent.com/**')],
   },
+  output: 'standalone',
 };
 
 export default nextConfig;
