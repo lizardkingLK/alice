@@ -18,5 +18,5 @@ export async function getUserList() {
     );
   }
 
-  return usersData;
+  return usersData ?? [];
 }

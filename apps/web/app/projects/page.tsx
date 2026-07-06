@@ -16,7 +16,7 @@ export default async function ProjectsPage() {
   const userRole = dbUser?.role ?? 'member';
 
   // Fetch all active users to populate the Project Owner choices
-  const usersList = (await getUserList()) ?? [];
+  const usersList = await getUserList();
   const projectsList = await getProjectList();
 
   return (
