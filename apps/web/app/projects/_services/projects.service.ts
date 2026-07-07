@@ -16,6 +16,33 @@ export async function getProjectList(): Promise<ProjectListRow[]> {
   return data.projects;
 }
 
+export type GetProjectsPaginatedResponse = {
+  projects: ProjectListRow[];
+  totalCount: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
+
+export async function getProjectListPaginated(
+  page: number,
+  limit: number,
+  status?: 'active' | 'archived',
+  search?: string
+): Promise<GetProjectsPaginatedResponse> {
+  let url = `${apiProjects}?page=${page}&limit=${limit}`;
+  if (status) {
+    url += `&status=${status}`;
+  }
+  if (search) {
+    url += `&search=${encodeURIComponent(search)}`;
+  }
+  const data = await apiFetch<GetProjectsPaginatedResponse>(url, {
+    next: { revalidate: 0 },
+  });
+  return data;
+}
+
 export type CreateProjectInput = Omit<
   Tables<'projects'>,
   'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'created_by' | 'updated_by'

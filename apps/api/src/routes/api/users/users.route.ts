@@ -18,6 +18,26 @@ usersRouter.get(
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
     try {
+      const pageQuery = req.query.page;
+      const limitQuery = req.query.limit;
+
+      if (pageQuery !== undefined && limitQuery !== undefined) {
+        const page = Number.parseInt(pageQuery as string, 10);
+        const limit = Number.parseInt(limitQuery as string, 10);
+
+        if (!Number.isNaN(page) && page > 0 && !Number.isNaN(limit) && limit > 0) {
+          const result = await usersService.listUsers(req.userId!, page, limit);
+          const totalPages = Math.ceil(result.totalCount / limit);
+          return res.json({
+            users: result.users,
+            totalCount: result.totalCount,
+            page,
+            limit,
+            totalPages,
+          });
+        }
+      }
+
       const users = await usersService.listUsers(req.userId!);
       res.json({ users });
     } catch (error) {

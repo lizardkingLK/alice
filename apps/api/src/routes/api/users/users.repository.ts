@@ -28,6 +28,27 @@ export class UsersRepository {
     return data as UserRow[];
   }
 
+  async listPaginated(page: number, limit: number): Promise<{ users: UserRow[]; totalCount: number }> {
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const { data, error, count } = await supabase
+      .from('users')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) {
+      console.error('error. failed to list users paginated:', error.message);
+      throw new Error('Failed to list users');
+    }
+
+    return {
+      users: (data as UserRow[]) ?? [],
+      totalCount: count ?? 0,
+    };
+  }
+
   async findById(id: string): Promise<UserRow | null> {
     const { data, error } = await supabase
       .from('users')

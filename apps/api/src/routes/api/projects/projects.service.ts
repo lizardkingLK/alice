@@ -47,7 +47,22 @@ export type CreateProjectInput = Omit<
 export type UpdateProjectInput = Partial<CreateProjectInput>;
 
 export class ProjectsService {
-  async listProjects(): Promise<ProjectRowWithOwner[]> {
+  async listProjects(): Promise<ProjectRowWithOwner[]>;
+  async listProjects(
+    page: number,
+    limit: number,
+    status?: 'active' | 'archived',
+    search?: string
+  ): Promise<{ projects: ProjectRowWithOwner[]; totalCount: number }>;
+  async listProjects(
+    page?: number,
+    limit?: number,
+    status?: 'active' | 'archived',
+    search?: string
+  ): Promise<{ projects: ProjectRowWithOwner[]; totalCount: number } | ProjectRowWithOwner[]> {
+    if (page !== undefined && limit !== undefined) {
+      return await projectsRepository.listPaginated(page, limit, status, search);
+    }
     return await projectsRepository.listAll();
   }
 

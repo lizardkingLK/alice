@@ -5,11 +5,30 @@ export type UserRow = Tables<'users'>;
 
 const apiUsers = '/api/users';
 
+export type GetUsersPaginatedResponse = {
+  users: UserRow[];
+  totalCount: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
+
 export async function getUsersList(): Promise<UserRow[]> {
   const data = await apiFetch<{ users: UserRow[] }>(apiUsers, {
     next: { revalidate: 0 },
   });
   return data.users;
+}
+
+export async function getUsersListPaginated(
+  page: number,
+  limit: number
+): Promise<GetUsersPaginatedResponse> {
+  const url = `${apiUsers}?page=${page}&limit=${limit}`;
+  const data = await apiFetch<GetUsersPaginatedResponse>(url, {
+    next: { revalidate: 0 },
+  });
+  return data;
 }
 
 export async function getUserList(): Promise<UserRow[]> {

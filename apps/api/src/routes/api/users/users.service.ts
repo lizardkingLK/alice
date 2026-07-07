@@ -34,8 +34,21 @@ export type UpdateUserInput = {
 };
 
 export class UsersService {
-  async listUsers(_actorId: string): Promise<UserRow[]> {
+  async listUsers(actorId: string): Promise<UserRow[]>;
+  async listUsers(
+    actorId: string,
+    page: number,
+    limit: number
+  ): Promise<{ users: UserRow[]; totalCount: number }>;
+  async listUsers(
+    _actorId: string,
+    page?: number,
+    limit?: number
+  ): Promise<{ users: UserRow[]; totalCount: number } | UserRow[]> {
     // Any authenticated user can view the registry
+    if (page !== undefined && limit !== undefined) {
+      return await usersRepository.listPaginated(page, limit);
+    }
     return await usersRepository.listAll();
   }
 

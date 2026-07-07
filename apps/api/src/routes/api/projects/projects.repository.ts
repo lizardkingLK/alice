@@ -42,6 +42,47 @@ export class ProjectsRepository {
     return unsafeCast<ProjectRowWithOwner[]>(data);
   }
 
+  async listPaginated(
+    page: number,
+    limit: number,
+    status?: 'active' | 'archived',
+    search?: string
+  ): Promise<{ projects: ProjectRowWithOwner[]; totalCount: number }> {
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    let query = supabase
+      .from('projects')
+      .select('*, owner:users!projects_owner_id_fkey(id, name, email)', { count: 'exact' });
+
+    // Handle soft deleted vs active status
+    if (status === 'archived') {
+      query = query.not('deleted_at', 'is', null);
+    } else {
+      query = query.is('deleted_at', null);
+    }
+
+    // Handle search query
+    if (search) {
+      const sanitized = `%${search}%`;
+      query = query.or(`name.ilike.${sanitized},key.ilike.${sanitized},description.ilike.${sanitized}`);
+    }
+
+    const { data, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) {
+      console.error('error. failed to list projects paginated:', error.message);
+      throw new Error('Failed to list projects');
+    }
+
+    return {
+      projects: unsafeCast<ProjectRowWithOwner[]>(data ?? []),
+      totalCount: count ?? 0,
+    };
+  }
+
   async findByKey(key: string, excludeId?: string): Promise<ProjectRow | null> {
     let query = supabase.from('projects').select('*').eq('key', key);
     if (excludeId) {
