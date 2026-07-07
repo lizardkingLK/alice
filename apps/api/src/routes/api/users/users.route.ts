@@ -75,6 +75,11 @@ usersRouter.put(
   '/:id',
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
     const bodySchema = updateUserSchema.omit({ id: true });
     const parsed = bodySchema.safeParse(req.body);
     if (!parsed.success) {
@@ -84,7 +89,7 @@ usersRouter.put(
     try {
       const user = await usersService.updateUser(
         req.userId!,
-        req.params.id!,
+        id,
         parsed.data
       );
       res.json({ user });
@@ -100,6 +105,11 @@ usersRouter.patch(
   '/:id/toggle-active',
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
     const toggleSchema = z.object({
       active: z.boolean(),
     });
@@ -111,7 +121,7 @@ usersRouter.patch(
     try {
       const user = await usersService.toggleUserActive(
         req.userId!,
-        req.params.id!,
+        id,
         parsed.data.active
       );
       res.json({ user });

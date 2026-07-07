@@ -81,6 +81,11 @@ projectsRouter.put(
   '/:id',
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ error: 'Project ID is required' });
+    }
+
     const parsed = updateProjectSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: z.treeifyError(parsed.error) });
@@ -89,7 +94,7 @@ projectsRouter.put(
     try {
       const project = await projectsService.updateProject(
         req.userId!,
-        req.params.id!,
+        id,
         parsed.data
       );
       res.json({ project });
@@ -105,10 +110,15 @@ projectsRouter.patch(
   '/:id/soft-delete',
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ error: 'Project ID is required' });
+    }
+
     try {
       const project = await projectsService.softDeleteProject(
         req.userId!,
-        req.params.id!
+        id
       );
       res.json({ project });
     } catch (error) {
@@ -123,10 +133,15 @@ projectsRouter.patch(
   '/:id/restore',
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ error: 'Project ID is required' });
+    }
+
     try {
       const project = await projectsService.restoreProject(
         req.userId!,
-        req.params.id!
+        id
       );
       res.json({ project });
     } catch (error) {
@@ -141,8 +156,13 @@ projectsRouter.delete(
   '/:id',
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ error: 'Project ID is required' });
+    }
+
     try {
-      await projectsService.hardDeleteProject(req.userId!, req.params.id!);
+      await projectsService.hardDeleteProject(req.userId!, id);
       res.json({ success: true });
     } catch (error) {
       const message =
