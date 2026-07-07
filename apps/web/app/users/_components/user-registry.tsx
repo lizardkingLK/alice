@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import {
   Card,
   CardContent,
@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import type { Tables } from '@repo/types';
 import { toggleUserActive } from './actions';
+import { CustomSpinner } from '@/app/users/_components/user-spinner';
 
 type DbUser = Tables<'users'>;
 
@@ -56,11 +57,17 @@ export function UserRegistry({
   currentUserId,
   currentUserRole,
 }: Readonly<UserRegistryProps>) {
+  const [mounted, setMounted] = useState(false);
+
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<DbUser | null>(null);
   const [deactivatingUser, setDeactivatingUser] = useState<DbUser | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleToggleActive = (user: DbUser) => {
     if (user.active) {
@@ -201,15 +208,21 @@ export function UserRegistry({
                       </span>
 
                       <span className="text-muted-foreground flex items-center gap-1 text-xs">
-                        <Calendar className="h-3 w-3" />
                         <span>
-                          {new Date(usr.created_at).toLocaleDateString(
-                            undefined,
-                            {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                            }
+                          {mounted ? (
+                            <div className="flex gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {new Date(usr.created_at).toLocaleDateString(
+                                undefined,
+                                {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                }
+                              )}
+                            </div>
+                          ) : (
+                            <CustomSpinner />
                           )}
                         </span>
                       </span>
