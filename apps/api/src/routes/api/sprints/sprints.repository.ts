@@ -44,19 +44,42 @@ export class SprintsRepository {
     return data as unknown as SprintRowWithProject;
   }
 
-  async listByUser(userId: string): Promise<SprintRowWithProject[]> {
-    const { data, error } = await supabase
+  async listByUser(
+    userId: string,
+    tab: 'active' | 'archived' = 'active',
+    page: number = 1,
+    limit: number = 5
+  ): Promise<{
+    sprints: SprintRowWithProject[];
+    totalCount: number;
+  }> {
+    const from = (page - 1) * limit;
+    const to = page * limit - 1;
+
+    let query = supabase
       .from('sprints')
-      .select('*, project:projects(id, name, key)')
-      .eq('created_by', userId)
-      .order('start_date', { ascending: false });
+      .select('*, project:projects(id, name, key)', { count: 'exact' })
+      .eq('created_by', userId);
+
+    if (tab === 'archived') {
+      query = query.in('status', ['archived']);
+    } else {
+      query = query.in('status', ['planned', 'active', 'closed']);
+    }
+
+    const { data, error, count } = await query
+      .order('start_date', { ascending: false })
+      .range(from, to);
 
     if (error) {
       console.error('error. failed to list sprints:', error.message);
       throw new Error('Failed to list sprints');
     }
 
-    return (data as unknown as SprintRowWithProject[]) ?? [];
+    return {
+      sprints: (data as unknown as SprintRowWithProject[]) ?? [],
+      totalCount: count ?? 0,
+    };
   }
 
   async updateStatus(

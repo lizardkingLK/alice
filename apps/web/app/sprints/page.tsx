@@ -17,11 +17,13 @@ export default async function SprintsPage() {
   }
 
   const supabase = await createClient();
-  const { data: dbSprints, error } = await supabase
+  const { data: dbSprints, error, count } = await supabase
     .from('sprints')
-    .select('*, project:projects(id, name, key)')
+    .select('*, project:projects(id, name, key)', { count: 'exact' })
     .eq('created_by', user.id)
-    .order('start_date', { ascending: false });
+    .in('status', ['planned', 'active'])
+    .order('start_date', { ascending: false })
+    .range(0, 4);
 
   if (error) {
     console.error(
@@ -34,13 +36,23 @@ export default async function SprintsPage() {
     (dbSprints as unknown as DbSprintRelation[]) ?? []
   ).map((element) => mapDbSprintToSprint(element));
 
+  const initialPagination = {
+    page: 1,
+    limit: 5,
+    totalCount: count ?? 0,
+    totalPages: Math.ceil((count ?? 0) / 5) || 1,
+  };
+
   return (
     <DashboardShell
       title="Sprints"
       description="Plan and track team sprints."
       user={user}
     >
-      <SprintsWorkspace initialSprints={sprintsList} />
+      <SprintsWorkspace
+        initialSprints={sprintsList}
+        initialPagination={initialPagination}
+      />
     </DashboardShell>
   );
 }

@@ -24,6 +24,7 @@ enum SprintStatus {
   planned
   active
   closed
+  archived
 }
 
 enum WorkItemType {

@@ -8,6 +8,7 @@ import {
   createSprintBodySchema,
   updateSprintStatusSchema,
   updateSprintBodySchema,
+  listSprintsQuerySchema,
 } from './sprints.schemas';
 import { sprintsService } from './sprints.service';
 
@@ -17,9 +18,20 @@ sprintsRouter.get(
   '/',
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
+    const parsed = listSprintsQuerySchema.safeParse(req.query);
+
+    if (!parsed.success) {
+      return res.status(400).json({ error: z.treeifyError(parsed.error) });
+    }
+
     try {
-      const sprints = await sprintsService.listSprints(req.userId!);
-      res.json({ sprints });
+      const result = await sprintsService.listSprints(
+        req.userId!,
+        parsed.data.status,
+        parsed.data.page,
+        parsed.data.limit
+      );
+      res.json(result);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to list sprints';
@@ -54,12 +66,12 @@ sprintsRouter.post(
 
 const statusUpdateMap: Record<
   'Not Started' | 'Ongoing' | 'Completed' | 'Archived',
-  'planned' | 'active' | 'closed'
+  'planned' | 'active' | 'closed' | 'archived'
 > = {
   'Not Started': 'planned',
   Ongoing: 'active',
   Completed: 'closed',
-  Archived: 'closed',
+  Archived: 'archived',
 };
 
 sprintsRouter.patch(

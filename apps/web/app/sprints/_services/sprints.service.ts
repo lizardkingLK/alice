@@ -9,9 +9,10 @@ const dbStatusToResponseMap = {
   planned: 'Not Started',
   active: 'Ongoing',
   closed: 'Completed',
+  archived: 'Archived',
 } as const satisfies Record<
   DbSprint['status'],
-  Exclude<SprintStatus, 'Archived'>
+  SprintStatus
 >;
 
 export type Sprint = Pick<DbSprint, 'id' | 'name' | 'goal'> & {
@@ -76,9 +77,27 @@ export async function createSprint(input: CreateSprintInput): Promise<Sprint> {
   return data.sprint;
 }
 
-export async function listSprints(): Promise<Sprint[]> {
-  const data = await apiFetch<{ sprints: Sprint[] }>(apiSprints);
-  return data.sprints;
+export type PaginatedSprints = {
+  sprints: Sprint[];
+  pagination: {
+    page: number;
+    limit: number;
+    totalCount: number;
+    totalPages: number;
+  };
+};
+
+export async function listSprints(
+  tab?: 'active' | 'archived',
+  page?: number,
+  limit?: number
+): Promise<PaginatedSprints> {
+  const params = new URLSearchParams();
+  if (tab) params.append('status', tab);
+  if (page) params.append('page', page.toString());
+  if (limit) params.append('limit', limit.toString());
+
+  return apiFetch<PaginatedSprints>(`${apiSprints}?${params.toString()}`);
 }
 
 export async function updateSprintStatus(

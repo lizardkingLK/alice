@@ -878,7 +878,7 @@ export type Database = {
         | 'due_date';
       ProjectStatus: 'active' | 'archived';
       RecordStatus: 'active' | 'inactive' | 'archived' | 'deleted';
-      SprintStatus: 'planned' | 'active' | 'closed';
+      SprintStatus: 'planned' | 'active' | 'closed' | 'archived';
       UserRole: 'admin' | 'manager' | 'member';
       WorkItemPriority: 'lowest' | 'low' | 'medium' | 'high' | 'highest';
       WorkItemStatus:
@@ -1021,7 +1021,7 @@ export const Constants = {
       ],
       ProjectStatus: ['active', 'archived'],
       RecordStatus: ['active', 'inactive', 'archived', 'deleted'],
-      SprintStatus: ['planned', 'active', 'closed'],
+      SprintStatus: ['planned', 'active', 'closed', 'archived'],
       UserRole: ['admin', 'manager', 'member'],
       WorkItemPriority: ['lowest', 'low', 'medium', 'high', 'highest'],
       WorkItemStatus: ['Draft', 'New', 'ToDo', 'InProgress', 'Testing', 'Done'],

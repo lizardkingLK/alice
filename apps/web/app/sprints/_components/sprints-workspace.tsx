@@ -7,24 +7,34 @@ import { listSprints, Sprint } from '@/app/sprints/_services/sprints.service';
 
 interface SprintsWorkspaceProps {
   readonly initialSprints: Sprint[];
+  readonly initialPagination: {
+    page: number;
+    limit: number;
+    totalCount: number;
+    totalPages: number;
+  };
 }
 
 export function SprintsWorkspace({
   initialSprints,
+  initialPagination,
 }: Readonly<SprintsWorkspaceProps>) {
+  const [filterTab, setFilterTab] = useState<'active' | 'archived'>('active');
   const [sprints, setSprints] = useState<Sprint[]>(initialSprints);
+  const [pagination, setPagination] = useState(initialPagination);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isAddSprintOpen, setIsAddSprintOpen] = useState(false);
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null);
 
-  const refreshSprints = useCallback(async () => {
+  const fetchSprints = useCallback(async (tab: 'active' | 'archived', page: number) => {
     setLoadError(null);
     setIsLoading(true);
 
     try {
-      const nextSprints = await listSprints();
-      setSprints(nextSprints);
+      const result = await listSprints(tab, page);
+      setSprints(result.sprints);
+      setPagination(result.pagination);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to load sprints.';
@@ -34,18 +44,32 @@ export function SprintsWorkspace({
     }
   }, []);
 
-  useEffect(() => {
-    setSprints(initialSprints);
-  }, [initialSprints]);
-
-  const handleSprintCreated = (sprint: Sprint) => {
-    setSprints((current) => [sprint, ...current]);
+  const handleTabChange = async (nextTab: 'active' | 'archived') => {
+    setFilterTab(nextTab);
+    await fetchSprints(nextTab, 1);
   };
 
-  const handleSprintUpdated = (updatedSprint: Sprint) => {
-    setSprints((current) =>
-      current.map((s) => (s.id === updatedSprint.id ? updatedSprint : s))
-    );
+  const handlePageChange = async (nextPage: number) => {
+    await fetchSprints(filterTab, nextPage);
+  };
+
+  const handleRetry = async () => {
+    await fetchSprints(filterTab, pagination.page);
+  };
+
+  useEffect(() => {
+    setFilterTab('active');
+    setSprints(initialSprints);
+    setPagination(initialPagination);
+  }, [initialSprints, initialPagination]);
+
+  const handleSprintCreated = async () => {
+    setFilterTab('active');
+    await fetchSprints('active', 1);
+  };
+
+  const handleSprintUpdated = async () => {
+    await fetchSprints(filterTab, pagination.page);
   };
 
   return (
@@ -53,9 +77,13 @@ export function SprintsWorkspace({
       <div className="w-full">
         <SprintList
           sprints={sprints}
+          pagination={pagination}
+          filterTab={filterTab}
+          onTabChange={handleTabChange}
+          onPageChange={handlePageChange}
           isLoading={isLoading}
           error={loadError}
-          onRetry={refreshSprints}
+          onRetry={handleRetry}
           onSprintUpdated={handleSprintUpdated}
           onAddSprint={() => setIsAddSprintOpen(true)}
           onEditSprint={(sprint) => setEditingSprint(sprint)}

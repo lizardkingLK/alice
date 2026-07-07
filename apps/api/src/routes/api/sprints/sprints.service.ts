@@ -10,12 +10,13 @@ import {
 } from './sprints.repository';
 
 const dbStatusToResponseMap: Record<
-  'planned' | 'active' | 'closed',
+  'planned' | 'active' | 'closed' | 'archived',
   'Not Started' | 'Ongoing' | 'Completed' | 'Archived'
 > = {
   planned: 'Not Started',
   active: 'Ongoing',
   closed: 'Completed',
+  archived: 'Archived',
 };
 
 function toSprintResponse(row: SprintRowWithProject): SprintResponse {
@@ -59,9 +60,36 @@ export class SprintsService {
     return toSprintResponse(row);
   }
 
-  async listSprints(userId: string): Promise<SprintResponse[]> {
-    const rows = await sprintsRepository.listByUser(userId);
-    return rows.map(toSprintResponse);
+  async listSprints(
+    userId: string,
+    tab: 'active' | 'archived' = 'active',
+    page: number = 1,
+    limit: number = 5
+  ): Promise<{
+    sprints: SprintResponse[];
+    pagination: {
+      page: number;
+      limit: number;
+      totalCount: number;
+      totalPages: number;
+    };
+  }> {
+    const { sprints, totalCount } = await sprintsRepository.listByUser(
+      userId,
+      tab,
+      page,
+      limit
+    );
+    const totalPages = Math.ceil(totalCount / limit);
+    return {
+      sprints: sprints.map(toSprintResponse),
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: totalPages === 0 ? 1 : totalPages,
+      },
+    };
   }
 
   async updateSprintStatus(
