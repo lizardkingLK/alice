@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import {
   Card,
   CardContent,
@@ -67,9 +67,7 @@ export function UserRegistry({
   currentUserId,
   currentUserRole,
 }: Readonly<UserRegistryProps>) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const { handlePageChange, handleLimitChange } = usePaginationNavigation(totalPages, limit);
 
   const [mounted, setMounted] = useState(false);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
@@ -81,23 +79,6 @@ export function UserRegistry({
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  const navigateToParams = (newPage: number, newLimit: number) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('page', newPage.toString());
-    params.set('limit', newLimit.toString());
-    router.push(`${pathname}?${params.toString()}`);
-  };
-
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      navigateToParams(newPage, limit);
-    }
-  };
-
-  const handleLimitChange = (newLimit: number) => {
-    navigateToParams(1, newLimit);
-  };
 
   const handleToggleActive = (user: DbUser) => {
     if (user.active) {

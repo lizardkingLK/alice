@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition, ReactNode, useEffect } from 'react';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import {
   Card,
   CardContent,
@@ -60,9 +60,13 @@ export function ProjectRegistry({
   currentUserId,
   currentUserRole,
 }: Readonly<ProjectRegistryProps>) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const {
+    handlePageChange,
+    handleLimitChange,
+    pathname,
+    router,
+    searchParams,
+  } = usePaginationNavigation(totalPages, limit);
 
   const [searchQuery, setSearchQuery] = useState(search);
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
@@ -93,23 +97,6 @@ export function ProjectRegistry({
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, pathname, router, searchParams]);
-
-  const navigateToParams = (newPage: number, newLimit: number) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('page', newPage.toString());
-    params.set('limit', newLimit.toString());
-    router.push(`${pathname}?${params.toString()}`);
-  };
-
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      navigateToParams(newPage, limit);
-    }
-  };
-
-  const handleLimitChange = (newLimit: number) => {
-    navigateToParams(1, newLimit);
-  };
 
   const handleTabChange = (newTab: 'active' | 'archived') => {
     const params = new URLSearchParams(searchParams.toString());

@@ -19,17 +19,17 @@ usersRouter.get(
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
     try {
-      const pagination = parsePagination(req);
-      if (pagination) {
-        const { page, limit } = pagination;
-        const result = await usersService.listUsers(req.userId!, page, limit);
-        const totalPages = Math.ceil(result.totalCount / limit);
+      const paginatedParams = parsePagination(req);
+      if (paginatedParams) {
+        const p = paginatedParams.page;
+        const l = paginatedParams.limit;
+        const paginatedResult = await usersService.listUsers(req.userId!, p, l);
         return res.json({
-          users: result.users,
-          totalCount: result.totalCount,
-          page,
-          limit,
-          totalPages,
+          users: paginatedResult.users,
+          totalCount: paginatedResult.totalCount,
+          page: p,
+          limit: l,
+          totalPages: Math.ceil(paginatedResult.totalCount / l),
         });
       }
 
