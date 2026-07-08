@@ -17,7 +17,9 @@ async function requireProjectManager(actorId: string) {
   }
 
   if (user.role !== 'admin' && user.role !== 'manager') {
-    throw new Error('Unauthorized. Only admins and managers can manage projects.');
+    throw new Error(
+      'Unauthorized. Only admins and managers can manage projects.'
+    );
   }
   return user;
 }
@@ -34,7 +36,9 @@ async function requireAdmin(actorId: string) {
   }
 
   if (user.role !== 'admin') {
-    throw new Error('Unauthorized. Only administrators can permanently delete projects.');
+    throw new Error(
+      'Unauthorized. Only administrators can permanently delete projects.'
+    );
   }
   return user;
 }
@@ -51,7 +55,10 @@ export class ProjectsService {
     return await projectsRepository.listAll();
   }
 
-  async createProject(actorId: string, input: CreateProjectInput): Promise<ProjectRow> {
+  async createProject(
+    actorId: string,
+    input: CreateProjectInput
+  ): Promise<ProjectRow> {
     await requireProjectManager(actorId);
 
     const duplicate = await projectsRepository.findByKey(input.key);
@@ -70,16 +77,24 @@ export class ProjectsService {
     await requireProjectManager(actorId);
 
     if (input.key) {
-      const duplicate = await projectsRepository.findByKey(input.key, projectId);
+      const duplicate = await projectsRepository.findByKey(
+        input.key,
+        projectId
+      );
       if (duplicate) {
-        throw new Error(`Another project with the key "${input.key}" already exists.`);
+        throw new Error(
+          `Another project with the key "${input.key}" already exists.`
+        );
       }
     }
 
     return await projectsRepository.update(projectId, input, actorId);
   }
 
-  async softDeleteProject(actorId: string, projectId: string): Promise<ProjectRow> {
+  async softDeleteProject(
+    actorId: string,
+    projectId: string
+  ): Promise<ProjectRow> {
     await requireProjectManager(actorId);
 
     return await projectsRepository.update(
@@ -92,7 +107,10 @@ export class ProjectsService {
     );
   }
 
-  async restoreProject(actorId: string, projectId: string): Promise<ProjectRow> {
+  async restoreProject(
+    actorId: string,
+    projectId: string
+  ): Promise<ProjectRow> {
     await requireProjectManager(actorId);
 
     return await projectsRepository.update(

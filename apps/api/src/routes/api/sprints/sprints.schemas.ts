@@ -53,4 +53,3 @@ export const listSprintsQuerySchema = z.object({
 });
 
 export type ListSprintsQuery = z.infer<typeof listSprintsQuerySchema>;
-

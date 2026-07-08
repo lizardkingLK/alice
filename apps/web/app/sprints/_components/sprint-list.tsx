@@ -262,12 +262,7 @@ function SprintListContent({
       <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-center">
         <p className="text-destructive text-sm">{error}</p>
         {onRetry ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onRetry}
-          >
+          <Button type="button" variant="outline" size="sm" onClick={onRetry}>
             Try again
           </Button>
         ) : null}

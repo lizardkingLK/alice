@@ -34,18 +34,15 @@ projectsRouter.post(
     }
 
     try {
-      const project = await projectsService.createProject(
-        req.userId!,
-        {
-          name: parsed.data.name,
-          key: parsed.data.key,
-          description: parsed.data.description ?? null,
-          owner_id: parsed.data.owner_id,
-          start_date: parsed.data.start_date ?? null,
-          end_date: parsed.data.end_date ?? null,
-          status: parsed.data.status ?? 'active',
-        }
-      );
+      const project = await projectsService.createProject(req.userId!, {
+        name: parsed.data.name,
+        key: parsed.data.key,
+        description: parsed.data.description ?? null,
+        owner_id: parsed.data.owner_id,
+        start_date: parsed.data.start_date ?? null,
+        end_date: parsed.data.end_date ?? null,
+        status: parsed.data.status ?? 'active',
+      });
       res.status(201).json({ project });
     } catch (error) {
       const message =
@@ -91,7 +88,9 @@ projectsRouter.patch(
       res.json({ project });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to soft delete project';
+        error instanceof Error
+          ? error.message
+          : 'Failed to soft delete project';
       res.status(500).json({ error: message });
     }
   }
@@ -124,7 +123,9 @@ projectsRouter.delete(
       res.json({ success: true });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to hard delete project';
+        error instanceof Error
+          ? error.message
+          : 'Failed to hard delete project';
       res.status(500).json({ error: message });
     }
   }

@@ -17,7 +17,11 @@ export default async function SprintsPage() {
   }
 
   const supabase = await createClient();
-  const { data: dbSprints, error, count } = await supabase
+  const {
+    data: dbSprints,
+    error,
+    count,
+  } = await supabase
     .from('sprints')
     .select('*, project:projects(id, name, key)', { count: 'exact' })
     .eq('created_by', user.id)

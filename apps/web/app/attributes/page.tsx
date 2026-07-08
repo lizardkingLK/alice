@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { getUser } from '../../lib/auth';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { getAttributes } from '@/app/attributes/_services/attribute.service';
-import AttributesTable from '@/app/attributes/_components/attributes-table';
+import AttributesWorkspace from '@/app/attributes/_components/attributes-workspace';
 
 export default async function AttributesDashboard() {
   const user = await getUser();
@@ -21,11 +21,7 @@ export default async function AttributesDashboard() {
       description="Manage Attributes Data."
       user={user}
     >
-      <AttributesTable attributes={initialAttributes} />
-
-      {/* <div className="text-muted-foreground flex h-40 items-center justify-center rounded-lg border border-dashed text-sm">
-        Attributes Workspace — content coming soon.
-      </div> */}
+      <AttributesWorkspace attributes={initialAttributes} />
     </DashboardShell>
   );
 }

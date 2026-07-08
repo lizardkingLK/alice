@@ -10,10 +10,7 @@ const dbStatusToResponseMap = {
   active: 'Ongoing',
   closed: 'Completed',
   archived: 'Archived',
-} as const satisfies Record<
-  DbSprint['status'],
-  SprintStatus
->;
+} as const satisfies Record<DbSprint['status'], SprintStatus>;
 
 export type Sprint = Pick<DbSprint, 'id' | 'name' | 'goal'> & {
   status: SprintStatus;

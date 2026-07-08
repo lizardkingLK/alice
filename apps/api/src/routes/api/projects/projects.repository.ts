@@ -56,7 +56,11 @@ export class ProjectsRepository {
   }
 
   async findById(id: string): Promise<ProjectRow | null> {
-    const { data, error } = await supabase.from('projects').select('*').eq('id', id).maybeSingle();
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
     if (error) {
       console.error('error. failed to find project by id:', error.message);
       throw new Error('Failed to find project');
@@ -64,7 +68,10 @@ export class ProjectsRepository {
     return data;
   }
 
-  async create(data: Omit<ProjectRow, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>, actorId: string): Promise<ProjectRow> {
+  async create(
+    data: Omit<ProjectRow, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>,
+    actorId: string
+  ): Promise<ProjectRow> {
     const insertData = {
       ...data,
       deleted_at: null,
@@ -84,7 +91,11 @@ export class ProjectsRepository {
     return created;
   }
 
-  async update(id: string, data: Partial<Omit<ProjectRow, 'id' | 'created_at' | 'updated_at'>>, actorId: string): Promise<ProjectRow> {
+  async update(
+    id: string,
+    data: Partial<Omit<ProjectRow, 'id' | 'created_at' | 'updated_at'>>,
+    actorId: string
+  ): Promise<ProjectRow> {
     const updateData = {
       ...data,
       ...auditUpdate(actorId),
@@ -105,10 +116,7 @@ export class ProjectsRepository {
   }
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('projects')
-      .delete()
-      .eq('id', id);
+    const { error } = await supabase.from('projects').delete().eq('id', id);
 
     if (error) {
       console.error('error. failed to delete project:', error.message);

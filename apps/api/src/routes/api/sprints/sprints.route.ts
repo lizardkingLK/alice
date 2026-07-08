@@ -108,7 +108,10 @@ sprintsRouter.get(
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
     try {
-      const sprint = await sprintsService.getSprint(req.userId!, req.params.id!);
+      const sprint = await sprintsService.getSprint(
+        req.userId!,
+        req.params.id!
+      );
       if (!sprint) {
         return res.status(404).json({ error: 'Sprint not found' });
       }

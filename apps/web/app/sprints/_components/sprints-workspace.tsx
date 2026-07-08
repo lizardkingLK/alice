@@ -27,22 +27,25 @@ export function SprintsWorkspace({
   const [isAddSprintOpen, setIsAddSprintOpen] = useState(false);
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null);
 
-  const fetchSprints = useCallback(async (tab: 'active' | 'archived', page: number) => {
-    setLoadError(null);
-    setIsLoading(true);
+  const fetchSprints = useCallback(
+    async (tab: 'active' | 'archived', page: number) => {
+      setLoadError(null);
+      setIsLoading(true);
 
-    try {
-      const result = await listSprints(tab, page);
-      setSprints(result.sprints);
-      setPagination(result.pagination);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to load sprints.';
-      setLoadError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+      try {
+        const result = await listSprints(tab, page);
+        setSprints(result.sprints);
+        setPagination(result.pagination);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to load sprints.';
+        setLoadError(message);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
 
   const handleTabChange = async (nextTab: 'active' | 'archived') => {
     setFilterTab(nextTab);

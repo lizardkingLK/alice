@@ -21,7 +21,12 @@ import {
   CheckCircle,
   AlertCircle,
 } from 'lucide-react';
-import { createSprint, getSprint, updateSprint, Sprint } from '../_services/sprints.service';
+import {
+  createSprint,
+  getSprint,
+  updateSprint,
+  Sprint,
+} from '../_services/sprints.service';
 import { apiFetch } from '@/lib/api/api-client';
 
 type SprintFormProps = {
@@ -51,10 +56,14 @@ function validateSprintForm(
   return null;
 }
 
-function filterAndSortProjects(projects: Tables<'projects'>[]): Tables<'projects'>[] {
+function filterAndSortProjects(
+  projects: Tables<'projects'>[]
+): Tables<'projects'>[] {
   return projects
     .filter((p: Tables<'projects'>) => p.status === 'active' && !p.deleted_at)
-    .sort((a: Tables<'projects'>, b: Tables<'projects'>) => a.name.localeCompare(b.name));
+    .sort((a: Tables<'projects'>, b: Tables<'projects'>) =>
+      a.name.localeCompare(b.name)
+    );
 }
 
 function renderProjectOptions(
@@ -87,7 +96,10 @@ interface FormAlertMessageProps {
   isError: boolean;
 }
 
-function FormAlertMessage({ message, isError }: Readonly<FormAlertMessageProps>) {
+function FormAlertMessage({
+  message,
+  isError,
+}: Readonly<FormAlertMessageProps>) {
   if (!message) return null;
   return (
     <div
@@ -165,7 +177,8 @@ export function SprintForm({
         setSelectedProjectId(sprint.project?.id ?? '');
       })
       .catch((error: unknown) => {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to load sprint.';
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to load sprint.';
         setMessage(errorMessage);
         setIsError(true);
       })
@@ -181,7 +194,12 @@ export function SprintForm({
     setMessage(null);
     setIsError(false);
 
-    const validationError = validateSprintForm(name, startDate, endDate, selectedProjectId);
+    const validationError = validateSprintForm(
+      name,
+      startDate,
+      endDate,
+      selectedProjectId
+    );
     if (validationError) {
       setMessage(validationError);
       setIsError(true);
@@ -212,7 +230,9 @@ export function SprintForm({
     } catch (error) {
       const modeText = sprintId ? 'update' : 'create';
       const errorMessage =
-        error instanceof Error ? error.message : `Failed to ${modeText} sprint.`;
+        error instanceof Error
+          ? error.message
+          : `Failed to ${modeText} sprint.`;
       setMessage(errorMessage);
       setIsError(true);
     } finally {
@@ -278,7 +298,9 @@ export function SprintForm({
         {isLoadingSprint ? (
           <div className="flex h-64 flex-col items-center justify-center gap-2">
             <Loader2 className="text-primary h-8 w-8 animate-spin" />
-            <p className="text-muted-foreground text-sm">Loading sprint details...</p>
+            <p className="text-muted-foreground text-sm">
+              Loading sprint details...
+            </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -287,7 +309,9 @@ export function SprintForm({
               <select
                 id="sprint-project"
                 value={selectedProjectId}
-                onChange={(e: ChangeEvent<HTMLSelectElement>) => setSelectedProjectId(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+                  setSelectedProjectId(e.target.value)
+                }
                 required
                 disabled={isLoadingProjects}
                 className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50"
@@ -302,7 +326,9 @@ export function SprintForm({
                 id="sprint-name"
                 name="name"
                 value={name}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setName(e.target.value)
+                }
                 placeholder="Sprint 1"
                 required
               />
@@ -314,7 +340,9 @@ export function SprintForm({
                 id="sprint-goal"
                 name="goal"
                 value={goal}
-                onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setGoal(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+                  setGoal(e.target.value)
+                }
                 rows={3}
                 placeholder="What should this sprint achieve?"
                 className={cn(
@@ -331,7 +359,9 @@ export function SprintForm({
                   name="startDate"
                   type="date"
                   value={startDate}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setStartDate(e.target.value)
+                  }
                   required
                 />
               </div>
@@ -342,7 +372,9 @@ export function SprintForm({
                   name="endDate"
                   type="date"
                   value={endDate}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setEndDate(e.target.value)
+                  }
                   required
                 />
               </div>

@@ -1,5 +1,5 @@
 import './config/load-env';
-import './config/preload';
+import './config/env';
 
 import express from 'express';
 
