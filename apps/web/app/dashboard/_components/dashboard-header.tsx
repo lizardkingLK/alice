@@ -23,7 +23,7 @@ export function DashboardHeader({
         <NotificationInbox />
       </section>
       <section>
-        <AuthControls email={user?.email} />
+        <AuthControls email={user?.email} meta={user?.user_metadata} />
       </section>
     </header>
   );

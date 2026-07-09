@@ -1,74 +1,39 @@
 import { redirect } from 'next/navigation';
 import { getUser } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
-import type { Sprint } from '@/lib/api-client';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { SprintsWorkspace } from '@/app/sprints/_components/sprints-workspace';
+import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.service.server';
 
-const dbStatusToResponseMap = {
-  planned: 'Not Started',
-  active: 'Ongoing',
-  closed: 'Completed',
-} as const;
+import { PaginatedSprints } from '@/app/sprints/_services/sprints.service';
 
-type DbSprintRelation = {
-  id: string;
-  name: string;
-  goal: string | null;
-  status: 'planned' | 'active' | 'closed';
-  start_date: string;
-  end_date: string;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-  project: {
-    id: string;
-    name: string;
-    key: string;
-  } | null;
-};
-
-export default async function SprintsPage() {
+export default async function SprintsPage({
+  searchParams,
+}: Readonly<{
+  searchParams: Promise<{ page?: string; limit?: string; tab?: string }>;
+}>) {
   const user = await getUser();
 
   if (!user) {
     redirect('/login');
   }
 
-  const supabase = await createClient();
-  const { data: dbSprints, error } = await supabase
-    .from('sprints')
-    .select('*, project:projects(id, name, key)')
-    .eq('created_by', user.id)
-    .order('start_date', { ascending: false });
+  const resolvedSearchParams = await searchParams;
+  const page = Number.parseInt(resolvedSearchParams.page ?? '1', 10);
+  const limit = Number.parseInt(resolvedSearchParams.limit ?? '5', 10);
+  const status = resolvedSearchParams.tab === 'archived' ? 'archived' : 'active';
 
-  if (error) {
-    console.error(
-      'error. supabase database error fetching sprints:',
-      error.message
-    );
+  let sprintsData: PaginatedSprints = {
+    sprints: [],
+    pagination: { page: 1, limit: 5, totalCount: 0, totalPages: 1 },
+  };
+  let fetchError: string | null = null;
+
+  try {
+    sprintsData = await getSprintsPaginatedServer(status, page, limit);
+  } catch (error) {
+    fetchError = error instanceof Error ? error.message : 'Failed to fetch sprints.';
+    console.error('error. failed to fetch sprints list via API:', fetchError);
   }
-
-  const sprintsList: Sprint[] = (
-    (dbSprints as unknown as DbSprintRelation[]) ?? []
-  ).map((row) => ({
-    id: row.id,
-    name: row.name,
-    goal: row.goal,
-    status: dbStatusToResponseMap[row.status] || 'Not Started',
-    startDate: row.start_date,
-    endDate: row.end_date,
-    createdBy: row.created_by ?? '',
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    project: row.project
-      ? {
-          id: row.project.id,
-          name: row.project.name,
-          key: row.project.key,
-        }
-      : null,
-  }));
 
   return (
     <DashboardShell
@@ -76,7 +41,12 @@ export default async function SprintsPage() {
       description="Plan and track team sprints."
       user={user}
     >
-      <SprintsWorkspace initialSprints={sprintsList} />
+      <SprintsWorkspace
+        sprints={sprintsData.sprints}
+        pagination={sprintsData.pagination}
+        filterTab={status}
+        error={fetchError}
+      />
     </DashboardShell>
   );
 }

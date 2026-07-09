@@ -14,7 +14,7 @@ import {
 import { UserPlus, Loader2, AlertCircle, CheckCircle, X } from 'lucide-react';
 import type { Tables } from '@repo/types';
 import { ActionState } from '@/lib/server-actions';
-import { createUser, updateUser } from '@/app/users/actions';
+import { createUser, updateUser } from './actions';
 
 type DbUser = Tables<'users'>;
 

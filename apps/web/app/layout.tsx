@@ -4,7 +4,7 @@ import {
   appTitle,
   appTitleTemplate,
   baseUrl,
-} from '@/app/shared/values';
+} from '@/app/_shared/values';
 import React from 'react';
 import { cn } from '@repo/ui/lib/utils';
 import { geistMono, geistSans, inter } from '@/app/_config/fonts';

@@ -1,13 +1,15 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-
 import {
-  buildProjectInsert,
-  buildProjectUpdate,
-  findDuplicateProjectKey,
+  createProject as apiCreateProject,
+  updateProject as apiUpdateProject,
+  softDeleteProject as apiSoftDeleteProject,
+  restoreProject as apiRestoreProject,
+  hardDeleteProject as apiHardDeleteProject,
+} from '../_services/projects.service';
+import {
   parseProjectForm,
-  patchProjectById,
   requireProjectManager,
 } from '@/lib/projects/admin-project';
 import {
@@ -17,7 +19,6 @@ import {
   type ActionState,
 } from '@/lib/server-actions';
 import { getDbUser } from '@/lib/auth';
-import { createAdminClient } from '@/lib/supabase/admin';
 
 // eslint-disable-next-line no-unused-vars
 type MutationAction = (actorId: string) => Promise<ActionState>;
@@ -41,30 +42,25 @@ export async function createProject(
   _prevState: ActionState | null,
   formData: FormData
 ): Promise<ActionState & { projectId?: string }> {
-  return runProjectMutation(async (actorId) => {
+  return runProjectMutation(async () => {
     const parsed = parseProjectForm(formData);
     if (!parsed.ok) {
       return parsed.state;
     }
 
-    const duplicate = await findDuplicateProjectKey(parsed.data.key);
-    if (duplicate) {
-      return duplicate;
-    }
-
-    const adminSupabase = createAdminClient();
-    const { data, error } = await adminSupabase
-      .from('projects')
-      .insert(buildProjectInsert(parsed.data, actorId))
-      .select('id')
-      .single();
-
-    if (error) {
-      return actionFailure(`Database insertion failed: ${error.message}`);
-    }
+    // Call API backend
+    const project = await apiCreateProject({
+      name: parsed.data.name,
+      key: parsed.data.key,
+      description: parsed.data.description ?? null,
+      owner_id: parsed.data.owner_id,
+      start_date: parsed.data.start_date ?? null,
+      end_date: parsed.data.end_date ?? null,
+      status: parsed.data.status,
+    });
 
     revalidatePath('/projects');
-    return { ...actionSuccess(), projectId: data.id };
+    return { ...actionSuccess(), projectId: project.id };
   });
 }
 
@@ -73,26 +69,22 @@ export async function updateProject(
   _prevState: ActionState | null,
   formData: FormData
 ): Promise<ActionState> {
-  return runProjectMutation(async (actorId) => {
+  return runProjectMutation(async () => {
     const parsed = parseProjectForm(formData);
     if (!parsed.ok) {
       return parsed.state;
     }
 
-    const duplicate = await findDuplicateProjectKey(parsed.data.key, projectId);
-    if (duplicate) {
-      return duplicate;
-    }
-
-    const adminSupabase = createAdminClient();
-    const { error } = await adminSupabase
-      .from('projects')
-      .update(buildProjectUpdate(parsed.data, actorId))
-      .eq('id', projectId);
-
-    if (error) {
-      return actionFailure(`Database update failed: ${error.message}`);
-    }
+    // Call API backend
+    await apiUpdateProject(projectId, {
+      name: parsed.data.name,
+      key: parsed.data.key,
+      description: parsed.data.description ?? null,
+      owner_id: parsed.data.owner_id,
+      start_date: parsed.data.start_date ?? null,
+      end_date: parsed.data.end_date ?? null,
+      status: parsed.data.status,
+    });
 
     revalidatePath('/projects');
     return actionSuccess();
@@ -102,40 +94,18 @@ export async function updateProject(
 export async function softDeleteProject(
   projectId: string
 ): Promise<ActionState> {
-  return runProjectMutation(async (actorId) => {
-    const result = await patchProjectById(
-      projectId,
-      {
-        deleted_at: new Date().toISOString(),
-        status: 'archived',
-      },
-      actorId
-    );
-
-    if (result.success) {
-      revalidatePath('/projects');
-    }
-
-    return result;
+  return runProjectMutation(async () => {
+    await apiSoftDeleteProject(projectId);
+    revalidatePath('/projects');
+    return actionSuccess();
   });
 }
 
 export async function restoreProject(projectId: string): Promise<ActionState> {
-  return runProjectMutation(async (actorId) => {
-    const result = await patchProjectById(
-      projectId,
-      {
-        deleted_at: null,
-        status: 'active',
-      },
-      actorId
-    );
-
-    if (result.success) {
-      revalidatePath('/projects');
-    }
-
-    return result;
+  return runProjectMutation(async () => {
+    await apiRestoreProject(projectId);
+    revalidatePath('/projects');
+    return actionSuccess();
   });
 }
 
@@ -154,16 +124,7 @@ export async function hardDeleteProject(
   }
 
   try {
-    const adminSupabase = createAdminClient();
-    const { error } = await adminSupabase
-      .from('projects')
-      .delete()
-      .eq('id', projectId);
-
-    if (error) {
-      return actionFailure(error.message);
-    }
-
+    await apiHardDeleteProject(projectId);
     revalidatePath('/projects');
     return actionSuccess();
   } catch (err) {

@@ -5,10 +5,12 @@ import healthRouter from '../routes/api/health/health.route';
 import notificationsRouter from '../routes/api/notifications/notifications.route';
 import sprintsRouter from '../routes/api/sprints/sprints.route';
 import projectsRouter from '../routes/api/projects/projects.route';
+import attributesRouter from '../routes/api/attributes/attributes.route';
 
 const routesConfig: Router = Router();
 
 routesConfig.use('/', healthRouter);
+routesConfig.use('/api/attributes', attributesRouter);
 routesConfig.use('/api/files', filesRouter);
 routesConfig.use('/api/notifications', notificationsRouter);
 routesConfig.use('/api/projects', projectsRouter);

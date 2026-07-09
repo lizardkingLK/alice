@@ -1,16 +1,21 @@
 import { redirect } from 'next/navigation';
 import { getUser, getDbUser } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
-import type { Tables } from '@repo/types';
 import { ProjectRegistry } from '@/app/projects/_components/project-registry';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
+import { getProjectListPaginated, type ProjectListRow } from '@/app/projects/_services/projects.service';
+import { getUserList } from '@/app/users/_services/users.service';
 
-type DbUser = Tables<'users'>;
-type DbProject = Tables<'projects'> & {
-  owner?: Pick<DbUser, 'id' | 'name' | 'email'> | null;
-};
+export default async function ProjectsPage({
+  searchParams,
+}: Readonly<{
+  searchParams: Promise<{ page?: string; limit?: string; tab?: string; search?: string }>;
+}>) {
+  const resolvedSearchParams = await searchParams;
+  const page = Number.parseInt(resolvedSearchParams.page ?? '1', 10);
+  const limit = Number.parseInt(resolvedSearchParams.limit ?? '10', 10);
+  const status = resolvedSearchParams.tab === 'archived' ? 'archived' : 'active';
+  const search = resolvedSearchParams.search ?? '';
 
-export default async function ProjectsPage() {
   const user = await getUser();
 
   if (!user) {
@@ -20,60 +25,16 @@ export default async function ProjectsPage() {
   const dbUser = await getDbUser();
   const userRole = dbUser?.role ?? 'member';
 
-  const supabase = await createClient();
-
   // Fetch all active users to populate the Project Owner choices
-  const { data: usersData, error: usersError } = await supabase
-    .from('users')
-    .select(
-      'id, name, email, active, role, status, profile_picture, created_by, created_at, updated_by, updated_at'
-    )
-    .eq('active', true)
-    .order('name', { ascending: true });
+  const usersList = (await getUserList()) ?? [];
 
-  if (usersError) {
-    console.error(
-      'error. supabase database error fetching users:',
-      usersError.message
-    );
+  let projectsData = { projects: [] as ProjectListRow[], totalCount: 0, page: 1, limit: 10, totalPages: 1 };
+  try {
+    projectsData = await getProjectListPaginated(page, limit, status, search);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('error. failed to fetch projects list via API:', message);
   }
-
-  // Fetch all projects including soft-deleted ones via Express API
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const token = session?.access_token;
-
-  let projectsList: DbProject[] = [];
-
-  if (token) {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/projects`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          next: { revalidate: 0 },
-        }
-      );
-
-      if (response.ok) {
-        const data = (await response.json()) as { projects?: DbProject[] };
-        projectsList = data.projects ?? [];
-      } else {
-        console.error(
-          'Failed to fetch projects from API:',
-          response.statusText
-        );
-      }
-    } catch (err) {
-      console.error('Error fetching projects from API:', err);
-    }
-  }
-
-  const usersList: DbUser[] = usersData ?? [];
 
   return (
     <DashboardShell
@@ -83,7 +44,13 @@ export default async function ProjectsPage() {
     >
       <div className="w-full">
         <ProjectRegistry
-          projects={projectsList}
+          projects={projectsData.projects}
+          totalCount={projectsData.totalCount}
+          page={projectsData.page}
+          limit={projectsData.limit}
+          totalPages={projectsData.totalPages}
+          tab={status}
+          search={search}
           users={usersList}
           currentUserId={dbUser?.id}
           currentUserRole={userRole}

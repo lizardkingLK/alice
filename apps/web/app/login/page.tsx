@@ -3,6 +3,7 @@ import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { login } from '@/app/auth/actions';
+import GoogleLogin from '@/app/login/_components/google-login';
 
 type LoginPageProps = {
   searchParams: Promise<{ error?: string; reset?: string }>;
@@ -79,6 +80,10 @@ export default async function LoginPage({
             Sign up
           </Link>
         </p>
+
+        <p className="text-muted-foreground text-center">or</p>
+
+        <GoogleLogin />
       </div>
     </main>
   );
