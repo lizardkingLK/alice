@@ -34,47 +34,47 @@ export class TeamsRepository {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('error. failed to list teams:', error.message);
-      throw new Error('Failed to list teams');
+      console.error('database error list all teams:', error.message);
+      throw new Error('Failed to retrieve teams list');
     }
 
     return unsafeCast<TeamRowWithManager[]>(data);
   }
 
   async listPaginated(
-    page: number,
-    limit: number,
-    status?: 'active' | 'inactive' | 'archived' | 'deleted',
-    search?: string
+    pageNumber: number,
+    pageSize: number,
+    teamStatus?: 'active' | 'inactive' | 'archived' | 'deleted',
+    searchKeyword?: string
   ): Promise<{ teams: TeamRowWithManager[]; totalCount: number }> {
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
+    const rangeStart = (pageNumber - 1) * pageSize;
+    const rangeEnd = rangeStart + pageSize - 1;
 
-    let query = supabase
+    let dbQuery = supabase
       .from('teams')
       .select('*, manager:users!teams_manager_id_fkey(id, name, email)', { count: 'exact' });
 
-    if (status) {
-      query = query.eq('status', status);
+    if (teamStatus) {
+      dbQuery = dbQuery.eq('status', teamStatus);
     }
 
-    if (search) {
-      const sanitized = `%${search}%`;
-      query = query.or(`name.ilike.${sanitized},description.ilike.${sanitized},tech_stack.ilike.${sanitized}`);
+    if (searchKeyword) {
+      const likeExpr = `%${searchKeyword}%`;
+      dbQuery = dbQuery.or(`name.ilike.${likeExpr},description.ilike.${likeExpr},tech_stack.ilike.${likeExpr}`);
     }
 
-    const { data, error, count } = await query
+    const result = await dbQuery
       .order('created_at', { ascending: false })
-      .range(from, to);
+      .range(rangeStart, rangeEnd);
 
-    if (error) {
-      console.error('error. failed to list teams paginated:', error.message);
-      throw new Error('Failed to list teams');
+    if (result.error) {
+      console.error('database error list paginated teams:', result.error.message);
+      throw new Error(`Failed to list teams: ${result.error.message}`);
     }
 
     return {
-      teams: unsafeCast<TeamRowWithManager[]>(data ?? []),
-      totalCount: count ?? 0,
+      teams: unsafeCast<TeamRowWithManager[]>(result.data ?? []),
+      totalCount: result.count ?? 0,
     };
   }
 
@@ -85,8 +85,8 @@ export class TeamsRepository {
     }
     const { data, error } = await query.maybeSingle();
     if (error) {
-      console.error('error. failed to find team by name:', error.message);
-      throw new Error('Failed to check duplicate team name');
+      console.error('database query error find team by name:', error.message);
+      throw new Error('Failed to locate team by name');
     }
     return data;
   }
@@ -94,60 +94,60 @@ export class TeamsRepository {
   async findById(id: string): Promise<TeamRow | null> {
     const { data, error } = await supabase.from('teams').select('*').eq('id', id).maybeSingle();
     if (error) {
-      console.error('error. failed to find team by id:', error.message);
-      throw new Error('Failed to find team');
+      console.error('database query error find team by id:', error.message);
+      throw new Error('Failed to locate team by id');
     }
     return data;
   }
 
-  async create(data: Omit<TeamRow, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'>, actorId: string): Promise<TeamRow> {
-    const insertData = {
-      ...data,
-      ...auditCreateWithoutStatus(actorId),
+  async create(teamData: Omit<TeamRow, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'>, userId: string): Promise<TeamRow> {
+    const payload = {
+      ...teamData,
+      ...auditCreateWithoutStatus(userId),
     };
-    const { data: created, error } = await supabase
+    const response = await supabase
       .from('teams')
-      .insert(insertData)
+      .insert(payload)
       .select()
       .single();
 
-    if (error) {
-      console.error('error. failed to create team:', error.message);
-      throw new Error(`Database insertion failed: ${error.message}`);
+    if (response.error) {
+      console.error('database failure creating team:', response.error.message);
+      throw new Error(`Create team DB error: ${response.error.message}`);
     }
 
-    return created;
+    return response.data;
   }
 
-  async update(id: string, data: Partial<Omit<TeamRow, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'>>, actorId: string): Promise<TeamRow> {
-    const updateData = {
-      ...data,
-      ...auditUpdate(actorId),
+  async update(teamId: string, teamData: Partial<Omit<TeamRow, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'>>, userId: string): Promise<TeamRow> {
+    const payload = {
+      ...teamData,
+      ...auditUpdate(userId),
     };
-    const { data: updated, error } = await supabase
+    const response = await supabase
       .from('teams')
-      .update(updateData)
-      .eq('id', id)
+      .update(payload)
+      .eq('id', teamId)
       .select()
       .single();
 
-    if (error) {
-      console.error('error. failed to update team:', error.message);
-      throw new Error(`Database update failed: ${error.message}`);
+    if (response.error) {
+      console.error('database failure updating team:', response.error.message);
+      throw new Error(`Update team DB error: ${response.error.message}`);
     }
 
-    return updated;
+    return response.data;
   }
 
-  async delete(id: string): Promise<void> {
-    const { error } = await supabase
+  async delete(teamId: string): Promise<void> {
+    const response = await supabase
       .from('teams')
       .delete()
-      .eq('id', id);
+      .eq('id', teamId);
 
-    if (error) {
-      console.error('error. failed to delete team:', error.message);
-      throw new Error(`Database delete failed: ${error.message}`);
+    if (response.error) {
+      console.error('database failure deleting team:', response.error.message);
+      throw new Error(`Delete team DB error: ${response.error.message}`);
     }
   }
 }

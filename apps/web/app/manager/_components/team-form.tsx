@@ -25,7 +25,7 @@ import type { Tables } from '@repo/types';
 type DbUser = Tables<'users'>;
 type DbTeam = Tables<'teams'>;
 
-const initialState: ActionState = {
+const initialActionState: ActionState = {
   success: false,
   error: null,
 };
@@ -43,43 +43,41 @@ export function TeamForm({
   teamToEdit = null,
   users,
 }: Readonly<TeamFormProps>) {
-  const isEditMode = !!teamToEdit;
+  const editActionActive = !!teamToEdit;
 
-  const boundAction = isEditMode
+  const serverActionTarget = editActionActive
     ? updateTeam.bind(null, teamToEdit.id)
     : createTeam;
 
-  const [state, formAction, isPending] = useActionState(
-    boundAction,
-    initialState
+  const [formState, executeAction, isActionPending] = useActionState(
+    serverActionTarget,
+    initialActionState
   );
 
-  const formRef = useRef<HTMLFormElement>(null);
+  const teamFormReference = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    if (state.success) {
-      if (!isEditMode) {
-        formRef.current?.reset();
+    if (formState.success) {
+      if (!editActionActive) {
+        teamFormReference.current?.reset();
       }
-      const timer = setTimeout(() => {
+      const completionTimer = setTimeout(() => {
         onSuccess?.();
       }, 1200);
-      return () => clearTimeout(timer);
+      return () => clearTimeout(completionTimer);
     }
-  }, [state.success, onSuccess, isEditMode]);
+  }, [formState.success, onSuccess, editActionActive]);
 
-  let submitButtonText: ReactNode;
-  if (isPending) {
-    submitButtonText = (
+  let buttonLabelContent: ReactNode;
+  if (isActionPending) {
+    buttonLabelContent = (
       <>
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        {isEditMode ? 'Updating...' : 'Creating...'}
+        {editActionActive ? 'Updating team details...' : 'Creating new team...'}
       </>
     );
-  } else if (isEditMode) {
-    submitButtonText = 'Save Changes';
   } else {
-    submitButtonText = 'Create Team';
+    buttonLabelContent = editActionActive ? 'Save Changes' : 'Create Team';
   }
 
   return (
@@ -89,57 +87,55 @@ export function TeamForm({
           type="button"
           onClick={onClose}
           className="hover:bg-muted text-muted-foreground hover:text-foreground absolute top-4 right-4 cursor-pointer rounded-full p-1.5 transition-colors"
-          aria-label="Close modal"
+          aria-label="Dismiss form"
         >
           <X className="h-4 w-4" />
         </button>
       )}
 
-      <CardHeader className="space-y-1.5 pb-4">
+      <CardHeader className="space-y-1 pb-4">
         <CardTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight">
           <Users className="text-primary h-5 w-5" />
-          {isEditMode ? 'Edit Team' : 'Create New Team'}
+          {editActionActive ? 'Modify Team Configuration' : 'Register New Team'}
         </CardTitle>
         <CardDescription className="text-muted-foreground text-sm">
-          {isEditMode
-            ? 'Modify details for the existing team.'
-            : 'Register a new engineering team to assign workload and project sprints.'}
+          {editActionActive
+            ? 'Update the settings, tech stack, and manager of the selected team.'
+            : 'Register a new engineering team workspace to organize resources.'}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form ref={formRef} action={formAction} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-medium">
-                Team Name
-              </Label>
-              <Input
-                id="name"
-                name="name"
-                placeholder="e.g. Platform Team"
-                required
-                defaultValue={teamToEdit?.name ?? ''}
-                className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
-              />
-            </div>
+        <form ref={teamFormReference} action={executeAction} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name" className="text-sm font-medium">
+              Team Identifier / Name
+            </Label>
+            <Input
+              id="name"
+              name="name"
+              placeholder="e.g. Platform Team"
+              required
+              defaultValue={teamToEdit?.name ?? ''}
+              className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
+            />
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="tech_stack" className="text-sm font-medium">
-                Tech Stack
-              </Label>
-              <Input
-                id="tech_stack"
-                name="tech_stack"
-                placeholder="e.g. Next.js, Node, Postgres"
-                defaultValue={teamToEdit?.tech_stack ?? ''}
-                className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="tech_stack" className="text-sm font-medium">
+              Primary Technology Stack
+            </Label>
+            <Input
+              id="tech_stack"
+              name="tech_stack"
+              placeholder="e.g. Next.js, Node, Postgres"
+              defaultValue={teamToEdit?.tech_stack ?? ''}
+              className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
+            />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="description" className="text-sm font-medium">
-              Description
+              Role Description
             </Label>
             <Input
               id="description"
@@ -150,63 +146,61 @@ export function TeamForm({
             />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="manager_id" className="text-sm font-medium">
-                Team Manager
-              </Label>
-              <select
-                id="manager_id"
-                name="manager_id"
-                required
-                defaultValue={teamToEdit?.manager_id ?? ''}
-                className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-              >
-                <option value="" disabled>
-                  Select Manager...
-                </option>
-                {users
-                  .filter((u) => u.role === 'manager' || u.role === 'admin')
-                  .map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name} ({u.email})
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="status" className="text-sm font-medium">
-                Status
-              </Label>
-              <select
-                id="status"
-                name="status"
-                required
-                defaultValue={teamToEdit?.status ?? 'active'}
-                className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="archived">Archived</option>
-              </select>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="manager_id" className="text-sm font-medium">
+              Designated Team Manager
+            </Label>
+            <select
+              id="manager_id"
+              name="manager_id"
+              required
+              defaultValue={teamToEdit?.manager_id ?? ''}
+              className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+            >
+              <option value="" disabled>
+                Select Manager...
+              </option>
+              {users
+                .filter((u) => u.role === 'manager' || u.role === 'admin')
+                .map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name} ({u.email})
+                  </option>
+                ))}
+            </select>
           </div>
 
-          {state.error && (
+          <div className="space-y-2">
+            <Label htmlFor="status" className="text-sm font-medium">
+              Team Status
+            </Label>
+            <select
+              id="status"
+              name="status"
+              required
+              defaultValue={teamToEdit?.status ?? 'active'}
+              className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+
+          {formState.error && (
             <div className="text-destructive bg-destructive/10 border-destructive/20 flex items-center gap-2 rounded-lg border p-3 text-sm">
               <AlertCircle className="h-4 w-4 shrink-0" />
-              <span>{state.error}</span>
+              <span>Failed: {formState.error}</span>
             </div>
           )}
 
-          {state.success && (
+          {formState.success && (
             <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-500">
               <CheckCircle className="h-4 w-4 shrink-0" />
               <span>
-                {isEditMode
-                  ? 'Team updated successfully!'
-                  : 'Team created successfully!'}
+                {editActionActive
+                  ? 'The team configuration has been successfully updated.'
+                  : 'A new team record has been successfully registered.'}
               </span>
             </div>
           )}
@@ -215,19 +209,19 @@ export function TeamForm({
             {onClose && (
               <button
                 type="button"
-                disabled={isPending || state.success}
+                disabled={isActionPending || formState.success}
                 onClick={onClose}
-                className="border-input bg-background hover:bg-accent text-foreground flex w-1/3 cursor-pointer items-center justify-center rounded-md border text-sm font-semibold shadow-sm transition-all duration-300"
+                className="border-input bg-background hover:bg-accent text-foreground disabled:opacity-50 flex w-1/3 cursor-pointer items-center justify-center rounded-md border text-sm font-semibold shadow-sm transition-all duration-300"
               >
                 Cancel
               </button>
             )}
             <Button
               type="submit"
-              disabled={isPending || state.success}
+              disabled={isActionPending || formState.success}
               className={`${onClose ? 'w-2/3' : 'w-full'}`}
             >
-              {submitButtonText}
+              {buttonLabelContent}
             </Button>
           </div>
         </form>

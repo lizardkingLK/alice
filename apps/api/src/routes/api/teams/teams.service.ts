@@ -1,4 +1,4 @@
-import { supabase } from '../../../lib/supabase';
+import { requireUserWithRole } from '../../../lib/auth-helpers';
 import {
   teamsRepository,
   type TeamRow,
@@ -6,37 +6,19 @@ import {
 } from './teams.repository';
 
 async function requireTeamManager(actorId: string) {
-  const { data: user, error } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', actorId)
-    .single();
-
-  if (error || !user) {
-    throw new Error('Not authenticated.');
-  }
-
-  if (user.role !== 'admin' && user.role !== 'manager') {
-    throw new Error('Unauthorized. Only admins and managers can manage teams.');
-  }
-  return user;
+  return await requireUserWithRole(
+    actorId,
+    ['admin', 'manager'],
+    'Unauthorized. Only admins and managers can manage teams.'
+  );
 }
 
 async function requireAdmin(actorId: string) {
-  const { data: user, error } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', actorId)
-    .single();
-
-  if (error || !user) {
-    throw new Error('Not authenticated.');
-  }
-
-  if (user.role !== 'admin') {
-    throw new Error('Unauthorized. Only administrators can permanently delete teams.');
-  }
-  return user;
+  return await requireUserWithRole(
+    actorId,
+    ['admin'],
+    'Unauthorized. Only administrators can permanently delete teams.'
+  );
 }
 
 export type CreateTeamInput = Omit<

@@ -15,28 +15,28 @@ teamsRouter.get(
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
     try {
-      const statusQuery = req.query.status as 'active' | 'inactive' | 'archived' | 'deleted' | undefined;
-      const searchQuery = req.query.search as string | undefined;
+      const statusValue = req.query.status as 'active' | 'inactive' | 'archived' | 'deleted' | undefined;
+      const searchStr = req.query.search as string | undefined;
 
-      const pagination = parsePagination(req);
-      if (pagination) {
-        const { page, limit } = pagination;
-        const result = await teamsService.listTeams(page, limit, statusQuery, searchQuery);
-        const totalPages = Math.ceil(result.totalCount / limit);
+      const paginationInfo = parsePagination(req);
+      if (paginationInfo) {
+        const { page: targetPage, limit: targetLimit } = paginationInfo;
+        const listResult = await teamsService.listTeams(targetPage, targetLimit, statusValue, searchStr);
+        const pagesCount = Math.ceil(listResult.totalCount / targetLimit);
         return res.json({
-          teams: result.teams,
-          totalCount: result.totalCount,
-          page,
-          limit,
-          totalPages,
+          teams: listResult.teams,
+          totalCount: listResult.totalCount,
+          page: targetPage,
+          limit: targetLimit,
+          totalPages: pagesCount,
         });
       }
 
-      const teams = await teamsService.listTeams();
-      res.json({ teams });
+      const allTeams = await teamsService.listTeams();
+      res.json({ teams: allTeams });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to list teams';
+        error instanceof Error ? error.message : 'Failed to retrieve teams';
       res.status(500).json({ error: message });
     }
   }
@@ -46,26 +46,27 @@ teamsRouter.post(
   '/',
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
-    const parsed = createTeamSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: z.treeifyError(parsed.error) });
+    const validation = createTeamSchema.safeParse(req.body);
+    if (!validation.success) {
+      const errorMsg = z.treeifyError(validation.error);
+      return res.status(400).json({ error: errorMsg });
     }
 
     try {
-      const team = await teamsService.createTeam(
+      const createdRecord = await teamsService.createTeam(
         req.userId!,
         {
-          name: parsed.data.name,
-          description: parsed.data.description ?? null,
-          manager_id: parsed.data.manager_id,
-          tech_stack: parsed.data.tech_stack ?? null,
-          status: parsed.data.status ?? 'active',
+          name: validation.data.name,
+          description: validation.data.description ?? null,
+          manager_id: validation.data.manager_id,
+          tech_stack: validation.data.tech_stack ?? null,
+          status: validation.data.status ?? 'active',
         }
       );
-      res.status(201).json({ team });
+      res.status(201).json({ team: createdRecord });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to create team';
+        error instanceof Error ? error.message : 'Failed to register team';
       res.status(500).json({ error: message });
     }
   }
@@ -75,26 +76,26 @@ teamsRouter.put(
   '/:id',
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
-    const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ error: 'Team ID is required' });
+    const teamIdParam = req.params.id;
+    if (!teamIdParam) {
+      return res.status(400).json({ error: 'Team identifier is required' });
     }
 
-    const parsed = updateTeamSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: z.treeifyError(parsed.error) });
+    const validation = updateTeamSchema.safeParse(req.body);
+    if (validation.success === false) {
+      return res.status(400).json({ error: z.treeifyError(validation.error) });
     }
 
     try {
-      const team = await teamsService.updateTeam(
+      const updatedRecord = await teamsService.updateTeam(
         req.userId!,
-        id,
-        parsed.data
+        teamIdParam,
+        validation.data
       );
-      res.json({ team });
+      res.json({ team: updatedRecord });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to update team';
+        error instanceof Error ? error.message : 'Failed to modify team';
       res.status(500).json({ error: message });
     }
   }
@@ -104,20 +105,20 @@ teamsRouter.patch(
   '/:id/soft-delete',
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
-    const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ error: 'Team ID is required' });
+    const teamIdParam = req.params.id;
+    if (!teamIdParam) {
+      return res.status(400).json({ error: 'Team identifier is required' });
     }
 
     try {
-      const team = await teamsService.softDeleteTeam(
+      const archivedRecord = await teamsService.softDeleteTeam(
         req.userId!,
-        id
+        teamIdParam
       );
-      res.json({ team });
+      res.json({ team: archivedRecord });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to soft delete team';
+        error instanceof Error ? error.message : 'Failed to archive team';
       res.status(500).json({ error: message });
     }
   }
@@ -127,17 +128,17 @@ teamsRouter.patch(
   '/:id/restore',
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
-    const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ error: 'Team ID is required' });
+    const teamIdParam = req.params.id;
+    if (!teamIdParam) {
+      return res.status(400).json({ error: 'Team identifier is required' });
     }
 
     try {
-      const team = await teamsService.restoreTeam(
+      const restoredRecord = await teamsService.restoreTeam(
         req.userId!,
-        id
+        teamIdParam
       );
-      res.json({ team });
+      res.json({ team: restoredRecord });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to restore team';
@@ -150,17 +151,17 @@ teamsRouter.delete(
   '/:id',
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
-    const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ error: 'Team ID is required' });
+    const teamIdParam = req.params.id;
+    if (!teamIdParam) {
+      return res.status(400).json({ error: 'Team identifier is required' });
     }
 
     try {
-      await teamsService.hardDeleteTeam(req.userId!, id);
+      await teamsService.hardDeleteTeam(req.userId!, teamIdParam);
       res.json({ success: true });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to hard delete team';
+        error instanceof Error ? error.message : 'Failed to permanently purge team';
       res.status(500).json({ error: message });
     }
   }

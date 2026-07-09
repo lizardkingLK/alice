@@ -78,72 +78,70 @@ export function TeamRegistry({
     currentUserRole === 'admin' || currentUserRole === 'manager';
   const isAdmin = currentUserRole === 'admin';
 
-  // Synchronize search input changes with URL queries via debounce
+  // Sync the search query text input to the route parameters using a debounce delay
   useEffect(() => {
-    const currentSearch = searchParams.get('search') ?? '';
-    if (searchQuery === currentSearch) {
+    const routeSearchParam = searchParams.get('search') ?? '';
+    if (searchQuery.trim() === routeSearchParam.trim()) {
       return;
     }
 
-    const delayDebounceFn = setTimeout(() => {
-      const params = new URLSearchParams(searchParams.toString());
+    const debounceTimer = setTimeout(() => {
+      const nextQueryParams = new URLSearchParams(searchParams);
       if (searchQuery) {
-        params.set('search', searchQuery);
+        nextQueryParams.set('search', searchQuery);
       } else {
-        params.delete('search');
+        nextQueryParams.delete('search');
       }
-      params.set('page', '1'); // reset page
-      router.push(`${pathname}?${params.toString()}`);
-    }, 400);
+      nextQueryParams.set('page', '1'); // reset page counter to 1
+      router.push(`${pathname}?${nextQueryParams.toString()}`);
+    }, 450);
 
-    return () => clearTimeout(delayDebounceFn);
+    return () => clearTimeout(debounceTimer);
   }, [searchQuery, pathname, router, searchParams]);
 
-  const handleTabChange = (newTab: 'active' | 'inactive' | 'archived') => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('tab', newTab);
-    params.set('page', '1'); // reset page
-    router.push(`${pathname}?${params.toString()}`);
+  const changeTabSelection = (tabKey: 'active' | 'inactive' | 'archived') => {
+    const nextQueryParams = new URLSearchParams(searchParams);
+    nextQueryParams.set('tab', tabKey);
+    nextQueryParams.set('page', '1');
+    router.push(`${pathname}?${nextQueryParams.toString()}`);
   };
 
-  const handleSoftDelete = (team: DbTeam) => {
-    setTeamToDelete(team);
+  const handleSoftDelete = (item: DbTeam) => {
+    setTeamToDelete(item);
     setDeleteMode('soft');
     setError(null);
   };
 
-  const handleHardDelete = (team: DbTeam) => {
-    setTeamToDelete(team);
+  const handleHardDelete = (item: DbTeam) => {
+    setTeamToDelete(item);
     setDeleteMode('hard');
     setError(null);
   };
 
   const confirmDelete = () => {
-    if (!teamToDelete) return;
+    if (teamToDelete === null) return;
 
     startTransition(async () => {
-      let result;
-      if (deleteMode === 'soft') {
-        result = await softDeleteTeam(teamToDelete.id);
-      } else {
-        result = await hardDeleteTeam(teamToDelete.id);
-      }
+      const isSoft = deleteMode === 'soft';
+      const actionResult = isSoft 
+        ? await softDeleteTeam(teamToDelete.id)
+        : await hardDeleteTeam(teamToDelete.id);
 
-      if (result.success) {
+      if (actionResult.success) {
         setTeamToDelete(null);
         setError(null);
       } else {
-        setError(result.error || `Failed to ${deleteMode} delete team.`);
+        setError(actionResult.error ?? `Operation failed during ${deleteMode} delete.`);
       }
     });
   };
 
-  const handleRestore = (team: DbTeam) => {
+  const handleRestore = (item: DbTeam) => {
     setError(null);
     startTransition(async () => {
-      const result = await restoreTeam(team.id);
-      if (!result.success) {
-        setError(result.error || 'Failed to restore team.');
+      const actionResult = await restoreTeam(item.id);
+      if (actionResult.success === false) {
+        setError(actionResult.error ?? 'Unable to restore team.');
       }
     });
   };
@@ -153,13 +151,11 @@ export function TeamRegistry({
     deleteButtonText = (
       <>
         <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
-        Deleting...
+        Processing...
       </>
     );
-  } else if (deleteMode === 'soft') {
-    deleteButtonText = 'Archive Team';
   } else {
-    deleteButtonText = 'Delete Permanently';
+    deleteButtonText = deleteMode === 'soft' ? 'Archive Team' : 'Delete Permanently';
   }
 
   let registryDescription = 'Restore archived teams, or permanently delete them from the database.';
@@ -201,8 +197,8 @@ export function TeamRegistry({
           {/* Tabs */}
           <div className="bg-muted/50 border-border text-muted-foreground inline-flex h-10 items-center justify-center rounded-md border p-1">
             <button
-              onClick={() => handleTabChange('active')}
-              className={`ring-offset-background inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 ${
+              onClick={() => changeTabSelection('active')}
+              className={`ring-offset-background inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all focus-visible:outline-none ${
                 tab === 'active'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'hover:text-foreground'
@@ -211,8 +207,8 @@ export function TeamRegistry({
               Active
             </button>
             <button
-              onClick={() => handleTabChange('inactive')}
-              className={`ring-offset-background inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 ${
+              onClick={() => changeTabSelection('inactive')}
+              className={`ring-offset-background inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all focus-visible:outline-none ${
                 tab === 'inactive'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'hover:text-foreground'
@@ -221,8 +217,8 @@ export function TeamRegistry({
               Inactive
             </button>
             <button
-              onClick={() => handleTabChange('archived')}
-              className={`ring-offset-background inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 ${
+              onClick={() => changeTabSelection('archived')}
+              className={`ring-offset-background inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all focus-visible:outline-none ${
                 tab === 'archived'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'hover:text-foreground'
