@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/api/api-client';
+import { apiFetch } from '@/lib/api/api-client.server';
 import { createProjectsService } from './projects.service.base';
 
 const service = createProjectsService(apiFetch);

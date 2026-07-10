@@ -1,42 +1,25 @@
-import { supabase } from '../../../lib/supabase';
+import { requireUserWithRole } from '../../../lib/auth-helpers';
 import {
   projectsRepository,
   type ProjectRow,
   type ProjectRowWithOwner,
+  type ProjectMemberWithUser,
 } from './projects.repository';
 
 async function requireProjectManager(actorId: string) {
-  const { data: user, error } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', actorId)
-    .single();
-
-  if (error || !user) {
-    throw new Error('Not authenticated.');
-  }
-
-  if (user.role !== 'admin' && user.role !== 'manager') {
-    throw new Error('Unauthorized. Only admins and managers can manage projects.');
-  }
-  return user;
+  return await requireUserWithRole(
+    actorId,
+    ['admin', 'manager'],
+    'Unauthorized. Only admins and managers can manage projects.'
+  );
 }
 
 async function requireAdmin(actorId: string) {
-  const { data: user, error } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', actorId)
-    .single();
-
-  if (error || !user) {
-    throw new Error('Not authenticated.');
-  }
-
-  if (user.role !== 'admin') {
-    throw new Error('Unauthorized. Only administrators can permanently delete projects.');
-  }
-  return user;
+  return await requireUserWithRole(
+    actorId,
+    ['admin'],
+    'Unauthorized. Only administrators can permanently delete projects.'
+  );
 }
 
 export type CreateProjectInput = Omit<
@@ -64,6 +47,35 @@ export class ProjectsService {
       return await projectsRepository.listPaginated(page, limit, status, search);
     }
     return await projectsRepository.listAll();
+  }
+
+  async getProjectById(projectId: string): Promise<ProjectRowWithOwner> {
+    const project = await projectsRepository.findById(projectId);
+    if (!project) {
+      throw new Error('Project not found.');
+    }
+    return project;
+  }
+
+  async listMembers(projectId: string): Promise<ProjectMemberWithUser[]> {
+    return await projectsRepository.listMembers(projectId);
+  }
+
+  async addMember(actorId: string, projectId: string, userId: string): Promise<void> {
+    await requireProjectManager(actorId);
+
+    const currentMembers = await projectsRepository.listMembers(projectId);
+    if (currentMembers.some(m => m.user_id === userId)) {
+      throw new Error('User is already a member of this project.');
+    }
+
+    await projectsRepository.addMember(projectId, userId, actorId);
+  }
+
+  async removeMember(actorId: string, projectId: string, userId: string): Promise<void> {
+    await requireProjectManager(actorId);
+
+    await projectsRepository.removeMember(projectId, userId);
   }
 
   async createProject(actorId: string, input: CreateProjectInput): Promise<ProjectRow> {

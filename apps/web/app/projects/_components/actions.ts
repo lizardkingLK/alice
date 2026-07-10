@@ -7,7 +7,7 @@ import {
   softDeleteProject as apiSoftDeleteProject,
   restoreProject as apiRestoreProject,
   hardDeleteProject as apiHardDeleteProject,
-} from '../_services/projects.service';
+} from '../_services/projects.service.server';
 import {
   parseProjectForm,
   requireProjectManager,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useRef, ReactNode } from 'react';
+import { FormEvent, useEffect, useState, type ChangeEvent } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
@@ -11,8 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@repo/ui/components/ui/card';
-import { createProject, updateProject } from './actions';
-import type { ActionState } from '@/lib/server-actions';
+import { cn } from '@repo/ui/lib/utils';
 import {
   FolderPlus,
   FolderEdit,
@@ -21,21 +20,16 @@ import {
   CheckCircle,
   X,
 } from 'lucide-react';
-import type { Tables } from '@repo/types';
-
-type DbUser = Tables<'users'>;
-type DbProject = Tables<'projects'>;
-
-const initialState: ActionState = {
-  success: false,
-  error: null,
-};
+import type { User } from '@/app/users/_services/users.service';
+import { createProject, updateProject, getProject, type Project } from '../_services/projects.service';
 
 interface ProjectFormProps {
   readonly onClose?: () => void;
   readonly onSuccess?: () => void;
-  readonly projectToEdit?: DbProject | null;
-  readonly users: DbUser[];
+  readonly projectId?: string;
+  readonly users: User[];
+  // eslint-disable-next-line no-unused-vars
+  readonly onProjectUpdated?: (project: Project) => void;
 }
 
 function formatDateForInput(dateString?: string | null) {
@@ -43,39 +37,136 @@ function formatDateForInput(dateString?: string | null) {
   return dateString.split('T')[0] ?? '';
 }
 
+interface FormAlertMessageProps {
+  message: string | null;
+  isError: boolean;
+}
+
+function FormAlertMessage({ message, isError }: Readonly<FormAlertMessageProps>) {
+  if (!message) return null;
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-2 rounded-lg border p-3 text-sm',
+        isError
+          ? 'text-destructive bg-destructive/10 border-destructive/20'
+          : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
+      )}
+    >
+      {isError ? (
+        <AlertCircle className="h-4 w-4 shrink-0" />
+      ) : (
+        <CheckCircle className="h-4 w-4 shrink-0" />
+      )}
+      <span>{message}</span>
+    </div>
+  );
+}
+
 export function ProjectForm({
   onClose,
   onSuccess,
-  projectToEdit = null,
+  projectId,
   users,
+  onProjectUpdated,
 }: Readonly<ProjectFormProps>) {
-  const isEditMode = !!projectToEdit;
+  const isEditMode = !!projectId;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingProject, setIsLoadingProject] = useState(isEditMode);
+  const [message, setMessage] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
-  const boundAction = isEditMode
-    ? updateProject.bind(null, projectToEdit.id)
-    : createProject;
+  const [name, setName] = useState('');
+  const [key, setKey] = useState('');
+  const [description, setDescription] = useState('');
+  const [selectedOwnerId, setSelectedOwnerId] = useState('');
+  const [status, setStatus] = useState<'active' | 'archived'>('active');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
-  const [state, formAction, isPending] = useActionState(
-    boundAction,
-    initialState
-  );
+  // Fetch project details if in edit mode
+  useEffect(() => {
+    if (!projectId) return;
+    setIsLoadingProject(true);
+    getProject(projectId)
+      .then((project: Project) => {
+        setName(project.name);
+        setKey(project.key);
+        setDescription(project.description ?? '');
+        setSelectedOwnerId(project.owner_id);
+        setStatus(project.status);
+        setStartDate(formatDateForInput(project.start_date));
+        setEndDate(formatDateForInput(project.end_date));
+      })
+      .catch((error: unknown) => {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load project.';
+        setMessage(errorMessage);
+        setIsError(true);
+      })
+      .finally(() => {
+        setIsLoadingProject(false);
+      });
+  }, [projectId]);
 
-  const formRef = useRef<HTMLFormElement>(null);
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    setIsSubmitting(true);
+    setMessage(null);
+    setIsError(false);
+
+    if (!name.trim() || !key.trim() || !selectedOwnerId) {
+      setMessage('Project Name, Key, and Owner are required.');
+      setIsError(true);
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const projectData = {
+        name: name.trim(),
+        key: key.toUpperCase().trim(),
+        description: description.trim() || null,
+        owner_id: selectedOwnerId,
+        start_date: startDate || null,
+        end_date: endDate || null,
+        status: status,
+      };
+
+      let result;
+      if (projectId) {
+        result = await updateProject(projectId, projectData);
+        setMessage(`Project "${result.name}" updated.`);
+      } else {
+        result = await createProject(projectData);
+        setMessage(`Project "${result.name}" created.`);
+      }
+
+      setIsSuccess(true);
+      onProjectUpdated?.(result as Project);
+    } catch (error) {
+      const modeText = projectId ? 'update' : 'create';
+      const errorMessage =
+        error instanceof Error ? error.message : `Failed to ${modeText} project.`;
+      setMessage(errorMessage);
+      setIsError(true);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   useEffect(() => {
-    if (state.success) {
-      if (!isEditMode) {
-        formRef.current?.reset();
-      }
+    if (isSuccess) {
       const timer = setTimeout(() => {
         onSuccess?.();
       }, 1200);
       return () => clearTimeout(timer);
     }
-  }, [state.success, onSuccess, isEditMode]);
+  }, [isSuccess, onSuccess]);
 
-  let submitButtonText: ReactNode;
-  if (isPending) {
+  let submitButtonText;
+  if (isSubmitting) {
     submitButtonText = (
       <>
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -117,159 +208,157 @@ export function ProjectForm({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form ref={formRef} action={formAction} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+        {isLoadingProject ? (
+          <div className="flex h-64 flex-col items-center justify-center gap-2">
+            <Loader2 className="text-primary h-8 w-8 animate-spin" />
+            <p className="text-muted-foreground text-sm">Loading project details...</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-sm font-medium">
+                  Project Name
+                </Label>
+                <Input
+                  id="name"
+                  name="name"
+                  value={name}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+                  placeholder="e.g. Alice Platform"
+                  required
+                  className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="key" className="text-sm font-medium">
+                  Project Key
+                </Label>
+                <Input
+                  id="key"
+                  name="key"
+                  value={key}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setKey(e.target.value)}
+                  placeholder="e.g. ALICE"
+                  required
+                  maxLength={10}
+                  className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 uppercase transition-colors"
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-medium">
-                Project Name
+              <Label htmlFor="description" className="text-sm font-medium">
+                Description
               </Label>
               <Input
-                id="name"
-                name="name"
-                placeholder="e.g. Alice Platform"
-                required
-                defaultValue={projectToEdit?.name ?? ''}
+                id="description"
+                name="description"
+                value={description}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setDescription(e.target.value)}
+                placeholder="e.g. Core platform squad for JIRA clone"
                 className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="key" className="text-sm font-medium">
-                Project Key
-              </Label>
-              <Input
-                id="key"
-                name="key"
-                placeholder="e.g. ALICE"
-                required
-                maxLength={10}
-                defaultValue={projectToEdit?.key ?? ''}
-                className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 uppercase transition-colors"
-              />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="owner_id" className="text-sm font-medium">
+                  Project Owner
+                </Label>
+                <select
+                  id="owner_id"
+                  name="owner_id"
+                  value={selectedOwnerId}
+                  onChange={(e: ChangeEvent<HTMLSelectElement>) => setSelectedOwnerId(e.target.value)}
+                  required
+                  className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                >
+                  <option value="" disabled>
+                    Select Owner...
+                  </option>
+                  {users
+                    .filter((u) => u.role === 'manager')
+                    .map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name} ({u.email})
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="status" className="text-sm font-medium">
+                  Status
+                </Label>
+                <select
+                  id="status"
+                  name="status"
+                  value={status}
+                  onChange={(e: ChangeEvent<HTMLSelectElement>) => setStatus(e.target.value as 'active' | 'archived')}
+                  required
+                  className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                >
+                  <option value="active">Active</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description" className="text-sm font-medium">
-              Description
-            </Label>
-            <Input
-              id="description"
-              name="description"
-              placeholder="e.g. Core platform squad for JIRA clone"
-              defaultValue={projectToEdit?.description ?? ''}
-              className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
-            />
-          </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="start_date" className="text-sm font-medium">
+                  Start Date
+                </Label>
+                <Input
+                  id="start_date"
+                  name="start_date"
+                  type="date"
+                  value={startDate}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)}
+                  className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
+                />
+              </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="owner_id" className="text-sm font-medium">
-                Project Owner
-              </Label>
-              <select
-                id="owner_id"
-                name="owner_id"
-                required
-                defaultValue={projectToEdit?.owner_id ?? ''}
-                className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+              <div className="space-y-2">
+                <Label htmlFor="end_date" className="text-sm font-medium">
+                  End Date
+                </Label>
+                <Input
+                  id="end_date"
+                  name="end_date"
+                  type="date"
+                  value={endDate}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value)}
+                  className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
+                />
+              </div>
+            </div>
+
+            <FormAlertMessage message={message} isError={isError} />
+
+            <div className="flex gap-3 pt-2">
+              {onClose && (
+                <button
+                  type="button"
+                  disabled={isSubmitting || isSuccess}
+                  onClick={onClose}
+                  className="border-input bg-background hover:bg-accent text-foreground flex w-1/3 cursor-pointer items-center justify-center rounded-md border text-sm font-semibold shadow-sm transition-all duration-300"
+                >
+                  Cancel
+                </button>
+              )}
+              <Button
+                type="submit"
+                disabled={isSubmitting || isSuccess}
+                className={`${onClose ? 'w-2/3' : 'w-full'}`}
               >
-                <option value="" disabled>
-                  Select Owner...
-                </option>
-                {users
-                  .filter((u) => u.role === 'manager')
-                  .map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name} ({u.email})
-                    </option>
-                  ))}
-              </select>
+                {submitButtonText}
+              </Button>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="status" className="text-sm font-medium">
-                Status
-              </Label>
-              <select
-                id="status"
-                name="status"
-                required
-                defaultValue={projectToEdit?.status ?? 'active'}
-                className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-              >
-                <option value="active">Active</option>
-                <option value="archived">Archived</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="start_date" className="text-sm font-medium">
-                Start Date
-              </Label>
-              <Input
-                id="start_date"
-                name="start_date"
-                type="date"
-                defaultValue={formatDateForInput(projectToEdit?.start_date)}
-                className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="end_date" className="text-sm font-medium">
-                End Date
-              </Label>
-              <Input
-                id="end_date"
-                name="end_date"
-                type="date"
-                defaultValue={formatDateForInput(projectToEdit?.end_date)}
-                className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
-              />
-            </div>
-          </div>
-
-          {state.error && (
-            <div className="text-destructive bg-destructive/10 border-destructive/20 flex items-center gap-2 rounded-lg border p-3 text-sm">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              <span>{state.error}</span>
-            </div>
-          )}
-
-          {state.success && (
-            <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-500">
-              <CheckCircle className="h-4 w-4 shrink-0" />
-              <span>
-                {isEditMode
-                  ? 'Project updated successfully!'
-                  : 'Project created successfully!'}
-              </span>
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-2">
-            {onClose && (
-              <button
-                type="button"
-                disabled={isPending || state.success}
-                onClick={onClose}
-                className="border-input bg-background hover:bg-accent text-foreground flex w-1/3 cursor-pointer items-center justify-center rounded-md border text-sm font-semibold shadow-sm transition-all duration-300"
-              >
-                Cancel
-              </button>
-            )}
-            <Button
-              type="submit"
-              disabled={isPending || state.success}
-              className={`${onClose ? 'w-2/3' : 'w-full'}`}
-            >
-              {submitButtonText}
-            </Button>
-          </div>
-        </form>
+          </form>
+        )}
       </CardContent>
     </Card>
   );

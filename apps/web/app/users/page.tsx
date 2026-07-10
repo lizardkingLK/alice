@@ -1,11 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getDbUser, getUser } from '../../lib/auth';
-import type { Tables } from '@repo/types';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { UserRegistry } from '@/app/users/_components/user-registry';
-import { getUsersListPaginated } from '@/app/users/_services/users.service';
-
-type DbUser = Tables<'users'>;
+import { getUsersListPaginated, type User } from '@/app/users/_services/users.service.server';
 
 export default async function UsersDashboard({
   searchParams,
@@ -25,7 +22,7 @@ export default async function UsersDashboard({
   const dbUser = await getDbUser();
   const currentUserRole = dbUser?.role ?? 'member';
 
-  let usersData = { users: [] as DbUser[], totalCount: 0, page: 1, limit: 10, totalPages: 1 };
+  let usersData = { users: [] as User[], totalCount: 0, page: 1, limit: 10, totalPages: 1 };
   try {
     usersData = await getUsersListPaginated(page, limit);
   } catch (error) {
@@ -39,17 +36,15 @@ export default async function UsersDashboard({
       description="Manage application users, assign workspace roles, and control access."
       user={user}
     >
-      <div className="w-full">
-        <UserRegistry
-          users={usersData.users}
-          totalCount={usersData.totalCount}
-          page={usersData.page}
-          limit={usersData.limit}
-          totalPages={usersData.totalPages}
-          currentUserId={user.id}
-          currentUserRole={currentUserRole}
-        />
-      </div>
+      <UserRegistry
+        users={usersData.users}
+        totalCount={usersData.totalCount}
+        page={usersData.page}
+        limit={usersData.limit}
+        totalPages={usersData.totalPages}
+        currentUserId={user.id}
+        currentUserRole={currentUserRole}
+      />
     </DashboardShell>
   );
 }

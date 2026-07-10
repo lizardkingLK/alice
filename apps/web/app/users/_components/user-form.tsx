@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useRef, ReactNode } from 'react';
+import { FormEvent, useEffect, useState, type ChangeEvent } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
@@ -12,21 +12,40 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import { UserPlus, Loader2, AlertCircle, CheckCircle, X } from 'lucide-react';
-import type { Tables } from '@repo/types';
-import { ActionState } from '@/lib/server-actions';
-import { createUser, updateUser } from './actions';
-
-type DbUser = Tables<'users'>;
-
-const initialState: ActionState = {
-  success: false,
-  error: null,
-};
+import type { User } from '../_services/users.service';
+import { createUser, updateUser } from '../_services/users.service';
+import { cn } from '@repo/ui/lib/utils';
 
 interface UserFormProps {
-  readonly user?: DbUser;
+  readonly user?: User;
   readonly onClose?: () => void;
   readonly onSuccess?: () => void;
+}
+
+interface FormAlertMessageProps {
+  message: string | null;
+  isError: boolean;
+}
+
+function FormAlertMessage({ message, isError }: Readonly<FormAlertMessageProps>) {
+  if (!message) return null;
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-2 rounded-lg border p-3 text-sm',
+        isError
+          ? 'text-destructive bg-destructive/10 border-destructive/20'
+          : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
+      )}
+    >
+      {isError ? (
+        <AlertCircle className="h-4 w-4 shrink-0" />
+      ) : (
+        <CheckCircle className="h-4 w-4 shrink-0" />
+      )}
+      <span>{message}</span>
+    </div>
+  );
 }
 
 export function UserForm({
@@ -35,24 +54,72 @@ export function UserForm({
   onSuccess,
 }: Readonly<UserFormProps>) {
   const isEdit = !!user;
-  const [state, formAction, isPending] = useActionState(
-    isEdit ? updateUser : createUser,
-    initialState
-  );
-  const formRef = useRef<HTMLFormElement>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const [name, setName] = useState(user?.name ?? '');
+  const [email, setEmail] = useState(user?.email ?? '');
+  const [role, setRole] = useState<'admin' | 'manager' | 'member'>(user?.role ?? 'member');
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    setIsSubmitting(true);
+    setMessage(null);
+    setIsError(false);
+
+    if (!name.trim() || (!isEdit && !email.trim()) || !role) {
+      setMessage('Name, email, and role are required.');
+      setIsError(true);
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      if (isEdit) {
+        await updateUser(user.id, {
+          name: name.trim(),
+          role,
+        });
+        setMessage(`User details updated successfully!`);
+      } else {
+        const origin = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+        const redirectToUrl = `${origin.replace(/\/$/, '')}/auth/callback?next=${encodeURIComponent('/reset-password')}`;
+        
+        await createUser({
+          name: name.trim(),
+          email: email.trim(),
+          role,
+          redirectTo: redirectToUrl,
+        });
+        setMessage(`User added successfully! Sending invitation...`);
+      }
+
+      setIsSuccess(true);
+    } catch (error) {
+      const modeText = isEdit ? 'update' : 'add';
+      const errorMessage =
+        error instanceof Error ? error.message : `Failed to ${modeText} user.`;
+      setMessage(errorMessage);
+      setIsError(true);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   useEffect(() => {
-    if (state.success) {
-      formRef.current?.reset();
+    if (isSuccess) {
       const timer = setTimeout(() => {
         onSuccess?.();
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [state.success, onSuccess]);
+  }, [isSuccess, onSuccess]);
 
-  let submitButtonText: ReactNode;
-  if (isPending) {
+  let submitButtonText;
+  if (isSubmitting) {
     submitButtonText = (
       <>
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -90,9 +157,7 @@ export function UserForm({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form ref={formRef} action={formAction} className="space-y-4">
-          {isEdit && <input type="hidden" name="id" value={user.id} />}
-
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name" className="text-sm font-medium">
               Full Name
@@ -102,7 +167,8 @@ export function UserForm({
               name="name"
               placeholder="Erlich Bachman"
               required
-              defaultValue={user?.name}
+              value={name}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
               className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
             />
           </div>
@@ -117,7 +183,8 @@ export function UserForm({
               type="email"
               placeholder="erlich@bachmanity.com"
               required={!isEdit}
-              defaultValue={user?.email}
+              value={email}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
               disabled={isEdit}
               className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors disabled:opacity-50"
             />
@@ -132,8 +199,9 @@ export function UserForm({
                 id="role"
                 name="role"
                 required
-                defaultValue={user?.role ?? 'member'}
-                className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                value={role}
+                onChange={(e: ChangeEvent<HTMLSelectElement>) => setRole(e.target.value as 'admin' | 'manager' | 'member')}
+                className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
               >
                 <option value="member">Member</option>
                 <option value="manager">Manager</option>
@@ -142,29 +210,13 @@ export function UserForm({
             </div>
           </div>
 
-          {state.error && (
-            <div className="text-destructive bg-destructive/10 border-destructive/20 flex items-center gap-2 rounded-lg border p-3 text-sm">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              <span>{state.error}</span>
-            </div>
-          )}
-
-          {state.success && (
-            <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-500">
-              <CheckCircle className="h-4 w-4 shrink-0" />
-              <span>
-                {isEdit
-                  ? 'User details updated successfully!'
-                  : 'User added successfully! Sending invitation...'}
-              </span>
-            </div>
-          )}
+          <FormAlertMessage message={message} isError={isError} />
 
           <div className="flex gap-3 pt-2">
             {onClose && (
               <button
                 type="button"
-                disabled={isPending || state.success}
+                disabled={isSubmitting || isSuccess}
                 onClick={onClose}
                 className="border-input bg-background hover:bg-accent text-foreground flex w-1/3 cursor-pointer items-center justify-center rounded-md border text-sm font-semibold shadow-sm transition-all duration-300"
               >
@@ -173,7 +225,7 @@ export function UserForm({
             )}
             <Button
               type="submit"
-              disabled={isPending || state.success}
+              disabled={isSubmitting || isSuccess}
               className={`${onClose ? 'w-2/3' : 'w-full'}`}
             >
               {submitButtonText}

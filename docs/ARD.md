@@ -3,15 +3,15 @@
 ## Jira Teams — Project Management Platform
 
 **Project:** Alice (Jira Teams)  
-**Version:** 1.2  
-**Last Updated:** June 30, 2026  
+**Version:** 1.4  
+**Last Updated:** July 9, 2026  
 **Status:** In development
 
 ## 1. Executive Summary
 
 Jira Teams is a Jira-inspired project management application described in the README as a cost-effective alternative to Jira. Teams will use it to organize work into projects and track issues such as tasks, bugs, and stories.
 
-The project is a Turborepo monorepo with a Next.js frontend (`apps/web`), an Express API backend (`apps/api`), and a shared UI package (`packages/ui`). Authentication is handled by Clerk. Supabase (PostgreSQL) is the planned database for application data.
+The project is a Turborepo monorepo with a Next.js frontend (`apps/web`), an Express API backend (`apps/api`), and a shared UI package (`packages/ui`). Authentication is handled by Supabase Auth. Supabase (PostgreSQL) is the database for application data.
 
 ## 2. Product Vision
 
@@ -29,36 +29,35 @@ The project is a Turborepo monorepo with a Next.js frontend (`apps/web`), an Exp
 **Implemented**
 
 - Monorepo setup with Turborepo and pnpm workspaces.
-- Clerk authentication on the web app (`ClerkProvider`, `proxy.ts` middleware).
-- Clerk authentication on the API (`clerkMiddleware`, `requireApiAuth` middleware).
-- Home page at `/` with "Jira Teams" branding and Clerk sign-in, sign-out, and user controls.
-- Role-based dashboard routing:
-  - `/dashboard` — reads the user's Clerk `publicMetadata.role` and redirects to the correct dashboard.
-  - `/admin` — accessible only when role is `admin`.
-  - `/manager` — accessible only when role is `manager`.
-  - `/member` — accessible only when role is `member`.
-- Express API with modular route structure under `src/routes/api/`.
+- Supabase Auth integration on the web app (SSR clients, session cookies, middleware session refresh, and auth actions).
+- Supabase Auth on the API (`requireApiAuth` middleware validating Bearer access tokens).
+- Home page at `/` with "Jira Teams" branding and email/password authentication (sign-in, sign-up, sign-out).
+- Dashboard workspace shell (`/dashboard`) showing user activity overview.
+- Sprints management workspace (`/sprints`) supporting active/archived sprint lists, creation, and status transitions.
+- Project administration registry (`/projects`) supporting list, creation, editing, soft delete, restore, and hard delete.
+- Custom Attributes management page (`/attributes`) to list custom field configuration schemas.
+- User registry list and administration panel (`/users`) with admin-only user invite (via Supabase Auth emails) and active/deactivate controls.
+- Global client-side and server-side pagination component and routing hooks.
+- Express API with modular route structure under `src/routes/api/` (supporting health, users, notifications, files, projects, sprints, and attributes).
 - `GET /api/health` — public health check.
-- `GET /api/users/api/secure` — protected endpoint requiring a valid Clerk token.
 - Shared UI components: Button, Card, Field, Input, Label, Separator.
 - GitHub Actions workflow for lint, test, and Vercel deployment.
 - Conventional Commits enforced via Husky, Commitlint, and Commitizen.
 - Dev Container configuration (`.devcontainer/devcontainer.json`).
 - Root script `pnpm ui:add` for adding shadcn components to `@repo/ui`.
 - Public marketing pages at `/about` and `/contact`.
-- SEO foundation: site metadata, `robots.txt`, `sitemap.xml`, favicon/OG assets, and crawler exclusion for `/dashboard`.
+- SEO foundation: site metadata, `robots.txt`, `sitemap.xml`, favicon/OG assets, and crawler exclusion policy (metadata `noindex` and `robots.txt` disallow).
 
 **Not yet implemented**
 
-- Supabase database schema, migrations, and API data access.
-- Project and issue CRUD.
-- Persistent role assignment UI (roles are read from Clerk `publicMetadata.role`).
+- Work item (issue) CRUD (backlog, creating work items, boards, assigning items, updating status, comments, attachments).
+- Centralized custom database RBAC page-level enforcement helpers (e.g. `requireAdmin()` / `requireRole()`).
 
 ## 4. User Roles
 
-Roles are stored in Clerk user `publicMetadata.role`:
+Roles are stored in the application database `public.users` table:
 
-- **admin** — Access to `/admin` dashboard. Full administrative access (intended).
+- **admin** — Full administrative access, user creation/invite, active/deactivate controls, project mutations.
 - **manager** — Access to `/manager` dashboard. Project management access (intended).
 - **member** — Access to `/member` dashboard. Standard team member access (intended).
 
@@ -68,21 +67,16 @@ Users without a matching role are redirected to `/` when visiting a role-specifi
 
 ### Authentication
 
-- **AUTH-1:** As a user, I want to sign in so that I can access my workspace.
-  - Clerk `SignInButton` and `UserButton` are available on the home page.
+- **AUTH-1:** As a user, I want to sign in with email and password so that I can access my workspace.
+  - Supabase Auth input fields and actions are available on the `/login` page.
   - Status: Done.
 
-- **AUTH-2:** As a signed-in user, I want to be routed to the correct dashboard based on my role.
-  - `/dashboard` redirects to `/admin`, `/manager`, or `/member` based on `publicMetadata.role`.
+- **AUTH-2:** As an administrator, I want to invite team members via email.
+  - Invitation is sent via Supabase Auth email from the `/users` dashboard.
   - Status: Done.
 
-- **AUTH-3:** As a user, I want role-specific pages to block unauthorized access.
-  - Each role page checks the user's role and redirects to `/` if it does not match.
-  - Status: Done.
-
-- **AUTH-4:** As a client, I want to call protected API endpoints with my auth token.
-  - `GET /api/users/api/secure` returns a welcome message when a valid Clerk token is provided.
-  - Returns 401 when unauthenticated.
+- **AUTH-3:** As a client, I want to call protected API endpoints with my JWT access token.
+  - Endpoints validated via `requireApiAuth` middleware. Returns 401 when unauthenticated.
   - Status: Done.
 
 ### Platform
@@ -104,21 +98,29 @@ Users without a matching role are redirected to `/` when visiting a role-specifi
   - `robots.txt` disallows protected paths; forbidden routes use `noindex` page metadata.
   - Status: Done.
 
+### Project & Sprints Administration
+
+- **PROJ-1:** As a manager, I want to create, view, edit, and delete projects so that work is grouped.
+  - Paginated `/projects` administration registry with Zod validation and soft/hard delete.
+  - Status: Done.
+
+- **SPR-1:** As a team member, I want to view active and archived sprints and manage status transitions.
+  - Paginated `/sprints` list supporting status changes (planned, active, closed, archived).
+  - Status: Done.
+
 ### Planned (not yet in codebase)
 
-- **PROJ-1:** As a project manager, I want to create a project so that work is grouped.
 - **ISSUE-1:** As a team member, I want to create an issue with title, description, type, and priority so that work is tracked.
 - **ISSUE-2:** As a team member, I want to update issue status so that progress is visible.
 
 ## 6. Functional Requirements
 
-- **FR-1:** The system shall authenticate users via Clerk on both the web app and API.
-- **FR-2:** The system shall route authenticated users to role-based dashboards (`admin`, `manager`, `member`).
-- **FR-3:** The system shall store application data in Supabase (PostgreSQL) once implemented.
-- **FR-4:** The system shall expose a REST API from `apps/api` consumed by the Next.js frontend.
-- **FR-5:** The system shall provide a web UI at `apps/web` using shared `@repo/ui` components.
-- **FR-6:** The API shall expose a public health check at `GET /api/health`.
-- **FR-7:** The API shall protect endpoints using `requireApiAuth` middleware.
+- **FR-1:** The system shall authenticate users via Supabase Auth on both the web app and API.
+- **FR-2:** The system shall store application data in Supabase (PostgreSQL) using Prisma migrations.
+- **FR-3:** The system shall expose a REST API from `apps/api` consumed by the Next.js frontend.
+- **FR-4:** The system shall provide a web UI at `apps/web` using shared `@repo/ui` components.
+- **FR-5:** The API shall expose a public health check at `GET /api/health`.
+- **FR-6:** The API shall protect endpoints using `requireApiAuth` middleware validating Supabase access tokens.
 
 ## 7. Non-Functional Requirements
 
@@ -132,14 +134,14 @@ Users without a matching role are redirected to `/` when visiting a role-specifi
 
 ## 8. Assumptions & Dependencies
 
-- **Authentication:** Clerk (`@clerk/nextjs` on web, `@clerk/express` on API)
-- **Database:** Supabase (PostgreSQL) — planned, not yet integrated
+- **Authentication:** Supabase Auth (`@supabase/ssr` on web, `@supabase/supabase-js` on API)
+- **Database:** Supabase (PostgreSQL) and Prisma ORM (migrations/seeding)
 - **Hosting:** Vercel (separate projects for `web` and `api`)
 - **Package manager:** pnpm 9.x
 - **Node.js:** ≥ 18 (CI uses Node 20)
 - **Build system:** Turborepo
-- **Frontend:** Next.js 16, React 19, Tailwind CSS 4
-- **Backend:** Express.js 4
+- **Frontend:** Next.js 16.2, React 19.2, Tailwind CSS 4.3
+- **Backend:** Express.js 4.22
 
 ## 9. Definition of Done
 
@@ -148,7 +150,7 @@ A story is done when:
 1. Acceptance criteria are met.
 2. UI uses shared components from `@repo/ui` where applicable.
 3. Protected API routes use `requireApiAuth` where required.
-4. Role pages enforce access via `getUserRole()` from `apps/web/lib/auth.ts`.
+4. Role pages enforce access via `getUserRole()` from [auth.ts](file:///c:/Users/Aux-219/Documents/Jira_Repo_Recent/alice/apps/web/lib/auth.ts).
 5. `pnpm turbo lint` and `pnpm turbo test` pass.
 6. Changes are committed with Conventional Commits (`pnpm commit`).
 7. CI passes and deploys successfully on merge to `main`.

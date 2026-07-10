@@ -7,7 +7,7 @@
 | Project      | Alice (1BT Project Management System / Jira Teams)                 |
 | Source       | `1BT-JIRA Task Breakdown with Team Assignments.xlsx` (MVP 1–4)     |
 | Status       | Implemented — `init_jira_domain` + `add_audit_metadata` migrations |
-| Last updated | 2026-06-25                                                         |
+| Last updated | 2026-07-09                                                         |
 
 Related:
 
@@ -33,7 +33,7 @@ Related:
 
 ---
 
-## ER diagram
+## ER-diagram
 
 ```mermaid
 erDiagram
@@ -56,6 +56,7 @@ erDiagram
     WORK_ITEMS ||--o{ ATTACHMENTS : "has"
     USERS ||--o{ ATTACHMENTS : "uploads"
     USERS ||--o{ NOTIFICATIONS : "receives"
+    USERS ||--o{ ATTRIBUTES : "creates/updates"
 
     AUTH_USERS {
         uuid id PK
@@ -208,6 +209,18 @@ erDiagram
         uuid updated_by FK "nullable"
         timestamptz updated_at
     }
+
+    ATTRIBUTES {
+        uuid id PK
+        string_array work_item_types "WorkItemType[]"
+        json content
+        string status "RecordStatus"
+        timestamptz deleted_at "soft delete"
+        uuid created_by FK "nullable"
+        timestamptz created_at
+        uuid updated_by FK "nullable"
+        timestamptz updated_at
+    }
 ```
 
 ---
@@ -227,6 +240,7 @@ erDiagram
 | `comments`        | CMT-01–CMT-05                   | Threaded comments and @mentions                           |
 | `attachments`     | ATT-01–ATT-04                   | File uploads on work items                                |
 | `notifications`   | NOTIF-01–NOTIF-04               | In-app alerts (assign, status, mention, sprint, due date) |
+| `attributes`      |                                 | Custom fields configuration and schema metadata           |
 
 ---
 
@@ -239,6 +253,7 @@ users ──M:N──► teams           (via team_members)
 projects ──1:N──► sprints
 projects ──1:N──► work_items
 sprints ──0:N──► work_items    (null sprint_id = backlog)
+users ──1:N──► attributes      (via created_by / updated_by)
 work_items ──self──► work_items (Epic → Story → Task)
 work_items ──1:N──► comments, attachments
 users ──1:N──► notifications
@@ -248,12 +263,13 @@ users ──1:N──► notifications
 
 ## Implementation status
 
-| Entity                   | In `schema.prisma` today                        |
-| ------------------------ | ----------------------------------------------- |
-| `instruments`            | Yes — dev baseline with full audit columns      |
-| `users`                  | Yes — `init_jira_domain` + `add_audit_metadata` |
-| `projects`               | Yes — `init_jira_domain` + `add_audit_metadata` |
-| `teams`, `sprints`, etc. | Yes — `init_jira_domain` + `add_audit_metadata` |
+| Entity          | In `schema.prisma` today                         |
+| --------------- | ------------------------------------------------ |
+| `instruments`   | Yes — dev baseline with full audit columns       |
+| `users`         | Yes — `init_jira_domain` + `add_audit_metadata`  |
+| `projects`      | Yes — `init_jira_domain` + `add_audit_metadata`  |
+| `teams`, etc.   | Yes — `init_jira_domain` + `add_audit_metadata`  |
+| `attributes`    | Yes — schema definition with full audit columns  |
 
 When implementing, add tables via `packages/db/prisma/schema.prisma` and `pnpm db create:migrate:win <name>`. Each migration appends Supabase grants automatically (see `docs/guidelines/DATABASE.md`).
 

@@ -70,17 +70,22 @@ Included in `sitemap.ts` and allowed in `robots.ts`:
 
 ### Forbidden routes (no indexing)
 
-Must **not** appear in `sitemap.ts`. Must be blocked in `robots.ts` and carry `robots: { index: false, follow: false }` in route metadata.
+Must **not** appear in `sitemap.ts`. Must be blocked in `robots.ts` and carry `robots: { index: false, follow: false }` in route metadata (via layouts/pages).
 
-| Path           | Reason                                              |
-| -------------- | --------------------------------------------------- |
-| `/dashboard`   | Authenticated hub                                   |
-| `/admin`       | Admin role dashboard                                |
-| `/manager`     | Manager role dashboard                              |
-| `/member`      | Member role dashboard                               |
-| `/instruments` | Internal Supabase example                           |
-| `/files`       | Authenticated file upload                           |
-| `/*?*`         | Query-string URLs (filters, tokens, session params) |
+| Path               | Reason                                              |
+| ------------------ | --------------------------------------------------- |
+| `/dashboard`       | Authenticated hub                                   |
+| `/projects`        | Projects administration registry (replaces `/admin`)|
+| `/sprints`         | Sprints planner workspace                           |
+| `/attributes`      | Attributes settings configuration listing           |
+| `/users`           | User registry and invite panel                      |
+| `/manager`         | Manager role dashboard                              |
+| `/member`          | Member role dashboard                               |
+| `/instruments`     | Internal Supabase example                           |
+| `/files`           | Authenticated file upload                           |
+| `/forgot-password` | Auth recovery page                                  |
+| `/reset-password`  | Auth password reset page                            |
+| `/*?*`             | Query-string URLs (filters, tokens, session params) |
 
 **Defense in depth:** `robots.txt` tells well-behaved crawlers not to fetch a path; page-level `robots` metadata prevents indexing if a URL is linked from elsewhere.
 
@@ -118,23 +123,19 @@ Expected `robots.txt` behavior (production uses `baseUrl` for the sitemap line):
 User-Agent: *
 Allow: /
 Disallow: /dashboard
-Disallow: /admin
+Disallow: /projects
 Disallow: /manager
 Disallow: /member
 Disallow: /instruments
 Disallow: /files
+Disallow: /forgot-password
+Disallow: /reset-password
 Disallow: /*?*
 
 Sitemap: https://alice-web-seven.vercel.app/sitemap.xml
 ```
 
-When new forbidden routes are added, extend `Disallow` lines and add a segment `layout.tsx` with `robots: { index: false, follow: false }`.
-
-### Manual checks
-
-- Open a forbidden route (e.g. `/dashboard`) and inspect the HTML `<meta name="robots" content="noindex, nofollow">` in page source.
-- Use [Google Search Console](https://search.google.com/search-console) URL Inspection after deploy to confirm indexing status.
-- Ensure OG previews render correctly (root `opengraph-image.png` or page-specific overrides).
+When new forbidden routes are added, extend `Disallow` lines in `robots.ts` and add a segment `layout.tsx` with `robots: { index: false, follow: false }`.
 
 ## Related documentation
 

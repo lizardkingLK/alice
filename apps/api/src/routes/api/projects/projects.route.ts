@@ -168,4 +168,84 @@ projectsRouter.delete(
   }
 );
 
+projectsRouter.get(
+  '/:id',
+  requireApiAuth,
+  async (req: AuthenticatedRequest, res) => {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ error: 'Project ID is required' });
+    }
+    try {
+      const project = await projectsService.getProjectById(id);
+      res.json({ project });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to retrieve project';
+      res.status(500).json({ error: message });
+    }
+  }
+);
+
+projectsRouter.get(
+  '/:id/members',
+  requireApiAuth,
+  async (req: AuthenticatedRequest, res) => {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ error: 'Project ID is required' });
+    }
+    try {
+      const members = await projectsService.listMembers(id);
+      res.json({ members });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to retrieve project members';
+      res.status(500).json({ error: message });
+    }
+  }
+);
+
+projectsRouter.post(
+  '/:id/members',
+  requireApiAuth,
+  async (req: AuthenticatedRequest, res) => {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ error: 'Project ID is required' });
+    }
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+    try {
+      await projectsService.addMember(req.userId!, id, userId);
+      res.json({ success: true });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to add project member';
+      res.status(500).json({ error: message });
+    }
+  }
+);
+
+projectsRouter.delete(
+  '/:id/members/:userId',
+  requireApiAuth,
+  async (req: AuthenticatedRequest, res) => {
+    const { id, userId } = req.params;
+    if (!id || !userId) {
+      return res.status(400).json({ error: 'Project ID and User ID are required' });
+    }
+    try {
+      await projectsService.removeMember(req.userId!, id, userId);
+      res.json({ success: true });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to remove project member';
+      res.status(500).json({ error: message });
+    }
+  }
+);
+
 export default projectsRouter;

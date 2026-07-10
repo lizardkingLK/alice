@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition, ReactNode, useEffect } from 'react';
+import Link from 'next/link';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import {
   Card,
@@ -27,23 +28,19 @@ import {
   Search,
   FolderOpen,
 } from 'lucide-react';
-import type { Tables } from '@repo/types';
 import { Pagination } from '@/components/pagination';
-
-type DbUser = Tables<'users'>;
-type DbProject = Tables<'projects'> & {
-  owner?: Pick<DbUser, 'id' | 'name' | 'email'> | null;
-};
+import type { Project } from '../_services/projects.service';
+import type { User } from '@/app/users/_services/users.service';
 
 interface ProjectRegistryProps {
-  readonly projects: DbProject[];
+  readonly projects: Project[];
   readonly totalCount: number;
   readonly page: number;
   readonly limit: number;
   readonly totalPages: number;
   readonly tab: 'active' | 'archived';
   readonly search: string;
-  readonly users: DbUser[];
+  readonly users: User[];
   readonly currentUserId?: string | null;
   readonly currentUserRole?: string | null;
 }
@@ -70,8 +67,8 @@ export function ProjectRegistry({
 
   const [searchQuery, setSearchQuery] = useState(search);
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
-  const [projectToEdit, setProjectToEdit] = useState<DbProject | null>(null);
-  const [projectToDelete, setProjectToDelete] = useState<DbProject | null>(
+  const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(
     null
   );
   const [deleteMode, setDeleteMode] = useState<'soft' | 'hard'>('soft');
@@ -112,13 +109,13 @@ export function ProjectRegistry({
 
   const filteredProjects = projects;
 
-  const handleSoftDelete = (proj: DbProject) => {
+  const handleSoftDelete = (proj: Project) => {
     setProjectToDelete(proj);
     setDeleteMode('soft');
     setError(null);
   };
 
-  const handleHardDelete = (proj: DbProject) => {
+  const handleHardDelete = (proj: Project) => {
     setProjectToDelete(proj);
     setDeleteMode('hard');
     setError(null);
@@ -138,17 +135,20 @@ export function ProjectRegistry({
       if (result.success) {
         setProjectToDelete(null);
         setError(null);
+        router.refresh();
       } else {
         setError(result.error || `Failed to ${deleteMode} delete project.`);
       }
     });
   };
 
-  const handleRestore = (proj: DbProject) => {
+  const handleRestore = (proj: Project) => {
     setError(null);
     startTransition(async () => {
       const result = await restoreProject(proj.id);
-      if (!result.success) {
+      if (result.success) {
+        router.refresh();
+      } else {
         setError(result.error || 'Failed to restore project.');
       }
     });
@@ -268,12 +268,15 @@ export function ProjectRegistry({
                       key={proj.id}
                       className="group flex flex-col justify-between gap-4 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center"
                     >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="bg-primary/10 text-primary border-primary/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-sm font-bold shadow-sm transition-all duration-300 group-hover:scale-105">
+                      <Link
+                        href={`/projects/${proj.id}`}
+                        className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-85 transition-opacity cursor-pointer group/row"
+                      >
+                        <div className="bg-primary/10 text-primary border-primary/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-sm font-bold shadow-sm transition-all duration-300 group-hover/row:scale-105">
                           {proj.key.slice(0, 2)}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h4 className="text-foreground group-hover:text-primary flex items-center gap-2 text-sm leading-none font-semibold transition-colors">
+                          <h4 className="text-foreground group-hover/row:text-primary flex items-center gap-2 text-sm leading-none font-semibold transition-colors">
                             <span className="truncate">{proj.name}</span>
                             {proj.status === 'archived' && (
                               <span className="py-0.2 rounded-full border border-amber-500/20 bg-amber-500/10 px-1.5 text-[10px] font-semibold tracking-normal text-amber-600 uppercase shrink-0">
@@ -302,7 +305,7 @@ export function ProjectRegistry({
                             )}
                           </span>
                         </div>
-                      </div>
+                      </Link>
 
                       <div className="flex flex-wrap items-center gap-2 pl-13 sm:pl-0 sm:grid sm:grid-cols-[180px_90px_90px] sm:gap-4 sm:items-center sm:shrink-0">
                         <div className="flex justify-start">
@@ -407,7 +410,10 @@ export function ProjectRegistry({
             <ProjectForm
               users={users}
               onClose={() => setIsAddProjectOpen(false)}
-              onSuccess={() => setIsAddProjectOpen(false)}
+              onSuccess={() => {
+                setIsAddProjectOpen(false);
+                router.refresh();
+              }}
             />
           </div>
         </div>
@@ -418,9 +424,12 @@ export function ProjectRegistry({
           <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
             <ProjectForm
               users={users}
-              projectToEdit={projectToEdit}
+              projectId={projectToEdit.id}
               onClose={() => setProjectToEdit(null)}
-              onSuccess={() => setProjectToEdit(null)}
+              onSuccess={() => {
+                setProjectToEdit(null);
+                router.refresh();
+              }}
             />
           </div>
         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState } from 'react';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import {
   Card,
@@ -21,15 +21,13 @@ import {
   AlertTriangle,
   UserPlus,
 } from 'lucide-react';
-import type { Tables } from '@repo/types';
-import { toggleUserActive } from './actions';
+import { toggleUserActive } from '../_services/users.service';
 import { CustomSpinner } from '@/app/users/_components/user-spinner';
 import { Pagination } from '@/components/pagination';
-
-type DbUser = Tables<'users'>;
+import type { User } from '../_services/users.service';
 
 interface UserRegistryProps {
-  readonly users: DbUser[];
+  readonly users: User[];
   readonly totalCount: number;
   readonly page: number;
   readonly limit: number;
@@ -67,49 +65,59 @@ export function UserRegistry({
   currentUserId,
   currentUserRole,
 }: Readonly<UserRegistryProps>) {
-  const { handlePageChange, handleLimitChange } = usePaginationNavigation(totalPages, limit);
+  const { handlePageChange, handleLimitChange, router } = usePaginationNavigation(totalPages, limit);
 
   const [mounted, setMounted] = useState(false);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<DbUser | null>(null);
-  const [deactivatingUser, setDeactivatingUser] = useState<DbUser | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [deactivatingUser, setDeactivatingUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [isTogglingActive, setIsTogglingActive] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const handleToggleActive = (user: DbUser) => {
+  const handleToggleActive = (user: User) => {
     if (user.active) {
       // Trigger confirmation modal for deactivation
       setDeactivatingUser(user);
       setError(null);
     } else {
       // Activate immediately
-      startTransition(async () => {
-        const result = await toggleUserActive(user.id, true);
-        if (result.success) {
+      setIsTogglingActive(true);
+      toggleUserActive(user.id, true)
+        .then(() => {
           setError(null);
-        } else {
-          setError(result.error || 'Failed to activate user.');
-        }
-      });
+          router.refresh();
+        })
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : 'Failed to activate user.';
+          setError(message);
+        })
+        .finally(() => {
+          setIsTogglingActive(false);
+        });
     }
   };
 
   const confirmDeactivation = () => {
     if (!deactivatingUser) return;
 
-    startTransition(async () => {
-      const result = await toggleUserActive(deactivatingUser.id, false);
-      if (result.success) {
+    setIsTogglingActive(true);
+    toggleUserActive(deactivatingUser.id, false)
+      .then(() => {
         setDeactivatingUser(null);
         setError(null);
-      } else {
-        setError(result.error || 'Failed to deactivate user.');
-      }
-    });
+        router.refresh();
+      })
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : 'Failed to deactivate user.';
+        setError(message);
+      })
+      .finally(() => {
+        setIsTogglingActive(false);
+      });
   };
 
   return (
@@ -162,10 +170,10 @@ export function UserRegistry({
             <>
               <div className="divide-border divide-y">
               {users.map((usr) => {
-                const isSelf = usr.id === currentUserId;
-                const isDeactivating =
-                  isPending && deactivatingUser?.id === usr.id;
-                return (
+                 const isSelf = usr.id === currentUserId;
+                 const isDeactivating =
+                   isTogglingActive && deactivatingUser?.id === usr.id;
+                 return (
                   <div
                     key={usr.id}
                     className="group flex flex-col justify-between gap-4 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center"
@@ -246,7 +254,7 @@ export function UserRegistry({
                       <div className="flex justify-start">
                         {currentUserRole === 'admin' && (
                           <button
-                            disabled={isPending}
+                            disabled={isTogglingActive}
                             onClick={() => setEditingUser(usr)}
                             className="border-input bg-background hover:bg-accent text-foreground focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border text-[11px] font-medium transition-all focus-visible:ring-2 focus-visible:outline-none"
                           >
@@ -258,7 +266,7 @@ export function UserRegistry({
                       <div className="flex justify-start">
                         {currentUserRole === 'admin' && !isSelf && (
                           <button
-                            disabled={isPending}
+                            disabled={isTogglingActive}
                             onClick={() => handleToggleActive(usr)}
                             className={`focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md text-[11px] font-medium transition-all focus-visible:ring-2 focus-visible:outline-none ${
                               usr.active
@@ -344,7 +352,7 @@ export function UserRegistry({
             <div className="bg-muted/40 border-border flex justify-end gap-3 border-t px-6 py-4">
               <button
                 type="button"
-                disabled={isPending}
+                disabled={isTogglingActive}
                 onClick={() => setDeactivatingUser(null)}
                 className="border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex h-9 cursor-pointer items-center justify-center rounded-md border px-4 text-xs font-semibold shadow-sm transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
               >
@@ -352,11 +360,11 @@ export function UserRegistry({
               </button>
               <button
                 type="button"
-                disabled={isPending}
+                disabled={isTogglingActive}
                 onClick={confirmDeactivation}
                 className="focus-visible:ring-ring inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-rose-600 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-rose-700 focus-visible:ring-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
               >
-                {isPending ? (
+                {isTogglingActive ? (
                   <>
                     <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
                     Deactivating...
@@ -376,7 +384,10 @@ export function UserRegistry({
           <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
             <UserForm
               onClose={() => setIsAddUserOpen(false)}
-              onSuccess={() => setIsAddUserOpen(false)}
+              onSuccess={() => {
+                setIsAddUserOpen(false);
+                router.refresh();
+              }}
             />
           </div>
         </div>
@@ -389,7 +400,10 @@ export function UserRegistry({
             <UserForm
               user={editingUser}
               onClose={() => setEditingUser(null)}
-              onSuccess={() => setEditingUser(null)}
+              onSuccess={() => {
+                setEditingUser(null);
+                router.refresh();
+              }}
             />
           </div>
         </div>
