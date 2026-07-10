@@ -2,26 +2,20 @@
 
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { auditCreate, auditUpdate, userActiveAuditUpdate } from '@/lib/audit';
-import { getDbUser } from '@/lib/auth';
+import {
+  createUser as apiCreateUser,
+  updateUser as apiUpdateUser,
+  toggleUserActive as apiToggleUserActive,
+} from '../_services/users.service';
 import {
   buildAuthCallbackUrl,
   resolveRequestOrigin,
 } from '@/lib/auth-redirect';
-import { z } from 'zod';
-
-const createUserSchema = z.object({
-  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  email: z.email({ message: 'Please enter a valid email address.' }),
-  role: z.enum(['admin', 'manager', 'member']),
-});
-
-const updateUserSchema = z.object({
-  id: z.uuid({ message: 'Invalid user ID.' }),
-  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  role: z.enum(['admin', 'manager', 'member']),
-});
+import { getDbUser } from '@/lib/auth';
+import {
+  createUserSchema,
+  updateUserSchema,
+} from '@repo/types';
 
 export type ActionState = {
   success: boolean;
@@ -62,70 +56,18 @@ export async function createUser(
   }
 
   try {
-    const adminSupabase = createAdminClient();
-
-    // Check if the user already exists in public.users to avoid duplicating
-    const { data: existingUser } = await adminSupabase
-      .from('users')
-      .select('id')
-      .eq('email', validation.data.email)
-      .maybeSingle();
-
-    if (existingUser) {
-      return {
-        success: false,
-        error: 'A user with this email address already exists in the registry.',
-      };
-    }
-
     const headersList = await headers();
     const requestOrigin = headersList.get('origin') ?? 'http://localhost:3000';
     const origin = resolveRequestOrigin(requestOrigin);
     const redirectToUrl = buildAuthCallbackUrl(origin, '/reset-password');
 
-    // Invite the user in Supabase Auth
-    const { data: inviteData, error: inviteError } =
-      await adminSupabase.auth.admin.inviteUserByEmail(validation.data.email, {
-        redirectTo: redirectToUrl,
-        data: {
-          name: validation.data.name,
-          role: validation.data.role,
-        },
-      });
-
-    if (inviteError) {
-      return {
-        success: false,
-        error: `Failed to invite user via Auth: ${inviteError.message}`,
-      };
-    }
-
-    const invitedUser = inviteData?.user;
-    if (!invitedUser) {
-      return {
-        success: false,
-        error: 'Failed to retrieve invited user details.',
-      };
-    }
-
-    // Insert into public.users database table with correct auth ID
-    const { error: dbError } = await adminSupabase.from('users').insert({
-      id: invitedUser.id,
+    // Call API backend
+    await apiCreateUser({
       name: validation.data.name,
       email: validation.data.email,
       role: validation.data.role,
-      active: true,
-      ...auditCreate(currentUser.id),
+      redirectTo: redirectToUrl,
     });
-
-    if (dbError) {
-      // Rollback auth user if insertion into database fails
-      await adminSupabase.auth.admin.deleteUser(invitedUser.id);
-      return {
-        success: false,
-        error: `Database registration failed: ${dbError.message}`,
-      };
-    }
 
     revalidatePath('/users');
     return {
@@ -169,35 +111,8 @@ export async function toggleUserActive(
   }
 
   try {
-    const adminSupabase = createAdminClient();
-
-    // 1. Update public.users status
-    const { error: dbError } = await adminSupabase
-      .from('users')
-      .update(userActiveAuditUpdate(currentUser.id, active))
-      .eq('id', userId);
-
-    if (dbError) {
-      return {
-        success: false,
-        error: dbError.message,
-      };
-    }
-
-    // 2. Ban/unban in Supabase Auth to prevent logins
-    const { error: authError } = await adminSupabase.auth.admin.updateUserById(
-      userId,
-      {
-        ban_duration: active ? 'none' : '87600h',
-      }
-    );
-
-    if (authError) {
-      console.error(
-        'Failed to update ban status in Supabase Auth:',
-        authError.message
-      );
-    }
+    // Call API backend
+    await apiToggleUserActive(userId, active);
 
     revalidatePath('/users');
     return {
@@ -248,42 +163,11 @@ export async function updateUser(
   }
 
   try {
-    const adminSupabase = createAdminClient();
-
-    // 1. Update public.users database table
-    const { error: dbError } = await adminSupabase
-      .from('users')
-      .update({
-        name: validation.data.name,
-        role: validation.data.role,
-        ...auditUpdate(currentUser.id),
-      })
-      .eq('id', validation.data.id);
-
-    if (dbError) {
-      return {
-        success: false,
-        error: `Database update failed: ${dbError.message}`,
-      };
-    }
-
-    // 2. Update metadata in Supabase Auth so it is in sync
-    const { error: authError } = await adminSupabase.auth.admin.updateUserById(
-      validation.data.id,
-      {
-        user_metadata: {
-          name: validation.data.name,
-          role: validation.data.role,
-        },
-      }
-    );
-
-    if (authError) {
-      console.error(
-        'Failed to update user in Supabase Auth:',
-        authError.message
-      );
-    }
+    // Call API backend
+    await apiUpdateUser(validation.data.id, {
+      name: validation.data.name,
+      role: validation.data.role,
+    });
 
     revalidatePath('/users');
     return {

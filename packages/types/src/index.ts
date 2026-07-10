@@ -16,3 +16,4 @@ export {
 } from './audit.js';
 
 export * from './projects.js';
+export * from './users.js';

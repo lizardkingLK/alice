@@ -1,13 +1,21 @@
 import { redirect } from 'next/navigation';
 import { getDbUser, getUser } from '../../lib/auth';
-import { createClient } from '@/lib/supabase/server';
 import type { Tables } from '@repo/types';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { UserRegistry } from '@/app/users/_components/user-registry';
+import { getUsersListPaginated } from '@/app/users/_services/users.service';
 
 type DbUser = Tables<'users'>;
 
-export default async function UsersDashboard() {
+export default async function UsersDashboard({
+  searchParams,
+}: Readonly<{
+  searchParams: Promise<{ page?: string; limit?: string }>;
+}>) {
+  const resolvedSearchParams = await searchParams;
+  const page = Number.parseInt(resolvedSearchParams.page ?? '1', 10);
+  const limit = Number.parseInt(resolvedSearchParams.limit ?? '10', 10);
+
   const user = await getUser();
 
   if (!user) {
@@ -17,17 +25,13 @@ export default async function UsersDashboard() {
   const dbUser = await getDbUser();
   const currentUserRole = dbUser?.role ?? 'member';
 
-  const supabase = await createClient();
-  const { data: dbUsers, error } = await supabase
-    .from('users')
-    .select()
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('error. supabase database error:', error.message);
+  let usersData = { users: [] as DbUser[], totalCount: 0, page: 1, limit: 10, totalPages: 1 };
+  try {
+    usersData = await getUsersListPaginated(page, limit);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('error. failed to fetch users list via API:', message);
   }
-
-  const usersList: DbUser[] = dbUsers ?? [];
 
   return (
     <DashboardShell
@@ -37,7 +41,11 @@ export default async function UsersDashboard() {
     >
       <div className="w-full">
         <UserRegistry
-          users={usersList}
+          users={usersData.users}
+          totalCount={usersData.totalCount}
+          page={usersData.page}
+          limit={usersData.limit}
+          totalPages={usersData.totalPages}
           currentUserId={user.id}
           currentUserRole={currentUserRole}
         />

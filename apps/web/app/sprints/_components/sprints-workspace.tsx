@@ -1,78 +1,71 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { SprintList } from '@/app/sprints/_components/sprint-list';
 import { SprintForm } from '@/app/sprints/_components/sprint-form';
-import { listSprints, Sprint } from '@/app/sprints/_services/sprints.service';
+import { Sprint } from '@/app/sprints/_services/sprints.service';
 
 interface SprintsWorkspaceProps {
-  readonly initialSprints: Sprint[];
-  readonly initialPagination: {
+  readonly sprints: Sprint[];
+  readonly pagination: {
     page: number;
     limit: number;
     totalCount: number;
     totalPages: number;
   };
+  readonly filterTab: 'active' | 'archived';
+  readonly error?: string | null;
 }
 
 export function SprintsWorkspace({
-  initialSprints,
-  initialPagination,
+  sprints,
+  pagination,
+  filterTab,
+  error = null,
 }: Readonly<SprintsWorkspaceProps>) {
-  const [filterTab, setFilterTab] = useState<'active' | 'archived'>('active');
-  const [sprints, setSprints] = useState<Sprint[]>(initialSprints);
-  const [pagination, setPagination] = useState(initialPagination);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const {
+    handlePageChange,
+    handleLimitChange,
+    pathname,
+    router,
+    searchParams,
+  } = usePaginationNavigation(pagination.totalPages, pagination.limit);
+
   const [isAddSprintOpen, setIsAddSprintOpen] = useState(false);
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null);
 
-  const fetchSprints = useCallback(
-    async (tab: 'active' | 'archived', page: number) => {
-      setLoadError(null);
-      setIsLoading(true);
+  const handleTabChange = (nextTab: 'active' | 'archived') => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', nextTab);
+    params.set('page', '1'); // reset page when tab changes
+    router.push(`${pathname}?${params.toString()}`);
+  };
 
-      try {
-        const result = await listSprints(tab, page);
-        setSprints(result.sprints);
-        setPagination(result.pagination);
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to load sprints.';
-        setLoadError(message);
-      } finally {
-        setIsLoading(false);
+  const handleSprintCreated = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', 'active');
+    params.set('page', '1');
+    router.push(`${pathname}?${params.toString()}`);
+    router.refresh();
+  };
+
+  const handleSprintUpdated = (updated?: Sprint) => {
+    if (updated) {
+      const isMovedToAnotherTab =
+        (filterTab === 'active' && updated.status === 'Archived') ||
+        (filterTab === 'archived' && updated.status !== 'Archived');
+
+      if (isMovedToAnotherTab && sprints.length === 1 && pagination.page > 1) {
+        handlePageChange(pagination.page - 1);
+        return;
       }
-    },
-    []
-  );
-
-  const handleTabChange = async (nextTab: 'active' | 'archived') => {
-    setFilterTab(nextTab);
-    await fetchSprints(nextTab, 1);
+    }
+    router.refresh();
   };
 
-  const handlePageChange = async (nextPage: number) => {
-    await fetchSprints(filterTab, nextPage);
-  };
-
-  const handleRetry = async () => {
-    await fetchSprints(filterTab, pagination.page);
-  };
-
-  useEffect(() => {
-    setFilterTab('active');
-    setSprints(initialSprints);
-    setPagination(initialPagination);
-  }, [initialSprints, initialPagination]);
-
-  const handleSprintCreated = async () => {
-    setFilterTab('active');
-    await fetchSprints('active', 1);
-  };
-
-  const handleSprintUpdated = async () => {
-    await fetchSprints(filterTab, pagination.page);
+  const handleRetry = () => {
+    router.refresh();
   };
 
   return (
@@ -84,8 +77,8 @@ export function SprintsWorkspace({
           filterTab={filterTab}
           onTabChange={handleTabChange}
           onPageChange={handlePageChange}
-          isLoading={isLoading}
-          error={loadError}
+          onLimitChange={handleLimitChange}
+          error={error}
           onRetry={handleRetry}
           onSprintUpdated={handleSprintUpdated}
           onAddSprint={() => setIsAddSprintOpen(true)}

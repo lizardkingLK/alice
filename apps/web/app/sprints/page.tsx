@@ -1,51 +1,39 @@
 import { redirect } from 'next/navigation';
 import { getUser } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { SprintsWorkspace } from '@/app/sprints/_components/sprints-workspace';
-import {
-  mapDbSprintToSprint,
-  type DbSprintRelation,
-  type Sprint,
-} from '@/app/sprints/_services/sprints.service';
+import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.service.server';
 
-export default async function SprintsPage() {
+import { PaginatedSprints } from '@/app/sprints/_services/sprints.service';
+
+export default async function SprintsPage({
+  searchParams,
+}: Readonly<{
+  searchParams: Promise<{ page?: string; limit?: string; tab?: string }>;
+}>) {
   const user = await getUser();
 
   if (!user) {
     redirect('/login');
   }
 
-  const supabase = await createClient();
-  const {
-    data: dbSprints,
-    error,
-    count,
-  } = await supabase
-    .from('sprints')
-    .select('*, project:projects(id, name, key)', { count: 'exact' })
-    .eq('created_by', user.id)
-    .in('status', ['planned', 'active'])
-    .order('start_date', { ascending: false })
-    .range(0, 4);
+  const resolvedSearchParams = await searchParams;
+  const page = Number.parseInt(resolvedSearchParams.page ?? '1', 10);
+  const limit = Number.parseInt(resolvedSearchParams.limit ?? '5', 10);
+  const status = resolvedSearchParams.tab === 'archived' ? 'archived' : 'active';
 
-  if (error) {
-    console.error(
-      'error. supabase database error fetching sprints:',
-      error.message
-    );
-  }
-
-  const sprintsList: Sprint[] = (
-    (dbSprints as unknown as DbSprintRelation[]) ?? []
-  ).map((element) => mapDbSprintToSprint(element));
-
-  const initialPagination = {
-    page: 1,
-    limit: 5,
-    totalCount: count ?? 0,
-    totalPages: Math.ceil((count ?? 0) / 5) || 1,
+  let sprintsData: PaginatedSprints = {
+    sprints: [],
+    pagination: { page: 1, limit: 5, totalCount: 0, totalPages: 1 },
   };
+  let fetchError: string | null = null;
+
+  try {
+    sprintsData = await getSprintsPaginatedServer(status, page, limit);
+  } catch (error) {
+    fetchError = error instanceof Error ? error.message : 'Failed to fetch sprints.';
+    console.error('error. failed to fetch sprints list via API:', fetchError);
+  }
 
   return (
     <DashboardShell
@@ -54,8 +42,10 @@ export default async function SprintsPage() {
       user={user}
     >
       <SprintsWorkspace
-        initialSprints={sprintsList}
-        initialPagination={initialPagination}
+        sprints={sprintsData.sprints}
+        pagination={sprintsData.pagination}
+        filterTab={status}
+        error={fetchError}
       />
     </DashboardShell>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Card,
@@ -21,6 +21,7 @@ import {
   Sprint,
   updateSprintStatus,
 } from '@/app/sprints/_services/sprints.service';
+import { Pagination } from '@/components/pagination';
 
 type SprintListProps = {
   sprints: Sprint[];
@@ -35,6 +36,8 @@ type SprintListProps = {
   onTabChange: (tab: 'active' | 'archived') => void;
   // eslint-disable-next-line no-unused-vars
   onPageChange: (page: number) => void;
+  // eslint-disable-next-line no-unused-vars
+  onLimitChange: (limit: number) => void;
   isLoading?: boolean;
   error?: string | null;
   onRetry?: () => void;
@@ -146,6 +149,12 @@ function SprintListItem({
   onSprintUpdated,
   onEditSprint,
 }: Readonly<SprintListItemProps>) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <li className="space-y-2 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -162,7 +171,13 @@ function SprintListItem({
           />
         </div>
         <p className="text-muted-foreground text-sm">
-          {formatDate(sprint.startDate)} – {formatDate(sprint.endDate)}
+          {mounted ? (
+            <>{formatDate(sprint.startDate)} – {formatDate(sprint.endDate)}</>
+          ) : (
+            <span className="invisible">
+              {sprint.startDate} – {sprint.endDate}
+            </span>
+          )}
         </p>
       </div>
       {sprint.project ? (
@@ -308,6 +323,7 @@ export function SprintList({
   filterTab,
   onTabChange,
   onPageChange,
+  onLimitChange,
   isLoading = false,
   error = null,
   onRetry,
@@ -356,32 +372,16 @@ export function SprintList({
           onSprintUpdated={onSprintUpdated}
           onEditSprint={onEditSprint}
         />
-        {pagination && pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between border-t pt-4">
-            <p className="text-muted-foreground text-sm">
-              Showing page {pagination.page} of {pagination.totalPages}
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={pagination.page <= 1 || isLoading}
-                onClick={() => onPageChange?.(pagination.page - 1)}
-              >
-                Previous
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={pagination.page >= pagination.totalPages || isLoading}
-                onClick={() => onPageChange?.(pagination.page + 1)}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
+        {pagination && pagination.totalCount > 0 && (
+          <Pagination
+            totalCount={pagination.totalCount}
+            page={pagination.page}
+            limit={pagination.limit}
+            totalPages={pagination.totalPages}
+            onPageChange={onPageChange}
+            onLimitChange={onLimitChange}
+            label="sprints"
+          />
         )}
       </CardContent>
     </Card>
