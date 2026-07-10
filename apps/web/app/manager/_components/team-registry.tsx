@@ -126,6 +126,7 @@ export function TeamRegistry({
       if (actionResult.success) {
         setTeamToDelete(null);
         setError(null);
+        router.refresh();
       } else {
         setError(actionResult.error ?? `Operation failed during ${deleteMode} delete.`);
       }
@@ -136,7 +137,9 @@ export function TeamRegistry({
     setError(null);
     startTransition(async () => {
       const actionResult = await restoreTeam(item.id);
-      if (actionResult.success === false) {
+      if (actionResult.success) {
+        router.refresh();
+      } else {
         setError(actionResult.error ?? 'Unable to restore team.');
       }
     });

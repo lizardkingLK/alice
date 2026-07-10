@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/api/api-client';
+import { apiFetch } from '@/lib/api/api-client.server';
 import { Tables } from '@repo/types';
 import type { User } from '@/app/users/_services/users.service';
 
@@ -9,7 +9,9 @@ export type Project = Tables<'projects'> & {
 const apiProjects = '/api/projects';
 
 export async function getProjectList(): Promise<Project[]> {
-  const data = await apiFetch<{ projects: Project[] }>(apiProjects);
+  const data = await apiFetch<{ projects: Project[] }>(apiProjects, {
+    next: { revalidate: 0 },
+  });
   return data.projects;
 }
 
@@ -34,7 +36,9 @@ export async function getProjectListPaginated(
   if (search) {
     url += `&search=${encodeURIComponent(search)}`;
   }
-  const data = await apiFetch<GetProjectsPaginatedResponse>(url);
+  const data = await apiFetch<GetProjectsPaginatedResponse>(url, {
+    next: { revalidate: 0 },
+  });
   return data;
 }
 
@@ -98,18 +102,17 @@ export type ProjectMemberWithUser = {
   user: Pick<User, 'id' | 'name' | 'email' | 'role'> | null;
 };
 
-export async function getProject(id: string): Promise<Project> {
-  const data = await apiFetch<{ project: Project }>(`${apiProjects}/${id}`);
-  return data.project;
-}
-
 export async function getProjectDetails(id: string): Promise<Project> {
-  const data = await apiFetch<{ project: Project }>(`${apiProjects}/${id}`);
+  const data = await apiFetch<{ project: Project }>(`${apiProjects}/${id}`, {
+    next: { revalidate: 0 },
+  });
   return data.project;
 }
 
 export async function getProjectMembers(projectId: string): Promise<ProjectMemberWithUser[]> {
-  const data = await apiFetch<{ members: ProjectMemberWithUser[] }>(`${apiProjects}/${projectId}/members`);
+  const data = await apiFetch<{ members: ProjectMemberWithUser[] }>(`${apiProjects}/${projectId}/members`, {
+    next: { revalidate: 0 },
+  });
   return data.members;
 }
 

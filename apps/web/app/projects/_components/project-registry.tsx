@@ -135,6 +135,7 @@ export function ProjectRegistry({
       if (result.success) {
         setProjectToDelete(null);
         setError(null);
+        router.refresh();
       } else {
         setError(result.error || `Failed to ${deleteMode} delete project.`);
       }
@@ -145,7 +146,9 @@ export function ProjectRegistry({
     setError(null);
     startTransition(async () => {
       const result = await restoreProject(proj.id);
-      if (!result.success) {
+      if (result.success) {
+        router.refresh();
+      } else {
         setError(result.error || 'Failed to restore project.');
       }
     });
@@ -407,7 +410,10 @@ export function ProjectRegistry({
             <ProjectForm
               users={users}
               onClose={() => setIsAddProjectOpen(false)}
-              onSuccess={() => setIsAddProjectOpen(false)}
+              onSuccess={() => {
+                setIsAddProjectOpen(false);
+                router.refresh();
+              }}
             />
           </div>
         </div>
@@ -418,9 +424,12 @@ export function ProjectRegistry({
           <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
             <ProjectForm
               users={users}
-              projectToEdit={projectToEdit}
+              projectId={projectToEdit.id}
               onClose={() => setProjectToEdit(null)}
-              onSuccess={() => setProjectToEdit(null)}
+              onSuccess={() => {
+                setProjectToEdit(null);
+                router.refresh();
+              }}
             />
           </div>
         </div>

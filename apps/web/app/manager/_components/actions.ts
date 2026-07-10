@@ -7,7 +7,7 @@ import {
   softDeleteTeam as apiSoftDeleteTeam,
   restoreTeam as apiRestoreTeam,
   hardDeleteTeam as apiHardDeleteTeam,
-} from '../_services/teams.service';
+} from '../_services/teams.service.server';
 import {
   parseTeamForm,
   requireTeamManager,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useRef, ReactNode } from 'react';
+import { FormEvent, useEffect, useState, type ChangeEvent } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
@@ -11,8 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@repo/ui/components/ui/card';
-import { createTeam, updateTeam } from './actions';
-import type { ActionState } from '@/lib/server-actions';
+import { cn } from '@repo/ui/lib/utils';
 import {
   Users,
   Loader2,
@@ -22,19 +21,41 @@ import {
 } from 'lucide-react';
 import type { Tables } from '@repo/types';
 import type { User } from '@/app/users/_services/users.service';
+import { createTeam, updateTeam } from '../_services/teams.service';
 
 type DbTeam = Tables<'teams'>;
-
-const initialActionState: ActionState = {
-  success: false,
-  error: null,
-};
 
 interface TeamFormProps {
   readonly onClose?: () => void;
   readonly onSuccess?: () => void;
   readonly teamToEdit?: DbTeam | null;
   readonly users: User[];
+}
+
+interface FormAlertMessageProps {
+  message: string | null;
+  isError: boolean;
+}
+
+function FormAlertMessage({ message, isError }: Readonly<FormAlertMessageProps>) {
+  if (!message) return null;
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-2 rounded-lg border p-3 text-sm',
+        isError
+          ? 'text-destructive bg-destructive/10 border-destructive/20'
+          : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
+      )}
+    >
+      {isError ? (
+        <AlertCircle className="h-4 w-4 shrink-0" />
+      ) : (
+        <CheckCircle className="h-4 w-4 shrink-0" />
+      )}
+      <span>{message}</span>
+    </div>
+  );
 }
 
 export function TeamForm({
@@ -44,32 +65,73 @@ export function TeamForm({
   users,
 }: Readonly<TeamFormProps>) {
   const editActionActive = !!teamToEdit;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
-  const serverActionTarget = editActionActive
-    ? updateTeam.bind(null, teamToEdit.id)
-    : createTeam;
-
-  const [formState, executeAction, isActionPending] = useActionState(
-    serverActionTarget,
-    initialActionState
+  const [name, setName] = useState(teamToEdit?.name ?? '');
+  const [techStack, setTechStack] = useState(teamToEdit?.tech_stack ?? '');
+  const [description, setDescription] = useState(teamToEdit?.description ?? '');
+  const [managerId, setManagerId] = useState(teamToEdit?.manager_id ?? '');
+  const [status, setStatus] = useState<'active' | 'inactive' | 'archived'>(
+    teamToEdit?.status && teamToEdit.status !== 'deleted' ? teamToEdit.status : 'active'
   );
 
-  const teamFormReference = useRef<HTMLFormElement>(null);
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    setIsSubmitting(true);
+    setMessage(null);
+    setIsError(false);
+
+    if (!name.trim() || !managerId || !status) {
+      setMessage('Team name, manager, and status are required.');
+      setIsError(true);
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const teamData = {
+        name: name.trim(),
+        tech_stack: techStack.trim() || null,
+        description: description.trim() || null,
+        manager_id: managerId,
+        status: status,
+      };
+
+      if (editActionActive && teamToEdit) {
+        await updateTeam(teamToEdit.id, teamData);
+        setMessage('The team configuration has been successfully updated.');
+      } else {
+        await createTeam(teamData);
+        setMessage('A new team record has been successfully registered.');
+      }
+
+      setIsSuccess(true);
+    } catch (error) {
+      const modeText = editActionActive ? 'update' : 'create';
+      const errorMessage =
+        error instanceof Error ? error.message : `Failed to ${modeText} team.`;
+      setMessage(errorMessage);
+      setIsError(true);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   useEffect(() => {
-    if (formState.success) {
-      if (!editActionActive) {
-        teamFormReference.current?.reset();
-      }
-      const completionTimer = setTimeout(() => {
+    if (isSuccess) {
+      const timer = setTimeout(() => {
         onSuccess?.();
       }, 1200);
-      return () => clearTimeout(completionTimer);
+      return () => clearTimeout(timer);
     }
-  }, [formState.success, onSuccess, editActionActive]);
+  }, [isSuccess, onSuccess]);
 
-  let buttonLabelContent: ReactNode;
-  if (isActionPending) {
+  let buttonLabelContent;
+  if (isSubmitting) {
     buttonLabelContent = (
       <>
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -105,7 +167,7 @@ export function TeamForm({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form ref={teamFormReference} action={executeAction} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name" className="text-sm font-medium">
               Team Identifier / Name
@@ -115,7 +177,8 @@ export function TeamForm({
               name="name"
               placeholder="e.g. Platform Team"
               required
-              defaultValue={teamToEdit?.name ?? ''}
+              value={name}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
               className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
             />
           </div>
@@ -128,7 +191,8 @@ export function TeamForm({
               id="tech_stack"
               name="tech_stack"
               placeholder="e.g. Next.js, Node, Postgres"
-              defaultValue={teamToEdit?.tech_stack ?? ''}
+              value={techStack}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setTechStack(e.target.value)}
               className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
             />
           </div>
@@ -141,7 +205,8 @@ export function TeamForm({
               id="description"
               name="description"
               placeholder="e.g. Core team responsible for monorepo and API infrastructure"
-              defaultValue={teamToEdit?.description ?? ''}
+              value={description}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setDescription(e.target.value)}
               className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
             />
           </div>
@@ -154,7 +219,8 @@ export function TeamForm({
               id="manager_id"
               name="manager_id"
               required
-              defaultValue={teamToEdit?.manager_id ?? ''}
+              value={managerId}
+              onChange={(e: ChangeEvent<HTMLSelectElement>) => setManagerId(e.target.value)}
               className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
             >
               <option value="" disabled>
@@ -178,7 +244,8 @@ export function TeamForm({
               id="status"
               name="status"
               required
-              defaultValue={teamToEdit?.status ?? 'active'}
+              value={status}
+              onChange={(e: ChangeEvent<HTMLSelectElement>) => setStatus(e.target.value as 'active' | 'inactive' | 'archived')}
               className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
             >
               <option value="active">Active</option>
@@ -187,29 +254,13 @@ export function TeamForm({
             </select>
           </div>
 
-          {formState.error && (
-            <div className="text-destructive bg-destructive/10 border-destructive/20 flex items-center gap-2 rounded-lg border p-3 text-sm">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              <span>Failed: {formState.error}</span>
-            </div>
-          )}
-
-          {formState.success && (
-            <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-500">
-              <CheckCircle className="h-4 w-4 shrink-0" />
-              <span>
-                {editActionActive
-                  ? 'The team configuration has been successfully updated.'
-                  : 'A new team record has been successfully registered.'}
-              </span>
-            </div>
-          )}
+          <FormAlertMessage message={message} isError={isError} />
 
           <div className="flex gap-3 pt-2">
             {onClose && (
               <button
                 type="button"
-                disabled={isActionPending || formState.success}
+                disabled={isSubmitting || isSuccess}
                 onClick={onClose}
                 className="border-input bg-background hover:bg-accent text-foreground disabled:opacity-50 flex w-1/3 cursor-pointer items-center justify-center rounded-md border text-sm font-semibold shadow-sm transition-all duration-300"
               >
@@ -218,7 +269,7 @@ export function TeamForm({
             )}
             <Button
               type="submit"
-              disabled={isActionPending || formState.success}
+              disabled={isSubmitting || isSuccess}
               className={`${onClose ? 'w-2/3' : 'w-full'}`}
             >
               {buttonLabelContent}

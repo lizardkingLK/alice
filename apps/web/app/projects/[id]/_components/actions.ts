@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { addProjectMember, removeProjectMember } from '../../_services/projects.service';
+import { addProjectMember, removeProjectMember } from '../../_services/projects.service.server';
 import {
   actionFailure,
   actionSuccess,

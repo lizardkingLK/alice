@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/api/api-client';
+import { apiFetch } from '@/lib/api/api-client.server';
 import { Tables } from '@repo/types';
 import type { User } from '@/app/users/_services/users.service';
 
@@ -9,7 +9,9 @@ export type Team = Tables<'teams'> & {
 const apiTeams = '/api/teams';
 
 export async function getTeamList(): Promise<Team[]> {
-  const data = await apiFetch<{ teams: Team[] }>(apiTeams);
+  const data = await apiFetch<{ teams: Team[] }>(apiTeams, {
+    next: { revalidate: 0 },
+  });
   return data.teams;
 }
 
@@ -35,7 +37,9 @@ export async function getTeamListPaginated(
     url += `&search=${encodeURIComponent(search)}`;
   }
 
-  const data = await apiFetch<GetTeamsPaginatedResponse>(url);
+  const data = await apiFetch<GetTeamsPaginatedResponse>(url, {
+    next: { revalidate: 0 },
+  });
   return data;
 }
 

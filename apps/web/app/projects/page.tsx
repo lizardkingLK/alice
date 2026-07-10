@@ -2,8 +2,8 @@ import { redirect } from 'next/navigation';
 import { getUser, getDbUser } from '@/lib/auth';
 import { ProjectRegistry } from '@/app/projects/_components/project-registry';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
-import { getProjectListPaginated, type Project } from '@/app/projects/_services/projects.service';
-import { getUserList } from '@/app/users/_services/users.service';
+import { getProjectListPaginated, type Project } from '@/app/projects/_services/projects.service.server';
+import { getUserList } from '@/app/users/_services/users.service.server';
 
 export default async function ProjectsPage({
   searchParams,
@@ -42,20 +42,18 @@ export default async function ProjectsPage({
       description="Organize project administration."
       user={user}
     >
-      <div className="w-full">
-        <ProjectRegistry
-          projects={projectsResult.projects}
-          totalCount={projectsResult.totalCount}
-          page={projectsResult.page}
-          limit={projectsResult.limit}
-          totalPages={projectsResult.totalPages}
-          tab={status}
-          search={search}
-          users={usersList}
-          currentUserId={dbUser?.id}
-          currentUserRole={userRole}
-        />
-      </div>
+      <ProjectRegistry
+        projects={projectsResult.projects}
+        totalCount={projectsResult.totalCount}
+        page={projectsResult.page}
+        limit={projectsResult.limit}
+        totalPages={projectsResult.totalPages}
+        tab={status}
+        search={search}
+        users={usersList}
+        currentUserId={dbUser?.id}
+        currentUserRole={userRole}
+      />
     </DashboardShell>
   );
 }

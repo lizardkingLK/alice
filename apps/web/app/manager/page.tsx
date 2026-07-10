@@ -2,8 +2,8 @@ import { redirect } from 'next/navigation';
 import { getUser, getDbUser } from '@/lib/auth';
 import { TeamRegistry } from './_components/team-registry';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
-import { getTeamListPaginated, type Team } from './_services/teams.service';
-import { getUserList } from '@/app/users/_services/users.service';
+import { getTeamListPaginated, type Team } from './_services/teams.service.server';
+import { getUserList } from '@/app/users/_services/users.service.server';
 
 export default async function ManagerDashboardPage({
   searchParams,
@@ -50,20 +50,18 @@ export default async function ManagerDashboardPage({
       description="Manage teams workload and engineering resources."
       user={user}
     >
-      <div className="w-full">
-        <TeamRegistry
-          teams={teamsResult.teams}
-          totalCount={teamsResult.totalCount}
-          page={teamsResult.page}
-          limit={teamsResult.limit}
-          totalPages={teamsResult.totalPages}
-          tab={status ?? 'active'}
-          search={search}
-          users={usersList}
-          currentUserId={dbUser?.id}
-          currentUserRole={userRole}
-        />
-      </div>
+      <TeamRegistry
+        teams={teamsResult.teams}
+        totalCount={teamsResult.totalCount}
+        page={teamsResult.page}
+        limit={teamsResult.limit}
+        totalPages={teamsResult.totalPages}
+        tab={status ?? 'active'}
+        search={search}
+        users={usersList}
+        currentUserId={dbUser?.id}
+        currentUserRole={userRole}
+      />
     </DashboardShell>
   );
 }

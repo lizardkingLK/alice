@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/api/api-client';
+import { apiFetch } from '@/lib/api/api-client.server';
 import { Tables } from '@repo/types';
 
 export type User = Tables<'users'>;
@@ -14,7 +14,9 @@ export type GetUsersPaginatedResponse = {
 };
 
 export async function getUsersList(): Promise<User[]> {
-  const data = await apiFetch<{ users: User[] }>(apiUsers);
+  const data = await apiFetch<{ users: User[] }>(apiUsers, {
+    next: { revalidate: 0 },
+  });
   return data.users;
 }
 
@@ -23,7 +25,9 @@ export async function getUsersListPaginated(
   limit: number
 ): Promise<GetUsersPaginatedResponse> {
   const url = `${apiUsers}?page=${page}&limit=${limit}`;
-  const data = await apiFetch<GetUsersPaginatedResponse>(url);
+  const data = await apiFetch<GetUsersPaginatedResponse>(url, {
+    next: { revalidate: 0 },
+  });
   return data;
 }
 
