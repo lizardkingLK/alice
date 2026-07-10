@@ -1,0 +1,95 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Web: Next.js (server)",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/apps/web",
+      "program": "${workspaceFolder}/apps/web/node_modules/next/dist/bin/next",
+      "args": ["dev"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Web: Next.js (client)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/apps/web"
+    },
+    {
+      "name": "Web: Next.js (full stack)",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/apps/web",
+      "program": "${workspaceFolder}/apps/web/node_modules/next/dist/bin/next",
+      "args": ["dev"],
+      "console": "integratedTerminal",
+      "serverReadyAction": {
+        "pattern": "Local: .*(https?://\\S+)",
+        "uriFormat": "%s",
+        "action": "debugWithChrome"
+      }
+    },
+    {
+      "name": "API: Express",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/apps/api",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
+      "args": ["src/index.ts"],
+      "envFile": "${workspaceFolder}/apps/api/.env",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "API: attach",
+      "type": "node",
+      "request": "attach",
+      "port": 9229
+    },
+    {
+      "name": "DB: seed",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/packages/db",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
+      "args": ["src/seed.ts"],
+      "envFile": "${workspaceFolder}/packages/db/.env",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Web: Vitest",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/apps/web",
+      "program": "${workspaceFolder}/apps/web/node_modules/vitest/vitest.mjs",
+      "args": ["run", "${file}"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "API: Vitest",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/apps/api",
+      "program": "${workspaceFolder}/apps/api/node_modules/vitest/vitest.mjs",
+      "args": ["run", "${file}"],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/apps/api/.env"
+    },
+    {
+      "name": "UI: Vitest",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/packages/ui",
+      "program": "${workspaceFolder}/packages/ui/node_modules/vitest/vitest.mjs",
+      "args": ["run", "${file}"],
+      "console": "integratedTerminal"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full stack: Web + API",
+      "configurations": ["Web: Next.js (server)", "API: Express"]
+    }
+  ]
+}
