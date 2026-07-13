@@ -51,7 +51,7 @@ function buildBreadcrumbItems(
   );
   const overrideBySegment = new Map(
     overrides.map((item) => {
-      const segment = normalizeUrl(item.url).split('/').filter(Boolean).at(-1);
+      const segment = normalizeUrl(item.url).split('/').findLast(Boolean);
       return [segment ?? '', item] as const;
     })
   );
