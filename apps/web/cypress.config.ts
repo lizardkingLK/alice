@@ -64,8 +64,8 @@ export default defineConfig({
               return null;
             }
 
-            const user = data.users.find((u) => u.email === testUserEmail);
-            if (user) {
+            const hasUser = data.users.some((u) => u.email === testUserEmail);
+            if (hasUser) {
 
               // Clean up Cypress-created sprints to prevent list/pagination pollution
               const { error: deleteError } = await supabase

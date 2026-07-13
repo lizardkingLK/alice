@@ -14,20 +14,9 @@ describe('Sprints Workspace', () => {
     cy.login();
   });
 
-  it('should display the sprints list, add a sprint, and edit it', () => {
-    // 1. Visit /sprints
-    cy.visit('/sprints');
-
-    // 2. Assert page loaded and shows Sprints header
-    cy.contains('[data-slot="breadcrumb-page"]', 'Sprints').should('exist');
-    cy.get('body').should('contain', 'Plan and track team sprints.');
-
-    // 3. Click "Add Sprint" button
+  function createSprint(sprintName: string, goal: string) {
+    // Click "Add Sprint" button
     cy.contains('button', 'Add Sprint').click();
-
-    // 4. Fill in the "Create Sprint" form
-    const sprintName = `Sprint E2E ${Date.now()}`;
-    const goal = 'Write automated tests using Cypress';
 
     // Wait for project options to load and select the first project
     cy.get('select#sprint-project option')
@@ -55,6 +44,20 @@ describe('Sprints Workspace', () => {
 
     // Wait for the modal success timer to fire and unmount the modal
     cy.get('textarea#sprint-goal').should('not.exist');
+  }
+
+  it('should display the sprints list, add a sprint, and edit it', () => {
+    // 1. Visit /sprints
+    cy.visit('/sprints');
+
+    // 2. Assert page loaded and shows Sprints header
+    cy.contains('[data-slot="breadcrumb-page"]', 'Sprints').should('exist');
+    cy.get('body').should('contain', 'Plan and track team sprints.');
+
+    // 3. Add a sprint using the helper function
+    const sprintName = `Sprint E2E ${Date.now()}`;
+    const goal = 'Write automated tests using Cypress';
+    createSprint(sprintName, goal);
 
     // The modal should close and the new sprint should appear in the list
     cy.contains(sprintName).should('exist');
@@ -106,28 +109,7 @@ describe('Sprints Workspace', () => {
 
     const sprintName = `Admin Sprint ${Date.now()}`;
     const goal = 'Collaborative Sprint Goal';
-
-    cy.contains('button', 'Add Sprint').click();
-
-    cy.get('select#sprint-project option')
-      .should('have.length.at.least', 1)
-      .and('not.have.value', '');
-    cy.get('select#sprint-project').first().then(($select) => {
-      const options = $select.find('option');
-      cy.get('select#sprint-project').first().select(options.eq(0).val() as string);
-    });
-
-    cy.get('input#sprint-name').first().type(sprintName, { delay: 30 });
-    cy.get('textarea#sprint-goal').first().type(goal, { delay: 30 });
-
-    const today = new Date().toISOString().split('T')[0]!;
-    const twoWeeksLater = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]!;
-
-    cy.get('input#sprint-start-date').first().type(today, { delay: 30 });
-    cy.get('input#sprint-end-date').first().type(twoWeeksLater, { delay: 30 });
-
-    cy.get('form').first().submit();
-    cy.get('textarea#sprint-goal').should('not.exist');
+    createSprint(sprintName, goal);
 
     // 2. Clear auth state and log in as member@alice.dev
     cy.clearAllCookies();
