@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { SprintForm } from '@/app/sprints/_components/sprint-form';
-import { createSprint, getSprint, updateSprint } from '@/app/sprints/_services/sprints.service';
+import {
+  createSprint,
+  getSprint,
+  updateSprint,
+} from '@/app/sprints/_services/sprints.service';
 import { apiFetch } from '@/lib/api/api-client';
 
 vi.mock('@/app/sprints/_services/sprints.service', () => ({
@@ -15,10 +19,34 @@ vi.mock('@/lib/api/api-client', () => ({
 }));
 
 const mockProjects = [
-  { id: 'proj-1', name: 'Project Alpha', key: 'PAL', status: 'active', deleted_at: null },
-  { id: 'proj-2', name: 'Project Beta', key: 'PBE', status: 'active', deleted_at: null },
-  { id: 'proj-inactive', name: 'Inactive Project', key: 'INAC', status: 'inactive', deleted_at: null },
-  { id: 'proj-deleted', name: 'Deleted Project', key: 'DEL', status: 'active', deleted_at: '2026-07-09T00:00:00Z' },
+  {
+    id: 'proj-1',
+    name: 'Project Alpha',
+    key: 'PAL',
+    status: 'active',
+    deleted_at: null,
+  },
+  {
+    id: 'proj-2',
+    name: 'Project Beta',
+    key: 'PBE',
+    status: 'active',
+    deleted_at: null,
+  },
+  {
+    id: 'proj-inactive',
+    name: 'Inactive Project',
+    key: 'INAC',
+    status: 'inactive',
+    deleted_at: null,
+  },
+  {
+    id: 'proj-deleted',
+    name: 'Deleted Project',
+    key: 'DEL',
+    status: 'active',
+    deleted_at: '2026-07-09T00:00:00Z',
+  },
 ];
 
 const mockSprint = {
@@ -55,7 +83,9 @@ describe('SprintForm Component', () => {
 
     // After resolution, verify select options
     await waitFor(() => {
-      expect(screen.queryByText(/Loading projects.../i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/Loading projects.../i)
+      ).not.toBeInTheDocument();
     });
 
     const projectSelect = screen.getByLabelText(/Project/i);
@@ -73,24 +103,38 @@ describe('SprintForm Component', () => {
     render(<SprintForm />);
 
     await waitFor(() => {
-      expect(screen.queryByText(/Loading projects.../i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/Loading projects.../i)
+      ).not.toBeInTheDocument();
     });
 
     // Populate with invalid dates (endDate < startDate)
-    fireEvent.change(screen.getByLabelText(/Sprint name/i), { target: { value: 'Sprint 1' } });
-    fireEvent.change(screen.getByLabelText(/Start date/i), { target: { value: '2026-07-20' } });
-    fireEvent.change(screen.getByLabelText(/End date/i), { target: { value: '2026-07-10' } }); // earlier than start
+    fireEvent.change(screen.getByLabelText(/Sprint name/i), {
+      target: { value: 'Sprint 1' },
+    });
+    fireEvent.change(screen.getByLabelText(/Start date/i), {
+      target: { value: '2026-07-20' },
+    });
+    fireEvent.change(screen.getByLabelText(/End date/i), {
+      target: { value: '2026-07-10' },
+    }); // earlier than start
 
     const form = screen.getByLabelText(/Sprint name/i).closest('form')!;
     fireEvent.submit(form);
 
-    expect(await screen.findByText(/End date must be on or after the start date/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/End date must be on or after the start date/i)
+    ).toBeInTheDocument();
 
     // Clear name to test required validation
-    fireEvent.change(screen.getByLabelText(/Sprint name/i), { target: { value: '   ' } });
+    fireEvent.change(screen.getByLabelText(/Sprint name/i), {
+      target: { value: '   ' },
+    });
     fireEvent.submit(form);
 
-    expect(await screen.findByText(/Name, start date, and end date are required/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Name, start date, and end date are required/i)
+    ).toBeInTheDocument();
   });
 
   it('submits correctly in create mode and fires callbacks', async () => {
@@ -99,17 +143,29 @@ describe('SprintForm Component', () => {
 
     vi.mocked(createSprint).mockResolvedValue(mockSprint);
 
-    render(<SprintForm onSprintUpdated={onSprintUpdated} onSuccess={onSuccess} />);
+    render(
+      <SprintForm onSprintUpdated={onSprintUpdated} onSuccess={onSuccess} />
+    );
 
     await waitFor(() => {
-      expect(screen.queryByText(/Loading projects.../i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/Loading projects.../i)
+      ).not.toBeInTheDocument();
     });
 
     // Populate fields
-    fireEvent.change(screen.getByLabelText(/Sprint name/i), { target: { value: 'Sprint 1' } });
-    fireEvent.change(screen.getByLabelText(/Goal/i), { target: { value: 'Achieve project milestone' } });
-    fireEvent.change(screen.getByLabelText(/Start date/i), { target: { value: '2026-07-10' } });
-    fireEvent.change(screen.getByLabelText(/End date/i), { target: { value: '2026-07-24' } });
+    fireEvent.change(screen.getByLabelText(/Sprint name/i), {
+      target: { value: 'Sprint 1' },
+    });
+    fireEvent.change(screen.getByLabelText(/Goal/i), {
+      target: { value: 'Achieve project milestone' },
+    });
+    fireEvent.change(screen.getByLabelText(/Start date/i), {
+      target: { value: '2026-07-10' },
+    });
+    fireEvent.change(screen.getByLabelText(/End date/i), {
+      target: { value: '2026-07-24' },
+    });
 
     const form = screen.getByLabelText(/Sprint name/i).closest('form')!;
     fireEvent.submit(form);
@@ -125,7 +181,9 @@ describe('SprintForm Component', () => {
     });
 
     // Success alert should be shown
-    expect(await screen.findByText(/Sprint "Sprint 1" created/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Sprint "Sprint 1" created/i)
+    ).toBeInTheDocument();
     expect(onSprintUpdated).toHaveBeenCalledWith(mockSprint);
 
     // Wait for the 1500ms timeout naturally
@@ -142,7 +200,9 @@ describe('SprintForm Component', () => {
       name: 'Sprint 1 Updated',
     });
 
-    render(<SprintForm sprintId="sprint-123" onSprintUpdated={onSprintUpdated} />);
+    render(
+      <SprintForm sprintId="sprint-123" onSprintUpdated={onSprintUpdated} />
+    );
 
     // Initially loading sprint
     expect(screen.getByText(/Loading sprint details.../i)).toBeInTheDocument();
@@ -154,13 +214,17 @@ describe('SprintForm Component', () => {
     // Verify fields populated
     await waitFor(() => {
       expect(screen.getByLabelText(/Sprint name/i)).toHaveValue('Sprint 1');
-      expect(screen.getByLabelText(/Goal/i)).toHaveValue('Achieve project milestone');
+      expect(screen.getByLabelText(/Goal/i)).toHaveValue(
+        'Achieve project milestone'
+      );
       expect(screen.getByLabelText(/Start date/i)).toHaveValue('2026-07-10');
       expect(screen.getByLabelText(/End date/i)).toHaveValue('2026-07-24');
     });
 
     // Modify name
-    fireEvent.change(screen.getByLabelText(/Sprint name/i), { target: { value: 'Sprint 1 Updated' } });
+    fireEvent.change(screen.getByLabelText(/Sprint name/i), {
+      target: { value: 'Sprint 1 Updated' },
+    });
 
     const form = screen.getByLabelText(/Sprint name/i).closest('form')!;
     fireEvent.submit(form);
@@ -175,8 +239,12 @@ describe('SprintForm Component', () => {
       });
     });
 
-    expect(screen.queryByText(/Sprint "Sprint 1" updated/i)).not.toBeInTheDocument(); // old name not shown as updated
-    expect(await screen.findByText(/Sprint "Sprint 1 Updated" updated/i)).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Sprint "Sprint 1" updated/i)
+    ).not.toBeInTheDocument(); // old name not shown as updated
+    expect(
+      await screen.findByText(/Sprint "Sprint 1 Updated" updated/i)
+    ).toBeInTheDocument();
     expect(onSprintUpdated).toHaveBeenCalledWith({
       ...mockSprint,
       name: 'Sprint 1 Updated',
@@ -188,7 +256,9 @@ describe('SprintForm Component', () => {
     render(<SprintForm onClose={onClose} />);
 
     await waitFor(() => {
-      expect(screen.queryByText(/Loading projects.../i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/Loading projects.../i)
+      ).not.toBeInTheDocument();
     });
 
     const closeBtn = screen.getByRole('button', { name: /Close modal/i });

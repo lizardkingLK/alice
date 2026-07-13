@@ -20,7 +20,8 @@ export default async function SprintsPage({
   const resolvedSearchParams = await searchParams;
   const page = Number.parseInt(resolvedSearchParams.page ?? '1', 10);
   const limit = Number.parseInt(resolvedSearchParams.limit ?? '5', 10);
-  const status = resolvedSearchParams.tab === 'archived' ? 'archived' : 'active';
+  const status =
+    resolvedSearchParams.tab === 'archived' ? 'archived' : 'active';
 
   let sprintsData: PaginatedSprints = {
     sprints: [],
@@ -31,7 +32,8 @@ export default async function SprintsPage({
   try {
     sprintsData = await getSprintsPaginatedServer(status, page, limit);
   } catch (error) {
-    fetchError = error instanceof Error ? error.message : 'Failed to fetch sprints.';
+    fetchError =
+      error instanceof Error ? error.message : 'Failed to fetch sprints.';
     console.error('error. failed to fetch sprints list via API:', fetchError);
   }
 

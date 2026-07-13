@@ -28,7 +28,10 @@ export class UsersRepository {
     return data as UserRow[];
   }
 
-  async listPaginated(page: number, limit: number): Promise<{ users: UserRow[]; totalCount: number }> {
+  async listPaginated(
+    page: number,
+    limit: number
+  ): Promise<{ users: UserRow[]; totalCount: number }> {
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
@@ -94,7 +97,10 @@ export class UsersRepository {
       .single();
 
     if (error) {
-      console.error('error. failed to create user registry row:', error.message);
+      console.error(
+        'error. failed to create user registry row:',
+        error.message
+      );
       throw new Error(`Database registration failed: ${error.message}`);
     }
 
@@ -103,7 +109,9 @@ export class UsersRepository {
 
   async update(
     id: string,
-    data: Partial<Omit<UserRow, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'email'>>,
+    data: Partial<
+      Omit<UserRow, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'email'>
+    >,
     actorId: string
   ): Promise<UserRow> {
     const { data: updated, error } = await supabase
@@ -125,10 +133,7 @@ export class UsersRepository {
   }
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('users')
-      .delete()
-      .eq('id', id);
+    const { error } = await supabase.from('users').delete().eq('id', id);
 
     if (error) {
       console.error('error. failed to delete user:', error.message);

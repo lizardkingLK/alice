@@ -65,7 +65,8 @@ export function UserRegistry({
   currentUserId,
   currentUserRole,
 }: Readonly<UserRegistryProps>) {
-  const { handlePageChange, handleLimitChange, router } = usePaginationNavigation(totalPages, limit);
+  const { handlePageChange, handleLimitChange, router } =
+    usePaginationNavigation(totalPages, limit);
 
   const [mounted, setMounted] = useState(false);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
@@ -92,7 +93,8 @@ export function UserRegistry({
           router.refresh();
         })
         .catch((error: unknown) => {
-          const message = error instanceof Error ? error.message : 'Failed to activate user.';
+          const message =
+            error instanceof Error ? error.message : 'Failed to activate user.';
           setError(message);
         })
         .finally(() => {
@@ -112,7 +114,8 @@ export function UserRegistry({
         router.refresh();
       })
       .catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : 'Failed to deactivate user.';
+        const message =
+          error instanceof Error ? error.message : 'Failed to deactivate user.';
         setError(message);
       })
       .finally(() => {
@@ -169,143 +172,143 @@ export function UserRegistry({
           ) : (
             <>
               <div className="divide-border divide-y">
-              {users.map((usr) => {
-                 const isSelf = usr.id === currentUserId;
-                 const isDeactivating =
-                   isTogglingActive && deactivatingUser?.id === usr.id;
-                 return (
-                  <div
-                    key={usr.id}
-                    className="group flex flex-col justify-between gap-4 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center"
-                  >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-semibold shadow-sm transition-all duration-300 group-hover:scale-105 ${
-                          usr.active
-                            ? 'bg-primary/10 text-primary border-primary/20'
-                            : 'bg-muted text-muted-foreground border-muted-foreground/20'
-                        }`}
-                      >
-                        {getAvatarPlaceholder(usr.name)}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h4
-                          className={`flex items-center gap-2 text-sm leading-none font-semibold transition-colors ${
+                {users.map((usr) => {
+                  const isSelf = usr.id === currentUserId;
+                  const isDeactivating =
+                    isTogglingActive && deactivatingUser?.id === usr.id;
+                  return (
+                    <div
+                      key={usr.id}
+                      className="group flex flex-col justify-between gap-4 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center"
+                    >
+                      <div className="flex min-w-0 flex-1 items-center gap-3">
+                        <div
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-semibold shadow-sm transition-all duration-300 group-hover:scale-105 ${
                             usr.active
-                              ? 'text-foreground group-hover:text-primary'
-                              : 'text-muted-foreground line-through'
+                              ? 'bg-primary/10 text-primary border-primary/20'
+                              : 'bg-muted text-muted-foreground border-muted-foreground/20'
                           }`}
                         >
-                          <span className="truncate">{usr.name}</span>
-                          {isSelf && (
-                            <span className="bg-primary/25 border-primary/30 text-primary py-0.2 rounded-full border px-1.5 text-[10px] tracking-normal normal-case shrink-0">
-                              You
-                            </span>
-                          )}
-                        </h4>
-                        <span className="text-muted-foreground mt-1 flex items-center gap-1 text-xs min-w-0">
-                          <Mail className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{usr.email}</span>
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 pl-13 sm:pl-0 sm:grid sm:grid-cols-[110px_90px_120px_90px_120px] sm:gap-3 sm:items-center sm:shrink-0">
-                      <div className="flex justify-start">
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold tracking-wider uppercase ${getRoleBadgeStyles(usr.role)}`}
-                        >
-                          <Shield className="h-3 w-3" />
-                          {usr.role}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-start">
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold tracking-wider uppercase ${
-                            usr.active
-                              ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
-                              : 'border-rose-500/20 bg-rose-500/10 text-rose-500'
-                          }`}
-                        >
-                          {usr.active ? 'Active' : 'Inactive'}
-                        </span>
-                      </div>
-
-                      <div className="text-muted-foreground flex items-center gap-1 text-xs justify-start">
-                        {mounted ? (
-                          <div className="flex gap-1 items-center">
-                            <Calendar className="h-3 w-3 shrink-0" />
-                            <span>
-                              {new Date(usr.created_at).toLocaleDateString(
-                                undefined,
-                                {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  year: 'numeric',
-                                }
-                              )}
-                            </span>
-                          </div>
-                        ) : (
-                          <CustomSpinner />
-                        )}
-                      </div>
-
-                      <div className="flex justify-start">
-                        {currentUserRole === 'admin' && (
-                          <button
-                            disabled={isTogglingActive}
-                            onClick={() => setEditingUser(usr)}
-                            className="border-input bg-background hover:bg-accent text-foreground focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border text-[11px] font-medium transition-all focus-visible:ring-2 focus-visible:outline-none"
-                          >
-                            Edit
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="flex justify-start">
-                        {currentUserRole === 'admin' && !isSelf && (
-                          <button
-                            disabled={isTogglingActive}
-                            onClick={() => handleToggleActive(usr)}
-                            className={`focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md text-[11px] font-medium transition-all focus-visible:ring-2 focus-visible:outline-none ${
+                          {getAvatarPlaceholder(usr.name)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4
+                            className={`flex items-center gap-2 text-sm leading-none font-semibold transition-colors ${
                               usr.active
-                                ? 'border border-rose-500/20 bg-rose-500/10 text-rose-600 hover:bg-rose-600 hover:text-white'
-                                : 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-600 hover:text-white'
+                                ? 'text-foreground group-hover:text-primary'
+                                : 'text-muted-foreground line-through'
                             }`}
                           >
-                            {isDeactivating && (
-                              <Loader2 className="h-3 w-3 animate-spin" />
+                            <span className="truncate">{usr.name}</span>
+                            {isSelf && (
+                              <span className="bg-primary/25 border-primary/30 text-primary py-0.2 shrink-0 rounded-full border px-1.5 text-[10px] tracking-normal normal-case">
+                                You
+                              </span>
                             )}
-                            {!isDeactivating && usr.active && (
-                              <>
-                                <UserX className="mr-1 h-3 w-3" />
-                                Deactivate
-                              </>
-                            )}
-                            {!isDeactivating && !usr.active && (
-                              <>
-                                <UserCheck className="mr-1 h-3 w-3" />
-                                Activate
-                              </>
-                            )}
-                          </button>
-                        )}
+                          </h4>
+                          <span className="text-muted-foreground mt-1 flex min-w-0 items-center gap-1 text-xs">
+                            <Mail className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{usr.email}</span>
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 pl-13 sm:grid sm:shrink-0 sm:grid-cols-[110px_90px_120px_90px_120px] sm:items-center sm:gap-3 sm:pl-0">
+                        <div className="flex justify-start">
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold tracking-wider uppercase ${getRoleBadgeStyles(usr.role)}`}
+                          >
+                            <Shield className="h-3 w-3" />
+                            {usr.role}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-start">
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold tracking-wider uppercase ${
+                              usr.active
+                                ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
+                                : 'border-rose-500/20 bg-rose-500/10 text-rose-500'
+                            }`}
+                          >
+                            {usr.active ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+
+                        <div className="text-muted-foreground flex items-center justify-start gap-1 text-xs">
+                          {mounted ? (
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3 shrink-0" />
+                              <span>
+                                {new Date(usr.created_at).toLocaleDateString(
+                                  undefined,
+                                  {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                  }
+                                )}
+                              </span>
+                            </div>
+                          ) : (
+                            <CustomSpinner />
+                          )}
+                        </div>
+
+                        <div className="flex justify-start">
+                          {currentUserRole === 'admin' && (
+                            <button
+                              disabled={isTogglingActive}
+                              onClick={() => setEditingUser(usr)}
+                              className="border-input bg-background hover:bg-accent text-foreground focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border text-[11px] font-medium transition-all focus-visible:ring-2 focus-visible:outline-none"
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="flex justify-start">
+                          {currentUserRole === 'admin' && !isSelf && (
+                            <button
+                              disabled={isTogglingActive}
+                              onClick={() => handleToggleActive(usr)}
+                              className={`focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md text-[11px] font-medium transition-all focus-visible:ring-2 focus-visible:outline-none ${
+                                usr.active
+                                  ? 'border border-rose-500/20 bg-rose-500/10 text-rose-600 hover:bg-rose-600 hover:text-white'
+                                  : 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-600 hover:text-white'
+                              }`}
+                            >
+                              {isDeactivating && (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              )}
+                              {!isDeactivating && usr.active && (
+                                <>
+                                  <UserX className="mr-1 h-3 w-3" />
+                                  Deactivate
+                                </>
+                              )}
+                              {!isDeactivating && !usr.active && (
+                                <>
+                                  <UserCheck className="mr-1 h-3 w-3" />
+                                  Activate
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-            <Pagination
-              totalCount={totalCount}
-              page={page}
-              limit={limit}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-              onLimitChange={handleLimitChange}
-              label="users"
-            />
+                  );
+                })}
+              </div>
+              <Pagination
+                totalCount={totalCount}
+                page={page}
+                limit={limit}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                onLimitChange={handleLimitChange}
+                label="users"
+              />
             </>
           )}
         </CardContent>

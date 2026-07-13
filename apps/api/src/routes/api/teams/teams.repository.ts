@@ -52,7 +52,9 @@ export class TeamsRepository {
 
     let dbQuery = supabase
       .from('teams')
-      .select('*, manager:users!teams_manager_id_fkey(id, name, email)', { count: 'exact' });
+      .select('*, manager:users!teams_manager_id_fkey(id, name, email)', {
+        count: 'exact',
+      });
 
     if (teamStatus) {
       dbQuery = dbQuery.eq('status', teamStatus);
@@ -60,7 +62,9 @@ export class TeamsRepository {
 
     if (searchKeyword) {
       const likeExpr = `%${searchKeyword}%`;
-      dbQuery = dbQuery.or(`name.ilike.${likeExpr},description.ilike.${likeExpr},tech_stack.ilike.${likeExpr}`);
+      dbQuery = dbQuery.or(
+        `name.ilike.${likeExpr},description.ilike.${likeExpr},tech_stack.ilike.${likeExpr}`
+      );
     }
 
     const result = await dbQuery
@@ -68,7 +72,10 @@ export class TeamsRepository {
       .range(rangeStart, rangeEnd);
 
     if (result.error) {
-      console.error('database error list paginated teams:', result.error.message);
+      console.error(
+        'database error list paginated teams:',
+        result.error.message
+      );
       throw new Error(`Failed to list teams: ${result.error.message}`);
     }
 
@@ -92,7 +99,11 @@ export class TeamsRepository {
   }
 
   async findById(id: string): Promise<TeamRow | null> {
-    const { data, error } = await supabase.from('teams').select('*').eq('id', id).maybeSingle();
+    const { data, error } = await supabase
+      .from('teams')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
     if (error) {
       console.error('database query error find team by id:', error.message);
       throw new Error('Failed to locate team by id');
@@ -100,7 +111,13 @@ export class TeamsRepository {
     return data;
   }
 
-  async create(teamData: Omit<TeamRow, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'>, userId: string): Promise<TeamRow> {
+  async create(
+    teamData: Omit<
+      TeamRow,
+      'id' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'
+    >,
+    userId: string
+  ): Promise<TeamRow> {
     const payload = {
       ...teamData,
       ...auditCreateWithoutStatus(userId),
@@ -119,7 +136,16 @@ export class TeamsRepository {
     return response.data;
   }
 
-  async update(teamId: string, teamData: Partial<Omit<TeamRow, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'>>, userId: string): Promise<TeamRow> {
+  async update(
+    teamId: string,
+    teamData: Partial<
+      Omit<
+        TeamRow,
+        'id' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'
+      >
+    >,
+    userId: string
+  ): Promise<TeamRow> {
     const payload = {
       ...teamData,
       ...auditUpdate(userId),
@@ -140,10 +166,7 @@ export class TeamsRepository {
   }
 
   async delete(teamId: string): Promise<void> {
-    const response = await supabase
-      .from('teams')
-      .delete()
-      .eq('id', teamId);
+    const response = await supabase.from('teams').delete().eq('id', teamId);
 
     if (response.error) {
       console.error('database failure deleting team:', response.error.message);

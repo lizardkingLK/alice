@@ -10,11 +10,7 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import { TeamForm } from './team-form';
-import {
-  softDeleteTeam,
-  restoreTeam,
-  hardDeleteTeam,
-} from './actions';
+import { softDeleteTeam, restoreTeam, hardDeleteTeam } from './actions';
 import {
   Users,
   Terminal,
@@ -119,7 +115,7 @@ export function TeamRegistry({
 
     startTransition(async () => {
       const isSoft = deleteMode === 'soft';
-      const actionResult = isSoft 
+      const actionResult = isSoft
         ? await softDeleteTeam(teamToDelete.id)
         : await hardDeleteTeam(teamToDelete.id);
 
@@ -128,7 +124,9 @@ export function TeamRegistry({
         setError(null);
         router.refresh();
       } else {
-        setError(actionResult.error ?? `Operation failed during ${deleteMode} delete.`);
+        setError(
+          actionResult.error ?? `Operation failed during ${deleteMode} delete.`
+        );
       }
     });
   };
@@ -154,14 +152,17 @@ export function TeamRegistry({
       </>
     );
   } else {
-    deleteButtonText = deleteMode === 'soft' ? 'Archive Team' : 'Delete Permanently';
+    deleteButtonText =
+      deleteMode === 'soft' ? 'Archive Team' : 'Delete Permanently';
   }
 
-  let registryDescription = 'Restore archived teams, or permanently delete them from the database.';
+  let registryDescription =
+    'Restore archived teams, or permanently delete them from the database.';
   if (tab === 'active') {
     registryDescription = 'View and manage active software engineering teams.';
   } else if (tab === 'inactive') {
-    registryDescription = 'View and manage temporarily suspended or inactive teams.';
+    registryDescription =
+      'View and manage temporarily suspended or inactive teams.';
   }
 
   return (
@@ -272,7 +273,7 @@ export function TeamRegistry({
                       key={team.id}
                       className="group flex flex-col justify-between gap-4 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center"
                     >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="flex min-w-0 flex-1 items-center gap-3">
                         <div className="bg-primary/10 text-primary border-primary/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-sm font-bold shadow-sm transition-all duration-300 group-hover:scale-105">
                           {team.name.slice(0, 2).toUpperCase()}
                         </div>
@@ -280,23 +281,23 @@ export function TeamRegistry({
                           <h4 className="text-foreground group-hover:text-primary flex items-center gap-2 text-sm leading-none font-semibold transition-colors">
                             <span className="truncate">{team.name}</span>
                             {team.status === 'archived' && (
-                              <span className="py-0.2 rounded-full border border-amber-500/20 bg-amber-500/10 px-1.5 text-[10px] font-semibold tracking-normal text-amber-600 uppercase shrink-0">
+                              <span className="py-0.2 shrink-0 rounded-full border border-amber-500/20 bg-amber-500/10 px-1.5 text-[10px] font-semibold tracking-normal text-amber-600 uppercase">
                                 Archived
                               </span>
                             )}
                             {team.status === 'inactive' && (
-                              <span className="py-0.2 rounded-full border border-slate-500/20 bg-slate-500/10 px-1.5 text-[10px] font-semibold tracking-normal text-slate-600 uppercase shrink-0">
+                              <span className="py-0.2 shrink-0 rounded-full border border-slate-500/20 bg-slate-500/10 px-1.5 text-[10px] font-semibold tracking-normal text-slate-600 uppercase">
                                 Inactive
                               </span>
                             )}
                           </h4>
                           {team.description && (
-                            <p className="text-muted-foreground truncate text-xs mt-1">
+                            <p className="text-muted-foreground mt-1 truncate text-xs">
                               {team.description}
                             </p>
                           )}
-                          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1 min-w-0">
+                          <div className="text-muted-foreground mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                            <span className="flex min-w-0 items-center gap-1">
                               <Shield className="h-3 w-3 shrink-0" />
                               <span className="truncate">
                                 Manager:{' '}
@@ -306,16 +307,19 @@ export function TeamRegistry({
                                 {managerEmail && ` (${managerEmail})`}
                               </span>
                               {isManagerSelf && (
-                                <span className="bg-primary/25 border-primary/30 text-primary py-0.2 ml-1.5 rounded-full border px-1.5 text-[9px] font-semibold tracking-normal uppercase shrink-0">
+                                <span className="bg-primary/25 border-primary/30 text-primary py-0.2 ml-1.5 shrink-0 rounded-full border px-1.5 text-[9px] font-semibold tracking-normal uppercase">
                                   You
                                 </span>
                               )}
                             </span>
                             {team.tech_stack && (
-                              <span className="flex items-center gap-1 min-w-0">
+                              <span className="flex min-w-0 items-center gap-1">
                                 <Terminal className="h-3 w-3 shrink-0" />
                                 <span className="truncate">
-                                  Stack: <strong className="text-foreground">{team.tech_stack}</strong>
+                                  Stack:{' '}
+                                  <strong className="text-foreground">
+                                    {team.tech_stack}
+                                  </strong>
                                 </span>
                               </span>
                             )}
@@ -323,50 +327,46 @@ export function TeamRegistry({
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2 pl-13 sm:pl-0 sm:grid sm:grid-cols-[100px_100px] sm:gap-4 sm:items-center sm:shrink-0">
-                        <div className="flex justify-start w-full">
-                          {team.status !== 'archived' ? (
-                            isManagerOrAdmin && (
-                              <button
-                                onClick={() => setTeamToEdit(team)}
-                                className="border-input hover:bg-accent text-foreground focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border text-[11px] font-semibold shadow-sm transition-all focus-visible:ring-2 focus-visible:outline-none"
-                              >
-                                Edit
-                              </button>
-                            )
-                          ) : (
-                            isManagerOrAdmin && (
-                              <button
-                                disabled={isPending}
-                                onClick={() => handleRestore(team)}
-                                className="focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 text-[11px] shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
-                              >
-                                Restore
-                              </button>
-                            )
-                          )}
+                      <div className="flex flex-wrap items-center gap-2 pl-13 sm:grid sm:shrink-0 sm:grid-cols-[100px_100px] sm:items-center sm:gap-4 sm:pl-0">
+                        <div className="flex w-full justify-start">
+                          {team.status !== 'archived'
+                            ? isManagerOrAdmin && (
+                                <button
+                                  onClick={() => setTeamToEdit(team)}
+                                  className="border-input hover:bg-accent text-foreground focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border text-[11px] font-semibold shadow-sm transition-all focus-visible:ring-2 focus-visible:outline-none"
+                                >
+                                  Edit
+                                </button>
+                              )
+                            : isManagerOrAdmin && (
+                                <button
+                                  disabled={isPending}
+                                  onClick={() => handleRestore(team)}
+                                  className="focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
+                                >
+                                  Restore
+                                </button>
+                              )}
                         </div>
 
-                        <div className="flex justify-start w-full">
-                          {team.status !== 'archived' ? (
-                            isManagerOrAdmin && (
-                              <button
-                                onClick={() => handleSoftDelete(team)}
-                                className="border-input hover:bg-destructive/10 text-destructive focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border text-[11px] font-semibold shadow-sm transition-all focus-visible:ring-2 focus-visible:outline-none"
-                              >
-                                Archive
-                              </button>
-                            )
-                          ) : (
-                            isAdmin && (
-                              <button
-                                onClick={() => handleHardDelete(team)}
-                                className="focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border border-destructive/20 bg-destructive/10 text-destructive text-[11px] shadow-sm transition-all hover:bg-destructive hover:text-white focus-visible:ring-2 focus-visible:outline-none"
-                              >
-                                Delete
-                              </button>
-                            )
-                          )}
+                        <div className="flex w-full justify-start">
+                          {team.status !== 'archived'
+                            ? isManagerOrAdmin && (
+                                <button
+                                  onClick={() => handleSoftDelete(team)}
+                                  className="border-input hover:bg-destructive/10 text-destructive focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border text-[11px] font-semibold shadow-sm transition-all focus-visible:ring-2 focus-visible:outline-none"
+                                >
+                                  Archive
+                                </button>
+                              )
+                            : isAdmin && (
+                                <button
+                                  onClick={() => handleHardDelete(team)}
+                                  className="focus-visible:ring-ring border-destructive/20 bg-destructive/10 text-destructive hover:bg-destructive inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border text-[11px] shadow-sm transition-all hover:text-white focus-visible:ring-2 focus-visible:outline-none"
+                                >
+                                  Delete
+                                </button>
+                              )}
                         </div>
                       </div>
                     </div>
@@ -391,7 +391,7 @@ export function TeamRegistry({
 
       {/* Modals / Forms */}
       {isAddTeamOpen && (
-        <div className="bg-background/80 fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="bg-background/80 animate-in fade-in fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm duration-300">
           <div className="w-full max-w-lg">
             <TeamForm
               users={users}
@@ -406,7 +406,7 @@ export function TeamRegistry({
       )}
 
       {teamToEdit && (
-        <div className="bg-background/80 fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="bg-background/80 animate-in fade-in fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm duration-300">
           <div className="w-full max-w-lg">
             <TeamForm
               users={users}
@@ -423,31 +423,33 @@ export function TeamRegistry({
 
       {/* Delete / Archive Confirmation dialog */}
       {teamToDelete && (
-        <div className="bg-background/80 fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="bg-background/80 animate-in fade-in fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm duration-300">
           <Card className="border-border bg-card text-card-foreground w-full max-w-md border shadow-2xl">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl font-bold text-destructive">
+              <CardTitle className="text-destructive flex items-center gap-2 text-xl font-bold">
                 <AlertTriangle className="h-5 w-5 animate-bounce" />
-                {deleteMode === 'soft' ? 'Archive Team' : 'Permanently Delete Team'}
+                {deleteMode === 'soft'
+                  ? 'Archive Team'
+                  : 'Permanently Delete Team'}
               </CardTitle>
-              <CardDescription className="text-muted-foreground text-sm mt-1">
+              <CardDescription className="text-muted-foreground mt-1 text-sm">
                 {deleteMode === 'soft'
                   ? `Are you sure you want to archive "${teamToDelete.name}"? This team will be marked as archived but remains in the registry for audit tracking.`
                   : `WARNING: This action is permanent. Are you sure you want to delete "${teamToDelete.name}"? This will permanently purge the record from the database.`}
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex justify-end gap-3 pt-4 border-t border-border mt-4">
+            <CardContent className="border-border mt-4 flex justify-end gap-3 border-t pt-4">
               <button
                 disabled={isPending}
                 onClick={() => setTeamToDelete(null)}
-                className="border-input bg-background hover:bg-accent text-foreground disabled:opacity-50 inline-flex h-9 cursor-pointer items-center justify-center rounded-md border px-4 text-xs font-semibold shadow-sm transition-all focus-visible:outline-none"
+                className="border-input bg-background hover:bg-accent text-foreground inline-flex h-9 cursor-pointer items-center justify-center rounded-md border px-4 text-xs font-semibold shadow-sm transition-all focus-visible:outline-none disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 disabled={isPending}
                 onClick={confirmDelete}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 inline-flex h-9 cursor-pointer items-center justify-center rounded-md px-4 text-xs font-semibold shadow-md transition-all focus-visible:outline-none"
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 inline-flex h-9 cursor-pointer items-center justify-center rounded-md px-4 text-xs font-semibold shadow-md transition-all focus-visible:outline-none disabled:opacity-50"
               >
                 {deleteButtonText}
               </button>

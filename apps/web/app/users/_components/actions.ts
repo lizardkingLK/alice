@@ -12,10 +12,7 @@ import {
   resolveRequestOrigin,
 } from '@/lib/auth-redirect';
 import { getDbUser } from '@/lib/auth';
-import {
-  createUserSchema,
-  updateUserSchema,
-} from '@repo/types';
+import { createUserSchema, updateUserSchema } from '@repo/types';
 
 export type ActionState = {
   success: boolean;

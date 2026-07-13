@@ -68,9 +68,7 @@ export function ProjectRegistry({
   const [searchQuery, setSearchQuery] = useState(search);
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
-  const [projectToDelete, setProjectToDelete] = useState<Project | null>(
-    null
-  );
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [deleteMode, setDeleteMode] = useState<'soft' | 'hard'>('soft');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -270,7 +268,7 @@ export function ProjectRegistry({
                     >
                       <Link
                         href={`/projects/${proj.id}`}
-                        className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-85 transition-opacity cursor-pointer group/row"
+                        className="group/row flex min-w-0 flex-1 cursor-pointer items-center gap-3 transition-opacity hover:opacity-85"
                       >
                         <div className="bg-primary/10 text-primary border-primary/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-sm font-bold shadow-sm transition-all duration-300 group-hover/row:scale-105">
                           {proj.key.slice(0, 2)}
@@ -279,17 +277,17 @@ export function ProjectRegistry({
                           <h4 className="text-foreground group-hover/row:text-primary flex items-center gap-2 text-sm leading-none font-semibold transition-colors">
                             <span className="truncate">{proj.name}</span>
                             {proj.status === 'archived' && (
-                              <span className="py-0.2 rounded-full border border-amber-500/20 bg-amber-500/10 px-1.5 text-[10px] font-semibold tracking-normal text-amber-600 uppercase shrink-0">
+                              <span className="py-0.2 shrink-0 rounded-full border border-amber-500/20 bg-amber-500/10 px-1.5 text-[10px] font-semibold tracking-normal text-amber-600 uppercase">
                                 Archived
                               </span>
                             )}
                           </h4>
                           {proj.description && (
-                            <p className="text-muted-foreground truncate text-xs mt-1">
+                            <p className="text-muted-foreground mt-1 truncate text-xs">
                               {proj.description}
                             </p>
                           )}
-                          <span className="text-muted-foreground mt-1 flex items-center gap-1 text-xs min-w-0">
+                          <span className="text-muted-foreground mt-1 flex min-w-0 items-center gap-1 text-xs">
                             <Shield className="h-3 w-3 shrink-0" />
                             <span className="truncate">
                               Owner:{' '}
@@ -299,7 +297,7 @@ export function ProjectRegistry({
                               {ownerEmail && ` (${ownerEmail})`}
                             </span>
                             {isOwnerSelf && (
-                              <span className="bg-primary/25 border-primary/30 text-primary py-0.2 ml-1.5 rounded-full border px-1.5 text-[9px] font-semibold tracking-normal uppercase shrink-0">
+                              <span className="bg-primary/25 border-primary/30 text-primary py-0.2 ml-1.5 shrink-0 rounded-full border px-1.5 text-[9px] font-semibold tracking-normal uppercase">
                                 You
                               </span>
                             )}
@@ -307,25 +305,29 @@ export function ProjectRegistry({
                         </div>
                       </Link>
 
-                      <div className="flex flex-wrap items-center gap-2 pl-13 sm:pl-0 sm:grid sm:grid-cols-[180px_90px_90px] sm:gap-4 sm:items-center sm:shrink-0">
+                      <div className="flex flex-wrap items-center gap-2 pl-13 sm:grid sm:shrink-0 sm:grid-cols-[180px_90px_90px] sm:items-center sm:gap-4 sm:pl-0">
                         <div className="flex justify-start">
-                          <span className="text-muted-foreground flex items-center gap-1 text-xs justify-start">
+                          <span className="text-muted-foreground flex items-center justify-start gap-1 text-xs">
                             <Calendar className="h-3 w-3 shrink-0" />
                             <span className="truncate">
                               {proj.start_date || proj.end_date ? (
                                 <>
                                   {proj.start_date
-                                    ? new Date(proj.start_date).toLocaleDateString(
-                                        undefined,
-                                        { month: 'short', year: 'numeric' }
-                                      )
+                                    ? new Date(
+                                        proj.start_date
+                                      ).toLocaleDateString(undefined, {
+                                        month: 'short',
+                                        year: 'numeric',
+                                      })
                                     : 'Start'}
                                   {' — '}
                                   {proj.end_date
-                                    ? new Date(proj.end_date).toLocaleDateString(
-                                        undefined,
-                                        { month: 'short', year: 'numeric' }
-                                      )
+                                    ? new Date(
+                                        proj.end_date
+                                      ).toLocaleDateString(undefined, {
+                                        month: 'short',
+                                        year: 'numeric',
+                                      })
                                     : 'End'}
                                 </>
                               ) : (
@@ -335,53 +337,49 @@ export function ProjectRegistry({
                           </span>
                         </div>
 
-                        <div className="flex justify-start w-full">
-                          {tab === 'active' ? (
-                            isManagerOrAdmin && (
-                              <button
-                                onClick={() => setProjectToEdit(proj)}
-                                className="border-input hover:bg-accent text-foreground focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border text-[11px] font-semibold shadow-sm transition-all focus-visible:ring-2 focus-visible:outline-none"
-                              >
-                                Edit
-                              </button>
-                            )
-                          ) : (
-                            isManagerOrAdmin && (
-                              <button
-                                disabled={isPending}
-                                onClick={() => handleRestore(proj)}
-                                className="focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 text-[11px] shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
-                              >
-                                <RefreshCw className="mr-1 h-3 w-3 shrink-0" />
-                                Restore
-                              </button>
-                            )
-                          )}
+                        <div className="flex w-full justify-start">
+                          {tab === 'active'
+                            ? isManagerOrAdmin && (
+                                <button
+                                  onClick={() => setProjectToEdit(proj)}
+                                  className="border-input hover:bg-accent text-foreground focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border text-[11px] font-semibold shadow-sm transition-all focus-visible:ring-2 focus-visible:outline-none"
+                                >
+                                  Edit
+                                </button>
+                              )
+                            : isManagerOrAdmin && (
+                                <button
+                                  disabled={isPending}
+                                  onClick={() => handleRestore(proj)}
+                                  className="focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
+                                >
+                                  <RefreshCw className="mr-1 h-3 w-3 shrink-0" />
+                                  Restore
+                                </button>
+                              )}
                         </div>
 
-                        <div className="flex justify-start w-full">
-                          {tab === 'active' ? (
-                            isManagerOrAdmin && (
-                              <button
-                                disabled={isPending}
-                                onClick={() => handleSoftDelete(proj)}
-                                className="focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border border-rose-500/20 bg-rose-500/10 text-rose-600 text-[11px] shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
-                              >
-                                Delete
-                              </button>
-                            )
-                          ) : (
-                            isAdmin && (
-                              <button
-                                disabled={isPending}
-                                onClick={() => handleHardDelete(proj)}
-                                className="focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border border-rose-500/20 bg-rose-500/10 text-rose-600 text-[11px] shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
-                              >
-                                <Trash2 className="mr-1 h-3 w-3 shrink-0" />
-                                Purge
-                              </button>
-                            )
-                          )}
+                        <div className="flex w-full justify-start">
+                          {tab === 'active'
+                            ? isManagerOrAdmin && (
+                                <button
+                                  disabled={isPending}
+                                  onClick={() => handleSoftDelete(proj)}
+                                  className="focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
+                                >
+                                  Delete
+                                </button>
+                              )
+                            : isAdmin && (
+                                <button
+                                  disabled={isPending}
+                                  onClick={() => handleHardDelete(proj)}
+                                  className="focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
+                                >
+                                  <Trash2 className="mr-1 h-3 w-3 shrink-0" />
+                                  Purge
+                                </button>
+                              )}
                         </div>
                       </div>
                     </div>

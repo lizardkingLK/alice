@@ -21,7 +21,12 @@ import {
   X,
 } from 'lucide-react';
 import type { User } from '@/app/users/_services/users.service';
-import { createProject, updateProject, getProject, type Project } from '../_services/projects.service';
+import {
+  createProject,
+  updateProject,
+  getProject,
+  type Project,
+} from '../_services/projects.service';
 
 interface ProjectFormProps {
   readonly onClose?: () => void;
@@ -37,12 +42,23 @@ function formatDateForInput(dateString?: string | null) {
   return dateString.split('T')[0] ?? '';
 }
 
+function getTodayDateString() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 interface FormAlertMessageProps {
   message: string | null;
   isError: boolean;
 }
 
-function FormAlertMessage({ message, isError }: Readonly<FormAlertMessageProps>) {
+function FormAlertMessage({
+  message,
+  isError,
+}: Readonly<FormAlertMessageProps>) {
   if (!message) return null;
   return (
     <div
@@ -85,6 +101,13 @@ export function ProjectForm({
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
+  // Set default start date to today's date for create mode
+  useEffect(() => {
+    if (!isEditMode) {
+      setStartDate(getTodayDateString());
+    }
+  }, [isEditMode]);
+
   // Fetch project details if in edit mode
   useEffect(() => {
     if (!projectId) return;
@@ -100,7 +123,8 @@ export function ProjectForm({
         setEndDate(formatDateForInput(project.end_date));
       })
       .catch((error: unknown) => {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to load project.';
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to load project.';
         setMessage(errorMessage);
         setIsError(true);
       })
@@ -148,7 +172,9 @@ export function ProjectForm({
     } catch (error) {
       const modeText = projectId ? 'update' : 'create';
       const errorMessage =
-        error instanceof Error ? error.message : `Failed to ${modeText} project.`;
+        error instanceof Error
+          ? error.message
+          : `Failed to ${modeText} project.`;
       setMessage(errorMessage);
       setIsError(true);
     } finally {
@@ -211,7 +237,9 @@ export function ProjectForm({
         {isLoadingProject ? (
           <div className="flex h-64 flex-col items-center justify-center gap-2">
             <Loader2 className="text-primary h-8 w-8 animate-spin" />
-            <p className="text-muted-foreground text-sm">Loading project details...</p>
+            <p className="text-muted-foreground text-sm">
+              Loading project details...
+            </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -224,7 +252,9 @@ export function ProjectForm({
                   id="name"
                   name="name"
                   value={name}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setName(e.target.value)
+                  }
                   placeholder="e.g. Alice Platform"
                   required
                   className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
@@ -239,7 +269,9 @@ export function ProjectForm({
                   id="key"
                   name="key"
                   value={key}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setKey(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setKey(e.target.value)
+                  }
                   placeholder="e.g. ALICE"
                   required
                   maxLength={10}
@@ -256,7 +288,9 @@ export function ProjectForm({
                 id="description"
                 name="description"
                 value={description}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => setDescription(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setDescription(e.target.value)
+                }
                 placeholder="e.g. Core platform squad for JIRA clone"
                 className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
               />
@@ -271,7 +305,9 @@ export function ProjectForm({
                   id="owner_id"
                   name="owner_id"
                   value={selectedOwnerId}
-                  onChange={(e: ChangeEvent<HTMLSelectElement>) => setSelectedOwnerId(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+                    setSelectedOwnerId(e.target.value)
+                  }
                   required
                   className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                 >
@@ -296,7 +332,9 @@ export function ProjectForm({
                   id="status"
                   name="status"
                   value={status}
-                  onChange={(e: ChangeEvent<HTMLSelectElement>) => setStatus(e.target.value as 'active' | 'archived')}
+                  onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+                    setStatus(e.target.value as 'active' | 'archived')
+                  }
                   required
                   className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                 >
@@ -316,7 +354,10 @@ export function ProjectForm({
                   name="start_date"
                   type="date"
                   value={startDate}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setStartDate(e.target.value)
+                  }
+                  min={isEditMode ? undefined : getTodayDateString()}
                   className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
                 />
               </div>
@@ -330,7 +371,9 @@ export function ProjectForm({
                   name="end_date"
                   type="date"
                   value={endDate}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setEndDate(e.target.value)
+                  }
                   className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
                 />
               </div>

@@ -42,9 +42,17 @@ export class ProjectsService {
     limit?: number,
     status?: 'active' | 'archived',
     search?: string
-  ): Promise<{ projects: ProjectRowWithOwner[]; totalCount: number } | ProjectRowWithOwner[]> {
+  ): Promise<
+    | { projects: ProjectRowWithOwner[]; totalCount: number }
+    | ProjectRowWithOwner[]
+  > {
     if (page !== undefined && limit !== undefined) {
-      return await projectsRepository.listPaginated(page, limit, status, search);
+      return await projectsRepository.listPaginated(
+        page,
+        limit,
+        status,
+        search
+      );
     }
     return await projectsRepository.listAll();
   }
@@ -61,24 +69,35 @@ export class ProjectsService {
     return await projectsRepository.listMembers(projectId);
   }
 
-  async addMember(actorId: string, projectId: string, userId: string): Promise<void> {
+  async addMember(
+    actorId: string,
+    projectId: string,
+    userId: string
+  ): Promise<void> {
     await requireProjectManager(actorId);
 
     const currentMembers = await projectsRepository.listMembers(projectId);
-    if (currentMembers.some(m => m.user_id === userId)) {
+    if (currentMembers.some((m) => m.user_id === userId)) {
       throw new Error('User is already a member of this project.');
     }
 
     await projectsRepository.addMember(projectId, userId, actorId);
   }
 
-  async removeMember(actorId: string, projectId: string, userId: string): Promise<void> {
+  async removeMember(
+    actorId: string,
+    projectId: string,
+    userId: string
+  ): Promise<void> {
     await requireProjectManager(actorId);
 
     await projectsRepository.removeMember(projectId, userId);
   }
 
-  async createProject(actorId: string, input: CreateProjectInput): Promise<ProjectRow> {
+  async createProject(
+    actorId: string,
+    input: CreateProjectInput
+  ): Promise<ProjectRow> {
     await requireProjectManager(actorId);
 
     const duplicate = await projectsRepository.findByKey(input.key);
@@ -97,16 +116,24 @@ export class ProjectsService {
     await requireProjectManager(actorId);
 
     if (input.key) {
-      const duplicate = await projectsRepository.findByKey(input.key, projectId);
+      const duplicate = await projectsRepository.findByKey(
+        input.key,
+        projectId
+      );
       if (duplicate) {
-        throw new Error(`Another project with the key "${input.key}" already exists.`);
+        throw new Error(
+          `Another project with the key "${input.key}" already exists.`
+        );
       }
     }
 
     return await projectsRepository.update(projectId, input, actorId);
   }
 
-  async softDeleteProject(actorId: string, projectId: string): Promise<ProjectRow> {
+  async softDeleteProject(
+    actorId: string,
+    projectId: string
+  ): Promise<ProjectRow> {
     await requireProjectManager(actorId);
 
     return await projectsRepository.update(
@@ -119,7 +146,10 @@ export class ProjectsService {
     );
   }
 
-  async restoreProject(actorId: string, projectId: string): Promise<ProjectRow> {
+  async restoreProject(
+    actorId: string,
+    projectId: string
+  ): Promise<ProjectRow> {
     await requireProjectManager(actorId);
 
     return await projectsRepository.update(

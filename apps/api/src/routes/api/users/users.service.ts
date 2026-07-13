@@ -1,8 +1,5 @@
 import { supabase } from '../../../lib/supabase';
-import {
-  usersRepository,
-  type UserRow,
-} from './users.repository';
+import { usersRepository, type UserRow } from './users.repository';
 
 async function requireAdmin(actorId: string) {
   const { data: user, error } = await supabase
@@ -16,7 +13,9 @@ async function requireAdmin(actorId: string) {
   }
 
   if (user.role !== 'admin') {
-    throw new Error('Unauthorized. Only administrators can perform this action.');
+    throw new Error(
+      'Unauthorized. Only administrators can perform this action.'
+    );
   }
   return user;
 }
@@ -58,7 +57,9 @@ export class UsersService {
     // Check duplicate email
     const existing = await usersRepository.findByEmail(input.email);
     if (existing) {
-      throw new Error('A user with this email address already exists in the registry.');
+      throw new Error(
+        'A user with this email address already exists in the registry.'
+      );
     }
 
     // Invite user via Supabase Auth
@@ -141,7 +142,9 @@ export class UsersService {
     await requireAdmin(actorId);
 
     if (targetUserId === actorId && !active) {
-      throw new Error('Self lockout protection: You cannot deactivate your own account.');
+      throw new Error(
+        'Self lockout protection: You cannot deactivate your own account.'
+      );
     }
 
     // 1. Update public.users status

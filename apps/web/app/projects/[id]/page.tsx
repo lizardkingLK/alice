@@ -1,7 +1,10 @@
 import { redirect, notFound } from 'next/navigation';
 import { getUser, getDbUser } from '@/lib/auth';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
-import { getProjectDetails, getProjectMembers } from '../_services/projects.service.server';
+import {
+  getProjectDetails,
+  getProjectMembers,
+} from '../_services/projects.service.server';
 import { getUserList } from '@/app/users/_services/users.service.server';
 import { ProjectDetailsWorkspace } from './_components/project-details-workspace';
 

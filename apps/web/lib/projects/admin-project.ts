@@ -9,7 +9,12 @@ import {
 } from '@/lib/server-actions';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-import { createProjectSchema as projectSchema, type Tables, type TablesInsert, type TablesUpdate } from '@repo/types';
+import {
+  createProjectSchema as projectSchema,
+  type Tables,
+  type TablesInsert,
+  type TablesUpdate,
+} from '@repo/types';
 
 export type ProjectFormData = z.infer<typeof projectSchema>;
 

@@ -16,7 +16,12 @@ export type GetProjectsPaginatedResponse = {
 
 export type CreateProjectInput = Omit<
   Tables<'projects'>,
-  'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'created_by' | 'updated_by'
+  | 'id'
+  | 'created_at'
+  | 'updated_at'
+  | 'deleted_at'
+  | 'created_by'
+  | 'updated_by'
 >;
 
 export type UpdateProjectInput = Partial<CreateProjectInput>;
@@ -56,11 +61,16 @@ export function createProjectsService(
       return apiFetch<GetProjectsPaginatedResponse>(url);
     },
 
-    async createProject(input: CreateProjectInput): Promise<Tables<'projects'>> {
-      const data = await apiFetch<{ project: Tables<'projects'> }>(apiProjects, {
-        method: 'POST',
-        body: JSON.stringify(input),
-      });
+    async createProject(
+      input: CreateProjectInput
+    ): Promise<Tables<'projects'>> {
+      const data = await apiFetch<{ project: Tables<'projects'> }>(
+        apiProjects,
+        {
+          method: 'POST',
+          body: JSON.stringify(input),
+        }
+      );
       return data.project;
     },
 
@@ -68,10 +78,13 @@ export function createProjectsService(
       id: string,
       input: UpdateProjectInput
     ): Promise<Tables<'projects'>> {
-      const data = await apiFetch<{ project: Tables<'projects'> }>(`${apiProjects}/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(input),
-      });
+      const data = await apiFetch<{ project: Tables<'projects'> }>(
+        `${apiProjects}/${id}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify(input),
+        }
+      );
       return data.project;
     },
 
@@ -111,8 +124,12 @@ export function createProjectsService(
       return data.project;
     },
 
-    async getProjectMembers(projectId: string): Promise<ProjectMemberWithUser[]> {
-      const data = await apiFetch<{ members: ProjectMemberWithUser[] }>(`${apiProjects}/${projectId}/members`);
+    async getProjectMembers(
+      projectId: string
+    ): Promise<ProjectMemberWithUser[]> {
+      const data = await apiFetch<{ members: ProjectMemberWithUser[] }>(
+        `${apiProjects}/${projectId}/members`
+      );
       return data.members;
     },
 
@@ -123,7 +140,10 @@ export function createProjectsService(
       });
     },
 
-    async removeProjectMember(projectId: string, userId: string): Promise<void> {
+    async removeProjectMember(
+      projectId: string,
+      userId: string
+    ): Promise<void> {
       await apiFetch<void>(`${apiProjects}/${projectId}/members/${userId}`, {
         method: 'DELETE',
       });

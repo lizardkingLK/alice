@@ -27,7 +27,10 @@ interface FormAlertMessageProps {
   isError: boolean;
 }
 
-function FormAlertMessage({ message, isError }: Readonly<FormAlertMessageProps>) {
+function FormAlertMessage({
+  message,
+  isError,
+}: Readonly<FormAlertMessageProps>) {
   if (!message) return null;
   return (
     <div
@@ -61,7 +64,9 @@ export function UserForm({
 
   const [name, setName] = useState(user?.name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
-  const [role, setRole] = useState<'admin' | 'manager' | 'member'>(user?.role ?? 'member');
+  const [role, setRole] = useState<'admin' | 'manager' | 'member'>(
+    user?.role ?? 'member'
+  );
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -85,9 +90,10 @@ export function UserForm({
         });
         setMessage(`User details updated successfully!`);
       } else {
-        const origin = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+        const origin =
+          process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
         const redirectToUrl = `${origin.replace(/\/$/, '')}/auth/callback?next=${encodeURIComponent('/reset-password')}`;
-        
+
         await createUser({
           name: name.trim(),
           email: email.trim(),
@@ -168,7 +174,9 @@ export function UserForm({
               placeholder="Erlich Bachman"
               required
               value={name}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                setName(e.target.value)
+              }
               className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
             />
           </div>
@@ -184,7 +192,9 @@ export function UserForm({
               placeholder="erlich@bachmanity.com"
               required={!isEdit}
               value={email}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                setEmail(e.target.value)
+              }
               disabled={isEdit}
               className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors disabled:opacity-50"
             />
@@ -200,7 +210,9 @@ export function UserForm({
                 name="role"
                 required
                 value={role}
-                onChange={(e: ChangeEvent<HTMLSelectElement>) => setRole(e.target.value as 'admin' | 'manager' | 'member')}
+                onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+                  setRole(e.target.value as 'admin' | 'manager' | 'member')
+                }
                 className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
               >
                 <option value="member">Member</option>

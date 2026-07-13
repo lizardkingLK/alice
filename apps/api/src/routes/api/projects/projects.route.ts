@@ -21,7 +21,12 @@ projectsRouter.get(
       const pagination = parsePagination(req);
       if (pagination) {
         const { page, limit } = pagination;
-        const result = await projectsService.listProjects(page, limit, statusQuery, searchQuery);
+        const result = await projectsService.listProjects(
+          page,
+          limit,
+          statusQuery,
+          searchQuery
+        );
         const totalPages = Math.ceil(result.totalCount / limit);
         return res.json({
           projects: result.projects,
@@ -52,18 +57,15 @@ projectsRouter.post(
     }
 
     try {
-      const project = await projectsService.createProject(
-        req.userId!,
-        {
-          name: parsed.data.name,
-          key: parsed.data.key,
-          description: parsed.data.description ?? null,
-          owner_id: parsed.data.owner_id,
-          start_date: parsed.data.start_date ?? null,
-          end_date: parsed.data.end_date ?? null,
-          status: parsed.data.status ?? 'active',
-        }
-      );
+      const project = await projectsService.createProject(req.userId!, {
+        name: parsed.data.name,
+        key: parsed.data.key,
+        description: parsed.data.description ?? null,
+        owner_id: parsed.data.owner_id,
+        start_date: parsed.data.start_date ?? null,
+        end_date: parsed.data.end_date ?? null,
+        status: parsed.data.status ?? 'active',
+      });
       res.status(201).json({ project });
     } catch (error) {
       const message =
@@ -112,14 +114,13 @@ projectsRouter.patch(
     }
 
     try {
-      const project = await projectsService.softDeleteProject(
-        req.userId!,
-        id
-      );
+      const project = await projectsService.softDeleteProject(req.userId!, id);
       res.json({ project });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to soft delete project';
+        error instanceof Error
+          ? error.message
+          : 'Failed to soft delete project';
       res.status(500).json({ error: message });
     }
   }
@@ -135,10 +136,7 @@ projectsRouter.patch(
     }
 
     try {
-      const project = await projectsService.restoreProject(
-        req.userId!,
-        id
-      );
+      const project = await projectsService.restoreProject(req.userId!, id);
       res.json({ project });
     } catch (error) {
       const message =
@@ -162,7 +160,9 @@ projectsRouter.delete(
       res.json({ success: true });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to hard delete project';
+        error instanceof Error
+          ? error.message
+          : 'Failed to hard delete project';
       res.status(500).json({ error: message });
     }
   }
@@ -200,7 +200,9 @@ projectsRouter.get(
       res.json({ members });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to retrieve project members';
+        error instanceof Error
+          ? error.message
+          : 'Failed to retrieve project members';
       res.status(500).json({ error: message });
     }
   }
@@ -235,14 +237,18 @@ projectsRouter.delete(
   async (req: AuthenticatedRequest, res) => {
     const { id, userId } = req.params;
     if (!id || !userId) {
-      return res.status(400).json({ error: 'Project ID and User ID are required' });
+      return res
+        .status(400)
+        .json({ error: 'Project ID and User ID are required' });
     }
     try {
       await projectsService.removeMember(req.userId!, id, userId);
       res.json({ success: true });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to remove project member';
+        error instanceof Error
+          ? error.message
+          : 'Failed to remove project member';
       res.status(500).json({ error: message });
     }
   }

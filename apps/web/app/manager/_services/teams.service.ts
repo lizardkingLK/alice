@@ -11,4 +11,9 @@ export const softDeleteTeam = service.softDeleteTeam;
 export const restoreTeam = service.restoreTeam;
 export const hardDeleteTeam = service.hardDeleteTeam;
 
-export type { Team, GetTeamsPaginatedResponse, CreateTeamInput, UpdateTeamInput } from './teams.service.base';
+export type {
+  Team,
+  GetTeamsPaginatedResponse,
+  CreateTeamInput,
+  UpdateTeamInput,
+} from './teams.service.base';

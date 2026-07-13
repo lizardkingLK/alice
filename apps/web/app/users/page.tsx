@@ -2,7 +2,10 @@ import { redirect } from 'next/navigation';
 import { getDbUser, getUser } from '../../lib/auth';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { UserRegistry } from '@/app/users/_components/user-registry';
-import { getUsersListPaginated, type User } from '@/app/users/_services/users.service.server';
+import {
+  getUsersListPaginated,
+  type User,
+} from '@/app/users/_services/users.service.server';
 
 export default async function UsersDashboard({
   searchParams,
@@ -22,7 +25,13 @@ export default async function UsersDashboard({
   const dbUser = await getDbUser();
   const currentUserRole = dbUser?.role ?? 'member';
 
-  let usersData = { users: [] as User[], totalCount: 0, page: 1, limit: 10, totalPages: 1 };
+  let usersData = {
+    users: [] as User[],
+    totalCount: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+  };
   try {
     usersData = await getUsersListPaginated(page, limit);
   } catch (error) {

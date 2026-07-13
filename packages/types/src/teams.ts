@@ -5,7 +5,9 @@ export const createTeamSchema = z.object({
   description: z.string().nullable().optional(),
   manager_id: z.uuid({ message: 'Please select a valid manager.' }),
   tech_stack: z.string().nullable().optional(),
-  status: z.enum(['active', 'inactive', 'archived', 'deleted']).default('active'),
+  status: z
+    .enum(['active', 'inactive', 'archived', 'deleted'])
+    .default('active'),
 });
 
 export const updateTeamSchema = createTeamSchema.partial();

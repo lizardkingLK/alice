@@ -10,4 +10,9 @@ export const createUser = service.createUser;
 export const updateUser = service.updateUser;
 export const toggleUserActive = service.toggleUserActive;
 
-export type { User, GetUsersPaginatedResponse, CreateUserInput, UpdateUserInput } from './users.service.base';
+export type {
+  User,
+  GetUsersPaginatedResponse,
+  CreateUserInput,
+  UpdateUserInput,
+} from './users.service.base';

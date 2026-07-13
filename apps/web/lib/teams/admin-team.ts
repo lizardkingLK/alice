@@ -1,9 +1,6 @@
 import { z } from 'zod';
 import { getDbUser } from '@/lib/auth';
-import {
-  firstValidationError,
-  type ActionState,
-} from '@/lib/server-actions';
+import { firstValidationError, type ActionState } from '@/lib/server-actions';
 import { createTeamSchema as teamSchema, type Tables } from '@repo/types';
 
 export type TeamFormData = z.infer<typeof teamSchema>;
@@ -36,7 +33,9 @@ export function parseTeamForm(
     description: (formData.get('description') as string) || null,
     manager_id: formData.get('manager_id') as string,
     tech_stack: (formData.get('tech_stack') as string) || null,
-    status: (formData.get('status') as 'active' | 'inactive' | 'archived' | 'deleted') || 'active',
+    status:
+      (formData.get('status') as
+        'active' | 'inactive' | 'archived' | 'deleted') || 'active',
   });
 
   if (!validation.success) {

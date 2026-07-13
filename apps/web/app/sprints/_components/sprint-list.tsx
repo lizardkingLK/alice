@@ -172,7 +172,9 @@ function SprintListItem({
         </div>
         <p className="text-muted-foreground text-sm">
           {mounted ? (
-            <>{formatDate(sprint.startDate)} – {formatDate(sprint.endDate)}</>
+            <>
+              {formatDate(sprint.startDate)} – {formatDate(sprint.endDate)}
+            </>
           ) : (
             <span className="invisible">
               {sprint.startDate} – {sprint.endDate}
@@ -277,12 +279,7 @@ function SprintListContent({
       <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-center">
         <p className="text-destructive text-sm">{error}</p>
         {onRetry ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onRetry}
-          >
+          <Button type="button" variant="outline" size="sm" onClick={onRetry}>
             Try again
           </Button>
         ) : null}

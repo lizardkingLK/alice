@@ -14,34 +14,30 @@ usersRouter.get('/secure', requireApiAuth, (_req, res) => {
   res.json({ message: 'Welcome to your private dashboard!' });
 });
 
-usersRouter.get(
-  '/',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    try {
-      const paginatedParams = parsePagination(req);
-      if (paginatedParams) {
-        const p = paginatedParams.page;
-        const l = paginatedParams.limit;
-        const paginatedResult = await usersService.listUsers(req.userId!, p, l);
-        return res.json({
-          users: paginatedResult.users,
-          totalCount: paginatedResult.totalCount,
-          page: p,
-          limit: l,
-          totalPages: Math.ceil(paginatedResult.totalCount / l),
-        });
-      }
-
-      const users = await usersService.listUsers(req.userId!);
-      res.json({ users });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to list users';
-      res.status(500).json({ error: message });
+usersRouter.get('/', requireApiAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const paginatedParams = parsePagination(req);
+    if (paginatedParams) {
+      const p = paginatedParams.page;
+      const l = paginatedParams.limit;
+      const paginatedResult = await usersService.listUsers(req.userId!, p, l);
+      return res.json({
+        users: paginatedResult.users,
+        totalCount: paginatedResult.totalCount,
+        page: p,
+        limit: l,
+        totalPages: Math.ceil(paginatedResult.totalCount / l),
+      });
     }
+
+    const users = await usersService.listUsers(req.userId!);
+    res.json({ users });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to list users';
+    res.status(500).json({ error: message });
   }
-);
+});
 
 usersRouter.post(
   '/',
@@ -82,11 +78,7 @@ usersRouter.put(
     }
 
     try {
-      const user = await usersService.updateUser(
-        req.userId!,
-        id,
-        parsed.data
-      );
+      const user = await usersService.updateUser(req.userId!, id, parsed.data);
       res.json({ user });
     } catch (error) {
       const message =
@@ -122,7 +114,9 @@ usersRouter.patch(
       res.json({ user });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to update user active status';
+        error instanceof Error
+          ? error.message
+          : 'Failed to update user active status';
       res.status(500).json({ error: message });
     }
   }

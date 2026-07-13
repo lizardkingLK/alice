@@ -357,6 +357,7 @@ Public pages are discoverable via `sitemap.ts` and default root metadata. Authen
 Components are imported from `@repo/ui`.
 
 Cross-cutting pagination support is built via:
+
 - Client-side pagination hooks `usePaginationNavigation` to push paginated state changes to Next.js routing parameters.
 - Reusable `Pagination` component under `@/components/pagination` rendering navigation buttons, counts, and rows selector.
 

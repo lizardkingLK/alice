@@ -41,7 +41,9 @@ export class TeamsService {
     limit?: number,
     status?: 'active' | 'inactive' | 'archived' | 'deleted',
     search?: string
-  ): Promise<{ teams: TeamRowWithManager[]; totalCount: number } | TeamRowWithManager[]> {
+  ): Promise<
+    { teams: TeamRowWithManager[]; totalCount: number } | TeamRowWithManager[]
+  > {
     if (page !== undefined && limit !== undefined) {
       return await teamsRepository.listPaginated(page, limit, status, search);
     }
@@ -69,7 +71,9 @@ export class TeamsService {
     if (input.name) {
       const duplicate = await teamsRepository.findByName(input.name, teamId);
       if (duplicate) {
-        throw new Error(`Another team with the name "${input.name}" already exists.`);
+        throw new Error(
+          `Another team with the name "${input.name}" already exists.`
+        );
       }
     }
 

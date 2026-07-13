@@ -1,8 +1,17 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { ReactNode } from 'react';
 import { SprintList } from '@/app/sprints/_components/sprint-list';
-import { updateSprintStatus, Sprint } from '@/app/sprints/_services/sprints.service';
+import {
+  updateSprintStatus,
+  Sprint,
+} from '@/app/sprints/_services/sprints.service';
 
 vi.mock('@/app/sprints/_services/sprints.service', () => ({
   updateSprintStatus: vi.fn(),
@@ -11,14 +20,30 @@ vi.mock('@/app/sprints/_services/sprints.service', () => ({
 // Mock Dropdown Menu to avoid testing Radix internals in happy-dom environment
 vi.mock('@repo/ui/components/ui/dropdown-menu', () => {
   return {
-    DropdownMenu: ({ children }: { children: ReactNode }) => <div data-testid="dropdown-menu">{children}</div>,
-    DropdownMenuTrigger: ({ children }: { children: ReactNode }) => <div data-testid="dropdown-menu-trigger">{children}</div>,
-    DropdownMenuContent: ({ children }: { children: ReactNode }) => <div data-testid="dropdown-menu-content">{children}</div>,
-    DropdownMenuItem: ({ children, onClick }: { children: ReactNode; onClick?: () => void }) => {
+    DropdownMenu: ({ children }: { children: ReactNode }) => (
+      <div data-testid="dropdown-menu">{children}</div>
+    ),
+    DropdownMenuTrigger: ({ children }: { children: ReactNode }) => (
+      <div data-testid="dropdown-menu-trigger">{children}</div>
+    ),
+    DropdownMenuContent: ({ children }: { children: ReactNode }) => (
+      <div data-testid="dropdown-menu-content">{children}</div>
+    ),
+    DropdownMenuItem: ({
+      children,
+      onClick,
+    }: {
+      children: ReactNode;
+      onClick?: () => void;
+    }) => {
       // Extract main status name from children when children is an array [status, indicator]
       const text = Array.isArray(children) ? children[0] : children;
       return (
-        <button type="button" data-testid={`dropdown-item-${text}`} onClick={onClick}>
+        <button
+          type="button"
+          data-testid={`dropdown-item-${text}`}
+          onClick={onClick}
+        >
           {children}
         </button>
       );
@@ -176,7 +201,9 @@ describe('SprintList Component', () => {
     // Target the Archived tab button inside the tabs container specifically
     const activeTab = screen.getByRole('button', { name: 'Active' });
     const tabContainer = activeTab.parentElement!;
-    const archivedTabBtn = within(tabContainer).getByRole('button', { name: 'Archived' });
+    const archivedTabBtn = within(tabContainer).getByRole('button', {
+      name: 'Archived',
+    });
 
     fireEvent.click(archivedTabBtn);
 
@@ -272,7 +299,9 @@ describe('SprintList Component', () => {
         onLimitChange={vi.fn()}
       />
     );
-    expect(screen.getByText(/No active, upcoming, or completed sprints/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/No active, upcoming, or completed sprints/i)
+    ).toBeInTheDocument();
 
     rerender(
       <SprintList

@@ -8,17 +8,20 @@ export function usePaginationNavigation(totalPages: number, limit: number) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const navigateToParams = useCallback((newPage: number, newLimit: number, replace = false) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('page', newPage.toString());
-    params.set('limit', newLimit.toString());
-    const url = `${pathname}?${params.toString()}`;
-    if (replace) {
-      router.replace(url);
-    } else {
-      router.push(url);
-    }
-  }, [searchParams, pathname, router]);
+  const navigateToParams = useCallback(
+    (newPage: number, newLimit: number, replace = false) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('page', newPage.toString());
+      params.set('limit', newLimit.toString());
+      const url = `${pathname}?${params.toString()}`;
+      if (replace) {
+        router.replace(url);
+      } else {
+        router.push(url);
+      }
+    },
+    [searchParams, pathname, router]
+  );
 
   const currentPage = Number.parseInt(searchParams.get('page') ?? '1', 10);
 

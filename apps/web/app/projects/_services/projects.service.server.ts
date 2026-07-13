@@ -16,4 +16,10 @@ export const getProjectMembers = service.getProjectMembers;
 export const addProjectMember = service.addProjectMember;
 export const removeProjectMember = service.removeProjectMember;
 
-export type { Project, GetProjectsPaginatedResponse, CreateProjectInput, UpdateProjectInput, ProjectMemberWithUser } from './projects.service.base';
+export type {
+  Project,
+  GetProjectsPaginatedResponse,
+  CreateProjectInput,
+  UpdateProjectInput,
+  ProjectMemberWithUser,
+} from './projects.service.base';

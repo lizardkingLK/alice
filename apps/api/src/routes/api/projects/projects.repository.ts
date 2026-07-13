@@ -1,5 +1,9 @@
 import { supabase } from '../../../lib/supabase';
-import { auditCreate, auditCreateWithoutStatus, auditUpdate } from '../../../lib/audit';
+import {
+  auditCreate,
+  auditCreateWithoutStatus,
+  auditUpdate,
+} from '../../../lib/audit';
 
 export type ProjectRow = {
   id: string;
@@ -66,7 +70,9 @@ export class ProjectsRepository {
 
     let query = supabase
       .from('projects')
-      .select('*, owner:users!projects_owner_id_fkey(id, name, email)', { count: 'exact' });
+      .select('*, owner:users!projects_owner_id_fkey(id, name, email)', {
+        count: 'exact',
+      });
 
     // Handle soft deleted vs active status
     if (status === 'archived') {
@@ -78,7 +84,9 @@ export class ProjectsRepository {
     // Handle search query
     if (search) {
       const sanitized = `%${search}%`;
-      query = query.or(`name.ilike.${sanitized},key.ilike.${sanitized},description.ilike.${sanitized}`);
+      query = query.or(
+        `name.ilike.${sanitized},key.ilike.${sanitized},description.ilike.${sanitized}`
+      );
     }
 
     const { data, error, count } = await query
@@ -126,7 +134,9 @@ export class ProjectsRepository {
   async listMembers(projectId: string): Promise<ProjectMemberWithUser[]> {
     const { data, error } = await supabase
       .from('project_members')
-      .select('*, user:users!project_members_user_id_fkey(id, name, email, role)')
+      .select(
+        '*, user:users!project_members_user_id_fkey(id, name, email, role)'
+      )
       .eq('project_id', projectId)
       .eq('status', 'active');
 
@@ -138,19 +148,23 @@ export class ProjectsRepository {
     return unsafeCast<ProjectMemberWithUser[]>(data);
   }
 
-  async addMember(projectId: string, userId: string, actorId: string): Promise<void> {
+  async addMember(
+    projectId: string,
+    userId: string,
+    actorId: string
+  ): Promise<void> {
     const payload = {
       project_id: projectId,
       user_id: userId,
       ...auditCreate(actorId),
     };
-    const { error } = await supabase
-      .from('project_members')
-      .insert(payload);
+    const { error } = await supabase.from('project_members').insert(payload);
 
     if (error) {
       console.error('error. failed to add project member:', error.message);
-      throw new Error(`Database failed to add project member: ${error.message}`);
+      throw new Error(
+        `Database failed to add project member: ${error.message}`
+      );
     }
   }
 
@@ -163,11 +177,16 @@ export class ProjectsRepository {
 
     if (error) {
       console.error('error. failed to remove project member:', error.message);
-      throw new Error(`Database failed to remove project member: ${error.message}`);
+      throw new Error(
+        `Database failed to remove project member: ${error.message}`
+      );
     }
   }
 
-  async create(data: Omit<ProjectRow, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>, actorId: string): Promise<ProjectRow> {
+  async create(
+    data: Omit<ProjectRow, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>,
+    actorId: string
+  ): Promise<ProjectRow> {
     const insertData = {
       ...data,
       deleted_at: null,
@@ -187,7 +206,11 @@ export class ProjectsRepository {
     return created;
   }
 
-  async update(id: string, data: Partial<Omit<ProjectRow, 'id' | 'created_at' | 'updated_at'>>, actorId: string): Promise<ProjectRow> {
+  async update(
+    id: string,
+    data: Partial<Omit<ProjectRow, 'id' | 'created_at' | 'updated_at'>>,
+    actorId: string
+  ): Promise<ProjectRow> {
     const updateData = {
       ...data,
       ...auditUpdate(actorId),
@@ -208,10 +231,7 @@ export class ProjectsRepository {
   }
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('projects')
-      .delete()
-      .eq('id', id);
+    const { error } = await supabase.from('projects').delete().eq('id', id);
 
     if (error) {
       console.error('error. failed to delete project:', error.message);

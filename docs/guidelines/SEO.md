@@ -72,20 +72,20 @@ Included in `sitemap.ts` and allowed in `robots.ts`:
 
 Must **not** appear in `sitemap.ts`. Must be blocked in `robots.ts` and carry `robots: { index: false, follow: false }` in route metadata (via layouts/pages).
 
-| Path               | Reason                                              |
-| ------------------ | --------------------------------------------------- |
-| `/dashboard`       | Authenticated hub                                   |
-| `/projects`        | Projects administration registry (replaces `/admin`)|
-| `/sprints`         | Sprints planner workspace                           |
-| `/attributes`      | Attributes settings configuration listing           |
-| `/users`           | User registry and invite panel                      |
-| `/manager`         | Manager role dashboard                              |
-| `/member`          | Member role dashboard                               |
-| `/instruments`     | Internal Supabase example                           |
-| `/files`           | Authenticated file upload                           |
-| `/forgot-password` | Auth recovery page                                  |
-| `/reset-password`  | Auth password reset page                            |
-| `/*?*`             | Query-string URLs (filters, tokens, session params) |
+| Path               | Reason                                               |
+| ------------------ | ---------------------------------------------------- |
+| `/dashboard`       | Authenticated hub                                    |
+| `/projects`        | Projects administration registry (replaces `/admin`) |
+| `/sprints`         | Sprints planner workspace                            |
+| `/attributes`      | Attributes settings configuration listing            |
+| `/users`           | User registry and invite panel                       |
+| `/manager`         | Manager role dashboard                               |
+| `/member`          | Member role dashboard                                |
+| `/instruments`     | Internal Supabase example                            |
+| `/files`           | Authenticated file upload                            |
+| `/forgot-password` | Auth recovery page                                   |
+| `/reset-password`  | Auth password reset page                             |
+| `/*?*`             | Query-string URLs (filters, tokens, session params)  |
 
 **Defense in depth:** `robots.txt` tells well-behaved crawlers not to fetch a path; page-level `robots` metadata prevents indexing if a URL is linked from elsewhere.
 

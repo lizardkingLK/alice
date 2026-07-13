@@ -10,37 +10,39 @@ import { parsePagination } from '../../../lib/pagination';
 
 const teamsRouter: Router = Router();
 
-teamsRouter.get(
-  '/',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    try {
-      const statusValue = req.query.status as 'active' | 'inactive' | 'archived' | 'deleted' | undefined;
-      const searchStr = req.query.search as string | undefined;
+teamsRouter.get('/', requireApiAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const statusValue = req.query.status as
+      'active' | 'inactive' | 'archived' | 'deleted' | undefined;
+    const searchStr = req.query.search as string | undefined;
 
-      const paginationInfo = parsePagination(req);
-      if (paginationInfo) {
-        const { page: targetPage, limit: targetLimit } = paginationInfo;
-        const listResult = await teamsService.listTeams(targetPage, targetLimit, statusValue, searchStr);
-        const pagesCount = Math.ceil(listResult.totalCount / targetLimit);
-        return res.json({
-          teams: listResult.teams,
-          totalCount: listResult.totalCount,
-          page: targetPage,
-          limit: targetLimit,
-          totalPages: pagesCount,
-        });
-      }
-
-      const allTeams = await teamsService.listTeams();
-      res.json({ teams: allTeams });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to retrieve teams';
-      res.status(500).json({ error: message });
+    const paginationInfo = parsePagination(req);
+    if (paginationInfo) {
+      const { page: targetPage, limit: targetLimit } = paginationInfo;
+      const listResult = await teamsService.listTeams(
+        targetPage,
+        targetLimit,
+        statusValue,
+        searchStr
+      );
+      const pagesCount = Math.ceil(listResult.totalCount / targetLimit);
+      return res.json({
+        teams: listResult.teams,
+        totalCount: listResult.totalCount,
+        page: targetPage,
+        limit: targetLimit,
+        totalPages: pagesCount,
+      });
     }
+
+    const allTeams = await teamsService.listTeams();
+    res.json({ teams: allTeams });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to retrieve teams';
+    res.status(500).json({ error: message });
   }
-);
+});
 
 teamsRouter.post(
   '/',
@@ -53,16 +55,13 @@ teamsRouter.post(
     }
 
     try {
-      const createdRecord = await teamsService.createTeam(
-        req.userId!,
-        {
-          name: validation.data.name,
-          description: validation.data.description ?? null,
-          manager_id: validation.data.manager_id,
-          tech_stack: validation.data.tech_stack ?? null,
-          status: validation.data.status ?? 'active',
-        }
-      );
+      const createdRecord = await teamsService.createTeam(req.userId!, {
+        name: validation.data.name,
+        description: validation.data.description ?? null,
+        manager_id: validation.data.manager_id,
+        tech_stack: validation.data.tech_stack ?? null,
+        status: validation.data.status ?? 'active',
+      });
       res.status(201).json({ team: createdRecord });
     } catch (error) {
       const message =
@@ -161,7 +160,9 @@ teamsRouter.delete(
       res.json({ success: true });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to permanently purge team';
+        error instanceof Error
+          ? error.message
+          : 'Failed to permanently purge team';
       res.status(500).json({ error: message });
     }
   }

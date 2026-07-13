@@ -61,10 +61,13 @@ export function createTeamsService(
       id: string,
       input: UpdateTeamInput
     ): Promise<Tables<'teams'>> {
-      const data = await apiFetch<{ team: Tables<'teams'> }>(`${apiTeams}/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(input),
-      });
+      const data = await apiFetch<{ team: Tables<'teams'> }>(
+        `${apiTeams}/${id}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify(input),
+        }
+      );
       return data.team;
     },
 

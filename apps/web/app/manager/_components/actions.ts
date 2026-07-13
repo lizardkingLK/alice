@@ -8,10 +8,7 @@ import {
   restoreTeam as apiRestoreTeam,
   hardDeleteTeam as apiHardDeleteTeam,
 } from '../_services/teams.service.server';
-import {
-  parseTeamForm,
-  requireTeamManager,
-} from '@/lib/teams/admin-team';
+import { parseTeamForm, requireTeamManager } from '@/lib/teams/admin-team';
 import {
   actionFailure,
   actionSuccess,
@@ -23,9 +20,7 @@ import { getDbUser } from '@/lib/auth';
 // eslint-disable-next-line no-unused-vars
 type MutationAction = (actorId: string) => Promise<ActionState>;
 
-async function runTeamMutation<T extends ActionState>(
-  mutate: MutationAction
-) {
+async function runTeamMutation<T extends ActionState>(mutate: MutationAction) {
   const permission = await requireTeamManager();
   if (!permission.allowed) {
     return actionFailure(permission.error);
@@ -85,9 +80,7 @@ export async function updateTeam(
   });
 }
 
-export async function softDeleteTeam(
-  teamId: string
-): Promise<ActionState> {
+export async function softDeleteTeam(teamId: string): Promise<ActionState> {
   return runTeamMutation(async () => {
     await apiSoftDeleteTeam(teamId);
     revalidatePath('/manager');
@@ -103,9 +96,7 @@ export async function restoreTeam(teamId: string): Promise<ActionState> {
   });
 }
 
-export async function hardDeleteTeam(
-  teamId: string
-): Promise<ActionState> {
+export async function hardDeleteTeam(teamId: string): Promise<ActionState> {
   const currentUser = await getDbUser();
   if (!currentUser) {
     return actionFailure('Not authenticated.');

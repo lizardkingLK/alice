@@ -1,7 +1,10 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { addProjectMember, removeProjectMember } from '../../_services/projects.service.server';
+import {
+  addProjectMember,
+  removeProjectMember,
+} from '../../_services/projects.service.server';
 import {
   actionFailure,
   actionSuccess,
@@ -23,7 +26,8 @@ export async function addMemberAction(
     revalidatePath(`/projects/${projectId}`);
     return actionSuccess();
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to add member.';
+    const message =
+      error instanceof Error ? error.message : 'Failed to add member.';
     return actionFailure(message);
   }
 }
@@ -37,7 +41,8 @@ export async function removeMemberAction(
     revalidatePath(`/projects/${projectId}`);
     return actionSuccess();
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to remove member.';
+    const message =
+      error instanceof Error ? error.message : 'Failed to remove member.';
     return actionFailure(message);
   }
 }

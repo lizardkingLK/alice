@@ -263,13 +263,13 @@ users ──1:N──► notifications
 
 ## Implementation status
 
-| Entity          | In `schema.prisma` today                         |
-| --------------- | ------------------------------------------------ |
-| `instruments`   | Yes — dev baseline with full audit columns       |
-| `users`         | Yes — `init_jira_domain` + `add_audit_metadata`  |
-| `projects`      | Yes — `init_jira_domain` + `add_audit_metadata`  |
-| `teams`, etc.   | Yes — `init_jira_domain` + `add_audit_metadata`  |
-| `attributes`    | Yes — schema definition with full audit columns  |
+| Entity        | In `schema.prisma` today                        |
+| ------------- | ----------------------------------------------- |
+| `instruments` | Yes — dev baseline with full audit columns      |
+| `users`       | Yes — `init_jira_domain` + `add_audit_metadata` |
+| `projects`    | Yes — `init_jira_domain` + `add_audit_metadata` |
+| `teams`, etc. | Yes — `init_jira_domain` + `add_audit_metadata` |
+| `attributes`  | Yes — schema definition with full audit columns |
 
 When implementing, add tables via `packages/db/prisma/schema.prisma` and `pnpm db create:migrate:win <name>`. Each migration appends Supabase grants automatically (see `docs/guidelines/DATABASE.md`).
 

@@ -12,13 +12,7 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import { cn } from '@repo/ui/lib/utils';
-import {
-  Users,
-  Loader2,
-  AlertCircle,
-  CheckCircle,
-  X,
-} from 'lucide-react';
+import { Users, Loader2, AlertCircle, CheckCircle, X } from 'lucide-react';
 import type { Tables } from '@repo/types';
 import type { User } from '@/app/users/_services/users.service';
 import { createTeam, updateTeam } from '../_services/teams.service';
@@ -37,7 +31,10 @@ interface FormAlertMessageProps {
   isError: boolean;
 }
 
-function FormAlertMessage({ message, isError }: Readonly<FormAlertMessageProps>) {
+function FormAlertMessage({
+  message,
+  isError,
+}: Readonly<FormAlertMessageProps>) {
   if (!message) return null;
   return (
     <div
@@ -75,7 +72,9 @@ export function TeamForm({
   const [description, setDescription] = useState(teamToEdit?.description ?? '');
   const [managerId, setManagerId] = useState(teamToEdit?.manager_id ?? '');
   const [status, setStatus] = useState<'active' | 'inactive' | 'archived'>(
-    teamToEdit?.status && teamToEdit.status !== 'deleted' ? teamToEdit.status : 'active'
+    teamToEdit?.status && teamToEdit.status !== 'deleted'
+      ? teamToEdit.status
+      : 'active'
   );
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -178,7 +177,9 @@ export function TeamForm({
               placeholder="e.g. Platform Team"
               required
               value={name}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                setName(e.target.value)
+              }
               className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
             />
           </div>
@@ -192,7 +193,9 @@ export function TeamForm({
               name="tech_stack"
               placeholder="e.g. Next.js, Node, Postgres"
               value={techStack}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setTechStack(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                setTechStack(e.target.value)
+              }
               className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
             />
           </div>
@@ -206,7 +209,9 @@ export function TeamForm({
               name="description"
               placeholder="e.g. Core team responsible for monorepo and API infrastructure"
               value={description}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setDescription(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                setDescription(e.target.value)
+              }
               className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
             />
           </div>
@@ -220,7 +225,9 @@ export function TeamForm({
               name="manager_id"
               required
               value={managerId}
-              onChange={(e: ChangeEvent<HTMLSelectElement>) => setManagerId(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+                setManagerId(e.target.value)
+              }
               className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
             >
               <option value="" disabled>
@@ -245,7 +252,9 @@ export function TeamForm({
               name="status"
               required
               value={status}
-              onChange={(e: ChangeEvent<HTMLSelectElement>) => setStatus(e.target.value as 'active' | 'inactive' | 'archived')}
+              onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+                setStatus(e.target.value as 'active' | 'inactive' | 'archived')
+              }
               className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
             >
               <option value="active">Active</option>
@@ -262,7 +271,7 @@ export function TeamForm({
                 type="button"
                 disabled={isSubmitting || isSuccess}
                 onClick={onClose}
-                className="border-input bg-background hover:bg-accent text-foreground disabled:opacity-50 flex w-1/3 cursor-pointer items-center justify-center rounded-md border text-sm font-semibold shadow-sm transition-all duration-300"
+                className="border-input bg-background hover:bg-accent text-foreground flex w-1/3 cursor-pointer items-center justify-center rounded-md border text-sm font-semibold shadow-sm transition-all duration-300 disabled:opacity-50"
               >
                 Cancel
               </button>

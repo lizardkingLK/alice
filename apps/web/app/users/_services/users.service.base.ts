@@ -68,10 +68,13 @@ export function createUsersService(
     },
 
     async toggleUserActive(id: string, active: boolean): Promise<User> {
-      const data = await apiFetch<{ user: User }>(`${apiUsers}/${id}/toggle-active`, {
-        method: 'PATCH',
-        body: JSON.stringify({ active }),
-      });
+      const data = await apiFetch<{ user: User }>(
+        `${apiUsers}/${id}/toggle-active`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ active }),
+        }
+      );
       return data.user;
     },
   };

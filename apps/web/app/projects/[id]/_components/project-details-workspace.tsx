@@ -11,7 +11,10 @@ import {
 } from '@repo/ui/components/ui/card';
 import { Button } from '@repo/ui/components/ui/button';
 import { addMemberAction, removeMemberAction } from './actions';
-import type { Project, ProjectMemberWithUser } from '../../_services/projects.service';
+import type {
+  Project,
+  ProjectMemberWithUser,
+} from '../../_services/projects.service';
 import type { User } from '@/app/users/_services/users.service';
 import {
   Info,
@@ -90,13 +93,13 @@ export function ProjectDetailsWorkspace({
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
             <div className="bg-primary/10 text-primary border-primary/20 flex h-10 w-10 items-center justify-center rounded-lg border text-sm font-bold shadow-sm">
-              {project.key}
+              {project.key.slice(0, 2)}
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+            <h1 className="text-foreground text-3xl font-extrabold tracking-tight">
               {project.name}
             </h1>
           </div>
-          <p className="text-muted-foreground text-sm max-w-2xl">
+          <p className="text-muted-foreground max-w-2xl text-sm">
             {project.description || 'No description provided for this project.'}
           </p>
         </div>
@@ -110,7 +113,7 @@ export function ProjectDetailsWorkspace({
             className={`flex items-center gap-1.5 border-b-2 px-1 pb-3 text-sm font-semibold whitespace-nowrap transition-all focus:outline-none ${
               activeTab === 'details'
                 ? 'border-primary text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
+                : 'text-muted-foreground hover:text-foreground border-transparent'
             }`}
           >
             <Info className="h-4 w-4" />
@@ -121,7 +124,7 @@ export function ProjectDetailsWorkspace({
             className={`flex items-center gap-1.5 border-b-2 px-1 pb-3 text-sm font-semibold whitespace-nowrap transition-all focus:outline-none ${
               activeTab === 'members'
                 ? 'border-primary text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
+                : 'text-muted-foreground hover:text-foreground border-transparent'
             }`}
           >
             <Users className="h-4 w-4" />
@@ -134,7 +137,7 @@ export function ProjectDetailsWorkspace({
       {activeTab === 'details' && (
         <div className="grid gap-6 md:grid-cols-3">
           {/* Main Info Card */}
-          <Card className="border-border bg-card/50 md:col-span-2 backdrop-blur-md">
+          <Card className="border-border bg-card/50 backdrop-blur-md md:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
                 <Folder className="text-primary h-5 w-5" />
@@ -147,31 +150,36 @@ export function ProjectDetailsWorkspace({
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1">
-                  <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                  <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                     Project Name
                   </span>
-                  <p className="text-foreground text-sm font-semibold">{project.name}</p>
+                  <p className="text-foreground text-sm font-semibold">
+                    {project.name}
+                  </p>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                  <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                     Unique Key
                   </span>
-                  <p className="text-foreground text-sm font-mono font-semibold">{project.key}</p>
+                  <p className="text-foreground font-mono text-sm font-semibold">
+                    {project.key}
+                  </p>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                   Description
                 </span>
                 <p className="text-foreground text-sm leading-relaxed">
-                  {project.description || 'No description configures for this project.'}
+                  {project.description ||
+                    'No description configures for this project.'}
                 </p>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1">
-                  <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                  <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                     Timeline Calendar
                   </span>
                   <p className="text-foreground flex items-center gap-1.5 text-sm font-semibold">
@@ -179,19 +187,25 @@ export function ProjectDetailsWorkspace({
                     {project.start_date || project.end_date ? (
                       <>
                         {project.start_date
-                          ? new Date(project.start_date).toLocaleDateString(undefined, {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                            })
+                          ? new Date(project.start_date).toLocaleDateString(
+                              undefined,
+                              {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              }
+                            )
                           : 'Start Date'}
                         {' — '}
                         {project.end_date
-                          ? new Date(project.end_date).toLocaleDateString(undefined, {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                            })
+                          ? new Date(project.end_date).toLocaleDateString(
+                              undefined,
+                              {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              }
+                            )
                           : 'End Date'}
                       </>
                     ) : (
@@ -200,12 +214,12 @@ export function ProjectDetailsWorkspace({
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                  <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                     Record Status
                   </span>
                   <div>
                     <span
-                      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors uppercase ${
+                      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase transition-colors ${
                         project.status === 'active'
                           ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600'
                           : 'border-amber-500/20 bg-amber-500/10 text-amber-600'
@@ -220,7 +234,7 @@ export function ProjectDetailsWorkspace({
           </Card>
 
           {/* Sidebar Ownership Card */}
-          <Card className="border-border bg-card/50 backdrop-blur-md h-fit">
+          <Card className="border-border bg-card/50 h-fit backdrop-blur-md">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
                 <Shield className="text-primary h-5 w-5" />
@@ -236,10 +250,10 @@ export function ProjectDetailsWorkspace({
                   {(project.owner?.name ?? 'U').slice(0, 1).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-foreground text-sm font-semibold truncate">
+                  <p className="text-foreground truncate text-sm font-semibold">
                     {project.owner?.name ?? 'Unknown Owner'}
                   </p>
-                  <p className="text-muted-foreground text-xs truncate">
+                  <p className="text-muted-foreground truncate text-xs">
                     {project.owner?.email ?? 'No email configured'}
                   </p>
                 </div>
@@ -252,13 +266,14 @@ export function ProjectDetailsWorkspace({
       {activeTab === 'members' && (
         <div className="grid gap-6 md:grid-cols-3">
           {/* Members Table Card */}
-          <Card className="border-border bg-card/50 md:col-span-2 backdrop-blur-md">
+          <Card className="border-border bg-card/50 backdrop-blur-md md:col-span-2">
             <CardHeader>
               <CardTitle className="text-xl font-bold tracking-tight">
                 Allocated Members
               </CardTitle>
               <CardDescription className="text-muted-foreground text-sm">
-                A list of engineering resources currently assigned to this project.
+                A list of engineering resources currently assigned to this
+                project.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -293,24 +308,24 @@ export function ProjectDetailsWorkspace({
                         key={member.user_id}
                         className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
                       >
-                        <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex min-w-0 items-center gap-3">
                           <div className="bg-muted text-foreground flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold">
                             {userName.slice(0, 1).toUpperCase()}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-foreground text-sm font-semibold flex items-center gap-1.5">
+                            <p className="text-foreground flex items-center gap-1.5 text-sm font-semibold">
                               <span className="truncate">{userName}</span>
-                              <span className="text-[10px] bg-muted border border-border text-muted-foreground font-semibold px-1.5 py-0.2 rounded-full uppercase tracking-wider shrink-0">
+                              <span className="bg-muted border-border text-muted-foreground py-0.2 shrink-0 rounded-full border px-1.5 text-[10px] font-semibold tracking-wider uppercase">
                                 {userRole}
                               </span>
                               {isSelf && (
-                                <span className="bg-primary/20 text-primary text-[9px] font-bold px-1.5 py-0.2 rounded-full uppercase shrink-0">
+                                <span className="bg-primary/20 text-primary py-0.2 shrink-0 rounded-full px-1.5 text-[9px] font-bold uppercase">
                                   You
                                 </span>
                               )}
                             </p>
                             {userEmail && (
-                              <p className="text-muted-foreground text-xs truncate">
+                              <p className="text-muted-foreground truncate text-xs">
                                 {userEmail}
                               </p>
                             )}
@@ -322,7 +337,7 @@ export function ProjectDetailsWorkspace({
                             type="button"
                             disabled={isPending}
                             onClick={() => handleRemoveMember(member.user_id)}
-                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 disabled:opacity-50 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition-colors focus:outline-none"
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition-colors focus:outline-none disabled:opacity-50"
                             title={`Remove ${userName}`}
                           >
                             {isPending && deletingUserId === member.user_id ? (
@@ -342,7 +357,7 @@ export function ProjectDetailsWorkspace({
 
           {/* Add Members Allocation Panel */}
           {isManagerOrAdmin && (
-            <Card className="border-border bg-card/50 backdrop-blur-md h-fit">
+            <Card className="border-border bg-card/50 h-fit backdrop-blur-md">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
                   <UserPlus className="text-primary h-5 w-5" />

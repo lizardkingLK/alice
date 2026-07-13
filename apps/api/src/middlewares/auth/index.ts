@@ -31,6 +31,7 @@ export async function requireApiAuth(
   } = await supabase.auth.getUser(token);
 
   if (error || !user) {
+    console.error('API Auth Error:', error);
     res.status(401).json({ error: 'Unauthorized' });
     return;
   }
