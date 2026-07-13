@@ -1,4 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
+import { Tables } from '@repo/types';
+
+export type DbUser = Tables<'users'>;
 
 export async function getUserList() {
   const supabase = await createClient();

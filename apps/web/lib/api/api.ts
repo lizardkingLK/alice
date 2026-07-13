@@ -2,8 +2,44 @@ type ApiErrorResponse = {
   error: unknown;
 };
 
+type TreeifiedError = {
+  errors?: string[];
+  properties?: Record<string, TreeifiedError | undefined>;
+};
+
 function getAPIUrl() {
   return process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL;
+}
+
+function isTreeifiedError(value: unknown): value is TreeifiedError {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  return 'errors' in value || 'properties' in value;
+}
+
+function collectTreeifyMessages(node: TreeifiedError, path = ''): string[] {
+  const messages: string[] = [];
+
+  for (const error of node.errors ?? []) {
+    messages.push(error);
+  }
+
+  if (!node.properties) {
+    return messages;
+  }
+
+  for (const [key, child] of Object.entries(node.properties)) {
+    if (!child) {
+      continue;
+    }
+
+    const nextPath = path ? `${path}.${key}` : key;
+    messages.push(...collectTreeifyMessages(child, nextPath));
+  }
+
+  return messages;
 }
 
 function getApiErrorMessage(data: unknown): string {
@@ -13,9 +49,18 @@ function getApiErrorMessage(data: unknown): string {
 
   const { error } = data;
 
-  return typeof error === 'string'
-    ? error
-    : 'Request failed. Please try again.';
+  if (typeof error === 'string') {
+    return error;
+  }
+
+  if (isTreeifiedError(error)) {
+    const messages = collectTreeifyMessages(error);
+    if (messages.length > 0) {
+      return messages.join(', ');
+    }
+  }
+
+  return 'Request failed. Please try again.';
 }
 
 export async function getResponse<T>(

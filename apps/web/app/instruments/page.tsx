@@ -1,8 +1,6 @@
-import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { Skeleton } from '@repo/ui/components/ui/skeleton';
 import type { Tables } from '@repo/types';
-import { getUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 
@@ -34,18 +32,8 @@ async function InstrumentsData() {
 }
 
 export default async function InstrumentsPage() {
-  const user = await getUser();
-
-  if (!user) {
-    redirect('/login');
-  }
-
   return (
-    <DashboardShell
-      title="Instruments"
-      description="Track your favourite instruments."
-      user={user}
-    >
+    <DashboardShell description="Track your favourite instruments.">
       <Suspense fallback={<InstrumentsSkeleton />}>
         <InstrumentsData />
       </Suspense>

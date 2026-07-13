@@ -1,45 +1,28 @@
 'use client';
 
 import { Info } from 'lucide-react';
-import Link from 'next/link';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@repo/ui/components/ui/breadcrumb';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@repo/ui/components/ui/tooltip';
+import {
+  DashboardBreadcrumb,
+  type DashboardBreadcrumbOverride,
+} from './dashboard-breadcrumb';
 
 type DashboardPageMetaProps = {
-  title: string;
   description?: string;
+  breadcrumbOverrides?: DashboardBreadcrumbOverride[];
 };
 
 export function DashboardPageMeta({
-  title,
   description,
+  breadcrumbOverrides = [{ label: 'Dashboard', url: '/dashboard' }],
 }: Readonly<DashboardPageMetaProps>) {
   return (
     <div className="flex min-w-0 flex-1 items-center gap-3">
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link href="/dashboard">Dashboard</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>{title}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+      <DashboardBreadcrumb overrides={breadcrumbOverrides} />
 
       {description ? (
         <Tooltip>

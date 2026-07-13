@@ -26,12 +26,8 @@ import {
   Search,
   FolderOpen,
 } from 'lucide-react';
-import type { Tables } from '@repo/types';
-
-type DbUser = Tables<'users'>;
-type DbProject = Tables<'projects'> & {
-  owner?: Pick<DbUser, 'id' | 'name' | 'email'> | null;
-};
+import { DbUser } from '@/app/users/_services/users.service';
+import { DbProject } from '@/app/projects/_services/projects.service';
 
 interface ProjectRegistryProps {
   readonly projects: DbProject[];

@@ -1,19 +1,10 @@
-import { redirect } from 'next/navigation';
-import { getDbUser, getUser } from '../../lib/auth';
+import { getDbUser } from '../../lib/auth';
 import { createClient } from '@/lib/supabase/server';
-import type { Tables } from '@repo/types';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { UserRegistry } from '@/app/users/_components/user-registry';
-
-type DbUser = Tables<'users'>;
+import { DbUser } from '@/app/users/_services/users.service';
 
 export default async function UsersDashboard() {
-  const user = await getUser();
-
-  if (!user) {
-    redirect('/login');
-  }
-
   const dbUser = await getDbUser();
   const currentUserRole = dbUser?.role ?? 'member';
 
@@ -30,15 +21,11 @@ export default async function UsersDashboard() {
   const usersList: DbUser[] = dbUsers ?? [];
 
   return (
-    <DashboardShell
-      title="Users"
-      description="Manage application users, assign workspace roles, and control access."
-      user={user}
-    >
+    <DashboardShell description="Manage application users, assign workspace roles, and control access.">
       <div className="w-full">
         <UserRegistry
           users={usersList}
-          currentUserId={user.id}
+          currentUserId={dbUser?.id}
           currentUserRole={currentUserRole}
         />
       </div>

@@ -20,11 +20,9 @@ import {
   AlertTriangle,
   UserPlus,
 } from 'lucide-react';
-import type { Tables } from '@repo/types';
 import { toggleUserActive } from './actions';
 import { CustomSpinner } from '@/app/users/_components/user-spinner';
-
-type DbUser = Tables<'users'>;
+import { DbUser } from '@/app/users/_services/users.service';
 
 interface UserRegistryProps {
   readonly users: DbUser[];

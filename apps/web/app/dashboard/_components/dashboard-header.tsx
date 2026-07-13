@@ -1,29 +1,38 @@
 import { SidebarTrigger } from '@repo/ui/components/ui/sidebar';
 import { DashboardPageMeta } from './dashboard-page-meta';
-import { User } from '@supabase/supabase-js';
 import { AuthControls } from '@/app/dashboard/_components/dashboard-auth';
 import { NotificationInbox } from '@/app/dashboard/_components/dashboard-notifications';
+import { getUser } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import type { DashboardBreadcrumbOverride } from './dashboard-breadcrumb';
 
 type DashboardHeaderProps = {
-  title: string;
   description?: string;
-  user: User;
+  breadcrumbOverrides?: DashboardBreadcrumbOverride[];
 };
 
-export function DashboardHeader({
-  title,
+export async function DashboardHeader({
   description,
-  user,
+  breadcrumbOverrides,
 }: Readonly<DashboardHeaderProps>) {
+  const user = await getUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
       <SidebarTrigger className="-ml-1" />
-      <DashboardPageMeta title={title} description={description} />
+      <DashboardPageMeta
+        description={description}
+        breadcrumbOverrides={breadcrumbOverrides}
+      />
       <section>
         <NotificationInbox />
       </section>
       <section>
-        <AuthControls email={user?.email} meta={user?.user_metadata} />
+        <AuthControls email={user.email} meta={user.user_metadata} />
       </section>
     </header>
   );

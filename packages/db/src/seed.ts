@@ -74,14 +74,29 @@ async function findAuthUserIdByEmail(email: string): Promise<string | null> {
 }
 
 async function ensureAuthUser(user: SeedUser): Promise<string> {
+  const password = getSeedUserPassword();
   const existingId = await findAuthUserIdByEmail(user.email);
+
   if (existingId) {
+    // Keep seed password in sync so re-runs stay loginable after password drift.
+    const { error } = await supabase.auth.admin.updateUserById(existingId, {
+      password,
+      email_confirm: true,
+      user_metadata: { name: user.name },
+    });
+
+    if (error) {
+      throw new Error(
+        `Failed to update auth user "${user.email}": ${error.message}`
+      );
+    }
+
     return existingId;
   }
 
   const { data, error } = await supabase.auth.admin.createUser({
     email: user.email,
-    password: getSeedUserPassword(),
+    password,
     email_confirm: true,
     user_metadata: { name: user.name },
   });

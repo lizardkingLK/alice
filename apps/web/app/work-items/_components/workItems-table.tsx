@@ -1,6 +1,17 @@
 'use client';
 
-import { DbWorkItem } from '@/app/work-items/_services/workItem.service';
+import { useCallback, useMemo, useState } from 'react';
+import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  Row,
+  useReactTable,
+} from '@tanstack/react-table';
+import { Button } from '@repo/ui/components/ui/button';
+import { Badge } from '@repo/ui/components/ui/badge';
+import { Input } from '@repo/ui/components/ui/input';
 import {
   Card,
   CardContent,
@@ -9,357 +20,435 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@repo/ui/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@repo/ui/components/ui/table';
+import { cn } from '@repo/ui/lib/utils';
+import {
   AlertTriangle,
-  Calendar,
   ClipboardPenLine,
-  Code,
+  MoreHorizontal,
+  Pencil,
+  Plus,
   Search,
-  Shield,
+  Trash,
 } from 'lucide-react';
-import { useState } from 'react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@repo/ui/components/ui/dropdown-menu';
+import { WorkItemForm } from '@/app/work-items/_components/workItem-form';
+import { DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
+import { WorkItemWorkspaceProps } from '@/app/work-items/_components/workItems-workspace';
 
-interface WorkItemTableProps {
-  readonly workItems: DbWorkItem[];
-  //   readonly users: DbUser[];
-  readonly currentUserId?: string | null;
-  readonly currentUserRole?: string | null;
+type WorkItemStatus = DbWorkItem['status'];
+type WorkItemPriority = DbWorkItem['priority'];
+
+type WorkItemsTableProps = WorkItemWorkspaceProps & {
+  currentUserId?: string | null;
+};
+
+type RendererProps = { row: Row<DbWorkItem> };
+
+const STATUS_STYLES: Record<WorkItemStatus, string> = {
+  Draft: 'border-muted-foreground/20 bg-muted text-muted-foreground',
+  New: 'border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  ToDo: 'border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400',
+  InProgress:
+    'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  Testing: 'border-cyan-500/20 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400',
+  Done: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+};
+
+const PRIORITY_VARIANTS: Record<
+  WorkItemPriority,
+  'secondary' | 'outline' | 'default' | 'destructive'
+> = {
+  lowest: 'secondary',
+  low: 'outline',
+  medium: 'default',
+  high: 'destructive',
+  highest: 'destructive',
+};
+
+function formatDate(value: string | null): string {
+  if (!value) {
+    return '—';
+  }
+
+  return new Date(value).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }
 
-export default function WorkItemsTable({
+function formatLabelWithSpace(value: string): string {
+  return value.replace(/([a-z])([A-Z])/g, '$1 $2');
+}
+
+function formatLabelFirstLetterCapitalized(value: string): string {
+  return value[0]?.toUpperCase() + value.substring(1, value.length);
+}
+
+const titleRenderer = ({ row }: RendererProps) => (
+  <div className="flex min-w-48 items-center gap-3">
+    <div className="bg-primary/10 text-primary border-primary/20 flex size-8 shrink-0 items-center justify-center rounded-lg border text-xs font-bold">
+      {row.original.title.slice(0, 1).toUpperCase()}
+    </div>
+    <div className="space-y-1">
+      <a
+        className="hover:text-primary font-medium"
+        href={`/work-items/${row.original.id}`}
+      >
+        {row.original.title}
+      </a>
+      <p className="text-muted-foreground text-xs">
+        Created {formatDate(row.original.created_at)}
+      </p>
+    </div>
+  </div>
+);
+
+const typeRenderer = ({ row }: RendererProps) => (
+  <Badge variant="outline">{row.original.type}</Badge>
+);
+
+const statusRenderer = ({ row }: RendererProps) => (
+  <Badge
+    variant="outline"
+    className={cn('capitalize', STATUS_STYLES[row.original.status])}
+  >
+    {formatLabelWithSpace(row.original.status)}
+  </Badge>
+);
+
+const priorityRenderer = ({ row }: RendererProps) => (
+  <Badge variant={PRIORITY_VARIANTS[row.original.priority]}>
+    {formatLabelFirstLetterCapitalized(row.original.priority)}
+  </Badge>
+);
+
+const assigneeRenderer = ({
+  row,
   currentUserId,
-  workItems,
-  currentUserRole,
-}: Readonly<WorkItemTableProps>) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterTab, setFilterTab] = useState<'draft' | 'published'>('draft');
-  console.log(currentUserRole);
+}: RendererProps & { currentUserId?: string | null }) => {
+  const assigneeName = row.original.assignee?.name ?? '—';
+  const isAssignedToSelf = row.original.assignee_id === currentUserId;
 
-  //   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
-  //   const [projectToEdit, setProjectToEdit] = useState<DbProject | null>(null);
-  //   const [projectToDelete, setProjectToDelete] = useState<DbProject | null>(
-  //     null
-  //   );
-  //   const [deleteMode, setDeleteMode] = useState<'soft' | 'hard'>('soft');
+  return (
+    <div className="space-y-1">
+      <p className="font-medium">{assigneeName}</p>
+      {isAssignedToSelf ? (
+        <Badge variant="secondary" className="text-[10px]">
+          You
+        </Badge>
+      ) : null}
+    </div>
+  );
+};
+
+const dueDateRenderer = ({ row }: RendererProps) => (
+  <span className="text-muted-foreground">
+    {formatDate(row.original.due_date)}
+  </span>
+);
+
+const actionsHeaderRenderer = () => <span className="sr-only">Actions</span>;
+
+const actionsRenderer = ({
+  row,
+  openEditDialog,
+  // eslint-disable-next-line no-unused-vars
+}: RendererProps & { openEditDialog: (workItem: DbWorkItem) => void }) => (
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <Button variant="ghost" size="icon-sm" className="cursor-pointer">
+        <MoreHorizontal />
+        <span className="sr-only">Open menu</span>
+      </Button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end">
+      <DropdownMenuItem onClick={() => openEditDialog(row.original)}>
+        <Pencil />
+        Edit
+      </DropdownMenuItem>
+      <DropdownMenuItem variant="destructive">
+        <Trash />
+        Delete
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
+);
+
+export default function WorkItemsTable({
+  projects,
+  projectMembers,
+  initialWorkItems,
+  currentUserId,
+}: Readonly<WorkItemsTableProps>) {
+  const [globalFilter, setGlobalFilter] = useState('');
+  const [workItems, setWorkItems] = useState<DbWorkItem[]>(initialWorkItems);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [itemToEdit, setItemToEdit] = useState<DbWorkItem | null>(null);
   const [error, setError] = useState<string | null>(null);
-  //   const [isPending, startTransition] = useTransition();
 
-  // const isManagerOrAdmin =
-  //   currentUserRole === 'admin' || currentUserRole === 'manager';
-  // const isAdmin = currentUserRole === 'admin';
+  const isEditMode = itemToEdit !== null;
 
-  // Info if already used then remove the association first
+  const openCreateDialog = () => {
+    setItemToEdit(null);
+    setDialogOpen(true);
+  };
 
-  // Filter work-items based on search query and soft-delete status
-  const filteredWorkItems = workItems.filter((workItem) => {
-    const matchesSearch = workItem.title.toLowerCase().includes(
-      searchQuery.toLowerCase() //)
-      // ||
-      // workItem.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      // workItem.description?toLowerCase().includes(searchQuery.toLowerCase()
-    );
+  const openEditDialog = useCallback((workItem: DbWorkItem) => {
+    setItemToEdit(workItem);
+    setDialogOpen(true);
+  }, []);
 
-    const isDraft = workItem.status === 'Draft';
-
-    if (filterTab === 'draft') {
-      return matchesSearch && !isDraft;
-    } else {
-      return matchesSearch && isDraft;
+  const handleDialogChange = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setItemToEdit(null);
     }
+  };
+
+  const handleUpdated = useCallback(
+    (workItem: DbWorkItem) => {
+      const assignee =
+        workItem.assignee ??
+        projectMembers.find((member) => member.id === workItem.assignee_id) ??
+        null;
+
+      const nextWorkItem: DbWorkItem = {
+        ...workItem,
+        assignee: assignee
+          ? {
+              id: assignee.id,
+              name: assignee.name,
+              email: assignee.email,
+            }
+          : null,
+      };
+
+      setWorkItems((prev) => {
+        const exists = prev.some((item) => item.id === nextWorkItem.id);
+
+        if (exists) {
+          return prev.map((item) =>
+            item.id === nextWorkItem.id ? nextWorkItem : item
+          );
+        }
+
+        return [nextWorkItem, ...prev];
+      });
+
+      setError(null);
+      setDialogOpen(false);
+      setItemToEdit(null);
+    },
+    [projectMembers]
+  );
+
+  const columns = useMemo<ColumnDef<DbWorkItem>[]>(
+    () => [
+      {
+        accessorKey: 'title',
+        header: 'Title',
+        cell: titleRenderer,
+      },
+      {
+        accessorKey: 'type',
+        header: 'Type',
+        cell: typeRenderer,
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: statusRenderer,
+      },
+      {
+        accessorKey: 'priority',
+        header: 'Priority',
+        cell: priorityRenderer,
+      },
+      {
+        id: 'assignee',
+        header: 'Assignee',
+        cell: ({ row }) => assigneeRenderer({ row, currentUserId }),
+      },
+      {
+        accessorKey: 'due_date',
+        header: 'Due Date',
+        cell: dueDateRenderer,
+      },
+      {
+        id: 'actions',
+        header: actionsHeaderRenderer,
+        cell: ({ row }) => actionsRenderer({ row, openEditDialog }),
+      },
+    ],
+    [currentUserId, openEditDialog]
+  );
+
+  const table = useReactTable({
+    data: workItems,
+    columns,
+    state: { globalFilter },
+    onGlobalFilterChange: setGlobalFilter,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    globalFilterFn: (row, _columnId, filterValue) => {
+      const query = String(filterValue).toLowerCase();
+      const workItem = row.original;
+
+      return (
+        workItem.title.toLowerCase().includes(query) ||
+        workItem.status.toLowerCase().includes(query) ||
+        workItem.type.toLowerCase().includes(query) ||
+        (workItem.assignee?.name.toLowerCase().includes(query) ?? false) ||
+        (workItem.assignee?.email.toLowerCase().includes(query) ?? false)
+      );
+    },
   });
 
   return (
     <div className="space-y-6">
-      {error && (
+      {error ? (
         <div className="text-destructive bg-destructive/10 border-destructive/20 relative flex items-center gap-2 rounded-lg border p-3 text-sm">
-          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <AlertTriangle className="size-4 shrink-0" />
           <span>{error}</span>
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
             onClick={() => setError(null)}
-            className="ml-auto cursor-pointer text-xs hover:underline focus:outline-none"
+            className="ml-auto"
           >
             Dismiss
-          </button>
+          </Button>
         </div>
-      )}
+      ) : null}
 
-      {/*Control Bar*/}
+      {/* Work-Items Options */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative max-w-md flex-1">
-          <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search workitems by title..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="border-input bg-background/50 placeholder:text-muted-foreground focus-visible:ring-primary flex h-10 w-full rounded-md border py-2 pr-4 pl-10 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none"
+          <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+          <Input
+            value={globalFilter}
+            onChange={(event) => setGlobalFilter(event.target.value)}
+            placeholder="Search work items..."
+            className="pl-9"
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Tabs */}
-          <div className="bg-muted/50 border-border text-muted-foreground inline-flex h-10 items-center justify-center rounded-md border p-1">
-            <button
-              onClick={() => setFilterTab('draft')}
-              className={`ring-offset-background inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 ${
-                filterTab === 'draft'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'hover:text-foreground'
-              }`}
-            >
-              Draft
-            </button>
-            <button
-              onClick={() => setFilterTab('published')}
-              className={`ring-offset-background inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 ${
-                filterTab === 'published'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'hover:text-foreground'
-              }`}
-            >
-              Published
-            </button>
-          </div>
-        </div>
+        <Button onClick={openCreateDialog}>
+          <Plus />
+          Add Work-Item
+        </Button>
       </div>
 
-      {/* Work-Items list */}
+      {/* Work-Items Table */}
       <Card className="border-border bg-card/50 backdrop-blur-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight">
-            <Code className="text-primary h-5 w-5" />
-            Work-Items Table
+            <ClipboardPenLine className="text-primary size-5" />
+            Work Items
           </CardTitle>
-          <CardDescription className="text-muted-foreground text-sm">
-            {filterTab === 'draft'
-              ? 'View and manage drafted work-items for use in projects.'
-              : 'Publish drafted work-items, or delete them from the database.'}
+          <CardDescription>
+            View, filter, and manage work items across your workspace.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {filteredWorkItems.length === 0 ? (
-            <div className="text-muted-foreground flex h-60 flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-sm">
-              <ClipboardPenLine className="text-muted-foreground/50 h-8 w-8 animate-bounce stroke-1" />
-              <p>No work-items found matching the criteria.</p>
-            </div>
-          ) : (
-            <div className="divide-border divide-y">
-              {filteredWorkItems.map((workItem) => {
-                const assigneeName =
-                  workItem.assignee?.name ?? 'Unknown Assignee';
-                const assigneeEmail = workItem.assignee?.email ?? '';
-                const isAssignedToSelf = workItem.assignee_id === currentUserId;
-
-                return (
-                  <div
-                    key={workItem.id}
-                    className="group flex flex-col justify-between gap-4 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="bg-primary/10 text-primary border-primary/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-sm font-bold shadow-sm transition-all duration-300 group-hover:scale-105">
-                        {workItem.title.slice(0, 2)}
-                      </div>
-                      <div className="min-w-0 space-y-1">
-                        <h4 className="text-foreground group-hover:text-primary flex items-center gap-2 text-sm leading-none font-semibold transition-colors">
-                          {workItem.title}
-                          {workItem.status !== 'Draft' && (
-                            <span className="py-0.2 rounded-full border border-amber-500/20 bg-amber-500/10 px-1.5 text-[10px] font-semibold tracking-normal text-amber-600 uppercase">
-                              Published
-                            </span>
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.length > 0 ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && 'selected'}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
                           )}
-                        </h4>
-                        {workItem.description && (
-                          <p className="text-muted-foreground line-clamp-1 text-xs">
-                            {JSON.stringify(workItem.description, null, 2)}
-                          </p>
-                        )}
-                        <span className="text-muted-foreground flex items-center gap-1 text-xs">
-                          <Shield className="h-3 w-3" />
-                          <span>
-                            Assignee:{' '}
-                            <strong className="text-foreground">
-                              {assigneeName}
-                            </strong>
-                            {assigneeEmail && ` (${assigneeEmail})`}
-                            {isAssignedToSelf && (
-                              <span className="bg-primary/25 border-primary/30 text-primary py-0.2 ml-1.5 rounded-full border px-1.5 text-[9px] font-semibold tracking-normal uppercase">
-                                You
-                              </span>
-                            )}
-                          </span>
-                        </span>
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="text-muted-foreground h-48 text-center"
+                    >
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <ClipboardPenLine className="text-muted-foreground/50 size-8 stroke-1" />
+                        <p>No work items found matching your search.</p>
                       </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2 pl-13 sm:gap-4 sm:pl-0">
-                      <span className="text-muted-foreground flex items-center gap-1 text-xs">
-                        <Calendar className="h-3 w-3" />
-                        <span>
-                          {workItem.created_at || workItem.due_date ? (
-                            <>
-                              {workItem.created_at
-                                ? new Date(
-                                    workItem.created_at
-                                  ).toLocaleDateString(undefined, {
-                                    month: 'short',
-                                    year: 'numeric',
-                                  })
-                                : 'Start'}
-                              {' — '}
-                              {workItem.due_date
-                                ? new Date(
-                                    workItem.due_date
-                                  ).toLocaleDateString(undefined, {
-                                    month: 'short',
-                                    year: 'numeric',
-                                  })
-                                : 'End'}
-                            </>
-                          ) : (
-                            'No timeline configured'
-                          )}
-                        </span>
-                      </span>
-
-                      {/* Actions */}
-                      {/* <div className="flex items-center gap-1">
-                        {filterTab === 'draft' ? (
-                          <>
-                            {isManagerOrAdmin && (
-                              <button
-                                onClick={() => {
-                                  setProjectToEdit(proj);
-                                }}
-                                className="border-input hover:bg-accent text-foreground focus-visible:ring-ring flex h-8 cursor-pointer items-center justify-center rounded-md border px-3 text-xs font-semibold shadow-sm transition-all focus-visible:ring-2 focus-visible:outline-none"
-                              >
-                                Edit
-                              </button>
-                            )}
-                            {isManagerOrAdmin && (
-                              <button
-                                disabled={isPending}
-                                onClick={() => handleSoftDelete(proj)}
-                                className="focus-visible:ring-ring flex h-8 cursor-pointer items-center justify-center rounded-md border border-rose-500/20 bg-rose-500/10 px-3 text-xs font-semibold text-rose-600 shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
-                              >
-                                Delete
-                              </button>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            {isManagerOrAdmin && (
-                              <button
-                                disabled={isPending}
-                                onClick={() => handleRestore(proj)}
-                                className="focus-visible:ring-ring flex h-8 cursor-pointer items-center justify-center rounded-md border border-emerald-500/20 bg-emerald-500/10 px-3 text-xs font-semibold text-emerald-600 shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
-                              >
-                                <RefreshCw className="mr-1 h-3 w-3" />
-                                Restore
-                              </button>
-                            )}
-                            {isAdmin && (
-                              <button
-                                disabled={isPending}
-                                onClick={() => handleHardDelete(proj)}
-                                className="focus-visible:ring-ring flex h-9 cursor-pointer items-center justify-center rounded-md border border-rose-500/20 bg-rose-500/10 px-3 text-xs font-semibold text-rose-600 shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
-                              >
-                                <Trash2 className="mr-1 h-3 w-3" />
-                                Purge
-                              </button>
-                            )}
-                          </>
-                        )}
-                      </div> */}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Add/Edit Modal */}
-      {/* {isAddProjectOpen && (
-        <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
-          <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
-            <ProjectForm
-              users={users}
-              onClose={() => setIsAddProjectOpen(false)}
-              onSuccess={() => setIsAddProjectOpen(false)}
-            />
-          </div>
-        </div>
-      )}
+      {/* Work-Item Create/Edit */}
+      <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>
+              {isEditMode ? 'Edit Work Item' : 'Create Work Item'}
+            </DialogTitle>
+            <DialogDescription>
+              {isEditMode
+                ? 'Update the details for this work item.'
+                : 'Add a new work item and assign it to a team member.'}
+            </DialogDescription>
+          </DialogHeader>
 
-      {projectToEdit && (
-        <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
-          <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
-            <ProjectForm
-              users={users}
-              projectToEdit={projectToEdit}
-              onClose={() => setProjectToEdit(null)}
-              onSuccess={() => setProjectToEdit(null)}
-            />
-          </div>
-        </div>
-      )} */}
-
-      {/* Delete Confirmation Modal */}
-      {/* {projectToDelete && (
-        <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
-          <dialog
-            open
-            className="bg-card border-border animate-in fade-in zoom-in-95 relative block w-full max-w-md overflow-hidden rounded-xl border shadow-2xl duration-200"
-            aria-modal="true"
-          >
-            <div className="p-6">
-              <div className="mb-3 flex items-center gap-3 text-rose-500">
-                <div className="rounded-full border border-rose-500/20 bg-rose-500/10 p-2">
-                  <AlertTriangle className="h-6 w-6" />
-                </div>
-                <h3 className="text-foreground text-lg font-bold">
-                  {deleteMode === 'soft'
-                    ? 'Archive Project'
-                    : 'Permanently Delete Project'}
-                </h3>
-              </div>
-
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Are you sure you want to
-                {deleteMode === 'soft' ? ' archive ' : ' permanently delete '}
-                <strong className="text-foreground">
-                  {projectToDelete.name} ({projectToDelete.key})
-                </strong>
-                {' ?'}
-              </p>
-              <p className="text-muted-foreground/80 bg-muted/50 border-border/40 mt-2 rounded-lg border p-2.5 text-xs">
-                {deleteMode === 'soft'
-                  ? 'It will be hidden from the active projects list, but can be restored later from the Archived tab.'
-                  : 'Warning: This action is irreversible. All issues, sprints, and comments associated with this project will be permanently destroyed.'}
-              </p>
-            </div>
-
-            <div className="bg-muted/40 border-border flex justify-end gap-3 border-t px-6 py-4">
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={() => setProjectToDelete(null)}
-                className="border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex h-9 cursor-pointer items-center justify-center rounded-md border px-4 text-xs font-semibold shadow-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={confirmDelete}
-                className="focus-visible:ring-ring inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-rose-600 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-rose-700 focus-visible:ring-2 focus-visible:outline-none"
-              >
-                {deleteButtonText}
-              </button>
-            </div>
-          </dialog>
-        </div>
-      )} */}
+          <WorkItemForm
+            projects={projects}
+            itemToEdit={itemToEdit}
+            projectMembers={projectMembers}
+            onClose={() => handleDialogChange(false)}
+            onSuccess={handleUpdated}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

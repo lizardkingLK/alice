@@ -21,10 +21,8 @@ import {
   CheckCircle,
   X,
 } from 'lucide-react';
-import type { Tables } from '@repo/types';
-
-type DbUser = Tables<'users'>;
-type DbProject = Tables<'projects'>;
+import { DbUser } from '@/app/users/_services/users.service';
+import { DbProject } from '@/app/projects/_services/projects.service';
 
 const initialState: ActionState = {
   success: false,

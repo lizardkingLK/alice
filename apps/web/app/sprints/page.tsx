@@ -48,11 +48,7 @@ export default async function SprintsPage() {
   };
 
   return (
-    <DashboardShell
-      title="Sprints"
-      description="Plan and track team sprints."
-      user={user}
-    >
+    <DashboardShell description="Plan and track team sprints.">
       <SprintsWorkspace
         initialSprints={sprintsList}
         initialPagination={initialPagination}

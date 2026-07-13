@@ -1,5 +1,6 @@
 import { getResponse } from '@/lib/api/api';
 import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
 
 export async function apiFetch<T>(
   path: string,
@@ -11,7 +12,7 @@ export async function apiFetch<T>(
   } = await supabase.auth.getSession();
 
   if (!session?.access_token) {
-    throw new Error('You must be signed in to perform this action.');
+    redirect('/login');
   }
 
   const token = session.access_token;

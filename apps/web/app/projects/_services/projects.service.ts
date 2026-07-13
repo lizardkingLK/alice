@@ -1,7 +1,10 @@
+import { DbUser } from '@/app/users/_services/users.service';
 import { apiFetch } from '@/lib/api/api-client.server';
 import { Tables } from '@repo/types';
 
-type DbUser = Tables<'users'>;
+export type DbProject = Tables<'projects'> & {
+  owner?: Pick<DbUser, 'id' | 'name' | 'email'> | null;
+};
 
 export type ProjectListRow = Tables<'projects'> & {
   owner?: Pick<DbUser, 'id' | 'name' | 'email'> | null;
@@ -24,6 +27,9 @@ export type CreateProjectInput = Omit<
   | 'deleted_at'
   | 'created_by'
   | 'updated_by'
+  | 'work'
+  | 'attributes_config'
+  | 'workflow_config'
 >;
 
 export type UpdateProjectInput = Partial<CreateProjectInput>;

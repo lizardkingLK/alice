@@ -1,7 +1,8 @@
-import { apiFetch } from '@/lib/api/api-client.server';
+import { DbUser } from '@/app/users/_services/users.service';
+import { apiFetch as apiServerFetch } from '@/lib/api/api-client.server';
+
 import { Tables } from '@repo/types';
 
-type DbUser = Tables<'users'>;
 export type DbWorkItem = Tables<'work_items'> & {
   assignee: Pick<DbUser, 'id' | 'name' | 'email'> | null;
 };
@@ -9,8 +10,6 @@ export type DbWorkItem = Tables<'work_items'> & {
 const workItemsPath = '/api/workItems';
 
 export async function getWorkItems(): Promise<DbWorkItem[]> {
-  const data = await apiFetch<{ workItems: DbWorkItem[] }>(
-    workItemsPath
-  );
-  return data.workItems;
+  const data = await apiServerFetch<DbWorkItem[]>(workItemsPath);
+  return data;
 }
