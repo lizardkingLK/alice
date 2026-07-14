@@ -9,7 +9,6 @@ import {
   Calendar,
   Tag,
   Filter,
-  Sparkles,
   Info,
   AlertCircle,
   HelpCircle,
@@ -22,7 +21,6 @@ import {
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
-import { Label } from '@repo/ui/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -164,18 +162,8 @@ export function KanbanBoard() {
   const [activeDropCol, setActiveDropCol] = useState<Status | null>(null);
 
   // Modals state
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-
-  // New task form state
-  const [newTitle, setNewTitle] = useState('');
-  const [newDescription, setNewDescription] = useState('');
-  const [newStatus, setNewStatus] = useState<Status>('ToDo');
-  const [newPriority, setNewPriority] = useState<Priority>('medium');
-  const [newAssignee, setNewAssignee] = useState('');
-  const [newCategory, setNewCategory] = useState('');
-  const [newDueDate, setNewDueDate] = useState('');
 
   // Drag and drop handlers
   const handleDragStart = (e: React.DragEvent, id: string) => {
@@ -246,37 +234,7 @@ export function KanbanBoard() {
   });
 
 
-  // Handle task submission
-  const handleCreateTask = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim()) return;
 
-    const nextIdNumber = Math.max(...tasks.map(t => Number.parseInt(t.id.split('-')[1] ?? '0', 10)), 0) + 1;
-    const nextId = `ALICE-${nextIdNumber}`;
-
-    const newTask: Task = {
-      id: nextId,
-      title: newTitle,
-      description: newDescription || 'No description provided.',
-      status: newStatus,
-      priority: newPriority,
-      assignee: newAssignee || 'Unassigned',
-      category: newCategory || 'General',
-      dueDate: newDueDate || new Date().toISOString().split('T')[0]!,
-    };
-
-    setTasks(prev => [...prev, newTask]);
-    setIsCreateOpen(false);
-
-    // Reset Form fields
-    setNewTitle('');
-    setNewDescription('');
-    setNewStatus('ToDo');
-    setNewPriority('medium');
-    setNewAssignee('');
-    setNewCategory('');
-    setNewDueDate('');
-  };
 
   // Handle delete task
   const handleDeleteTask = (taskId: string) => {
@@ -599,131 +557,6 @@ export function KanbanBoard() {
         </DialogContent>
       </Dialog>
 
-      {/* Create Task Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-md border-t-4 border-t-primary bg-card/95 backdrop-blur-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 font-bold text-lg">
-              <Sparkles className="w-5 h-5 text-primary animate-pulse" /> Add Kanban Task
-            </DialogTitle>
-            <DialogDescription className="text-xs">
-              Fill in the parameters below to add a new task to your Kanban Board in-memory.
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleCreateTask} className="space-y-4 my-2 text-sm">
-            <div className="space-y-1.5">
-              <Label htmlFor="title" className="text-xs font-semibold">
-                Task Title *
-              </Label>
-              <Input
-                id="title"
-                placeholder="Describe the objective concisely"
-                value={newTitle}
-                onChange={e => setNewTitle(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="description" className="text-xs font-semibold">
-                Description
-              </Label>
-              <Input
-                id="description"
-                placeholder="Provide task specifics or criteria"
-                value={newDescription}
-                onChange={e => setNewDescription(e.target.value)}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="status" className="text-xs font-semibold">
-                  Initial Status
-                </Label>
-                <Select value={newStatus} onValueChange={(val) => setNewStatus(val as Status)}>
-                  <SelectTrigger id="status">
-                    <SelectValue placeholder="To Do" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {COLUMNS.map(c => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="priority" className="text-xs font-semibold">
-                  Priority
-                </Label>
-                <Select value={newPriority} onValueChange={(val) => setNewPriority(val as Priority)}>
-                  <SelectTrigger id="priority">
-                    <SelectValue placeholder="Medium" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="assignee" className="text-xs font-semibold">
-                  Assignee
-                </Label>
-                <Input
-                  id="assignee"
-                  placeholder="e.g. Alice Smith"
-                  value={newAssignee}
-                  onChange={e => setNewAssignee(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="category" className="text-xs font-semibold">
-                  Category / Tag
-                </Label>
-                <Input
-                  id="category"
-                  placeholder="e.g. Frontend"
-                  value={newCategory}
-                  onChange={e => setNewCategory(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="dueDate" className="text-xs font-semibold">
-                Due Date
-              </Label>
-              <Input
-                id="dueDate"
-                type="date"
-                value={newDueDate}
-                onChange={e => setNewDueDate(e.target.value)}
-              />
-            </div>
-
-            <DialogFooter className="mt-6">
-              <DialogClose asChild>
-                <Button type="button" variant="secondary" className="text-xs">
-                  Cancel
-                </Button>
-              </DialogClose>
-              <Button type="submit" className="text-xs font-semibold">
-                Add Task
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
