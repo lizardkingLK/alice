@@ -12,6 +12,7 @@ import {
   Timer,
   Files,
   ClipboardPenIcon,
+  Kanban,
 } from 'lucide-react';
 import { cn } from '@repo/ui/lib/utils';
 import {
@@ -29,6 +30,7 @@ import {
 
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { href: '/board', label: 'Board', icon: Kanban },
   { href: '/users', label: 'Users', icon: Users },
   { href: '/projects', label: 'Projects', icon: FolderKanban },
   { href: '/sprints', label: 'Sprints', icon: Timer },
