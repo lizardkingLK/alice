@@ -69,6 +69,7 @@ export async function getResponse<T>(
   init?: RequestInit
 ): Promise<T> {
   const response = await fetch(`${getAPIUrl()}${path}`, {
+    cache: 'no-store',
     ...init,
     headers: {
       'Content-Type': 'application/json',

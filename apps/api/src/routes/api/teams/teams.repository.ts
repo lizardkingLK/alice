@@ -20,6 +20,7 @@ export type TeamRowWithManager = TeamRow & {
     name: string;
     email: string;
   } | null;
+  members?: { team_id: string; user_id: string; status: string }[];
 };
 
 function unsafeCast<T>(val: unknown): T {
@@ -30,7 +31,7 @@ export class TeamsRepository {
   async listAll(): Promise<TeamRowWithManager[]> {
     const { data, error } = await supabase
       .from('teams')
-      .select('*, manager:users!teams_manager_id_fkey(id, name, email)')
+      .select('*, manager:users!teams_manager_id_fkey(id, name, email), members:team_members(*)')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -52,7 +53,7 @@ export class TeamsRepository {
 
     let dbQuery = supabase
       .from('teams')
-      .select('*, manager:users!teams_manager_id_fkey(id, name, email)', {
+      .select('*, manager:users!teams_manager_id_fkey(id, name, email), members:team_members(*)', {
         count: 'exact',
       });
 
@@ -112,12 +113,13 @@ export class TeamsRepository {
   }
 
   async create(
-    teamData: Omit<
+    teamInput: Omit<
       TeamRow,
       'id' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'
-    >,
+    > & { member_ids?: string[] },
     userId: string
   ): Promise<TeamRow> {
+    const { member_ids, ...teamData } = teamInput;
     const payload = {
       ...teamData,
       ...auditCreateWithoutStatus(userId),
@@ -133,19 +135,43 @@ export class TeamsRepository {
       throw new Error(`Create team DB error: ${response.error.message}`);
     }
 
-    return response.data;
+    const createdTeam = response.data;
+
+    if (member_ids && member_ids.length > 0) {
+      const teamMembersPayload = member_ids.map((memberId) => ({
+        team_id: createdTeam.id,
+        user_id: memberId,
+        status: 'active' as const,
+        created_by: userId,
+        updated_by: userId,
+        updated_at: new Date().toISOString(),
+      }));
+
+      const membersResponse = await supabase
+        .from('team_members')
+        .insert(teamMembersPayload);
+
+      if (membersResponse.error) {
+        console.error('database failure adding team members:', membersResponse.error.message);
+        await supabase.from('teams').delete().eq('id', createdTeam.id);
+        throw new Error(`Failed to add team members: ${membersResponse.error.message}`);
+      }
+    }
+
+    return createdTeam;
   }
 
   async update(
     teamId: string,
-    teamData: Partial<
+    teamInput: Partial<
       Omit<
         TeamRow,
         'id' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'
       >
-    >,
+    > & { member_ids?: string[] },
     userId: string
   ): Promise<TeamRow> {
+    const { member_ids, ...teamData } = teamInput;
     const payload = {
       ...teamData,
       ...auditUpdate(userId),
@@ -160,6 +186,38 @@ export class TeamsRepository {
     if (response.error) {
       console.error('database failure updating team:', response.error.message);
       throw new Error(`Update team DB error: ${response.error.message}`);
+    }
+
+    if (member_ids) {
+      const deleteResponse = await supabase
+        .from('team_members')
+        .delete()
+        .eq('team_id', teamId);
+
+      if (deleteResponse.error) {
+        console.error('database failure deleting team members:', deleteResponse.error.message);
+        throw new Error(`Failed to update team members: ${deleteResponse.error.message}`);
+      }
+
+      if (member_ids.length > 0) {
+        const teamMembersPayload = member_ids.map((memberId) => ({
+          team_id: teamId,
+          user_id: memberId,
+          status: 'active' as const,
+          created_by: userId,
+          updated_by: userId,
+          updated_at: new Date().toISOString(),
+        }));
+
+        const insertResponse = await supabase
+          .from('team_members')
+          .insert(teamMembersPayload);
+
+        if (insertResponse.error) {
+          console.error('database failure inserting team members:', insertResponse.error.message);
+          throw new Error(`Failed to update team members: ${insertResponse.error.message}`);
+        }
+      }
     }
 
     return response.data;

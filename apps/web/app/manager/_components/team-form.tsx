@@ -13,16 +13,119 @@ import {
 } from '@repo/ui/components/ui/card';
 import { cn } from '@repo/ui/lib/utils';
 import { Users, Loader2, AlertCircle, CheckCircle, X } from 'lucide-react';
-import type { Tables } from '@repo/types';
 import type { User } from '@/app/users/_services/users.service';
 import { createTeam, updateTeam } from '../_services/teams.service';
+import {
+  getProjectList,
+  getProjectMembers,
+  type Project,
+  type ProjectMemberWithUser,
+} from '@/app/projects/_services/projects.service';
+import type { Team } from '../_services/teams.service';
 
-type DbTeam = Tables<'teams'>;
+interface ProjectMembersListProps {
+  isLoadingMembers: boolean;
+  projectMembers: ProjectMemberWithUser[];
+  selectedMemberIds: string[];
+  setSelectedMemberIds: React.Dispatch<React.SetStateAction<string[]>>;
+}
+
+function ProjectMembersList({
+  isLoadingMembers,
+  projectMembers,
+  selectedMemberIds,
+  setSelectedMemberIds,
+}: Readonly<ProjectMembersListProps>) {
+  if (isLoadingMembers) {
+    return (
+      <div className="text-muted-foreground flex items-center gap-2 text-xs py-1">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        Loading project members...
+      </div>
+    );
+  }
+
+  if (projectMembers.length === 0) {
+    return (
+      <div className="text-muted-foreground bg-muted/30 border-border/50 rounded-lg border p-3 text-xs">
+        No active members found in this project.
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-background/50 border-input max-h-48 overflow-y-auto custom-scrollbar rounded-md border p-2 space-y-1">
+      {projectMembers.map((m) => {
+        const isChecked = selectedMemberIds.includes(m.user_id);
+        const checkboxId = `member-checkbox-${m.user_id}`;
+        return (
+          <div
+            key={m.user_id}
+            className="hover:bg-accent/50 flex items-center gap-3 rounded px-2.5 py-1.5 transition-colors"
+          >
+            <input
+              id={checkboxId}
+              type="checkbox"
+              checked={isChecked}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setSelectedMemberIds([...selectedMemberIds, m.user_id]);
+                } else {
+                  setSelectedMemberIds(
+                    selectedMemberIds.filter((id: string) => id !== m.user_id)
+                  );
+                }
+              }}
+              className="accent-primary h-4 w-4 rounded cursor-pointer"
+            />
+            <label
+              htmlFor={checkboxId}
+              className="flex flex-col cursor-pointer flex-1"
+            >
+              <span className="text-xs font-semibold text-foreground">
+                {m.user?.name}
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                {m.user?.email} • {m.user?.role}
+              </span>
+            </label>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+async function findBestProjectForTeamMembers(
+  currentMemberIds: string[],
+  activeProjects: Project[]
+): Promise<string> {
+  if (currentMemberIds.length === 0) return '';
+
+  let bestProjectId = '';
+  let maxOverlap = 0;
+
+  for (const proj of activeProjects) {
+    try {
+      const projMembers = await getProjectMembers(proj.id);
+      const projMemberIds = new Set(projMembers.map((pm) => pm.user_id));
+      const overlap = currentMemberIds.filter((id: string) => projMemberIds.has(id)).length;
+      if (overlap > maxOverlap) {
+        maxOverlap = overlap;
+        bestProjectId = proj.id;
+      }
+    } catch (err) {
+      console.error(`Failed to fetch members for project ${proj.id}:`, err);
+    }
+  }
+
+  return bestProjectId;
+}
 
 interface TeamFormProps {
   readonly onClose?: () => void;
   readonly onSuccess?: () => void;
-  readonly teamToEdit?: DbTeam | null;
+  readonly teamToEdit?: Team | null;
   readonly users: User[];
 }
 
@@ -72,10 +175,63 @@ export function TeamForm({
   const [description, setDescription] = useState(teamToEdit?.description ?? '');
   const [managerId, setManagerId] = useState(teamToEdit?.manager_id ?? '');
   const [status, setStatus] = useState<'active' | 'inactive' | 'archived'>(
-    teamToEdit?.status && teamToEdit.status !== 'deleted'
+    teamToEdit?.status && teamToEdit?.status !== 'deleted'
       ? teamToEdit.status
       : 'active'
   );
+
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [projectMembers, setProjectMembers] = useState<ProjectMemberWithUser[]>([]);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+
+  useEffect(() => {
+    const initEditData = async () => {
+      setIsLoadingProjects(true);
+      try {
+        const list = await getProjectList();
+        const activeProjects = list.filter((p) => p.status === 'active');
+        setProjects(activeProjects);
+
+        if (editActionActive && teamToEdit?.members) {
+          const currentMemberIds = teamToEdit.members.map((m: { user_id: string }) => m.user_id);
+          setSelectedMemberIds(currentMemberIds);
+
+          const bestProjectId = await findBestProjectForTeamMembers(currentMemberIds, activeProjects);
+          if (bestProjectId) {
+            setSelectedProjectId(bestProjectId);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch projects:', err);
+      } finally {
+        setIsLoadingProjects(false);
+      }
+    };
+
+    initEditData();
+  }, [editActionActive, teamToEdit]);
+
+  useEffect(() => {
+    if (selectedProjectId) {
+      const fetchMembers = async () => {
+        setIsLoadingMembers(true);
+        try {
+          const membersList = await getProjectMembers(selectedProjectId);
+          setProjectMembers(membersList.filter((m) => m.status === 'active' && m.user));
+        } catch (err) {
+          console.error('Failed to fetch project members:', err);
+        } finally {
+          setIsLoadingMembers(false);
+        }
+      };
+      fetchMembers();
+    } else {
+      setProjectMembers([]);
+    }
+  }, [selectedProjectId]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -98,6 +254,7 @@ export function TeamForm({
         description: description.trim() || null,
         manager_id: managerId,
         status: status,
+        member_ids: selectedMemberIds,
       };
 
       if (editActionActive && teamToEdit) {
@@ -142,7 +299,27 @@ export function TeamForm({
   }
 
   return (
-    <Card className="border-border bg-card text-card-foreground relative border shadow-2xl transition-all duration-300">
+    <Card className="border-border bg-card text-card-foreground relative border shadow-2xl transition-all duration-300 max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <style dangerouslySetInnerHTML={{ __html: `
+        .custom-scrollbar {
+          scrollbar-width: thin !important;
+          scrollbar-color: rgba(156, 163, 175, 0.3) transparent !important;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px !important;
+          height: 4px !important;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent !important;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: rgba(156, 163, 175, 0.3) !important;
+          border-radius: 9999px !important;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background-color: rgba(156, 163, 175, 0.6) !important;
+        }
+      `}} />
       {onClose && (
         <button
           type="button"
@@ -242,6 +419,45 @@ export function TeamForm({
                 ))}
             </select>
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="project_id" className="text-sm font-medium">
+              Associated Project
+            </Label>
+            <select
+              id="project_id"
+              name="project_id"
+              value={selectedProjectId}
+              onChange={(e) => {
+                setSelectedProjectId(e.target.value);
+                setSelectedMemberIds([]);
+              }}
+              className="bg-background/80 border-input text-foreground focus-visible:ring-primary focus:border-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+            >
+              <option value="">
+                {isLoadingProjects ? 'Loading projects...' : 'Select Project...'}
+              </option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({p.key})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {selectedProjectId && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">
+                Project Members to Add to Team
+              </Label>
+              <ProjectMembersList
+                isLoadingMembers={isLoadingMembers}
+                projectMembers={projectMembers}
+                selectedMemberIds={selectedMemberIds}
+                setSelectedMemberIds={setSelectedMemberIds}
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="status" className="text-sm font-medium">

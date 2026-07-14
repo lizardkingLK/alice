@@ -27,6 +27,8 @@ import {
   Plus,
   Search,
   FolderOpen,
+  Pencil,
+  Archive,
 } from 'lucide-react';
 import { Pagination } from '@/components/pagination';
 import type { Project } from '../_services/projects.service';
@@ -341,9 +343,11 @@ export function ProjectRegistry({
                           {tab === 'active'
                             ? isManagerOrAdmin && (
                                 <button
+                                  disabled={isPending}
                                   onClick={() => setProjectToEdit(proj)}
-                                  className="border-input hover:bg-accent text-foreground focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border text-[11px] font-semibold shadow-sm transition-all focus-visible:ring-2 focus-visible:outline-none"
+                                  className="focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 font-semibold shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
                                 >
+                                  <Pencil className="mr-1 h-3 w-3" />
                                   Edit
                                 </button>
                               )
@@ -367,7 +371,8 @@ export function ProjectRegistry({
                                   onClick={() => handleSoftDelete(proj)}
                                   className="focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
                                 >
-                                  Delete
+                                  <Archive className="mr-1 h-3 w-3" />
+                                  Archive
                                 </button>
                               )
                             : isAdmin && (
