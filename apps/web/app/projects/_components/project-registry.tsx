@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useTransition, ReactNode, useEffect } from 'react';
+import { useState, useTransition, ReactNode } from 'react';
 import Link from 'next/link';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
+import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import {
   Card,
   CardContent,
@@ -65,7 +66,7 @@ export function ProjectRegistry({
     searchParams,
   } = usePaginationNavigation(totalPages, limit);
 
-  const [searchQuery, setSearchQuery] = useState(search);
+  const { searchQuery, setSearchQuery } = useDebouncedSearch(search);
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
@@ -76,27 +77,6 @@ export function ProjectRegistry({
   const isManagerOrAdmin =
     currentUserRole === 'admin' || currentUserRole === 'manager';
   const isAdmin = currentUserRole === 'admin';
-
-  // Synchronize search input changes with URL queries via debounce
-  useEffect(() => {
-    const currentSearch = searchParams.get('search') ?? '';
-    if (searchQuery === currentSearch) {
-      return;
-    }
-
-    const delayDebounceFn = setTimeout(() => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (searchQuery) {
-        params.set('search', searchQuery);
-      } else {
-        params.delete('search');
-      }
-      params.set('page', '1'); // reset page
-      router.push(`${pathname}?${params.toString()}`);
-    }, 400);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery, pathname, router, searchParams]);
 
   const handleTabChange = (newTab: 'active' | 'archived') => {
     const params = new URLSearchParams(searchParams.toString());

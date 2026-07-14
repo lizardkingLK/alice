@@ -8,6 +8,15 @@ import {
   type SprintRowWithProject,
   type SprintRow,
 } from './sprints.repository';
+import { requireUserWithRole } from '../../../lib/auth-helpers';
+
+async function requireManagerOrAdmin(actorId: string) {
+  return await requireUserWithRole(
+    actorId,
+    ['admin', 'manager'],
+    'Unauthorized. Only admins and managers can perform this action on sprints.'
+  );
+}
 
 const dbStatusToResponseMap: Record<
   'planned' | 'active' | 'closed' | 'archived',
@@ -45,6 +54,7 @@ export class SprintsService {
     userId: string,
     input: CreateSprintBody
   ): Promise<SprintResponse> {
+    await requireManagerOrAdmin(userId);
     const goal =
       input.goal === undefined || input.goal === '' ? null : input.goal;
 
@@ -64,7 +74,8 @@ export class SprintsService {
     userId: string,
     tab: 'active' | 'archived' = 'active',
     page: number = 1,
-    limit: number = 5
+    limit: number = 5,
+    search?: string
   ): Promise<{
     sprints: SprintResponse[];
     pagination: {
@@ -78,7 +89,8 @@ export class SprintsService {
       userId,
       tab,
       page,
-      limit
+      limit,
+      search
     );
     const totalPages = Math.ceil(totalCount / limit);
     return {
@@ -97,6 +109,7 @@ export class SprintsService {
     sprintId: string,
     status: SprintRow['status']
   ): Promise<SprintResponse> {
+    await requireManagerOrAdmin(userId);
     const row = await sprintsRepository.updateStatus(userId, sprintId, status);
     return toSprintResponse(row);
   }
@@ -114,6 +127,7 @@ export class SprintsService {
     sprintId: string,
     input: UpdateSprintBody
   ): Promise<SprintResponse> {
+    await requireManagerOrAdmin(userId);
     const goal =
       input.goal === undefined || input.goal === '' ? null : input.goal;
 
