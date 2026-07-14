@@ -23,3 +23,16 @@ export const formatLabelWithSpace = (value: string): string => {
 export const formatLabelFirstLetterCapitalized = (value: string): string => {
   return value[0]?.toUpperCase() + value.substring(1, value.length);
 };
+
+export const getInitials = (name: string | null | undefined): string => {
+  if (!name) {
+    return '?';
+  }
+
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
+};

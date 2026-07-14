@@ -12,7 +12,13 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import { cn } from '@repo/ui/lib/utils';
-import { Users, Loader2, AlertCircle, CheckCircle, X } from 'lucide-react';
+import {
+  Users,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+  X,
+} from '@repo/ui/lib/icons';
 import type { Tables } from '@repo/types';
 import type { User } from '@/app/users/_services/users.service';
 import { createTeam, updateTeam } from '../_services/teams.service';

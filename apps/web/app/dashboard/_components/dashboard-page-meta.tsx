@@ -1,6 +1,6 @@
 'use client';
 
-import { Info } from 'lucide-react';
+import { Info } from '@repo/ui/lib/icons';
 import {
   Tooltip,
   TooltipContent,

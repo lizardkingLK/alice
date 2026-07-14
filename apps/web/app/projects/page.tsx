@@ -19,7 +19,7 @@ export default async function ProjectsPage({
 }>) {
   const resolvedSearchParams = await searchParams;
   const page = Number.parseInt(resolvedSearchParams.page ?? '1', 10);
-  const limit = Number.parseInt(resolvedSearchParams.limit ?? '10', 10);
+  const limit = Number.parseInt(resolvedSearchParams.limit ?? '5', 10);
   const status =
     resolvedSearchParams.tab === 'archived' ? 'archived' : 'active';
   const search = resolvedSearchParams.search ?? '';

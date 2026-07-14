@@ -42,7 +42,7 @@ import {
   Plus,
   Search,
   Trash,
-} from 'lucide-react';
+} from '@repo/ui/lib/icons';
 import {
   DropdownMenu,
   DropdownMenuContent,

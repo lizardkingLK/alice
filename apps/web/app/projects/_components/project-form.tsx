@@ -19,7 +19,7 @@ import {
   AlertCircle,
   CheckCircle,
   X,
-} from 'lucide-react';
+} from '@repo/ui/lib/icons';
 import type { User } from '@/app/users/_services/users.service';
 import {
   createProject,

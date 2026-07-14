@@ -5,7 +5,7 @@ import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { resetPassword, ResetState } from './actions';
-import { KeyRound, Loader2, AlertCircle } from 'lucide-react';
+import { KeyRound, Loader2, AlertCircle } from '@repo/ui/lib/icons';
 
 const initialState: ResetState = {
   success: false,

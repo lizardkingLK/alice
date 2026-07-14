@@ -5,6 +5,12 @@ import { NotificationInbox } from '@/app/dashboard/_components/dashboard-notific
 import { getUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import type { DashboardBreadcrumbOverride } from './dashboard-breadcrumb';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@repo/ui/components/ui/tooltip';
 
 type DashboardHeaderProps = {
   description?: string;
@@ -23,7 +29,17 @@ export async function DashboardHeader({
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-      <SidebarTrigger className="-ml-1" />
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <SidebarTrigger className="-ml-1 cursor-pointer" />
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            <p>⌘B</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
       <DashboardPageMeta
         description={description}
         breadcrumbOverrides={breadcrumbOverrides}

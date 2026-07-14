@@ -20,7 +20,7 @@ import {
   Loader2,
   AlertTriangle,
   UserPlus,
-} from 'lucide-react';
+} from '@repo/ui/lib/icons';
 import { toggleUserActive } from '../_services/users.service';
 import { CustomSpinner } from '@/app/users/_components/user-spinner';
 import { Pagination } from '@/components/pagination';

@@ -11,7 +11,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@repo/ui/components/ui/card';
-import { Loader2, AlertCircle, CheckCircle, ShieldCheck } from 'lucide-react';
+import {
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+  ShieldCheck,
+} from '@repo/ui/lib/icons';
 
 export default function ConfirmContent() {
   const router = useRouter();

@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@repo/ui/components/ui/select';
-import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle, Loader2 } from '@repo/ui/lib/icons';
 import { User as DbUser } from '@/app/users/_services/users.service';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
 import {

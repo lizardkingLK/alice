@@ -12,7 +12,7 @@ import {
   Timer,
   Files,
   ClipboardPenIcon,
-} from 'lucide-react';
+} from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import {
   Sidebar,

@@ -11,7 +11,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@repo/ui/components/ui/card';
-import { UserPlus, Loader2, AlertCircle, CheckCircle, X } from 'lucide-react';
+import {
+  UserPlus,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+  X,
+} from '@repo/ui/lib/icons';
 import type { User } from '../_services/users.service';
 import { createUser, updateUser } from '../_services/users.service';
 import { cn } from '@repo/ui/lib/utils';

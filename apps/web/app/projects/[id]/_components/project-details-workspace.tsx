@@ -27,7 +27,7 @@ import {
   Loader2,
   AlertTriangle,
   Folder,
-} from 'lucide-react';
+} from '@repo/ui/lib/icons';
 
 interface ProjectDetailsWorkspaceProps {
   readonly project: Project;

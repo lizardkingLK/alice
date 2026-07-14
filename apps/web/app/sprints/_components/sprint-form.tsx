@@ -20,7 +20,7 @@ import {
   CalendarCog,
   CheckCircle,
   AlertCircle,
-} from 'lucide-react';
+} from '@repo/ui/lib/icons';
 import {
   createSprint,
   getSprint,

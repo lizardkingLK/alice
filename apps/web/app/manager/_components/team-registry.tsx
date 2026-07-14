@@ -20,7 +20,7 @@ import {
   Plus,
   Search,
   FolderOpen,
-} from 'lucide-react';
+} from '@repo/ui/lib/icons';
 import { Pagination } from '@/components/pagination';
 import type { Team } from '../_services/teams.service';
 import type { User } from '@/app/users/_services/users.service';

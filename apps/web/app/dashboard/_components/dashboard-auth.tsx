@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
-import { Book, User, UserIcon } from 'lucide-react';
+import { Book, User, UserIcon } from '@repo/ui/lib/icons';
 import Image from 'next/image';
 import { cn } from '@repo/ui/lib/utils';
 
