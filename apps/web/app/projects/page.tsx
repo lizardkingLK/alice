@@ -7,22 +7,20 @@ import {
 } from '@/app/projects/_services/projects.service.server';
 import { getUserList } from '@/app/users/_services/users.service.server';
 
+import {
+  parseStandardParams,
+  parseTabStatus,
+  type RawSearchParams,
+} from '@/lib/search-params';
+
 export default async function ProjectsPage({
   searchParams,
 }: Readonly<{
-  searchParams: Promise<{
-    page?: string;
-    limit?: string;
-    tab?: string;
-    search?: string;
-  }>;
+  searchParams: Promise<RawSearchParams>;
 }>) {
   const resolvedSearchParams = await searchParams;
-  const page = Number.parseInt(resolvedSearchParams.page ?? '1', 10);
-  const limit = Number.parseInt(resolvedSearchParams.limit ?? '10', 10);
-  const status =
-    resolvedSearchParams.tab === 'archived' ? 'archived' : 'active';
-  const search = resolvedSearchParams.search ?? '';
+  const { page, limit, search } = parseStandardParams(resolvedSearchParams, 10);
+  const status = parseTabStatus(resolvedSearchParams.tab);
 
   const dbUser = await getDbUser();
   const userRole = dbUser?.role ?? 'member';

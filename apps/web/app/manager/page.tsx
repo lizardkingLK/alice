@@ -1,5 +1,10 @@
 import { getDbUser } from '@/lib/auth';
 import { TeamRegistry } from './_components/team-registry';
+import {
+  parseStandardParams,
+  parseManagerTabStatus,
+  type RawSearchParams,
+} from '@/lib/search-params';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import {
   getTeamListPaginated,
@@ -10,26 +15,11 @@ import { getUserList } from '@/app/users/_services/users.service.server';
 export default async function ManagerDashboardPage({
   searchParams,
 }: Readonly<{
-  searchParams: Promise<{
-    page?: string;
-    limit?: string;
-    tab?: string;
-    search?: string;
-  }>;
+  searchParams: Promise<RawSearchParams>;
 }>) {
   const resolvedSearchParams = await searchParams;
-  const page = Number.parseInt(resolvedSearchParams.page ?? '1', 10);
-  const limit = Number.parseInt(resolvedSearchParams.limit ?? '10', 10);
-
-  // Map tab selections to DB statuses. Default to 'active'.
-  let status: 'active' | 'inactive' | 'archived' | undefined = 'active';
-  if (resolvedSearchParams.tab === 'archived') {
-    status = 'archived';
-  } else if (resolvedSearchParams.tab === 'inactive') {
-    status = 'inactive';
-  }
-
-  const search = resolvedSearchParams.search ?? '';
+  const { page, limit, search } = parseStandardParams(resolvedSearchParams, 10);
+  const status = parseManagerTabStatus(resolvedSearchParams.tab);
 
   const dbUser = await getDbUser();
   const userRole = dbUser?.role ?? 'member';

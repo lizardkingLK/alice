@@ -1,6 +1,10 @@
 import { redirect } from 'next/navigation';
 import { getDbUser } from '../../lib/auth';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
+import {
+  parseStandardParams,
+  type RawSearchParams,
+} from '@/lib/search-params';
 import { UserRegistry } from '@/app/users/_components/user-registry';
 import {
   getUsersListPaginated,
@@ -10,7 +14,7 @@ import {
 export default async function UsersDashboard({
   searchParams,
 }: Readonly<{
-  searchParams: Promise<{ page?: string; limit?: string }>;
+  searchParams: Promise<RawSearchParams>;
 }>) {
   const user = await getDbUser();
 
@@ -19,8 +23,7 @@ export default async function UsersDashboard({
   }
 
   const resolvedSearchParams = await searchParams;
-  const page = Number.parseInt(resolvedSearchParams.page ?? '1', 10);
-  const limit = Number.parseInt(resolvedSearchParams.limit ?? '10', 10);
+  const { page, limit } = parseStandardParams(resolvedSearchParams, 10);
 
   const dbUser = await getDbUser();
   const currentUserRole = dbUser?.role ?? 'member';
