@@ -47,6 +47,7 @@ import {
   MoreHorizontal,
   Paperclip,
   Plus,
+  Rocket,
   Settings,
 } from 'lucide-react';
 
@@ -540,7 +541,10 @@ export default function WorkItemDetails({
                         <Badge variant="secondary">OPEN</Badge>
                       </li>
                       <li className="flex items-center justify-between gap-2">
-                        <span>1 build</span>
+                        <span className="inline-flex items-center gap-2">
+                          <Rocket className="text-muted-foreground size-3.5" />
+                          1 build
+                        </span>
                         <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
                       </li>
                     </ul>
