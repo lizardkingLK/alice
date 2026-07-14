@@ -4,6 +4,7 @@ import type { User } from '@/app/users/_services/users.service';
 
 export type Team = Tables<'teams'> & {
   manager?: Pick<User, 'id' | 'name' | 'email'> | null;
+  members?: { team_id: string; user_id: string; status: 'active' | 'inactive' | 'archived' | 'deleted' }[];
 };
 
 export type GetTeamsPaginatedResponse = {
@@ -17,7 +18,9 @@ export type GetTeamsPaginatedResponse = {
 export type CreateTeamInput = Omit<
   Tables<'teams'>,
   'id' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'
->;
+> & {
+  member_ids?: string[];
+};
 
 export type UpdateTeamInput = Partial<CreateTeamInput>;
 

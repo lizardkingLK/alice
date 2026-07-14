@@ -24,7 +24,9 @@ async function requireAdmin(actorId: string) {
 export type CreateTeamInput = Omit<
   TeamRow,
   'id' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'
->;
+> & {
+  member_ids?: string[];
+};
 
 export type UpdateTeamInput = Partial<CreateTeamInput>;
 

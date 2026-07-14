@@ -20,6 +20,7 @@ import {
   Loader2,
   AlertTriangle,
   UserPlus,
+  Pencil,
 } from 'lucide-react';
 import { toggleUserActive } from '../_services/users.service';
 import { CustomSpinner } from '@/app/users/_components/user-spinner';
@@ -263,8 +264,9 @@ export function UserRegistry({
                               variant="outline"
                               disabled={isTogglingActive}
                               onClick={() => setEditingUser(usr)}
-                              className="h-8 w-full text-[11px] font-medium shadow-sm"
+                              className="focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 font-medium shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
                             >
+                              <Pencil className="mr-1 h-3 w-3" />
                               Edit
                             </Button>
                           )}

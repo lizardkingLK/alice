@@ -8,6 +8,7 @@ export const createTeamSchema = z.object({
   status: z
     .enum(['active', 'inactive', 'archived', 'deleted'])
     .default('active'),
+  member_ids: z.array(z.uuid()).optional(),
 });
 
 export const updateTeamSchema = createTeamSchema.partial();

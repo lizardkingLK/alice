@@ -23,6 +23,10 @@ import {
   Plus,
   Search,
   FolderOpen,
+  Pencil,
+  Archive,
+  RefreshCw,
+  Trash2,
 } from 'lucide-react';
 import { Pagination } from '@/components/pagination';
 import type { Team } from '../_services/teams.service';
@@ -341,13 +345,14 @@ export function TeamRegistry({
                         <div className="flex w-full justify-start">
                           {team.status !== 'archived'
                             ? isManagerOrAdmin && (
-                                <Button
-                                  variant="outline"
+                                <button
+                                  disabled={isPending}
                                   onClick={() => setTeamToEdit(team)}
-                                  className="h-8 w-full text-[11px] font-semibold shadow-sm"
+                                  className="focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 font-semibold shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
                                 >
+                                  <Pencil className="mr-1 h-3 w-3" />
                                   Edit
-                                </Button>
+                                </button>
                               )
                             : isManagerOrAdmin && (
                                 <Button
@@ -355,6 +360,7 @@ export function TeamRegistry({
                                   onClick={() => handleRestore(team)}
                                   className="h-8 w-full border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 shadow-sm transition-all hover:bg-emerald-600 hover:text-white disabled:opacity-50"
                                 >
+                                  <RefreshCw className="mr-1 h-3 w-3 shrink-0" />
                                   Restore
                                 </Button>
                               )}
@@ -363,21 +369,24 @@ export function TeamRegistry({
                         <div className="flex w-full justify-start">
                           {team.status !== 'archived'
                             ? isManagerOrAdmin && (
-                                <Button
-                                  variant="outline"
+                                <button
+                                  disabled={isPending}
                                   onClick={() => handleSoftDelete(team)}
-                                  className="hover:bg-destructive/10 hover:text-destructive h-8 w-full text-[11px] font-semibold shadow-sm"
+                                  className="focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
                                 >
+                                  <Archive className="mr-1 h-3 w-3" />
                                   Archive
-                                </Button>
+                                </button>
                               )
                             : isAdmin && (
-                                <Button
+                                <button
+                                  disabled={isPending}
                                   onClick={() => handleHardDelete(team)}
-                                  className="border-destructive/20 bg-destructive/10 text-destructive hover:bg-destructive h-8 w-full text-[11px] shadow-sm transition-all hover:text-white"
+                                  className="focus-visible:ring-ring border-destructive/20 bg-destructive/10 text-destructive hover:bg-destructive inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border text-[11px] shadow-sm transition-all hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
                                 >
-                                  Delete
-                                </Button>
+                                  <Trash2 className="mr-1 h-3 w-3 shrink-0" />
+                                  Purge
+                                </button>
                               )}
                         </div>
                       </div>
@@ -435,40 +444,58 @@ export function TeamRegistry({
 
       {/* Delete / Archive Confirmation dialog */}
       {teamToDelete && (
-        <div className="bg-background/80 animate-in fade-in fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm duration-300">
-          <Card className="border-border bg-card text-card-foreground w-full max-w-md border shadow-2xl">
-            <CardHeader>
-              <CardTitle className="text-destructive flex items-center gap-2 text-xl font-bold">
-                <AlertTriangle className="h-5 w-5 animate-bounce" />
+        <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
+          <dialog
+            open
+            className="bg-card border-border animate-in fade-in zoom-in-95 relative block w-full max-w-md overflow-hidden rounded-xl border shadow-2xl duration-200"
+            aria-modal="true"
+          >
+            <div className="p-6">
+              <div className="mb-3 flex items-center gap-3 text-rose-500">
+                <div className="rounded-full border border-rose-500/20 bg-rose-500/10 p-2">
+                  <AlertTriangle className="h-6 w-6" />
+                </div>
+                <h3 className="text-foreground text-lg font-bold">
+                  {deleteMode === 'soft'
+                    ? 'Archive Team'
+                    : 'Permanently Delete Team'}
+                </h3>
+              </div>
+
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Are you sure you want to
+                {deleteMode === 'soft' ? ' archive ' : ' permanently delete '}
+                <strong className="text-foreground">
+                  {teamToDelete.name}
+                </strong>
+                {' ?'}
+              </p>
+              <p className="text-muted-foreground/80 bg-muted/50 border-border/40 mt-2 rounded-lg border p-2.5 text-xs">
                 {deleteMode === 'soft'
-                  ? 'Archive Team'
-                  : 'Permanently Delete Team'}
-              </CardTitle>
-              <CardDescription className="text-muted-foreground mt-1 text-sm">
-                {deleteMode === 'soft'
-                  ? `Are you sure you want to archive "${teamToDelete.name}"? This team will be marked as archived but remains in the registry for audit tracking.`
-                  : `WARNING: This action is permanent. Are you sure you want to delete "${teamToDelete.name}"? This will permanently purge the record from the database.`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="border-border mt-4 flex justify-end gap-3 border-t pt-4">
-              <Button
-                variant="outline"
+                  ? 'It will be hidden from the active teams list, but can be restored later from the Archived tab.'
+                  : 'Warning: This action is irreversible. This will permanently purge the record from the database.'}
+              </p>
+            </div>
+
+            <div className="bg-muted/40 border-border flex justify-end gap-3 border-t px-6 py-4">
+              <button
+                type="button"
                 disabled={isPending}
                 onClick={() => setTeamToDelete(null)}
-                className="h-9 px-4 text-xs font-semibold"
+                className="border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex h-9 cursor-pointer items-center justify-center rounded-md border px-4 text-xs font-semibold shadow-sm transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
               >
                 Cancel
-              </Button>
-              <Button
-                variant="destructive"
+              </button>
+              <button
+                type="button"
                 disabled={isPending}
                 onClick={confirmDelete}
-                className="h-9 px-4 text-xs font-semibold shadow-md"
+                className="focus-visible:ring-ring inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-rose-600 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-rose-700 focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
               >
                 {deleteButtonText}
-              </Button>
-            </CardContent>
-          </Card>
+              </button>
+            </div>
+          </dialog>
         </div>
       )}
     </div>
