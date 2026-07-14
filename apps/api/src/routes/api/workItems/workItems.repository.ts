@@ -15,7 +15,7 @@ export type UpdateWorkItemRecord = WorkItemBody & {
 };
 
 export class WorkItemRepository {
-  async listAll(): Promise<DbWorkItem[]> {
+  async get(): Promise<DbWorkItem[]> {
     const { data, error } = await supabase
       .from('work_items')
       .select('*, assignee:users!assignee_id(id, name, email)')
@@ -27,6 +27,24 @@ export class WorkItemRepository {
     }
 
     return data as DbWorkItem[];
+  }
+
+  async getById(workItemId: string): Promise<DbWorkItem> {
+    const assignee = 'assignee:users!assignee_id(id, name, email)';
+    const reporter = 'reporter:users!reporter_id(id, name, email)';
+
+    const { data, error } = await supabase
+      .from('work_items')
+      .select(`*, ${assignee}, ${reporter}`)
+      .eq('id', workItemId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('error. failed to get work-item:', error.message);
+      throw new Error('Failed to get work-item');
+    }
+
+    return data as DbWorkItem;
   }
 
   async create(input: CreateWorkItemRecord): Promise<DbWorkItem> {

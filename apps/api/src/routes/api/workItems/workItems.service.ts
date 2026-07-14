@@ -2,8 +2,12 @@ import { DbWorkItem, workItemRepository } from './workItems.repository';
 import { WorkItemBody } from './workItems.schemas';
 
 export class WorkItemService {
-  async listWorkItems(): Promise<DbWorkItem[]> {
-    return await workItemRepository.listAll();
+  async getWorkItems(): Promise<DbWorkItem[]> {
+    return await workItemRepository.get();
+  }
+
+  async getWorkItem(workItemId: string): Promise<DbWorkItem> {
+    return await workItemRepository.getById(workItemId);
   }
 
   async createWorkItem(

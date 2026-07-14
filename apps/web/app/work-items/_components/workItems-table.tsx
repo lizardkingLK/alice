@@ -34,7 +34,6 @@ import {
   TableHeader,
   TableRow,
 } from '@repo/ui/components/ui/table';
-import { cn } from '@repo/ui/lib/utils';
 import {
   AlertTriangle,
   ClipboardPenLine,
@@ -53,56 +52,15 @@ import {
 import { WorkItemForm } from '@/app/work-items/_components/workItem-form';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
 import { WorkItemWorkspaceProps } from '@/app/work-items/_components/workItems-workspace';
-
-type WorkItemStatus = DbWorkItem['status'];
-type WorkItemPriority = DbWorkItem['priority'];
+import { formatDate } from '@/app/_shared/utility';
+import statusRenderer from '@/app/work-items/_components/workItem-status-badge';
+import priorityRenderer from '@/app/work-items/_components/workItem-priority-badge';
 
 type WorkItemsTableProps = WorkItemWorkspaceProps & {
   currentUserId?: string | null;
 };
 
-type RendererProps = { row: Row<DbWorkItem> };
-
-const STATUS_STYLES: Record<WorkItemStatus, string> = {
-  Draft: 'border-muted-foreground/20 bg-muted text-muted-foreground',
-  New: 'border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  ToDo: 'border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400',
-  InProgress:
-    'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  Testing: 'border-cyan-500/20 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400',
-  Done: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-};
-
-const PRIORITY_VARIANTS: Record<
-  WorkItemPriority,
-  'secondary' | 'outline' | 'default' | 'destructive'
-> = {
-  lowest: 'secondary',
-  low: 'outline',
-  medium: 'default',
-  high: 'destructive',
-  highest: 'destructive',
-};
-
-function formatDate(value: string | null): string {
-  if (!value) {
-    return '—';
-  }
-
-  return new Date(value).toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
-function formatLabelWithSpace(value: string): string {
-  return value.replace(/([a-z])([A-Z])/g, '$1 $2');
-}
-
-function formatLabelFirstLetterCapitalized(value: string): string {
-  return value[0]?.toUpperCase() + value.substring(1, value.length);
-}
+export type RendererProps = { row: Row<DbWorkItem> };
 
 const titleRenderer = ({ row }: RendererProps) => (
   <div className="flex min-w-48 items-center gap-3">
@@ -125,21 +83,6 @@ const titleRenderer = ({ row }: RendererProps) => (
 
 const typeRenderer = ({ row }: RendererProps) => (
   <Badge variant="outline">{row.original.type}</Badge>
-);
-
-const statusRenderer = ({ row }: RendererProps) => (
-  <Badge
-    variant="outline"
-    className={cn('capitalize', STATUS_STYLES[row.original.status])}
-  >
-    {formatLabelWithSpace(row.original.status)}
-  </Badge>
-);
-
-const priorityRenderer = ({ row }: RendererProps) => (
-  <Badge variant={PRIORITY_VARIANTS[row.original.priority]}>
-    {formatLabelFirstLetterCapitalized(row.original.priority)}
-  </Badge>
 );
 
 const assigneeRenderer = ({

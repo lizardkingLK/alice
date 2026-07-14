@@ -24,7 +24,9 @@ Cypress.Commands.add('login', (email, password) => {
     const finalEmail = email || env.TEST_USER_EMAIL;
     const finalPassword = password || env.TEST_USER_PASSWORD;
     if (!finalEmail || !finalPassword) {
-      throw new Error('Cypress login error: TEST_USER_EMAIL or TEST_USER_PASSWORD environment variable is missing.');
+      throw new Error(
+        'Cypress login error: TEST_USER_EMAIL or TEST_USER_PASSWORD environment variable is missing.'
+      );
     }
     cy.visit('/login');
     cy.get('#email').type(finalEmail);

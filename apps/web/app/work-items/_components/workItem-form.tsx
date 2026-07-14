@@ -18,10 +18,10 @@ import { DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
 import {
   createWorkItem,
   updateWorkItem,
-  WorkItemModificationResponse,
 } from '@/app/work-items/_services/workItem.client.service';
 import { Project as DbProject } from '@/app/projects/_services/projects.service';
 import { delay } from '@/app/_shared/utility';
+import { ResponseDTO } from '@repo/types/connection';
 
 interface WorkItemFormProps {
   onClose?: () => void;
@@ -80,7 +80,7 @@ export function WorkItemForm({
 
     try {
       const isUpdate = isEditMode && itemToEdit;
-      let response: WorkItemModificationResponse | null = null;
+      let response: ResponseDTO<DbWorkItem> | null = null;
       if (isUpdate) {
         response = await updateWorkItem(itemToEdit.id, formData);
       } else {

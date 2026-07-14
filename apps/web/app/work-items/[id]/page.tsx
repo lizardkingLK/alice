@@ -1,14 +1,23 @@
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import WorkItemDetails from '@/app/work-items/_components/workItem-details';
+import { getWorkItem } from '@/app/work-items/_services/workItem.server.service';
 
 export default async function WorkItemPage({
   params,
 }: Readonly<{ params: Promise<{ id: string }> }>) {
-  const { id: workItemId } = await params;
+  const { id } = await params;
+  const workItem = await getWorkItem(id);
 
   return (
-    <DashboardShell description="Work-Item Details">
-      <WorkItemDetails workItemId={workItemId} />
+    <DashboardShell
+      description="Work-Item Details"
+      breadcrumbOverrides={[
+        { label: 'Dashboard', url: '/dashboard' },
+        { label: 'Work Items', url: '/work-items' },
+        { label: workItem.title, url: `/work-items/${workItem.id}` },
+      ]}
+    >
+      <WorkItemDetails workItem={workItem} />
     </DashboardShell>
   );
 }

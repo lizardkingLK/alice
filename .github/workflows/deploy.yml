@@ -29,8 +29,11 @@ jobs:
           node-version: 20
           cache: 'pnpm'
 
-      - name: Install workspace Dependencies
+      - name: Install Workspace Dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build App With Packages
+        run: pnpm build
 
       - name: Run Types Checkout
         run: pnpm checktypes

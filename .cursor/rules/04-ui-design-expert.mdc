@@ -28,3 +28,6 @@ alwaysApply: true
 - New UI elements are reusable and exported from `@repo/ui` when broadly applicable.
 - App imports shared components via `@repo/ui/components/*`.
 - Final UI aligns with the existing theme system and spacing/radius conventions.
+
+## Long Class Names
+- Use tailwind utility `cn` on package `@repo/ui` to join long class names to support readability.

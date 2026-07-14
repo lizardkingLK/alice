@@ -20,6 +20,11 @@
       "types": "./src/generated/supabase/database.types.ts",
       "require": "./dist/generated/supabase/database.types.js",
       "default": "./dist/generated/supabase/database.types.js"
+    },
+    "./connection": {
+      "types": "./src/connection",
+      "require": "./dist/connection/index.js",
+      "default": "./dist/connection/index.js"
     }
   },
   "scripts": {

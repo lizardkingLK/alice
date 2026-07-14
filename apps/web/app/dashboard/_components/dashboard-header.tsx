@@ -18,7 +18,6 @@ export async function DashboardHeader({
   const user = await getUser();
 
   if (!user) {
-    // throw new Error("problem");
     redirect('/login');
   }
 
