@@ -8,10 +8,48 @@ import {
 } from '@testing-library/react';
 import { ReactNode } from 'react';
 import { SprintList } from '@/app/sprints/_components/sprint-list';
+import { SprintsWorkspace } from '@/app/sprints/_components/sprints-workspace';
 import {
   updateSprintStatus,
   Sprint,
 } from '@/app/sprints/_services/sprints.service';
+
+const mockPush = vi.fn();
+const mockRefresh = vi.fn();
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: mockPush,
+    refresh: mockRefresh,
+  }),
+  usePathname: () => '/sprints',
+  useSearchParams: () => ({
+    get: (key: string) => {
+      if (key === 'search') return '';
+      if (key === 'tab') return 'active';
+      return null;
+    },
+    toString: () => '',
+  }),
+}));
+
+vi.mock('@/app/sprints/_components/sprint-form', () => ({
+  SprintForm: ({
+    onClose,
+    onSuccess,
+    sprintId,
+  }: {
+    onClose?: () => void;
+    onSuccess?: () => void;
+    sprintId?: string;
+  }) => (
+    <div data-testid="mock-sprint-form">
+      <span>Mock Sprint Form - {sprintId || 'Create'}</span>
+      <button onClick={onClose}>Close Form</button>
+      <button onClick={onSuccess}>Success Form</button>
+    </div>
+  ),
+}));
 
 vi.mock('@/app/sprints/_services/sprints.service', () => ({
   updateSprintStatus: vi.fn(),
@@ -135,6 +173,7 @@ describe('SprintList Component', () => {
         onPageChange={vi.fn()}
         onLimitChange={vi.fn()}
         onSprintUpdated={onSprintUpdated}
+        isManagerOrAdmin={true}
       />
     );
 
@@ -185,29 +224,64 @@ describe('SprintList Component', () => {
     expect(onPageChange).toHaveBeenCalledWith(1);
   });
 
-  it('triggers tab change callback', () => {
-    const onTabChange = vi.fn();
+  it('handles tab changes', () => {
     render(
-      <SprintList
+      <SprintsWorkspace
         sprints={mockSprints}
         pagination={mockPagination}
         filterTab="active"
-        onTabChange={onTabChange}
-        onPageChange={vi.fn()}
-        onLimitChange={vi.fn()}
+        search=""
+        userRole="admin"
       />
     );
 
-    // Target the Archived tab button inside the tabs container specifically
     const activeTab = screen.getByRole('button', { name: 'Active' });
     const tabContainer = activeTab.parentElement!;
-    const archivedTabBtn = within(tabContainer).getByRole('button', {
+    const archivedBtn = within(tabContainer).getByRole('button', {
       name: 'Archived',
     });
+    fireEvent.click(archivedBtn);
 
-    fireEvent.click(archivedTabBtn);
+    expect(mockPush).toHaveBeenCalledWith('/sprints?tab=archived&page=1');
+  });
 
-    expect(onTabChange).toHaveBeenCalledWith('archived');
+  it('handles search input with debounced redirect', async () => {
+    render(
+      <SprintsWorkspace
+        sprints={mockSprints}
+        pagination={mockPagination}
+        filterTab="active"
+        search=""
+        userRole="admin"
+      />
+    );
+
+    const searchInput = screen.getByPlaceholderText(/Search sprints/i);
+    fireEvent.change(searchInput, { target: { value: 'Alpha' } });
+
+    await waitFor(
+      () => {
+        expect(mockPush).toHaveBeenCalledWith('/sprints?search=Alpha&page=1');
+      },
+      { timeout: 500 }
+    );
+  });
+
+  it('opens sprint form on Add Sprint button click', () => {
+    render(
+      <SprintsWorkspace
+        sprints={mockSprints}
+        pagination={mockPagination}
+        filterTab="active"
+        search=""
+        userRole="admin"
+      />
+    );
+
+    const addBtn = screen.getByRole('button', { name: /Add Sprint/i });
+    fireEvent.click(addBtn);
+
+    expect(screen.getByTestId('mock-sprint-form')).toBeInTheDocument();
   });
 
   it('triggers add and edit sprint callbacks', () => {
@@ -219,11 +293,11 @@ describe('SprintList Component', () => {
         sprints={mockSprints}
         pagination={mockPagination}
         filterTab="active"
-        onTabChange={vi.fn()}
         onPageChange={vi.fn()}
         onLimitChange={vi.fn()}
         onAddSprint={onAddSprint}
         onEditSprint={onEditSprint}
+        isManagerOrAdmin={true}
       />
     );
 
@@ -231,7 +305,7 @@ describe('SprintList Component', () => {
     fireEvent.click(addSprintBtn);
     expect(onAddSprint).toHaveBeenCalled();
 
-    const editBtns = screen.getAllByRole('button', { name: 'Edit Sprint' });
+    const editBtns = screen.getAllByRole('button', { name: 'Edit' });
     // First edit button belongs to Sprint Alpha
     fireEvent.click(editBtns[0]!);
     expect(onEditSprint).toHaveBeenCalledWith(mockSprints[0]);

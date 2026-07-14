@@ -29,7 +29,8 @@ sprintsRouter.get(
         req.userId!,
         parsed.data.status,
         parsed.data.page,
-        parsed.data.limit
+        parsed.data.limit,
+        parsed.data.search
       );
       res.json(result);
     } catch (error) {

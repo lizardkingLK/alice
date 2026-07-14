@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { SprintList } from '@/app/sprints/_components/sprint-list';
 import { SprintForm } from '@/app/sprints/_components/sprint-form';
 import { Sprint } from '@/app/sprints/_services/sprints.service';
+
+import { Search } from 'lucide-react';
 
 interface SprintsWorkspaceProps {
   readonly sprints: Sprint[];
@@ -15,14 +17,20 @@ interface SprintsWorkspaceProps {
     totalPages: number;
   };
   readonly filterTab: 'active' | 'archived';
+  readonly search: string;
   readonly error?: string | null;
+  readonly userRole: string;
+  readonly currentUserId?: string | null;
 }
 
 export function SprintsWorkspace({
   sprints,
   pagination,
   filterTab,
+  search,
   error = null,
+  userRole,
+  currentUserId,
 }: Readonly<SprintsWorkspaceProps>) {
   const {
     handlePageChange,
@@ -32,8 +40,32 @@ export function SprintsWorkspace({
     searchParams,
   } = usePaginationNavigation(pagination.totalPages, pagination.limit);
 
+  const isManagerOrAdmin = userRole === 'admin' || userRole === 'manager';
+
+  const [searchQuery, setSearchQuery] = useState(search);
   const [isAddSprintOpen, setIsAddSprintOpen] = useState(false);
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null);
+
+  // Synchronize search input changes with URL queries via debounce
+  useEffect(() => {
+    const currentSearch = searchParams.get('search') ?? '';
+    if (searchQuery === currentSearch) {
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (searchQuery) {
+        params.set('search', searchQuery);
+      } else {
+        params.delete('search');
+      }
+      params.set('page', '1'); // reset page
+      router.push(`${pathname}?${params.toString()}`);
+    }, 400);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, pathname, router, searchParams]);
 
   const handleTabChange = (nextTab: 'active' | 'archived') => {
     const params = new URLSearchParams(searchParams.toString());
@@ -70,20 +102,62 @@ export function SprintsWorkspace({
 
   return (
     <>
-      <div className="w-full">
-        <SprintList
-          sprints={sprints}
-          pagination={pagination}
-          filterTab={filterTab}
-          onTabChange={handleTabChange}
-          onPageChange={handlePageChange}
-          onLimitChange={handleLimitChange}
-          error={error}
-          onRetry={handleRetry}
-          onSprintUpdated={handleSprintUpdated}
-          onAddSprint={() => setIsAddSprintOpen(true)}
-          onEditSprint={(sprint) => setEditingSprint(sprint)}
-        />
+      <div className="space-y-6">
+        {/* Control Bar */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative max-w-md flex-1">
+            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search sprints by name or goal..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="border-input bg-background/50 placeholder:text-muted-foreground focus-visible:ring-primary flex h-10 w-full rounded-md border py-2 pr-4 pl-10 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Tabs */}
+            <div className="bg-muted/50 border-border text-muted-foreground inline-flex h-10 items-center justify-center rounded-md border p-1">
+              <button
+                onClick={() => handleTabChange('active')}
+                className={`ring-offset-background inline-flex cursor-pointer items-center justify-center rounded-sm px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 ${
+                  filterTab === 'active'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'hover:text-foreground'
+                }`}
+              >
+                Active
+              </button>
+              <button
+                onClick={() => handleTabChange('archived')}
+                className={`ring-offset-background inline-flex cursor-pointer items-center justify-center rounded-sm px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 ${
+                  filterTab === 'archived'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'hover:text-foreground'
+                }`}
+              >
+                Archived
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="w-full">
+          <SprintList
+            sprints={sprints}
+            pagination={pagination}
+            filterTab={filterTab}
+            onPageChange={handlePageChange}
+            onLimitChange={handleLimitChange}
+            error={error}
+            onRetry={handleRetry}
+            onSprintUpdated={handleSprintUpdated}
+            onAddSprint={isManagerOrAdmin ? () => setIsAddSprintOpen(true) : undefined}
+            onEditSprint={isManagerOrAdmin ? (sprint) => setEditingSprint(sprint) : undefined}
+            isManagerOrAdmin={isManagerOrAdmin}
+          />
+        </div>
       </div>
 
       {isAddSprintOpen && (
@@ -93,6 +167,7 @@ export function SprintsWorkspace({
               onSprintUpdated={handleSprintCreated}
               onClose={() => setIsAddSprintOpen(false)}
               onSuccess={() => setIsAddSprintOpen(false)}
+              currentUserId={currentUserId}
             />
           </div>
         </div>
@@ -106,6 +181,7 @@ export function SprintsWorkspace({
               onSprintUpdated={handleSprintUpdated}
               onClose={() => setEditingSprint(null)}
               onSuccess={() => setEditingSprint(null)}
+              currentUserId={currentUserId}
             />
           </div>
         </div>

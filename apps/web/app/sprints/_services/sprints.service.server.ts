@@ -6,12 +6,14 @@ const apiSprints = '/api/sprints';
 export async function getSprintsPaginatedServer(
   tab?: 'active' | 'archived',
   page?: number,
-  limit?: number
+  limit?: number,
+  search?: string
 ): Promise<PaginatedSprints> {
   const params = new URLSearchParams();
   if (tab) params.append('status', tab);
   if (page) params.append('page', page.toString());
   if (limit) params.append('limit', limit.toString());
+  if (search) params.append('search', search);
 
   return apiFetch<PaginatedSprints>(`${apiSprints}?${params.toString()}`, {
     next: { revalidate: 0 },

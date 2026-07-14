@@ -48,7 +48,8 @@ export class SprintsRepository {
     userId: string,
     tab: 'active' | 'archived' = 'active',
     page: number = 1,
-    limit: number = 5
+    limit: number = 5,
+    search?: string
   ): Promise<{
     sprints: SprintRowWithProject[];
     totalCount: number;
@@ -64,6 +65,11 @@ export class SprintsRepository {
       query = query.in('status', ['archived']);
     } else {
       query = query.in('status', ['planned', 'active', 'closed']);
+    }
+
+    if (search) {
+      const sanitized = `%${search}%`;
+      query = query.or(`name.ilike.${sanitized},goal.ilike.${sanitized}`);
     }
 
     const { data, error, count } = await query

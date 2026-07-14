@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState, type ChangeEvent } from 'react';
+import { FormEvent, useEffect, useState, useMemo, type ChangeEvent } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Card,
@@ -36,6 +36,7 @@ type SprintFormProps = {
   onSprintUpdated?: (sprint: Sprint) => void;
   onClose?: () => void;
   onSuccess?: () => void;
+  currentUserId?: string | null;
 };
 
 function validateSprintForm(
@@ -126,6 +127,7 @@ export function SprintForm({
   onSprintUpdated,
   onClose,
   onSuccess,
+  currentUserId,
 }: Readonly<SprintFormProps>) {
   const isEditMode = !!sprintId;
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -142,6 +144,15 @@ export function SprintForm({
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
+  // Filter projects to only show user's own projects
+  // Plus the project of the sprint if in edit mode (even if they don't own it)
+  const displayedProjects = useMemo(() => {
+    if (!currentUserId) return projects;
+    return projects.filter(
+      (p) => p.owner_id === currentUserId || p.id === selectedProjectId
+    );
+  }, [projects, currentUserId, selectedProjectId]);
+
   // Fetch active projects
   useEffect(() => {
     setIsLoadingProjects(true);
@@ -151,8 +162,13 @@ export function SprintForm({
           const activeProjects = filterAndSortProjects(data.projects);
           setProjects(activeProjects);
           // If in create mode and we have active projects, pre-select the first one
-          if (!sprintId && activeProjects.length > 0 && activeProjects[0]) {
-            setSelectedProjectId(activeProjects[0].id);
+          if (!sprintId) {
+            const ownProjects = currentUserId
+              ? activeProjects.filter((p) => p.owner_id === currentUserId)
+              : activeProjects;
+            if (ownProjects.length > 0 && ownProjects[0]) {
+              setSelectedProjectId(ownProjects[0].id);
+            }
           }
         }
       })
@@ -162,7 +178,7 @@ export function SprintForm({
       .finally(() => {
         setIsLoadingProjects(false);
       });
-  }, [sprintId]);
+  }, [sprintId, currentUserId]);
 
   // Fetch sprint details if in edit mode
   useEffect(() => {
@@ -316,7 +332,7 @@ export function SprintForm({
                 disabled={isLoadingProjects}
                 className="bg-background/80 border-input text-foreground focus:border-primary focus:ring-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50"
               >
-                {renderProjectOptions(isLoadingProjects, projects)}
+                {renderProjectOptions(isLoadingProjects, displayedProjects)}
               </select>
             </div>
 
