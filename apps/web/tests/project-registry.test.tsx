@@ -270,7 +270,7 @@ describe('ProjectRegistry Component', () => {
       />
     );
 
-    const deleteBtn = screen.getAllByRole('button', { name: 'Delete' })[0];
+    const deleteBtn = screen.getAllByRole('button', { name: 'Archive' })[0];
     fireEvent.click(deleteBtn!);
 
     // Dialog should open
