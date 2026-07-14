@@ -11,6 +11,14 @@ import {
 } from '@repo/ui/components/ui/card';
 import { UserForm } from './user-form';
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@repo/ui/components/ui/table';
+import {
   Users,
   Mail,
   Shield,
@@ -157,9 +165,9 @@ export function UserRegistry({
           {currentUserRole === 'admin' && (
             <Button
               onClick={() => setIsAddUserOpen(true)}
-              className="h-10 text-xs font-semibold shadow-md duration-300 hover:shadow-lg"
+              className="h-10 w-32 px-6 text-xs font-semibold shadow-md duration-300 hover:shadow-lg flex items-center justify-center shrink-0"
             >
-              <UserPlus className="mr-1.5 h-3.5 w-3.5" />
+              <UserPlus className="mr-1.5 h-3.5 w-3.5 shrink-0" />
               Add User
             </Button>
           )}
@@ -175,137 +183,37 @@ export function UserRegistry({
             </div>
           ) : (
             <>
-              <div className="divide-border divide-y">
-                {users.map((usr) => {
-                  const isSelf = usr.id === currentUserId;
-                  const isDeactivating =
-                    isTogglingActive && deactivatingUser?.id === usr.id;
-                  return (
-                    <div
-                      key={usr.id}
-                      className="group flex flex-col justify-between gap-4 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center"
-                    >
-                      <div className="flex min-w-0 flex-1 items-center gap-3">
-                        <div
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-semibold shadow-sm transition-all duration-300 group-hover:scale-105 ${
-                            usr.active
-                              ? 'bg-primary/10 text-primary border-primary/20'
-                              : 'bg-muted text-muted-foreground border-muted-foreground/20'
-                          }`}
-                        >
-                          {getAvatarPlaceholder(usr.name)}
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[35%]">User</TableHead>
+                      <TableHead className="w-[15%]">Role</TableHead>
+                      <TableHead className="w-[12%]">Status</TableHead>
+                      <TableHead className="w-[18%]">Joined Date</TableHead>
+                      <TableHead className="w-[20%] pr-4">
+                        <div className="flex justify-end">
+                          <div className="w-50 text-left">Actions</div>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <h4
-                            className={`flex items-center gap-2 text-sm leading-none font-semibold transition-colors ${
-                              usr.active
-                                ? 'text-foreground group-hover:text-primary'
-                                : 'text-muted-foreground line-through'
-                            }`}
-                          >
-                            <span className="truncate">{usr.name}</span>
-                            {isSelf && (
-                              <span className="bg-primary/25 border-primary/30 text-primary py-0.2 shrink-0 rounded-full border px-1.5 text-[10px] tracking-normal normal-case">
-                                You
-                              </span>
-                            )}
-                          </h4>
-                          <span className="text-muted-foreground mt-1 flex min-w-0 items-center gap-1 text-xs">
-                            <Mail className="h-3 w-3 shrink-0" />
-                            <span className="truncate">{usr.email}</span>
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 pl-13 sm:grid sm:shrink-0 sm:grid-cols-[110px_90px_120px_90px_120px] sm:items-center sm:gap-3 sm:pl-0">
-                        <div className="flex justify-start">
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold tracking-wider uppercase ${getRoleBadgeStyles(usr.role)}`}
-                          >
-                            <Shield className="h-3 w-3" />
-                            {usr.role}
-                          </span>
-                        </div>
-
-                        <div className="flex justify-start">
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold tracking-wider uppercase ${
-                              usr.active
-                                ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
-                                : 'border-rose-500/20 bg-rose-500/10 text-rose-500'
-                            }`}
-                          >
-                            {usr.active ? 'Active' : 'Inactive'}
-                          </span>
-                        </div>
-
-                        <div className="text-muted-foreground flex items-center justify-start gap-1 text-xs">
-                          {mounted ? (
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3 shrink-0" />
-                              <span>
-                                {new Date(usr.created_at).toLocaleDateString(
-                                  undefined,
-                                  {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric',
-                                  }
-                                )}
-                              </span>
-                            </div>
-                          ) : (
-                            <CustomSpinner />
-                          )}
-                        </div>
-
-                        <div className="flex justify-start">
-                          {currentUserRole === 'admin' && (
-                            <Button
-                              variant="outline"
-                              disabled={isTogglingActive}
-                              onClick={() => setEditingUser(usr)}
-                              className="focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 font-medium shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
-                            >
-                              <Pencil className="mr-1 h-3 w-3" />
-                              Edit
-                            </Button>
-                          )}
-                        </div>
-
-                        <div className="flex justify-start">
-                          {currentUserRole === 'admin' && !isSelf && (
-                            <Button
-                              disabled={isTogglingActive}
-                              onClick={() => handleToggleActive(usr)}
-                              className={cn(
-                                'h-8 w-full text-[11px] font-medium shadow-sm transition-all',
-                                usr.active
-                                  ? 'border border-rose-500/20 bg-rose-500/10 text-rose-600 hover:bg-rose-600 hover:text-white'
-                                  : 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-600 hover:text-white'
-                              )}
-                            >
-                              {isDeactivating && (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              )}
-                              {!isDeactivating && usr.active && (
-                                <>
-                                  <UserX className="mr-1 h-3 w-3" />
-                                  Deactivate
-                                </>
-                              )}
-                              {!isDeactivating && !usr.active && (
-                                <>
-                                  <UserCheck className="mr-1 h-3 w-3" />
-                                  Activate
-                                </>
-                              )}
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((usr) => (
+                      <UserRegistryRow
+                        key={usr.id}
+                        usr={usr}
+                        currentUserId={currentUserId}
+                        currentUserRole={currentUserRole}
+                        isTogglingActive={isTogglingActive}
+                        deactivatingUser={deactivatingUser}
+                        mounted={mounted}
+                        setEditingUser={setEditingUser}
+                        handleToggleActive={handleToggleActive}
+                      />
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
               <Pagination
                 totalCount={totalCount}
@@ -420,5 +328,173 @@ export function UserRegistry({
         </div>
       )}
     </>
+  );
+}
+
+/* eslint-disable no-unused-vars */
+interface UserRegistryRowProps {
+  readonly usr: User;
+  readonly currentUserId: string | null | undefined;
+  readonly currentUserRole: string | null | undefined;
+  readonly isTogglingActive: boolean;
+  readonly deactivatingUser: User | null;
+  readonly mounted: boolean;
+  readonly setEditingUser: (usr: User) => void;
+  readonly handleToggleActive: (usr: User) => void;
+}
+/* eslint-enable no-unused-vars */
+
+function formatJoinedDate(createdAt: string, mounted: boolean) {
+  if (!mounted) return <CustomSpinner />;
+  return (
+    <div className="flex items-center gap-1">
+      <Calendar className="h-3 w-3 shrink-0" />
+      <span>
+        {new Date(createdAt).toLocaleDateString(undefined, {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        })}
+      </span>
+    </div>
+  );
+}
+
+function UserRegistryRow({
+  usr,
+  currentUserId,
+  currentUserRole,
+  isTogglingActive,
+  deactivatingUser,
+  mounted,
+  setEditingUser,
+  handleToggleActive,
+}: UserRegistryRowProps) {
+  const isSelf = usr.id === currentUserId;
+  const isDeactivating = isTogglingActive && deactivatingUser?.id === usr.id;
+
+  // Extract action buttons to avoid nested conditional JSX (SonarQube compliance)
+  let primaryButton = <div className="w-20 shrink-0" />;
+  if (currentUserRole === 'admin') {
+    primaryButton = (
+      <Button
+        variant="outline"
+        disabled={isTogglingActive}
+        onClick={() => setEditingUser(usr)}
+        className="focus-visible:ring-ring border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 font-semibold shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50 h-8 w-20 justify-center shrink-0 flex items-center"
+      >
+        <Pencil className="mr-1 h-3 w-3 shrink-0" />
+        <span>Edit</span>
+      </Button>
+    );
+  }
+
+  let secondaryButton = <div className="w-28 shrink-0" />;
+  if (currentUserRole === 'admin' && !isSelf) {
+    let buttonContent;
+    if (isDeactivating) {
+      buttonContent = <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />;
+    } else if (usr.active) {
+      buttonContent = (
+        <>
+          <UserX className="mr-1 h-3.5 w-3.5 shrink-0" />
+          <span>Deactivate</span>
+        </>
+      );
+    } else {
+      buttonContent = (
+        <>
+          <UserCheck className="mr-1 h-3.5 w-3.5 shrink-0" />
+          <span>Activate</span>
+        </>
+      );
+    }
+
+    secondaryButton = (
+      <Button
+        disabled={isTogglingActive}
+        onClick={() => handleToggleActive(usr)}
+        className={cn(
+          'focus-visible:ring-ring border font-medium shadow-sm transition-all focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50 h-8 w-28 text-[11px] justify-center shrink-0 flex items-center',
+          usr.active
+            ? 'border-rose-500/20 bg-rose-500/10 text-rose-600 hover:bg-rose-600 hover:text-white'
+            : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-600 hover:text-white'
+        )}
+      >
+        {buttonContent}
+      </Button>
+    );
+  }
+
+  return (
+    <TableRow className="hover:bg-accent/40 h-16">
+      <TableCell className="w-[35%] font-medium">
+        <div className="flex items-center gap-3">
+          <div
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-semibold shadow-sm transition-all duration-300 ${
+              usr.active
+                ? 'bg-primary/10 text-primary border-primary/20'
+                : 'bg-muted text-muted-foreground border-muted-foreground/20'
+            }`}
+          >
+            {getAvatarPlaceholder(usr.name)}
+          </div>
+          <div className="min-w-0">
+            <div
+              className={`flex items-center gap-2 text-sm font-semibold transition-colors ${
+                usr.active
+                  ? 'text-foreground hover:text-primary'
+                  : 'text-muted-foreground line-through'
+              }`}
+            >
+              <span className="truncate">{usr.name}</span>
+              {isSelf && (
+                <span className="bg-primary/25 border-primary/30 text-primary py-0.2 shrink-0 rounded-full border px-1.5 text-[9px] tracking-normal normal-case">
+                  You
+                </span>
+              )}
+            </div>
+            <span className="text-muted-foreground mt-0.5 flex items-center gap-1 text-[11px]">
+              <Mail className="h-3 w-3 shrink-0" />
+              <span className="truncate">{usr.email}</span>
+            </span>
+          </div>
+        </div>
+      </TableCell>
+      <TableCell className="w-[15%]">
+        <span
+          className={cn(
+            'inline-flex items-center justify-center gap-1 rounded-full border text-[10px] font-semibold uppercase w-24 h-6 shrink-0',
+            getRoleBadgeStyles(usr.role)
+          )}
+        >
+          <Shield className="h-3 w-3 shrink-0" />
+          <span>{usr.role}</span>
+        </span>
+      </TableCell>
+      <TableCell className="w-[12%]">
+        <span
+          className={cn(
+            'inline-flex items-center justify-center gap-1 rounded-full border text-[10px] font-semibold uppercase w-24 h-6 shrink-0',
+            usr.active
+              ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
+              : 'border-rose-500/20 bg-rose-500/10 text-rose-500'
+          )}
+        >
+          <span>{usr.active ? 'Active' : 'Inactive'}</span>
+        </span>
+      </TableCell>
+      <TableCell className="w-[18%]">
+        <div className="text-muted-foreground flex items-center gap-1 text-xs">
+          {formatJoinedDate(usr.created_at, mounted)}
+        </div>
+      </TableCell>
+      <TableCell className="w-[20%] text-right pr-4">
+        <div className="flex justify-end gap-2">
+          {primaryButton}
+          {secondaryButton}
+        </div>
+      </TableCell>
+    </TableRow>
   );
 }

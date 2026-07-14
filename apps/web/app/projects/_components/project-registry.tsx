@@ -16,6 +16,14 @@ import { Input } from '@repo/ui/components/ui/input';
 import { cn } from '@repo/ui/lib/utils';
 import { ProjectForm } from './project-form';
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@repo/ui/components/ui/table';
+import {
   softDeleteProject,
   restoreProject,
   hardDeleteProject,
@@ -215,9 +223,9 @@ export function ProjectRegistry({
                 setProjectToEdit(null);
                 setIsAddProjectOpen(true);
               }}
-              className="h-10 text-xs font-semibold shadow-md duration-300 hover:shadow-lg"
+              className="h-10 w-32 px-6 text-xs font-semibold shadow-md duration-300 hover:shadow-lg flex items-center justify-center shrink-0"
             >
-              <Plus className="mr-1.5 h-4 w-4" />
+              <Plus className="mr-1.5 h-4 w-4 shrink-0" />
               Add Project
             </Button>
           )}
@@ -245,139 +253,38 @@ export function ProjectRegistry({
             </div>
           ) : (
             <>
-              <div className="divide-border divide-y">
-                {filteredProjects.map((proj) => {
-                  const ownerName = proj.owner?.name ?? 'Unknown Owner';
-                  const ownerEmail = proj.owner?.email ?? '';
-                  const isOwnerSelf = proj.owner_id === currentUserId;
-
-                  return (
-                    <div
-                      key={proj.id}
-                      className="group flex flex-col justify-between gap-4 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center"
-                    >
-                      <Link
-                        href={`/projects/${proj.id}`}
-                        className="group/row flex min-w-0 flex-1 cursor-pointer items-center gap-3 transition-opacity hover:opacity-85"
-                      >
-                        <div className="bg-primary/10 text-primary border-primary/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-sm font-bold shadow-sm transition-all duration-300 group-hover/row:scale-105">
-                          {proj.key.slice(0, 2)}
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[31%]">Project</TableHead>
+                      <TableHead className="w-[31%]">Owner</TableHead>
+                      <TableHead className="w-[18%]">Timeline</TableHead>
+                      <TableHead className="w-[20%] pr-4">
+                        <div className="flex justify-end">
+                          <div className="w-50 text-left">Actions</div>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <h4 className="text-foreground group-hover/row:text-primary flex items-center gap-2 text-sm leading-none font-semibold transition-colors">
-                            <span className="truncate">{proj.name}</span>
-                            {proj.status === 'archived' && (
-                              <span className="py-0.2 shrink-0 rounded-full border border-amber-500/20 bg-amber-500/10 px-1.5 text-[10px] font-semibold tracking-normal text-amber-600 uppercase">
-                                Archived
-                              </span>
-                            )}
-                          </h4>
-                          {proj.description && (
-                            <p className="text-muted-foreground mt-1 truncate text-xs">
-                              {proj.description}
-                            </p>
-                          )}
-                          <span className="text-muted-foreground mt-1 flex min-w-0 items-center gap-1 text-xs">
-                            <Shield className="h-3 w-3 shrink-0" />
-                            <span className="truncate">
-                              Owner:{' '}
-                              <strong className="text-foreground">
-                                {ownerName}
-                              </strong>
-                              {ownerEmail && ` (${ownerEmail})`}
-                            </span>
-                            {isOwnerSelf && (
-                              <span className="bg-primary/25 border-primary/30 text-primary py-0.2 ml-1.5 shrink-0 rounded-full border px-1.5 text-[9px] font-semibold tracking-normal uppercase">
-                                You
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                      </Link>
-
-                      <div className="flex flex-wrap items-center gap-2 pl-13 sm:grid sm:shrink-0 sm:grid-cols-[180px_90px_90px] sm:items-center sm:gap-4 sm:pl-0">
-                        <div className="flex justify-start">
-                          <span className="text-muted-foreground flex items-center justify-start gap-1 text-xs">
-                            <Calendar className="h-3 w-3 shrink-0" />
-                            <span className="truncate">
-                              {proj.start_date || proj.end_date ? (
-                                <>
-                                  {proj.start_date
-                                    ? new Date(
-                                        proj.start_date
-                                      ).toLocaleDateString(undefined, {
-                                        month: 'short',
-                                        year: 'numeric',
-                                      })
-                                    : 'Start'}
-                                  {' — '}
-                                  {proj.end_date
-                                    ? new Date(
-                                        proj.end_date
-                                      ).toLocaleDateString(undefined, {
-                                        month: 'short',
-                                        year: 'numeric',
-                                      })
-                                    : 'End'}
-                                </>
-                              ) : (
-                                'No timeline configured'
-                              )}
-                            </span>
-                          </span>
-                        </div>
-
-                        <div className="flex w-full justify-start">
-                          {tab === 'active'
-                            ? isManagerOrAdmin && (
-                                <button
-                                  disabled={isPending}
-                                  onClick={() => setProjectToEdit(proj)}
-                                  className="focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 font-semibold shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
-                                >
-                                  <Pencil className="mr-1 h-3 w-3" />
-                                  Edit
-                                </button>
-                              )
-                            : isManagerOrAdmin && (
-                                <Button
-                                  disabled={isPending}
-                                  onClick={() => handleRestore(proj)}
-                                  className="h-8 w-full border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 shadow-sm hover:bg-emerald-600 hover:text-white disabled:opacity-50"
-                                >
-                                  <RefreshCw className="mr-1 h-3 w-3 shrink-0" />
-                                  Restore
-                                </Button>
-                              )}
-                        </div>
-
-                        <div className="flex w-full justify-start">
-                          {tab === 'active'
-                            ? isManagerOrAdmin && (
-                                <button
-                                  disabled={isPending}
-                                  onClick={() => handleSoftDelete(proj)}
-                                  className="focus-visible:ring-ring inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
-                                >
-                                  <Archive className="mr-1 h-3 w-3" />
-                                  Archive
-                                </button>
-                              )
-                            : isAdmin && (
-                                <Button
-                                  disabled={isPending}
-                                  onClick={() => handleHardDelete(proj)}
-                                  className="h-8 w-full border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm hover:bg-rose-600 hover:text-white disabled:opacity-50"
-                                >
-                                  <Trash2 className="mr-1 h-3 w-3 shrink-0" />
-                                  Purge
-                                </Button>
-                              )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredProjects.map((proj) => (
+                      <ProjectRegistryRow
+                        key={proj.id}
+                        proj={proj}
+                        currentUserId={currentUserId}
+                        isPending={isPending}
+                        tab={tab}
+                        isManagerOrAdmin={isManagerOrAdmin}
+                        isAdmin={isAdmin}
+                        setProjectToEdit={setProjectToEdit}
+                        handleRestore={handleRestore}
+                        handleSoftDelete={handleSoftDelete}
+                        handleHardDelete={handleHardDelete}
+                      />
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
 
               <Pagination
@@ -484,5 +391,158 @@ export function ProjectRegistry({
         </div>
       )}
     </div>
+  );
+}
+
+function formatTimeline(startDate?: string | null, endDate?: string | null) {
+  if (!startDate && !endDate) return 'No timeline';
+  const startStr = startDate
+    ? new Date(startDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+    : 'Start';
+  const endStr = endDate
+    ? new Date(endDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+    : 'End';
+  return `${startStr} - ${endStr}`;
+}
+
+/* eslint-disable no-unused-vars */
+interface ProjectRegistryRowProps {
+  readonly proj: Project;
+  readonly currentUserId: string | null | undefined;
+  readonly isPending: boolean;
+  readonly tab: 'active' | 'archived';
+  readonly isManagerOrAdmin: boolean;
+  readonly isAdmin: boolean;
+  readonly setProjectToEdit: (proj: Project | null) => void;
+  readonly handleRestore: (proj: Project) => void;
+  readonly handleSoftDelete: (proj: Project) => void;
+  readonly handleHardDelete: (proj: Project) => void;
+}
+/* eslint-enable no-unused-vars */
+
+function ProjectRegistryRow({
+  proj,
+  currentUserId,
+  isPending,
+  tab,
+  isManagerOrAdmin,
+  isAdmin,
+  setProjectToEdit,
+  handleRestore,
+  handleSoftDelete,
+  handleHardDelete,
+}: ProjectRegistryRowProps) {
+  const ownerName = proj.owner?.name ?? 'Unknown Owner';
+  const ownerEmail = proj.owner?.email ?? '';
+  const isOwnerSelf = proj.owner_id === currentUserId;
+
+  // Extract action buttons to avoid nested conditional JSX (SonarQube compliance)
+  let primaryButton = <div className="w-20 shrink-0" />;
+  if (isManagerOrAdmin) {
+    primaryButton = tab === 'active' ? (
+      <Button
+        variant="outline"
+        disabled={isPending}
+        onClick={() => setProjectToEdit(proj)}
+        className="focus-visible:ring-ring border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 font-semibold shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50 h-8 w-20 justify-center shrink-0 flex items-center"
+      >
+        <Pencil className="mr-1 h-3 w-3 shrink-0" />
+        <span>Edit</span>
+      </Button>
+    ) : (
+      <Button
+        disabled={isPending}
+        onClick={() => handleRestore(proj)}
+        className="h-8 border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 shadow-sm hover:bg-emerald-600 hover:text-white disabled:opacity-50 w-20 justify-center shrink-0 flex items-center"
+      >
+        <RefreshCw className="mr-1 h-3 w-3 shrink-0" />
+        <span>Restore</span>
+      </Button>
+    );
+  }
+
+  let secondaryButton = <div className="w-28 shrink-0" />;
+  if (tab === 'active' && isManagerOrAdmin) {
+    secondaryButton = (
+      <Button
+        disabled={isPending}
+        onClick={() => handleSoftDelete(proj)}
+        className="focus-visible:ring-ring border border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50 h-8 w-28 justify-center shrink-0 flex items-center"
+      >
+        <Archive className="mr-1 h-3 w-3 shrink-0" />
+        <span>Archive</span>
+      </Button>
+    );
+  } else if (tab !== 'active' && isAdmin) {
+    secondaryButton = (
+      <Button
+        disabled={isPending}
+        onClick={() => handleHardDelete(proj)}
+        className="h-8 border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm hover:bg-rose-600 hover:text-white disabled:opacity-50 w-28 justify-center shrink-0 flex items-center"
+      >
+        <Trash2 className="mr-1 h-3 w-3 shrink-0" />
+        <span>Purge</span>
+      </Button>
+    );
+  }
+
+  return (
+    <TableRow className="hover:bg-accent/40 h-16">
+      <TableCell className="w-[31%] font-medium">
+        <Link
+          href={`/projects/${proj.id}`}
+          className="group/row flex items-center gap-3 transition-opacity hover:opacity-85"
+        >
+          <div className="bg-primary/10 text-primary border-primary/20 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-bold shadow-sm transition-all duration-300 group-hover/row:scale-105">
+            {proj.key.slice(0, 2)}
+          </div>
+          <div className="min-w-0">
+            <div className="text-foreground group-hover/row:text-primary flex items-center gap-2 text-sm font-semibold transition-colors">
+              <span className="truncate">{proj.name}</span>
+              {proj.status === 'archived' && (
+                <span className="py-0.2 shrink-0 rounded-full border border-amber-500/20 bg-amber-500/10 px-1.5 text-[9px] font-semibold tracking-normal text-amber-600 uppercase">
+                  Archived
+                </span>
+              )}
+            </div>
+            {proj.description && (
+              <p className="text-muted-foreground mt-0.5 truncate text-[11px]">
+                {proj.description}
+              </p>
+            )}
+          </div>
+        </Link>
+      </TableCell>
+      <TableCell className="w-[31%]">
+        <span className="text-muted-foreground flex items-center gap-1 text-xs">
+          <Shield className="h-3 w-3 shrink-0" />
+          <span className="truncate">
+            <strong className="text-foreground font-semibold">
+              {ownerName}
+            </strong>
+            {ownerEmail && ` (${ownerEmail})`}
+          </span>
+          {isOwnerSelf && (
+            <span className="bg-primary/25 border-primary/30 text-primary py-0.2 ml-1.5 shrink-0 rounded-full border px-1.5 text-[9px] font-semibold tracking-normal uppercase">
+              You
+            </span>
+          )}
+        </span>
+      </TableCell>
+      <TableCell className="w-[18%]">
+        <span className="text-muted-foreground flex items-center gap-1 text-xs">
+          <Calendar className="h-3 w-3 shrink-0" />
+          <span className="truncate">
+            {formatTimeline(proj.start_date, proj.end_date)}
+          </span>
+        </span>
+      </TableCell>
+      <TableCell className="w-[20%] text-right pr-4">
+        <div className="flex justify-end gap-2">
+          {primaryButton}
+          {secondaryButton}
+        </div>
+      </TableCell>
+    </TableRow>
   );
 }
