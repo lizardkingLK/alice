@@ -255,9 +255,9 @@ export function TeamRegistry({
                 setTeamToEdit(null);
                 setIsAddTeamOpen(true);
               }}
-              className="h-10 text-xs font-semibold shadow-md duration-300 hover:shadow-lg"
+              className="h-10 w-32 px-6 text-xs font-semibold shadow-md duration-300 hover:shadow-lg flex items-center justify-center shrink-0"
             >
-              <Plus className="mr-1.5 h-4 w-4" />
+              <Plus className="mr-1.5 h-4 w-4 shrink-0" />
               Add Team
             </Button>
           )}
@@ -430,7 +430,7 @@ export function TeamRegistry({
       {/* Modals / Forms */}
       {isAddTeamOpen && (
         <div className="bg-background/80 animate-in fade-in fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm duration-300">
-          <div className="w-full max-w-lg">
+          <div className="w-full max-w-xl">
             <TeamForm
               users={users}
               onClose={() => setIsAddTeamOpen(false)}
@@ -445,7 +445,7 @@ export function TeamRegistry({
 
       {teamToEdit && (
         <div className="bg-background/80 animate-in fade-in fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm duration-300">
-          <div className="w-full max-w-lg">
+          <div className="w-full max-w-xl">
             <TeamForm
               users={users}
               teamToEdit={teamToEdit}
