@@ -2,14 +2,13 @@ import { Metadata } from 'next';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { getProjectList } from '@/app/projects/_services/projects.service.server';
 import { getUserList } from '@/app/users/_services/users.service.server';
-import { getWorkItems } from '@/app/work-items/_services/workItem.server.service';
+import { getWorkItems, DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.service.server';
 import { getDbUser } from '@/lib/auth';
 import { BacklogWorkspace } from './_components/backlog-workspace';
 
 import { Project as DbProject } from '@/app/projects/_services/projects.service';
 import { User as DbUser } from '@/app/users/_services/users.service';
-import { DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
 import { Sprint } from '@/app/sprints/_services/sprints.service';
 
 export const metadata: Metadata = {

@@ -252,9 +252,7 @@ export function BacklogWorkspace({
     filteredItems.forEach((item) => {
       const sId = item.sprint_id;
       if (sId) {
-        if (!groups[sId]) {
-          groups[sId] = [];
-        }
+        groups[sId] ??= [];
         groups[sId].push(item);
       }
     });
@@ -375,7 +373,7 @@ export function BacklogWorkspace({
       createdBy: currentUserId || '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      project: projects.find((p) => p.id === newSprintProjId) || null,
+      project: projects.find((p) => p.id === newSprintProjId) ?? null,
     };
 
     setSprintList((prev) => [newSprint, ...prev]);
