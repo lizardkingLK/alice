@@ -1,3 +1,4 @@
+import { Metadata } from 'next';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { SprintsWorkspace } from '@/app/sprints/_components/sprints-workspace';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.service.server';
@@ -9,6 +10,14 @@ import {
 import { getDbUser } from '@/lib/auth';
 
 import { PaginatedSprints } from '@/app/sprints/_services/sprints.service';
+
+export const metadata: Metadata = {
+  title: 'Sprints',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function SprintsPage({
   searchParams,
