@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Monorepo: attach",
+      "name": "Monorepo: Attach",
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "pnpm",
@@ -10,17 +10,7 @@
       "console": "integratedTerminal"
     },
     {
-      "name": "DB: seed",
-      "type": "node",
-      "request": "launch",
-      "cwd": "${workspaceFolder}/packages/db",
-      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
-      "args": ["src/seed.ts"],
-      "envFile": "${workspaceFolder}/packages/db/.env",
-      "console": "integratedTerminal"
-    },
-    {
-      "name": "Web: Vitest",
+      "name": "Vitest: Web",
       "type": "node",
       "request": "launch",
       "cwd": "${workspaceFolder}/apps/web",
@@ -29,40 +19,14 @@
       "console": "integratedTerminal"
     },
     {
-      "name": "API: Vitest",
-      "type": "node",
-      "request": "launch",
-      "cwd": "${workspaceFolder}/apps/api",
-      "program": "${workspaceFolder}/apps/api/node_modules/vitest/vitest.mjs",
-      "args": ["run", "${file}"],
-      "console": "integratedTerminal",
-      "envFile": "${workspaceFolder}/apps/api/.env"
-    },
-    {
-      "name": "UI: Vitest",
-      "type": "node",
-      "request": "launch",
-      "cwd": "${workspaceFolder}/packages/ui",
-      "program": "${workspaceFolder}/packages/ui/node_modules/vitest/vitest.mjs",
-      "args": ["run", "${file}"],
-      "console": "integratedTerminal"
-    },
-    {
-      "name": "Next.js: Server",
+      "name": "Next.js: Web",
       "type": "node-terminal",
       "request": "launch",
       "command": "pnpm dev",
       "cwd": "${workspaceFolder}/apps/web"
     },
     {
-      "name": "Next.js: Client",
-      "type": "chrome",
-      "request": "launch",
-      "url": "http://localhost:3000",
-      "webRoot": "${workspaceFolder}"
-    },
-    {
-      "name": "Express: Backend",
+      "name": "Express: API",
       "type": "node-terminal",
       "request": "launch",
       "command": "pnpm dev",
@@ -72,7 +36,7 @@
   "compounds": [
     {
       "name": "Full stack: Web + API",
-      "configurations": ["Next.js: Server", "Express: Backend"]
+      "configurations": ["Next.js: Web", "Express: API"]
     }
   ]
 }
