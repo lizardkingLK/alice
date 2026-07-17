@@ -13,6 +13,7 @@ import {
   Files,
   ClipboardPenIcon,
   Kanban,
+  ListTodo,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import {
@@ -31,6 +32,7 @@ import {
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/board', label: 'Board', icon: Kanban },
+  { href: '/backlog', label: 'Backlog', icon: ListTodo },
   { href: '/users', label: 'Users', icon: Users },
   { href: '/projects', label: 'Projects', icon: FolderKanban },
   { href: '/sprints', label: 'Sprints', icon: Timer },

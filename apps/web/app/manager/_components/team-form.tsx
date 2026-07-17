@@ -359,133 +359,142 @@ export function TeamForm({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-sm font-medium">
-              Team Identifier / Name
-            </Label>
-            <Input
-              id="name"
-              name="name"
-              placeholder="e.g. Platform Team"
-              required
-              value={name}
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setName(e.target.value)
-              }
-              className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="tech_stack" className="text-sm font-medium">
-              Primary Technology Stack
-            </Label>
-            <Input
-              id="tech_stack"
-              name="tech_stack"
-              placeholder="e.g. Next.js, Node, Postgres"
-              value={techStack}
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setTechStack(e.target.value)
-              }
-              className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description" className="text-sm font-medium">
-              Role Description
-            </Label>
-            <Input
-              id="description"
-              name="description"
-              placeholder="e.g. Core team responsible for monorepo and API infrastructure"
-              value={description}
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setDescription(e.target.value)
-              }
-              className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="manager_id" className="text-sm font-medium">
-              Designated Team Manager
-            </Label>
-            <Select value={managerId} onValueChange={setManagerId}>
-              <SelectTrigger id="manager_id" className="bg-background/80 h-10">
-                <SelectValue placeholder="Select Manager..." />
-              </SelectTrigger>
-              <SelectContent>
-                {users
-                  .filter((u) => u.role === 'manager' || u.role === 'admin')
-                  .map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.name} ({u.email})
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="project_id" className="text-sm font-medium">
-              Associated Project
-            </Label>
-            <select
-              id="project_id"
-              name="project_id"
-              value={selectedProjectId}
-              onChange={(e) => {
-                setSelectedProjectId(e.target.value);
-                setSelectedMemberIds([]);
-              }}
-              className="bg-background/80 border-input text-foreground focus-visible:ring-primary focus:border-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-            >
-              <option value="">
-                {isLoadingProjects ? 'Loading projects...' : 'Select Project...'}
-              </option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.key})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {selectedProjectId && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">
-                Project Members to Add to Team
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* Team Identifier / Name */}
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="name" className="text-sm font-medium">
+                Team Identifier / Name
               </Label>
-              <ProjectMembersList
-                isLoadingMembers={isLoadingMembers}
-                projectMembers={projectMembers}
-                selectedMemberIds={selectedMemberIds}
-                setSelectedMemberIds={setSelectedMemberIds}
+              <Input
+                id="name"
+                name="name"
+                placeholder="e.g. Platform Team"
+                required
+                value={name}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setName(e.target.value)
+                }
+                className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
               />
             </div>
-          )}
 
-          <div className="space-y-2">
-            <Label htmlFor="status" className="text-sm font-medium">
-              Team Status
-            </Label>
-            <Select
-              value={status}
-              onValueChange={(val) =>
-                setStatus(val as 'active' | 'inactive' | 'archived')
-              }
-            >
-              <SelectTrigger id="status" className="bg-background/80 h-10">
-                <SelectValue placeholder="Select status..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Primary Technology Stack */}
+            <div className="space-y-2">
+              <Label htmlFor="tech_stack" className="text-sm font-medium">
+                Primary Technology Stack
+              </Label>
+              <Input
+                id="tech_stack"
+                name="tech_stack"
+                placeholder="e.g. Next.js, Node, Postgres"
+                value={techStack}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setTechStack(e.target.value)
+                }
+                className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
+              />
+            </div>
+
+            {/* Team Status */}
+            <div className="space-y-2">
+              <Label htmlFor="status" className="text-sm font-medium">
+                Team Status
+              </Label>
+              <Select
+                value={status}
+                onValueChange={(val) =>
+                  setStatus(val as 'active' | 'inactive' | 'archived')
+                }
+              >
+                <SelectTrigger id="status" className="bg-background/80 h-10 w-full">
+                  <SelectValue placeholder="Select status..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="archived">Archived</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Role Description */}
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="description" className="text-sm font-medium">
+                Role Description
+              </Label>
+              <Input
+                id="description"
+                name="description"
+                placeholder="e.g. Core team responsible for monorepo and API infrastructure"
+                value={description}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setDescription(e.target.value)
+                }
+                className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
+              />
+            </div>
+
+            {/* Designated Team Manager */}
+            <div className="space-y-2">
+              <Label htmlFor="manager_id" className="text-sm font-medium">
+                Designated Team Manager
+              </Label>
+              <Select value={managerId} onValueChange={setManagerId}>
+                <SelectTrigger id="manager_id" className="bg-background/80 h-10 w-full">
+                  <SelectValue placeholder="Select Manager..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {users
+                    .filter((u) => u.role === 'manager' || u.role === 'admin')
+                    .map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.name} ({u.email})
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Associated Project */}
+            <div className="space-y-2">
+              <Label htmlFor="project_id" className="text-sm font-medium">
+                Associated Project
+              </Label>
+              <select
+                id="project_id"
+                name="project_id"
+                value={selectedProjectId}
+                onChange={(e) => {
+                  setSelectedProjectId(e.target.value);
+                  setSelectedMemberIds([]);
+                }}
+                className="bg-background/80 border-input text-foreground focus-visible:ring-primary focus:border-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+              >
+                <option value="">
+                  {isLoadingProjects ? 'Loading projects...' : 'Select Project...'}
+                </option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.key})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Project Members to Add to Team */}
+            {selectedProjectId && (
+              <div className="space-y-2 sm:col-span-2">
+                <Label className="text-sm font-medium">
+                  Project Members to Add to Team
+                </Label>
+                <ProjectMembersList
+                  isLoadingMembers={isLoadingMembers}
+                  projectMembers={projectMembers}
+                  selectedMemberIds={selectedMemberIds}
+                  setSelectedMemberIds={setSelectedMemberIds}
+                />
+              </div>
+            )}
           </div>
 
           <FormAlertMessage message={message} isError={isError} />
