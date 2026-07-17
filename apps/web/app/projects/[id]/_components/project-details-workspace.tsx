@@ -17,7 +17,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@repo/ui/components/ui/select';
-import { cn } from '@repo/ui/lib/utils';
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from '@repo/ui/components/ui/tabs';
 import { addMemberAction, removeMemberAction } from './actions';
 import type {
   Project,
@@ -114,39 +119,29 @@ export function ProjectDetailsWorkspace({
       </div>
 
       {/* Tabs Selector */}
-      <div className="border-border border-b">
-        <div className="flex gap-4">
-          <Button
-            variant="ghost"
-            onClick={() => setActiveTab('details')}
-            className={cn(
-              'flex h-auto cursor-pointer items-center gap-1.5 rounded-none border-b-2 bg-transparent px-1 pt-0 pb-3 text-sm font-semibold whitespace-nowrap transition-all hover:bg-transparent focus:outline-none',
-              activeTab === 'details'
-                ? 'border-primary text-foreground'
-                : 'text-muted-foreground hover:text-foreground border-transparent'
-            )}
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as 'details' | 'members')}
+        className="w-full space-y-6"
+      >
+        <TabsList className="border-border flex h-auto justify-start gap-4 rounded-none border-b bg-transparent p-0">
+          <TabsTrigger
+            value="details"
+            className="border-transparent text-muted-foreground hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground flex h-auto cursor-pointer items-center gap-1.5 rounded-none border-b-2 bg-transparent px-1 pt-0 pb-3 text-sm font-semibold whitespace-nowrap transition-all hover:bg-transparent focus:outline-none shadow-none data-[state=active]:shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
           >
             <Info className="h-4 w-4" />
             Project Details
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => setActiveTab('members')}
-            className={cn(
-              'flex h-auto cursor-pointer items-center gap-1.5 rounded-none border-b-2 bg-transparent px-1 pt-0 pb-3 text-sm font-semibold whitespace-nowrap transition-all hover:bg-transparent focus:outline-none',
-              activeTab === 'members'
-                ? 'border-primary text-foreground'
-                : 'text-muted-foreground hover:text-foreground border-transparent'
-            )}
+          </TabsTrigger>
+          <TabsTrigger
+            value="members"
+            className="border-transparent text-muted-foreground hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground flex h-auto cursor-pointer items-center gap-1.5 rounded-none border-b-2 bg-transparent px-1 pt-0 pb-3 text-sm font-semibold whitespace-nowrap transition-all hover:bg-transparent focus:outline-none shadow-none data-[state=active]:shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
           >
             <Users className="h-4 w-4" />
             Project Members ({members.length})
-          </Button>
-        </div>
-      </div>
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Tab Contents */}
-      {activeTab === 'details' && (
+        <TabsContent value="details" className="m-0 focus-visible:ring-0 focus-visible:ring-offset-0">
         <div className="grid gap-6 md:grid-cols-3">
           {/* Main Info Card */}
           <Card className="border-border bg-card/50 backdrop-blur-md md:col-span-2">
@@ -273,9 +268,9 @@ export function ProjectDetailsWorkspace({
             </CardContent>
           </Card>
         </div>
-      )}
+      </TabsContent>
 
-      {activeTab === 'members' && (
+      <TabsContent value="members" className="m-0 focus-visible:ring-0 focus-visible:ring-offset-0">
         <div className="grid gap-6 md:grid-cols-3">
           {/* Members Table Card */}
           <Card className="border-border bg-card/50 backdrop-blur-md md:col-span-2">
@@ -434,7 +429,8 @@ export function ProjectDetailsWorkspace({
             </Card>
           )}
         </div>
-      )}
+      </TabsContent>
+    </Tabs>
     </div>
   );
 }
