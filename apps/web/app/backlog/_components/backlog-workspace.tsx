@@ -22,15 +22,12 @@ import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Textarea } from '@repo/ui/components/ui/textarea';
-import { Label } from '@repo/ui/components/ui/label';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
-  DialogClose,
 } from '@repo/ui/components/ui/dialog';
 import {
   Select,
@@ -55,6 +52,8 @@ import { DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
 import { Sprint } from '@/app/sprints/_services/sprints.service';
 import { Project as DbProject } from '@/app/projects/_services/projects.service';
 import { User as DbUser } from '@/app/users/_services/users.service';
+import { SprintForm } from '@/app/sprints/_components/sprint-form';
+import { WorkItemForm } from '@/app/work-items/_components/workItem-form';
 
 interface BacklogWorkspaceProps {
   projects: DbProject[];
@@ -408,14 +407,9 @@ export function BacklogWorkspace({
       project: projects.find((p) => p.id === newSprintProjId) ?? null,
     };
 
+  const handleCreateSprintSuccess = (newSprint: Sprint) => {
     setSprintList((prev) => [newSprint, ...prev]);
     setIsCreateSprintOpen(false);
-
-    // Reset Form
-    setNewSprintName('');
-    setNewSprintGoal('');
-    setNewSprintStart('');
-    setNewSprintEnd('');
   };
 
   // Dialog Create Issue Submission
@@ -458,15 +452,9 @@ export function BacklogWorkspace({
         : null,
     };
 
+  const handleCreateIssueSuccess = (newWI: DbWorkItem) => {
     setWorkItems((prev) => [newWI, ...prev]);
     setIsCreateIssueOpen(false);
-
-    // Reset Form
-    setNewIssueTitle('');
-    setNewIssueType('Task');
-    setNewIssuePriority('medium');
-    setNewIssueAssigneeId('');
-    setNewIssueSprintId('backlog');
   };
 
   // Update inline value of item from details sheet
@@ -1445,6 +1433,34 @@ export function BacklogWorkspace({
                 </Button>
               </DialogFooter>
             </form>
+        {isCreateSprintOpen && (
+          <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
+            <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
+              <SprintForm
+                onSprintUpdated={handleCreateSprintSuccess}
+                onClose={() => setIsCreateSprintOpen(false)}
+                onSuccess={() => setIsCreateSprintOpen(false)}
+                currentUserId={currentUserId}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Dialog: Create Issue */}
+        <Dialog open={isCreateIssueOpen} onOpenChange={setIsCreateIssueOpen}>
+          <DialogContent className="sm:max-w-xl bg-card border-border/80 backdrop-blur-md">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold">Create Work Item</DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                Add a new work item and assign it to a team member.
+              </DialogDescription>
+            </DialogHeader>
+            <WorkItemForm
+              projects={projects}
+              projectMembers={projectMembers}
+              onClose={() => setIsCreateIssueOpen(false)}
+              onSuccess={handleCreateIssueSuccess}
+            />
           </DialogContent>
         </Dialog>
       </div>
