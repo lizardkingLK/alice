@@ -16,8 +16,7 @@
   "scripts": {
     "lint": "eslint . --max-warnings 0",
     "generate:component": "turbo gen react-component",
-    "checktypes": "tsc --noEmit",
-    "test": "vitest"
+    "checktypes": "tsc --noEmit"
   },
   "dependencies": {
     "lucide-react": "^1.21.0",
