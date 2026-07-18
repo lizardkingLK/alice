@@ -16,6 +16,22 @@ function todayDateString(): string {
   return `${year}-${month}-${day}`;
 }
 
+const literalSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
+type Literal = z.infer<typeof literalSchema>;
+export type SupabaseJson =
+  Literal | { [key: string]: SupabaseJson } | SupabaseJson[];
+
+export const jsonSchema: z.ZodType<SupabaseJson> = z.lazy(() =>
+  z.union([
+    literalSchema,
+    z.array(z.lazy(() => jsonSchema)),
+    z.record(
+      z.string(),
+      z.lazy(() => jsonSchema)
+    ),
+  ])
+) as z.ZodType<SupabaseJson>;
+
 export const workItemCoreObject = z.object({
   title: z
     .string()
@@ -26,7 +42,7 @@ export const workItemCoreObject = z.object({
   type: workItemTypeSchema,
   assignee_id: z.uuid({ message: 'Please select a valid assignee' }).nullable(),
   due_date: dateStringSchema.nullable(),
-  description: z.string().nullable(),
+  description: jsonSchema,
 });
 
 export const createUpdateWorkItemBodySchema = workItemCoreObject.refine(

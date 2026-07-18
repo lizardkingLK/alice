@@ -8,6 +8,7 @@ import { workItemService } from './workItems.service';
 import {
   createUpdateWorkItemBodySchema,
   patchUpdateWorkItemBodySchema,
+  SupabaseJson,
 } from './workItems.schemas';
 
 const workItemsRouter: Router = Router();
@@ -79,7 +80,20 @@ workItemsRouter.patch(
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
     try {
-      const parsed = patchUpdateWorkItemBodySchema.safeParse(req.body);
+      const processedBody = { ...req.body };
+
+      if (typeof req.body.description === 'string') {
+        try {
+          processedBody.description = JSON.parse(req.body.description);
+        } catch {
+          return res.status(400).json({
+            data: null,
+            error: 'Invalid JSON format provided for description field',
+          });
+        }
+      }
+
+      const parsed = patchUpdateWorkItemBodySchema.safeParse(processedBody);
       if (!parsed.success) {
         return res
           .status(400)
@@ -92,33 +106,24 @@ workItemsRouter.patch(
       if (!existingWorkItem) {
         return res
           .status(404)
-          .json({ data: null, error: 'Work-item not found' });
+          .json({ data: null, error: 'Work item not found' });
       }
 
-      const title = parsed.data.title ?? existingWorkItem.title;
-      const project_id = parsed.data.project_id ?? existingWorkItem.project_id;
-      const type = parsed.data.type ?? existingWorkItem.type;
-      const assignee_id =
-        parsed.data.assignee_id !== undefined
-          ? parsed.data.assignee_id
-          : existingWorkItem.assignee_id;
-      const due_date =
-        parsed.data.due_date !== undefined
-          ? parsed.data.due_date
-          : existingWorkItem.due_date;
-      const description = (
-        parsed.data.description !== undefined
-          ? parsed.data.description
-          : existingWorkItem.description
-      ) as string | null;
-
       const payload = {
-        title,
-        project_id,
-        type,
-        assignee_id,
-        due_date,
-        description,
+        title: parsed.data.title ?? existingWorkItem.title,
+        project_id: parsed.data.project_id ?? existingWorkItem.project_id,
+        type: parsed.data.type ?? existingWorkItem.type,
+        assignee_id:
+          parsed.data.assignee_id !== undefined
+            ? parsed.data.assignee_id
+            : existingWorkItem.assignee_id,
+        due_date:
+          parsed.data.due_date !== undefined
+            ? parsed.data.due_date
+            : existingWorkItem.due_date,
+        description: (parsed.data.description !== undefined
+          ? parsed.data.description
+          : existingWorkItem.description) as SupabaseJson,
       };
 
       const workItem = await workItemService.updateWorkItem(

@@ -17,6 +17,8 @@ import { useEditorAutosave } from '@/hooks/use-editor-autosave';
 import CodeBlockNodeView from '@/app/work-items/_components/workItem-description-editor-nodeView';
 import EditorCommandsBar from '@/app/work-items/_components/workItem-description-editor-commandsBar';
 import getEditorStyles from '@/app/work-items/_components/workItem-description-editor-styles';
+import { delay } from '@/app/_shared/utility';
+import { CustomLinkExtension } from '@/lib/editor/tiptap-link-configuration';
 
 type WorkItemDescriptionEditorProps = {
   id: string;
@@ -44,6 +46,7 @@ export default function WorkItemDescriptionEditor({
     extensions: [
       StarterKit.configure({
         codeBlock: false,
+        link: false,
       }),
       CodeBlockLowlight.configure({
         lowlight,
@@ -53,6 +56,7 @@ export default function WorkItemDescriptionEditor({
           return ReactNodeViewRenderer(CodeBlockNodeView);
         },
       }),
+      CustomLinkExtension,
     ],
     content: initialContent ?? '',
     editable: true,
@@ -72,6 +76,7 @@ export default function WorkItemDescriptionEditor({
   const handleSave = async () => {
     setSaving(true);
     onSave(editor.getJSON());
+    await delay();
     clearAutosave();
     setSaving(false);
   };
