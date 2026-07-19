@@ -4,6 +4,7 @@ import * as React from 'react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from './hover-card';
 import { ExternalLink } from 'lucide-react';
 import { ReactNode } from 'react';
+import { cn } from '@repo/ui/lib/utils';
 
 interface OGMetadata {
   title: string;
@@ -38,6 +39,105 @@ function getSafeHostname(url: string): string | null {
   }
 }
 
+const NAMED_HTML_ENTITIES: Record<string, string> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
+  rsquo: '\u2019',
+  lsquo: '\u2018',
+  rdquo: '\u201D',
+  ldquo: '\u201C',
+  ndash: '\u2013',
+  mdash: '\u2014',
+  hellip: '\u2026',
+};
+
+/** Decode HTML entities so values like &#x27; render as ' in plain text. */
+function decodeHtmlEntities(value: string): string {
+  return value
+    .replaceAll(/&#x([0-9a-fA-F]+);/g, (match, hex: string) => {
+      const codePoint = Number.parseInt(hex, 16);
+      return Number.isFinite(codePoint)
+        ? String.fromCodePoint(codePoint)
+        : match;
+    })
+    .replaceAll(/&#(\d+);/g, (match, dec: string) => {
+      const codePoint = Number.parseInt(dec, 10);
+      return Number.isFinite(codePoint)
+        ? String.fromCodePoint(codePoint)
+        : match;
+    })
+    .replaceAll(/&([a-zA-Z]+);/g, (match, name: string) => {
+      return NAMED_HTML_ENTITIES[name.toLowerCase()] ?? match;
+    });
+}
+
+function sanitizeOgText(value: string | undefined): string {
+  if (!value) {
+    return '';
+  }
+
+  return decodeHtmlEntities(value);
+}
+
+function LinkPreviewDescription({
+  description,
+}: Readonly<{ description: string }>) {
+  const textRef = React.useRef<HTMLParagraphElement>(null);
+  const [expanded, setExpanded] = React.useState(false);
+  const [isClamped, setIsClamped] = React.useState(false);
+
+  React.useLayoutEffect(() => {
+    setExpanded(false);
+  }, [description]);
+
+  React.useLayoutEffect(() => {
+    const element = textRef.current;
+    if (!element || expanded) {
+      return;
+    }
+
+    const updateClampState = () => {
+      setIsClamped(element.scrollHeight > element.clientHeight + 1);
+    };
+
+    updateClampState();
+
+    const observer = new ResizeObserver(updateClampState);
+    observer.observe(element);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [description, expanded]);
+
+  return (
+    <div className="space-y-1">
+      <p
+        ref={textRef}
+        className={cn(
+          'text-muted-foreground text-[11px] leading-relaxed',
+          !expanded && 'line-clamp-2'
+        )}
+      >
+        {description}
+      </p>
+      {isClamped || expanded ? (
+        <button
+          type="button"
+          className="text-primary hover:text-primary/80 text-[11px] font-medium hover:underline"
+          onClick={() => setExpanded((prev) => !prev)}
+        >
+          {expanded ? 'Show less' : 'Read more'}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export function LinkPreview({ url, children }: Readonly<LinkPreviewProps>) {
   const [metadata, setMetadata] = React.useState<OGMetadata | null>(null);
   const [loading, setLoading] = React.useState(false);
@@ -45,24 +145,34 @@ export function LinkPreview({ url, children }: Readonly<LinkPreviewProps>) {
 
   const canPreview = isPreviewableUrl(url);
 
-  const fetchMetadata = async () => {
+  const fetchMetadata = () => {
     if (!canPreview || hasFetched) {
       return;
     }
 
     setLoading(true);
-    try {
-      const res = await fetch(`/api/meta?url=${encodeURIComponent(url)}`);
-      if (res.ok) {
-        const data = await res.json();
-        setMetadata(data);
-      }
-    } catch (err) {
-      console.error('error. failed to parse link metadata:', err);
-    } finally {
-      setLoading(false);
-      setHasFetched(true);
-    }
+
+    fetch(`/api/meta?url=${encodeURIComponent(url)}`)
+      .then(async (res) => {
+        if (!res.ok) {
+          return;
+        }
+
+        const data = (await res.json()) as OGMetadata;
+        setMetadata({
+          title: sanitizeOgText(data.title),
+          description: sanitizeOgText(data.description),
+          image: data.image,
+          siteName: sanitizeOgText(data.siteName) || undefined,
+        });
+      })
+      .catch((err: unknown) => {
+        console.error('error. failed to parse link metadata:', err);
+      })
+      .finally(() => {
+        setLoading(false);
+        setHasFetched(true);
+      });
   };
 
   // Placeholder / relative fragments like "#" are not absolute URLs — skip preview.
@@ -71,6 +181,8 @@ export function LinkPreview({ url, children }: Readonly<LinkPreviewProps>) {
   }
 
   const hostname = metadata?.siteName || getSafeHostname(url) || url;
+  const description =
+    metadata?.description || 'No preview information available for this URL.';
 
   return (
     <HoverCard openDelay={400} closeDelay={200}>
@@ -101,10 +213,7 @@ export function LinkPreview({ url, children }: Readonly<LinkPreviewProps>) {
               <h4 className="text-foreground line-clamp-1 text-xs font-semibold">
                 {metadata?.title || url}
               </h4>
-              <p className="text-muted-foreground line-clamp-2 text-[11px] leading-relaxed">
-                {metadata?.description ||
-                  'No preview information available for this URL.'}
-              </p>
+              <LinkPreviewDescription description={description} />
             </div>
 
             <div className="text-muted-foreground flex items-center justify-between border-t pt-2 text-[10px]">
