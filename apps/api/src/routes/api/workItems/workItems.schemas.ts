@@ -16,6 +16,10 @@ function todayDateString(): string {
   return `${year}-${month}-${day}`;
 }
 
+function emptyStringToNull(value: unknown): unknown {
+  return value === '' || value === undefined ? null : value;
+}
+
 const literalSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 type Literal = z.infer<typeof literalSchema>;
 export type SupabaseJson =
@@ -40,9 +44,12 @@ export const workItemCoreObject = z.object({
     .max(200, 'Title must be at most 200 characters'),
   project_id: z.uuid({ message: 'Please select a valid project' }),
   type: workItemTypeSchema,
-  assignee_id: z.uuid({ message: 'Please select a valid assignee' }).nullable(),
-  due_date: dateStringSchema.nullable(),
-  description: jsonSchema,
+  assignee_id: z.preprocess(
+    emptyStringToNull,
+    z.uuid({ message: 'Please select a valid assignee' }).nullable()
+  ),
+  due_date: z.preprocess(emptyStringToNull, dateStringSchema.nullable()),
+  description: jsonSchema.nullable().optional(),
 });
 
 export const createUpdateWorkItemBodySchema = workItemCoreObject.refine(
@@ -75,3 +82,4 @@ export const patchUpdateWorkItemBodySchema = workItemCoreObject
   );
 
 export type WorkItemBody = z.infer<typeof createUpdateWorkItemBodySchema>;
+export type PatchWorkItemBody = z.infer<typeof patchUpdateWorkItemBodySchema>;
