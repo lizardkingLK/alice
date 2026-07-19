@@ -36,6 +36,7 @@ import { toTiptapContent } from '@/app/work-items/_helpers/work-item-description
 import { Json } from '@repo/types';
 import { updateWorkItem } from '@/app/work-items/_services/workItem.client.service';
 import WorkItemSidebar from '@/app/work-items/_components/workItem-details-sidebar';
+import { WorkItemTitleEditor } from '@/app/work-items/_components/workItem-title-editor';
 
 const PLACEHOLDER_ATTACHMENTS = [
   {
@@ -147,6 +148,14 @@ export default function WorkItemDetails({
     setEditing(false);
   };
 
+  const handleTitleUpdate = async (nextTitle: string) => {
+    const formData = new FormData();
+    formData.set('title', nextTitle);
+
+    await updateWorkItem(workItem.id, formData);
+    setWorkItem((prev) => ({ ...prev, title: nextTitle }));
+  };
+
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6">
       {/* Title + actions */}
@@ -159,9 +168,10 @@ export default function WorkItemDetails({
                 {workItem.id.slice(0, 8).toUpperCase()}
               </span>
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
-              {workItem.title}
-            </h1>
+            <WorkItemTitleEditor
+              title={workItem.title}
+              onSave={handleTitleUpdate}
+            />
           </div>
         </div>
 
