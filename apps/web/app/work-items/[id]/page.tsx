@@ -7,6 +7,7 @@ export default async function WorkItemPage({
 }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = await params;
   const workItem = await getWorkItem(id);
+  const shortId = workItem.id.slice(0, 8).toUpperCase();
 
   return (
     <DashboardShell
@@ -14,10 +15,10 @@ export default async function WorkItemPage({
       breadcrumbOverrides={[
         { label: 'Dashboard', url: '/dashboard' },
         { label: 'Work Items', url: '/work-items' },
-        { label: workItem.title, url: `/work-items/${workItem.id}` },
+        { label: shortId, url: `/work-items/${workItem.id}` },
       ]}
     >
-      <WorkItemDetails workItem={workItem} />
+      <WorkItemDetails workItemDetails={workItem} />
     </DashboardShell>
   );
 }

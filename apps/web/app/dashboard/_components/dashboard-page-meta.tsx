@@ -1,7 +1,6 @@
 'use client';
 
-import { Info } from 'lucide-react';
-import { Button } from '@repo/ui/components/ui/button';
+import { Info } from '@repo/ui/lib/icons';
 import {
   Tooltip,
   TooltipContent,
@@ -11,6 +10,7 @@ import {
   DashboardBreadcrumb,
   type DashboardBreadcrumbOverride,
 } from './dashboard-breadcrumb';
+import { Button } from '@repo/ui/components/ui/button';
 
 type DashboardPageMetaProps = {
   description?: string;

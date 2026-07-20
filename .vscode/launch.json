@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Monorepo: attach",
+      "name": "Monorepo: Attach",
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "pnpm",
@@ -10,63 +10,7 @@
       "console": "integratedTerminal"
     },
     {
-      "name": "Web: Next.js (server)",
-      "type": "node",
-      "request": "launch",
-      "cwd": "${workspaceFolder}/apps/web",
-      "program": "${workspaceFolder}/apps/web/node_modules/next/dist/bin/next",
-      "args": ["dev"],
-      "console": "integratedTerminal"
-    },
-    {
-      "name": "Web: Next.js (client)",
-      "type": "chrome",
-      "request": "launch",
-      "url": "http://localhost:3000",
-      "webRoot": "${workspaceFolder}/apps/web"
-    },
-    {
-      "name": "Web: Next.js (full stack)",
-      "type": "node",
-      "request": "launch",
-      "cwd": "${workspaceFolder}/apps/web",
-      "program": "${workspaceFolder}/apps/web/node_modules/next/dist/bin/next",
-      "args": ["dev"],
-      "console": "integratedTerminal",
-      "serverReadyAction": {
-        "pattern": "Local: .*(https?://\\S+)",
-        "uriFormat": "%s",
-        "action": "debugWithChrome"
-      }
-    },
-    {
-      "name": "API: Express",
-      "type": "node",
-      "request": "launch",
-      "cwd": "${workspaceFolder}/apps/api",
-      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
-      "args": ["src/index.ts"],
-      "envFile": "${workspaceFolder}/apps/api/.env",
-      "console": "integratedTerminal"
-    },
-    {
-      "name": "API: attach",
-      "type": "node",
-      "request": "attach",
-      "port": 9229
-    },
-    {
-      "name": "DB: seed",
-      "type": "node",
-      "request": "launch",
-      "cwd": "${workspaceFolder}/packages/db",
-      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
-      "args": ["src/seed.ts"],
-      "envFile": "${workspaceFolder}/packages/db/.env",
-      "console": "integratedTerminal"
-    },
-    {
-      "name": "Web: Vitest",
+      "name": "Vitest: Web",
       "type": "node",
       "request": "launch",
       "cwd": "${workspaceFolder}/apps/web",
@@ -75,29 +19,24 @@
       "console": "integratedTerminal"
     },
     {
-      "name": "API: Vitest",
-      "type": "node",
+      "name": "Next.js: Web",
+      "type": "node-terminal",
       "request": "launch",
-      "cwd": "${workspaceFolder}/apps/api",
-      "program": "${workspaceFolder}/apps/api/node_modules/vitest/vitest.mjs",
-      "args": ["run", "${file}"],
-      "console": "integratedTerminal",
-      "envFile": "${workspaceFolder}/apps/api/.env"
+      "command": "pnpm dev",
+      "cwd": "${workspaceFolder}/apps/web"
     },
     {
-      "name": "UI: Vitest",
-      "type": "node",
+      "name": "Express: API",
+      "type": "node-terminal",
       "request": "launch",
-      "cwd": "${workspaceFolder}/packages/ui",
-      "program": "${workspaceFolder}/packages/ui/node_modules/vitest/vitest.mjs",
-      "args": ["run", "${file}"],
-      "console": "integratedTerminal"
+      "command": "pnpm dev",
+      "cwd": "${workspaceFolder}/apps/api"
     }
   ],
   "compounds": [
     {
       "name": "Full stack: Web + API",
-      "configurations": ["Web: Next.js (server)", "API: Express"]
+      "configurations": ["Next.js: Web", "Express: API"]
     }
   ]
 }

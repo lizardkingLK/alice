@@ -8,7 +8,7 @@ if [ -f ./secrets_web.txt ]; then
 fi
 
 echo "info. installing workspace dependencies..."
-pnpm install --frozen-lockfile
+pnpm install --frozen-lockfile --ignore-scripts
 
 echo "info. compiling turborepo apps..."
 NODE_ENV=production pnpm turbo run build

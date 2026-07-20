@@ -7,6 +7,7 @@ import {
 } from '@/app/_shared/values';
 import React from 'react';
 import { cn } from '@repo/ui/lib/utils';
+import { Toaster } from '@repo/ui/components/ui/sonner';
 import { geistMono, geistSans, inter } from '@/app/_config/fonts';
 import './globals.css';
 
@@ -28,6 +29,7 @@ export default function RootLayout({
     <html lang="en" className={cn('font-sans', inter.variable)}>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         {children}
+        <Toaster />
       </body>
     </html>
   );

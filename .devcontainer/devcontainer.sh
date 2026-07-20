@@ -16,9 +16,9 @@ export PATH="$HOME/.local/share/pnpm:$PATH"
 pnpm config set global-bin-dir /home/node/.local/share/pnpm
 
 echo "info. updating PNPM to latest..."
-npm install -g pnpm@latest
+npm install -g pnpm@latest --ignore-scripts
 
 echo "info. installing workspace dependencies..."
-pnpm install
+pnpm install --ignore-scripts
 
 echo "info. setup complete."

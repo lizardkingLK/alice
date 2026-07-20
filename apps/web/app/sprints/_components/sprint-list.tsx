@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
 import { cn } from '@repo/ui/lib/utils';
-import { Calendar, Plus } from 'lucide-react';
+import { Plus, Calendar } from '@repo/ui/lib/icons';
 import {
   Sprint,
   updateSprintStatus,

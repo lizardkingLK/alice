@@ -6,7 +6,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { Slot } from 'radix-ui';
 
 import { useIsMobile } from '@repo/ui/hooks/use-mobile';
-import { cn } from '@repo/ui/lib/utils';
+import { cn, trueRandom } from '@repo/ui/lib/utils';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Separator } from '@repo/ui/components/ui/separator';
@@ -23,7 +23,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@repo/ui/components/ui/tooltip';
-import { trueRandom } from '@repo/ui/utils';
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = '16rem';
@@ -100,6 +99,14 @@ function SidebarProvider({
         (event.metaKey || event.ctrlKey)
       ) {
         event.preventDefault();
+        const target = event.target as HTMLElement;
+        if (
+          target.isContentEditable ||
+          ['INPUT', 'TEXTAREA'].includes(target.tagName)
+        ) {
+          return;
+        }
+
         toggleSidebar();
       }
     };
@@ -281,6 +288,7 @@ function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
 
   return (
     <button
+      type="button"
       data-sidebar="rail"
       data-slot="sidebar-rail"
       aria-label="Toggle Sidebar"

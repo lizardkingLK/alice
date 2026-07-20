@@ -13,6 +13,7 @@ export default function robots(): MetadataRoute.Robots {
         '/member',
         '/instruments',
         '/files',
+        '/profile',
         '/forgot-password',
         '/reset-password',
         '/*?*',

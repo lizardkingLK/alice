@@ -1,5 +1,6 @@
 'use client';
 
+import { FormAlertMessage } from '@/app/_shared/form-alert-message';
 import {
   FormEvent,
   useEffect,
@@ -32,9 +33,7 @@ import {
   X,
   CalendarPlus,
   CalendarCog,
-  CheckCircle,
-  AlertCircle,
-} from 'lucide-react';
+} from '@repo/ui/lib/icons';
 import {
   createSprint,
   getSprint,
@@ -106,34 +105,6 @@ function renderProjectOptions(
   ));
 }
 
-interface FormAlertMessageProps {
-  message: string | null;
-  isError: boolean;
-}
-
-function FormAlertMessage({
-  message,
-  isError,
-}: Readonly<FormAlertMessageProps>) {
-  if (!message) return null;
-  return (
-    <div
-      className={cn(
-        'flex items-center gap-2 rounded-lg border p-3 text-sm',
-        isError
-          ? 'text-destructive bg-destructive/10 border-destructive/20'
-          : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
-      )}
-    >
-      {isError ? (
-        <AlertCircle className="h-4 w-4 shrink-0" />
-      ) : (
-        <CheckCircle className="h-4 w-4 shrink-0" />
-      )}
-      <span>{message}</span>
-    </div>
-  );
-}
 
 export function SprintForm({
   className,

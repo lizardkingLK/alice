@@ -31,10 +31,10 @@ import {
   Search,
   FolderOpen,
   Pencil,
-  Archive,
   RefreshCw,
+  Archive,
   Trash2,
-} from 'lucide-react';
+} from '@repo/ui/lib/icons';
 import { Pagination } from '@/components/pagination';
 import type { Team } from '../_services/teams.service';
 import type { User } from '@/app/users/_services/users.service';
@@ -255,7 +255,7 @@ export function TeamRegistry({
                 setTeamToEdit(null);
                 setIsAddTeamOpen(true);
               }}
-              className="h-10 w-32 px-6 text-xs font-semibold shadow-md duration-300 hover:shadow-lg flex items-center justify-center shrink-0"
+              className="h-10 w-32 px-6 text-xs font-semibold shadow-md duration-300 hover:shadow-lg flex items-center justify-center shrink-0 cursor-pointer"
             >
               <Plus className="mr-1.5 h-4 w-4 shrink-0" />
               Add Team
@@ -298,7 +298,8 @@ export function TeamRegistry({
                   </TableHeader>
                   <TableBody>
                     {teams.map((team) => {
-                      const managerName = team.manager?.name ?? 'Unknown Manager';
+                      const managerName =
+                        team.manager?.name ?? 'Unknown Manager';
                       const managerEmail = team.manager?.email ?? '';
                       const isManagerSelf = team.manager_id === currentUserId;
 
@@ -310,18 +311,21 @@ export function TeamRegistry({
                             variant="outline"
                             disabled={isPending}
                             onClick={() => setTeamToEdit(team)}
-                            className="focus-visible:ring-ring border border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 font-semibold shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50 h-8 w-20 justify-center shrink-0 flex items-center"
+                            className="focus-visible:ring-ring border border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 font-semibold shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50 h-8 w-20 justify-center shrink-0 flex items-center cursor-pointer"
                           >
                             <Pencil className="mr-1 h-3 w-3 shrink-0" />
                             <span>Edit</span>
                           </Button>
                         );
-                      } else if (team.status === 'archived' && isManagerOrAdmin) {
+                      } else if (
+                        team.status === 'archived' &&
+                        isManagerOrAdmin
+                      ) {
                         primaryButton = (
                           <Button
                             disabled={isPending}
                             onClick={() => handleRestore(team)}
-                            className="h-8 border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 shadow-sm hover:bg-emerald-600 hover:text-white disabled:opacity-50 w-20 justify-center shrink-0 flex items-center"
+                            className="h-8 border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 shadow-sm hover:bg-emerald-600 hover:text-white disabled:opacity-50 w-20 justify-center shrink-0 flex items-center cursor-pointer"
                           >
                             <RefreshCw className="mr-1 h-3 w-3 shrink-0" />
                             <span>Restore</span>
@@ -335,7 +339,7 @@ export function TeamRegistry({
                           <Button
                             disabled={isPending}
                             onClick={() => handleSoftDelete(team)}
-                            className="focus-visible:ring-ring border border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50 h-8 w-28 justify-center shrink-0 flex items-center"
+                            className="focus-visible:ring-ring border border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50 h-8 w-28 justify-center shrink-0 flex items-center cursor-pointer"
                           >
                             <Archive className="mr-1 h-3 w-3 shrink-0" />
                             <span>Archive</span>
@@ -346,7 +350,7 @@ export function TeamRegistry({
                           <Button
                             disabled={isPending}
                             onClick={() => handleHardDelete(team)}
-                            className="h-8 border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm hover:bg-rose-600 hover:text-white disabled:opacity-50 w-28 justify-center shrink-0 flex items-center"
+                            className="h-8 border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm hover:bg-rose-600 hover:text-white disabled:opacity-50 w-28 justify-center shrink-0 flex items-center cursor-pointer"
                           >
                             <Trash2 className="mr-1 h-3 w-3 shrink-0" />
                             <span>Purge</span>
@@ -355,7 +359,10 @@ export function TeamRegistry({
                       }
 
                       return (
-                        <TableRow key={team.id} className="hover:bg-accent/40 h-16">
+                        <TableRow
+                          key={team.id}
+                          className="hover:bg-accent/40 h-16"
+                        >
                           <TableCell className="w-[40%] font-medium">
                             <div className="flex items-center gap-3">
                               <div className="bg-primary/10 text-primary border-primary/20 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-bold shadow-sm transition-all duration-300 group-hover:scale-105">
@@ -399,7 +406,7 @@ export function TeamRegistry({
                               )}
                             </span>
                           </TableCell>
-                          <TableCell className="w-[20%] text-right pr-4">
+                          <TableCell className="w-[20%] pr-4 text-right">
                             <div className="flex justify-end gap-2">
                               {primaryButton}
                               {secondaryButton}
@@ -482,9 +489,7 @@ export function TeamRegistry({
               <p className="text-muted-foreground text-sm leading-relaxed">
                 Are you sure you want to
                 {deleteMode === 'soft' ? ' archive ' : ' permanently delete '}
-                <strong className="text-foreground">
-                  {teamToDelete.name}
-                </strong>
+                <strong className="text-foreground">{teamToDelete.name}</strong>
                 {' ?'}
               </p>
               <p className="text-muted-foreground/80 bg-muted/50 border-border/40 mt-2 rounded-lg border p-2.5 text-xs">

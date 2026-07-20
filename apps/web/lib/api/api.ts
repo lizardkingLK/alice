@@ -68,14 +68,23 @@ export async function getResponse<T>(
   token: string,
   init?: RequestInit
 ): Promise<T> {
+  const headers = new Headers(init?.headers);
+  headers.set('Authorization', `Bearer ${token}`);
+
+  const isFormData =
+    typeof FormData !== 'undefined' && init?.body instanceof FormData;
+
+  // Let the browser set multipart boundary for FormData uploads.
+  if (isFormData) {
+    headers.delete('Content-Type');
+  } else if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
   const response = await fetch(`${getAPIUrl()}${path}`, {
     cache: 'no-store',
     ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      ...init?.headers,
-    },
+    headers,
   });
 
   const data: T | ApiErrorResponse = await response.json();

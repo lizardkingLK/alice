@@ -1,4 +1,5 @@
 @import '../../../packages/ui/globals.css';
+@plugin '@tailwindcss/typography';
 
 @source './src/**/*.{ts,tsx}';
 @source '../../../packages/ui/src/**/*.{ts,tsx}';

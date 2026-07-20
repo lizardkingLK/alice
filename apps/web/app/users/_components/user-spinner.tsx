@@ -1,5 +1,5 @@
 import { cn } from '@repo/ui/lib/utils';
-import { LoaderIcon } from 'lucide-react';
+import { LoaderIcon } from '@repo/ui/lib/icons';
 
 interface CustomSpinnerProps {
   className?: string;

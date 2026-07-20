@@ -3,7 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
-export function useDebouncedSearch(initialSearch: string, delay = 400, searchParamKey = 'search') {
+export function useDebouncedSearch(
+  initialSearch: string,
+  delay = 400,
+  searchParamKey = 'search'
+) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

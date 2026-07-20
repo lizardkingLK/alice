@@ -31,3 +31,20 @@ alwaysApply: true
 
 ## Long Class Names
 - Use tailwind utility `cn` on package `@repo/ui` to join long class names to support readability.
+
+## Truncated text + native title
+- Whenever text uses ellipsis (`truncate` / `line-clamp` / `text-ellipsis`), the full string must remain discoverable on hover.
+- Prefer the shared `@repo/ui/components/ui/truncated-text` primitive for single-line truncation. It sets the native `title` **only when content actually overflows**, so short labels stay tooltip-free.
+- Do not always hardcode `title={text}` on every truncate unless a one-off makes the shared primitive impractical.
+- Prefer native `title` over a custom Tooltip for plain “show full truncated string” cases (tables, badges, filenames). Use Tooltip only when the hint needs richer UI.
+- Example:
+
+```tsx
+import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
+
+<TruncatedText className="text-sm">{child.title}</TruncatedText>
+```
+
+## Use Link instead of anchor tags
+- When writing anchor tags use the component `Link` from module `next/link` to avoid full page reloads.
+- Avoid when anchor tag parsing in work-item descriptions as they are generated in code.

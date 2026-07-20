@@ -5,7 +5,7 @@ globs: apps/web/app/**, apps/web/app/robots.ts, apps/web/app/sitemap.ts
 
 # SEO Optimizer Rules
 
-Follow `docs/guidelines/SEO.md` for the full operational guide. These rules apply whenever adding or changing routes, metadata, or crawler-facing files in `apps/web`.
+Follow `docs/guides/SEO.md` for the full operational guide. These rules apply whenever adding or changing routes, metadata, or crawler-facing files in `apps/web`.
 
 ## Central configuration
 

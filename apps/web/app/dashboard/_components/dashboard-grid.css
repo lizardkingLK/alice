@@ -1,0 +1,35 @@
+/* RGL items set an explicit pixel box. Absolute-fill the widget so charts
+   measure a non-zero width/height instead of collapsing in nested flex. */
+.dashboard-grid .react-grid-item > .dashboard-widget-root {
+  position: absolute;
+  inset: 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+.dashboard-grid .react-grid-item.react-grid-placeholder {
+  background: var(--primary);
+  opacity: 0.18;
+  border-radius: var(--radius);
+  transition-duration: 100ms;
+}
+
+.dashboard-grid .react-grid-item > .react-resizable-handle::after {
+  border-color: color-mix(in oklch, var(--muted-foreground) 55%, transparent);
+}
+
+.dashboard-grid .react-grid-item:hover > .react-resizable-handle::after {
+  border-color: var(--primary);
+}
+
+.dashboard-grid .react-grid-item.react-draggable-dragging,
+.dashboard-grid .react-grid-item.resizing {
+  z-index: 20;
+}
+
+.dashboard-grid .react-grid-item.react-draggable-dragging > *,
+.dashboard-grid .react-grid-item.resizing > * {
+  box-shadow:
+    0 12px 40px color-mix(in oklch, var(--foreground) 12%, transparent),
+    0 0 0 1px color-mix(in oklch, var(--primary) 35%, transparent);
+}

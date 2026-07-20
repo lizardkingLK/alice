@@ -31,7 +31,9 @@ export class TeamsRepository {
   async listAll(): Promise<TeamRowWithManager[]> {
     const { data, error } = await supabase
       .from('teams')
-      .select('*, manager:users!teams_manager_id_fkey(id, name, email), members:team_members(*)')
+      .select(
+        '*, manager:users!teams_manager_id_fkey(id, name, email), members:team_members(*)'
+      )
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -53,9 +55,12 @@ export class TeamsRepository {
 
     let dbQuery = supabase
       .from('teams')
-      .select('*, manager:users!teams_manager_id_fkey(id, name, email), members:team_members(*)', {
-        count: 'exact',
-      });
+      .select(
+        '*, manager:users!teams_manager_id_fkey(id, name, email), members:team_members(*)',
+        {
+          count: 'exact',
+        }
+      );
 
     if (teamStatus) {
       dbQuery = dbQuery.eq('status', teamStatus);
@@ -152,9 +157,14 @@ export class TeamsRepository {
         .insert(teamMembersPayload);
 
       if (membersResponse.error) {
-        console.error('database failure adding team members:', membersResponse.error.message);
+        console.error(
+          'database failure adding team members:',
+          membersResponse.error.message
+        );
         await supabase.from('teams').delete().eq('id', createdTeam.id);
-        throw new Error(`Failed to add team members: ${membersResponse.error.message}`);
+        throw new Error(
+          `Failed to add team members: ${membersResponse.error.message}`
+        );
       }
     }
 
@@ -195,8 +205,13 @@ export class TeamsRepository {
         .eq('team_id', teamId);
 
       if (deleteResponse.error) {
-        console.error('database failure deleting team members:', deleteResponse.error.message);
-        throw new Error(`Failed to update team members: ${deleteResponse.error.message}`);
+        console.error(
+          'database failure deleting team members:',
+          deleteResponse.error.message
+        );
+        throw new Error(
+          `Failed to update team members: ${deleteResponse.error.message}`
+        );
       }
 
       if (member_ids.length > 0) {
@@ -214,8 +229,13 @@ export class TeamsRepository {
           .insert(teamMembersPayload);
 
         if (insertResponse.error) {
-          console.error('database failure inserting team members:', insertResponse.error.message);
-          throw new Error(`Failed to update team members: ${insertResponse.error.message}`);
+          console.error(
+            'database failure inserting team members:',
+            insertResponse.error.message
+          );
+          throw new Error(
+            `Failed to update team members: ${insertResponse.error.message}`
+          );
         }
       }
     }

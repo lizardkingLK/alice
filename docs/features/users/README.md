@@ -8,4 +8,5 @@ Quick links:
 
 - Implementation: `apps/web/app/users/`
 - Schema: `public.users` in `packages/db/prisma/schema.prisma`
-- Authorization plan: `docs/authorization/RBAC_AUTHORIZATION_SKELETON.md`
+- Auth flows (invite + reset diagrams): `docs/auth/AUTHENTICATION.md`
+- Authorization plan: `docs/auth/RBAC_AUTHORIZATION_SKELETON.md`

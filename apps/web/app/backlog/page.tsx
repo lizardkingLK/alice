@@ -2,7 +2,10 @@ import { Metadata } from 'next';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { getProjectList } from '@/app/projects/_services/projects.service.server';
 import { getUserList } from '@/app/users/_services/users.service.server';
-import { getWorkItems, DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
+import {
+  getWorkItems,
+  DbWorkItem,
+} from '@/app/work-items/_services/workItem.server.service';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.service.server';
 import { getDbUser } from '@/lib/auth';
 import { BacklogWorkspace } from './_components/backlog-workspace';
@@ -30,19 +33,21 @@ export default async function BacklogPage() {
   let error: string | null = null;
 
   try {
-    const [projectsData, membersData, workItemsData, sprintsData] = await Promise.all([
-      getProjectList(),
-      getUserList(),
-      getWorkItems(),
-      getSprintsPaginatedServer('active', 1, 100),
-    ]);
+    const [projectsData, membersData, workItemsData, sprintsData] =
+      await Promise.all([
+        getProjectList(),
+        getUserList(),
+        getWorkItems(),
+        getSprintsPaginatedServer('active', 1, 100),
+      ]);
 
     projects = projectsData;
     projectMembers = membersData;
     initialWorkItems = workItemsData;
     sprints = sprintsData.sprints;
   } catch (err) {
-    error = err instanceof Error ? err.message : 'Failed to fetch backlog data.';
+    error =
+      err instanceof Error ? err.message : 'Failed to fetch backlog data.';
     console.error('Failed to fetch backlog data:', err);
   }
 

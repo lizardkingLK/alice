@@ -4,6 +4,7 @@ on:
   push:
     branches: [main, dev]
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main, dev]
 
 env:
@@ -13,6 +14,7 @@ env:
 jobs:
   validate_and_test:
     name: Code Validation and Quality Controls
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source Code
@@ -50,7 +52,9 @@ jobs:
   sonar_quality_gate:
     name: Execute SonarCloud Scan
     needs: validate_and_test
-    if: github.base_ref == 'dev' || github.ref == 'refs/heads/dev'
+    if: >-
+      (github.base_ref == 'dev' || github.ref == 'refs/heads/dev') &&
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source Code
@@ -67,7 +71,12 @@ jobs:
           args: >
             -Dsonar.qualitygate.wait=true
             -Dsonar.pullrequest.github.repository=${{ github.repository }}
-            ${{ github.event_name == 'pull_request' && format('-Dsonar.pullrequest.key={0} -Dsonar.pullrequest.branch={1} -Dsonar.pullrequest.base={2}', github.event.pull_request.number, github.head_ref, github.base_ref) || '' }}
+            ${{ github.event_name == 'pull_request' && 
+                format('-Dsonar.pullrequest.key={0} -Dsonar.pullrequest.branch={1} -Dsonar.pullrequest.base={2}', 
+                  github.event.pull_request.number, 
+                  github.head_ref, 
+                  github.base_ref) 
+                || '' }}
 
   validate_database:
     name: Validate Postgresql for Up-to-date
