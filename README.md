@@ -10,14 +10,14 @@ Jira Teams helps teams manage projects, sprints, boards, backlogs, and work item
 
 This repository is an **Alice** monorepo that powers **Jira Teams**. It is organized as:
 
-| Area | Path | Role |
-|------|------|------|
-| Web app | `apps/web` | Next.js frontend (dashboard, board, backlog, work items, projects, auth, profile) |
-| API | `apps/api` | Express.js TypeScript backend (REST, auth-aware routes, file uploads) |
-| UI kit | `packages/ui` | Shared shadcn/ui components and theme tokens |
-| Database | `packages/db` | Prisma / Supabase migrations, seeds, and type generation |
-| Types | `packages/types` | Shared TypeScript types (including generated DB types) |
-| Tooling | `packages/eslint-config`, `packages/typescript-config` | Shared lint and TS configs |
+| Area     | Path                                                   | Role                                                                              |
+| -------- | ------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| Web app  | `apps/web`                                             | Next.js frontend (dashboard, board, backlog, work items, projects, auth, profile) |
+| API      | `apps/api`                                             | Express.js TypeScript backend (REST, auth-aware routes, file uploads)             |
+| UI kit   | `packages/ui`                                          | Shared shadcn/ui components and theme tokens                                      |
+| Database | `packages/db`                                          | Prisma / Supabase migrations, seeds, and type generation                          |
+| Types    | `packages/types`                                       | Shared TypeScript types (including generated DB types)                            |
+| Tooling  | `packages/eslint-config`, `packages/typescript-config` | Shared lint and TS configs                                                        |
 
 **Build system:** Turborepo + pnpm workspaces  
 **Commits:** Conventional Commits (Commitizen / Commitlint + Husky)

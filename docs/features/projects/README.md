@@ -2,9 +2,9 @@
 
 Project administration registry: list, create, edit, soft delete, restore, and hard delete.
 
-| Document | Description | Status |
-|----------|-------------|--------|
-| — | See [ARD](../../product/ARD.md) (PROJ-1) and [TRD](../../architecture/TRD.md); add dedicated notes here as needed | Living |
+| Document | Description                                                                                                       | Status |
+| -------- | ----------------------------------------------------------------------------------------------------------------- | ------ |
+| —        | See [ARD](../../product/ARD.md) (PROJ-1) and [TRD](../../architecture/TRD.md); add dedicated notes here as needed | Living |
 
 Quick links:
 

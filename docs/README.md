@@ -2,21 +2,21 @@
 
 Central docs for **Alice** (branded as **Jira Teams**).
 
-| Status | Meaning |
-|--------|---------|
-| **Living** | Matches current product / engineering practice — keep updated |
-| **Plan** | Design or rollout intent — may not be fully implemented |
-| **Reference** | Stable domain or schema notes |
+| Status        | Meaning                                                       |
+| ------------- | ------------------------------------------------------------- |
+| **Living**    | Matches current product / engineering practice — keep updated |
+| **Plan**      | Design or rollout intent — may not be fully implemented       |
+| **Reference** | Stable domain or schema notes                                 |
 
 ---
 
 ## Start here
 
-| Doc | Audience | Status |
-|-----|----------|--------|
-| [product/ARD.md](./product/ARD.md) | Product / requirements | Living |
-| [architecture/TRD.md](./architecture/TRD.md) | Engineering / architecture | Living |
-| [guides/DATABASE.md](./guides/DATABASE.md) | Anyone touching schema or migrations | Living |
+| Doc                                          | Audience                             | Status |
+| -------------------------------------------- | ------------------------------------ | ------ |
+| [product/ARD.md](./product/ARD.md)           | Product / requirements               | Living |
+| [architecture/TRD.md](./architecture/TRD.md) | Engineering / architecture           | Living |
+| [guides/DATABASE.md](./guides/DATABASE.md)   | Anyone touching schema or migrations | Living |
 
 ---
 
@@ -38,14 +38,14 @@ How the monorepo fits together (apps, auth, deployment).
 
 One folder per product area. Prefer a local `README.md` as the index.
 
-| Area | Index |
-|------|--------|
-| Users | [features/users/](./features/users/) |
+| Area       | Index                                          |
+| ---------- | ---------------------------------------------- |
+| Users      | [features/users/](./features/users/)           |
 | Work items | [features/work-items/](./features/work-items/) |
-| Board | [features/board/](./features/board/) |
-| Projects | [features/projects/](./features/projects/) |
-| Sprints | [features/sprints/](./features/sprints/) |
-| Dashboard | [features/dashboard/](./features/dashboard/) |
+| Board      | [features/board/](./features/board/)           |
+| Projects   | [features/projects/](./features/projects/)     |
+| Sprints    | [features/sprints/](./features/sprints/)       |
+| Dashboard  | [features/dashboard/](./features/dashboard/)   |
 
 ### Database
 

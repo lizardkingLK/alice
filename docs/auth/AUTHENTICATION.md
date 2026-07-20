@@ -2,13 +2,13 @@
 
 Living guide to how identity works in **Alice** (Jira Teams): email/password, Google OAuth, session handling, admin invites, password reset, and how emails relate across accounts.
 
-| Field | Value |
-|-------|--------|
-| Status | **Living** |
-| Last updated | 2026-07-20 |
-| Primary apps | `apps/web`, `apps/api` |
-| Identity provider | Supabase Auth |
-| App profile table | `public.users` |
+| Field             | Value                  |
+| ----------------- | ---------------------- |
+| Status            | **Living**             |
+| Last updated      | 2026-07-20             |
+| Primary apps      | `apps/web`, `apps/api` |
+| Identity provider | Supabase Auth          |
+| App profile table | `public.users`         |
 
 Related:
 
@@ -21,12 +21,12 @@ Related:
 
 ## 1. Mental model
 
-| Concern | Source of truth |
-|---------|-----------------|
-| Credentials, sessions, OAuth identities | Supabase Auth (`auth.users`, `auth.identities`) |
-| Display name, role, `active` flag | Application table `public.users` |
-| Web session cookies | `@supabase/ssr` (Next.js server + proxy refresh) |
-| API calls | `Authorization: Bearer <access_token>` validated by `requireApiAuth` |
+| Concern                                 | Source of truth                                                      |
+| --------------------------------------- | -------------------------------------------------------------------- |
+| Credentials, sessions, OAuth identities | Supabase Auth (`auth.users`, `auth.identities`)                      |
+| Display name, role, `active` flag       | Application table `public.users`                                     |
+| Web session cookies                     | `@supabase/ssr` (Next.js server + proxy refresh)                     |
+| API calls                               | `Authorization: Bearer <access_token>` validated by `requireApiAuth` |
 
 **Rule:** Authentication is Supabase. Authorization for product actions uses `public.users.role` / `active` (and API helpers), not editable Auth `user_metadata` as the long-term RBAC source of truth. Metadata may still be written on invite for bootstrap (name/role) and copied into `public.users` on first profile create.
 
@@ -50,29 +50,29 @@ flowchart LR
 
 ### Key routes
 
-| Route | Purpose |
-|-------|---------|
-| `/login` | Email/password + Google sign-in |
-| `/signup` | Email/password registration |
-| `/forgot-password` | Request recovery email |
-| `/reset-password` | Set a new password (requires session) |
-| `/auth/callback` | PKCE `code` → session (OAuth, confirm, invite, recovery) |
-| `/auth/confirm` | Optional `verifyOtp(token_hash)` UI — **not used** by current email templates |
-| `/users` | Admin invite / activate / deactivate |
+| Route              | Purpose                                                                       |
+| ------------------ | ----------------------------------------------------------------------------- |
+| `/login`           | Email/password + Google sign-in                                               |
+| `/signup`          | Email/password registration                                                   |
+| `/forgot-password` | Request recovery email                                                        |
+| `/reset-password`  | Set a new password (requires session)                                         |
+| `/auth/callback`   | PKCE `code` → session (OAuth, confirm, invite, recovery)                      |
+| `/auth/confirm`    | Optional `verifyOtp(token_hash)` UI — **not used** by current email templates |
+| `/users`           | Admin invite / activate / deactivate                                          |
 
 ### Key code
 
-| Area | Path |
-|------|------|
-| Auth Server Actions | `apps/web/app/auth/actions.ts` |
-| OAuth callback | `apps/web/app/auth/callback/route.ts` |
-| Profile bootstrap | `apps/web/lib/ensure-public-user.ts` |
-| Session helpers | `apps/web/lib/auth.ts` (`getUser`, `getDbUser`, `getUserRole`) |
-| Session refresh | `apps/web/proxy.ts` → `lib/supabase/middleware.ts` |
-| Google button | `apps/web/app/login/_components/google-login.tsx` |
-| Reset password action | `apps/web/app/reset-password/actions.ts` |
-| API JWT gate | `apps/api/src/middlewares/auth/index.ts` |
-| Admin invite | `apps/api/src/routes/api/users/users.service.ts` |
+| Area                  | Path                                                           |
+| --------------------- | -------------------------------------------------------------- |
+| Auth Server Actions   | `apps/web/app/auth/actions.ts`                                 |
+| OAuth callback        | `apps/web/app/auth/callback/route.ts`                          |
+| Profile bootstrap     | `apps/web/lib/ensure-public-user.ts`                           |
+| Session helpers       | `apps/web/lib/auth.ts` (`getUser`, `getDbUser`, `getUserRole`) |
+| Session refresh       | `apps/web/proxy.ts` → `lib/supabase/middleware.ts`             |
+| Google button         | `apps/web/app/login/_components/google-login.tsx`              |
+| Reset password action | `apps/web/app/reset-password/actions.ts`                       |
+| API JWT gate          | `apps/api/src/middlewares/auth/index.ts`                       |
+| Admin invite          | `apps/api/src/routes/api/users/users.service.ts`               |
 
 ---
 
@@ -241,24 +241,24 @@ Official reference: [Supabase Identity Linking](https://supabase.com/docs/guides
 
 Supabase supports (when enabled in project Auth settings):
 
-| API | Purpose |
-|-----|---------|
+| API                                                  | Purpose                                                                    |
+| ---------------------------------------------------- | -------------------------------------------------------------------------- |
 | `supabase.auth.linkIdentity({ provider: 'google' })` | While signed in, attach another OAuth identity (can use a different email) |
-| `supabase.auth.unlinkIdentity(identity)` | Remove a linked identity |
-| `supabase.auth.getUserIdentities()` | List identities on the current user |
-| `supabase.auth.updateUser({ email })` | Change / add email identity (with verification) |
+| `supabase.auth.unlinkIdentity(identity)`             | Remove a linked identity                                                   |
+| `supabase.auth.getUserIdentities()`                  | List identities on the current user                                        |
+| `supabase.auth.updateUser({ email })`                | Change / add email identity (with verification)                            |
 
 **Planned product work (optional):** profile settings to “Connect Google” / “Disconnect Google”, enable manual linking in Supabase, and document conflict UX when the Google email already belongs to another Auth user.
 
 ### 5.3 Email collision matrix (practical)
 
-| Existing account | New attempt | Typical result |
-|------------------|-------------|----------------|
-| Email/password, verified | Google, **same** verified email | Automatic link → one user |
-| Email/password | Sign up again, same email | Auth rejects / “already registered” |
-| Google-only | Email signup, same email | Depends on confirm + linking settings; often blocked or linked after verify |
-| Two different emails | User wants one login | Needs **manual** linking (not in app today) |
-| Admin invite pending | Self-signup same email | Duplicate risk — admins should invite first; registry checks `public.users` email uniqueness on invite |
+| Existing account         | New attempt                     | Typical result                                                                                         |
+| ------------------------ | ------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Email/password, verified | Google, **same** verified email | Automatic link → one user                                                                              |
+| Email/password           | Sign up again, same email       | Auth rejects / “already registered”                                                                    |
+| Google-only              | Email signup, same email        | Depends on confirm + linking settings; often blocked or linked after verify                            |
+| Two different emails     | User wants one login            | Needs **manual** linking (not in app today)                                                            |
+| Admin invite pending     | Self-signup same email          | Duplicate risk — admins should invite first; registry checks `public.users` email uniqueness on invite |
 
 ---
 
@@ -366,12 +366,12 @@ sequenceDiagram
 
 ### Difference from admin invite
 
-| Step | Forgot password | Admin invite |
-|------|-----------------|--------------|
-| Starts with | `resetPasswordForEmail` | `inviteUserByEmail` |
-| Email type | Recovery | Invite |
-| Sets `public.users` | Already exists | Created at invite time |
-| Ends at | `/?reset=success` after set password | Same reset page → `/?reset=success` |
+| Step                | Forgot password                      | Admin invite                        |
+| ------------------- | ------------------------------------ | ----------------------------------- |
+| Starts with         | `resetPasswordForEmail`              | `inviteUserByEmail`                 |
+| Email type          | Recovery                             | Invite                              |
+| Sets `public.users` | Already exists                       | Created at invite time              |
+| Ends at             | `/?reset=success` after set password | Same reset page → `/?reset=success` |
 
 ---
 
@@ -415,50 +415,50 @@ Admin-only user mutations additionally call `requireAdmin` inside `UsersService`
 
 ### Web (`apps/web`)
 
-| Variable | Role |
-|----------|------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser / SSR anon key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server admin client (profile ensure, etc.) |
-| `NEXT_PUBLIC_SITE_URL` | Canonical origin for email `redirectTo` (optional) |
-| `NEXT_PUBLIC_API_URL` | API base for Bearer calls |
+| Variable                        | Role                                               |
+| ------------------------------- | -------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase project URL                               |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser / SSR anon key                             |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Server admin client (profile ensure, etc.)         |
+| `NEXT_PUBLIC_SITE_URL`          | Canonical origin for email `redirectTo` (optional) |
+| `NEXT_PUBLIC_API_URL`           | API base for Bearer calls                          |
 
 ### API (`apps/api`)
 
-| Variable | Role |
-|----------|------|
-| `SUPABASE_URL` | Supabase URL |
-| `SUPABASE_ANON_KEY` | JWT verification in `requireApiAuth` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Invites, bans, privileged DB |
-| `FRONTEND_URL` | CORS / frontend origin |
+| Variable                    | Role                                 |
+| --------------------------- | ------------------------------------ |
+| `SUPABASE_URL`              | Supabase URL                         |
+| `SUPABASE_ANON_KEY`         | JWT verification in `requireApiAuth` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Invites, bans, privileged DB         |
+| `FRONTEND_URL`              | CORS / frontend origin               |
 
 ---
 
 ## 11. Capability matrix
 
-| Capability | Status in Alice |
-|------------|-----------------|
-| Email/password sign up | Implemented |
-| Email/password sign in | Implemented |
-| Sign out | Implemented |
-| Google OAuth sign in | Implemented (`/login`) |
-| Google on sign-up page | Not present |
-| Automatic identity linking (same verified email) | Platform (Supabase); no app code |
-| Manual link / unlink UI | **Not implemented** |
-| Admin invite + set password | Implemented (API + `/users`) |
-| Activate / deactivate | Implemented |
-| Forgot / reset password | Implemented |
-| `/auth/confirm` token-hash flow | Code present; emails use `/auth/callback` |
-| Full page-level RBAC | Partial — see RBAC skeleton |
+| Capability                                       | Status in Alice                           |
+| ------------------------------------------------ | ----------------------------------------- |
+| Email/password sign up                           | Implemented                               |
+| Email/password sign in                           | Implemented                               |
+| Sign out                                         | Implemented                               |
+| Google OAuth sign in                             | Implemented (`/login`)                    |
+| Google on sign-up page                           | Not present                               |
+| Automatic identity linking (same verified email) | Platform (Supabase); no app code          |
+| Manual link / unlink UI                          | **Not implemented**                       |
+| Admin invite + set password                      | Implemented (API + `/users`)              |
+| Activate / deactivate                            | Implemented                               |
+| Forgot / reset password                          | Implemented                               |
+| `/auth/confirm` token-hash flow                  | Code present; emails use `/auth/callback` |
+| Full page-level RBAC                             | Partial — see RBAC skeleton               |
 
 ---
 
 ## 12. Troubleshooting
 
-| Symptom | Likely cause |
-|---------|----------------|
-| Google button fails immediately | Provider disabled or redirect URL mismatch in Supabase / Google Cloud |
-| Invite / reset link lands on login error | Expired or already-used `code`; recovery failures go to `/forgot-password?error=expired` |
-| User signed in Auth but missing from registry | `ensurePublicUser` failed (check service role + RLS/grants on `public.users`) |
-| Deactivated user still sees UI briefly | Stale cookie until `getUser()` runs; Auth ban should block API |
-| Two registry rows for “same person” | Different Auth user IDs (different emails or linking never occurred) |
+| Symptom                                       | Likely cause                                                                             |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Google button fails immediately               | Provider disabled or redirect URL mismatch in Supabase / Google Cloud                    |
+| Invite / reset link lands on login error      | Expired or already-used `code`; recovery failures go to `/forgot-password?error=expired` |
+| User signed in Auth but missing from registry | `ensurePublicUser` failed (check service role + RLS/grants on `public.users`)            |
+| Deactivated user still sees UI briefly        | Stale cookie until `getUser()` runs; Auth ban should block API                           |
+| Two registry rows for “same person”           | Different Auth user IDs (different emails or linking never occurred)                     |

@@ -36,7 +36,9 @@ const widgetById = Object.fromEntries(
   WIDGET_CATALOG.map((widget) => [widget.id, widget])
 ) as Record<WidgetId, (typeof WIDGET_CATALOG)[number]>;
 
-function StatWidget({ id }: { id: keyof typeof STAT_VALUES }) {
+type StatWidgetProps = { id: keyof typeof STAT_VALUES };
+
+function StatWidget({ id }: Readonly<StatWidgetProps>) {
   const meta = widgetById[id];
   const stat = STAT_VALUES[id];
 
@@ -57,13 +59,12 @@ type ChartSize = {
   height: number;
 };
 
-function ChartViewport({
-  config,
-  children,
-}: {
+type ChartViewportType = {
   config: ComponentProps<typeof ChartContainer>['config'];
   children: ComponentProps<typeof ChartContainer>['children'];
-}) {
+};
+
+function ChartViewport({ config, children }: Readonly<ChartViewportType>) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<ChartSize | null>(null);
 
@@ -239,7 +240,9 @@ function ActivityWidget() {
   );
 }
 
-export function DashboardWidget({ id }: { id: WidgetId }) {
+type DashboardWidgetType = { id: WidgetId };
+
+export function DashboardWidget({ id }: Readonly<DashboardWidgetType>) {
   switch (id) {
     case 'open-issues':
     case 'in-progress':

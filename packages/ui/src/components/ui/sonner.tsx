@@ -1,6 +1,6 @@
 'use client';
 
-import { Toaster as Sonner, type ToasterProps, toast } from 'sonner';
+import { Toaster as Sonner, type ToasterProps } from 'sonner';
 import {
   CircleCheckIcon,
   InfoIcon,
@@ -18,7 +18,7 @@ const closeButtonClasses = [
   'focus-visible:ring-0 focus-visible:outline-none',
 ].join(' ');
 
-function Toaster({ ...props }: ToasterProps) {
+function Toaster({ ...props }: Readonly<ToasterProps>) {
   return (
     <Sonner
       theme="light"
@@ -72,4 +72,5 @@ function Toaster({ ...props }: ToasterProps) {
   );
 }
 
-export { Toaster, toast };
+export { Toaster };
+export { toast } from 'sonner';

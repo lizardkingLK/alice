@@ -1,7 +1,7 @@
 # Work items feature documentation
 
-| Document | Description | Status |
-|----------|-------------|--------|
+| Document                                                            | Description                                                  | Status |
+| ------------------------------------------------------------------- | ------------------------------------------------------------ | ------ |
 | [WORK_ITEM_DESCRIPTION.md](../../database/WORK_ITEM_DESCRIPTION.md) | TipTap / ProseMirror JSON stored in `work_items.description` | Living |
 
 Quick links:

@@ -2,9 +2,9 @@
 
 Sprint lifecycle: planned, active, closed, archived — list, create, and status transitions.
 
-| Document | Description | Status |
-|----------|-------------|--------|
-| — | See [ARD](../../product/ARD.md) (SPR-1) and [TRD](../../architecture/TRD.md); add dedicated notes here as needed | Living |
+| Document | Description                                                                                                      | Status |
+| -------- | ---------------------------------------------------------------------------------------------------------------- | ------ |
+| —        | See [ARD](../../product/ARD.md) (SPR-1) and [TRD](../../architecture/TRD.md); add dedicated notes here as needed | Living |
 
 Quick links:
 

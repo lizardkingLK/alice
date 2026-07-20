@@ -2,9 +2,9 @@
 
 Authenticated workspace hub with a customizable overview (drag / resize widgets).
 
-| Document | Description | Status |
-|----------|-------------|--------|
-| — | See [ARD](../../product/ARD.md) and [TRD](../../architecture/TRD.md); add widget/layout notes here as needed | Living |
+| Document | Description                                                                                                  | Status |
+| -------- | ------------------------------------------------------------------------------------------------------------ | ------ |
+| —        | See [ARD](../../product/ARD.md) and [TRD](../../architecture/TRD.md); add widget/layout notes here as needed | Living |
 
 Quick links:
 
