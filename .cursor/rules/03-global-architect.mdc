@@ -37,7 +37,7 @@ globs: "**/*"
 
 ## SEO
 
-- For metadata, sitemap, robots, and crawler exclusion in `apps/web`, follow `.cursor/rules/06-seo-optimizer.mdc` and `docs/guidelines/SEO.md`.
+- For metadata, sitemap, robots, and crawler exclusion in `apps/web`, follow `.cursor/rules/06-seo-optimizer.mdc` and `docs/guides/SEO.md`.
 
 ## Code Style & Formatting
 

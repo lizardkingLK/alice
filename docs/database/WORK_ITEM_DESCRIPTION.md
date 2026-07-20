@@ -5,9 +5,10 @@
 Related:
 
 - [`ER_DIAGRAM.md`](./ER_DIAGRAM.md) — `work_items` entity
-- [`../guidelines/DATABASE.md`](../guidelines/DATABASE.md) — seed data and migrations
+- [`../guides/DATABASE.md`](../guides/DATABASE.md) — seed data and migrations
+- [`../features/work-items/`](../features/work-items/) — feature index
 - `apps/web/app/work-items/_components/workItem-description-editor.tsx` — editor UI
-- `apps/web/lib/work-item-description.ts` — plain-text fallback for read mode
+- `apps/web/app/work-items/_helpers/work-item-description.ts` — plain-text helpers for read mode
 
 ---
 

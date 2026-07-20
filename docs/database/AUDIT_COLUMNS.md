@@ -5,7 +5,7 @@ Every domain table includes standard audit metadata. Use the shared helpers in `
 Related:
 
 - [`ER_DIAGRAM.md`](./ER_DIAGRAM.md) — entity model
-- [`../guidelines/DATABASE.md`](../guidelines/DATABASE.md) — migrations and workflow
+- [`../guides/DATABASE.md`](../guides/DATABASE.md) — migrations and workflow
 
 ---
 

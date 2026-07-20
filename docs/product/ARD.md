@@ -3,9 +3,9 @@
 ## Jira Teams — Project Management Platform
 
 **Project:** Alice (Jira Teams)  
-**Version:** 1.4  
-**Last Updated:** July 9, 2026  
-**Status:** In development
+**Version:** 1.5  
+**Last Updated:** July 20, 2026  
+**Status:** In development (Living)
 
 ## 1. Executive Summary
 
@@ -32,26 +32,30 @@ The project is a Turborepo monorepo with a Next.js frontend (`apps/web`), an Exp
 - Supabase Auth integration on the web app (SSR clients, session cookies, middleware session refresh, and auth actions).
 - Supabase Auth on the API (`requireApiAuth` middleware validating Bearer access tokens).
 - Home page at `/` with "Jira Teams" branding and email/password authentication (sign-in, sign-up, sign-out).
-- Dashboard workspace shell (`/dashboard`) showing user activity overview.
+- Password recovery pages (`/forgot-password`, `/reset-password`) and auth confirm flow.
+- Dashboard workspace shell (`/dashboard`) with customizable overview widgets.
 - Sprints management workspace (`/sprints`) supporting active/archived sprint lists, creation, and status transitions.
 - Project administration registry (`/projects`) supporting list, creation, editing, soft delete, restore, and hard delete.
+- Work items list and detail (`/work-items`, `/work-items/[id]`) with rich TipTap description and inline title editing.
+- Backlog (`/backlog`) for sprint planning and unassigned work.
+- Board (`/board`) kanban by work-item status with optimistic status updates via API.
 - Custom Attributes management page (`/attributes`) to list custom field configuration schemas.
 - User registry list and administration panel (`/users`) with admin-only user invite (via Supabase Auth emails) and active/deactivate controls.
+- Files and profile workspace pages (`/files`, `/profile`).
 - Global client-side and server-side pagination component and routing hooks.
-- Express API with modular route structure under `src/routes/api/` (supporting health, users, notifications, files, projects, sprints, and attributes).
+- Express API with modular route structure under `src/routes/api/` (health, users, notifications, files, projects, sprints, attributes, work items).
 - `GET /api/health` — public health check.
-- Shared UI components: Button, Card, Field, Input, Label, Separator.
+- Shared UI components via `@repo/ui` (shadcn-based; add with `pnpm ui:add`).
 - GitHub Actions workflow for lint, test, and Vercel deployment.
 - Conventional Commits enforced via Husky, Commitlint, and Commitizen.
 - Dev Container configuration (`.devcontainer/devcontainer.json`).
-- Root script `pnpm ui:add` for adding shadcn components to `@repo/ui`.
 - Public marketing pages at `/about` and `/contact`.
 - SEO foundation: site metadata, `robots.txt`, `sitemap.xml`, favicon/OG assets, and crawler exclusion policy (metadata `noindex` and `robots.txt` disallow).
 
 **Not yet implemented**
 
-- Work item (issue) CRUD (backlog, creating work items, boards, assigning items, updating status, comments, attachments).
-- Centralized custom database RBAC page-level enforcement helpers (e.g. `requireAdmin()` / `requireRole()`).
+- Work item comments and attachments on the detail surface.
+- Centralized custom database RBAC page-level enforcement helpers (e.g. `requireAdmin()` / `requireRole()`) — see `docs/auth/RBAC_AUTHORIZATION_SKELETON.md`.
 
 ## 4. User Roles
 
@@ -108,10 +112,19 @@ Users without a matching role are redirected to `/` when visiting a role-specifi
   - Paginated `/sprints` list supporting status changes (planned, active, closed, archived).
   - Status: Done.
 
+### Work items & board
+
+- **ISSUE-1:** As a team member, I want to create and view issues with title, description, type, and priority so that work is tracked.
+  - Work items list/detail with TipTap description; see `docs/features/work-items/` and `docs/database/WORK_ITEM_DESCRIPTION.md`.
+  - Status: Done (core create/read/update); comments and attachments still planned.
+
+- **ISSUE-2:** As a team member, I want to update issue status so that progress is visible.
+  - Board drag/move and status PATCH via API; Draft items excluded from the board.
+  - Status: Done.
+
 ### Planned (not yet in codebase)
 
-- **ISSUE-1:** As a team member, I want to create an issue with title, description, type, and priority so that work is tracked.
-- **ISSUE-2:** As a team member, I want to update issue status so that progress is visible.
+- **ISSUE-3:** As a team member, I want to comment on and attach files to a work item.
 
 ## 6. Functional Requirements
 
@@ -130,7 +143,7 @@ Users without a matching role are redirected to `/` when visiting a role-specifi
 - **NFR-4:** Secrets are stored in environment variables, not in source control.
 - **NFR-5:** The API is deployed as Vercel Serverless Functions (stateless; no in-memory persistence).
 - **NFR-6:** Commits follow Conventional Commits via `pnpm commit`.
-- **NFR-7:** Public marketing and entry pages shall be indexable by search engines; authenticated dashboards, role-specific areas, and internal utilities shall not appear in search results (enforced via `robots.txt`, `sitemap.xml` curation, and per-route `noindex` metadata — see `docs/guidelines/SEO.md`).
+- **NFR-7:** Public marketing and entry pages shall be indexable by search engines; authenticated dashboards, role-specific areas, and internal utilities shall not appear in search results (enforced via `robots.txt`, `sitemap.xml` curation, and per-route `noindex` metadata — see `docs/guides/SEO.md`).
 
 ## 8. Assumptions & Dependencies
 
@@ -150,7 +163,7 @@ A story is done when:
 1. Acceptance criteria are met.
 2. UI uses shared components from `@repo/ui` where applicable.
 3. Protected API routes use `requireApiAuth` where required.
-4. Role pages enforce access via `getUserRole()` from [auth.ts](file:///c:/Users/Aux-219/Documents/Jira_Repo_Recent/alice/apps/web/lib/auth.ts).
+4. Role pages enforce access via `getUserRole()` from `apps/web/lib/auth.ts`.
 5. `pnpm turbo lint` and `pnpm turbo test` pass.
 6. Changes are committed with Conventional Commits (`pnpm commit`).
 7. CI passes and deploys successfully on merge to `main`.

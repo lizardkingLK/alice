@@ -61,7 +61,7 @@ Repeat for `apps/web` and `packages/ui` as needed.
 
 ## SonarQube for IDE (SonarLint)
 
-See **`docs/guidelines/SONAR.md`** for full setup (user token, connected mode, CI, triage workflow).
+See **`docs/guides/SONAR.md`** for full setup (user token, connected mode, CI, triage workflow).
 
 Workspace project binding: `.vscode/settings.json` + `.sonarcloud.properties`. Connection token stays in **user** settings only.
 

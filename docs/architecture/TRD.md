@@ -3,9 +3,9 @@
 ## Jira Teams — Project Management Platform
 
 **Project:** Alice (Jira Teams)  
-**Version:** 1.4  
-**Last Updated:** July 9, 2026  
-**Status:** In development
+**Version:** 1.5  
+**Last Updated:** July 20, 2026  
+**Status:** In development (Living)
 
 ## 1. Purpose
 
@@ -27,7 +27,7 @@ Both apps deploy to Vercel. The API runs as Vercel Serverless Functions. Protect
 - `tsconfig.json` — root path alias for `@repo/ui/*`
 - `.github/workflows/deploy.yml` — CI/CD pipeline
 - `.devcontainer/devcontainer.json` — Dev Container for Node.js and TypeScript
-- `docs/` — project documentation
+- `docs/` — project documentation (see `docs/README.md`)
 
 **apps/api**
 
@@ -117,7 +117,7 @@ Both apps deploy to Vercel. The API runs as Vercel Serverless Functions. Protect
 **packages/eslint-config** — shared ESLint configs  
 **packages/typescript-config** — shared TypeScript configs
 
-See also: `docs/guidelines/DATABASE.md` (operational runbook), `docs/guidelines/DEBUGGING.md` (IDE debug configs), `docs/guidelines/SEO.md` (search metadata and crawler policy), `docs/features/users/` (user management), `docs/authorization/` (auth and RBAC plans).
+See also: `docs/guides/DATABASE.md` (operational runbook), `docs/guides/DEBUGGING.md` (IDE debug configs), `docs/guides/SEO.md` (search metadata and crawler policy), `docs/features/` (feature indexes), `docs/auth/` (auth and RBAC plans). Index: `docs/README.md`.
 
 ## 4. Technology Stack
 
@@ -159,7 +159,7 @@ See also: `docs/guidelines/DATABASE.md` (operational runbook), `docs/guidelines/
 
 ## 5. Authentication — Supabase Auth
 
-Identity is handled by Supabase Auth. Authorization (roles, permissions) lives in application database tables — not in Supabase Auth user metadata. See `docs/authorization/RBAC_AUTHORIZATION_SKELETON.md`.
+Identity is handled by Supabase Auth. Authorization (roles, permissions) lives in application database tables — not in Supabase Auth user metadata. See `docs/auth/RBAC_AUTHORIZATION_SKELETON.md`.
 
 ### Web app
 
@@ -178,7 +178,7 @@ Identity is handled by Supabase Auth. Authorization (roles, permissions) lives i
 - `SUPABASE_SERVICE_ROLE_KEY` (server-only; never import in client components)
 - `NEXT_PUBLIC_API_URL`
 
-**Planned:** forgot-password flow — see `docs/authorization/FORGOT_PASSWORD_AUTH_PLAN.md`.
+Password recovery: `/forgot-password` and `/reset-password` — see `docs/auth/FORGOT_PASSWORD_AUTH_PLAN.md` (as-built may extend the plan).
 
 ### API
 
@@ -468,4 +468,4 @@ pnpm commit               # conventional commit (interactive)
 
 - Work item (issue) CRUD (backlog, creating work items, boards, assigning items, updating status, comments, attachments)
 - Zod request validation on all other API routes
-- Full custom RBAC in database tables — page-level guards (see `docs/authorization/RBAC_AUTHORIZATION_SKELETON.md`)
+- Full custom RBAC in database tables — page-level guards (see `docs/auth/RBAC_AUTHORIZATION_SKELETON.md`)

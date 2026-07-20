@@ -139,6 +139,6 @@ When new forbidden routes are added, extend `Disallow` lines in `robots.ts` and 
 
 ## Related documentation
 
-- Technical architecture: `docs/TRD.md` §9.1
-- Product requirements: `docs/ARD.md` (NFR-7)
+- Technical architecture: `docs/architecture/TRD.md` §9.1
+- Product requirements: `docs/product/ARD.md` (NFR-7)
 - Cursor agent rules: `.cursor/rules/06-seo-optimizer.mdc`

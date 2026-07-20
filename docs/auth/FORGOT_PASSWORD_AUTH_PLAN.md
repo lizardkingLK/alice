@@ -5,9 +5,9 @@
 - Project: Alice (Jira Teams)
 - Area: Web Authentication (`apps/web`)
 - Version: 0.1 (Draft)
-- Status: Proposed
+- Status: Plan — **as-built flows live in [AUTHENTICATION.md](./AUTHENTICATION.md) §7**
 - Owner: TBD
-- Last Updated: 2026-06-28
+- Last Updated: 2026-06-28 (status note 2026-07-20)
 - Depends on: Supabase Auth (email/password), `@supabase/ssr`, existing `app/auth/actions.ts` patterns
 
 ## 1. Goal

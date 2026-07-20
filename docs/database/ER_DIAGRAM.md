@@ -11,11 +11,11 @@
 
 Related:
 
-- `docs/guidelines/DATABASE.md` — migrations and workflow
+- `docs/guides/DATABASE.md` — migrations and workflow
 - `docs/database/AUDIT_COLUMNS.md` — audit column conventions and `@repo/types/audit` helpers
 - `docs/database/WORK_ITEM_DESCRIPTION.md` — TipTap JSON format for `work_items.description`
 - `docs/features/users/USER_MANAGEMENT.md` — `public.users` (partially implemented)
-- `docs/authorization/RBAC_AUTHORIZATION_SKELETON.md` — authorization rollout
+- `docs/auth/RBAC_AUTHORIZATION_SKELETON.md` — authorization rollout
 
 ---
 
@@ -259,7 +259,7 @@ users ──1:N──► notifications
 | `projects`    | Yes — includes `attributes_config`, `workflow_config` JSON |
 | `teams`, etc. | Yes — `init_jira_domain` + audit migrations                |
 
-When implementing, add tables via `packages/db/prisma/schema.prisma` and `pnpm db create:migrate:win <name>`. Each migration appends Supabase grants automatically (see `docs/guidelines/DATABASE.md`).
+When implementing, add tables via `packages/db/prisma/schema.prisma` and `pnpm db create:migrate:win <name>`. Each migration appends Supabase grants automatically (see `docs/guides/DATABASE.md`).
 
 ---
 

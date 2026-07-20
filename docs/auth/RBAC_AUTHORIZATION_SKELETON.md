@@ -19,7 +19,7 @@ This document captures the agreed direction:
 - Add route-level authorization checks to decide whether a signed-in user can access a requested page.
 - Add dashboard access checks to block outside users from internal workspace routes.
 
-Related: `FORGOT_PASSWORD_AUTH_PLAN.md` (password recovery). User invites use the same `/reset-password` route — see `docs/features/users/USER_MANAGEMENT.md`.
+Related: `FORGOT_PASSWORD_AUTH_PLAN.md` (password recovery). User invites use the same `/reset-password` route — see `docs/features/users/USER_MANAGEMENT.md`. Index: `docs/README.md`.
 
 ## 2. Problem Statement
 
