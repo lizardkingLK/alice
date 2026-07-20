@@ -19,11 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@repo/ui/components/ui/card';
-import {
-  Users,
-  Loader2,
-  X,
-} from '@repo/ui/lib/icons';
+import { Users, Loader2, X } from '@repo/ui/lib/icons';
 import type { User } from '@/app/users/_services/users.service';
 import { createTeam, updateTeam } from '../_services/teams.service';
 import {
@@ -140,7 +136,6 @@ interface TeamFormProps {
   readonly teamToEdit?: Team | null;
   readonly users: User[];
 }
-
 
 export function TeamForm({
   onClose,

@@ -28,12 +28,7 @@ import {
 import { Textarea } from '@repo/ui/components/ui/textarea';
 import { cn } from '@repo/ui/lib/utils';
 import type { Tables } from '@repo/types';
-import {
-  Loader2,
-  X,
-  CalendarPlus,
-  CalendarCog,
-} from '@repo/ui/lib/icons';
+import { Loader2, X, CalendarPlus, CalendarCog } from '@repo/ui/lib/icons';
 import {
   createSprint,
   getSprint,
@@ -104,7 +99,6 @@ function renderProjectOptions(
     </SelectItem>
   ));
 }
-
 
 export function SprintForm({
   className,
