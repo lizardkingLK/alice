@@ -61,7 +61,7 @@ function ChartContainer({
   height?: number | `${number}%`;
 }) {
   const uniqueId = React.useId();
-  const chartId = `chart-${id ?? uniqueId.replaceAll(/:/, '')}`;
+  const chartId = `chart-${id ?? uniqueId.replaceAll(':', '')}`;
   const configValue = React.useMemo(() => ({ config }), [config]);
 
   return (
