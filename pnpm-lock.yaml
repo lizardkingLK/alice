@@ -141,6 +141,9 @@ importers:
       '@tailwindcss/postcss':
         specifier: ^4.3.1
         version: 4.3.1
+      '@tailwindcss/typography':
+        specifier: ^0.5.10
+        version: 0.5.20(tailwindcss@4.3.1)
       '@tanstack/react-table':
         specifier: ^8.21.3
         version: 8.21.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -367,6 +370,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@tailwindcss/typography':
+        specifier: ^0.5.10
+        version: 0.5.20(tailwindcss@4.3.1)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -413,9 +419,6 @@ importers:
       '@repo/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
-      '@tailwindcss/typography':
-        specifier: ^0.5.10
-        version: 0.5.20(tailwindcss@4.3.1)
       '@types/node':
         specifier: ^22.15.3
         version: 22.20.0
