@@ -19,11 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@repo/ui/components/ui/card';
-import {
-  Users,
-  Loader2,
-  X,
-} from '@repo/ui/lib/icons';
+import { Users, Loader2, X } from '@repo/ui/lib/icons';
 import type { User } from '@/app/users/_services/users.service';
 import { createTeam, updateTeam } from '../_services/teams.service';
 import {
@@ -38,8 +34,7 @@ interface ProjectMembersListProps {
   isLoadingMembers: boolean;
   projectMembers: ProjectMemberWithUser[];
   selectedMemberIds: string[];
-  setSelectedMemberIds: React.Dispatch<React.SetStateAction<string[]>>;
-}
+  setSelectedMemberIds: React.Dispatch<React.SetStateAction<string[]>>;}
 
 function ProjectMembersList({
   isLoadingMembers,
@@ -141,7 +136,6 @@ interface TeamFormProps {
   readonly teamToEdit?: Team | null;
   readonly users: User[];
 }
-
 
 export function TeamForm({
   onClose,
@@ -391,10 +385,7 @@ export function TeamForm({
                   setStatus(val as 'active' | 'inactive' | 'archived')
                 }
               >
-                <SelectTrigger
-                  id="status"
-                  className="bg-background/80 h-10 w-full"
-                >
+                <SelectTrigger id="status" className="bg-background/80 h-10 w-full cursor-pointer">
                   <SelectValue placeholder="Select status..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -428,10 +419,7 @@ export function TeamForm({
                 Designated Team Manager
               </Label>
               <Select value={managerId} onValueChange={setManagerId}>
-                <SelectTrigger
-                  id="manager_id"
-                  className="bg-background/80 h-10 w-full"
-                >
+                <SelectTrigger id="manager_id" className="bg-background/80 h-10 w-full cursor-pointer">
                   <SelectValue placeholder="Select Manager..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -451,27 +439,31 @@ export function TeamForm({
               <Label htmlFor="project_id" className="text-sm font-medium">
                 Associated Project
               </Label>
-              <select
-                id="project_id"
-                name="project_id"
-                value={selectedProjectId}
-                onChange={(e) => {
-                  setSelectedProjectId(e.target.value);
+              <Select
+                value={selectedProjectId || 'none'}
+                onValueChange={(val) => {
+                  setSelectedProjectId(val === 'none' ? '' : val);
                   setSelectedMemberIds([]);
                 }}
-                className="bg-background/80 border-input text-foreground focus-visible:ring-primary focus:border-primary ring-offset-background flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
               >
-                <option value="">
-                  {isLoadingProjects
-                    ? 'Loading projects...'
-                    : 'Select Project...'}
-                </option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.key})
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="project_id" className="bg-background/80 h-10 w-full cursor-pointer">
+                  <SelectValue
+                    placeholder={
+                      isLoadingProjects ? 'Loading projects...' : 'Select Project...'
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">
+                    {isLoadingProjects ? 'Loading projects...' : 'Select Project...'}
+                  </SelectItem>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name} ({p.key})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Project Members to Add to Team */}

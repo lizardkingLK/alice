@@ -8,6 +8,14 @@ import WorkItemsWorkspace from '@/app/work-items/_components/workItems-workspace
 import { getProjectList } from '@/app/projects/_services/projects.service.server';
 import { parseStandardParams, type RawSearchParams } from '@/lib/search-params';
 
+const EMPTY_WORK_ITEMS = {
+  workItems: [] as DbWorkItem[],
+  totalCount: 0,
+  page: 1,
+  limit: 10,
+  totalPages: 1,
+};
+
 export default async function WorkItemsDashboard({
   searchParams,
 }: Readonly<{
@@ -18,23 +26,23 @@ export default async function WorkItemsDashboard({
   const resolvedSearchParams = await searchParams;
   const { page, limit, search } = parseStandardParams(resolvedSearchParams, 10);
 
-  const projects = await getProjectList();
-  const projectMembers = await getUserList();
-
-  let workItemsResult = {
-    workItems: [] as DbWorkItem[],
-    totalCount: 0,
-    page: 1,
-    limit: 10,
-    totalPages: 1,
-  };
-
-  try {
-    workItemsResult = await getWorkItemsPaginated(page, limit, search);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('error. failed to fetch work items list via API:', message);
-  }
+  const [projects, projectMembers, workItemsResult] = await Promise.all([
+    getProjectList().catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error('error. failed to fetch projects via API:', message);
+      return [];
+    }),
+    getUserList().catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error('error. failed to fetch users via API:', message);
+      return [];
+    }),
+    getWorkItemsPaginated(page, limit, search).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error('error. failed to fetch work items list via API:', message);
+      return EMPTY_WORK_ITEMS;
+    }),
+  ]);
 
   return (
     <DashboardShell description="Manage Work Items.">

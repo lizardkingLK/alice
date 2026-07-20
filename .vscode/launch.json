@@ -2,14 +2,6 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Monorepo: Attach",
-      "type": "node",
-      "request": "launch",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["turbo", "run", "dev"],
-      "console": "integratedTerminal"
-    },
-    {
       "name": "Vitest: Web",
       "type": "node",
       "request": "launch",

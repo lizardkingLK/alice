@@ -19,6 +19,11 @@ export const metadata: Metadata = {
   },
 };
 
+const EMPTY_SPRINTS: PaginatedSprints = {
+  sprints: [],
+  pagination: { page: 1, limit: 5, totalCount: 0, totalPages: 1 },
+};
+
 export default async function SprintsPage({
   searchParams,
 }: Readonly<{
@@ -28,22 +33,24 @@ export default async function SprintsPage({
   const { page, limit, search } = parseStandardParams(resolvedSearchParams, 5);
   const status = parseTabStatus(resolvedSearchParams.tab);
 
-  const dbUser = await getDbUser();
-  const userRole = dbUser?.role ?? 'member';
-
-  let sprintsData: PaginatedSprints = {
-    sprints: [],
-    pagination: { page: 1, limit: 5, totalCount: 0, totalPages: 1 },
-  };
   let fetchError: string | null = null;
 
-  try {
-    sprintsData = await getSprintsPaginatedServer(status, page, limit, search);
-  } catch (error) {
-    fetchError =
-      error instanceof Error ? error.message : 'Failed to fetch sprints.';
-    console.error('error. failed to fetch sprints list via API:', fetchError);
-  }
+  const [dbUser, sprintsData] = await Promise.all([
+    getDbUser(),
+    getSprintsPaginatedServer(status, page, limit, search).catch(
+      (error: unknown) => {
+        fetchError =
+          error instanceof Error ? error.message : 'Failed to fetch sprints.';
+        console.error(
+          'error. failed to fetch sprints list via API:',
+          fetchError
+        );
+        return EMPTY_SPRINTS;
+      }
+    ),
+  ]);
+
+  const userRole = dbUser?.role ?? 'member';
 
   return (
     <DashboardShell description="Plan and track team sprints.">

@@ -404,7 +404,7 @@ export function KanbanBoard({ initialWorkItems }: Readonly<KanbanBoardProps>) {
         </CardContent>
       </Card>
 
-      <div className="grid min-h-[32rem] flex-1 grid-cols-1 items-stretch gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid min-h-128 flex-1 grid-cols-1 items-stretch gap-4 md:grid-cols-2 xl:grid-cols-5">
         {COLUMNS.map((column) => {
           const columnItems = filteredItems.filter(
             (item) => item.status === column.id
@@ -416,7 +416,7 @@ export function KanbanBoard({ initialWorkItems }: Readonly<KanbanBoardProps>) {
               key={column.id}
               aria-label={formatLabelWithSpace(column.id)}
               className={cn(
-                'bg-muted/25 flex h-full min-h-[32rem] flex-col rounded-xl border border-t-4 p-3 transition-colors',
+                'bg-muted/25 flex h-full min-h-128 flex-col rounded-xl border border-t-4 p-3 transition-colors',
                 column.accentClassName,
                 isOver && 'border-primary bg-primary/5 border-dashed'
               )}
@@ -517,7 +517,7 @@ export function KanbanBoard({ initialWorkItems }: Readonly<KanbanBoardProps>) {
       </div>
 
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="overflow-x-hidden sm:max-w-xl">
           {selectedTask ? (
             <>
               <DialogHeader>
@@ -536,12 +536,12 @@ export function KanbanBoard({ initialWorkItems }: Readonly<KanbanBoardProps>) {
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-4 text-sm">
+              <div className="min-w-0 space-y-4 text-sm">
                 <div className="space-y-2">
                   <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                     Description
                   </p>
-                  <div className="bg-muted/40 max-h-56 overflow-y-auto rounded-lg border p-3">
+                  <div className="bg-muted/40 max-h-56 overflow-x-hidden overflow-y-auto rounded-lg border p-3">
                     <DescriptionView
                       description={selectedTask.description ?? null}
                     />

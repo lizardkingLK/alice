@@ -219,7 +219,9 @@ export default function WorkItemDetails({
                 onCancel={() => setEditing(false)}
               />
             ) : (
-              <DescriptionView description={workItem.description} />
+              <div className="min-w-0 overflow-x-auto">
+                <DescriptionView description={workItem.description} />
+              </div>
             )}
           </section>
 

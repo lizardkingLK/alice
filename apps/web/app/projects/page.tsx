@@ -13,6 +13,14 @@ import {
   type RawSearchParams,
 } from '@/lib/search-params';
 
+const EMPTY_PROJECTS = {
+  projects: [] as Project[],
+  totalCount: 0,
+  page: 1,
+  limit: 10,
+  totalPages: 1,
+};
+
 export default async function ProjectsPage({
   searchParams,
 }: Readonly<{
@@ -22,25 +30,24 @@ export default async function ProjectsPage({
   const { page, limit, search } = parseStandardParams(resolvedSearchParams, 10);
   const status = parseTabStatus(resolvedSearchParams.tab);
 
-  const dbUser = await getDbUser();
+  const [dbUser, usersList, projectsResult] = await Promise.all([
+    getDbUser(),
+    getUserList().catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error('error. failed to fetch users via API:', message);
+      return [];
+    }),
+    getProjectListPaginated(page, limit, status, search).catch(
+      (error: unknown) => {
+        const message =
+          error instanceof Error ? error.message : 'Unknown error';
+        console.error('error. failed to fetch projects list via API:', message);
+        return EMPTY_PROJECTS;
+      }
+    ),
+  ]);
+
   const userRole = dbUser?.role ?? 'member';
-
-  // Fetch all active users to populate the Project Owner choices
-  const usersList = (await getUserList()) ?? [];
-
-  let projectsResult = {
-    projects: [] as Project[],
-    totalCount: 0,
-    page: 1,
-    limit: 10,
-    totalPages: 1,
-  };
-  try {
-    projectsResult = await getProjectListPaginated(page, limit, status, search);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('error. failed to fetch projects list via API:', message);
-  }
 
   return (
     <DashboardShell description="Organize project administration.">

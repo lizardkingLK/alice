@@ -19,12 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@repo/ui/components/ui/card';
-import {
-  FolderPlus,
-  FolderEdit,
-  Loader2,
-  X,
-} from '@repo/ui/lib/icons';
+import { FolderPlus, FolderEdit, Loader2, X } from '@repo/ui/lib/icons';
 import type { User } from '@/app/users/_services/users.service';
 import {
   createProject,
@@ -54,7 +49,6 @@ function getTodayDateString() {
   const day = String(today.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
-
 
 export function ProjectForm({
   onClose,
