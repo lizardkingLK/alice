@@ -349,9 +349,7 @@ type ChartPayloadLike = {
   payload?: unknown;
 };
 
-function stringifyChartField(
-  value: string | number | ((obj: unknown) => unknown) | undefined
-): string | undefined {
+function stringifyChartField(value: unknown): string | undefined {
   if (typeof value === 'string' || typeof value === 'number') {
     return String(value);
   }
@@ -375,9 +373,9 @@ function getPayloadReactKey(item: ChartPayloadLike, nameKey?: string): string {
       : undefined;
 
   if (nameKey && payload && nameKey in payload) {
-    const payloadValue = payload[nameKey];
+    const payloadValue = stringifyChartField(payload[nameKey]);
     if (payloadValue != null && payloadValue !== '') {
-      return `${nameKey}-${String(payloadValue)}`;
+      return `${nameKey}-${payloadValue}`;
     }
   }
 
@@ -396,8 +394,9 @@ function getPayloadReactKey(item: ChartPayloadLike, nameKey?: string): string {
     return name;
   }
 
-  if (item.value != null) {
-    return `value-${String(item.value)}`;
+  const value = stringifyChartField(item.value);
+  if (value != null) {
+    return `value-${value}`;
   }
 
   return 'chart-item';
