@@ -207,13 +207,17 @@ function ChartTooltipContent({
         {payload
           .filter((item) => item.type !== 'none')
           .map((item, index) => {
-            const key = `${nameKey ?? item.name ?? item.dataKey ?? 'value'}`;
-            const itemConfig = getPayloadConfigFromPayload(config, item, key);
+            const configKey = getPayloadConfigKey(item, nameKey);
+            const itemConfig = getPayloadConfigFromPayload(
+              config,
+              item,
+              configKey
+            );
             const indicatorColor = color ?? item.payload?.fill ?? item.color;
 
             return (
               <div
-                key={key}
+                key={getPayloadReactKey(item, nameKey)}
                 className={cn(
                   '[&>svg]:text-muted-foreground flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5',
                   indicator === 'dot' && 'items-center'
@@ -306,12 +310,16 @@ function ChartLegendContent({
       {payload
         .filter((item) => item.type !== 'none')
         .map((item) => {
-          const key = `${nameKey ?? item.dataKey ?? 'value'}`;
-          const itemConfig = getPayloadConfigFromPayload(config, item, key);
+          const configKey = getPayloadConfigKey(item, nameKey);
+          const itemConfig = getPayloadConfigFromPayload(
+            config,
+            item,
+            configKey
+          );
 
           return (
             <div
-              key={key}
+              key={getPayloadReactKey(item, nameKey)}
               className={cn(
                 '[&>svg]:text-muted-foreground flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3'
               )}
@@ -332,6 +340,67 @@ function ChartLegendContent({
         })}
     </div>
   );
+}
+
+type ChartPayloadLike = {
+  name?: string | number | ((obj: unknown) => unknown);
+  dataKey?: string | number | ((obj: unknown) => unknown);
+  value?: unknown;
+  payload?: unknown;
+};
+
+function stringifyChartField(
+  value: string | number | ((obj: unknown) => unknown) | undefined
+): string | undefined {
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+
+  return undefined;
+}
+
+function getPayloadConfigKey(item: ChartPayloadLike, nameKey?: string): string {
+  return (
+    nameKey ??
+    stringifyChartField(item.name) ??
+    stringifyChartField(item.dataKey) ??
+    'value'
+  );
+}
+
+function getPayloadReactKey(item: ChartPayloadLike, nameKey?: string): string {
+  const payload =
+    typeof item.payload === 'object' && item.payload !== null
+      ? (item.payload as Record<string, unknown>)
+      : undefined;
+
+  if (nameKey && payload && nameKey in payload) {
+    const payloadValue = payload[nameKey];
+    if (payloadValue != null && payloadValue !== '') {
+      return `${nameKey}-${String(payloadValue)}`;
+    }
+  }
+
+  const dataKey = stringifyChartField(item.dataKey);
+  const name = stringifyChartField(item.name);
+
+  if (dataKey && name) {
+    return `${dataKey}-${name}`;
+  }
+
+  if (dataKey) {
+    return dataKey;
+  }
+
+  if (name) {
+    return name;
+  }
+
+  if (item.value != null) {
+    return `value-${String(item.value)}`;
+  }
+
+  return 'chart-item';
 }
 
 function getPayloadConfigFromPayload(

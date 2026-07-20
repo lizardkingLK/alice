@@ -72,7 +72,7 @@ const renderAnchor: CustomElementHandler = (element, options) => {
     <LinkPreview url={url}>
       <a
         href={url}
-        className="text-primary hover:text-primary/80 underline transition-colors"
+        className="text-primary hover:text-primary/80 inline-block max-w-full break-all underline transition-colors"
         rel="noopener noreferrer"
         target="_blank"
         onClick={handleNavigation}
@@ -237,13 +237,14 @@ export function DescriptionView({
   return (
     <div
       className={cn(
-        'prose prose-sm max-w-none text-sm leading-relaxed',
+        'prose prose-sm max-w-none min-w-0 text-sm leading-relaxed',
         'text-foreground prose-strong:text-foreground prose-em:text-foreground',
         'prose-headings:text-foreground prose-p:text-foreground',
         'prose-ol:text-foreground prose-ul:text-foreground marker:text-foreground',
         '[&_p]:my-2 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0',
         '[&_strong]:text-foreground [&_strong]:font-semibold',
         '[&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-zinc-100',
+        '[wrap:anywhere] [&_a]:break-all [&_a]:max-w-full [&_a]:inline-block [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_.code-block-wrapper]:max-w-full',
         CODE_SYNTAX_HIGHLIGHT_CLASSES,
         className
       )}
