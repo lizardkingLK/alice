@@ -359,41 +359,6 @@ export function BacklogWorkspace({
     }));
   };
 
-  // Inline Quick Create Issue Submission
-  const handleQuickCreateSubmit = (
-    e: React.FormEvent,
-    sprintId: string | null
-  ) => {
-    e.preventDefault();
-    const key = sprintId || 'backlog';
-    const title = quickTitles[key]?.trim();
-    if (!title) return;
-
-    const firstProj = projects[0];
-    if (!firstProj) return;
-
-    const newWI: DbWorkItem = {
-      id: crypto.randomUUID(),
-      title,
-      project_id: firstProj.id,
-      sprint_id: sprintId,
-      parent_id: null,
-      type: 'Task',
-      priority: 'medium',
-      description: null,
-      assignee_id: null,
-      reporter_id: currentUserId || null,
-      due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .substring(0, 10), // 1 week out
-      story_points: null,
-      status: 'New',
-      created_by: currentUserId || null,
-      created_at: new Date().toISOString(),
-      updated_by: null,
-      updated_at: new Date().toISOString(),
-      assignee: null,
-    };
 
 
   // Dialog Create Sprint Submission
@@ -433,7 +398,6 @@ export function BacklogWorkspace({
       }).catch((err) => {
         console.error(`Failed to update work item ${String(field)}:`, err);
       });
-    }
 
     // Sync selected item state (so Sheet controls are responsive)
     setSelectedItem((prev) => {
@@ -801,29 +765,7 @@ export function BacklogWorkspace({
                       )}
 
 
-                      {/* Sprint Inline Quick Create */}
-                      {sprint.status !== 'Completed' && (
-                        <form
-                          onSubmit={(e) =>
-                            handleQuickCreateSubmit(e, sprint.id)
-                          }
-                          className="border-border/80 bg-background/30 hover:bg-background/60 mt-2 flex items-center gap-2 rounded-lg border border-dashed px-3 py-1.5 transition-colors"
-                        >
-                          <Plus className="text-muted-foreground h-3.5 w-3.5" />
-                          <input
-                            type="text"
-                            placeholder="Create issue inline..."
-                            className="placeholder:text-muted-foreground/60 text-foreground w-full border-none bg-transparent text-xs outline-none"
-                            value={quickTitles[sprint.id] ?? ''}
-                            onChange={(e) =>
-                              setQuickTitles((prev) => ({
-                                ...prev,
-                                [sprint.id]: e.target.value,
-                              }))
-                            }
-                          />
-                        </form>
-                      )}
+
                     </div>
                   )}
                 </Card>
@@ -906,25 +848,7 @@ export function BacklogWorkspace({
                   )}
 
 
-                  {/* Backlog Quick Create Form */}
-                  <form
-                    onSubmit={(e) => handleQuickCreateSubmit(e, null)}
-                    className="border-border/80 bg-background/30 hover:bg-background/60 mt-3 flex items-center gap-2 rounded-lg border border-dashed px-3 py-2 transition-colors"
-                  >
-                    <Plus className="h-4 w-4 text-indigo-500" />
-                    <input
-                      type="text"
-                      placeholder="Quick create issue in backlog... (press Enter)"
-                      className="placeholder:text-muted-foreground/60 text-foreground w-full border-none bg-transparent text-sm outline-none"
-                      value={quickTitles['backlog'] ?? ''}
-                      onChange={(e) =>
-                        setQuickTitles((prev) => ({
-                          ...prev,
-                          backlog: e.target.value,
-                        }))
-                      }
-                    />
-                  </form>
+
                 </div>
               )}
             </Card>
@@ -1145,8 +1069,6 @@ export function BacklogWorkspace({
                     onClick={handleSaveChanges}
                     disabled={isSaving}
                     className="cursor-pointer bg-linear-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-semibold h-9 px-6 shadow-md transition-all duration-150"
-                    onClick={() => setSelectedItem(null)}
-                    className="h-9 cursor-pointer bg-linear-to-r from-indigo-500 to-violet-600 px-6 font-semibold text-white shadow-md transition-all duration-150 hover:from-indigo-600 hover:to-violet-700"
                   >
                     {isSaving ? 'Saving...' : 'Save Changes'}
                   </Button>

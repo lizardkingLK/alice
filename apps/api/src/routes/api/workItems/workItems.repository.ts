@@ -112,7 +112,7 @@ export class WorkItemRepository {
 
     // Filter out undefined fields dynamically
     const cleanedUpdates = Object.fromEntries(
-      Object.entries(fields).filter(([_, value]) => value !== undefined)
+      Object.entries(fields).filter(([_, value]) => typeof value !== 'undefined')
     );
 
     const updateData: Partial<DbWorkItem> = {
@@ -123,18 +123,8 @@ export class WorkItemRepository {
 
     const { data, error } = await supabase
       .from('work_items')
-      .update({
-        title: input.title,
-        project_id: input.project_id,
-        type: input.type,
-        assignee_id: input.assignee_id,
-        due_date: input.due_date,
-        description: input.description,
-        status: input.status,
-        updated_by: input.updatedBy,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', input.id)
+      .update(updateData)
+      .eq('id', id)
       .select('*, assignee:users!assignee_id(id, name, email)')
       .single();
 
