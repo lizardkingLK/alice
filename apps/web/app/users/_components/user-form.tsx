@@ -1,5 +1,6 @@
 'use client';
 
+import { FormAlertMessage } from '@/app/_shared/form-alert-message';
 import { FormEvent, useEffect, useState, type ChangeEvent } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
@@ -21,13 +22,10 @@ import {
 import {
   UserPlus,
   Loader2,
-  AlertCircle,
-  CheckCircle,
   X,
 } from '@repo/ui/lib/icons';
 import type { User } from '../_services/users.service';
 import { createUser, updateUser } from '../_services/users.service';
-import { cn } from '@repo/ui/lib/utils';
 
 interface UserFormProps {
   readonly user?: User;
@@ -35,34 +33,6 @@ interface UserFormProps {
   readonly onSuccess?: () => void;
 }
 
-interface FormAlertMessageProps {
-  message: string | null;
-  isError: boolean;
-}
-
-function FormAlertMessage({
-  message,
-  isError,
-}: Readonly<FormAlertMessageProps>) {
-  if (!message) return null;
-  return (
-    <div
-      className={cn(
-        'flex items-center gap-2 rounded-lg border p-3 text-sm',
-        isError
-          ? 'text-destructive bg-destructive/10 border-destructive/20'
-          : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
-      )}
-    >
-      {isError ? (
-        <AlertCircle className="h-4 w-4 shrink-0" />
-      ) : (
-        <CheckCircle className="h-4 w-4 shrink-0" />
-      )}
-      <span>{message}</span>
-    </div>
-  );
-}
 
 export function UserForm({
   user,

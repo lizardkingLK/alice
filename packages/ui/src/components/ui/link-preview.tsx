@@ -39,50 +39,6 @@ function getSafeHostname(url: string): string | null {
   }
 }
 
-const NAMED_HTML_ENTITIES: Record<string, string> = {
-  amp: '&',
-  lt: '<',
-  gt: '>',
-  quot: '"',
-  apos: "'",
-  nbsp: ' ',
-  rsquo: '\u2019',
-  lsquo: '\u2018',
-  rdquo: '\u201D',
-  ldquo: '\u201C',
-  ndash: '\u2013',
-  mdash: '\u2014',
-  hellip: '\u2026',
-};
-
-/** Decode HTML entities so values like &#x27; render as ' in plain text. */
-function decodeHtmlEntities(value: string): string {
-  return value
-    .replaceAll(/&#x([0-9a-fA-F]+);/g, (match, hex: string) => {
-      const codePoint = Number.parseInt(hex, 16);
-      return Number.isFinite(codePoint)
-        ? String.fromCodePoint(codePoint)
-        : match;
-    })
-    .replaceAll(/&#(\d+);/g, (match, dec: string) => {
-      const codePoint = Number.parseInt(dec, 10);
-      return Number.isFinite(codePoint)
-        ? String.fromCodePoint(codePoint)
-        : match;
-    })
-    .replaceAll(/&([a-zA-Z]+);/g, (match, name: string) => {
-      return NAMED_HTML_ENTITIES[name.toLowerCase()] ?? match;
-    });
-}
-
-function sanitizeOgText(value: string | undefined): string {
-  if (!value) {
-    return '';
-  }
-
-  return decodeHtmlEntities(value);
-}
-
 function LinkPreviewDescription({
   description,
 }: Readonly<{ description: string }>) {
@@ -160,10 +116,10 @@ export function LinkPreview({ url, children }: Readonly<LinkPreviewProps>) {
 
         const data = (await res.json()) as OGMetadata;
         setMetadata({
-          title: sanitizeOgText(data.title),
-          description: sanitizeOgText(data.description),
+          title: data.title,
+          description: data.description,
           image: data.image,
-          siteName: sanitizeOgText(data.siteName) || undefined,
+          siteName: data.siteName,
         });
       })
       .catch((err: unknown) => {

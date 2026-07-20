@@ -1,5 +1,6 @@
 import type { Json } from '@repo/types';
 import type { JSONContent } from '@tiptap/react';
+import { escapeHtml } from '@/app/work-items/_helpers/escape-html';
 import { highlightCodeBlockHtml } from '@/app/work-items/_helpers/work-item-description-highlight';
 
 type TiptapMark = {
@@ -81,15 +82,6 @@ export function toTiptapContent(description: Json | null): JSONContent | null {
 /** TipTap editor document → Supabase JSONB (DB/UI boundary). */
 export function fromTiptapContent(content: JSONContent): Json {
   return content as unknown as Json;
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
 }
 
 function getAttrString(

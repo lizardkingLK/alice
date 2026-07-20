@@ -1,5 +1,7 @@
 import { all, createLowlight } from 'lowlight';
 
+import { escapeHtml } from '@/app/work-items/_helpers/escape-html';
+
 const lowlight = createLowlight(all);
 
 type HastText = {
@@ -22,15 +24,6 @@ type HastRoot = {
 };
 
 type HastNode = HastText | HastElement | HastRoot;
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
 
 function classNameToString(
   className: HastElement['properties'] extends undefined
