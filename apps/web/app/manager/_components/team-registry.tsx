@@ -255,7 +255,7 @@ export function TeamRegistry({
                 setTeamToEdit(null);
                 setIsAddTeamOpen(true);
               }}
-              className="h-10 w-32 px-6 text-xs font-semibold shadow-md duration-300 hover:shadow-lg flex items-center justify-center shrink-0"
+              className="h-10 w-32 px-6 text-xs font-semibold shadow-md duration-300 hover:shadow-lg flex items-center justify-center shrink-0 cursor-pointer"
             >
               <Plus className="mr-1.5 h-4 w-4 shrink-0" />
               Add Team
@@ -310,7 +310,7 @@ export function TeamRegistry({
                             variant="outline"
                             disabled={isPending}
                             onClick={() => setTeamToEdit(team)}
-                            className="focus-visible:ring-ring border border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 font-semibold shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50 h-8 w-20 justify-center shrink-0 flex items-center"
+                            className="focus-visible:ring-ring border border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 font-semibold shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50 h-8 w-20 justify-center shrink-0 flex items-center cursor-pointer"
                           >
                             <Pencil className="mr-1 h-3 w-3 shrink-0" />
                             <span>Edit</span>
@@ -321,7 +321,7 @@ export function TeamRegistry({
                           <Button
                             disabled={isPending}
                             onClick={() => handleRestore(team)}
-                            className="h-8 border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 shadow-sm hover:bg-emerald-600 hover:text-white disabled:opacity-50 w-20 justify-center shrink-0 flex items-center"
+                            className="h-8 border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 shadow-sm hover:bg-emerald-600 hover:text-white disabled:opacity-50 w-20 justify-center shrink-0 flex items-center cursor-pointer"
                           >
                             <RefreshCw className="mr-1 h-3 w-3 shrink-0" />
                             <span>Restore</span>
@@ -335,7 +335,7 @@ export function TeamRegistry({
                           <Button
                             disabled={isPending}
                             onClick={() => handleSoftDelete(team)}
-                            className="focus-visible:ring-ring border border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50 h-8 w-28 justify-center shrink-0 flex items-center"
+                            className="focus-visible:ring-ring border border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50 h-8 w-28 justify-center shrink-0 flex items-center cursor-pointer"
                           >
                             <Archive className="mr-1 h-3 w-3 shrink-0" />
                             <span>Archive</span>
@@ -346,7 +346,7 @@ export function TeamRegistry({
                           <Button
                             disabled={isPending}
                             onClick={() => handleHardDelete(team)}
-                            className="h-8 border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm hover:bg-rose-600 hover:text-white disabled:opacity-50 w-28 justify-center shrink-0 flex items-center"
+                            className="h-8 border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm hover:bg-rose-600 hover:text-white disabled:opacity-50 w-28 justify-center shrink-0 flex items-center cursor-pointer"
                           >
                             <Trash2 className="mr-1 h-3 w-3 shrink-0" />
                             <span>Purge</span>
