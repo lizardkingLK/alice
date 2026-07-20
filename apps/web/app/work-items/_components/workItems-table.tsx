@@ -5,7 +5,6 @@ import {
   type ColumnDef,
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
   Row,
   useReactTable,
 } from '@tanstack/react-table';
@@ -42,7 +41,7 @@ import {
   Plus,
   Search,
   Trash,
-} from 'lucide-react';
+} from '@repo/ui/lib/icons';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,8 +52,13 @@ import { WorkItemForm } from '@/app/work-items/_components/workItem-form';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
 import { WorkItemWorkspaceProps } from '@/app/work-items/_components/workItems-workspace';
 import { formatDate } from '@/app/_shared/utility';
-import statusRenderer from '@/app/work-items/_components/workItem-status-badge';
-import priorityRenderer from '@/app/work-items/_components/workItem-priority-badge';
+import statusRenderer from '@/app/work-items/_components/workItem-badge-status';
+import priorityRenderer from '@/app/work-items/_components/workItem-badge-priority';
+import Link from 'next/link';
+import { cn } from '@repo/ui/lib/utils';
+import { Pagination } from '@/components/pagination';
+import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
+import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 
 type WorkItemsTableProps = WorkItemWorkspaceProps & {
   currentUserId?: string | null;
@@ -63,22 +67,26 @@ type WorkItemsTableProps = WorkItemWorkspaceProps & {
 export type RendererProps = { row: Row<DbWorkItem> };
 
 const titleRenderer = ({ row }: RendererProps) => (
-  <div className="flex min-w-48 items-center gap-3">
-    <div className="bg-primary/10 text-primary border-primary/20 flex size-8 shrink-0 items-center justify-center rounded-lg border text-xs font-bold">
+  <Link
+    className="flex min-w-48 items-center gap-3"
+    href={`/work-items/${row.original.id}`}
+  >
+    <div
+      className={cn(
+        'bg-primary/10 text-primary border-primary/20',
+        'flex size-8 shrink-0 items-center justify-center',
+        'rounded-lg border text-xs font-bold'
+      )}
+    >
       {row.original.title.slice(0, 1).toUpperCase()}
     </div>
-    <div className="space-y-1">
-      <a
-        className="hover:text-primary font-medium"
-        href={`/work-items/${row.original.id}`}
-      >
-        {row.original.title}
-      </a>
+    <div className="space-y-1 font-medium">
+      {row.original.title}
       <p className="text-muted-foreground text-xs">
         Created {formatDate(row.original.created_at)}
       </p>
     </div>
-  </div>
+  </Link>
 );
 
 const typeRenderer = ({ row }: RendererProps) => (
@@ -141,15 +149,23 @@ export default function WorkItemsTable({
   projects,
   projectMembers,
   initialWorkItems,
+  totalCount,
+  page,
+  limit,
+  totalPages,
+  search,
   currentUserId,
 }: Readonly<WorkItemsTableProps>) {
-  const [globalFilter, setGlobalFilter] = useState('');
-  const [workItems, setWorkItems] = useState<DbWorkItem[]>(initialWorkItems);
+  const { handlePageChange, handleLimitChange, router } =
+    usePaginationNavigation(totalPages, limit);
+  const { searchQuery, setSearchQuery } = useDebouncedSearch(search);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<DbWorkItem | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const isEditMode = itemToEdit !== null;
+  const workItems = initialWorkItems;
 
   const openCreateDialog = () => {
     setItemToEdit(null);
@@ -168,42 +184,12 @@ export default function WorkItemsTable({
     }
   };
 
-  const handleUpdated = useCallback(
-    (workItem: DbWorkItem) => {
-      const assignee =
-        workItem.assignee ??
-        projectMembers.find((member) => member.id === workItem.assignee_id) ??
-        null;
-
-      const nextWorkItem: DbWorkItem = {
-        ...workItem,
-        assignee: assignee
-          ? {
-              id: assignee.id,
-              name: assignee.name,
-              email: assignee.email,
-            }
-          : null,
-      };
-
-      setWorkItems((prev) => {
-        const exists = prev.some((item) => item.id === nextWorkItem.id);
-
-        if (exists) {
-          return prev.map((item) =>
-            item.id === nextWorkItem.id ? nextWorkItem : item
-          );
-        }
-
-        return [nextWorkItem, ...prev];
-      });
-
-      setError(null);
-      setDialogOpen(false);
-      setItemToEdit(null);
-    },
-    [projectMembers]
-  );
+  const handleUpdated = useCallback(() => {
+    setError(null);
+    setDialogOpen(false);
+    setItemToEdit(null);
+    router.refresh();
+  }, [router]);
 
   const columns = useMemo<ColumnDef<DbWorkItem>[]>(
     () => [
@@ -249,22 +235,7 @@ export default function WorkItemsTable({
   const table = useReactTable({
     data: workItems,
     columns,
-    state: { globalFilter },
-    onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    globalFilterFn: (row, _columnId, filterValue) => {
-      const query = String(filterValue).toLowerCase();
-      const workItem = row.original;
-
-      return (
-        workItem.title.toLowerCase().includes(query) ||
-        workItem.status.toLowerCase().includes(query) ||
-        workItem.type.toLowerCase().includes(query) ||
-        (workItem.assignee?.name.toLowerCase().includes(query) ?? false) ||
-        (workItem.assignee?.email.toLowerCase().includes(query) ?? false)
-      );
-    },
   });
 
   return (
@@ -290,8 +261,8 @@ export default function WorkItemsTable({
         <div className="relative max-w-md flex-1">
           <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
           <Input
-            value={globalFilter}
-            onChange={(event) => setGlobalFilter(event.target.value)}
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search work items..."
             className="pl-9"
           />
@@ -366,6 +337,16 @@ export default function WorkItemsTable({
               </TableBody>
             </Table>
           </div>
+
+          <Pagination
+            totalCount={totalCount}
+            page={page}
+            limit={limit}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            onLimitChange={handleLimitChange}
+            label="work items"
+          />
         </CardContent>
       </Card>
 
@@ -388,7 +369,7 @@ export default function WorkItemsTable({
             itemToEdit={itemToEdit}
             projectMembers={projectMembers}
             onClose={() => handleDialogChange(false)}
-            onSuccess={handleUpdated}
+            onSuccess={() => handleUpdated()}
           />
         </DialogContent>
       </Dialog>

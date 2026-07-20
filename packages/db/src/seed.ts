@@ -1,6 +1,10 @@
 import 'dotenv/config';
 
-import { auditCreate, auditCreateWithoutStatus } from '@repo/types/audit';
+import {
+  auditCreate,
+  auditCreateWithoutStatus,
+  auditUpdate,
+} from '@repo/types/audit';
 import { createClient } from '@supabase/supabase-js';
 
 import { env } from './env.js';
@@ -41,6 +45,136 @@ const DEFAULT_INSTRUMENTS = [
   'cello',
   'double bass',
 ] as const;
+
+type TiptapMark = { type: string };
+
+type TiptapTextNode = {
+  type: 'text';
+  text: string;
+  marks?: TiptapMark[];
+};
+
+type TiptapBlockNode = {
+  type: string;
+  attrs?: Record<string, unknown>;
+  content?: Array<TiptapBlockNode | TiptapTextNode>;
+};
+
+type TiptapDocument = {
+  type: 'doc';
+  content: TiptapBlockNode[];
+};
+
+function tiptapText(textValue: string, marks?: TiptapMark[]): TiptapTextNode {
+  return marks
+    ? { type: 'text', text: textValue, marks }
+    : { type: 'text', text: textValue };
+}
+
+function tiptapParagraph(...content: TiptapTextNode[]): TiptapBlockNode {
+  return { type: 'paragraph', content };
+}
+
+function tiptapHeading(
+  level: 1 | 2 | 3,
+  ...content: TiptapTextNode[]
+): TiptapBlockNode {
+  return { type: 'heading', attrs: { level }, content };
+}
+
+function tiptapBulletList(...items: TiptapTextNode[][]): TiptapBlockNode {
+  return {
+    type: 'bulletList',
+    content: items.map((item) => ({
+      type: 'listItem',
+      content: [tiptapParagraph(...item)],
+    })),
+  };
+}
+
+function tiptapDoc(...blocks: TiptapBlockNode[]): TiptapDocument {
+  return { type: 'doc', content: blocks };
+}
+
+const SEED_WORK_ITEM_DESCRIPTIONS = {
+  epic: tiptapDoc(
+    tiptapHeading(2, tiptapText('User management epic')),
+    tiptapParagraph(
+      tiptapText(
+        'Deliver admin-facing flows to invite, activate, and govern workspace users with role-based access.'
+      )
+    ),
+    tiptapParagraph(tiptapText('Scope', [{ type: 'bold' }])),
+    tiptapBulletList(
+      [tiptapText('User registry with role assignment')],
+      [tiptapText('Activation and deactivation controls')],
+      [tiptapText('Audit-friendly profile updates')]
+    ),
+    tiptapParagraph(
+      tiptapText('Out of scope for this epic: ', [{ type: 'italic' }]),
+      tiptapText('self-service billing and org-wide SSO provisioning.')
+    )
+  ),
+  story: tiptapDoc(
+    tiptapHeading(2, tiptapText('Admin user registry screen')),
+    tiptapParagraph(
+      tiptapText(
+        'Build the admin table view for listing users, filtering by role, and updating account state.'
+      )
+    ),
+    tiptapParagraph(tiptapText('Acceptance criteria', [{ type: 'bold' }])),
+    tiptapBulletList(
+      [tiptapText('Admins can search users by name or email')],
+      [
+        tiptapText('Role changes persist to '),
+        tiptapText('public.users', [{ type: 'code' }]),
+      ],
+      [tiptapText('Inactive users cannot access protected routes')]
+    )
+  ),
+  task: tiptapDoc(
+    tiptapHeading(2, tiptapText('Wire user list to Supabase')),
+    tiptapParagraph(
+      tiptapText(
+        'Connect the registry table to the API using server-prefetched data and typed DTOs from '
+      ),
+      tiptapText('@repo/types', [{ type: 'code' }]),
+      tiptapText('.')
+    ),
+    tiptapParagraph(tiptapText('Implementation notes', [{ type: 'bold' }])),
+    tiptapBulletList(
+      [
+        tiptapText(
+          'Use service-role only in server actions, never in client components'
+        ),
+      ],
+      [tiptapText('Map API errors to actionable toast messages')],
+      [tiptapText('Keep pagination ready even if MVP loads all rows')]
+    )
+  ),
+  backlogStory: tiptapDoc(
+    tiptapHeading(2, tiptapText('Kanban drag-and-drop board')),
+    tiptapParagraph(
+      tiptapText(
+        'Backlog story for MVP 3: visualize sprint work in swimlanes and support drag-and-drop status changes.'
+      )
+    ),
+    tiptapParagraph(tiptapText('Desired UX', [{ type: 'bold' }])),
+    tiptapBulletList(
+      [
+        tiptapText('Columns driven by project '),
+        tiptapText('workflow_config', [{ type: 'code' }]),
+      ],
+      [tiptapText('Cards show assignee, priority, and due date')],
+      [tiptapText('Optimistic updates with rollback on API failure')]
+    ),
+    tiptapParagraph(
+      tiptapText(
+        'Depends on workflow configuration being stored per project in JSON.'
+      )
+    )
+  ),
+} as const;
 
 type SeedUser = (typeof SEED_USERS)[number];
 
@@ -401,6 +535,22 @@ async function ensureWorkItem(
     .maybeSingle();
 
   if (existing) {
+    if (values.description !== undefined) {
+      const { error: updateError } = await supabase
+        .from('work_items')
+        .update({
+          description: values.description,
+          ...auditUpdate(actorId),
+        })
+        .eq('id', existing.id);
+
+      if (updateError) {
+        throw new Error(
+          `Failed to refresh work item description "${title}": ${updateError.message}`
+        );
+      }
+    }
+
     return existing.id;
   }
 
@@ -443,12 +593,7 @@ async function seedWorkItems(
       priority: 'high',
       status: 'InProgress',
       reporter_id: adminId,
-      description: {
-        type: 'doc',
-        content: [
-          { type: 'paragraph', text: 'Epic for admin user management flows.' },
-        ],
-      },
+      description: SEED_WORK_ITEM_DESCRIPTIONS.epic,
     }
   );
 
@@ -466,15 +611,7 @@ async function seedWorkItems(
       reporter_id: adminId,
       story_points: 5,
       due_date: '2026-06-12',
-      description: {
-        type: 'doc',
-        content: [
-          {
-            type: 'paragraph',
-            text: 'List users, assign roles, activate/deactivate accounts.',
-          },
-        ],
-      },
+      description: SEED_WORK_ITEM_DESCRIPTIONS.story,
     }
   );
 
@@ -491,6 +628,7 @@ async function seedWorkItems(
       assignee_id: memberId,
       reporter_id: adminId,
       story_points: 3,
+      description: SEED_WORK_ITEM_DESCRIPTIONS.task,
     }
   );
 
@@ -504,12 +642,7 @@ async function seedWorkItems(
       status: 'New',
       reporter_id: adminId,
       story_points: 8,
-      description: {
-        type: 'doc',
-        content: [
-          { type: 'paragraph', text: 'Backlog item for MVP 3 kanban board.' },
-        ],
-      },
+      description: SEED_WORK_ITEM_DESCRIPTIONS.backlogStory,
     }
   );
 

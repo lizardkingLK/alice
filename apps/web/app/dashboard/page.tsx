@@ -3,7 +3,7 @@ import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 
 export default async function DashboardPage() {
   return (
-    <DashboardShell description="Track your work and team activity at a glance.">
+    <DashboardShell description="Customize your overview — drag, resize, and glance at team progress.">
       <DashboardOverview />
     </DashboardShell>
   );

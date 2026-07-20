@@ -1,8 +1,20 @@
 import { DbWorkItem, workItemRepository } from './workItems.repository';
-import { WorkItemBody } from './workItems.schemas';
+import { WorkItemBody, WorkItemUpdateBody } from './workItems.schemas';
 
 export class WorkItemService {
   async getWorkItems(): Promise<DbWorkItem[]> {
+    return await workItemRepository.get();
+  }
+
+  async listWorkItems(
+    page?: number,
+    limit?: number,
+    search?: string
+  ): Promise<{ workItems: DbWorkItem[]; totalCount: number } | DbWorkItem[]> {
+    if (page !== undefined && limit !== undefined) {
+      return await workItemRepository.listPaginated(page, limit, search);
+    }
+
     return await workItemRepository.get();
   }
 
@@ -23,7 +35,7 @@ export class WorkItemService {
   async updateWorkItem(
     userId: string,
     workItemId: string,
-    input: WorkItemBody
+    input: WorkItemUpdateBody
   ): Promise<DbWorkItem> {
     return await workItemRepository.update({
       ...input,

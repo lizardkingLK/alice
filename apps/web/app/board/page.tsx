@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
+import { getWorkItems } from '@/app/work-items/_services/workItem.server.service';
 import { KanbanBoard } from './_components/kanban-board';
 
 export const metadata: Metadata = {
@@ -11,6 +12,9 @@ export const metadata: Metadata = {
 };
 
 export default async function BoardPage() {
+  const workItems = await getWorkItems();
+  const boardItems = workItems.filter((item) => item.status !== 'Draft');
+
   return (
     <DashboardShell
       description="Track progress, update task statuses, and organize work-items in real-time."
@@ -19,7 +23,7 @@ export default async function BoardPage() {
         { label: 'Board', url: '/board' },
       ]}
     >
-      <KanbanBoard />
+      <KanbanBoard initialWorkItems={boardItems} />
     </DashboardShell>
   );
 }

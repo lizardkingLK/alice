@@ -29,7 +29,7 @@ import {
   AlertTriangle,
   UserPlus,
   Pencil,
-} from 'lucide-react';
+} from '@repo/ui/lib/icons';
 import { toggleUserActive } from '../_services/users.service';
 import { CustomSpinner } from '@/app/users/_components/user-spinner';
 import { Pagination } from '@/components/pagination';
@@ -165,7 +165,7 @@ export function UserRegistry({
           {currentUserRole === 'admin' && (
             <Button
               onClick={() => setIsAddUserOpen(true)}
-              className="h-10 w-32 px-6 text-xs font-semibold shadow-md duration-300 hover:shadow-lg flex items-center justify-center shrink-0"
+              className="flex h-10 w-32 shrink-0 items-center justify-center px-6 text-xs font-semibold shadow-md duration-300 hover:shadow-lg"
             >
               <UserPlus className="mr-1.5 h-3.5 w-3.5 shrink-0" />
               Add User
@@ -381,7 +381,7 @@ function UserRegistryRow({
         variant="outline"
         disabled={isTogglingActive}
         onClick={() => setEditingUser(usr)}
-        className="focus-visible:ring-ring border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 font-semibold shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50 h-8 w-20 justify-center shrink-0 flex items-center"
+        className="focus-visible:ring-ring flex h-8 w-20 shrink-0 items-center justify-center border-emerald-500/20 bg-emerald-500/10 text-[11px] font-semibold text-emerald-600 shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
       >
         <Pencil className="mr-1 h-3 w-3 shrink-0" />
         <span>Edit</span>
@@ -393,7 +393,7 @@ function UserRegistryRow({
   if (currentUserRole === 'admin' && !isSelf) {
     let buttonContent;
     if (isDeactivating) {
-      buttonContent = <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />;
+      buttonContent = <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />;
     } else if (usr.active) {
       buttonContent = (
         <>
@@ -415,7 +415,7 @@ function UserRegistryRow({
         disabled={isTogglingActive}
         onClick={() => handleToggleActive(usr)}
         className={cn(
-          'focus-visible:ring-ring border font-medium shadow-sm transition-all focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50 h-8 w-28 text-[11px] justify-center shrink-0 flex items-center',
+          'focus-visible:ring-ring flex h-8 w-28 shrink-0 items-center justify-center border text-[11px] font-medium shadow-sm transition-all focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50',
           usr.active
             ? 'border-rose-500/20 bg-rose-500/10 text-rose-600 hover:bg-rose-600 hover:text-white'
             : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-600 hover:text-white'
@@ -464,7 +464,7 @@ function UserRegistryRow({
       <TableCell className="w-[15%]">
         <span
           className={cn(
-            'inline-flex items-center justify-center gap-1 rounded-full border text-[10px] font-semibold uppercase w-24 h-6 shrink-0',
+            'inline-flex h-6 w-24 shrink-0 items-center justify-center gap-1 rounded-full border text-[10px] font-semibold uppercase',
             getRoleBadgeStyles(usr.role)
           )}
         >
@@ -475,7 +475,7 @@ function UserRegistryRow({
       <TableCell className="w-[12%]">
         <span
           className={cn(
-            'inline-flex items-center justify-center gap-1 rounded-full border text-[10px] font-semibold uppercase w-24 h-6 shrink-0',
+            'inline-flex h-6 w-24 shrink-0 items-center justify-center gap-1 rounded-full border text-[10px] font-semibold uppercase',
             usr.active
               ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
               : 'border-rose-500/20 bg-rose-500/10 text-rose-500'
@@ -489,7 +489,7 @@ function UserRegistryRow({
           {formatJoinedDate(usr.created_at, mounted)}
         </div>
       </TableCell>
-      <TableCell className="w-[20%] text-right pr-4">
+      <TableCell className="w-[20%] pr-4 text-right">
         <div className="flex justify-end gap-2">
           {primaryButton}
           {secondaryButton}

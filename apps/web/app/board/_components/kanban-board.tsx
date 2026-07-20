@@ -1,137 +1,172 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useMemo, useState, type DragEvent } from 'react';
 import { cn } from '@repo/ui/lib/utils';
-
 import {
-  Search,
-  Trash2,
-  Calendar,
-  Tag,
-  Filter,
-  Info,
   AlertCircle,
-  HelpCircle,
+  Calendar,
+  Filter,
   FolderDot,
-} from 'lucide-react';
+  Search,
+  SquareArrowOutUpRight,
+  Tag,
+} from '@repo/ui/lib/icons';
 import {
-  Card,
-  CardContent,
-} from '@repo/ui/components/ui/card';
+  Avatar,
+  AvatarFallback,
+  AvatarGroup,
+  AvatarGroupCount,
+} from '@repo/ui/components/ui/avatar';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
-import { Input } from '@repo/ui/components/ui/input';
+import { Card, CardContent } from '@repo/ui/components/ui/card';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose,
+  DialogHeader,
+  DialogTitle,
 } from '@repo/ui/components/ui/dialog';
+import { Input } from '@repo/ui/components/ui/input';
+import { Label } from '@repo/ui/components/ui/label';
+import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@repo/ui/components/ui/select';
+import { Separator } from '@repo/ui/components/ui/separator';
 import {
   Tooltip,
-  TooltipTrigger,
   TooltipContent,
+  TooltipTrigger,
 } from '@repo/ui/components/ui/tooltip';
+import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
+import { formatLabelWithSpace } from '@/app/_shared/utility';
+import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
+import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
+import { DescriptionView } from '@/app/work-items/_components/workItem-description-view';
+import { descriptionToPlainText } from '@/app/work-items/_helpers/work-item-description';
+import { updateWorkItemStatus } from '@/app/work-items/_services/workItem.client.service';
+import type { DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
 
+type BoardStatus = Exclude<DbWorkItem['status'], 'Draft'>;
+type BoardPriority = DbWorkItem['priority'];
 
-// Define TS types for the Kanban Board
-type Status = 'ToDo' | 'InProgress' | 'InReview' | 'Done';
-type Priority = 'low' | 'medium' | 'high';
-
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: Status;
-  priority: Priority;
-  assignee: string;
-  category: string;
-  dueDate: string;
-}
-
-function createTask(
-  id: string,
-  title: string,
-  description: string,
-  statusAndPriority: string,
-  assignee: string,
-  category: string,
-  dueDate: string
-): Task {
-  const [status, priority] = statusAndPriority.split(':') as [Status, Priority];
-  return { id, title, description, status, priority, assignee, category, dueDate };
-}
-
-// Initial realistic task data
-const INITIAL_TASKS: Task[] = [
-  createTask('ALICE-101', 'Integrate Supabase Auth', 'Setup Supabase SSR authentication client and middleware for secure route protection.', 'ToDo:high', 'Alice Smith', 'Security', '2026-07-20'),
-  createTask('ALICE-104', 'Design Landing Page Hero Section', 'Implement modern glassmorphism aesthetic with floating particles and grid layout.', 'ToDo:medium', 'Bob Jones', 'Design', '2026-07-25'),
-  createTask('ALICE-102', 'Create Reusable Table Component', 'Build a generic table with sorting, search filtering, and paginated pagination state.', 'InProgress:high', 'Charlie Brown', 'UI Components', '2026-07-18'),
-  createTask('ALICE-105', 'Write API Integration Tests', 'Write robust integration test suites for project services and database operations.', 'InProgress:low', 'David Green', 'QA / Testing', '2026-07-30'),
-  createTask('ALICE-103', 'Setup GitHub Actions CI Pipeline', 'Setup standard GitHub actions workflow to run linters, typechecks, and tests automatically.', 'InReview:high', 'Alice Smith', 'DevOps', '2026-07-16'),
-  createTask('ALICE-100', 'Monorepo Workspace Initialization', 'Configure pnpm-workspace and turbo pipelines for web apps and packages packages.', 'Done:medium', 'Eve White', 'Infrastructure', '2026-07-10'),
+const COLUMNS: {
+  id: BoardStatus;
+  accentClassName: string;
+}[] = [
+  { id: 'New', accentClassName: 'border-t-blue-500' },
+  { id: 'ToDo', accentClassName: 'border-t-violet-500' },
+  { id: 'InProgress', accentClassName: 'border-t-amber-500' },
+  { id: 'Testing', accentClassName: 'border-t-cyan-500' },
+  { id: 'Done', accentClassName: 'border-t-emerald-500' },
 ];
 
-const COLUMNS: { id: Status; title: string; color: string; border: string; bg: string }[] = [
-  { id: 'ToDo', title: 'To Do', color: 'text-zinc-600 dark:text-zinc-400', border: 'border-t-zinc-500', bg: 'bg-zinc-50/50 dark:bg-zinc-900/10' },
-  { id: 'InProgress', title: 'In Progress', color: 'text-amber-600 dark:text-amber-400', border: 'border-t-amber-500', bg: 'bg-amber-50/20 dark:bg-amber-950/5' },
-  { id: 'InReview', title: 'In Review', color: 'text-cyan-600 dark:text-cyan-400', border: 'border-t-cyan-500', bg: 'bg-cyan-50/20 dark:bg-cyan-950/5' },
-  { id: 'Done', title: 'Done', color: 'text-emerald-600 dark:text-emerald-400', border: 'border-t-emerald-500', bg: 'bg-emerald-50/20 dark:bg-emerald-950/5' },
+const PRIORITY_BORDERS: Record<BoardPriority, string> = {
+  highest: 'border-l-destructive',
+  high: 'border-l-destructive',
+  medium: 'border-l-primary',
+  low: 'border-l-border',
+  lowest: 'border-l-border',
+};
+
+const PRIORITIES: BoardPriority[] = [
+  'highest',
+  'high',
+  'medium',
+  'low',
+  'lowest',
 ];
 
-const ASSIGNEE_COLORS: Record<string, string> = {
-  'Alice Smith': 'bg-purple-500 hover:bg-purple-600',
-  'Bob Jones': 'bg-emerald-500 hover:bg-emerald-600',
-  'Charlie Brown': 'bg-indigo-500 hover:bg-indigo-600',
-  'David Green': 'bg-orange-500 hover:bg-orange-600',
-  'Eve White': 'bg-pink-500 hover:bg-pink-600',
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+function shortId(id: string) {
+  return id.slice(0, 8).toUpperCase();
+}
+
+function assigneeName(item: DbWorkItem) {
+  return item.assignee?.name?.trim() || 'Unassigned';
+}
+
+type KanbanBoardProps = {
+  initialWorkItems: DbWorkItem[];
 };
 
-const getAssigneeColorClass = (name: string) => {
-  return ASSIGNEE_COLORS[name] ?? 'bg-zinc-500 hover:bg-zinc-600';
-};
-
-const PRIORITY_BORDERS: Record<Priority, string> = {
-  high: 'border-l-red-500',
-  medium: 'border-l-blue-500',
-  low: 'border-l-zinc-300 dark:border-l-zinc-700',
-};
-
-
-
-export function KanbanBoard() {
-  const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
+export function KanbanBoard({ initialWorkItems }: Readonly<KanbanBoardProps>) {
+  const [workItems, setWorkItems] = useState<DbWorkItem[]>(initialWorkItems);
   const [search, setSearch] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);
-
-  
-  // Drag and Drop active column state (for visual effect)
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
-  const [activeDropCol, setActiveDropCol] = useState<Status | null>(null);
-
-  // Modals state
+  const [activeDropCol, setActiveDropCol] = useState<BoardStatus | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedTask, setSelectedTask] = useState<DbWorkItem | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const [pendingStatusIds, setPendingStatusIds] = useState<Set<string>>(
+    () => new Set()
+  );
 
-  // Drag and drop handlers
-  const handleDragStart = (e: React.DragEvent, id: string) => {
-    e.dataTransfer.setData('text/plain', id);
+  const uniqueAssignees = useMemo(() => {
+    const byId = new Map<string, string>();
+
+    for (const item of workItems) {
+      if (item.assignee_id && item.assignee?.name) {
+        byId.set(item.assignee_id, item.assignee.name);
+      }
+    }
+
+    return Array.from(byId.entries()).map(([id, name]) => ({ id, name }));
+  }, [workItems]);
+
+  const filteredItems = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    return workItems.filter((item) => {
+      if (item.status === 'Draft') {
+        return false;
+      }
+
+      const description = descriptionToPlainText(item.description ?? null);
+      const assignee = assigneeName(item).toLowerCase();
+
+      const matchesSearch =
+        !query ||
+        item.title.toLowerCase().includes(query) ||
+        item.id.toLowerCase().includes(query) ||
+        description.toLowerCase().includes(query) ||
+        assignee.includes(query) ||
+        item.type.toLowerCase().includes(query);
+
+      const matchesPriority =
+        priorityFilter === 'all' || item.priority === priorityFilter;
+
+      const matchesAssignee =
+        !assigneeFilter || item.assignee_id === assigneeFilter;
+
+      return matchesSearch && matchesPriority && matchesAssignee;
+    });
+  }, [workItems, search, priorityFilter, assigneeFilter]);
+
+  const handleDragStart = (event: DragEvent, id: string) => {
+    event.dataTransfer.setData('text/plain', id);
     setDraggedTaskId(id);
   };
 
-  const handleDragOver = (e: React.DragEvent, colId: Status) => {
-    e.preventDefault();
+  const handleDragOver = (event: DragEvent, colId: BoardStatus) => {
+    event.preventDefault();
     if (activeDropCol !== colId) {
       setActiveDropCol(colId);
     }
@@ -141,13 +176,89 @@ export function KanbanBoard() {
     setActiveDropCol(null);
   };
 
-  const handleDrop = (e: React.DragEvent, targetStatus: Status) => {
-    e.preventDefault();
-    const id = e.dataTransfer.getData('text/plain') || draggedTaskId;
+  const restoreStatus = (id: string, status: DbWorkItem['status']) => {
+    setWorkItems((previous) =>
+      previous.map((item) => (item.id === id ? { ...item, status } : item))
+    );
+    setSelectedTask((previous) =>
+      previous?.id === id ? { ...previous, status } : previous
+    );
+  };
+
+  const syncWorkItem = (id: string, updated: DbWorkItem) => {
+    setWorkItems((previous) =>
+      previous.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              ...updated,
+              assignee: updated.assignee ?? item.assignee,
+            }
+          : item
+      )
+    );
+    setSelectedTask((previous) =>
+      previous?.id === id
+        ? {
+            ...previous,
+            ...updated,
+            assignee: updated.assignee ?? previous.assignee,
+          }
+        : previous
+    );
+  };
+
+  const clearPendingStatus = (id: string) => {
+    setPendingStatusIds((previous) => {
+      const next = new Set(previous);
+      next.delete(id);
+      return next;
+    });
+  };
+
+  const applyStatusChange = (id: string, targetStatus: BoardStatus) => {
+    const currentItem = workItems.find((item) => item.id === id);
+    if (!currentItem || currentItem.status === targetStatus) {
+      return;
+    }
+
+    if (pendingStatusIds.has(id)) {
+      return;
+    }
+
+    const previousStatus = currentItem.status;
+    setStatusError(null);
+    setPendingStatusIds((previous) => new Set(previous).add(id));
+    restoreStatus(id, targetStatus);
+
+    updateWorkItemStatus(id, targetStatus)
+      .then((response) => {
+        if (response.error || !response.data) {
+          restoreStatus(id, previousStatus);
+          setStatusError(
+            typeof response.error === 'string'
+              ? response.error
+              : 'Failed to update work item status.'
+          );
+          return;
+        }
+
+        syncWorkItem(id, response.data);
+      })
+      .catch(() => {
+        restoreStatus(id, previousStatus);
+        setStatusError('Failed to update work item status.');
+      })
+      .finally(() => {
+        clearPendingStatus(id);
+      });
+  };
+
+  const handleDrop = (event: DragEvent, targetStatus: BoardStatus) => {
+    event.preventDefault();
+    const id = event.dataTransfer.getData('text/plain') || draggedTaskId;
     if (id) {
-      setTasks(prev =>
-        prev.map(t => (t.id === id ? { ...t, status: targetStatus } : t))
-      );
+      applyStatusChange(id, targetStatus);
     }
     setDraggedTaskId(null);
     setActiveDropCol(null);
@@ -158,370 +269,378 @@ export function KanbanBoard() {
     setActiveDropCol(null);
   };
 
-  // Move task via button click (accessiblity helper / backup)
-  const moveTask = (taskId: string, targetStatus: Status) => {
-    setTasks(prev =>
-      prev.map(t => (t.id === taskId ? { ...t, status: targetStatus } : t))
-    );
-    if (selectedTask?.id === taskId) {
-      setSelectedTask(prev => prev ? { ...prev, status: targetStatus } : null);
-    }
-  };
-
-  // Get unique assignees (excluding 'Unassigned')
-  const uniqueAssignees = Array.from(
-    new Set(tasks.map(t => t.assignee).filter(name => name && name !== 'Unassigned'))
-  );
-
-  const handleAssigneeClick = (name: string) => {
-    setAssigneeFilter(prev => prev === name ? null : name);
-  };
-
-  // Filter tasks based on Search and Priority selection
-  const filteredTasks = tasks.filter(task => {
-    const matchesSearch =
-      task.title.toLowerCase().includes(search.toLowerCase()) ||
-      task.id.toLowerCase().includes(search.toLowerCase()) ||
-      task.description.toLowerCase().includes(search.toLowerCase()) ||
-      task.assignee.toLowerCase().includes(search.toLowerCase());
-      
-    const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
-
-    const matchesAssignee = !assigneeFilter || task.assignee === assigneeFilter;
-
-    return matchesSearch && matchesPriority && matchesAssignee;
-  });
-
-
-
-
-  // Handle delete task
-  const handleDeleteTask = (taskId: string) => {
-    setTasks(prev => prev.filter(t => t.id !== taskId));
-    setIsDetailOpen(false);
-    setSelectedTask(null);
-  };
-
-  // Badge priority stylers
-  const getPriorityBadge = (priority: Priority) => {
-    switch (priority) {
-      case 'high':
-        return <Badge variant="destructive" className="capitalize text-xs font-semibold px-2 py-0.5"><AlertCircle className="w-3.5 h-3.5 mr-1 inline" />High</Badge>;
-      case 'medium':
-        return <Badge variant="default" className="capitalize text-xs font-semibold px-2 py-0.5 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 text-white"><Info className="w-3.5 h-3.5 mr-1 inline" />Medium</Badge>;
-      case 'low':
-        return <Badge variant="secondary" className="capitalize text-xs font-semibold px-2 py-0.5"><HelpCircle className="w-3.5 h-3.5 mr-1 inline" />Low</Badge>;
-    }
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   return (
-    <div className="flex flex-col gap-6 w-full h-full max-w-7xl mx-auto">
-      {/* Kanban Board Controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card/60 backdrop-blur-md border rounded-xl p-4 shadow-sm">
-        <div className="flex flex-1 flex-col sm:flex-row items-center gap-3 w-full">
-          <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search board tasks..."
-              className="pl-9"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
+    <div className="flex h-full w-full flex-col gap-6">
+      {statusError ? (
+        <div className="bg-destructive/10 text-destructive border-destructive/20 flex items-start gap-2 rounded-lg border px-3 py-2 text-sm">
+          <AlertCircle className="mt-0.5 size-4 shrink-0" />
+          <div className="flex flex-1 items-start justify-between gap-3">
+            <p>{statusError}</p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              className="text-destructive hover:text-destructive"
+              onClick={() => setStatusError(null)}
+            >
+              Dismiss
+            </Button>
           </div>
+        </div>
+      ) : null}
 
-          {/* Assignee Avatars */}
-          <div className="flex items-center gap-1.5 shrink-0 px-1 border-l border-r border-zinc-200 dark:border-zinc-800 mx-1">
-            <span className="text-[10px] uppercase font-bold text-muted-foreground mr-1 hidden lg:inline">
-              Assignees:
-            </span>
-            <div className="flex items-center -space-x-2 transition-all duration-300">
-              {uniqueAssignees.slice(0, 3).map((assignee) => {
-                const isSelected = assigneeFilter === assignee;
-                const initials = getInitials(assignee);
-                const colorClass = getAssigneeColorClass(assignee);
-
-                return (
-                  <Tooltip key={assignee}>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        onClick={() => handleAssigneeClick(assignee)}
-                        className={cn(
-                          "h-8 w-8 rounded-full border-2 border-background flex items-center justify-center text-[10px] font-bold text-white transition-all cursor-pointer shadow-sm relative group/avatar",
-                          colorClass,
-                          isSelected ? "ring-2 ring-primary ring-offset-2 z-20 scale-110" : "opacity-80 hover:opacity-100 hover:-translate-y-0.5 hover:z-10",
-                          assigneeFilter && !isSelected && "opacity-40"
-                        )}
-                      >
-                        {initials}
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-[10px] py-1 px-2 font-medium">
-                      {assignee} {isSelected ? '(Filter Active)' : ''}
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              })}
-              {uniqueAssignees.length > 3 && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div 
-                      className="h-8 w-8 rounded-full border-2 border-background bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 flex items-center justify-center text-[10px] font-bold shadow-sm relative group/more cursor-help"
-                    >
-                      +{uniqueAssignees.length - 3}
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-[10px] py-1.5 px-2.5 font-medium flex flex-col gap-0.5 max-w-xs shadow-lg border">
-                    {uniqueAssignees.slice(3).map(assignee => (
-                      <span key={assignee}>{assignee}</span>
-                    ))}
-                  </TooltipContent>
-                </Tooltip>
-              )}
+      <Card className="shadow-none">
+        <CardContent className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="flex w-full flex-1 flex-col gap-4 sm:flex-row sm:items-end">
+            <div className="w-full space-y-2 sm:max-w-xs">
+              <Label htmlFor="board-search">Search</Label>
+              <div className="relative">
+                <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                <Input
+                  id="board-search"
+                  placeholder="Search work items..."
+                  className="pl-9"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </div>
             </div>
-            {assigneeFilter && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setAssigneeFilter(null)}
-                className="h-7 text-[10px] px-2 text-muted-foreground hover:text-foreground"
-              >
-                Clear
-              </Button>
-            )}
+
+            <div className="space-y-2">
+              <Label>Assignees</Label>
+              <div className="flex items-center gap-2">
+                <AvatarGroup className="*:data-[slot=avatar]:size-8">
+                  {uniqueAssignees.slice(0, 3).map((assignee) => {
+                    const isSelected = assigneeFilter === assignee.id;
+                    return (
+                      <Tooltip key={assignee.id}>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setAssigneeFilter((previous) =>
+                                previous === assignee.id ? null : assignee.id
+                              )
+                            }
+                            className={cn(
+                              'focus-visible:ring-ring rounded-full outline-none focus-visible:ring-2',
+                              isSelected &&
+                                'ring-primary ring-offset-background ring-2 ring-offset-2',
+                              assigneeFilter && !isSelected && 'opacity-40'
+                            )}
+                            aria-pressed={isSelected}
+                            aria-label={`Filter by ${assignee.name}`}
+                          >
+                            <Avatar size="default">
+                              <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                                {getInitials(assignee.name)}
+                              </AvatarFallback>
+                            </Avatar>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                          {assignee.name}
+                          {isSelected ? ' · filtering' : ''}
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                  {uniqueAssignees.length > 3 ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <AvatarGroupCount className="text-xs font-medium">
+                          +{uniqueAssignees.length - 3}
+                        </AvatarGroupCount>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="space-y-1">
+                        {uniqueAssignees.slice(3).map((assignee) => (
+                          <p key={assignee.id}>{assignee.name}</p>
+                        ))}
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : null}
+                </AvatarGroup>
+
+                {assigneeFilter ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setAssigneeFilter(null)}
+                  >
+                    Clear
+                  </Button>
+                ) : null}
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Priority Filter */}
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
-          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-            <SelectTrigger className="w-full md:w-37.5">
-              <SelectValue placeholder="Priority: All" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Priorities</SelectItem>
-              <SelectItem value="high">High Priority</SelectItem>
-              <SelectItem value="medium">Medium Priority</SelectItem>
-              <SelectItem value="low">Low Priority</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+          <div className="w-full space-y-2 md:w-48">
+            <Label htmlFor="board-priority">Priority</Label>
+            <div className="flex items-center gap-2">
+              <Filter className="text-muted-foreground size-4 shrink-0" />
+              <Select
+                value={priorityFilter}
+                onValueChange={(value) => {
+                  if (value) {
+                    setPriorityFilter(value);
+                  }
+                }}
+              >
+                <SelectTrigger id="board-priority" className="w-full">
+                  <SelectValue placeholder="All priorities" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All priorities</SelectItem>
+                  {PRIORITIES.map((priority) => (
+                    <SelectItem key={priority} value={priority}>
+                      {formatLabelWithSpace(priority)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Board Columns Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 items-start flex-1 min-h-125">
-        {COLUMNS.map(col => {
-          const colTasks = filteredTasks.filter(t => t.status === col.id);
-          const isOver = activeDropCol === col.id;
+      <div className="grid min-h-[32rem] flex-1 grid-cols-1 items-stretch gap-4 md:grid-cols-2 xl:grid-cols-5">
+        {COLUMNS.map((column) => {
+          const columnItems = filteredItems.filter(
+            (item) => item.status === column.id
+          );
+          const isOver = activeDropCol === column.id;
 
           return (
-            <div
-              key={col.id}
-              className={`flex flex-col h-full rounded-2xl border ${col.border} border-t-4 transition-colors duration-200 p-4 ${col.bg} ${
-                isOver ? 'bg-zinc-100/50 dark:bg-zinc-800/10 border-dashed border-2' : ''
-              }`}
-              onDragOver={e => handleDragOver(e, col.id)}
+            <section
+              key={column.id}
+              aria-label={formatLabelWithSpace(column.id)}
+              className={cn(
+                'bg-muted/25 flex h-full min-h-[32rem] flex-col rounded-xl border border-t-4 p-3 transition-colors',
+                column.accentClassName,
+                isOver && 'border-primary bg-primary/5 border-dashed'
+              )}
+              onDragOver={(event) => handleDragOver(event, column.id)}
               onDragLeave={handleDragLeave}
-              onDrop={e => handleDrop(e, col.id)}
+              onDrop={(event) => handleDrop(event, column.id)}
             >
-              {/* Column Header */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <span className={`font-semibold text-sm ${col.color}`}>
-                    {col.title}
-                  </span>
-                  <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-xs font-semibold">
-                    {colTasks.length}
-                  </Badge>
-                </div>
+              <div className="mb-3 flex items-center justify-between gap-2 px-1">
+                <WorkItemStatusBadge status={column.id} />
+                <Badge variant="secondary">{columnItems.length}</Badge>
               </div>
 
-              {/* Tasks List */}
-              <div className="flex flex-col gap-3 overflow-y-auto grow max-h-150 pr-1">
-                {colTasks.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center border-dashed border-2 border-zinc-200 dark:border-zinc-800 rounded-xl py-12 px-4 text-center text-muted-foreground text-xs select-none">
-                    <FolderDot className="w-8 h-8 stroke-1 text-zinc-300 dark:text-zinc-700 mb-2" />
-                    No tasks in this stage
-                  </div>
-                ) : (
-                  colTasks.map(task => (
-                    <Card
-                      key={task.id}
-                      draggable
-                      onDragStart={e => handleDragStart(e, task.id)}
-                      onDragEnd={handleDragEnd}
-                      onClick={() => {
-                        setSelectedTask(task);
-                        setIsDetailOpen(true);
-                      }}
-                      className={cn(
-                        "group relative cursor-pointer hover:shadow-md transition-all duration-200 border-l-4 border-y-0 border-r-0 rounded-l-none",
-                        PRIORITY_BORDERS[task.priority],
-                        draggedTaskId === task.id ? 'opacity-40 scale-95' : 'hover:scale-[1.01]'
-                      )}
-                    >
-                      <CardContent className="p-4 flex flex-col gap-2">
-                        <div className="flex justify-between items-start mb-1 gap-2">
-                          <span className="text-[10px] font-bold text-zinc-400 tracking-wider font-mono">
-                            {task.id}
-                          </span>
-                          {getPriorityBadge(task.priority)}
-                        </div>
+              <ScrollArea className="h-0 min-h-0 flex-1 pr-2">
+                <div className="flex flex-col gap-3 pb-1">
+                  {columnItems.length === 0 ? (
+                    <div className="text-muted-foreground flex min-h-40 flex-col items-center justify-center rounded-lg border border-dashed px-4 py-10 text-center text-xs">
+                      <FolderDot className="text-muted-foreground/50 mb-2 size-8 stroke-1" />
+                      No work items in this stage
+                    </div>
+                  ) : (
+                    columnItems.map((item) => {
+                      const description = descriptionToPlainText(
+                        item.description ?? null
+                      );
+                      const name = assigneeName(item);
 
-                        <h4 className="font-semibold text-sm leading-tight text-zinc-800 dark:text-zinc-100 group-hover:text-primary transition-colors">
-                          {task.title}
-                        </h4>
-
-                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1 leading-relaxed">
-                          {task.description}
-                        </p>
-
-                        <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80">
-                          <span className="flex items-center text-[10px] text-zinc-500 font-medium bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded">
-                            <Tag className="w-2.5 h-2.5 mr-1" />
-                            {task.category}
-                          </span>
-
-                          <div className="flex items-center gap-1.5" title={`Assignee: ${task.assignee}`}>
-                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary">
-                              {getInitials(task.assignee)}
+                      return (
+                        <Card
+                          key={item.id}
+                          draggable
+                          onDragStart={(event) =>
+                            handleDragStart(event, item.id)
+                          }
+                          onDragEnd={handleDragEnd}
+                          onClick={() => {
+                            setSelectedTask(item);
+                            setIsDetailOpen(true);
+                          }}
+                          className={cn(
+                            'group cursor-grab rounded-l-none border-y-0 border-r-0 border-l-4 py-0 shadow-none active:cursor-grabbing',
+                            PRIORITY_BORDERS[item.priority],
+                            (draggedTaskId === item.id ||
+                              pendingStatusIds.has(item.id)) &&
+                              'opacity-40'
+                          )}
+                        >
+                          <CardContent className="flex flex-col gap-2 p-3.5">
+                            <div className="flex items-start justify-between gap-2">
+                              <span className="text-muted-foreground font-mono text-[10px] font-medium tracking-wider uppercase">
+                                {shortId(item.id)}
+                              </span>
+                              <PriorityBadge priority={item.priority} />
                             </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
-            </div>
+
+                            <TruncatedText className="text-foreground group-hover:text-primary text-sm leading-snug font-semibold transition-colors">
+                              {item.title}
+                            </TruncatedText>
+
+                            {description ? (
+                              <p className="text-muted-foreground line-clamp-2 text-xs leading-relaxed">
+                                {description}
+                              </p>
+                            ) : null}
+
+                            <Separator className="my-1" />
+
+                            <div className="flex items-center justify-between gap-2">
+                              <Badge
+                                variant="outline"
+                                className="max-w-[60%] truncate"
+                              >
+                                <Tag data-icon="inline-start" />
+                                <span className="truncate">{item.type}</span>
+                              </Badge>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Avatar size="sm">
+                                    <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-medium">
+                                      {getInitials(name)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  {name}
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })
+                  )}
+                </div>
+              </ScrollArea>
+            </section>
           );
         })}
       </div>
 
-      {/* Task Details Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="sm:max-w-xl border-l-4 border-l-primary bg-card/95 backdrop-blur-lg">
-          {selectedTask && (
+        <DialogContent className="sm:max-w-xl">
+          {selectedTask ? (
             <>
               <DialogHeader>
-                <div className="flex justify-between items-center pr-6 mb-2">
-                  <span className="text-xs font-mono font-bold text-muted-foreground bg-muted px-2 py-1 rounded">
-                    {selectedTask.id}
-                  </span>
-                  {getPriorityBadge(selectedTask.priority)}
+                <div className="mb-1 flex items-center justify-between gap-3 pr-6">
+                  <Badge variant="outline" className="font-mono">
+                    {shortId(selectedTask.id)}
+                  </Badge>
+                  <PriorityBadge priority={selectedTask.priority} />
                 </div>
-                <DialogTitle className="text-xl font-bold">{selectedTask.title}</DialogTitle>
-                <DialogDescription className="text-xs">
-                  Manage tasks details, status movement and task parameters.
+                <DialogTitle className="text-foreground text-xl">
+                  {selectedTask.title}
+                </DialogTitle>
+                <DialogDescription>
+                  Preview this work item or move it between board columns.
+                  Status changes are saved immediately.
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-4 my-4 text-sm leading-relaxed">
-                <div>
-                  <h5 className="font-semibold text-xs text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">
+              <div className="space-y-4 text-sm">
+                <div className="space-y-2">
+                  <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                     Description
-                  </h5>
-                  <p className="bg-muted/40 rounded-xl p-3 border leading-relaxed text-zinc-700 dark:text-zinc-300">
-                    {selectedTask.description}
                   </p>
+                  <div className="bg-muted/40 max-h-56 overflow-y-auto rounded-lg border p-3">
+                    <DescriptionView
+                      description={selectedTask.description ?? null}
+                    />
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    {
-                      label: 'Assignee',
-                      content: (
-                        <div className="flex items-center gap-2">
-                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white shadow-sm">
-                            {getInitials(selectedTask.assignee)}
-                          </div>
-                          <span className="font-medium text-xs">{selectedTask.assignee}</span>
-                        </div>
-                      ),
-                    },
-                    {
-                      label: 'Category',
-                      content: (
-                        <span className="inline-flex items-center gap-1 font-medium text-xs">
-                          <Tag className="w-3.5 h-3.5 text-primary" />
-                          {selectedTask.category}
-                        </span>
-                      ),
-                    },
-                    {
-                      label: 'Due Date',
-                      content: (
-                        <span className="inline-flex items-center gap-1 font-medium text-xs">
-                          <Calendar className="w-3.5 h-3.5 text-primary" />
-                          {selectedTask.dueDate}
-                        </span>
-                      ),
-                    },
-                    {
-                      label: 'Current Status',
-                      content: (
-                        <span className="font-semibold text-xs capitalize text-zinc-700 dark:text-zinc-300">
-                          {COLUMNS.find(c => c.id === selectedTask.status)?.title}
-                        </span>
-                      ),
-                    },
-                  ].map(item => (
-                    <div key={item.label} className="bg-muted/20 p-2.5 border rounded-lg">
-                      <span className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase font-bold tracking-wider block mb-1">
-                        {item.label}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-muted/20 rounded-lg border p-3">
+                    <p className="text-muted-foreground mb-2 text-[10px] font-medium tracking-wide uppercase">
+                      Assignee
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Avatar size="sm">
+                        <AvatarFallback className="bg-primary text-primary-foreground text-[10px] font-medium">
+                          {getInitials(assigneeName(selectedTask))}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-foreground text-xs font-medium">
+                        {assigneeName(selectedTask)}
                       </span>
-                      {item.content}
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="bg-muted/20 rounded-lg border p-3">
+                    <p className="text-muted-foreground mb-2 text-[10px] font-medium tracking-wide uppercase">
+                      Type
+                    </p>
+                    <span className="text-foreground inline-flex items-center gap-1.5 text-xs font-medium">
+                      <Tag className="text-primary size-3.5" />
+                      {selectedTask.type}
+                    </span>
+                  </div>
+
+                  <div className="bg-muted/20 rounded-lg border p-3">
+                    <p className="text-muted-foreground mb-2 text-[10px] font-medium tracking-wide uppercase">
+                      Due date
+                    </p>
+                    <span className="text-foreground inline-flex items-center gap-1.5 text-xs font-medium">
+                      <Calendar className="text-primary size-3.5" />
+                      {selectedTask.due_date ?? 'Not set'}
+                    </span>
+                  </div>
+
+                  <div className="bg-muted/20 rounded-lg border p-3">
+                    <p className="text-muted-foreground mb-2 text-[10px] font-medium tracking-wide uppercase">
+                      Status
+                    </p>
+                    <WorkItemStatusBadge status={selectedTask.status} />
+                  </div>
                 </div>
 
-                <div>
-                  <h5 className="font-semibold text-xs text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">
-                    Quick Move Status
-                  </h5>
+                <div className="space-y-2">
+                  <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    Move to
+                  </p>
                   <div className="flex flex-wrap gap-2">
-                    {COLUMNS.map(col => (
+                    {COLUMNS.map((column) => (
                       <Button
-                        key={col.id}
-                        variant={selectedTask.status === col.id ? 'default' : 'outline'}
+                        key={column.id}
+                        type="button"
+                        variant={
+                          selectedTask.status === column.id
+                            ? 'default'
+                            : 'outline'
+                        }
                         size="sm"
-                        className="text-xs px-2.5 py-1"
-                        onClick={() => moveTask(selectedTask.id, col.id)}
+                        disabled={pendingStatusIds.has(selectedTask.id)}
+                        onClick={() =>
+                          applyStatusChange(selectedTask.id, column.id)
+                        }
                       >
-                        {col.title}
+                        {formatLabelWithSpace(column.id)}
                       </Button>
                     ))}
                   </div>
                 </div>
               </div>
 
-              <DialogFooter className="gap-2 sm:gap-0 mt-4 border-t pt-4">
-                <Button
-                  variant="destructive"
-                  onClick={() => handleDeleteTask(selectedTask.id)}
-                  className="mr-auto text-xs"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" /> Delete Task
+              <DialogFooter className="gap-2 border-t pt-4 sm:justify-between">
+                <Button asChild variant="outline">
+                  <a
+                    href={`/work-items/${selectedTask.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Open details
+                    <SquareArrowOutUpRight />
+                  </a>
                 </Button>
                 <DialogClose asChild>
-                  <Button variant="secondary" className="text-xs">Close</Button>
+                  <Button type="button" variant="secondary">
+                    Close
+                  </Button>
                 </DialogClose>
               </DialogFooter>
             </>
-          )}
+          ) : null}
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }

@@ -31,10 +31,10 @@ import {
   Search,
   FolderOpen,
   Pencil,
-  Archive,
   RefreshCw,
+  Archive,
   Trash2,
-} from 'lucide-react';
+} from '@repo/ui/lib/icons';
 import { Pagination } from '@/components/pagination';
 import type { Team } from '../_services/teams.service';
 import type { User } from '@/app/users/_services/users.service';
@@ -298,7 +298,8 @@ export function TeamRegistry({
                   </TableHeader>
                   <TableBody>
                     {teams.map((team) => {
-                      const managerName = team.manager?.name ?? 'Unknown Manager';
+                      const managerName =
+                        team.manager?.name ?? 'Unknown Manager';
                       const managerEmail = team.manager?.email ?? '';
                       const isManagerSelf = team.manager_id === currentUserId;
 
@@ -316,7 +317,10 @@ export function TeamRegistry({
                             <span>Edit</span>
                           </Button>
                         );
-                      } else if (team.status === 'archived' && isManagerOrAdmin) {
+                      } else if (
+                        team.status === 'archived' &&
+                        isManagerOrAdmin
+                      ) {
                         primaryButton = (
                           <Button
                             disabled={isPending}
@@ -355,7 +359,10 @@ export function TeamRegistry({
                       }
 
                       return (
-                        <TableRow key={team.id} className="hover:bg-accent/40 h-16">
+                        <TableRow
+                          key={team.id}
+                          className="hover:bg-accent/40 h-16"
+                        >
                           <TableCell className="w-[40%] font-medium">
                             <div className="flex items-center gap-3">
                               <div className="bg-primary/10 text-primary border-primary/20 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-bold shadow-sm transition-all duration-300 group-hover:scale-105">
@@ -399,7 +406,7 @@ export function TeamRegistry({
                               )}
                             </span>
                           </TableCell>
-                          <TableCell className="w-[20%] text-right pr-4">
+                          <TableCell className="w-[20%] pr-4 text-right">
                             <div className="flex justify-end gap-2">
                               {primaryButton}
                               {secondaryButton}
@@ -482,9 +489,7 @@ export function TeamRegistry({
               <p className="text-muted-foreground text-sm leading-relaxed">
                 Are you sure you want to
                 {deleteMode === 'soft' ? ' archive ' : ' permanently delete '}
-                <strong className="text-foreground">
-                  {teamToDelete.name}
-                </strong>
+                <strong className="text-foreground">{teamToDelete.name}</strong>
                 {' ?'}
               </p>
               <p className="text-muted-foreground/80 bg-muted/50 border-border/40 mt-2 rounded-lg border p-2.5 text-xs">

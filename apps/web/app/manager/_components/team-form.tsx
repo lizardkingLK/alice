@@ -1,5 +1,6 @@
 'use client';
 
+import { FormAlertMessage } from '@/app/_shared/form-alert-message';
 import { FormEvent, useEffect, useState, type ChangeEvent } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
@@ -18,8 +19,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@repo/ui/components/ui/card';
-import { cn } from '@repo/ui/lib/utils';
-import { Users, Loader2, AlertCircle, CheckCircle, X } from 'lucide-react';
+import {
+  Users,
+  Loader2,
+  X,
+} from '@repo/ui/lib/icons';
 import type { User } from '@/app/users/_services/users.service';
 import { createTeam, updateTeam } from '../_services/teams.service';
 import {
@@ -34,8 +38,7 @@ interface ProjectMembersListProps {
   isLoadingMembers: boolean;
   projectMembers: ProjectMemberWithUser[];
   selectedMemberIds: string[];
-  setSelectedMemberIds: React.Dispatch<React.SetStateAction<string[]>>;
-}
+  setSelectedMemberIds: React.Dispatch<React.SetStateAction<string[]>>;}
 
 function ProjectMembersList({
   isLoadingMembers,
@@ -45,7 +48,7 @@ function ProjectMembersList({
 }: Readonly<ProjectMembersListProps>) {
   if (isLoadingMembers) {
     return (
-      <div className="text-muted-foreground flex items-center gap-2 text-xs py-1">
+      <div className="text-muted-foreground flex items-center gap-2 py-1 text-xs">
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
         Loading project members...
       </div>
@@ -61,7 +64,7 @@ function ProjectMembersList({
   }
 
   return (
-    <div className="bg-background/50 border-input max-h-48 overflow-y-auto custom-scrollbar rounded-md border p-2 space-y-1">
+    <div className="bg-background/50 border-input custom-scrollbar max-h-48 space-y-1 overflow-y-auto rounded-md border p-2">
       {projectMembers.map((m) => {
         const isChecked = selectedMemberIds.includes(m.user_id);
         const checkboxId = `member-checkbox-${m.user_id}`;
@@ -83,16 +86,16 @@ function ProjectMembersList({
                   );
                 }
               }}
-              className="accent-primary h-4 w-4 rounded cursor-pointer"
+              className="accent-primary h-4 w-4 cursor-pointer rounded"
             />
             <label
               htmlFor={checkboxId}
-              className="flex flex-col cursor-pointer flex-1"
+              className="flex flex-1 cursor-pointer flex-col"
             >
-              <span className="text-xs font-semibold text-foreground">
+              <span className="text-foreground text-xs font-semibold">
                 {m.user?.name}
               </span>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-muted-foreground text-[10px]">
                 {m.user?.email} • {m.user?.role}
               </span>
             </label>
@@ -116,7 +119,9 @@ async function findBestProjectForTeamMembers(
     try {
       const projMembers = await getProjectMembers(proj.id);
       const projMemberIds = new Set(projMembers.map((pm) => pm.user_id));
-      const overlap = currentMemberIds.filter((id: string) => projMemberIds.has(id)).length;
+      const overlap = currentMemberIds.filter((id: string) =>
+        projMemberIds.has(id)
+      ).length;
       if (overlap > maxOverlap) {
         maxOverlap = overlap;
         bestProjectId = proj.id;
@@ -136,34 +141,6 @@ interface TeamFormProps {
   readonly users: User[];
 }
 
-interface FormAlertMessageProps {
-  message: string | null;
-  isError: boolean;
-}
-
-function FormAlertMessage({
-  message,
-  isError,
-}: Readonly<FormAlertMessageProps>) {
-  if (!message) return null;
-  return (
-    <div
-      className={cn(
-        'flex items-center gap-2 rounded-lg border p-3 text-sm',
-        isError
-          ? 'text-destructive bg-destructive/10 border-destructive/20'
-          : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
-      )}
-    >
-      {isError ? (
-        <AlertCircle className="h-4 w-4 shrink-0" />
-      ) : (
-        <CheckCircle className="h-4 w-4 shrink-0" />
-      )}
-      <span>{message}</span>
-    </div>
-  );
-}
 
 export function TeamForm({
   onClose,
@@ -189,7 +166,9 @@ export function TeamForm({
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
-  const [projectMembers, setProjectMembers] = useState<ProjectMemberWithUser[]>([]);
+  const [projectMembers, setProjectMembers] = useState<ProjectMemberWithUser[]>(
+    []
+  );
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
@@ -203,10 +182,15 @@ export function TeamForm({
         setProjects(activeProjects);
 
         if (editActionActive && teamToEdit?.members) {
-          const currentMemberIds = teamToEdit.members.map((m: { user_id: string }) => m.user_id);
+          const currentMemberIds = teamToEdit.members.map(
+            (m: { user_id: string }) => m.user_id
+          );
           setSelectedMemberIds(currentMemberIds);
 
-          const bestProjectId = await findBestProjectForTeamMembers(currentMemberIds, activeProjects);
+          const bestProjectId = await findBestProjectForTeamMembers(
+            currentMemberIds,
+            activeProjects
+          );
           if (bestProjectId) {
             setSelectedProjectId(bestProjectId);
           }
@@ -227,7 +211,9 @@ export function TeamForm({
         setIsLoadingMembers(true);
         try {
           const membersList = await getProjectMembers(selectedProjectId);
-          setProjectMembers(membersList.filter((m) => m.status === 'active' && m.user));
+          setProjectMembers(
+            membersList.filter((m) => m.status === 'active' && m.user)
+          );
         } catch (err) {
           console.error('Failed to fetch project members:', err);
         } finally {
@@ -306,8 +292,10 @@ export function TeamForm({
   }
 
   return (
-    <Card className="border-border bg-card text-card-foreground relative border shadow-2xl transition-all duration-300 max-h-[90vh] overflow-y-auto custom-scrollbar">
-      <style dangerouslySetInnerHTML={{ __html: `
+    <Card className="border-border bg-card text-card-foreground custom-scrollbar relative max-h-[90vh] overflow-y-auto border shadow-2xl transition-all duration-300">
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         .custom-scrollbar {
           scrollbar-width: thin !important;
           scrollbar-color: rgba(156, 163, 175, 0.3) transparent !important;
@@ -326,7 +314,9 @@ export function TeamForm({
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background-color: rgba(156, 163, 175, 0.6) !important;
         }
-      `}} />
+      `,
+        }}
+      />
       {onClose && (
         <Button
           type="button"

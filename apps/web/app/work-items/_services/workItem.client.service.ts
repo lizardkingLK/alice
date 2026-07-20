@@ -22,3 +22,13 @@ export async function updateWorkItem(
     body: JSON.stringify(Object.fromEntries(formData.entries())),
   });
 }
+
+export async function updateWorkItemStatus(
+  id: string,
+  status: DbWorkItem['status']
+): Promise<ResponseDTO<DbWorkItem>> {
+  return await apiFetch<ResponseDTO<DbWorkItem>>(`${workItemsPath}/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+}

@@ -1,15 +1,15 @@
 /* eslint-disable no-unused-vars */
 'use client';
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Select,
-  SelectContent,
-  SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectContent,
+  SelectItem,
 } from '@repo/ui/components/ui/select';
+import { ChevronLeft, ChevronRight } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 
 interface PaginationProps {

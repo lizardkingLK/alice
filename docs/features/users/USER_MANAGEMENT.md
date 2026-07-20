@@ -12,9 +12,10 @@
 
 Related:
 
-- `docs/authorization/RBAC_AUTHORIZATION_SKELETON.md` — full RBAC rollout plan
-- `docs/authorization/FORGOT_PASSWORD_AUTH_PLAN.md` — password reset route used by invitations
-- `docs/guidelines/DATABASE.md` — `public.users` schema and migrations
+- `docs/auth/AUTHENTICATION.md` — living auth guide (admin invite + reset sequences)
+- `docs/auth/RBAC_AUTHORIZATION_SKELETON.md` — full RBAC rollout plan
+- `docs/auth/FORGOT_PASSWORD_AUTH_PLAN.md` — original password-reset plan
+- `docs/guides/DATABASE.md` — `public.users` schema and migrations
 
 ---
 
@@ -152,7 +153,7 @@ sequenceDiagram
 
 Server Actions already reject non-admins, but **the page and UI are not admin-gated yet**. Treat full admin-only access as **planned RBAC work**, not complete.
 
-See `docs/authorization/RBAC_AUTHORIZATION_SKELETON.md` for the target architecture.
+See `docs/auth/RBAC_AUTHORIZATION_SKELETON.md` for the target architecture.
 
 ---
 
@@ -183,7 +184,7 @@ Required in `apps/web` (see `sample.env`):
 
 ## SEO and security notes
 
-- `/users` is an **authenticated internal route** — it must not be indexed (add `robots: { index: false }` on a layout and `disallow: /users` in `robots.ts` per `docs/guidelines/SEO.md` when that route is classified).
+- `/users` is an **authenticated internal route** — it must not be indexed (add `robots: { index: false }` on a layout and `disallow: /users` in `robots.ts` per `docs/guides/SEO.md` when that route is classified).
 - Never import `lib/supabase/admin.ts` from client components.
 - Invitation links must use the allow-listed `redirectTo` host in Supabase.
 

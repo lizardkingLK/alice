@@ -11,8 +11,7 @@
     "vercel-build": "pnpm --filter @repo/types build",
     "start": "node dist/index.js",
     "lint": "eslint --max-warnings 0",
-    "checktypes": "tsc --noEmit -p tsconfig.eslint.json",
-    "test": "vitest"
+    "checktypes": "tsc --noEmit -p tsconfig.eslint.json"
   },
   "dependencies": {
     "@repo/types": "workspace:*",

@@ -9,8 +9,7 @@ import { Sprint } from '@/app/sprints/_services/sprints.service';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { cn } from '@repo/ui/lib/utils';
-
-import { Search } from 'lucide-react';
+import { Search } from '@repo/ui/lib/icons';
 
 interface SprintsWorkspaceProps {
   readonly sprints: Sprint[];

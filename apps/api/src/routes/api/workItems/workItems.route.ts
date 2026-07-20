@@ -4,16 +4,44 @@ import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
+import { parsePagination } from '../../../lib/pagination';
 import { workItemService } from './workItems.service';
-import { createUpdateWorkItemBodySchema } from './workItems.schemas';
+import {
+  createUpdateWorkItemBodySchema,
+  patchUpdateWorkItemBodySchema,
+  SupabaseJson,
+} from './workItems.schemas';
+import type { DbWorkItem } from './workItems.repository';
 
 const workItemsRouter: Router = Router();
 
 workItemsRouter.get(
   '/',
   requireApiAuth,
-  async (_req: AuthenticatedRequest, res) => {
+  async (req: AuthenticatedRequest, res) => {
     try {
+      const searchQuery =
+        typeof req.query.search === 'string' ? req.query.search : undefined;
+      const pagination = parsePagination(req);
+
+      if (pagination) {
+        const { page, limit } = pagination;
+        const result = (await workItemService.listWorkItems(
+          page,
+          limit,
+          searchQuery
+        )) as { workItems: DbWorkItem[]; totalCount: number };
+        const totalPages = Math.max(1, Math.ceil(result.totalCount / limit));
+
+        return res.json({
+          workItems: result.workItems,
+          totalCount: result.totalCount,
+          page,
+          limit,
+          totalPages,
+        });
+      }
+
       const workItems = await workItemService.getWorkItems();
       res.json({ data: workItems, error: null });
     } catch (error) {
@@ -76,18 +104,59 @@ workItemsRouter.patch(
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
     try {
-      const parsed = createUpdateWorkItemBodySchema.safeParse(req.body);
+      const processedBody = { ...req.body };
+
+      if (typeof req.body.description === 'string') {
+        try {
+          processedBody.description = JSON.parse(req.body.description);
+        } catch {
+          return res.status(400).json({
+            data: null,
+            error: 'Invalid JSON format provided for description field',
+          });
+        }
+      }
+
+      const parsed = patchUpdateWorkItemBodySchema.safeParse(processedBody);
       if (!parsed.success) {
         return res
           .status(400)
           .json({ data: null, error: z.treeifyError(parsed.error) });
       }
 
+      const existingWorkItem = await workItemService.getWorkItem(
+        req.params.id!
+      );
+      if (!existingWorkItem) {
+        return res
+          .status(404)
+          .json({ data: null, error: 'Work item not found' });
+      }
+
+      const payload = {
+        title: parsed.data.title ?? existingWorkItem.title,
+        project_id: parsed.data.project_id ?? existingWorkItem.project_id,
+        type: parsed.data.type ?? existingWorkItem.type,
+        assignee_id:
+          parsed.data.assignee_id !== undefined
+            ? parsed.data.assignee_id
+            : existingWorkItem.assignee_id,
+        due_date:
+          parsed.data.due_date !== undefined
+            ? parsed.data.due_date
+            : existingWorkItem.due_date,
+        description: (parsed.data.description !== undefined
+          ? parsed.data.description
+          : existingWorkItem.description) as SupabaseJson,
+        status: parsed.data.status ?? existingWorkItem.status,
+      };
+
       const workItem = await workItemService.updateWorkItem(
         req.userId!,
         req.params.id!,
-        parsed.data
+        payload
       );
+
       res.status(200).json({ data: workItem, error: null });
     } catch (error) {
       const message =

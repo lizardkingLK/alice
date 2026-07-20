@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
-import { Book, User, UserIcon } from 'lucide-react';
+import { Book, User, UserIcon } from '@repo/ui/lib/icons';
 import Image from 'next/image';
 import { cn } from '@repo/ui/lib/utils';
 
@@ -46,9 +46,11 @@ const UserProfile = ({ image }: Readonly<UserProfileProps>) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem>
-          <UserIcon />
-          Profile
+        <DropdownMenuItem asChild>
+          <Link href="/profile">
+            <UserIcon />
+            Profile
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem>

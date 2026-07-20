@@ -8,7 +8,7 @@ async function check() {
   const projRes = await supabase
     .from('projects')
     .select('*, members:project_members(*)');
-  
+
   console.log('--- PROJECTS FROM DATABASE ---');
   console.log(JSON.stringify(projRes.data, null, 2));
 }

@@ -15,7 +15,7 @@ import {
   Check,
   AlertCircle,
   HelpCircle,
-} from 'lucide-react';
+} from '@repo/ui/lib/icons';
 
 import { Card } from '@repo/ui/components/ui/card';
 import { Badge } from '@repo/ui/components/ui/badge';
@@ -47,7 +47,7 @@ import {
 import { Separator } from '@repo/ui/components/ui/separator';
 import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
 
-import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-status-badge';
+import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
 import { Sprint } from '@/app/sprints/_services/sprints.service';
 import { Project as DbProject } from '@/app/projects/_services/projects.service';
@@ -110,7 +110,9 @@ export function BacklogWorkspace({
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
 
   // Interactive UI state
-  const [collapsedSprints, setCollapsedSprints] = useState<Record<string, boolean>>({});
+  const [collapsedSprints, setCollapsedSprints] = useState<
+    Record<string, boolean>
+  >({});
   const [isBacklogCollapsed, setIsBacklogCollapsed] = useState(false);
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [dragOverTargetId, setDragOverTargetId] = useState<string | null>(null); // sprint ID or 'backlog'
@@ -126,11 +128,18 @@ export function BacklogWorkspace({
   const [isCreateIssueOpen, setIsCreateIssueOpen] = useState(false);
 
   // Helper: date format range
-  const formatDateRange = (start: string | null | Date, end: string | null | Date) => {
+  const formatDateRange = (
+    start: string | null | Date,
+    end: string | null | Date
+  ) => {
     if (!start || !end) return 'No dates set';
     const s = new Date(start);
     const e = new Date(end);
-    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+    const options: Intl.DateTimeFormatOptions = {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    };
     return `${s.toLocaleDateString('en-US', options)} - ${e.toLocaleDateString('en-US', options)}`;
   };
 
@@ -190,7 +199,8 @@ export function BacklogWorkspace({
           if (sprintProjId && draggedItem.project_id !== sprintProjId) {
             alert(
               `Cannot assign task to this sprint. The task belongs to project "${
-                projects.find((p) => p.id === draggedItem.project_id)?.name ?? 'Unknown'
+                projects.find((p) => p.id === draggedItem.project_id)?.name ??
+                'Unknown'
               }", but this sprint belongs to "${targetSprint.project?.name ?? 'Unknown'}".`
             );
             setDraggedItemId(null);
@@ -207,7 +217,9 @@ export function BacklogWorkspace({
       );
       // Update selected item in sheet if it's currently open
       if (selectedItem?.id === itemId) {
-        setSelectedItem((prev) => prev ? { ...prev, sprint_id: targetId } : null);
+        setSelectedItem((prev) =>
+          prev ? { ...prev, sprint_id: targetId } : null
+        );
       }
     }
     setDraggedItemId(null);
@@ -220,13 +232,18 @@ export function BacklogWorkspace({
       const matchesSearch =
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.id.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesProject = projectFilter === 'all' || item.project_id === projectFilter;
-      const matchesAssignee = assigneeFilter === 'all' || item.assignee_id === assigneeFilter;
-      
-      const mappedPriority = mapPriority(item.priority);
-      const matchesPriority = priorityFilter === 'all' || mappedPriority === priorityFilter;
+      const matchesProject =
+        projectFilter === 'all' || item.project_id === projectFilter;
+      const matchesAssignee =
+        assigneeFilter === 'all' || item.assignee_id === assigneeFilter;
 
-      return matchesSearch && matchesProject && matchesAssignee && matchesPriority;
+      const mappedPriority = mapPriority(item.priority);
+      const matchesPriority =
+        priorityFilter === 'all' || mappedPriority === priorityFilter;
+
+      return (
+        matchesSearch && matchesProject && matchesAssignee && matchesPriority
+      );
     });
   }, [workItems, searchQuery, projectFilter, assigneeFilter, priorityFilter]);
 
@@ -251,10 +268,12 @@ export function BacklogWorkspace({
   // Calculations for sprints (issue counts)
   const sprintStats = useMemo(() => {
     const stats: Record<string, { count: number }> = {};
-    
+
     // Sprints stats
     sprintList.forEach((sprint) => {
-      const sprintItems = workItems.filter((item) => item.sprint_id === sprint.id);
+      const sprintItems = workItems.filter(
+        (item) => item.sprint_id === sprint.id
+      );
       stats[sprint.id] = {
         count: sprintItems.length,
       };
@@ -274,7 +293,9 @@ export function BacklogWorkspace({
     if (activeTab === 'completed') {
       return sprintList.filter((s) => s.status === 'Completed');
     }
-    return sprintList.filter((s) => s.status === 'Ongoing' || s.status === 'Not Started');
+    return sprintList.filter(
+      (s) => s.status === 'Ongoing' || s.status === 'Not Started'
+    );
   }, [sprintList, activeTab]);
 
   // Start Sprint Handler
@@ -308,7 +329,10 @@ export function BacklogWorkspace({
   };
 
   // Inline Quick Create Issue Submission
-  const handleQuickCreateSubmit = (e: React.FormEvent, sprintId: string | null) => {
+  const handleQuickCreateSubmit = (
+    e: React.FormEvent,
+    sprintId: string | null
+  ) => {
     e.preventDefault();
     const key = sprintId || 'backlog';
     const title = quickTitles[key]?.trim();
@@ -328,7 +352,9 @@ export function BacklogWorkspace({
       description: null,
       assignee_id: null,
       reporter_id: currentUserId || null,
-      due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10), // 1 week out
+      due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .substring(0, 10), // 1 week out
       story_points: null,
       status: 'New',
       created_by: currentUserId || null,
@@ -355,15 +381,22 @@ export function BacklogWorkspace({
   };
 
   // Update inline value of item from details sheet
-  const handleUpdateItemField = <K extends keyof DbWorkItem>(itemId: string, field: K, value: DbWorkItem[K]) => {
-    let updatedAssignee: { id: string; name: string; email: string } | null = null;
+  const handleUpdateItemField = <K extends keyof DbWorkItem>(
+    itemId: string,
+    field: K,
+    value: DbWorkItem[K]
+  ) => {
+    let updatedAssignee: { id: string; name: string; email: string } | null =
+      null;
     if (field === 'assignee_id') {
       const m = projectMembers.find((member) => member.id === value);
       updatedAssignee = m ? { id: m.id, name: m.name, email: m.email } : null;
     }
 
     setWorkItems((prev) =>
-      prev.map((item) => updateWorkItemField(item, itemId, field, value, updatedAssignee))
+      prev.map((item) =>
+        updateWorkItemField(item, itemId, field, value, updatedAssignee)
+      )
     );
 
     // Sync selected item state
@@ -387,29 +420,34 @@ export function BacklogWorkspace({
     setPriorityFilter('all');
   };
 
-  const isFiltersActive = searchQuery || projectFilter !== 'all' || assigneeFilter !== 'all' || priorityFilter !== 'all';
+  const isFiltersActive =
+    searchQuery ||
+    projectFilter !== 'all' ||
+    assigneeFilter !== 'all' ||
+    priorityFilter !== 'all';
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col gap-6 w-full max-w-350 mx-auto pb-10">
-        
+      <div className="mx-auto flex w-full max-w-350 flex-col gap-6 pb-10">
         {/* Error alert */}
         {error && (
-          <div className="bg-destructive/15 border border-destructive/20 text-destructive text-sm px-4 py-3 rounded-lg flex items-center gap-2">
+          <div className="bg-destructive/15 border-destructive/20 text-destructive flex items-center gap-2 rounded-lg border px-4 py-3 text-sm">
             <AlertCircle className="h-4 w-4" />
             <span>{error}</span>
           </div>
         )}
 
         {/* Toolbar & Filters */}
-        <div className="bg-card/40 border border-border/60 rounded-xl p-4 shadow-sm backdrop-blur-md flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="bg-card/40 border-border/60 flex flex-col gap-4 rounded-xl border p-4 shadow-sm backdrop-blur-md">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <Layers className="h-5 w-5 text-indigo-500" />
-              <h2 className="text-xl font-bold tracking-tight text-foreground">Sprint Planning</h2>
+              <h2 className="text-foreground text-xl font-bold tracking-tight">
+                Sprint Planning
+              </h2>
 
               {/* Active / Completed tabs */}
-              <div className="bg-muted/50 border border-border text-muted-foreground inline-flex h-9 items-center justify-center rounded-md p-1 ml-4">
+              <div className="bg-muted/50 border-border text-muted-foreground ml-4 inline-flex h-9 items-center justify-center rounded-md border p-1">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -438,12 +476,12 @@ export function BacklogWorkspace({
                 </Button>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                className="cursor-pointer border-indigo-500/20 bg-indigo-500/5 hover:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-semibold"
+                className="cursor-pointer border-indigo-500/20 bg-indigo-500/5 font-semibold text-indigo-600 hover:bg-indigo-500/10 dark:text-indigo-400"
                 onClick={() => setIsCreateSprintOpen(true)}
               >
                 <Plus className="mr-1.5 h-4 w-4" />
@@ -451,7 +489,7 @@ export function BacklogWorkspace({
               </Button>
               <Button
                 size="sm"
-                className="cursor-pointer bg-linear-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-semibold"
+                className="cursor-pointer bg-linear-to-r from-indigo-500 to-violet-600 font-semibold text-white hover:from-indigo-600 hover:to-violet-700"
                 onClick={() => setIsCreateIssueOpen(true)}
               >
                 <Plus className="mr-1.5 h-4 w-4" />
@@ -463,18 +501,18 @@ export function BacklogWorkspace({
           <div className="flex flex-wrap items-center gap-3">
             {/* Search Input */}
             <div className="relative w-full sm:max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
               <Input
                 placeholder="Search backlog issues..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-9 bg-background/50 border-border/80 focus:border-indigo-500 transition-colors"
+                className="bg-background/50 border-border/80 h-9 pl-9 transition-colors focus:border-indigo-500"
               />
             </div>
 
             {/* Project Filter */}
             <Select value={projectFilter} onValueChange={setProjectFilter}>
-              <SelectTrigger className="h-9 w-37.5 bg-background/50 border-border/80 text-xs">
+              <SelectTrigger className="bg-background/50 border-border/80 h-9 w-37.5 text-xs">
                 <SelectValue placeholder="All Projects" />
               </SelectTrigger>
               <SelectContent>
@@ -489,7 +527,7 @@ export function BacklogWorkspace({
 
             {/* Assignee Filter */}
             <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-              <SelectTrigger className="h-9 w-40 bg-background/50 border-border/80 text-xs">
+              <SelectTrigger className="bg-background/50 border-border/80 h-9 w-40 text-xs">
                 <SelectValue placeholder="All Assignees" />
               </SelectTrigger>
               <SelectContent>
@@ -504,7 +542,7 @@ export function BacklogWorkspace({
 
             {/* Priority Filter */}
             <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="h-9 w-35 bg-background/50 border-border/80 text-xs">
+              <SelectTrigger className="bg-background/50 border-border/80 h-9 w-35 text-xs">
                 <SelectValue placeholder="All Priorities" />
               </SelectTrigger>
               <SelectContent>
@@ -521,7 +559,7 @@ export function BacklogWorkspace({
                 variant="ghost"
                 size="sm"
                 onClick={handleClearFilters}
-                className="h-9 px-3 text-muted-foreground hover:text-foreground cursor-pointer text-xs"
+                className="text-muted-foreground hover:text-foreground h-9 cursor-pointer px-3 text-xs"
               >
                 Clear Filters
                 <X className="ml-1 h-3.5 w-3.5" />
@@ -532,13 +570,14 @@ export function BacklogWorkspace({
 
         {/* Sprints & Backlog Containers */}
         <div className="space-y-4">
-          
           {/* Display Sprints */}
           {displayedSprints.length === 0 ? (
-            <div className="bg-card/35 border border-dashed border-border rounded-xl py-12 px-4 text-center text-muted-foreground text-sm">
-              <HelpCircle className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
+            <div className="bg-card/35 border-border text-muted-foreground rounded-xl border border-dashed px-4 py-12 text-center text-sm">
+              <HelpCircle className="text-muted-foreground/30 mx-auto mb-3 h-8 w-8" />
               <p className="font-medium">No {activeTab} sprints found</p>
-              <p className="text-xs text-muted-foreground/75 mt-1">Create a sprint to organize upcoming deliverable workflows.</p>
+              <p className="text-muted-foreground/75 mt-1 text-xs">
+                Create a sprint to organize upcoming deliverable workflows.
+              </p>
             </div>
           ) : (
             displayedSprints.map((sprint) => {
@@ -551,12 +590,14 @@ export function BacklogWorkspace({
                 <Card
                   key={sprint.id}
                   className={cn(
-                    "overflow-hidden border-border/70 shadow-sm transition-all duration-200",
-                    sprint.status === 'Ongoing' ? "border-l-4 border-l-blue-500 dark:border-l-blue-600" : "border-l-4 border-l-zinc-300 dark:border-l-zinc-700"
+                    'border-border/70 overflow-hidden shadow-sm transition-all duration-200',
+                    sprint.status === 'Ongoing'
+                      ? 'border-l-4 border-l-blue-500 dark:border-l-blue-600'
+                      : 'border-l-4 border-l-zinc-300 dark:border-l-zinc-700'
                   )}
                 >
                   {/* Sprint Header */}
-                  <div className="bg-muted/30 hover:bg-muted/50 transition-colors px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-border/50">
+                  <div className="bg-muted/30 hover:bg-muted/50 border-border/50 flex flex-col justify-between gap-3 border-b px-4 py-3 transition-colors md:flex-row md:items-center">
                     <div className="flex items-center gap-3">
                       <Button
                         variant="ghost"
@@ -565,60 +606,80 @@ export function BacklogWorkspace({
                         onClick={() => toggleSprint(sprint.id)}
                       >
                         {isCollapsed ? (
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          <ChevronRight className="text-muted-foreground h-4 w-4" />
                         ) : (
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          <ChevronDown className="text-muted-foreground h-4 w-4" />
                         )}
                       </Button>
 
                       <div className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-foreground">{sprint.name}</span>
+                          <span className="text-foreground font-semibold">
+                            {sprint.name}
+                          </span>
                           {sprint.status === 'Ongoing' && (
-                            <Badge variant="outline" className="border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold px-2 py-0">
+                            <Badge
+                              variant="outline"
+                              className="border-blue-500/20 bg-blue-500/10 px-2 py-0 font-semibold text-blue-600 dark:text-blue-400"
+                            >
                               Ongoing
                             </Badge>
                           )}
                           {sprint.status === 'Completed' && (
-                            <Badge variant="outline" className="border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold px-2 py-0">
+                            <Badge
+                              variant="outline"
+                              className="border-emerald-500/20 bg-emerald-500/10 px-2 py-0 font-semibold text-emerald-600 dark:text-emerald-400"
+                            >
                               Completed
                             </Badge>
                           )}
                           {sprint.status === 'Not Started' && (
-                            <Badge variant="outline" className="border-zinc-500/20 bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 font-semibold px-2 py-0">
+                            <Badge
+                              variant="outline"
+                              className="border-zinc-500/20 bg-zinc-500/10 px-2 py-0 font-semibold text-zinc-600 dark:text-zinc-400"
+                            >
                               Planned
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className="text-muted-foreground flex items-center gap-2 text-xs">
                           <Calendar className="h-3.5 w-3.5" />
-                          <span>{formatDateRange(sprint.startDate, sprint.endDate)}</span>
+                          <span>
+                            {formatDateRange(sprint.startDate, sprint.endDate)}
+                          </span>
                           {sprint.project && (
                             <>
-                              <span className="text-muted-foreground/60">•</span>
-                              <span className="font-semibold text-indigo-600 dark:text-indigo-400">{sprint.project.name}</span>
+                              <span className="text-muted-foreground/60">
+                                •
+                              </span>
+                              <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                                {sprint.project.name}
+                              </span>
                             </>
                           )}
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-end gap-3 flex-wrap md:flex-nowrap">
+                    <div className="flex flex-wrap items-center justify-end gap-3 md:flex-nowrap">
                       {/* Issue Count badge */}
-                      <div className="flex items-center gap-1.5 mr-2">
-                        <span className="text-xs text-muted-foreground font-semibold bg-muted/65 px-2.5 py-0.5 rounded-full">
+                      <div className="mr-2 flex items-center gap-1.5">
+                        <span className="text-muted-foreground bg-muted/65 rounded-full px-2.5 py-0.5 text-xs font-semibold">
                           {stats.count} issue{stats.count === 1 ? '' : 's'}
                         </span>
                       </div>
 
-                      <Separator orientation="vertical" className="h-6 hidden md:block" />
+                      <Separator
+                        orientation="vertical"
+                        className="hidden h-6 md:block"
+                      />
 
                       {/* Sprint Actions */}
                       {sprint.status === 'Not Started' && (
                         <Button
                           size="sm"
                           onClick={() => handleStartSprint(sprint.id)}
-                          className="cursor-pointer h-8 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
+                          className="h-8 cursor-pointer bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-700"
                         >
                           <Play className="mr-1 h-3 w-3 fill-current" />
                           Start Sprint
@@ -628,7 +689,7 @@ export function BacklogWorkspace({
                         <Button
                           size="sm"
                           onClick={() => handleCompleteSprint(sprint.id)}
-                          className="cursor-pointer h-8 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white"
+                          className="h-8 cursor-pointer bg-indigo-600 text-xs font-semibold text-white hover:bg-indigo-700"
                         >
                           <Check className="mr-1 h-3.5 w-3.5" />
                           Complete Sprint
@@ -644,13 +705,15 @@ export function BacklogWorkspace({
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, sprint.id)}
                       className={cn(
-                        "p-3 transition-all duration-200 min-h-22.5 space-y-1.5",
-                        isDragOver ? "bg-indigo-500/5 border-2 border-dashed border-indigo-500/30 scale-[0.99] rounded-lg" : "bg-card"
+                        'min-h-22.5 space-y-1.5 p-3 transition-all duration-200',
+                        isDragOver
+                          ? 'scale-[0.99] rounded-lg border-2 border-dashed border-indigo-500/30 bg-indigo-500/5'
+                          : 'bg-card'
                       )}
                     >
                       {sprintWIs.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-6 text-center text-muted-foreground text-xs">
-                          <HelpCircle className="h-5 w-5 text-muted-foreground/40 mb-1.5" />
+                        <div className="text-muted-foreground flex flex-col items-center justify-center py-6 text-center text-xs">
+                          <HelpCircle className="text-muted-foreground/40 mb-1.5 h-5 w-5" />
                           <p>Plan this sprint by dragging backlog items here</p>
                         </div>
                       ) : (
@@ -669,17 +732,22 @@ export function BacklogWorkspace({
                       {/* Sprint Inline Quick Create */}
                       {sprint.status !== 'Completed' && (
                         <form
-                          onSubmit={(e) => handleQuickCreateSubmit(e, sprint.id)}
-                          className="flex items-center gap-2 mt-2 px-3 py-1.5 border border-dashed border-border/80 rounded-lg bg-background/30 hover:bg-background/60 transition-colors"
+                          onSubmit={(e) =>
+                            handleQuickCreateSubmit(e, sprint.id)
+                          }
+                          className="border-border/80 bg-background/30 hover:bg-background/60 mt-2 flex items-center gap-2 rounded-lg border border-dashed px-3 py-1.5 transition-colors"
                         >
-                          <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                          <Plus className="text-muted-foreground h-3.5 w-3.5" />
                           <input
                             type="text"
                             placeholder="Create issue inline..."
-                            className="bg-transparent border-none outline-none text-xs w-full placeholder:text-muted-foreground/60 text-foreground"
+                            className="placeholder:text-muted-foreground/60 text-foreground w-full border-none bg-transparent text-xs outline-none"
                             value={quickTitles[sprint.id] ?? ''}
                             onChange={(e) =>
-                              setQuickTitles((prev) => ({ ...prev, [sprint.id]: e.target.value }))
+                              setQuickTitles((prev) => ({
+                                ...prev,
+                                [sprint.id]: e.target.value,
+                              }))
                             }
                           />
                         </form>
@@ -693,8 +761,8 @@ export function BacklogWorkspace({
 
           {/* Backlog Section (Only visible on Active Tab) */}
           {activeTab === 'active' && (
-            <Card className="border-border/70 shadow-sm overflow-hidden">
-              <div className="bg-muted/20 hover:bg-muted/40 transition-colors px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/50">
+            <Card className="border-border/70 overflow-hidden shadow-sm">
+              <div className="bg-muted/20 hover:bg-muted/40 border-border/50 flex flex-col justify-between gap-3 border-b px-4 py-3 transition-colors sm:flex-row sm:items-center">
                 <div className="flex items-center gap-3">
                   <Button
                     variant="ghost"
@@ -703,22 +771,25 @@ export function BacklogWorkspace({
                     onClick={() => setIsBacklogCollapsed(!isBacklogCollapsed)}
                   >
                     {isBacklogCollapsed ? (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      <ChevronRight className="text-muted-foreground h-4 w-4" />
                     ) : (
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      <ChevronDown className="text-muted-foreground h-4 w-4" />
                     )}
                   </Button>
                   <div className="flex flex-col gap-0.5">
-                    <span className="font-semibold text-foreground flex items-center gap-2">
+                    <span className="text-foreground flex items-center gap-2 font-semibold">
                       Backlog
                     </span>
-                    <p className="text-xs text-muted-foreground">Unassigned to any active or planned sprint</p>
+                    <p className="text-muted-foreground text-xs">
+                      Unassigned to any active or planned sprint
+                    </p>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-end gap-3">
-                  <span className="text-xs text-muted-foreground font-semibold bg-muted/65 px-2.5 py-0.5 rounded-full">
-                    {backlogItems.length} issue{backlogItems.length === 1 ? '' : 's'}
+                  <span className="text-muted-foreground bg-muted/65 rounded-full px-2.5 py-0.5 text-xs font-semibold">
+                    {backlogItems.length} issue
+                    {backlogItems.length === 1 ? '' : 's'}
                   </span>
                 </div>
               </div>
@@ -730,13 +801,15 @@ export function BacklogWorkspace({
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, null)}
                   className={cn(
-                    "p-3 transition-all duration-200 min-h-37.5 space-y-1.5",
-                    dragOverTargetId === 'backlog' ? "bg-indigo-500/5 border-2 border-dashed border-indigo-500/30 scale-[0.99] rounded-lg" : "bg-card"
+                    'min-h-37.5 space-y-1.5 p-3 transition-all duration-200',
+                    dragOverTargetId === 'backlog'
+                      ? 'scale-[0.99] rounded-lg border-2 border-dashed border-indigo-500/30 bg-indigo-500/5'
+                      : 'bg-card'
                   )}
                 >
                   {backlogItems.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground text-xs">
-                      <HelpCircle className="h-6 w-6 text-muted-foreground/40 mb-2" />
+                    <div className="text-muted-foreground flex flex-col items-center justify-center py-10 text-center text-xs">
+                      <HelpCircle className="text-muted-foreground/40 mb-2 h-6 w-6" />
                       <p>Backlog is empty</p>
                     </div>
                   ) : (
@@ -755,16 +828,19 @@ export function BacklogWorkspace({
                   {/* Backlog Quick Create Form */}
                   <form
                     onSubmit={(e) => handleQuickCreateSubmit(e, null)}
-                    className="flex items-center gap-2 mt-3 px-3 py-2 border border-dashed border-border/80 rounded-lg bg-background/30 hover:bg-background/60 transition-colors"
+                    className="border-border/80 bg-background/30 hover:bg-background/60 mt-3 flex items-center gap-2 rounded-lg border border-dashed px-3 py-2 transition-colors"
                   >
                     <Plus className="h-4 w-4 text-indigo-500" />
                     <input
                       type="text"
                       placeholder="Quick create issue in backlog... (press Enter)"
-                      className="bg-transparent border-none outline-none text-sm w-full placeholder:text-muted-foreground/60 text-foreground"
+                      className="placeholder:text-muted-foreground/60 text-foreground w-full border-none bg-transparent text-sm outline-none"
                       value={quickTitles['backlog'] ?? ''}
                       onChange={(e) =>
-                        setQuickTitles((prev) => ({ ...prev, backlog: e.target.value }))
+                        setQuickTitles((prev) => ({
+                          ...prev,
+                          backlog: e.target.value,
+                        }))
                       }
                     />
                   </form>
@@ -775,27 +851,41 @@ export function BacklogWorkspace({
         </div>
 
         {/* Slide-out Sheet details panel (Clean, spacious layout with good margins) */}
-        <Sheet open={!!selectedItem} onOpenChange={(open) => !open && setSelectedItem(null)}>
-          <SheetContent className="sm:max-w-xl overflow-y-auto border-l border-border bg-card/95 shadow-xl backdrop-blur-md px-8 py-8 transition-all duration-200">
+        <Sheet
+          open={!!selectedItem}
+          onOpenChange={(open) => !open && setSelectedItem(null)}
+        >
+          <SheetContent className="border-border bg-card/95 overflow-y-auto border-l px-8 py-8 shadow-xl backdrop-blur-md transition-all duration-200 sm:max-w-xl">
             {selectedItem && (
               <div className="space-y-6">
                 <SheetHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <Badge variant="outline" className="border-indigo-500/20 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-semibold uppercase text-[10px]">
+                    <Badge
+                      variant="outline"
+                      className="border-indigo-500/20 bg-indigo-500/10 text-[10px] font-semibold text-indigo-600 uppercase dark:text-indigo-400"
+                    >
                       {selectedItem.type}
                     </Badge>
-                    <span className="font-mono text-xs text-muted-foreground">
-                      {projects.find((p) => p.id === selectedItem.project_id)?.key || 'ALICE'}-{selectedItem.id.slice(0, 4).toUpperCase()}
+                    <span className="text-muted-foreground font-mono text-xs">
+                      {projects.find((p) => p.id === selectedItem.project_id)
+                        ?.key || 'ALICE'}
+                      -{selectedItem.id.slice(0, 4).toUpperCase()}
                     </span>
                   </div>
-                  <SheetTitle className="text-xl font-bold tracking-tight text-foreground mt-2">
+                  <SheetTitle className="text-foreground mt-2 text-xl font-bold tracking-tight">
                     <Input
                       value={selectedItem.title}
-                      onChange={(e) => handleUpdateItemField(selectedItem.id, 'title', e.target.value)}
-                      className="text-lg font-bold border-none hover:bg-muted/30 focus-visible:bg-background px-1.5 h-auto py-1 shadow-none transition-colors"
+                      onChange={(e) =>
+                        handleUpdateItemField(
+                          selectedItem.id,
+                          'title',
+                          e.target.value
+                        )
+                      }
+                      className="hover:bg-muted/30 focus-visible:bg-background h-auto border-none px-1.5 py-1 text-lg font-bold shadow-none transition-colors"
                     />
                   </SheetTitle>
-                  <SheetDescription className="text-xs text-muted-foreground">
+                  <SheetDescription className="text-muted-foreground text-xs">
                     Edit and manage issue parameters in real-time.
                   </SheetDescription>
                 </SheetHeader>
@@ -803,14 +893,22 @@ export function BacklogWorkspace({
                 <Separator />
 
                 {/* Grid details (generous gap-6 and px-2 padding to stay away from borders) */}
-                <div className="grid grid-cols-[120px_1fr] gap-x-6 gap-y-5 text-sm px-2">
+                <div className="grid grid-cols-[120px_1fr] gap-x-6 gap-y-5 px-2 text-sm">
                   {/* Status Dropdown */}
-                  <span className="text-muted-foreground self-center">Status</span>
+                  <span className="text-muted-foreground self-center">
+                    Status
+                  </span>
                   <Select
                     value={selectedItem.status}
-                    onValueChange={(val) => handleUpdateItemField(selectedItem.id, 'status', val as DbWorkItem['status'])}
+                    onValueChange={(val) =>
+                      handleUpdateItemField(
+                        selectedItem.id,
+                        'status',
+                        val as DbWorkItem['status']
+                      )
+                    }
                   >
-                    <SelectTrigger className="h-9 w-full bg-background/50 border-border/80">
+                    <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -824,12 +922,20 @@ export function BacklogWorkspace({
                   </Select>
 
                   {/* Priority Dropdown */}
-                  <span className="text-muted-foreground self-center">Priority</span>
+                  <span className="text-muted-foreground self-center">
+                    Priority
+                  </span>
                   <Select
                     value={mapPriority(selectedItem.priority)}
-                    onValueChange={(val) => handleUpdateItemField(selectedItem.id, 'priority', val as DbWorkItem['priority'])}
+                    onValueChange={(val) =>
+                      handleUpdateItemField(
+                        selectedItem.id,
+                        'priority',
+                        val as DbWorkItem['priority']
+                      )
+                    }
                   >
-                    <SelectTrigger className="h-9 w-full bg-background/50 border-border/80">
+                    <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -840,7 +946,9 @@ export function BacklogWorkspace({
                   </Select>
 
                   {/* Assignee Dropdown */}
-                  <span className="text-muted-foreground self-center">Assignee</span>
+                  <span className="text-muted-foreground self-center">
+                    Assignee
+                  </span>
                   <Select
                     value={selectedItem.assignee_id || 'unassigned'}
                     onValueChange={(val) =>
@@ -851,7 +959,7 @@ export function BacklogWorkspace({
                       )
                     }
                   >
-                    <SelectTrigger className="h-9 w-full bg-background/50 border-border/80">
+                    <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -860,7 +968,9 @@ export function BacklogWorkspace({
                         <SelectItem key={member.id} value={member.id}>
                           <div className="flex items-center gap-2 text-xs">
                             <Avatar size="sm" className="size-5">
-                              <AvatarFallback className="text-[8px]">{getInitials(member.name)}</AvatarFallback>
+                              <AvatarFallback className="text-[8px]">
+                                {getInitials(member.name)}
+                              </AvatarFallback>
                             </Avatar>
                             <span>{member.name}</span>
                           </div>
@@ -870,7 +980,9 @@ export function BacklogWorkspace({
                   </Select>
 
                   {/* Sprint Selection */}
-                  <span className="text-muted-foreground self-center">Sprint</span>
+                  <span className="text-muted-foreground self-center">
+                    Sprint
+                  </span>
                   <Select
                     value={selectedItem.sprint_id || 'backlog'}
                     onValueChange={(val) =>
@@ -881,7 +993,7 @@ export function BacklogWorkspace({
                       )
                     }
                   >
-                    <SelectTrigger className="h-9 w-full bg-background/50 border-border/80">
+                    <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -895,12 +1007,26 @@ export function BacklogWorkspace({
                   </Select>
 
                   {/* Due Date */}
-                  <span className="text-muted-foreground self-center">Due Date</span>
+                  <span className="text-muted-foreground self-center">
+                    Due Date
+                  </span>
                   <Input
                     type="date"
-                    value={selectedItem.due_date ? new Date(selectedItem.due_date).toISOString().split('T')[0] : ''}
-                    onChange={(e) => handleUpdateItemField(selectedItem.id, 'due_date', e.target.value)}
-                    className="h-9 w-full bg-background/50 border-border/80"
+                    value={
+                      selectedItem.due_date
+                        ? new Date(selectedItem.due_date)
+                            .toISOString()
+                            .split('T')[0]
+                        : ''
+                    }
+                    onChange={(e) =>
+                      handleUpdateItemField(
+                        selectedItem.id,
+                        'due_date',
+                        e.target.value
+                      )
+                    }
+                    className="bg-background/50 border-border/80 h-9 w-full"
                   />
                 </div>
 
@@ -908,12 +1034,25 @@ export function BacklogWorkspace({
 
                 {/* Description (Editable block with good spacing) */}
                 <div className="space-y-3 px-2">
-                  <h4 className="text-sm font-semibold text-foreground">Description</h4>
+                  <h4 className="text-foreground text-sm font-semibold">
+                    Description
+                  </h4>
                   <Textarea
                     placeholder="Describe the objective, scope, and validation criteria..."
-                    value={selectedItem.description && typeof selectedItem.description === 'string' ? selectedItem.description : ''}
-                    onChange={(e) => handleUpdateItemField(selectedItem.id, 'description', e.target.value)}
-                    className="min-h-36 bg-background/50 text-sm leading-relaxed border-border/80 focus:border-indigo-500 transition-colors p-3"
+                    value={
+                      selectedItem.description &&
+                      typeof selectedItem.description === 'string'
+                        ? selectedItem.description
+                        : ''
+                    }
+                    onChange={(e) =>
+                      handleUpdateItemField(
+                        selectedItem.id,
+                        'description',
+                        e.target.value
+                      )
+                    }
+                    className="bg-background/50 border-border/80 min-h-36 p-3 text-sm leading-relaxed transition-colors focus:border-indigo-500"
                   />
                 </div>
 
@@ -923,7 +1062,7 @@ export function BacklogWorkspace({
                 <div className="flex justify-end px-2 pt-2 pb-4">
                   <Button
                     onClick={() => setSelectedItem(null)}
-                    className="cursor-pointer bg-linear-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-semibold h-9 px-6 shadow-md transition-all duration-150"
+                    className="h-9 cursor-pointer bg-linear-to-r from-indigo-500 to-violet-600 px-6 font-semibold text-white shadow-md transition-all duration-150 hover:from-indigo-600 hover:to-violet-700"
                   >
                     Save Changes
                   </Button>
@@ -949,10 +1088,12 @@ export function BacklogWorkspace({
 
         {/* Dialog: Create Issue */}
         <Dialog open={isCreateIssueOpen} onOpenChange={setIsCreateIssueOpen}>
-          <DialogContent className="sm:max-w-xl bg-card border-border/80 backdrop-blur-md">
+          <DialogContent className="bg-card border-border/80 backdrop-blur-md sm:max-w-xl">
             <DialogHeader>
-              <DialogTitle className="text-lg font-bold">Create Work Item</DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground">
+              <DialogTitle className="text-lg font-bold">
+                Create Work Item
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground text-xs">
                 Add a new work item and assign it to a team member.
               </DialogDescription>
             </DialogHeader>
@@ -964,7 +1105,6 @@ export function BacklogWorkspace({
             />
           </DialogContent>
         </Dialog>
-
       </div>
     </TooltipProvider>
   );
@@ -987,7 +1127,8 @@ function IssueRow({
   onDragStart,
   getInitials,
 }: Readonly<IssueRowProps>) {
-  const projectKey = projects.find((p) => p.id === item.project_id)?.key || 'ALICE';
+  const projectKey =
+    projects.find((p) => p.id === item.project_id)?.key || 'ALICE';
   const displayKey = `${projectKey}-${item.id.slice(0, 4).toUpperCase()}`;
 
   const typeStyles: Record<string, string> = {
@@ -999,7 +1140,8 @@ function IssueRow({
   const normalizedPriority = mapPriority(item.priority);
   const priorityStyles: Record<string, string> = {
     high: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
-    medium: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+    medium:
+      'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
     low: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
   };
 
@@ -1010,35 +1152,41 @@ function IssueRow({
       onDragStart={(e) => onDragStart(e, item.id)}
       onClick={() => onSelect(item)}
       className={cn(
-        "w-full text-left font-normal group relative flex items-center justify-between gap-4 px-3 py-2 border border-border/60 rounded-lg",
-        "bg-card/45 hover:bg-muted/30 cursor-grab active:cursor-grabbing hover:border-indigo-500/30",
-        "transition-all duration-150 shadow-sm",
-        "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500"
+        'group border-border/60 relative flex w-full items-center justify-between gap-4 rounded-lg border px-3 py-2 text-left font-normal',
+        'bg-card/45 hover:bg-muted/30 cursor-grab hover:border-indigo-500/30 active:cursor-grabbing',
+        'shadow-sm transition-all duration-150',
+        'focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-hidden'
       )}
     >
-      <div className="flex items-center gap-3 min-w-0 flex-1">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
         {/* Grab Handle */}
         <div className="text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors">
           <GripVertical className="h-4 w-4" />
         </div>
 
         {/* Issue Type Indicator */}
-        <Badge variant="outline" className={cn("text-[9px] uppercase px-1.5 py-0 h-4 border", typeStyles[item.type])}>
+        <Badge
+          variant="outline"
+          className={cn(
+            'h-4 border px-1.5 py-0 text-[9px] uppercase',
+            typeStyles[item.type]
+          )}
+        >
           {item.type}
         </Badge>
 
         {/* Key */}
-        <span className="font-mono text-xs font-semibold text-muted-foreground tracking-tight whitespace-nowrap min-w-17.5">
+        <span className="text-muted-foreground min-w-17.5 font-mono text-xs font-semibold tracking-tight whitespace-nowrap">
           {displayKey}
         </span>
 
         {/* Title */}
-        <span className="text-sm text-foreground font-medium truncate max-w-md sm:max-w-xl group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+        <span className="text-foreground max-w-md truncate text-sm font-medium transition-colors group-hover:text-indigo-600 sm:max-w-xl dark:group-hover:text-indigo-400">
           {item.title}
         </span>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
         {/* Status */}
         <WorkItemStatusBadge status={item.status} />
 
@@ -1046,7 +1194,7 @@ function IssueRow({
         <Badge
           variant="outline"
           className={cn(
-            "text-[9px] capitalize px-1.5 py-0 h-4 border font-medium whitespace-nowrap",
+            'h-4 border px-1.5 py-0 text-[9px] font-medium whitespace-nowrap capitalize',
             priorityStyles[normalizedPriority]
           )}
         >
@@ -1054,8 +1202,8 @@ function IssueRow({
         </Badge>
 
         {/* Assignee Avatar */}
-        <Avatar size="sm" className="size-6 border border-border/80">
-          <AvatarFallback className="text-[9px] font-semibold bg-muted-foreground/15 text-muted-foreground">
+        <Avatar size="sm" className="border-border/80 size-6 border">
+          <AvatarFallback className="bg-muted-foreground/15 text-muted-foreground text-[9px] font-semibold">
             {getInitials(item.assignee?.name)}
           </AvatarFallback>
         </Avatar>

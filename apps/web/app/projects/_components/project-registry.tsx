@@ -39,9 +39,9 @@ import {
   Plus,
   Search,
   FolderOpen,
-  Pencil,
   Archive,
-} from 'lucide-react';
+  Pencil,
+} from '@repo/ui/lib/icons';
 import { Pagination } from '@/components/pagination';
 import type { Project } from '../_services/projects.service';
 import type { User } from '@/app/users/_services/users.service';
@@ -223,7 +223,7 @@ export function ProjectRegistry({
                 setProjectToEdit(null);
                 setIsAddProjectOpen(true);
               }}
-              className="h-10 w-32 px-6 text-xs font-semibold shadow-md duration-300 hover:shadow-lg flex items-center justify-center shrink-0"
+              className="flex h-10 w-32 shrink-0 items-center justify-center px-6 text-xs font-semibold shadow-md duration-300 hover:shadow-lg"
             >
               <Plus className="mr-1.5 h-4 w-4 shrink-0" />
               Add Project
@@ -397,10 +397,16 @@ export function ProjectRegistry({
 function formatTimeline(startDate?: string | null, endDate?: string | null) {
   if (!startDate && !endDate) return 'No timeline';
   const startStr = startDate
-    ? new Date(startDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+    ? new Date(startDate).toLocaleDateString(undefined, {
+        month: 'short',
+        year: 'numeric',
+      })
     : 'Start';
   const endStr = endDate
-    ? new Date(endDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+    ? new Date(endDate).toLocaleDateString(undefined, {
+        month: 'short',
+        year: 'numeric',
+      })
     : 'End';
   return `${startStr} - ${endStr}`;
 }
@@ -439,26 +445,27 @@ function ProjectRegistryRow({
   // Extract action buttons to avoid nested conditional JSX (SonarQube compliance)
   let primaryButton = <div className="w-20 shrink-0" />;
   if (isManagerOrAdmin) {
-    primaryButton = tab === 'active' ? (
-      <Button
-        variant="outline"
-        disabled={isPending}
-        onClick={() => setProjectToEdit(proj)}
-        className="focus-visible:ring-ring border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 font-semibold shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50 h-8 w-20 justify-center shrink-0 flex items-center"
-      >
-        <Pencil className="mr-1 h-3 w-3 shrink-0" />
-        <span>Edit</span>
-      </Button>
-    ) : (
-      <Button
-        disabled={isPending}
-        onClick={() => handleRestore(proj)}
-        className="h-8 border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 shadow-sm hover:bg-emerald-600 hover:text-white disabled:opacity-50 w-20 justify-center shrink-0 flex items-center"
-      >
-        <RefreshCw className="mr-1 h-3 w-3 shrink-0" />
-        <span>Restore</span>
-      </Button>
-    );
+    primaryButton =
+      tab === 'active' ? (
+        <Button
+          variant="outline"
+          disabled={isPending}
+          onClick={() => setProjectToEdit(proj)}
+          className="focus-visible:ring-ring flex h-8 w-20 shrink-0 items-center justify-center border-emerald-500/20 bg-emerald-500/10 text-[11px] font-semibold text-emerald-600 shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
+        >
+          <Pencil className="mr-1 h-3 w-3 shrink-0" />
+          <span>Edit</span>
+        </Button>
+      ) : (
+        <Button
+          disabled={isPending}
+          onClick={() => handleRestore(proj)}
+          className="flex h-8 w-20 shrink-0 items-center justify-center border-emerald-500/20 bg-emerald-500/10 text-[11px] text-emerald-600 shadow-sm hover:bg-emerald-600 hover:text-white disabled:opacity-50"
+        >
+          <RefreshCw className="mr-1 h-3 w-3 shrink-0" />
+          <span>Restore</span>
+        </Button>
+      );
   }
 
   let secondaryButton = <div className="w-28 shrink-0" />;
@@ -467,7 +474,7 @@ function ProjectRegistryRow({
       <Button
         disabled={isPending}
         onClick={() => handleSoftDelete(proj)}
-        className="focus-visible:ring-ring border border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50 h-8 w-28 justify-center shrink-0 flex items-center"
+        className="focus-visible:ring-ring flex h-8 w-28 shrink-0 items-center justify-center border border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
       >
         <Archive className="mr-1 h-3 w-3 shrink-0" />
         <span>Archive</span>
@@ -478,7 +485,7 @@ function ProjectRegistryRow({
       <Button
         disabled={isPending}
         onClick={() => handleHardDelete(proj)}
-        className="h-8 border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm hover:bg-rose-600 hover:text-white disabled:opacity-50 w-28 justify-center shrink-0 flex items-center"
+        className="flex h-8 w-28 shrink-0 items-center justify-center border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm hover:bg-rose-600 hover:text-white disabled:opacity-50"
       >
         <Trash2 className="mr-1 h-3 w-3 shrink-0" />
         <span>Purge</span>
@@ -537,7 +544,7 @@ function ProjectRegistryRow({
           </span>
         </span>
       </TableCell>
-      <TableCell className="w-[20%] text-right pr-4">
+      <TableCell className="w-[20%] pr-4 text-right">
         <div className="flex justify-end gap-2">
           {primaryButton}
           {secondaryButton}

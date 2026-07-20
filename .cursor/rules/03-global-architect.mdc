@@ -22,10 +22,13 @@ globs: "**/*"
 - Destructure props in the function parameter list.
 - Follow Rules of Hooks (`eslint-plugin-react-hooks`).
 - Respect `react-refresh/only-export-components` where applicable.
+- Do not put `role="button"` on non-`<button>` elements (SonarQube / a11y). Use a real `<button type="button">` (optionally inside a heading) and style it instead of faking button semantics with ARIA.
+- Do not use the `void someAsyncFn()` pattern to silence floating promises (SonarQube). Prefer `.catch(...)` on the promise, or structure the flow so the async work is awaited in a proper async function.
 
 ### Before you finish
 
-- Run ESLint on touched files and resolve errors (and warnings you introduced).
+- Run `pnpm lint` to eslint on touched files and resolve errors (and warnings you introduced).
+- Run `pnpm checktypes` to make sure the types aligns and ready to transpile to avoid compatibility issues.
 - Run `pnpm format` from the repository root to apply Prettier formatting to changed files (`ts`, `tsx`, `js`, `jsx`, `json`, `css`, `md`).
 
 ## UI Architecture
@@ -34,7 +37,7 @@ globs: "**/*"
 
 ## SEO
 
-- For metadata, sitemap, robots, and crawler exclusion in `apps/web`, follow `.cursor/rules/06-seo-optimizer.mdc` and `docs/guidelines/SEO.md`.
+- For metadata, sitemap, robots, and crawler exclusion in `apps/web`, follow `.cursor/rules/06-seo-optimizer.mdc` and `docs/guides/SEO.md`.
 
 ## Code Style & Formatting
 
