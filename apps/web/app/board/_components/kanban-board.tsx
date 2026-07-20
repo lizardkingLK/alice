@@ -517,7 +517,7 @@ export function KanbanBoard({ initialWorkItems }: Readonly<KanbanBoardProps>) {
       </div>
 
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="sm:max-w-xl overflow-x-hidden">
+        <DialogContent className="overflow-x-hidden sm:max-w-xl">
           {selectedTask ? (
             <>
               <DialogHeader>

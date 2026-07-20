@@ -19,11 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@repo/ui/components/ui/card';
-import {
-  UserPlus,
-  Loader2,
-  X,
-} from '@repo/ui/lib/icons';
+import { UserPlus, Loader2, X } from '@repo/ui/lib/icons';
 import type { User } from '../_services/users.service';
 import { createUser, updateUser } from '../_services/users.service';
 
@@ -32,7 +28,6 @@ interface UserFormProps {
   readonly onClose?: () => void;
   readonly onSuccess?: () => void;
 }
-
 
 export function UserForm({
   user,

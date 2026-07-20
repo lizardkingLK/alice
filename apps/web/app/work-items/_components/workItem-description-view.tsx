@@ -244,7 +244,7 @@ export function DescriptionView({
         '[&_p]:my-2 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0',
         '[&_strong]:text-foreground [&_strong]:font-semibold',
         '[&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-zinc-100',
-        '[wrap:anywhere] [&_a]:break-all [&_a]:max-w-full [&_a]:inline-block [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_.code-block-wrapper]:max-w-full',
+        '[wrap:anywhere] [&_.code-block-wrapper]:max-w-full [&_a]:inline-block [&_a]:max-w-full [&_a]:break-all [&_pre]:max-w-full [&_pre]:overflow-x-auto',
         CODE_SYNTAX_HIGHLIGHT_CLASSES,
         className
       )}

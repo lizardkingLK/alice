@@ -7,6 +7,14 @@ import {
   type User,
 } from '@/app/users/_services/users.service.server';
 
+const EMPTY_USERS = {
+  users: [] as User[],
+  totalCount: 0,
+  page: 1,
+  limit: 10,
+  totalPages: 1,
+};
+
 export default async function UsersDashboard({
   searchParams,
 }: Readonly<{
@@ -15,23 +23,16 @@ export default async function UsersDashboard({
   const resolvedSearchParams = await searchParams;
   const { page, limit } = parseStandardParams(resolvedSearchParams, 10);
 
-  const dbUser = await getDbUser();
+  const [dbUser, usersData] = await Promise.all([
+    getDbUser(),
+    getUsersListPaginated(page, limit).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error('error. failed to fetch users list via API:', message);
+      return EMPTY_USERS;
+    }),
+  ]);
+
   const currentUserRole = dbUser?.role ?? 'member';
-
-  let usersData = {
-    users: [] as User[],
-    totalCount: 0,
-    page: 1,
-    limit: 10,
-    totalPages: 1,
-  };
-
-  try {
-    usersData = await getUsersListPaginated(page, limit);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('error. failed to fetch users list via API:', message);
-  }
 
   return (
     <DashboardShell description="Manage application users, assign workspace roles, and control access.">

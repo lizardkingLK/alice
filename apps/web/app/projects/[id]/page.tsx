@@ -16,20 +16,28 @@ export default async function ProjectDetailsPage({
   const resolvedParams = await params;
   const projectId = resolvedParams.id;
 
-  const dbUser = await getDbUser();
-  const userRole = dbUser?.role ?? 'member';
+  const [dbUser, projectBundle, allUsers] = await Promise.all([
+    getDbUser(),
+    Promise.all([
+      getProjectDetails(projectId),
+      getProjectMembers(projectId),
+    ]).catch((error: unknown) => {
+      console.error('Failed to load project details:', error);
+      return null;
+    }),
+    getUserList().catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error('error. failed to fetch users via API:', message);
+      return [];
+    }),
+  ]);
 
-  let project;
-  let members = [];
-  try {
-    project = await getProjectDetails(projectId);
-    members = await getProjectMembers(projectId);
-  } catch (error) {
-    console.error('Failed to load project details:', error);
+  if (!projectBundle) {
     notFound();
   }
 
-  const allUsers = (await getUserList()) ?? [];
+  const [project, members] = projectBundle;
+  const userRole = dbUser?.role ?? 'member';
 
   return (
     <DashboardShell
