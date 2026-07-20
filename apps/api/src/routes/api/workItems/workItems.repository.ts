@@ -112,7 +112,7 @@ export class WorkItemRepository {
 
     // Filter out undefined fields dynamically
     const cleanedUpdates = Object.fromEntries(
-      Object.entries(fields).filter(([_, value]) => typeof value !== 'undefined')
+      Object.entries(fields as Record<string, unknown>).filter(([_, value]) => value !== undefined)
     );
 
     const updateData: Partial<DbWorkItem> = {
