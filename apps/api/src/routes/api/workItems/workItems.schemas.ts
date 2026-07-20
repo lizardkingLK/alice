@@ -34,3 +34,42 @@ export const createUpdateWorkItemBodySchema = z
   });
 
 export type WorkItemBody = z.infer<typeof createUpdateWorkItemBodySchema>;
+
+export const updateWorkItemBodySchema = z
+  .object({
+    title: z
+      .string()
+      .trim()
+      .min(1, 'Title is required')
+      .max(200, 'Title must be at most 200 characters')
+      .optional(),
+    project_id: z.uuid({ message: 'Please select a valid project' }).optional(),
+    type: workItemTypeSchema.optional(),
+    assignee_id: z
+      .uuid({ message: 'Please select a valid assignee' })
+      .nullable()
+      .optional(),
+    due_date: dateStringSchema.nullable().optional(),
+    sprint_id: z.uuid().nullable().optional(),
+    priority: z.enum(['low', 'medium', 'high']).optional(),
+    status: z
+      .enum(['Draft', 'New', 'ToDo', 'InProgress', 'Testing', 'Done'])
+      .optional(),
+    description: z.any().nullable().optional(),
+    story_points: z.number().nullable().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.due_date) {
+        return data.due_date >= todayDateString();
+      }
+      return true;
+    },
+    {
+      message: 'Due date must be on or after today',
+      path: ['due_date'],
+    }
+  );
+
+export type UpdateWorkItemBody = z.infer<typeof updateWorkItemBodySchema>;
+

@@ -9,6 +9,8 @@ import {
   type SprintRow,
 } from './sprints.repository';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
+import { supabase } from '../../../lib/supabase';
+
 
 async function requireManagerOrAdmin(actorId: string) {
   return await requireUserWithRole(
@@ -110,6 +112,32 @@ export class SprintsService {
     status: SprintRow['status']
   ): Promise<SprintResponse> {
     await requireManagerOrAdmin(userId);
+
+    if (status === 'active' || status === 'closed') {
+      const { data: workItems, error: itemsError } = await supabase
+        .from('work_items')
+        .select('id, status')
+        .eq('sprint_id', sprintId);
+
+      if (itemsError) {
+        console.error('Failed to query work items for status update check:', itemsError.message);
+        throw new Error('Failed to validate sprint work items');
+      }
+
+      if (status === 'active') {
+        if (!workItems || workItems.length === 0) {
+          throw new Error('Cannot start a sprint without work items');
+        }
+      }
+
+      if (status === 'closed') {
+        const incomplete = workItems?.filter((item) => item.status !== 'Done') ?? [];
+        if (incomplete.length > 0) {
+          throw new Error('Cannot complete sprint. All work items in the sprint must be completed (Done).');
+        }
+      }
+    }
+
     const row = await sprintsRepository.updateStatus(userId, sprintId, status);
     return toSprintResponse(row);
   }

@@ -15,10 +15,15 @@ export async function createWorkItem(
 
 export async function updateWorkItem(
   id: string,
-  formData: FormData
+  data: FormData | Record<string, unknown>
 ): Promise<ResponseDTO<DbWorkItem>> {
+  const body =
+    data instanceof FormData
+      ? JSON.stringify(Object.fromEntries(data.entries()))
+      : JSON.stringify(data);
+
   return await apiFetch<ResponseDTO<DbWorkItem>>(`${workItemsPath}/${id}`, {
     method: 'PATCH',
-    body: JSON.stringify(Object.fromEntries(formData.entries())),
+    body,
   });
 }

@@ -5,7 +5,10 @@ import {
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
 import { workItemService } from './workItems.service';
-import { createUpdateWorkItemBodySchema } from './workItems.schemas';
+import {
+  createUpdateWorkItemBodySchema,
+  updateWorkItemBodySchema,
+} from './workItems.schemas';
 
 const workItemsRouter: Router = Router();
 
@@ -76,7 +79,7 @@ workItemsRouter.patch(
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
     try {
-      const parsed = createUpdateWorkItemBodySchema.safeParse(req.body);
+      const parsed = updateWorkItemBodySchema.safeParse(req.body);
       if (!parsed.success) {
         return res
           .status(400)

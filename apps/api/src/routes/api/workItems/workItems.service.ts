@@ -1,5 +1,5 @@
 import { DbWorkItem, workItemRepository } from './workItems.repository';
-import { WorkItemBody } from './workItems.schemas';
+import { WorkItemBody, UpdateWorkItemBody } from './workItems.schemas';
 
 export class WorkItemService {
   async getWorkItems(): Promise<DbWorkItem[]> {
@@ -23,7 +23,7 @@ export class WorkItemService {
   async updateWorkItem(
     userId: string,
     workItemId: string,
-    input: WorkItemBody
+    input: UpdateWorkItemBody
   ): Promise<DbWorkItem> {
     return await workItemRepository.update({
       ...input,
