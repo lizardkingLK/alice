@@ -34,7 +34,8 @@ interface ProjectMembersListProps {
   isLoadingMembers: boolean;
   projectMembers: ProjectMemberWithUser[];
   selectedMemberIds: string[];
-  setSelectedMemberIds: React.Dispatch<React.SetStateAction<string[]>>;}
+  setSelectedMemberIds: React.Dispatch<React.SetStateAction<string[]>>;
+}
 
 function ProjectMembersList({
   isLoadingMembers,
@@ -385,7 +386,10 @@ export function TeamForm({
                   setStatus(val as 'active' | 'inactive' | 'archived')
                 }
               >
-                <SelectTrigger id="status" className="bg-background/80 h-10 w-full cursor-pointer">
+                <SelectTrigger
+                  id="status"
+                  className="bg-background/80 h-10 w-full cursor-pointer"
+                >
                   <SelectValue placeholder="Select status..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -419,7 +423,10 @@ export function TeamForm({
                 Designated Team Manager
               </Label>
               <Select value={managerId} onValueChange={setManagerId}>
-                <SelectTrigger id="manager_id" className="bg-background/80 h-10 w-full cursor-pointer">
+                <SelectTrigger
+                  id="manager_id"
+                  className="bg-background/80 h-10 w-full cursor-pointer"
+                >
                   <SelectValue placeholder="Select Manager..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -446,16 +453,23 @@ export function TeamForm({
                   setSelectedMemberIds([]);
                 }}
               >
-                <SelectTrigger id="project_id" className="bg-background/80 h-10 w-full cursor-pointer">
+                <SelectTrigger
+                  id="project_id"
+                  className="bg-background/80 h-10 w-full cursor-pointer"
+                >
                   <SelectValue
                     placeholder={
-                      isLoadingProjects ? 'Loading projects...' : 'Select Project...'
+                      isLoadingProjects
+                        ? 'Loading projects...'
+                        : 'Select Project...'
                     }
                   />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">
-                    {isLoadingProjects ? 'Loading projects...' : 'Select Project...'}
+                    {isLoadingProjects
+                      ? 'Loading projects...'
+                      : 'Select Project...'}
                   </SelectItem>
                   {projects.map((p) => (
                     <SelectItem key={p.id} value={p.id}>

@@ -51,8 +51,8 @@ import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-prior
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
 import { DescriptionView } from '@/app/work-items/_components/workItem-description-view';
 import { descriptionToPlainText } from '@/app/work-items/_helpers/work-item-description';
-import { updateWorkItemStatus } from '@/app/work-items/_services/workItem.client.service';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
+import { updateWorkItemStatus } from '@/app/work-items/_services/workItem.service.client';
+import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 
 type BoardStatus = Exclude<DbWorkItem['status'], 'Draft'>;
 type BoardPriority = DbWorkItem['priority'];

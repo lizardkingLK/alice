@@ -1,6 +1,6 @@
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import WorkItemDetails from '@/app/work-items/_components/workItem-details';
-import { getWorkItem } from '@/app/work-items/_services/workItem.server.service';
+import { getWorkItem } from '@/app/work-items/_services/workItem.service.server';
 
 export default async function WorkItemPage({
   params,

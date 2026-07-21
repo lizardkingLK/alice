@@ -48,8 +48,6 @@ vi.mock('@/app/sprints/_components/sprint-form', () => ({
   ),
 }));
 
-
-
 // Mock Dropdown Menu to avoid testing Radix internals in happy-dom environment
 vi.mock('@repo/ui/components/ui/dropdown-menu', () => {
   return {
@@ -429,15 +427,21 @@ describe('SprintList Component', () => {
 
     // Verify Archive button is rendered for Completed Sprint
     const completedLi = screen.getByText('Completed Sprint').closest('li')!;
-    const archiveBtn = within(completedLi).getByRole('button', { name: 'Archive Sprint' });
+    const archiveBtn = within(completedLi).getByRole('button', {
+      name: 'Archive Sprint',
+    });
     expect(archiveBtn).toBeInTheDocument();
 
     // Verify Archive button is NOT rendered for Ongoing or Planned Sprint
     const ongoingLi = screen.getByText('Ongoing Sprint').closest('li')!;
-    expect(within(ongoingLi).queryByRole('button', { name: 'Archive Sprint' })).not.toBeInTheDocument();
+    expect(
+      within(ongoingLi).queryByRole('button', { name: 'Archive Sprint' })
+    ).not.toBeInTheDocument();
 
     const plannedLi = screen.getByText('Planned Sprint').closest('li')!;
-    expect(within(plannedLi).queryByRole('button', { name: 'Archive Sprint' })).not.toBeInTheDocument();
+    expect(
+      within(plannedLi).queryByRole('button', { name: 'Archive Sprint' })
+    ).not.toBeInTheDocument();
 
     // Click the Archive button and check callback
     fireEvent.click(archiveBtn);
@@ -486,12 +490,16 @@ describe('SprintList Component', () => {
 
     // Verify Restore button is rendered for Archived Sprint
     const archivedLi = screen.getByText('Archived Sprint').closest('li')!;
-    const restoreBtn = within(archivedLi).getByRole('button', { name: 'Restore Sprint' });
+    const restoreBtn = within(archivedLi).getByRole('button', {
+      name: 'Restore Sprint',
+    });
     expect(restoreBtn).toBeInTheDocument();
 
     // Verify Restore button is NOT rendered for Completed Sprint
     const completedLi = screen.getByText('Completed Sprint').closest('li')!;
-    expect(within(completedLi).queryByRole('button', { name: 'Restore Sprint' })).not.toBeInTheDocument();
+    expect(
+      within(completedLi).queryByRole('button', { name: 'Restore Sprint' })
+    ).not.toBeInTheDocument();
 
     // Click the Restore button and check callback
     fireEvent.click(restoreBtn);
@@ -528,6 +536,8 @@ describe('SprintList Component', () => {
 
     // Verify Edit button is NOT rendered for Archived Sprint
     const archivedLi = screen.getByText('Archived Sprint').closest('li')!;
-    expect(within(archivedLi).queryByRole('button', { name: 'Edit Sprint' })).not.toBeInTheDocument();
+    expect(
+      within(archivedLi).queryByRole('button', { name: 'Edit Sprint' })
+    ).not.toBeInTheDocument();
   });
 });

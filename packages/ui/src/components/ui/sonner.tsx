@@ -1,5 +1,6 @@
 'use client';
 
+import { useTheme } from 'next-themes';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 import {
   CircleCheckIcon,
@@ -13,17 +14,20 @@ import {
 const closeButtonClasses = [
   'order-3! static! inset-auto! top-auto! right-auto! left-auto! transform-none!',
   'ml-auto! size-8 shrink-0 rounded-md! border-0! bg-transparent! shadow-none!',
-  'text-primary-foreground/80! opacity-100!',
-  'hover:bg-transparent! hover:text-primary-foreground! hover:opacity-100!',
+  'text-foreground/60! opacity-100!',
+  'hover:bg-transparent! hover:text-foreground! hover:opacity-100!',
   'focus-visible:ring-0 focus-visible:outline-none',
 ].join(' ');
 
 function Toaster({ ...props }: Readonly<ToasterProps>) {
+  const { theme = 'system' } = useTheme();
+
   return (
     <Sonner
-      theme="light"
+      theme={theme as ToasterProps['theme']}
       className="toaster group"
-      position="bottom-right"
+      position="top-right"
+      expand
       closeButton
       duration={5000}
       icons={{
@@ -36,9 +40,10 @@ function Toaster({ ...props }: Readonly<ToasterProps>) {
       }}
       style={
         {
-          '--normal-bg': 'var(--primary)',
-          '--normal-text': 'var(--primary-foreground)',
-          '--normal-border': 'transparent',
+          '--normal-bg': 'color-mix(in oklch, var(--primary) 10%, var(--card))',
+          '--normal-text': 'var(--foreground)',
+          '--normal-border':
+            'color-mix(in oklch, var(--primary) 18%, var(--border))',
           '--border-radius': 'var(--radius)',
           '--toast-close-button-start': 'auto',
           '--toast-close-button-end': 'auto',
@@ -48,12 +53,11 @@ function Toaster({ ...props }: Readonly<ToasterProps>) {
       toastOptions={{
         classNames: {
           toast:
-            'cn-toast flex! min-h-12 w-auto min-w-[16rem] items-center border-0 py-2.5 pr-2 pl-3.5 shadow-md',
+            'cn-toast flex! min-h-12 w-auto min-w-[16rem] items-center border py-2.5 pr-2 pl-3.5 shadow-md',
           title: 'text-sm leading-none font-medium',
           content: 'flex! w-auto! flex-none! items-center',
           icon: 'm-0! mr-2!',
-          success:
-            'bg-primary! text-primary-foreground! [&_[data-icon]]:text-primary-foreground',
+          success: '[&_[data-icon]]:text-primary!',
           error: [
             'bg-destructive! text-white! [&_[data-icon]]:text-white',
             '[&_[data-close-button]]:text-white/80! [&_[data-close-button]:hover]:text-white!',
@@ -62,7 +66,7 @@ function Toaster({ ...props }: Readonly<ToasterProps>) {
             'bg-amber-500! text-white! dark:bg-amber-600! [&_[data-icon]]:text-white',
             '[&_[data-close-button]]:text-white/80! [&_[data-close-button]:hover]:text-white!',
           ].join(' '),
-          info: 'bg-primary! text-primary-foreground! [&_[data-icon]]:text-primary-foreground',
+          info: '[&_[data-icon]]:text-primary!',
           description: 'hidden',
           closeButton: closeButtonClasses,
         },

@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { getInitials } from '@/app/_shared/utility';
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
-import { DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
+import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
@@ -34,7 +34,7 @@ import WorkItemDescriptionEditor from '@/app/work-items/_components/workItem-des
 import { DescriptionView } from '@/app/work-items/_components/workItem-description-view';
 import { toTiptapContent } from '@/app/work-items/_helpers/work-item-description';
 import { Json } from '@repo/types';
-import { updateWorkItem } from '@/app/work-items/_services/workItem.client.service';
+import { updateWorkItem } from '@/app/work-items/_services/workItem.service.client';
 import WorkItemSidebar from '@/app/work-items/_components/workItem-details-sidebar';
 import { WorkItemTitleEditor } from '@/app/work-items/_components/workItem-title-editor';
 import { toast } from '@repo/ui/components/ui/sonner';

@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
-import { getWorkItems } from '@/app/work-items/_services/workItem.server.service';
+import { getWorkItems } from '@/app/work-items/_services/workItem.service.server';
 import { KanbanBoard } from './_components/kanban-board';
 
 export const metadata: Metadata = {

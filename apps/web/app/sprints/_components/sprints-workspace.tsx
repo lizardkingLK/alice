@@ -5,7 +5,10 @@ import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { SprintList } from '@/app/sprints/_components/sprint-list';
 import { SprintForm } from '@/app/sprints/_components/sprint-form';
-import { Sprint, updateSprintStatus } from '@/app/sprints/_services/sprints.service';
+import {
+  Sprint,
+  updateSprintStatus,
+} from '@/app/sprints/_services/sprints.service';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { cn } from '@repo/ui/lib/utils';
@@ -165,12 +168,8 @@ export function SprintsWorkspace({
                 ? (sprint) => setEditingSprint(sprint)
                 : undefined
             }
-            onArchiveSprint={
-              isManagerOrAdmin ? handleArchiveSprint : undefined
-            }
-            onRestoreSprint={
-              isManagerOrAdmin ? handleRestoreSprint : undefined
-            }
+            onArchiveSprint={isManagerOrAdmin ? handleArchiveSprint : undefined}
+            onRestoreSprint={isManagerOrAdmin ? handleRestoreSprint : undefined}
           />
         </div>
       </div>

@@ -129,13 +129,15 @@ export class SprintsRepository {
       .neq('status', 'Done');
 
     if (error) {
-      console.error('error. failed to get incomplete work item count:', error.message);
+      console.error(
+        'error. failed to get incomplete work item count:',
+        error.message
+      );
       throw new Error('Failed to get incomplete work item count');
     }
 
     return count ?? 0;
   }
-
 
   async findById(
     _userId: string,

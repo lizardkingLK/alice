@@ -4,7 +4,7 @@ import {
   getInitials,
 } from '@/app/_shared/utility';
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
-import { DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
+import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
 import { Button } from '@repo/ui/components/ui/button';
 import { ButtonGroup } from '@repo/ui/components/ui/button-group';
