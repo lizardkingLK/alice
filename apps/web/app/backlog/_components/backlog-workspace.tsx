@@ -132,6 +132,7 @@ export function BacklogWorkspace({
   const [sprintToComplete, setSprintToComplete] = useState<Sprint | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [isActionPending, setIsActionPending] = useState(false);
+  const [isMismatchOpen, setIsMismatchOpen] = useState(false);
 
   // Helper: date format range
   const formatDateRange = (
@@ -203,12 +204,7 @@ export function BacklogWorkspace({
         if (draggedItem && targetSprint) {
           const sprintProjId = targetSprint.project?.id;
           if (sprintProjId && draggedItem.project_id !== sprintProjId) {
-            alert(
-              `Cannot assign task to this sprint. The task belongs to project "${
-                projects.find((p) => p.id === draggedItem.project_id)?.name ??
-                'Unknown'
-              }", but this sprint belongs to "${targetSprint.project?.name ?? 'Unknown'}".`
-            );
+            setIsMismatchOpen(true);
             setDraggedItemId(null);
             setDragOverTargetId(null);
             return;
@@ -311,6 +307,7 @@ export function BacklogWorkspace({
 
   // Start Sprint Handler
   const handleStartSprint = (sprintId: string) => {
+    if (!isManagerOrAdmin) return;
     const sprint = sprintList.find((s) => s.id === sprintId);
     if (sprint) {
       setActionError(null);
@@ -320,6 +317,7 @@ export function BacklogWorkspace({
 
   // Complete Sprint Handler
   const handleCompleteSprint = (sprintId: string) => {
+    if (!isManagerOrAdmin) return;
     const sprint = sprintList.find((s) => s.id === sprintId);
     if (sprint) {
       setActionError(null);
@@ -329,6 +327,10 @@ export function BacklogWorkspace({
 
   // Start Sprint API Caller
   const confirmStartSprint = async (sprintId: string) => {
+    if (!isManagerOrAdmin) {
+      setActionError('Only admins and managers can perform this action.');
+      return;
+    }
     setActionError(null);
     setIsActionPending(true);
     try {
@@ -347,6 +349,10 @@ export function BacklogWorkspace({
 
   // Complete Sprint API Caller
   const confirmCompleteSprint = async (sprintId: string) => {
+    if (!isManagerOrAdmin) {
+      setActionError('Only admins and managers can perform this action.');
+      return;
+    }
     setActionError(null);
     setIsActionPending(true);
     try {
@@ -382,6 +388,7 @@ export function BacklogWorkspace({
 
   // Dialog Create Sprint Submission
   const handleCreateSprintSuccess = (newSprint: Sprint) => {
+    if (!isManagerOrAdmin) return;
     setSprintList((prev) => [newSprint, ...prev]);
     setIsCreateSprintOpen(false);
   };
@@ -392,46 +399,88 @@ export function BacklogWorkspace({
     setIsCreateIssueOpen(false);
   };
 
+  const isProjectSprintMismatch = (
+    currentItem: DbWorkItem | undefined,
+    sprint: Sprint | undefined,
+    projectId: string | undefined
+  ): boolean => {
+    if (!currentItem || !sprint) {
+      return false;
+    }
+    const sprintProjId = sprint.project?.id;
+    return !!(sprintProjId && projectId !== sprintProjId);
+  };
+
+  const checkProjectMismatch = (
+    currentItem: DbWorkItem | undefined,
+    newProjectId: unknown
+  ): boolean => {
+    if (!currentItem?.sprint_id) {
+      return false;
+    }
+    const currentSprint = sprintList.find((s) => s.id === currentItem.sprint_id);
+    return isProjectSprintMismatch(currentItem, currentSprint, String(newProjectId));
+  };
+
+  const checkSprintMismatch = (
+    currentItem: DbWorkItem | undefined,
+    newSprintId: unknown
+  ): boolean => {
+    if (!newSprintId) {
+      return false;
+    }
+    const targetSprint = sprintList.find((s) => s.id === newSprintId);
+    return isProjectSprintMismatch(currentItem, targetSprint, currentItem?.project_id);
+  };
+
+  const checkProjectSprintMismatch = (
+    itemId: string,
+    field: string,
+    value: unknown
+  ): boolean => {
+    const currentItem = workItems.find((item) => item.id === itemId);
+    if (field === 'project_id') {
+      return checkProjectMismatch(currentItem, value);
+    }
+    if (field === 'sprint_id') {
+      return checkSprintMismatch(currentItem, value);
+    }
+    return false;
+  };
+
+  const getUpdatedAssignee = (
+    field: string,
+    value: unknown
+  ): { id: string; name: string; email: string } | null => {
+    if (field !== 'assignee_id') {
+      return null;
+    }
+    const m = projectMembers.find((member) => member.id === value);
+    return m ? { id: m.id, name: m.name, email: m.email } : null;
+  };
+
+  const getFormDataStringValue = (value: unknown): string => {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    if (typeof value === 'object') {
+      return JSON.stringify(value);
+    }
+    return String(value);
+  };
+
   // Update inline value of item from details sheet
   const handleUpdateItemField = <K extends keyof DbWorkItem>(
     itemId: string,
     field: K,
     value: DbWorkItem[K]
   ) => {
-    if (field === 'project_id') {
-      const currentItem = workItems.find((item) => item.id === itemId);
-      if (currentItem?.sprint_id) {
-        const currentSprint = sprintList.find((s) => s.id === currentItem.sprint_id);
-        if (currentSprint && currentSprint.project?.id !== value) {
-          setWorkItems((prev) =>
-            prev.map((item) =>
-              item.id === itemId
-                ? { ...item, project_id: value as string, sprint_id: null }
-                : item
-            )
-          );
-          setSelectedItem((prev) =>
-            prev?.id === itemId
-              ? { ...prev, project_id: value as string, sprint_id: null }
-              : prev
-          );
-          const formData = new FormData();
-          formData.append('project_id', String(value));
-          formData.append('sprint_id', '');
-          updateWorkItem(itemId, formData).catch((err) => {
-            console.error(`Failed to update project and clear sprint:`, err);
-          });
-          return;
-        }
-      }
+    if (checkProjectSprintMismatch(itemId, String(field), value)) {
+      setIsMismatchOpen(true);
+      return;
     }
 
-    let updatedAssignee: { id: string; name: string; email: string } | null =
-      null;
-    if (field === 'assignee_id') {
-      const m = projectMembers.find((member) => member.id === value);
-      updatedAssignee = m ? { id: m.id, name: m.name, email: m.email } : null;
-    }
+    const updatedAssignee = getUpdatedAssignee(String(field), value);
 
     setWorkItems((prev) =>
       prev.map((item) =>
@@ -452,15 +501,7 @@ export function BacklogWorkspace({
     });
 
     const formData = new FormData();
-    let valStr = '';
-    if (value !== null && value !== undefined) {
-      if (typeof value === 'object') {
-        valStr = JSON.stringify(value);
-      } else {
-        valStr = String(value);
-      }
-    }
-    formData.append(String(field), valStr);
+    formData.append(String(field), getFormDataStringValue(value));
 
     updateWorkItem(itemId, formData).catch((err) => {
       console.error(`Failed to update work item field ${String(field)}:`, err);
@@ -533,15 +574,17 @@ export function BacklogWorkspace({
             </div>
 
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="cursor-pointer border-indigo-500/20 bg-indigo-500/5 font-semibold text-indigo-600 hover:bg-indigo-500/10 dark:text-indigo-400"
-                onClick={() => setIsCreateSprintOpen(true)}
-              >
-                <Plus className="mr-1.5 h-4 w-4" />
-                Create Sprint
-              </Button>
+              {isManagerOrAdmin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="cursor-pointer border-indigo-500/20 bg-indigo-500/5 font-semibold text-indigo-600 hover:bg-indigo-500/10 dark:text-indigo-400"
+                  onClick={() => setIsCreateSprintOpen(true)}
+                >
+                  <Plus className="mr-1.5 h-4 w-4" />
+                  Create Sprint
+                </Button>
+              )}
               <Button
                 size="sm"
                 className="cursor-pointer bg-linear-to-r from-indigo-500 to-violet-600 font-semibold text-white hover:from-indigo-600 hover:to-violet-700"
@@ -877,7 +920,19 @@ export function BacklogWorkspace({
           open={!!selectedItem}
           onOpenChange={(open) => !open && setSelectedItem(null)}
         >
-          <SheetContent className="border-border bg-card/95 overflow-y-auto border-l px-8 py-8 shadow-xl backdrop-blur-md transition-all duration-200 sm:max-w-2xl">
+          <SheetContent
+            onPointerDownOutside={(e) => {
+              if (isMismatchOpen) {
+                e.preventDefault();
+              }
+            }}
+            onInteractOutside={(e) => {
+              if (isMismatchOpen) {
+                e.preventDefault();
+              }
+            }}
+            className="border-border bg-card/95 overflow-y-auto border-l px-8 py-8 shadow-xl backdrop-blur-md transition-all duration-200 sm:max-w-2xl"
+          >
             {selectedItem && (
               <div className="space-y-6">
                 <SheetHeader className="pb-2">
@@ -1121,7 +1176,7 @@ export function BacklogWorkspace({
         </Sheet>
 
         {/* Dialog: Create Sprint */}
-        {isCreateSprintOpen && (
+        {isManagerOrAdmin && isCreateSprintOpen && (
           <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
             <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
               <SprintForm
@@ -1294,6 +1349,43 @@ export function BacklogWorkspace({
                 </div>
               );
             })()}
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog: Project Mismatch Error */}
+        <Dialog open={isMismatchOpen} onOpenChange={setIsMismatchOpen}>
+          <DialogContent
+            onPointerDownOutside={(e) => e.preventDefault()}
+            onInteractOutside={(e) => e.preventDefault()}
+            onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-card border-border/80 backdrop-blur-md sm:max-w-md"
+          >
+            <DialogHeader className="flex flex-col items-center text-center pb-2">
+              <div className="rounded-full bg-destructive/15 p-3 mb-2">
+                <AlertCircle className="h-6 w-6 text-destructive animate-bounce" />
+              </div>
+              <DialogTitle className="text-lg font-bold">
+                Project Mismatch
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground text-xs">
+                This task cannot be assigned to this sprint because they belong to different projects.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex justify-end pt-2">
+              <Button
+                size="sm"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsMismatchOpen(false);
+                }}
+              >
+                OK
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
