@@ -9,10 +9,7 @@ import {
 import { ReactNode } from 'react';
 import { SprintList } from '@/app/sprints/_components/sprint-list';
 import { SprintsWorkspace } from '@/app/sprints/_components/sprints-workspace';
-import {
-  updateSprintStatus,
-  Sprint,
-} from '@/app/sprints/_services/sprints.service';
+import { Sprint } from '@/app/sprints/_services/sprints.service';
 
 const mockPush = vi.fn();
 const mockRefresh = vi.fn();
@@ -51,9 +48,7 @@ vi.mock('@/app/sprints/_components/sprint-form', () => ({
   ),
 }));
 
-vi.mock('@/app/sprints/_services/sprints.service', () => ({
-  updateSprintStatus: vi.fn(),
-}));
+
 
 // Mock Dropdown Menu to avoid testing Radix internals in happy-dom environment
 vi.mock('@repo/ui/components/ui/dropdown-menu', () => {
@@ -159,11 +154,7 @@ describe('SprintList Component', () => {
     expect(screen.getByText('Goal Alpha')).toBeInTheDocument();
   });
 
-  it('handles status transition from dropdown menu selection', async () => {
-    const onSprintUpdated = vi.fn();
-    const updatedSprint: Sprint = { ...mockSprints[0]!, status: 'Completed' };
-    vi.mocked(updateSprintStatus).mockResolvedValue(updatedSprint);
-
+  it('renders sprint status as read-only label even for managers and admins', () => {
     render(
       <SprintList
         sprints={mockSprints}
@@ -172,22 +163,15 @@ describe('SprintList Component', () => {
         onTabChange={vi.fn()}
         onPageChange={vi.fn()}
         onLimitChange={vi.fn()}
-        onSprintUpdated={onSprintUpdated}
-        isManagerOrAdmin={true}
       />
     );
 
-    // Find Completed dropdown item under Sprint Alpha's status dropdown menu and click it
-    const completedBtn = screen.getAllByTestId('dropdown-item-Completed')[0];
-    expect(completedBtn).toBeInTheDocument();
+    // Verify that the status text is rendered
+    expect(screen.getByText('Ongoing')).toBeInTheDocument();
+    expect(screen.getByText('Not Started')).toBeInTheDocument();
 
-    fireEvent.click(completedBtn!);
-
-    await waitFor(() => {
-      expect(updateSprintStatus).toHaveBeenCalledWith('sprint-1', 'Completed');
-    });
-
-    expect(onSprintUpdated).toHaveBeenCalledWith(updatedSprint);
+    // Verify that the status dropdown menu or triggers are not present/active
+    expect(screen.queryByTestId('dropdown-menu')).not.toBeInTheDocument();
   });
 
   it('triggers pagination callbacks', () => {
@@ -299,7 +283,6 @@ describe('SprintList Component', () => {
         onLimitChange={vi.fn()}
         onAddSprint={onAddSprint}
         onEditSprint={onEditSprint}
-        isManagerOrAdmin={true}
       />
     );
 
@@ -307,7 +290,7 @@ describe('SprintList Component', () => {
     fireEvent.click(addSprintBtn);
     expect(onAddSprint).toHaveBeenCalled();
 
-    const editBtns = screen.getAllByRole('button', { name: 'Edit' });
+    const editBtns = screen.getAllByRole('button', { name: 'Edit Sprint' });
     // First edit button belongs to Sprint Alpha
     fireEvent.click(editBtns[0]!);
     expect(onEditSprint).toHaveBeenCalledWith(mockSprints[0]);
@@ -390,5 +373,161 @@ describe('SprintList Component', () => {
       />
     );
     expect(screen.getByText(/No archived sprints/i)).toBeInTheDocument();
+  });
+
+  it('renders Archive button only for Completed sprints and triggers callback', () => {
+    const onArchiveSprint = vi.fn();
+    const testSprints: Sprint[] = [
+      {
+        id: 'sprint-completed',
+        name: 'Completed Sprint',
+        goal: null,
+        status: 'Completed' as const,
+        startDate: '2026-07-01',
+        endDate: '2026-07-14',
+        createdBy: 'user-1',
+        createdAt: '2026-07-01T00:00:00Z',
+        updatedAt: '2026-07-01T00:00:00Z',
+        project: null,
+      },
+      {
+        id: 'sprint-ongoing',
+        name: 'Ongoing Sprint',
+        goal: null,
+        status: 'Ongoing' as const,
+        startDate: '2026-07-01',
+        endDate: '2026-07-14',
+        createdBy: 'user-1',
+        createdAt: '2026-07-01T00:00:00Z',
+        updatedAt: '2026-07-01T00:00:00Z',
+        project: null,
+      },
+      {
+        id: 'sprint-planned',
+        name: 'Planned Sprint',
+        goal: null,
+        status: 'Not Started' as const,
+        startDate: '2026-07-01',
+        endDate: '2026-07-14',
+        createdBy: 'user-1',
+        createdAt: '2026-07-01T00:00:00Z',
+        updatedAt: '2026-07-01T00:00:00Z',
+        project: null,
+      },
+    ];
+
+    render(
+      <SprintList
+        sprints={testSprints}
+        pagination={{ page: 1, limit: 10, totalCount: 3, totalPages: 1 }}
+        filterTab="active"
+        onPageChange={vi.fn()}
+        onLimitChange={vi.fn()}
+        onArchiveSprint={onArchiveSprint}
+      />
+    );
+
+    // Verify Archive button is rendered for Completed Sprint
+    const completedLi = screen.getByText('Completed Sprint').closest('li')!;
+    const archiveBtn = within(completedLi).getByRole('button', { name: 'Archive Sprint' });
+    expect(archiveBtn).toBeInTheDocument();
+
+    // Verify Archive button is NOT rendered for Ongoing or Planned Sprint
+    const ongoingLi = screen.getByText('Ongoing Sprint').closest('li')!;
+    expect(within(ongoingLi).queryByRole('button', { name: 'Archive Sprint' })).not.toBeInTheDocument();
+
+    const plannedLi = screen.getByText('Planned Sprint').closest('li')!;
+    expect(within(plannedLi).queryByRole('button', { name: 'Archive Sprint' })).not.toBeInTheDocument();
+
+    // Click the Archive button and check callback
+    fireEvent.click(archiveBtn);
+    expect(onArchiveSprint).toHaveBeenCalledWith(testSprints[0]);
+  });
+
+  it('renders Restore button only for Archived sprints and triggers callback', () => {
+    const onRestoreSprint = vi.fn();
+    const testSprints: Sprint[] = [
+      {
+        id: 'sprint-archived',
+        name: 'Archived Sprint',
+        goal: null,
+        status: 'Archived' as const,
+        startDate: '2026-07-01',
+        endDate: '2026-07-14',
+        createdBy: 'user-1',
+        createdAt: '2026-07-01T00:00:00Z',
+        updatedAt: '2026-07-01T00:00:00Z',
+        project: null,
+      },
+      {
+        id: 'sprint-completed',
+        name: 'Completed Sprint',
+        goal: null,
+        status: 'Completed' as const,
+        startDate: '2026-07-01',
+        endDate: '2026-07-14',
+        createdBy: 'user-1',
+        createdAt: '2026-07-01T00:00:00Z',
+        updatedAt: '2026-07-01T00:00:00Z',
+        project: null,
+      },
+    ];
+
+    render(
+      <SprintList
+        sprints={testSprints}
+        pagination={{ page: 1, limit: 10, totalCount: 2, totalPages: 1 }}
+        filterTab="archived"
+        onPageChange={vi.fn()}
+        onLimitChange={vi.fn()}
+        onRestoreSprint={onRestoreSprint}
+      />
+    );
+
+    // Verify Restore button is rendered for Archived Sprint
+    const archivedLi = screen.getByText('Archived Sprint').closest('li')!;
+    const restoreBtn = within(archivedLi).getByRole('button', { name: 'Restore Sprint' });
+    expect(restoreBtn).toBeInTheDocument();
+
+    // Verify Restore button is NOT rendered for Completed Sprint
+    const completedLi = screen.getByText('Completed Sprint').closest('li')!;
+    expect(within(completedLi).queryByRole('button', { name: 'Restore Sprint' })).not.toBeInTheDocument();
+
+    // Click the Restore button and check callback
+    fireEvent.click(restoreBtn);
+    expect(onRestoreSprint).toHaveBeenCalledWith(testSprints[0]);
+  });
+
+  it('does not render Edit button for Archived sprints', () => {
+    const onEditSprint = vi.fn();
+    const testSprints: Sprint[] = [
+      {
+        id: 'sprint-archived',
+        name: 'Archived Sprint',
+        goal: null,
+        status: 'Archived' as const,
+        startDate: '2026-07-01',
+        endDate: '2026-07-14',
+        createdBy: 'user-1',
+        createdAt: '2026-07-01T00:00:00Z',
+        updatedAt: '2026-07-01T00:00:00Z',
+        project: null,
+      },
+    ];
+
+    render(
+      <SprintList
+        sprints={testSprints}
+        pagination={{ page: 1, limit: 10, totalCount: 1, totalPages: 1 }}
+        filterTab="archived"
+        onPageChange={vi.fn()}
+        onLimitChange={vi.fn()}
+        onEditSprint={onEditSprint}
+      />
+    );
+
+    // Verify Edit button is NOT rendered for Archived Sprint
+    const archivedLi = screen.getByText('Archived Sprint').closest('li')!;
+    expect(within(archivedLi).queryByRole('button', { name: 'Edit Sprint' })).not.toBeInTheDocument();
   });
 });
