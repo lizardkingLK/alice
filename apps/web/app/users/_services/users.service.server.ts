@@ -1,5 +1,6 @@
 import { apiFetch } from '@/lib/api/api-client.server';
 import { createClient } from '@/lib/supabase/server';
+import { pageRange, paginationMeta } from '@/lib/db/pagination';
 import { createUsersService } from './users.service.base';
 import type { GetUsersPaginatedResponse, User } from './users.service.base';
 
@@ -28,32 +29,32 @@ export async function getUsersList(): Promise<User[]> {
 
 export async function getUsersListPaginated(
   page: number,
-  limit: number
+  limit: number,
+  search = ''
 ): Promise<GetUsersPaginatedResponse> {
   const supabase = await createClient();
+  const { from, to } = pageRange(page, limit);
 
-  const from = (page - 1) * limit;
-  const to = from + limit - 1;
-
-  const { data, error, count } = await supabase
+  let query = supabase
     .from('users')
     .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(from, to);
+    .order('created_at', { ascending: false });
+
+  const term = search.trim().replace(/[,()]/g, '');
+  if (term) {
+    query = query.or(`name.ilike.%${term}%,email.ilike.%${term}%`);
+  }
+
+  const { data, error, count } = await query.range(from, to);
 
   if (error) {
     console.error('error. failed to list users paginated:', error.message);
     throw new Error('Failed to list users');
   }
 
-  const totalCount = count ?? 0;
-
   return {
     users: (data ?? []) as User[],
-    totalCount,
-    page,
-    limit,
-    totalPages: Math.max(1, Math.ceil(totalCount / limit)),
+    ...paginationMeta(count ?? 0, page, limit),
   };
 }
 

@@ -142,7 +142,10 @@ export class SprintsService {
       if (!currentSprint) {
         throw new Error('Sprint not found');
       }
-      if (currentSprint.status === 'planned' || currentSprint.status === 'active') {
+      if (
+        currentSprint.status === 'planned' ||
+        currentSprint.status === 'active'
+      ) {
         throw new Error('Cannot archive ongoing or not started sprints.');
       }
     }

@@ -226,7 +226,7 @@ function SprintListItem({
               type="button"
               aria-label="Restore Sprint"
               onClick={() => onRestoreSprint(sprint)}
-              className="focus-visible:ring-ring flex h-8 w-20 shrink-0 items-center justify-center border-emerald-500/20 bg-emerald-500/10 text-[11px] font-semibold text-emerald-600 shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50 cursor-pointer"
+              className="focus-visible:ring-ring flex h-8 w-20 shrink-0 cursor-pointer items-center justify-center border-emerald-500/20 bg-emerald-500/10 text-[11px] font-semibold text-emerald-600 shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
             >
               <RefreshCw className="mr-1 h-3 w-3 shrink-0" />
               <span>Restore</span>

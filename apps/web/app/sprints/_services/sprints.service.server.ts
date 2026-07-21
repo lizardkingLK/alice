@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { pageRange, paginationMeta } from '@/lib/db/pagination';
 import {
   mapDbSprintToSprint,
   type DbSprintRelation,
@@ -16,9 +17,7 @@ export async function getSprintsPaginatedServer(
   search?: string
 ): Promise<PaginatedSprints> {
   const supabase = await createClient();
-
-  const from = (page - 1) * limit;
-  const to = page * limit - 1;
+  const { from, to } = pageRange(page, limit);
 
   let query = supabase
     .from('sprints')
@@ -44,16 +43,10 @@ export async function getSprintsPaginatedServer(
     throw new Error('Failed to list sprints');
   }
 
-  const totalCount = count ?? 0;
   const rows = (data ?? []) as unknown as DbSprintRelation[];
 
   return {
     sprints: rows.map(mapDbSprintToSprint),
-    pagination: {
-      page,
-      limit,
-      totalCount,
-      totalPages: Math.max(1, Math.ceil(totalCount / limit)),
-    },
+    pagination: paginationMeta(count ?? 0, page, limit),
   };
 }

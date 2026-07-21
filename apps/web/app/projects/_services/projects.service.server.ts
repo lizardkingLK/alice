@@ -1,5 +1,6 @@
 import { apiFetch } from '@/lib/api/api-client.server';
 import { createClient } from '@/lib/supabase/server';
+import { pageRange, paginationMeta } from '@/lib/db/pagination';
 import { createProjectsService } from './projects.service.base';
 import type {
   GetProjectsPaginatedResponse,
@@ -39,9 +40,7 @@ export async function getProjectListPaginated(
   search?: string
 ): Promise<GetProjectsPaginatedResponse> {
   const supabase = await createClient();
-
-  const from = (page - 1) * limit;
-  const to = from + limit - 1;
+  const { from, to } = pageRange(page, limit);
 
   let query = supabase
     .from('projects')
@@ -69,14 +68,9 @@ export async function getProjectListPaginated(
     throw new Error('Failed to list projects');
   }
 
-  const totalCount = count ?? 0;
-
   return {
     projects: (data ?? []) as unknown as Project[],
-    totalCount,
-    page,
-    limit,
-    totalPages: Math.max(1, Math.ceil(totalCount / limit)),
+    ...paginationMeta(count ?? 0, page, limit),
   };
 }
 

@@ -6,6 +6,7 @@ import {
   type Project,
 } from '@/app/projects/_services/projects.service.server';
 import { getUserList } from '@/app/users/_services/users.service.server';
+import { safeServerFetch } from '@/lib/safe-server-fetch';
 
 import {
   parseStandardParams,
@@ -32,18 +33,11 @@ export default async function ProjectsPage({
 
   const [dbUser, usersList, projectsResult] = await Promise.all([
     getDbUser(),
-    getUserList().catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      console.error('error. failed to fetch users via API:', message);
-      return [];
-    }),
-    getProjectListPaginated(page, limit, status, search).catch(
-      (error: unknown) => {
-        const message =
-          error instanceof Error ? error.message : 'Unknown error';
-        console.error('error. failed to fetch projects list via API:', message);
-        return EMPTY_PROJECTS;
-      }
+    safeServerFetch(getUserList(), [], 'fetch users via API'),
+    safeServerFetch(
+      getProjectListPaginated(page, limit, status, search),
+      EMPTY_PROJECTS,
+      'fetch projects list via API'
     ),
   ]);
 

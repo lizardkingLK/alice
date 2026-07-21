@@ -421,8 +421,14 @@ export function BacklogWorkspace({
     if (!currentItem?.sprint_id) {
       return false;
     }
-    const currentSprint = sprintList.find((s) => s.id === currentItem.sprint_id);
-    return isProjectSprintMismatch(currentItem, currentSprint, String(newProjectId));
+    const currentSprint = sprintList.find(
+      (s) => s.id === currentItem.sprint_id
+    );
+    return isProjectSprintMismatch(
+      currentItem,
+      currentSprint,
+      String(newProjectId)
+    );
   };
 
   const checkSprintMismatch = (
@@ -433,7 +439,11 @@ export function BacklogWorkspace({
       return false;
     }
     const targetSprint = sprintList.find((s) => s.id === newSprintId);
-    return isProjectSprintMismatch(currentItem, targetSprint, currentItem?.project_id);
+    return isProjectSprintMismatch(
+      currentItem,
+      targetSprint,
+      currentItem?.project_id
+    );
   };
 
   const checkProjectSprintMismatch = (
@@ -1407,22 +1417,23 @@ export function BacklogWorkspace({
             onClick={(e) => e.stopPropagation()}
             className="bg-card border-border/80 backdrop-blur-md sm:max-w-md"
           >
-            <DialogHeader className="flex flex-col items-center text-center pb-2">
-              <div className="rounded-full bg-destructive/15 p-3 mb-2">
-                <AlertCircle className="h-6 w-6 text-destructive animate-bounce" />
+            <DialogHeader className="flex flex-col items-center pb-2 text-center">
+              <div className="bg-destructive/15 mb-2 rounded-full p-3">
+                <AlertCircle className="text-destructive h-6 w-6 animate-bounce" />
               </div>
               <DialogTitle className="text-lg font-bold">
                 Project Mismatch
               </DialogTitle>
               <DialogDescription className="text-muted-foreground text-xs">
-                This task cannot be assigned to this sprint because they belong to different projects.
+                This task cannot be assigned to this sprint because they belong
+                to different projects.
               </DialogDescription>
             </DialogHeader>
 
             <div className="flex justify-end pt-2">
               <Button
                 size="sm"
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold cursor-pointer"
+                className="cursor-pointer bg-indigo-600 font-semibold text-white hover:bg-indigo-700"
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsMismatchOpen(false);

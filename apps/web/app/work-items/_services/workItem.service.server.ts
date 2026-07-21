@@ -1,5 +1,6 @@
 import { User as DbUser } from '@/app/users/_services/users.service';
 import { createClient } from '@/lib/supabase/server';
+import { pageRange, paginationMeta } from '@/lib/db/pagination';
 import { Tables } from '@repo/types';
 
 type DbUserEssentials = Pick<DbUser, 'id' | 'name' | 'email'>;
@@ -23,7 +24,7 @@ const REPORTER_SELECT = 'reporter:users!reporter_id(id, name, email)';
 /**
  * Server-only reads that query Supabase directly from the RSC layer,
  * skipping the `web → api` hop. Mutations still go through the API
- * (see `workItem.client.service.ts`).
+ * (see `workItem.service.client.ts`).
  */
 
 export async function getWorkItems(filters?: {
@@ -60,9 +61,7 @@ export async function getWorkItemsPaginated(
   filters?: { sprintId?: string | null }
 ): Promise<GetWorkItemsPaginatedResponse> {
   const supabase = await createClient();
-
-  const from = (page - 1) * limit;
-  const to = from + limit - 1;
+  const { from, to } = pageRange(page, limit);
 
   let query = supabase
     .from('work_items')
@@ -89,14 +88,9 @@ export async function getWorkItemsPaginated(
     throw new Error('Failed to list work-items');
   }
 
-  const totalCount = count ?? 0;
-
   return {
     workItems: (data ?? []) as unknown as DbWorkItem[],
-    totalCount,
-    page,
-    limit,
-    totalPages: Math.max(1, Math.ceil(totalCount / limit)),
+    ...paginationMeta(count ?? 0, page, limit),
   };
 }
 

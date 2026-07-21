@@ -75,29 +75,23 @@ Inactive-user semantics are unchanged: a user is treated as signed-out only when
 
 ### 2.3 Parallel data fetching with `Promise.all`
 
-Independent server fetches now run concurrently instead of sequentially. Each call keeps its own error boundary via `.catch()` so one failure doesn't blank the page.
+Independent server fetches now run concurrently instead of sequentially. Each call is wrapped in the shared `safeServerFetch` guard, so one failure logs and falls back to a safe default instead of blanking the whole page.
 
-```29:45:apps/web/app/work-items/page.tsx
+```30:38:apps/web/app/work-items/page.tsx
   const [projects, projectMembers, workItemsResult] = await Promise.all([
-    getProjectList().catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      console.error('error. failed to fetch projects via API:', message);
-      return [];
-    }),
-    getUserList().catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      console.error('error. failed to fetch users via API:', message);
-      return [];
-    }),
-    getWorkItemsPaginated(page, limit, search).catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      console.error('error. failed to fetch work items list via API:', message);
-      return EMPTY_WORK_ITEMS;
-    }),
+    safeServerFetch(getProjectList(), [], 'fetch projects via API'),
+    safeServerFetch(getUserList(), [], 'fetch users via API'),
+    safeServerFetch(
+      getWorkItemsPaginated(page, limit, search),
+      EMPTY_WORK_ITEMS,
+      'fetch work items list via API'
+    ),
   ]);
 ```
 
-Applied to: `work-items`, `projects`, `manager`, `projects/[id]`, `users`, `sprints`. (`backlog` already used `Promise.all`.)
+`safeServerFetch` (`apps/web/lib/safe-server-fetch.ts`) replaced a `try/catch` block that was copy-pasted into every page — the wrapped promise is created by the caller, so concurrency inside `Promise.all` is preserved. Applied to: `work-items`, `projects`, `manager`, `projects/[id]`, `users`, `sprints`. (`backlog` uses a single surrounding `try/catch`.)
+
+Paginated readers also share `pageRange` / `paginationMeta` (`apps/web/lib/db/pagination.ts`) for the range math and `{ totalCount, page, limit, totalPages }` shape, keeping the direct-read services free of duplicated pagination boilerplate.
 
 ### 2.4 Direct Supabase reads in RSC
 

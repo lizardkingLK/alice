@@ -11,6 +11,7 @@ import {
   type Team,
 } from './_services/teams.service.server';
 import { getUserList } from '@/app/users/_services/users.service.server';
+import { safeServerFetch } from '@/lib/safe-server-fetch';
 
 const EMPTY_TEAMS = {
   teams: [] as Team[],
@@ -31,18 +32,11 @@ export default async function ManagerDashboardPage({
 
   const [dbUser, usersList, teamsResult] = await Promise.all([
     getDbUser(),
-    getUserList().catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      console.error('error. failed to fetch users via API:', message);
-      return [];
-    }),
-    getTeamListPaginated(page, limit, status, search).catch(
-      (error: unknown) => {
-        const message =
-          error instanceof Error ? error.message : 'Unknown error';
-        console.error('error. failed to fetch teams list via API:', message);
-        return EMPTY_TEAMS;
-      }
+    safeServerFetch(getUserList(), [], 'fetch users via API'),
+    safeServerFetch(
+      getTeamListPaginated(page, limit, status, search),
+      EMPTY_TEAMS,
+      'fetch teams list via API'
     ),
   ]);
 
