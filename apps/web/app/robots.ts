@@ -14,6 +14,7 @@ export default function robots(): MetadataRoute.Robots {
         '/instruments',
         '/files',
         '/profile',
+        '/edit-profile',
         '/forgot-password',
         '/reset-password',
         '/*?*',

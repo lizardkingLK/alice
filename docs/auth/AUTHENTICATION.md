@@ -103,8 +103,8 @@ sequenceDiagram
     Auth->>Mail: Confirmation email
     Actions-->>U: Redirect /signup?checkEmail=1
     U->>Mail: Open confirm link
-    Mail->>CB: ?code=…&next=/dashboard
-    CB->>Auth: exchangeCodeForSession(code)
+    Mail->>CB: ?token_hash=…&type=signup&next=/dashboard
+    CB->>Auth: verifyOtp({ type: 'signup', token_hash })
     CB->>DB: ensurePublicUser(user)
     CB-->>U: Redirect /dashboard
   else Session already present
@@ -116,7 +116,7 @@ sequenceDiagram
 
 - `emailRedirectTo` is built from the request origin / `NEXT_PUBLIC_SITE_URL` via `buildAuthCallbackUrl`.
 - Default role for self-signup profiles is **`member`** (`ensurePublicUser` → `resolveRole`).
-- Confirmation depends on the Supabase project setting “Confirm email”.
+- Confirmation depends on the Supabase project setting “Confirm email”. When enabled, the **Confirm signup** email template must use the `token_hash` link (see §12).
 
 ---
 
@@ -296,15 +296,18 @@ sequenceDiagram
   end
 
   Invitee->>Mail: Open invite link
-  Mail->>CB: ?code=…&next=/reset-password
-  CB->>Auth: exchangeCodeForSession(code)
+  Mail->>CB: ?token_hash=…&type=invite&next=/reset-password
+  CB->>Auth: verifyOtp({ type: 'invite', token_hash })
   CB->>DB: ensurePublicUser (usually already exists)
   CB-->>Invitee: Redirect /reset-password
   Invitee->>Reset: Set password
   Reset->>Auth: updateUser({ password })
-  Reset->>Auth: signOut()
-  Reset-->>Invitee: Redirect /?reset=success
+  Reset-->>Invitee: Redirect /dashboard (stays signed in)
 ```
+
+> **Email template requirement.** The Invite template must use the server-readable `token_hash` link, **not** the default `{{ .ConfirmationURL }}` (which uses the implicit hash-fragment flow the server callback can't read). See §12 for the exact string and the allowlist / Site URL setup.
+>
+> **Legacy fallback.** `RecoveryHashGuard` (`apps/web/app/forgot-password/_components/recovery-hash-guard.tsx`) catches old implicit-flow links that still land on `/forgot-password#access_token=…`: it restores the session client-side via `setSession` and forwards to `/reset-password` instead of showing the bogus expired error.
 
 ### Activate / deactivate
 
@@ -322,7 +325,7 @@ More UI/schema detail: [USER_MANAGEMENT.md](../features/users/USER_MANAGEMENT.md
 
 ## 7. Forgot password and password reset
 
-Self-service recovery uses Supabase recovery emails and the shared `/auth/callback` PKCE exchange. The same `/reset-password` page is reused after **admin invite**.
+Self-service recovery uses Supabase recovery emails and the shared `/auth/callback` route. Email links carry a server-readable `token_hash` verified with `verifyOtp` (not the implicit hash-fragment flow). The same `/reset-password` page is reused after **admin invite**.
 
 ### Sequence
 
@@ -345,33 +348,34 @@ sequenceDiagram
 
   Auth->>Mail: Recovery email (if user exists)
   U->>Mail: Open link
-  Mail->>CB: ?code=…&next=/reset-password
-  alt Code exchange OK
-    CB->>Auth: exchangeCodeForSession(code)
+  Mail->>CB: ?token_hash=…&type=recovery&next=/reset-password
+  alt verifyOtp OK
+    CB->>Auth: verifyOtp({ type: 'recovery', token_hash })
     CB-->>U: Redirect /reset-password
     U->>Reset: New password (+ confirm)
     Reset->>Auth: updateUser({ password })
-    Reset->>Auth: signOut()
-    Reset-->>U: Redirect /?reset=success
-  else Code missing / expired
+    Reset-->>U: Redirect /dashboard (stays signed in)
+  else token missing / invalid / expired
     CB-->>U: Redirect /forgot-password?error=expired
   end
 ```
+
+> The Recovery template must also use the `token_hash` link — see §12.
 
 ### Guards
 
 - `/reset-password` **layout** requires a signed-in user (`getUser()`); otherwise redirect to `/forgot-password`.
 - Session may come from recovery **or** invite; the layout does not distinguish recovery-only sessions.
-- After a successful reset, the app **signs the user out** so they sign in with the new password.
+- After a successful reset the user **stays signed in** and is redirected to `/dashboard`. The `redirect()` call lives **outside** the action's try/catch (it throws `NEXT_REDIRECT`, which a surrounding catch would otherwise swallow — sending the now-signed-out user back to `/forgot-password`).
 
 ### Difference from admin invite
 
-| Step                | Forgot password                      | Admin invite                        |
-| ------------------- | ------------------------------------ | ----------------------------------- |
-| Starts with         | `resetPasswordForEmail`              | `inviteUserByEmail`                 |
-| Email type          | Recovery                             | Invite                              |
-| Sets `public.users` | Already exists                       | Created at invite time              |
-| Ends at             | `/?reset=success` after set password | Same reset page → `/?reset=success` |
+| Step                | Forgot password                | Admin invite                   |
+| ------------------- | ------------------------------ | ------------------------------ |
+| Starts with         | `resetPasswordForEmail`        | `inviteUserByEmail`            |
+| Email type          | Recovery                       | Invite                         |
+| Sets `public.users` | Already exists                 | Created at invite time         |
+| Ends at             | `/dashboard` (stays signed in) | Same reset page → `/dashboard` |
 
 ---
 
@@ -448,17 +452,49 @@ Admin-only user mutations additionally call `requireAdmin` inside `UsersService`
 | Admin invite + set password                      | Implemented (API + `/users`)              |
 | Activate / deactivate                            | Implemented                               |
 | Forgot / reset password                          | Implemented                               |
-| `/auth/confirm` token-hash flow                  | Code present; emails use `/auth/callback` |
+| `token_hash` + `verifyOtp` in `/auth/callback`   | Implemented (templates must use it — §12) |
 | Full page-level RBAC                             | Partial — see RBAC skeleton               |
 
 ---
 
-## 12. Troubleshooting
+## 12. Email templates (token_hash, multi-environment)
 
-| Symptom                                       | Likely cause                                                                             |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Google button fails immediately               | Provider disabled or redirect URL mismatch in Supabase / Google Cloud                    |
-| Invite / reset link lands on login error      | Expired or already-used `code`; recovery failures go to `/forgot-password?error=expired` |
-| User signed in Auth but missing from registry | `ensurePublicUser` failed (check service role + RLS/grants on `public.users`)            |
-| Deactivated user still sees UI briefly        | Stale cookie until `getUser()` runs; Auth ban should block API                           |
-| Two registry rows for “same person”           | Different Auth user IDs (different emails or linking never occurred)                     |
+Auth email links (invite, recovery, signup confirm) must use the server-readable **`token_hash`** flow. The default `{{ .ConfirmationURL }}` routes through Supabase's `/auth/v1/verify` endpoint, which returns the session in the **URL hash fragment** (implicit flow) — the server callback can't read it, so links fail with a misleading `?error=expired`.
+
+### Use `{{ .RedirectTo }}`, not `{{ .SiteURL }}`
+
+`{{ .SiteURL }}` is a **single global value** (Supabase → Authentication → URL Configuration), so every email points at one environment (usually prod). `{{ .RedirectTo }}` instead reflects the `redirectTo` the app passed, which is built from the **request origin** (`buildAuthCallbackUrl`) — localhost when triggered locally, prod in prod. That carries the existing `?next=…`, so we just append the token params.
+
+Update these templates (Supabase → Authentication → Email Templates):
+
+| Template       | Link                                                          |
+| -------------- | ------------------------------------------------------------- |
+| Invite user    | `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=invite`   |
+| Reset Password | `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery` |
+| Confirm signup | `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=signup`   |
+
+The callback (`apps/web/app/auth/callback/route.ts`) reads `token_hash` + `type` and calls `verifyOtp`, then redirects to `next` (invite/recovery → `/reset-password`, signup → `/dashboard`).
+
+### Setup requirements
+
+- **Allowlist both origins** in Redirect URLs: `http://localhost:3000/**` and the prod origin (e.g. `https://alice-web-seven.vercel.app/**`). If `redirect_to` isn't allowlisted, Supabase drops it and `{{ .RedirectTo }}` falls back to Site URL.
+- **Do not pin `NEXT_PUBLIC_SITE_URL` to prod locally** — `resolveRequestOrigin` prefers it over the request origin, which would force prod links even from localhost.
+- **Deploy the callback** — the `token_hash` handler must be live in each environment you test; otherwise old callback code ignores `token_hash` and returns `?error=expired`.
+- `token_hash` is **single-use** — link scanners/previews or a prior click consume it. Test with a fresh invite/reset.
+
+### Quick local-only alternative
+
+For a one-off local test you can temporarily set **Site URL** to `http://localhost:3000` and keep `{{ .SiteURL }}` templates. `verifyOtp` validates against Supabase's hosted API (host-independent), so it works — but it's a global switch that repoints prod emails too, so revert afterward. The `{{ .RedirectTo }}` approach above avoids the toggling.
+
+---
+
+## 13. Troubleshooting
+
+| Symptom                                       | Likely cause                                                                                                                               |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Google button fails immediately               | Provider disabled or redirect URL mismatch in Supabase / Google Cloud                                                                      |
+| Invite / reset link shows `error=expired`     | Template still uses `{{ .ConfirmationURL }}` (implicit flow), callback not deployed, or single-use `token_hash` already consumed — see §12 |
+| Email link points at the wrong environment    | `{{ .SiteURL }}` is a single global value; use `{{ .RedirectTo }}` and allowlist both origins — see §12                                    |
+| User signed in Auth but missing from registry | `ensurePublicUser` failed (check service role + RLS/grants on `public.users`)                                                              |
+| Deactivated user still sees UI briefly        | Stale cookie until `getUser()` runs; Auth ban should block API                                                                             |
+| Two registry rows for “same person”           | Different Auth user IDs (different emails or linking never occurred)                                                                       |

@@ -1,19 +1,21 @@
+import Link from 'next/link';
 import {
+  BadgeCheck,
   Briefcase,
-  Building2,
-  Clock,
+  CalendarDays,
   FileText,
-  LayoutGrid,
+  LogIn,
   Mail,
-  MapPin,
-  Network,
   Phone,
+  ShieldAlert,
+  Users,
 } from '@repo/ui/lib/icons';
 import {
   Avatar,
-  AvatarBadge,
   AvatarFallback,
+  AvatarImage,
 } from '@repo/ui/components/ui/avatar';
+import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Card,
@@ -22,25 +24,86 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import { Separator } from '@repo/ui/components/ui/separator';
+import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';
-import { PROFILE_MOCK } from '@/app/profile/_components/profile-mock-data';
+import {
+  formatDate,
+  formatLabelFirstLetterCapitalized,
+  getInitials,
+} from '@/app/_shared/utility';
+import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
+import type {
+  ProfileTeam,
+  ProfileWorkedOn,
+} from '@/app/profile/_services/profile.service.server';
 
-const ABOUT_ICONS = {
-  briefcase: Briefcase,
-  network: Network,
-  building: Building2,
-  mapPin: MapPin,
-  clock: Clock,
-} as const;
+type ProfileViewProps = {
+  name: string;
+  handle: string;
+  email: string;
+  phone: string | null;
+  avatarUrl: string | null;
+  role: string;
+  provider: string;
+  emailVerified: boolean;
+  memberSince: string | null;
+  teams: ProfileTeam[];
+  workedOn: ProfileWorkedOn[];
+};
 
-const WORKED_ON_TONES = {
-  blue: 'bg-sky-500/15 text-sky-600 dark:text-sky-400',
-  orange: 'bg-orange-500/15 text-orange-600 dark:text-orange-400',
-  green: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
-} as const;
+const ROLE_STYLES: Record<string, string> = {
+  admin: 'border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-400',
+  manager:
+    'border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400',
+  member: 'border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-400',
+};
 
-export function ProfileView() {
-  const profile = PROFILE_MOCK;
+const PROVIDER_LABELS: Record<string, string> = {
+  email: 'Email & password',
+  google: 'Google',
+};
+
+function providerLabel(provider: string): string {
+  return (
+    PROVIDER_LABELS[provider] ?? formatLabelFirstLetterCapitalized(provider)
+  );
+}
+
+export function ProfileView({
+  name,
+  handle,
+  email,
+  phone,
+  avatarUrl,
+  role,
+  provider,
+  emailVerified,
+  memberSince,
+  teams,
+  workedOn,
+}: Readonly<ProfileViewProps>) {
+  const about = [
+    {
+      id: 'role',
+      icon: Briefcase,
+      label: `${formatLabelFirstLetterCapitalized(role)} role`,
+    },
+    {
+      id: 'provider',
+      icon: LogIn,
+      label: `Signed in with ${providerLabel(provider)}`,
+    },
+    {
+      id: 'verified',
+      icon: emailVerified ? BadgeCheck : ShieldAlert,
+      label: emailVerified ? 'Email verified' : 'Email not verified',
+    },
+    {
+      id: 'member-since',
+      icon: CalendarDays,
+      label: `Member since ${formatDate(memberSince)}`,
+    },
+  ];
 
   return (
     <div className="bg-background min-h-full">
@@ -62,26 +125,32 @@ export function ProfileView() {
           <aside className="relative z-10 -mt-12 space-y-5 sm:-mt-14">
             <div className="space-y-3">
               <Avatar className="border-background size-24 border-4 shadow-md sm:size-28">
+                {avatarUrl ? <AvatarImage src={avatarUrl} alt={name} /> : null}
                 <AvatarFallback className="bg-muted text-foreground text-2xl font-semibold sm:text-3xl">
-                  {profile.avatarInitials}
+                  {getInitials(name)}
                 </AvatarFallback>
               </Avatar>
 
-              <div className="space-y-0.5">
-                <h1 className="text-2xl font-semibold tracking-tight">
-                  {profile.name}
-                </h1>
-                <p className="text-muted-foreground text-sm">
-                  {profile.handle}
-                </p>
+              <div className="space-y-1.5">
+                <div className="space-y-0.5">
+                  <h1
+                    className="truncate text-2xl font-semibold tracking-tight"
+                    title={name}
+                  >
+                    {name}
+                  </h1>
+                  <p className="text-muted-foreground text-sm">{handle}</p>
+                </div>
+                <Badge
+                  variant="outline"
+                  className={cn('capitalize', ROLE_STYLES[role])}
+                >
+                  {role}
+                </Badge>
               </div>
 
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full cursor-pointer"
-              >
-                Manage your account
+              <Button asChild variant="secondary" className="w-full">
+                <Link href="/edit-profile">Manage your account</Link>
               </Button>
             </div>
 
@@ -90,8 +159,8 @@ export function ProfileView() {
                 <CardTitle className="text-base">About</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {profile.about.map((item) => {
-                  const Icon = ABOUT_ICONS[item.icon];
+                {about.map((item) => {
+                  const Icon = item.icon;
                   return (
                     <div key={item.id} className="flex items-start gap-2.5">
                       <Icon className="text-muted-foreground mt-0.5 size-4 shrink-0" />
@@ -110,14 +179,16 @@ export function ProfileView() {
                 <div className="space-y-2">
                   <div className="text-muted-foreground flex items-center gap-2 text-sm">
                     <Mail className="size-4 shrink-0" />
-                    <span className="text-foreground truncate">
-                      {profile.email}
-                    </span>
+                    <TruncatedText className="text-foreground">
+                      {email}
+                    </TruncatedText>
                   </div>
-                  <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                    <Phone className="size-4 shrink-0" />
-                    <span className="text-foreground">{profile.phone}</span>
-                  </div>
+                  {phone ? (
+                    <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                      <Phone className="size-4 shrink-0" />
+                      <span className="text-foreground">{phone}</span>
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
@@ -127,25 +198,32 @@ export function ProfileView() {
                 <h2 className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
                   Teams
                 </h2>
-                <ul className="space-y-3">
-                  {profile.teams.map((team) => (
-                    <li key={team.id} className="flex items-center gap-2.5">
-                      <Avatar size="sm">
-                        <AvatarFallback className="text-[10px] font-semibold">
-                          {team.initials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">
-                          {team.name}
-                        </p>
-                        <p className="text-muted-foreground truncate text-xs">
-                          {team.membersLabel}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                {teams.length > 0 ? (
+                  <ul className="space-y-3">
+                    {teams.map((team) => (
+                      <li key={team.id} className="flex items-center gap-2.5">
+                        <Avatar size="sm">
+                          <AvatarFallback className="text-[10px] font-semibold">
+                            {getInitials(team.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <TruncatedText className="text-sm font-medium">
+                            {team.name}
+                          </TruncatedText>
+                          <p className="text-muted-foreground truncate text-xs">
+                            {team.memberCount}{' '}
+                            {team.memberCount === 1 ? 'member' : 'members'}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-muted-foreground text-sm">
+                    Not a member of any team yet.
+                  </p>
+                )}
               </div>
             </div>
           </aside>
@@ -153,121 +231,48 @@ export function ProfileView() {
           {/* Right column */}
           <main className="min-w-0 space-y-8 pt-4 lg:pt-6">
             <section className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Users className="text-muted-foreground size-5" />
                 <h2 className="text-lg font-semibold tracking-tight">
                   Worked on
                 </h2>
-                <Button
-                  type="button"
-                  variant="link"
-                  className="text-primary h-auto cursor-pointer px-0"
-                >
-                  View all
-                </Button>
               </div>
 
               <Card className="shadow-none">
                 <CardContent className="divide-border divide-y p-0">
-                  {profile.workedOn.map((item) => (
-                    <div
-                      key={item.id}
-                      className="hover:bg-muted/40 flex items-start gap-3 px-4 py-3 transition-colors"
-                    >
-                      <div
-                        className={cn(
-                          'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md',
-                          WORKED_ON_TONES[item.tone]
-                        )}
+                  {workedOn.length > 0 ? (
+                    workedOn.map((item) => (
+                      <Link
+                        key={item.id}
+                        href={`/work-items/${item.id}`}
+                        className="hover:bg-muted/40 flex items-start gap-3 px-4 py-3 transition-colors"
                       >
-                        <FileText className="size-4" />
-                      </div>
-                      <div className="min-w-0 space-y-0.5">
-                        <p className="truncate text-sm font-medium">
-                          {item.title}
-                        </p>
-                        <p className="text-muted-foreground line-clamp-2 text-xs">
-                          {item.meta}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                  <div className="px-4 py-3">
-                    <Button
-                      type="button"
-                      variant="link"
-                      className="text-primary h-auto cursor-pointer px-0 text-sm"
-                    >
-                      Show more
-                    </Button>
-                  </div>
+                        <div className="bg-muted text-muted-foreground mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md">
+                          <FileText className="size-4" />
+                        </div>
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <TruncatedText className="text-sm font-medium">
+                            {item.title}
+                          </TruncatedText>
+                          <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
+                            {item.projectKey ? (
+                              <span className="font-medium">
+                                {item.projectKey}
+                              </span>
+                            ) : null}
+                            <WorkItemStatusBadge status={item.status} />
+                            <span>Updated {formatDate(item.updatedAt)}</span>
+                          </div>
+                        </div>
+                      </Link>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground px-4 py-6 text-sm">
+                      No work items assigned or reported yet.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
-            </section>
-
-            <section className="space-y-3">
-              <h2 className="text-lg font-semibold tracking-tight">
-                Places you work
-              </h2>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {profile.places.map((place) => (
-                  <Card key={place.id} size="sm" className="shadow-none">
-                    <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
-                      <LayoutGrid className="text-primary size-4" />
-                      <CardTitle className="text-sm font-medium">
-                        {place.name}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="bg-muted/50 flex items-center gap-3 rounded-lg border px-3 py-4">
-                        <div
-                          className={cn(
-                            'flex size-10 items-center justify-center rounded-md',
-                            'bg-primary text-white'
-                          )}
-                        >
-                          <LayoutGrid className="size-5" />
-                        </div>
-                        <p className="text-sm font-medium">{place.subtitle}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </section>
-
-            <section className="space-y-3">
-              <h2 className="text-lg font-semibold tracking-tight">
-                Works with
-              </h2>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {profile.worksWith.map((person) => (
-                  <Card
-                    key={person.id}
-                    size="sm"
-                    className="items-center py-5 text-center shadow-none"
-                  >
-                    <CardContent className="flex flex-col items-center gap-2 pt-0">
-                      <Avatar className="size-16">
-                        <AvatarFallback className="text-base font-semibold">
-                          {person.initials}
-                        </AvatarFallback>
-                        {person.online ? (
-                          <AvatarBadge className="ring-background size-3.5 bg-emerald-500" />
-                        ) : null}
-                      </Avatar>
-                      <div className="space-y-0.5">
-                        <p className="text-sm font-semibold">{person.name}</p>
-                        <p className="text-muted-foreground text-xs">
-                          {person.handle}
-                        </p>
-                        <p className="text-muted-foreground text-xs">
-                          {person.role}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
             </section>
           </main>
         </div>
