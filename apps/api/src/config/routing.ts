@@ -7,10 +7,12 @@ import sprintsRouter from '../routes/api/sprints/sprints.route';
 import projectsRouter from '../routes/api/projects/projects.route';
 import workItemsRouter from '../routes/api/workItems/workItems.route';
 import teamsRouter from '../routes/api/teams/teams.route';
+import commentsRouter from '../routes/api/comments/comments.route';
 
 const routesConfig: Router = Router();
 
 routesConfig.use('/', healthRouter);
+routesConfig.use('/api/comments', commentsRouter);
 routesConfig.use('/api/files', filesRouter);
 routesConfig.use('/api/notifications', notificationsRouter);
 routesConfig.use('/api/projects', projectsRouter);

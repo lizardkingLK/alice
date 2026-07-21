@@ -52,6 +52,8 @@ Testing is split into two primary layers to balance execution speed and integrat
 apps/web/
 ├── tests/                           # Unit & Component Tests (Vitest + RTL)
 │   ├── setup.ts                     # Testing Library setup & mock resets
+│   ├── comments/
+│   │   └── comments-feed.test.tsx   # Comments feed, search & reply unit tests
 │   ├── teams/
 │   │   ├── team-form.test.tsx       # Team creation/management unit tests
 │   │   └── team-registry.test.tsx   # Team listing & member management tests
@@ -98,6 +100,7 @@ The table below maps all project features to their implementation paths, descrip
 | **Work Items & Backlog** | `apps/web/app/work-items`<br>`apps/web/app/backlog`<br>`apps/web/app/work-items/_components/` | Work item creation (Story, Task, Bug, Epic), estimation, sprint allocation, backlog prioritization, and TipTap rich text descriptions. | `apps/web/tests/sprints/sprint-list.test.tsx` | `apps/web/cypress/e2e/sprints.cy.ts` |
 | **Kanban / Active Board** | `apps/web/app/board`<br>`apps/web/app/board/_components/` | Interactive kanban board visualization, drag-and-drop column transitions (To Do, In Progress, Done), and assignee quick-filters. | `apps/web/tests/sprints/sprint-list.test.tsx` | `apps/web/cypress/e2e/sprints.cy.ts` |
 | **Dashboard & Metrics** | `apps/web/app/dashboard`<br>`apps/web/app/dashboard/_components/` | Analytics summary, role-based dashboard views (Admin/Manager/Member), velocity tracking, and sprint overview widgets. | `apps/web/tests/teams/team-registry.test.tsx` | `apps/web/cypress/e2e/home.cy.ts` |
+| **Discussions & Comments** | `apps/web/app/comments`<br>`apps/web/app/comments/_components/`<br>`apps/web/app/comments/_services/comments.service.ts` | Threaded discussions across work items, search, filtering, inline replies, edit/archive comments, and metrics summary. | `apps/web/tests/comments/comments-feed.test.tsx` | `apps/web/cypress/e2e/home.cy.ts` |
 | **Auth & RBAC Middleware** | `apps/web/app/login`<br>`apps/web/app/signup`<br>`apps/web/proxy.ts`<br>`apps/web/app/auth/` | Supabase Auth integration, OAuth, magic links, session cookies, password reset, and Next.js middleware route protection. | `apps/web/tests/setup.ts` | `apps/web/cypress/e2e/home.cy.ts` |
 | **Backend API Service** | `apps/api/src/`<br>`apps/api/src/routes/`<br>`apps/api/src/controllers/` | Express REST API server providing backend endpoints, Zod input validation, Novu notification integration, and Supabase DB calls. | `apps/api` (Vitest configured) | `apps/web/cypress/e2e/sprints.cy.ts`<br>`apps/web/cypress/e2e/home.cy.ts` |
 | **Shared UI Components** | `packages/ui/src/`<br>`packages/ui/src/components/` | Shared Shadcn & Radix UI accessible component primitives (Buttons, Dialogs, Tables, Form fields, Dropdowns). | Workspace unit testing via `@repo/ui` | All Cypress E2E flows |
