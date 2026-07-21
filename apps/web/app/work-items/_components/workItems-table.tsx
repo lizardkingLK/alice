@@ -9,7 +9,6 @@ import {
 } from '@tanstack/react-table';
 import { Button } from '@repo/ui/components/ui/button';
 import { Badge } from '@repo/ui/components/ui/badge';
-import { Input } from '@repo/ui/components/ui/input';
 import {
   Card,
   CardContent,
@@ -25,12 +24,10 @@ import {
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
 import {
-  AlertTriangle,
   ClipboardPenLine,
   MoreHorizontal,
   Pencil,
   Plus,
-  Search,
   Trash,
 } from '@repo/ui/lib/icons';
 import {
@@ -49,6 +46,8 @@ import Link from 'next/link';
 import { cn } from '@repo/ui/lib/utils';
 import { Pagination } from '@/components/pagination';
 import { DataTable } from '@/components/data-table';
+import { SearchInput } from '@/components/search-input';
+import { DismissibleError } from '@/components/dismissible-error';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 
@@ -232,33 +231,15 @@ export default function WorkItemsTable({
 
   return (
     <div className="space-y-6">
-      {error ? (
-        <div className="text-destructive bg-destructive/10 border-destructive/20 relative flex items-center gap-2 rounded-lg border p-3 text-sm">
-          <AlertTriangle className="size-4 shrink-0" />
-          <span>{error}</span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            onClick={() => setError(null)}
-            className="ml-auto"
-          >
-            Dismiss
-          </Button>
-        </div>
-      ) : null}
+      <DismissibleError message={error} onDismiss={() => setError(null)} />
 
       {/* Work-Items Options */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative max-w-md flex-1">
-          <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-          <Input
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search work items..."
-            className="pl-9"
-          />
-        </div>
+        <SearchInput
+          value={searchQuery}
+          onValueChange={setSearchQuery}
+          placeholder="Search work items..."
+        />
 
         <Button onClick={openCreateDialog}>
           <Plus />
