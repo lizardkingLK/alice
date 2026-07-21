@@ -91,6 +91,7 @@ export class WorkItemRepository {
         project_id: input.project_id,
         type: input.type,
         assignee_id: input.assignee_id,
+        sprint_id: input.sprint_id,
         due_date: input.due_date,
         reporter_id: input.createdBy,
         status: 'New',

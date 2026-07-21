@@ -141,6 +141,10 @@ workItemsRouter.patch(
           parsed.data.assignee_id !== undefined
             ? parsed.data.assignee_id
             : existingWorkItem.assignee_id,
+        sprint_id:
+          parsed.data.sprint_id !== undefined
+            ? parsed.data.sprint_id
+            : existingWorkItem.sprint_id,
         due_date:
           parsed.data.due_date !== undefined
             ? parsed.data.due_date

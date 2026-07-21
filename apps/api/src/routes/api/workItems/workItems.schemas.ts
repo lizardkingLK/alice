@@ -55,6 +55,10 @@ export const workItemCoreObject = z.object({
     emptyStringToNull,
     z.uuid({ message: 'Please select a valid assignee' }).nullable()
   ),
+  sprint_id: z.preprocess(
+    emptyStringToNull,
+    z.uuid({ message: 'Please select a valid sprint' }).nullable().optional()
+  ),
   due_date: z.preprocess(emptyStringToNull, dateStringSchema.nullable()),
   description: jsonSchema.nullable().optional(),
 });
