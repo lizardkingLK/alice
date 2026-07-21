@@ -383,7 +383,6 @@ sequenceDiagram
   participant API as Express
   participant MW as requireApiAuth
   participant Auth as Supabase Auth
-  participant DB as public.users
 
   Web->>Web: getSession() → access_token
   Web->>API: HTTP + Authorization Bearer token
@@ -392,13 +391,14 @@ sequenceDiagram
   alt Invalid / missing token
     MW-->>Web: 401
   else Valid
-    MW->>DB: ensure profile row if missing (service role)
     MW->>API: req.userId = user.id
     API-->>Web: business response
   end
 ```
 
-Admin-only user mutations additionally call `requireAdmin` inside `UsersService`.
+`requireApiAuth` only verifies the JWT and sets `req.userId` — it does **not** read or write `public.users`. Profile provisioning happens at the auth entry points (sign up, login, OAuth/email-confirm callback via `ensurePublicUser`, and admin invite via the API), so the hot path stays a single Auth verify with no DB round trip.
+
+Admin-only user mutations additionally call `requireAdmin` inside `UsersService`, which performs its own `public.users` role lookup.
 
 ---
 

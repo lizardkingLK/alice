@@ -117,6 +117,52 @@ export type DbWorkItem = Tables<'work_items'> & {
 };
 ```
 
+### 2.5 Slim `requireApiAuth`
+
+The API auth middleware used to do three things per request: verify the JWT, **SELECT** the caller's `public.users` row, and **INSERT** it if missing (auto-provisioning). Steps 2–3 added a DB round trip to every authenticated API call.
+
+Profile provisioning already happens idempotently at every auth entry point via `ensurePublicUser` (`apps/web/lib/ensure-public-user.ts`):
+
+- **Sign up** and **login** — `apps/web/app/auth/actions.ts`
+- **OAuth / email-confirm callback** — `apps/web/app/auth/callback/route.ts`
+- **Admin invite** — the API inserts the `public.users` row directly (`users.service.ts`, with Auth rollback on failure)
+
+So the middleware no longer touches the DB — it just verifies the token and sets `req.userId`. The stateless anon client is also hoisted to module scope instead of being re-created per request.
+
+```25:50:apps/api/src/middlewares/auth/index.ts
+export async function requireApiAuth(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ')
+    ? authHeader.slice(7)
+    : undefined;
+
+  if (!token) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  const {
+    data: { user },
+    error,
+  } = await authClient.auth.getUser(token);
+
+  if (error || !user) {
+    console.error('API Auth Error:', error);
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  req.userId = user.id;
+  next();
+}
+```
+
+**Trade-off:** admin-only mutations still do their own `public.users` role lookup (`requireAdmin`), so authorization is unaffected. The only removed behavior is lazy self-provisioning on a random API call — which was already redundant given the entry-point provisioning above.
+
 ---
 
 ## 3. Contributor patterns
@@ -138,7 +184,7 @@ Targeting sub-1.5s. Ordered by impact-to-effort.
 | ID     | Work                                                                                                                               | Effort | Risk    | Expected impact                           | Status            |
 | ------ | ---------------------------------------------------------------------------------------------------------------------------------- | ------ | ------- | ----------------------------------------- | ----------------- |
 | **M1** | Direct Supabase reads in RSC for GET/list pages — drop the `web → api` hop for reads; keep API for mutations/admin.                | M–L    | Medium  | 40–60% of remaining latency on read pages | ✅ Shipped (§2.4) |
-| **M2** | Slim `requireApiAuth` — move profile auto-provisioning to login/signup/invite; keep JWT verify off the hot DB path.                | S      | Low–Med | −1 DB round trip per API call             | Planned           |
+| **M2** | Slim `requireApiAuth` — move profile auto-provisioning to login/signup/invite; keep JWT verify off the hot DB path.                | S      | Low–Med | −1 DB round trip per API call             | ✅ Shipped (§2.5) |
 | **M3** | Suspense streaming — render the shell immediately, stream tables via `<Suspense>` + `loading.tsx`.                                 | M      | Low     | Large perceived speedup                   | Planned           |
 | **M4** | Batch "workspace" API endpoints — collapse multi-call pages into one auth + fewer DB round trips (only where M1 isn't adopted).    | M      | Low     | Medium                                    | Planned           |
 | **M5** | Short-TTL caching for stable dropdown data (`getUserList`, `getProjectList`) via `unstable_cache` + tag revalidation on mutations. | S–M    | Low–Med | Medium                                    | Planned           |
