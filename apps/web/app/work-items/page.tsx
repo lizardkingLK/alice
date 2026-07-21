@@ -2,7 +2,7 @@ import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import {
   getWorkItemsPaginated,
   type DbWorkItem,
-} from '@/app/work-items/_services/workItem.server.service';
+} from '@/app/work-items/_services/workItem.service.server';
 import { getUserList } from '@/app/users/_services/users.service.server';
 import WorkItemsWorkspace from '@/app/work-items/_components/workItems-workspace';
 import { getProjectList } from '@/app/projects/_services/projects.service.server';

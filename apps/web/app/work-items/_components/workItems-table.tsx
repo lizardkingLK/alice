@@ -49,7 +49,7 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
 import { WorkItemForm } from '@/app/work-items/_components/workItem-form';
-import { DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
+import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { WorkItemWorkspaceProps } from '@/app/work-items/_components/workItems-workspace';
 import { formatDate } from '@/app/_shared/utility';
 import statusRenderer from '@/app/work-items/_components/workItem-badge-status';

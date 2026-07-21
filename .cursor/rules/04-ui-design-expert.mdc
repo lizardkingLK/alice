@@ -48,3 +48,26 @@ import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 ## Use Link instead of anchor tags
 - When writing anchor tags use the component `Link` from module `next/link` to avoid full page reloads.
 - Avoid when anchor tag parsing in work-item descriptions as they are generated in code.
+
+## Ambiguous JSX child spacing
+- Never leave literal text on its own line directly before/after a JSX element — it triggers the "Ambiguous spacing after previous element" warning because whether a space renders is unclear.
+- For a **row of discrete inline elements** (badges, chips, icon + label, key/value pairs), lay them out with `flex items-center gap-*` instead of relying on whitespace or `{' '}`:
+
+```tsx
+<div className="flex items-center gap-2">
+  <Badge>{status}</Badge>
+  <span>{owner.name}</span>
+</div>
+```
+
+- For **prose sentences** with inline emphasis, keep the text inline and make spacing explicit: use `{' '}` where a space must render, and attach punctuation to the element with an expression container so no space sneaks in:
+
+```tsx
+<p>
+  Changing status to{' '}
+  <span className="font-semibold">Ongoing</span>
+  {'.'}
+</p>
+```
+
+- Do not use `flex`/`gap` to fix spacing inside a sentence — it inserts a uniform gap before punctuation and breaks natural text wrapping.

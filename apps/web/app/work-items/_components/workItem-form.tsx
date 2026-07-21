@@ -14,11 +14,11 @@ import {
 } from '@repo/ui/components/ui/select';
 import { AlertCircle, CheckCircle, Loader2 } from '@repo/ui/lib/icons';
 import { User as DbUser } from '@/app/users/_services/users.service';
-import { DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
+import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import {
   createWorkItem,
   updateWorkItem,
-} from '@/app/work-items/_services/workItem.client.service';
+} from '@/app/work-items/_services/workItem.service.client';
 import { Project as DbProject } from '@/app/projects/_services/projects.service';
 import { delay } from '@/app/_shared/utility';
 import { ResponseDTO } from '@repo/types/connection';

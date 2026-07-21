@@ -2,7 +2,9 @@ import { DbWorkItem, workItemRepository } from './workItems.repository';
 import { WorkItemBody, WorkItemUpdateBody } from './workItems.schemas';
 
 export class WorkItemService {
-  async getWorkItems(filters?: { sprint_id?: string | null }): Promise<DbWorkItem[]> {
+  async getWorkItems(filters?: {
+    sprint_id?: string | null;
+  }): Promise<DbWorkItem[]> {
     return await workItemRepository.get(filters);
   }
 
@@ -13,7 +15,12 @@ export class WorkItemService {
     filters?: { sprint_id?: string | null }
   ): Promise<{ workItems: DbWorkItem[]; totalCount: number } | DbWorkItem[]> {
     if (page !== undefined && limit !== undefined) {
-      return await workItemRepository.listPaginated(page, limit, search, filters);
+      return await workItemRepository.listPaginated(
+        page,
+        limit,
+        search,
+        filters
+      );
     }
 
     return await workItemRepository.get(filters);

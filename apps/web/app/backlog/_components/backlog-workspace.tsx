@@ -48,15 +48,16 @@ import { Separator } from '@repo/ui/components/ui/separator';
 import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
 
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
-import { DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
-import { Sprint, updateSprintStatus } from '@/app/sprints/_services/sprints.service';
+import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import {
+  Sprint,
+  updateSprintStatus,
+} from '@/app/sprints/_services/sprints.service';
 import { Project as DbProject } from '@/app/projects/_services/projects.service';
 import { User as DbUser } from '@/app/users/_services/users.service';
 import { SprintForm } from '@/app/sprints/_components/sprint-form';
 import { WorkItemForm } from '@/app/work-items/_components/workItem-form';
-import {
-  updateWorkItem,
-} from '@/app/work-items/_services/workItem.client.service';
+import { updateWorkItem } from '@/app/work-items/_services/workItem.service.client';
 
 interface BacklogWorkspaceProps {
   projects: DbProject[];
@@ -339,7 +340,9 @@ export function BacklogWorkspace({
       setSprintToStart(null);
     } catch (err) {
       console.error('Failed to start sprint:', err);
-      setActionError(err instanceof Error ? err.message : 'Failed to start sprint.');
+      setActionError(
+        err instanceof Error ? err.message : 'Failed to start sprint.'
+      );
     } finally {
       setIsActionPending(false);
     }
@@ -364,7 +367,9 @@ export function BacklogWorkspace({
       setSprintToComplete(null);
     } catch (err) {
       console.error('Failed to complete sprint:', err);
-      setActionError(err instanceof Error ? err.message : 'Failed to complete sprint.');
+      setActionError(
+        err instanceof Error ? err.message : 'Failed to complete sprint.'
+      );
     } finally {
       setIsActionPending(false);
     }
@@ -377,8 +382,6 @@ export function BacklogWorkspace({
       [sprintId]: !prev[sprintId],
     }));
   };
-
-
 
   // Dialog Create Sprint Submission
   const handleCreateSprintSuccess = (newSprint: Sprint) => {
@@ -399,24 +402,27 @@ export function BacklogWorkspace({
     value: DbWorkItem[K]
   ) => {
     if (field === 'project_id') {
+      const projectId = value as string;
       const currentItem = workItems.find((item) => item.id === itemId);
       if (currentItem?.sprint_id) {
-        const currentSprint = sprintList.find((s) => s.id === currentItem.sprint_id);
-        if (currentSprint && currentSprint.project?.id !== value) {
+        const currentSprint = sprintList.find(
+          (s) => s.id === currentItem.sprint_id
+        );
+        if (currentSprint && currentSprint.project?.id !== projectId) {
           setWorkItems((prev) =>
             prev.map((item) =>
               item.id === itemId
-                ? { ...item, project_id: value as string, sprint_id: null }
+                ? { ...item, project_id: projectId, sprint_id: null }
                 : item
             )
           );
           setSelectedItem((prev) =>
             prev?.id === itemId
-              ? { ...prev, project_id: value as string, sprint_id: null }
+              ? { ...prev, project_id: projectId, sprint_id: null }
               : prev
           );
           const formData = new FormData();
-          formData.append('project_id', String(value));
+          formData.append('project_id', projectId);
           formData.append('sprint_id', '');
           updateWorkItem(itemId, formData).catch((err) => {
             console.error(`Failed to update project and clear sprint:`, err);
@@ -783,8 +789,6 @@ export function BacklogWorkspace({
                           />
                         ))
                       )}
-
-
                     </div>
                   )}
                 </Card>
@@ -923,11 +927,7 @@ export function BacklogWorkspace({
                   <Select
                     value={selectedItem.project_id}
                     onValueChange={(val) =>
-                      handleUpdateItemField(
-                        selectedItem.id,
-                        'project_id',
-                        val
-                      )
+                      handleUpdateItemField(selectedItem.id, 'project_id', val)
                     }
                   >
                     <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
@@ -1155,7 +1155,10 @@ export function BacklogWorkspace({
         </Dialog>
 
         {/* Dialog: Start Sprint Confirmation */}
-        <Dialog open={!!sprintToStart} onOpenChange={(open) => !open && setSprintToStart(null)}>
+        <Dialog
+          open={!!sprintToStart}
+          onOpenChange={(open) => !open && setSprintToStart(null)}
+        >
           <DialogContent className="bg-card border-border/80 backdrop-blur-md sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="text-lg font-bold">
@@ -1166,58 +1169,76 @@ export function BacklogWorkspace({
               </DialogDescription>
             </DialogHeader>
 
-            {sprintToStart && (() => {
-              const sprintWIs = workItems.filter(item => item.sprint_id === sprintToStart.id);
-              const isEmpty = sprintWIs.length === 0;
+            {sprintToStart &&
+              (() => {
+                const sprintWIs = workItems.filter(
+                  (item) => item.sprint_id === sprintToStart.id
+                );
+                const isEmpty = sprintWIs.length === 0;
 
-              return (
-                <div className="space-y-4 py-2">
-                  {isEmpty ? (
-                    <div className="bg-destructive/15 border-destructive/20 text-destructive rounded-lg border px-4 py-3 text-sm flex gap-2 items-center">
-                      <AlertCircle className="h-5 w-5 shrink-0" />
-                      <span>{"If sprint haven't any work items cannot start the sprint."}</span>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-foreground">
-                      This sprint contains <span className="font-semibold">{sprintWIs.length}</span> work items. Starting it will change its status to <span className="text-indigo-500 font-semibold">Ongoing</span>.
-                    </p>
-                  )}
+                return (
+                  <div className="space-y-4 py-2">
+                    {isEmpty ? (
+                      <div className="bg-destructive/15 border-destructive/20 text-destructive flex items-center gap-2 rounded-lg border px-4 py-3 text-sm">
+                        <AlertCircle className="h-5 w-5 shrink-0" />
+                        <span>
+                          {
+                            "If sprint haven't any work items cannot start the sprint."
+                          }
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-foreground text-sm">
+                        This sprint contains{' '}
+                        <span className="font-semibold">
+                          {sprintWIs.length}
+                        </span>{' '}
+                        work items. Starting it will change its status to{' '}
+                        <span className="font-semibold text-indigo-500">
+                          Ongoing
+                        </span>
+                        {'.'}
+                      </p>
+                    )}
 
-                  {actionError && (
-                    <div className="bg-destructive/15 border-destructive/20 text-destructive rounded-lg border px-4 py-3 text-sm flex gap-2 items-center">
-                      <AlertCircle className="h-5 w-5 shrink-0" />
-                      <span>{actionError}</span>
-                    </div>
-                  )}
+                    {actionError && (
+                      <div className="bg-destructive/15 border-destructive/20 text-destructive flex items-center gap-2 rounded-lg border px-4 py-3 text-sm">
+                        <AlertCircle className="h-5 w-5 shrink-0" />
+                        <span>{actionError}</span>
+                      </div>
+                    )}
 
-                  <div className="flex justify-end gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSprintToStart(null)}
-                      disabled={isActionPending}
-                    >
-                      Cancel
-                    </Button>
-                    {!isEmpty && (
+                    <div className="flex justify-end gap-2 pt-2">
                       <Button
+                        variant="outline"
                         size="sm"
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
-                        onClick={() => confirmStartSprint(sprintToStart.id)}
+                        onClick={() => setSprintToStart(null)}
                         disabled={isActionPending}
                       >
-                        {isActionPending ? 'Starting...' : 'Start Sprint'}
+                        Cancel
                       </Button>
-                    )}
+                      {!isEmpty && (
+                        <Button
+                          size="sm"
+                          className="bg-emerald-600 font-semibold text-white hover:bg-emerald-700"
+                          onClick={() => confirmStartSprint(sprintToStart.id)}
+                          disabled={isActionPending}
+                        >
+                          {isActionPending ? 'Starting...' : 'Start Sprint'}
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })()}
+                );
+              })()}
           </DialogContent>
         </Dialog>
 
         {/* Dialog: Complete Sprint Confirmation */}
-        <Dialog open={!!sprintToComplete} onOpenChange={(open) => !open && setSprintToComplete(null)}>
+        <Dialog
+          open={!!sprintToComplete}
+          onOpenChange={(open) => !open && setSprintToComplete(null)}
+        >
           <DialogContent className="bg-card border-border/80 backdrop-blur-md sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="text-lg font-bold">
@@ -1228,72 +1249,93 @@ export function BacklogWorkspace({
               </DialogDescription>
             </DialogHeader>
 
-            {sprintToComplete && (() => {
-              const sprintWIs = workItems.filter(item => item.sprint_id === sprintToComplete.id);
-              const isEmpty = sprintWIs.length === 0;
-              const incompleteWIs = sprintWIs.filter(item => item.status !== 'Done');
-              const hasIncomplete = incompleteWIs.length > 0;
-
-              let statusSection;
-              if (isEmpty) {
-                statusSection = (
-                  <div className="bg-destructive/15 border-destructive/20 text-destructive rounded-lg border px-4 py-3 text-sm flex gap-2 items-center">
-                    <AlertCircle className="h-5 w-5 shrink-0" />
-                    <span>{"If sprint haven't any work items cannot complete the sprint."}</span>
-                  </div>
+            {sprintToComplete &&
+              (() => {
+                const sprintWIs = workItems.filter(
+                  (item) => item.sprint_id === sprintToComplete.id
                 );
-              } else if (hasIncomplete) {
-                statusSection = (
-                  <div className="bg-amber-500/15 border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg border px-4 py-3 text-sm flex gap-2 items-start">
-                    <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-semibold mb-1">Cannot Complete Sprint</p>
-                      <p className="text-xs">{"Can't complete the sprint all the work items are not done."}</p>
-                    </div>
-                  </div>
+                const isEmpty = sprintWIs.length === 0;
+                const incompleteWIs = sprintWIs.filter(
+                  (item) => item.status !== 'Done'
                 );
-              } else {
-                statusSection = (
-                  <p className="text-sm text-foreground">
-                    Excellent! All <span className="font-semibold">{sprintWIs.length}</span> work items in this sprint are completed. Ready to close?
-                  </p>
-                );
-              }
+                const hasIncomplete = incompleteWIs.length > 0;
 
-              return (
-                <div className="space-y-4 py-2">
-                  {statusSection}
-
-                  {actionError && (
-                    <div className="bg-destructive/15 border-destructive/20 text-destructive rounded-lg border px-4 py-3 text-sm flex gap-2 items-center">
+                let statusSection;
+                if (isEmpty) {
+                  statusSection = (
+                    <div className="bg-destructive/15 border-destructive/20 text-destructive flex items-center gap-2 rounded-lg border px-4 py-3 text-sm">
                       <AlertCircle className="h-5 w-5 shrink-0" />
-                      <span>{actionError}</span>
+                      <span>
+                        {
+                          "If sprint haven't any work items cannot complete the sprint."
+                        }
+                      </span>
                     </div>
-                  )}
+                  );
+                } else if (hasIncomplete) {
+                  statusSection = (
+                    <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/15 px-4 py-3 text-sm text-amber-600 dark:text-amber-400">
+                      <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                      <div>
+                        <p className="mb-1 font-semibold">
+                          Cannot Complete Sprint
+                        </p>
+                        <p className="text-xs">
+                          {
+                            "Can't complete the sprint all the work items are not done."
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  );
+                } else {
+                  statusSection = (
+                    <p className="text-foreground text-sm">
+                      Excellent! All{' '}
+                      <span className="font-semibold">{sprintWIs.length}</span>{' '}
+                      work items in this sprint are completed. Ready to close?
+                    </p>
+                  );
+                }
 
-                  <div className="flex justify-end gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSprintToComplete(null)}
-                      disabled={isActionPending}
-                    >
-                      Cancel
-                    </Button>
-                    {!isEmpty && !hasIncomplete && (
+                return (
+                  <div className="space-y-4 py-2">
+                    {statusSection}
+
+                    {actionError && (
+                      <div className="bg-destructive/15 border-destructive/20 text-destructive flex items-center gap-2 rounded-lg border px-4 py-3 text-sm">
+                        <AlertCircle className="h-5 w-5 shrink-0" />
+                        <span>{actionError}</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end gap-2 pt-2">
                       <Button
+                        variant="outline"
                         size="sm"
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
-                        onClick={() => confirmCompleteSprint(sprintToComplete.id)}
+                        onClick={() => setSprintToComplete(null)}
                         disabled={isActionPending}
                       >
-                        {isActionPending ? 'Completing...' : 'Complete Sprint'}
+                        Cancel
                       </Button>
-                    )}
+                      {!isEmpty && !hasIncomplete && (
+                        <Button
+                          size="sm"
+                          className="bg-indigo-600 font-semibold text-white hover:bg-indigo-700"
+                          onClick={() =>
+                            confirmCompleteSprint(sprintToComplete.id)
+                          }
+                          disabled={isActionPending}
+                        >
+                          {isActionPending
+                            ? 'Completing...'
+                            : 'Complete Sprint'}
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })()}
+                );
+              })()}
           </DialogContent>
         </Dialog>
       </div>

@@ -166,10 +166,16 @@ describe('TeamForm Component', () => {
 
     render(<TeamForm users={mockUsers} />);
 
-    expect(screen.getByLabelText(/Team Identifier \/ Name/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Primary Technology Stack/i)).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/Team Identifier \/ Name/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/Primary Technology Stack/i)
+    ).toBeInTheDocument();
     expect(screen.getByLabelText(/Role Description/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Designated Team Manager/i)).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/Designated Team Manager/i)
+    ).toBeInTheDocument();
     expect(screen.getByLabelText(/Associated Project/i)).toBeInTheDocument();
 
     await waitFor(() => {
@@ -229,12 +235,17 @@ describe('TeamForm Component', () => {
     });
 
     expect(
-      await screen.findByText(/A new team record has been successfully registered/i)
+      await screen.findByText(
+        /A new team record has been successfully registered/i
+      )
     ).toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(onSuccess).toHaveBeenCalled();
-    }, { timeout: 1600 });
+    await waitFor(
+      () => {
+        expect(onSuccess).toHaveBeenCalled();
+      },
+      { timeout: 1600 }
+    );
   });
 
   it('populates fields and updates correctly in edit mode', async () => {
@@ -244,11 +255,7 @@ describe('TeamForm Component', () => {
     vi.mocked(getProjectMembers).mockResolvedValue(mockProjectMembers);
 
     render(
-      <TeamForm
-        teamToEdit={mockTeam}
-        users={mockUsers}
-        onSuccess={onSuccess}
-      />
+      <TeamForm teamToEdit={mockTeam} users={mockUsers} onSuccess={onSuccess} />
     );
 
     await waitFor(() => {
@@ -283,7 +290,9 @@ describe('TeamForm Component', () => {
     });
 
     expect(
-      await screen.findByText(/The team configuration has been successfully updated/i)
+      await screen.findByText(
+        /The team configuration has been successfully updated/i
+      )
     ).toBeInTheDocument();
   });
 
@@ -300,7 +309,9 @@ describe('TeamForm Component', () => {
     const projectSelect = screen.getByLabelText(/Associated Project/i);
     fireEvent.click(projectSelect);
 
-    const option = await screen.findByRole('option', { name: /Project Alpha/i });
+    const option = await screen.findByRole('option', {
+      name: /Project Alpha/i,
+    });
     fireEvent.click(option);
 
     await waitFor(() => {
