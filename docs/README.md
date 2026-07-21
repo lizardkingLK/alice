@@ -17,6 +17,7 @@ Central docs for **Alice** (branded as **Jira Teams**).
 | [product/ARD.md](./product/ARD.md)           | Product / requirements               | Living |
 | [architecture/TRD.md](./architecture/TRD.md) | Engineering / architecture           | Living |
 | [guides/DATABASE.md](./guides/DATABASE.md)   | Anyone touching schema or migrations | Living |
+| [guides/TESTING_DEVELOPMENT_FLOW.md](./guides/TESTING_DEVELOPMENT_FLOW.md) | Anyone developing features & running unit/e2e tests | Living |
 
 ---
 
@@ -67,6 +68,7 @@ Authentication and authorization. Index: [auth/README.md](./auth/README.md).
 
 How we work day to day.
 
+- [TESTING_DEVELOPMENT_FLOW.md](./guides/TESTING_DEVELOPMENT_FLOW.md) — Project development & testing flow for all features
 - [DATABASE.md](./guides/DATABASE.md) — Prisma / Supabase workflow
 - [DEBUGGING.md](./guides/DEBUGGING.md) — IDE debug configs
 - [SEO.md](./guides/SEO.md) — metadata, sitemap, robots
