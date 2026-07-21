@@ -49,11 +49,14 @@ import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
 
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
-import { Sprint } from '@/app/sprints/_services/sprints.service';
+import { Sprint, updateSprintStatus } from '@/app/sprints/_services/sprints.service';
 import { Project as DbProject } from '@/app/projects/_services/projects.service';
 import { User as DbUser } from '@/app/users/_services/users.service';
 import { SprintForm } from '@/app/sprints/_components/sprint-form';
 import { WorkItemForm } from '@/app/work-items/_components/workItem-form';
+import {
+  updateWorkItem,
+} from '@/app/work-items/_services/workItem.client.service';
 
 interface BacklogWorkspaceProps {
   projects: DbProject[];
@@ -93,9 +96,11 @@ export function BacklogWorkspace({
   projectMembers,
   initialWorkItems,
   sprints,
+  userRole,
   currentUserId,
   error = null,
 }: Readonly<BacklogWorkspaceProps>) {
+  const isManagerOrAdmin = userRole === 'admin' || userRole === 'manager';
   // Client state
   const [sprintList, setSprintList] = useState<Sprint[]>(sprints);
   const [workItems, setWorkItems] = useState<DbWorkItem[]>(initialWorkItems);
@@ -120,12 +125,13 @@ export function BacklogWorkspace({
   // Selection state for Slide-out Details panel
   const [selectedItem, setSelectedItem] = useState<DbWorkItem | null>(null);
 
-  // Quick Create Issue state
-  const [quickTitles, setQuickTitles] = useState<Record<string, string>>({}); // sprintId -> title
-
   // Dialogs State
   const [isCreateSprintOpen, setIsCreateSprintOpen] = useState(false);
   const [isCreateIssueOpen, setIsCreateIssueOpen] = useState(false);
+  const [sprintToStart, setSprintToStart] = useState<Sprint | null>(null);
+  const [sprintToComplete, setSprintToComplete] = useState<Sprint | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isActionPending, setIsActionPending] = useState(false);
 
   // Helper: date format range
   const formatDateRange = (
@@ -221,6 +227,11 @@ export function BacklogWorkspace({
           prev ? { ...prev, sprint_id: targetId } : null
         );
       }
+      const formData = new FormData();
+      formData.append('sprint_id', targetId || '');
+      updateWorkItem(itemId, formData).catch((err) => {
+        console.error('Failed to update work item sprint:', err);
+      });
     }
     setDraggedItemId(null);
     setDragOverTargetId(null);
@@ -300,24 +311,63 @@ export function BacklogWorkspace({
 
   // Start Sprint Handler
   const handleStartSprint = (sprintId: string) => {
-    setSprintList((prev) =>
-      prev.map((s) => (s.id === sprintId ? { ...s, status: 'Ongoing' } : s))
-    );
+    const sprint = sprintList.find((s) => s.id === sprintId);
+    if (sprint) {
+      setActionError(null);
+      setSprintToStart(sprint);
+    }
   };
 
   // Complete Sprint Handler
   const handleCompleteSprint = (sprintId: string) => {
-    setSprintList((prev) =>
-      prev.map((s) => (s.id === sprintId ? { ...s, status: 'Completed' } : s))
-    );
-    // Move non-Done issues to backlog
-    setWorkItems((prev) =>
-      prev.map((item) =>
-        item.sprint_id === sprintId && item.status !== 'Done'
-          ? { ...item, sprint_id: null }
-          : item
-      )
-    );
+    const sprint = sprintList.find((s) => s.id === sprintId);
+    if (sprint) {
+      setActionError(null);
+      setSprintToComplete(sprint);
+    }
+  };
+
+  // Start Sprint API Caller
+  const confirmStartSprint = async (sprintId: string) => {
+    setActionError(null);
+    setIsActionPending(true);
+    try {
+      const updatedSprint = await updateSprintStatus(sprintId, 'Ongoing');
+      setSprintList((prev) =>
+        prev.map((s) => (s.id === sprintId ? updatedSprint : s))
+      );
+      setSprintToStart(null);
+    } catch (err) {
+      console.error('Failed to start sprint:', err);
+      setActionError(err instanceof Error ? err.message : 'Failed to start sprint.');
+    } finally {
+      setIsActionPending(false);
+    }
+  };
+
+  // Complete Sprint API Caller
+  const confirmCompleteSprint = async (sprintId: string) => {
+    setActionError(null);
+    setIsActionPending(true);
+    try {
+      const updatedSprint = await updateSprintStatus(sprintId, 'Completed');
+      setSprintList((prev) =>
+        prev.map((s) => (s.id === sprintId ? updatedSprint : s))
+      );
+      setWorkItems((prev) =>
+        prev.map((item) =>
+          item.sprint_id === sprintId && item.status !== 'Done'
+            ? { ...item, sprint_id: null }
+            : item
+        )
+      );
+      setSprintToComplete(null);
+    } catch (err) {
+      console.error('Failed to complete sprint:', err);
+      setActionError(err instanceof Error ? err.message : 'Failed to complete sprint.');
+    } finally {
+      setIsActionPending(false);
+    }
   };
 
   // Toggle Collapse
@@ -328,45 +378,7 @@ export function BacklogWorkspace({
     }));
   };
 
-  // Inline Quick Create Issue Submission
-  const handleQuickCreateSubmit = (
-    e: React.FormEvent,
-    sprintId: string | null
-  ) => {
-    e.preventDefault();
-    const key = sprintId || 'backlog';
-    const title = quickTitles[key]?.trim();
-    if (!title) return;
 
-    const firstProj = projects[0];
-    if (!firstProj) return;
-
-    const newWI: DbWorkItem = {
-      id: crypto.randomUUID(),
-      title,
-      project_id: firstProj.id,
-      sprint_id: sprintId,
-      parent_id: null,
-      type: 'Task',
-      priority: 'medium',
-      description: null,
-      assignee_id: null,
-      reporter_id: currentUserId || null,
-      due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .substring(0, 10), // 1 week out
-      story_points: null,
-      status: 'New',
-      created_by: currentUserId || null,
-      created_at: new Date().toISOString(),
-      updated_by: null,
-      updated_at: new Date().toISOString(),
-      assignee: null,
-    };
-
-    setWorkItems((prev) => [newWI, ...prev]);
-    setQuickTitles((prev) => ({ ...prev, [key]: '' }));
-  };
 
   // Dialog Create Sprint Submission
   const handleCreateSprintSuccess = (newSprint: Sprint) => {
@@ -386,6 +398,34 @@ export function BacklogWorkspace({
     field: K,
     value: DbWorkItem[K]
   ) => {
+    if (field === 'project_id') {
+      const currentItem = workItems.find((item) => item.id === itemId);
+      if (currentItem?.sprint_id) {
+        const currentSprint = sprintList.find((s) => s.id === currentItem.sprint_id);
+        if (currentSprint && currentSprint.project?.id !== value) {
+          setWorkItems((prev) =>
+            prev.map((item) =>
+              item.id === itemId
+                ? { ...item, project_id: value as string, sprint_id: null }
+                : item
+            )
+          );
+          setSelectedItem((prev) =>
+            prev?.id === itemId
+              ? { ...prev, project_id: value as string, sprint_id: null }
+              : prev
+          );
+          const formData = new FormData();
+          formData.append('project_id', String(value));
+          formData.append('sprint_id', '');
+          updateWorkItem(itemId, formData).catch((err) => {
+            console.error(`Failed to update project and clear sprint:`, err);
+          });
+          return;
+        }
+      }
+    }
+
     let updatedAssignee: { id: string; name: string; email: string } | null =
       null;
     if (field === 'assignee_id') {
@@ -409,6 +449,21 @@ export function BacklogWorkspace({
         return updated;
       }
       return prev;
+    });
+
+    const formData = new FormData();
+    let valStr = '';
+    if (value !== null && value !== undefined) {
+      if (typeof value === 'object') {
+        valStr = JSON.stringify(value);
+      } else {
+        valStr = String(value);
+      }
+    }
+    formData.append(String(field), valStr);
+
+    updateWorkItem(itemId, formData).catch((err) => {
+      console.error(`Failed to update work item field ${String(field)}:`, err);
     });
   };
 
@@ -675,7 +730,7 @@ export function BacklogWorkspace({
                       />
 
                       {/* Sprint Actions */}
-                      {sprint.status === 'Not Started' && (
+                      {isManagerOrAdmin && sprint.status === 'Not Started' && (
                         <Button
                           size="sm"
                           onClick={() => handleStartSprint(sprint.id)}
@@ -685,7 +740,7 @@ export function BacklogWorkspace({
                           Start Sprint
                         </Button>
                       )}
-                      {sprint.status === 'Ongoing' && (
+                      {isManagerOrAdmin && sprint.status === 'Ongoing' && (
                         <Button
                           size="sm"
                           onClick={() => handleCompleteSprint(sprint.id)}
@@ -729,29 +784,7 @@ export function BacklogWorkspace({
                         ))
                       )}
 
-                      {/* Sprint Inline Quick Create */}
-                      {sprint.status !== 'Completed' && (
-                        <form
-                          onSubmit={(e) =>
-                            handleQuickCreateSubmit(e, sprint.id)
-                          }
-                          className="border-border/80 bg-background/30 hover:bg-background/60 mt-2 flex items-center gap-2 rounded-lg border border-dashed px-3 py-1.5 transition-colors"
-                        >
-                          <Plus className="text-muted-foreground h-3.5 w-3.5" />
-                          <input
-                            type="text"
-                            placeholder="Create issue inline..."
-                            className="placeholder:text-muted-foreground/60 text-foreground w-full border-none bg-transparent text-xs outline-none"
-                            value={quickTitles[sprint.id] ?? ''}
-                            onChange={(e) =>
-                              setQuickTitles((prev) => ({
-                                ...prev,
-                                [sprint.id]: e.target.value,
-                              }))
-                            }
-                          />
-                        </form>
-                      )}
+
                     </div>
                   )}
                 </Card>
@@ -786,7 +819,16 @@ export function BacklogWorkspace({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-3">
+                <div className="flex items-center justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 cursor-pointer border-indigo-500/20 bg-indigo-500/5 font-semibold text-indigo-600 hover:bg-indigo-500/10 dark:text-indigo-400"
+                    onClick={() => setIsCreateIssueOpen(true)}
+                  >
+                    <Plus className="mr-1.5 h-3.5 w-3.5" />
+                    New Issue
+                  </Button>
                   <span className="text-muted-foreground bg-muted/65 rounded-full px-2.5 py-0.5 text-xs font-semibold">
                     {backlogItems.length} issue
                     {backlogItems.length === 1 ? '' : 's'}
@@ -824,26 +866,6 @@ export function BacklogWorkspace({
                       />
                     ))
                   )}
-
-                  {/* Backlog Quick Create Form */}
-                  <form
-                    onSubmit={(e) => handleQuickCreateSubmit(e, null)}
-                    className="border-border/80 bg-background/30 hover:bg-background/60 mt-3 flex items-center gap-2 rounded-lg border border-dashed px-3 py-2 transition-colors"
-                  >
-                    <Plus className="h-4 w-4 text-indigo-500" />
-                    <input
-                      type="text"
-                      placeholder="Quick create issue in backlog... (press Enter)"
-                      className="placeholder:text-muted-foreground/60 text-foreground w-full border-none bg-transparent text-sm outline-none"
-                      value={quickTitles['backlog'] ?? ''}
-                      onChange={(e) =>
-                        setQuickTitles((prev) => ({
-                          ...prev,
-                          backlog: e.target.value,
-                        }))
-                      }
-                    />
-                  </form>
                 </div>
               )}
             </Card>
@@ -855,7 +877,7 @@ export function BacklogWorkspace({
           open={!!selectedItem}
           onOpenChange={(open) => !open && setSelectedItem(null)}
         >
-          <SheetContent className="border-border bg-card/95 overflow-y-auto border-l px-8 py-8 shadow-xl backdrop-blur-md transition-all duration-200 sm:max-w-xl">
+          <SheetContent className="border-border bg-card/95 overflow-y-auto border-l px-8 py-8 shadow-xl backdrop-blur-md transition-all duration-200 sm:max-w-2xl">
             {selectedItem && (
               <div className="space-y-6">
                 <SheetHeader className="pb-2">
@@ -894,6 +916,32 @@ export function BacklogWorkspace({
 
                 {/* Grid details (generous gap-6 and px-2 padding to stay away from borders) */}
                 <div className="grid grid-cols-[120px_1fr] gap-x-6 gap-y-5 px-2 text-sm">
+                  {/* Project Dropdown */}
+                  <span className="text-muted-foreground self-center">
+                    Project
+                  </span>
+                  <Select
+                    value={selectedItem.project_id}
+                    onValueChange={(val) =>
+                      handleUpdateItemField(
+                        selectedItem.id,
+                        'project_id',
+                        val
+                      )
+                    }
+                  >
+                    <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
                   {/* Status Dropdown */}
                   <span className="text-muted-foreground self-center">
                     Status
@@ -1088,7 +1136,7 @@ export function BacklogWorkspace({
 
         {/* Dialog: Create Issue */}
         <Dialog open={isCreateIssueOpen} onOpenChange={setIsCreateIssueOpen}>
-          <DialogContent className="bg-card border-border/80 backdrop-blur-md sm:max-w-xl">
+          <DialogContent className="bg-card border-border/80 backdrop-blur-md sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle className="text-lg font-bold">
                 Create Work Item
@@ -1103,6 +1151,149 @@ export function BacklogWorkspace({
               onClose={() => setIsCreateIssueOpen(false)}
               onSuccess={handleCreateIssueSuccess}
             />
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog: Start Sprint Confirmation */}
+        <Dialog open={!!sprintToStart} onOpenChange={(open) => !open && setSprintToStart(null)}>
+          <DialogContent className="bg-card border-border/80 backdrop-blur-md sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold">
+                Start Sprint: {sprintToStart?.name}?
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground text-xs">
+                Review the sprint details before starting.
+              </DialogDescription>
+            </DialogHeader>
+
+            {sprintToStart && (() => {
+              const sprintWIs = workItems.filter(item => item.sprint_id === sprintToStart.id);
+              const isEmpty = sprintWIs.length === 0;
+
+              return (
+                <div className="space-y-4 py-2">
+                  {isEmpty ? (
+                    <div className="bg-destructive/15 border-destructive/20 text-destructive rounded-lg border px-4 py-3 text-sm flex gap-2 items-center">
+                      <AlertCircle className="h-5 w-5 shrink-0" />
+                      <span>{"If sprint haven't any work items cannot start the sprint."}</span>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-foreground">
+                      This sprint contains <span className="font-semibold">{sprintWIs.length}</span> work items. Starting it will change its status to <span className="text-indigo-500 font-semibold">Ongoing</span>.
+                    </p>
+                  )}
+
+                  {actionError && (
+                    <div className="bg-destructive/15 border-destructive/20 text-destructive rounded-lg border px-4 py-3 text-sm flex gap-2 items-center">
+                      <AlertCircle className="h-5 w-5 shrink-0" />
+                      <span>{actionError}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSprintToStart(null)}
+                      disabled={isActionPending}
+                    >
+                      Cancel
+                    </Button>
+                    {!isEmpty && (
+                      <Button
+                        size="sm"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+                        onClick={() => confirmStartSprint(sprintToStart.id)}
+                        disabled={isActionPending}
+                      >
+                        {isActionPending ? 'Starting...' : 'Start Sprint'}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog: Complete Sprint Confirmation */}
+        <Dialog open={!!sprintToComplete} onOpenChange={(open) => !open && setSprintToComplete(null)}>
+          <DialogContent className="bg-card border-border/80 backdrop-blur-md sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold">
+                Complete Sprint: {sprintToComplete?.name}?
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground text-xs">
+                Review incomplete items before completing.
+              </DialogDescription>
+            </DialogHeader>
+
+            {sprintToComplete && (() => {
+              const sprintWIs = workItems.filter(item => item.sprint_id === sprintToComplete.id);
+              const isEmpty = sprintWIs.length === 0;
+              const incompleteWIs = sprintWIs.filter(item => item.status !== 'Done');
+              const hasIncomplete = incompleteWIs.length > 0;
+
+              let statusSection;
+              if (isEmpty) {
+                statusSection = (
+                  <div className="bg-destructive/15 border-destructive/20 text-destructive rounded-lg border px-4 py-3 text-sm flex gap-2 items-center">
+                    <AlertCircle className="h-5 w-5 shrink-0" />
+                    <span>{"If sprint haven't any work items cannot complete the sprint."}</span>
+                  </div>
+                );
+              } else if (hasIncomplete) {
+                statusSection = (
+                  <div className="bg-amber-500/15 border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg border px-4 py-3 text-sm flex gap-2 items-start">
+                    <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold mb-1">Cannot Complete Sprint</p>
+                      <p className="text-xs">{"Can't complete the sprint all the work items are not done."}</p>
+                    </div>
+                  </div>
+                );
+              } else {
+                statusSection = (
+                  <p className="text-sm text-foreground">
+                    Excellent! All <span className="font-semibold">{sprintWIs.length}</span> work items in this sprint are completed. Ready to close?
+                  </p>
+                );
+              }
+
+              return (
+                <div className="space-y-4 py-2">
+                  {statusSection}
+
+                  {actionError && (
+                    <div className="bg-destructive/15 border-destructive/20 text-destructive rounded-lg border px-4 py-3 text-sm flex gap-2 items-center">
+                      <AlertCircle className="h-5 w-5 shrink-0" />
+                      <span>{actionError}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSprintToComplete(null)}
+                      disabled={isActionPending}
+                    >
+                      Cancel
+                    </Button>
+                    {!isEmpty && !hasIncomplete && (
+                      <Button
+                        size="sm"
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
+                        onClick={() => confirmCompleteSprint(sprintToComplete.id)}
+                        disabled={isActionPending}
+                      >
+                        {isActionPending ? 'Completing...' : 'Complete Sprint'}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
           </DialogContent>
         </Dialog>
       </div>

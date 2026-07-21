@@ -107,6 +107,36 @@ export class SprintsRepository {
     return data as unknown as SprintRowWithProject;
   }
 
+  async getWorkItemCount(sprintId: string): Promise<number> {
+    const { count, error } = await supabase
+      .from('work_items')
+      .select('*', { count: 'exact', head: true })
+      .eq('sprint_id', sprintId);
+
+    if (error) {
+      console.error('error. failed to get work item count:', error.message);
+      throw new Error('Failed to get work item count');
+    }
+
+    return count ?? 0;
+  }
+
+  async getIncompleteWorkItemCount(sprintId: string): Promise<number> {
+    const { count, error } = await supabase
+      .from('work_items')
+      .select('*', { count: 'exact', head: true })
+      .eq('sprint_id', sprintId)
+      .neq('status', 'Done');
+
+    if (error) {
+      console.error('error. failed to get incomplete work item count:', error.message);
+      throw new Error('Failed to get incomplete work item count');
+    }
+
+    return count ?? 0;
+  }
+
+
   async findById(
     _userId: string,
     sprintId: string
