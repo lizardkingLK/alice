@@ -130,6 +130,16 @@ export class SprintsService {
       }
     }
 
+    if (status === 'archived') {
+      const currentSprint = await sprintsRepository.findById(userId, sprintId);
+      if (!currentSprint) {
+        throw new Error('Sprint not found');
+      }
+      if (currentSprint.status === 'planned' || currentSprint.status === 'active') {
+        throw new Error('Cannot archive ongoing or not started sprints.');
+      }
+    }
+
     const row = await sprintsRepository.updateStatus(userId, sprintId, status);
     return toSprintResponse(row);
   }
@@ -150,6 +160,14 @@ export class SprintsService {
     await requireManagerOrAdmin(userId);
     const goal =
       input.goal === undefined || input.goal === '' ? null : input.goal;
+
+    const currentSprint = await sprintsRepository.findById(userId, sprintId);
+    if (!currentSprint) {
+      throw new Error('Sprint not found');
+    }
+    if (currentSprint.status === 'archived') {
+      throw new Error('Cannot edit an archived sprint');
+    }
 
     const row = await sprintsRepository.update(userId, sprintId, {
       name: input.name,
