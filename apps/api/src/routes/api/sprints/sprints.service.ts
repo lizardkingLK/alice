@@ -110,6 +110,26 @@ export class SprintsService {
     status: SprintRow['status']
   ): Promise<SprintResponse> {
     await requireManagerOrAdmin(userId);
+
+    if (status === 'active') {
+      const count = await sprintsRepository.getWorkItemCount(sprintId);
+      if (count === 0) {
+        throw new Error("If sprint haven't any work items cannot start the sprint.");
+      }
+    }
+
+    if (status === 'closed') {
+      const count = await sprintsRepository.getWorkItemCount(sprintId);
+      if (count === 0) {
+        throw new Error("If sprint haven't any work items cannot complete the sprint.");
+      }
+
+      const incompleteCount = await sprintsRepository.getIncompleteWorkItemCount(sprintId);
+      if (incompleteCount > 0) {
+        throw new Error("Can't complete the sprint all the work items are not done.");
+      }
+    }
+
     const row = await sprintsRepository.updateStatus(userId, sprintId, status);
     return toSprintResponse(row);
   }

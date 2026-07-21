@@ -15,11 +15,22 @@ export type UpdateWorkItemRecord = WorkItemUpdateBody & {
 };
 
 export class WorkItemRepository {
-  async get(): Promise<DbWorkItem[]> {
-    const { data, error } = await supabase
+  async get(filters?: { sprint_id?: string | null }): Promise<DbWorkItem[]> {
+    let query = supabase
       .from('work_items')
-      .select('*, assignee:users!assignee_id(id, name, email)')
-      .order('created_at', { ascending: false });
+      .select('*, assignee:users!assignee_id(id, name, email)');
+
+    if (filters) {
+      if (filters.sprint_id === null) {
+        query = query.is('sprint_id', null);
+      } else if (filters.sprint_id) {
+        query = query.eq('sprint_id', filters.sprint_id);
+      }
+    }
+
+    const { data, error } = await query.order('created_at', {
+      ascending: false,
+    });
 
     if (error) {
       console.error('error. failed to list work-items:', error.message);
@@ -32,7 +43,8 @@ export class WorkItemRepository {
   async listPaginated(
     page: number,
     limit: number,
-    search?: string
+    search?: string,
+    filters?: { sprint_id?: string | null }
   ): Promise<{ workItems: DbWorkItem[]; totalCount: number }> {
     const from = (page - 1) * limit;
     const to = from + limit - 1;
@@ -45,6 +57,14 @@ export class WorkItemRepository {
 
     if (search?.trim()) {
       query = query.ilike('title', `%${search.trim()}%`);
+    }
+
+    if (filters) {
+      if (filters.sprint_id === null) {
+        query = query.is('sprint_id', null);
+      } else if (filters.sprint_id) {
+        query = query.eq('sprint_id', filters.sprint_id);
+      }
     }
 
     const { data, error, count } = await query
@@ -92,6 +112,7 @@ export class WorkItemRepository {
         type: input.type,
         assignee_id: input.assignee_id,
         due_date: input.due_date,
+        sprint_id: input.sprint_id,
         reporter_id: input.createdBy,
         status: 'New',
         ...auditCreateWithoutStatus(input.createdBy),
@@ -118,6 +139,7 @@ export class WorkItemRepository {
         due_date: input.due_date,
         description: input.description,
         status: input.status,
+        sprint_id: input.sprint_id,
         updated_by: input.updatedBy,
         updated_at: new Date().toISOString(),
       })

@@ -24,12 +24,22 @@ workItemsRouter.get(
         typeof req.query.search === 'string' ? req.query.search : undefined;
       const pagination = parsePagination(req);
 
+      // Parse filters
+      let sprint_id: string | null | undefined = undefined;
+      if (req.query.sprint_id === 'null' || req.query.backlog === 'true') {
+        sprint_id = null;
+      } else if (typeof req.query.sprint_id === 'string') {
+        sprint_id = req.query.sprint_id;
+      }
+      const filters = { sprint_id };
+
       if (pagination) {
         const { page, limit } = pagination;
         const result = (await workItemService.listWorkItems(
           page,
           limit,
-          searchQuery
+          searchQuery,
+          filters
         )) as { workItems: DbWorkItem[]; totalCount: number };
         const totalPages = Math.max(1, Math.ceil(result.totalCount / limit));
 
@@ -42,7 +52,7 @@ workItemsRouter.get(
         });
       }
 
-      const workItems = await workItemService.getWorkItems();
+      const workItems = await workItemService.getWorkItems(filters);
       res.json({ data: workItems, error: null });
     } catch (error) {
       const message =
@@ -149,6 +159,10 @@ workItemsRouter.patch(
           ? parsed.data.description
           : existingWorkItem.description) as SupabaseJson,
         status: parsed.data.status ?? existingWorkItem.status,
+        sprint_id:
+          parsed.data.sprint_id !== undefined
+            ? parsed.data.sprint_id
+            : existingWorkItem.sprint_id,
       };
 
       const workItem = await workItemService.updateWorkItem(

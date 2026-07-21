@@ -20,9 +20,21 @@ export type GetWorkItemsPaginatedResponse = {
 
 const workItemsPath = '/api/workItems';
 
-export async function getWorkItems(): Promise<DbWorkItem[]> {
+export async function getWorkItems(filters?: { sprintId?: string | null }): Promise<DbWorkItem[]> {
+  const params = new URLSearchParams();
+  if (filters) {
+    if (filters.sprintId === null) {
+      params.set('sprint_id', 'null');
+    } else if (filters.sprintId) {
+      params.set('sprint_id', filters.sprintId);
+    }
+  }
+
+  const queryString = params.toString();
+  const url = queryString ? `${workItemsPath}?${queryString}` : workItemsPath;
+
   const response =
-    await apiServerFetch<ResponseDTO<DbWorkItem[]>>(workItemsPath);
+    await apiServerFetch<ResponseDTO<DbWorkItem[]>>(url);
   if (response.error) {
     throw new Error(response.error as string);
   }
@@ -33,7 +45,8 @@ export async function getWorkItems(): Promise<DbWorkItem[]> {
 export async function getWorkItemsPaginated(
   page: number,
   limit: number,
-  search?: string
+  search?: string,
+  filters?: { sprintId?: string | null }
 ): Promise<GetWorkItemsPaginatedResponse> {
   const params = new URLSearchParams({
     page: String(page),
@@ -42,6 +55,14 @@ export async function getWorkItemsPaginated(
 
   if (search?.trim()) {
     params.set('search', search.trim());
+  }
+
+  if (filters) {
+    if (filters.sprintId === null) {
+      params.set('sprint_id', 'null');
+    } else if (filters.sprintId) {
+      params.set('sprint_id', filters.sprintId);
+    }
   }
 
   return apiServerFetch<GetWorkItemsPaginatedResponse>(
