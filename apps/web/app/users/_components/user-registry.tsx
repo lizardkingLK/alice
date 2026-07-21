@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import {
+  type CellContext,
   type ColumnDef,
   getCoreRowModel,
   type Row,
@@ -217,6 +218,64 @@ function ActionsCell({
   );
 }
 
+/* eslint-disable no-unused-vars */
+// Per-table context handed to the module-level cell renderers via
+// `useReactTable({ meta })`, so the renderers can stay out of the component.
+interface UserTableMeta {
+  readonly currentUserId?: string | null;
+  readonly isBusy: boolean;
+  readonly onEdit: (usr: User) => void;
+  readonly onToggle: (usr: User) => void;
+}
+
+type UserCellRenderer = (context: CellContext<User, unknown>) => ReactNode;
+/* eslint-enable no-unused-vars */
+
+function getUserTableMeta(table: CellContext<User, unknown>['table']) {
+  return table.options.meta as UserTableMeta;
+}
+
+// Cell renderers keyed by column id. Kept at module scope (outside the
+// component) to satisfy react/no-unstable-nested-components (SonarQube S6478).
+const CELL_RENDERERS: Record<string, UserCellRenderer> = {
+  name: ({ row, table }) => (
+    <UserCell
+      row={row}
+      isSelf={row.original.id === getUserTableMeta(table).currentUserId}
+    />
+  ),
+  role: ({ row }) => <RoleBadge role={row.original.role} />,
+  status: ({ row }) => <StatusBadge active={row.original.active} />,
+  joined: ({ row }) => <JoinedCell row={row} />,
+  actions: ({ row, table }) => {
+    const meta = getUserTableMeta(table);
+    return (
+      <ActionsCell
+        row={row}
+        isSelf={row.original.id === meta.currentUserId}
+        isBusy={meta.isBusy}
+        onEdit={meta.onEdit}
+        onToggle={meta.onToggle}
+      />
+    );
+  },
+};
+
+const renderActionsHeader = () => <span className="sr-only">Actions</span>;
+
+const BASE_COLUMNS: ColumnDef<User>[] = [
+  { accessorKey: 'name', header: 'User', cell: CELL_RENDERERS.name },
+  { accessorKey: 'role', header: 'Role', cell: CELL_RENDERERS.role },
+  { accessorKey: 'active', header: 'Status', cell: CELL_RENDERERS.status },
+  { accessorKey: 'created_at', header: 'Joined', cell: CELL_RENDERERS.joined },
+];
+
+const ACTIONS_COLUMN: ColumnDef<User> = {
+  id: 'actions',
+  header: renderActionsHeader,
+  cell: CELL_RENDERERS.actions,
+};
+
 export function UserRegistry({
   users,
   totalCount,
@@ -293,61 +352,21 @@ export function UserRegistry({
       });
   };
 
-  const columns = useMemo<ColumnDef<User>[]>(() => {
-    const base: ColumnDef<User>[] = [
-      {
-        accessorKey: 'name',
-        header: 'User',
-        cell: ({ row }) => (
-          <UserCell row={row} isSelf={row.original.id === currentUserId} />
-        ),
-      },
-      {
-        accessorKey: 'role',
-        header: 'Role',
-        cell: ({ row }) => <RoleBadge role={row.original.role} />,
-      },
-      {
-        accessorKey: 'active',
-        header: 'Status',
-        cell: ({ row }) => <StatusBadge active={row.original.active} />,
-      },
-      {
-        accessorKey: 'created_at',
-        header: 'Joined',
-        cell: ({ row }) => <JoinedCell row={row} />,
-      },
-    ];
-
-    if (isAdmin) {
-      base.push({
-        id: 'actions',
-        header: () => <span className="sr-only">Actions</span>,
-        cell: ({ row }) => (
-          <ActionsCell
-            row={row}
-            isSelf={row.original.id === currentUserId}
-            isBusy={isTogglingActive}
-            onEdit={openEditDialog}
-            onToggle={handleToggleActive}
-          />
-        ),
-      });
-    }
-
-    return base;
-  }, [
-    isAdmin,
-    currentUserId,
-    isTogglingActive,
-    openEditDialog,
-    handleToggleActive,
-  ]);
+  const columns = useMemo<ColumnDef<User>[]>(
+    () => (isAdmin ? [...BASE_COLUMNS, ACTIONS_COLUMN] : BASE_COLUMNS),
+    [isAdmin]
+  );
 
   const table = useReactTable({
     data: users,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    meta: {
+      currentUserId,
+      isBusy: isTogglingActive,
+      onEdit: openEditDialog,
+      onToggle: handleToggleActive,
+    } satisfies UserTableMeta,
   });
 
   return (
