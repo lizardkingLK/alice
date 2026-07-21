@@ -3,6 +3,7 @@ import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { requestPasswordReset } from '@/app/auth/actions';
+import { RecoveryHashGuard } from './_components/recovery-hash-guard';
 
 type ForgotPasswordPageProps = {
   searchParams: Promise<{ sent?: string; error?: string }>;
@@ -17,6 +18,7 @@ export default async function ForgotPasswordPage({
 
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
+      <RecoveryHashGuard />
       <div className="border-border w-full max-w-sm space-y-6 rounded-xl border p-6">
         <div className="space-y-1 text-center">
           <h1 className="text-2xl font-semibold">Forgot password</h1>

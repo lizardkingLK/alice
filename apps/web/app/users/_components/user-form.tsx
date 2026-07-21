@@ -1,6 +1,6 @@
 'use client';
 
-import { FormAlertMessage } from '@/app/_shared/form-alert-message';
+import { FormAlertMessage } from '@/components/form-alert-message';
 import { FormEvent, useEffect, useState, type ChangeEvent } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
