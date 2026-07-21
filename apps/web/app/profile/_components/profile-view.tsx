@@ -125,9 +125,7 @@ export function ProfileView({
           <aside className="relative z-10 -mt-12 space-y-5 sm:-mt-14">
             <div className="space-y-3">
               <Avatar className="border-background size-24 border-4 shadow-md sm:size-28">
-                {avatarUrl ? (
-                  <AvatarImage src={avatarUrl} alt={name} />
-                ) : null}
+                {avatarUrl ? <AvatarImage src={avatarUrl} alt={name} /> : null}
                 <AvatarFallback className="bg-muted text-foreground text-2xl font-semibold sm:text-3xl">
                   {getInitials(name)}
                 </AvatarFallback>
@@ -151,12 +149,8 @@ export function ProfileView({
                 </Badge>
               </div>
 
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full cursor-pointer"
-              >
-                Manage your account
+              <Button asChild variant="secondary" className="w-full">
+                <Link href="/edit-profile">Manage your account</Link>
               </Button>
             </div>
 

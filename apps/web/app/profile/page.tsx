@@ -40,8 +40,7 @@ export default async function ProfilePage() {
   const avatarUrl =
     dbUser?.profile_picture ??
     metadataString(metadata, 'avatar_url', 'picture');
-  const role =
-    dbUser?.role ?? metadataString(metadata, 'role') ?? 'member';
+  const role = dbUser?.role ?? metadataString(metadata, 'role') ?? 'member';
   const provider = user.app_metadata?.provider ?? 'email';
   const emailVerified =
     Boolean(user.email_confirmed_at) || metadata.email_verified === true;

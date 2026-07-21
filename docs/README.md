@@ -47,6 +47,7 @@ One folder per product area. Prefer a local `README.md` as the index.
 | Projects   | [features/projects/](./features/projects/)     |
 | Sprints    | [features/sprints/](./features/sprints/)       |
 | Dashboard  | [features/dashboard/](./features/dashboard/)   |
+| Profile    | [features/profile/](./features/profile/)       |
 
 ### Database
 
