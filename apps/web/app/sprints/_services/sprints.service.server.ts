@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { pageRange, paginationMeta } from '@/lib/db/pagination';
+import { applyListSearch, throwIfError } from '@/lib/db/query';
 import {
   mapDbSprintToSprint,
   type DbSprintRelation,
@@ -29,19 +30,13 @@ export async function getSprintsPaginatedServer(
     query = query.in('status', ['planned', 'active', 'closed']);
   }
 
-  if (search) {
-    const sanitized = `%${search}%`;
-    query = query.or(`name.ilike.${sanitized},goal.ilike.${sanitized}`);
-  }
+  query = applyListSearch(query, search, ['name', 'goal']);
 
   const { data, error, count } = await query
     .order('start_date', { ascending: false })
     .range(from, to);
 
-  if (error) {
-    console.error('error. failed to list sprints:', error.message);
-    throw new Error('Failed to list sprints');
-  }
+  throwIfError(error, 'failed to list sprints', 'Failed to list sprints');
 
   const rows = (data ?? []) as unknown as DbSprintRelation[];
 

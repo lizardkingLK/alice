@@ -3,7 +3,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
   type ColumnDef,
-  flexRender,
   getCoreRowModel,
   type Row,
   useReactTable,
@@ -27,14 +26,6 @@ import {
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@repo/ui/components/ui/table';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -57,6 +48,7 @@ import {
 import { cn } from '@repo/ui/lib/utils';
 import { formatDate, getInitials } from '@/app/_shared/utility';
 import { Pagination } from '@/components/pagination';
+import { DataTable } from '@/components/data-table';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { toggleUserActive } from '../_services/users.service';
@@ -409,59 +401,22 @@ export function UserRegistry({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-lg border">
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {table.getRowModel().rows.length > 0 ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id} className="hover:bg-accent/40">
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="text-muted-foreground h-48 text-center"
-                    >
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <Users className="text-muted-foreground/50 size-8 stroke-1" />
-                        <p>No registered users found.</p>
-                        <p className="text-muted-foreground/75 text-xs">
-                          {searchQuery
-                            ? 'Try adjusting your search.'
-                            : 'Create one using the button to get started.'}
-                        </p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <DataTable
+            table={table}
+            columnCount={columns.length}
+            rowClassName="hover:bg-accent/40"
+            emptyState={
+              <div className="flex flex-col items-center justify-center gap-2">
+                <Users className="text-muted-foreground/50 size-8 stroke-1" />
+                <p>No registered users found.</p>
+                <p className="text-muted-foreground/75 text-xs">
+                  {searchQuery
+                    ? 'Try adjusting your search.'
+                    : 'Create one using the button to get started.'}
+                </p>
+              </div>
+            }
+          />
 
           <Pagination
             totalCount={totalCount}

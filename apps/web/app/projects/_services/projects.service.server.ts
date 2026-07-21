@@ -1,6 +1,7 @@
 import { apiFetch } from '@/lib/api/api-client.server';
 import { createClient } from '@/lib/supabase/server';
 import { pageRange, paginationMeta } from '@/lib/db/pagination';
+import { applyListSearch, throwIfError } from '@/lib/db/query';
 import { createProjectsService } from './projects.service.base';
 import type {
   GetProjectsPaginatedResponse,
@@ -25,10 +26,7 @@ export async function getProjectList(): Promise<Project[]> {
     .select(`*, ${OWNER_SELECT}`)
     .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('error. failed to list projects:', error.message);
-    throw new Error('Failed to list projects');
-  }
+  throwIfError(error, 'failed to list projects', 'Failed to list projects');
 
   return (data ?? []) as unknown as Project[];
 }
@@ -52,21 +50,17 @@ export async function getProjectListPaginated(
     query = query.is('deleted_at', null);
   }
 
-  if (search) {
-    const sanitized = `%${search}%`;
-    query = query.or(
-      `name.ilike.${sanitized},key.ilike.${sanitized},description.ilike.${sanitized}`
-    );
-  }
+  query = applyListSearch(query, search, ['name', 'key', 'description']);
 
   const { data, error, count } = await query
     .order('created_at', { ascending: false })
     .range(from, to);
 
-  if (error) {
-    console.error('error. failed to list projects paginated:', error.message);
-    throw new Error('Failed to list projects');
-  }
+  throwIfError(
+    error,
+    'failed to list projects paginated',
+    'Failed to list projects'
+  );
 
   return {
     projects: (data ?? []) as unknown as Project[],
@@ -83,10 +77,7 @@ async function findProjectById(id: string): Promise<Project> {
     .eq('id', id)
     .maybeSingle();
 
-  if (error) {
-    console.error('error. failed to find project by id:', error.message);
-    throw new Error('Failed to find project');
-  }
+  throwIfError(error, 'failed to find project by id', 'Failed to find project');
 
   return data as unknown as Project;
 }
@@ -110,10 +101,11 @@ export async function getProjectMembers(
     .eq('project_id', projectId)
     .eq('status', 'active');
 
-  if (error) {
-    console.error('error. failed to list project members:', error.message);
-    throw new Error('Failed to list project members');
-  }
+  throwIfError(
+    error,
+    'failed to list project members',
+    'Failed to list project members'
+  );
 
   return (data ?? []) as unknown as ProjectMemberWithUser[];
 }

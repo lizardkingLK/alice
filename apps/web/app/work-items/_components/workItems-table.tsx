@@ -3,7 +3,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
   type ColumnDef,
-  flexRender,
   getCoreRowModel,
   Row,
   useReactTable,
@@ -25,14 +24,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@repo/ui/components/ui/table';
 import {
   AlertTriangle,
   ClipboardPenLine,
@@ -57,6 +48,7 @@ import priorityRenderer from '@/app/work-items/_components/workItem-badge-priori
 import Link from 'next/link';
 import { cn } from '@repo/ui/lib/utils';
 import { Pagination } from '@/components/pagination';
+import { DataTable } from '@/components/data-table';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 
@@ -286,57 +278,16 @@ export default function WorkItemsTable({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-lg border">
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {table.getRowModel().rows.length > 0 ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      data-state={row.getIsSelected() && 'selected'}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="text-muted-foreground h-48 text-center"
-                    >
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <ClipboardPenLine className="text-muted-foreground/50 size-8 stroke-1" />
-                        <p>No work items found matching your search.</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <DataTable
+            table={table}
+            columnCount={columns.length}
+            emptyState={
+              <div className="flex flex-col items-center justify-center gap-2">
+                <ClipboardPenLine className="text-muted-foreground/50 size-8 stroke-1" />
+                <p>No work items found matching your search.</p>
+              </div>
+            }
+          />
 
           <Pagination
             totalCount={totalCount}
