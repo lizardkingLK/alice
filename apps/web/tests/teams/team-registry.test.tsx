@@ -148,12 +148,16 @@ describe('TeamRegistry Component', () => {
       />
     );
 
-    const searchInput = screen.getByPlaceholderText(/Search teams by name, tech stack, or description/i);
+    const searchInput = screen.getByPlaceholderText(
+      /Search teams by name, tech stack, or description/i
+    );
     fireEvent.change(searchInput, { target: { value: 'Infrastructure' } });
 
     await waitFor(
       () => {
-        expect(mockPush).toHaveBeenCalledWith('/manager?search=Infrastructure&page=1');
+        expect(mockPush).toHaveBeenCalledWith(
+          '/manager?search=Infrastructure&page=1'
+        );
       },
       { timeout: 800 }
     );
@@ -236,9 +240,13 @@ describe('TeamRegistry Component', () => {
     fireEvent.click(purgeBtn);
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText(/Warning: This action is irreversible/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Warning: This action is irreversible/i)
+    ).toBeInTheDocument();
 
-    const confirmBtn = screen.getByRole('button', { name: 'Delete Permanently' });
+    const confirmBtn = screen.getByRole('button', {
+      name: 'Delete Permanently',
+    });
     fireEvent.click(confirmBtn);
 
     await waitFor(() => {
@@ -317,7 +325,9 @@ describe('TeamRegistry Component', () => {
     fireEvent.click(editBtn);
 
     expect(screen.getByTestId('mock-team-form')).toBeInTheDocument();
-    expect(screen.getByText('Mock Team Form - Core Infrastructure')).toBeInTheDocument();
+    expect(
+      screen.getByText('Mock Team Form - Core Infrastructure')
+    ).toBeInTheDocument();
   });
 
   it('hides action buttons for standard member role', () => {
@@ -336,8 +346,14 @@ describe('TeamRegistry Component', () => {
       />
     );
 
-    expect(screen.queryByRole('button', { name: /Add Team/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Add Team/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Edit' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Archive' })
+    ).not.toBeInTheDocument();
   });
 });

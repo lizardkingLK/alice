@@ -5,7 +5,7 @@ import { getUserList } from '@/app/users/_services/users.service.server';
 import {
   getWorkItems,
   DbWorkItem,
-} from '@/app/work-items/_services/workItem.server.service';
+} from '@/app/work-items/_services/workItem.service.server';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.service.server';
 import { getDbUser } from '@/lib/auth';
 import { BacklogWorkspace } from './_components/backlog-workspace';

@@ -5,7 +5,10 @@ import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { SprintList } from '@/app/sprints/_components/sprint-list';
 import { SprintForm } from '@/app/sprints/_components/sprint-form';
-import { Sprint } from '@/app/sprints/_services/sprints.service';
+import {
+  Sprint,
+  updateSprintStatus,
+} from '@/app/sprints/_services/sprints.service';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { cn } from '@repo/ui/lib/utils';
@@ -78,6 +81,24 @@ export function SprintsWorkspace({
     router.refresh();
   };
 
+  const handleArchiveSprint = async (sprint: Sprint) => {
+    try {
+      const updated = await updateSprintStatus(sprint.id, 'Archived');
+      handleSprintUpdated(updated);
+    } catch (error) {
+      console.error('Failed to archive sprint:', error);
+    }
+  };
+
+  const handleRestoreSprint = async (sprint: Sprint) => {
+    try {
+      const updated = await updateSprintStatus(sprint.id, 'Completed');
+      handleSprintUpdated(updated);
+    } catch (error) {
+      console.error('Failed to restore sprint:', error);
+    }
+  };
+
   const handleRetry = () => {
     router.refresh();
   };
@@ -147,7 +168,8 @@ export function SprintsWorkspace({
                 ? (sprint) => setEditingSprint(sprint)
                 : undefined
             }
-            isManagerOrAdmin={isManagerOrAdmin}
+            onArchiveSprint={isManagerOrAdmin ? handleArchiveSprint : undefined}
+            onRestoreSprint={isManagerOrAdmin ? handleRestoreSprint : undefined}
           />
         </div>
       </div>

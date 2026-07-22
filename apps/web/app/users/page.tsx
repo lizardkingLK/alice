@@ -6,6 +6,7 @@ import {
   getUsersListPaginated,
   type User,
 } from '@/app/users/_services/users.service.server';
+import { safeServerFetch } from '@/lib/safe-server-fetch';
 
 const EMPTY_USERS = {
   users: [] as User[],
@@ -21,15 +22,15 @@ export default async function UsersDashboard({
   searchParams: Promise<RawSearchParams>;
 }>) {
   const resolvedSearchParams = await searchParams;
-  const { page, limit } = parseStandardParams(resolvedSearchParams, 10);
+  const { page, limit, search } = parseStandardParams(resolvedSearchParams, 10);
 
   const [dbUser, usersData] = await Promise.all([
     getDbUser(),
-    getUsersListPaginated(page, limit).catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      console.error('error. failed to fetch users list via API:', message);
-      return EMPTY_USERS;
-    }),
+    safeServerFetch(
+      getUsersListPaginated(page, limit, search),
+      EMPTY_USERS,
+      'fetch users list via API'
+    ),
   ]);
 
   const currentUserRole = dbUser?.role ?? 'member';
@@ -42,6 +43,7 @@ export default async function UsersDashboard({
         page={usersData.page}
         limit={usersData.limit}
         totalPages={usersData.totalPages}
+        search={search}
         currentUserId={dbUser?.id}
         currentUserRole={currentUserRole}
       />

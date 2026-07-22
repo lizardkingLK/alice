@@ -4,8 +4,11 @@ import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import {
   getProjectDetails,
   getProjectMembers,
+  type Project,
+  type ProjectMemberWithUser,
 } from '../_services/projects.service.server';
 import { getUserList } from '@/app/users/_services/users.service.server';
+import { safeServerFetch } from '@/lib/safe-server-fetch';
 import { ProjectDetailsWorkspace } from './_components/project-details-workspace';
 
 export default async function ProjectDetailsPage({
@@ -18,18 +21,12 @@ export default async function ProjectDetailsPage({
 
   const [dbUser, projectBundle, allUsers] = await Promise.all([
     getDbUser(),
-    Promise.all([
-      getProjectDetails(projectId),
-      getProjectMembers(projectId),
-    ]).catch((error: unknown) => {
-      console.error('Failed to load project details:', error);
-      return null;
-    }),
-    getUserList().catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      console.error('error. failed to fetch users via API:', message);
-      return [];
-    }),
+    safeServerFetch<[Project, ProjectMemberWithUser[]] | null>(
+      Promise.all([getProjectDetails(projectId), getProjectMembers(projectId)]),
+      null,
+      'load project details'
+    ),
+    safeServerFetch(getUserList(), [], 'fetch users via API'),
   ]);
 
   if (!projectBundle) {

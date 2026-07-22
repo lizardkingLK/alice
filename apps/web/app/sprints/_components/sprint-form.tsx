@@ -1,6 +1,6 @@
 'use client';
 
-import { FormAlertMessage } from '@/app/_shared/form-alert-message';
+import { FormAlertMessage } from '@/components/form-alert-message';
 import {
   FormEvent,
   useEffect,

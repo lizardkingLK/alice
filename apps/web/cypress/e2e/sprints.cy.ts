@@ -96,20 +96,11 @@ describe('Sprints Workspace', () => {
     // Verify it updated in the list
     cy.contains('li', sprintName).should('contain', updatedGoal);
 
-    // 6. Update Status
-    // Inside the sprint list item, click the status button/dropdown
+    // 6. Verify Status is Read-Only
+    // The status should display 'Not Started' and should not be editable (rendered as span, not a button)
     cy.contains('li', sprintName).within(() => {
-      cy.get('button')
-        .contains(/Planned|Not Started|Ongoing|Completed/i)
-        .click();
-    });
-
-    // Select "Ongoing" in the dropdown list
-    cy.contains('[role="menuitem"]', 'Ongoing').click();
-
-    // Verify status button now displays "Ongoing"
-    cy.contains('li', sprintName).within(() => {
-      cy.get('button').should('contain', 'Ongoing');
+      cy.contains('span', 'Not Started').should('exist');
+      cy.get('button').contains('Not Started').should('not.exist');
     });
   });
 
@@ -134,17 +125,10 @@ describe('Sprints Workspace', () => {
     // 4. Verify we can see the admin's sprint
     cy.contains(sprintName).should('exist');
 
-    // 5. Change status as non-creator
+    // 5. Verify status is read-only as non-creator
     cy.contains('li', sprintName).within(() => {
-      cy.get('button')
-        .contains(/Planned|Not Started|Ongoing|Completed/i)
-        .click();
-    });
-    cy.contains('[role="menuitem"]', 'Ongoing').click();
-
-    // Verify status button now displays "Ongoing"
-    cy.contains('li', sprintName).within(() => {
-      cy.get('button').should('contain', 'Ongoing');
+      cy.contains('span', 'Not Started').should('exist');
+      cy.get('button').contains('Not Started').should('not.exist');
     });
 
     // 6. Edit the sprint as non-creator

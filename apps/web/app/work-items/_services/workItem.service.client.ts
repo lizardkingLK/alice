@@ -1,4 +1,4 @@
-import { DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
+import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { apiFetch } from '@/lib/api/api-client';
 import { ResponseDTO } from '@repo/types/connection';
 

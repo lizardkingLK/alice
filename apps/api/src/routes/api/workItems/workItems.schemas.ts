@@ -57,6 +57,12 @@ export const workItemCoreObject = z.object({
   ),
   due_date: z.preprocess(emptyStringToNull, dateStringSchema.nullable()),
   description: jsonSchema.nullable().optional(),
+  sprint_id: z
+    .preprocess(
+      emptyStringToNull,
+      z.uuid({ message: 'Please select a valid sprint' }).nullable()
+    )
+    .optional(),
 });
 
 export const createUpdateWorkItemBodySchema = workItemCoreObject.refine(

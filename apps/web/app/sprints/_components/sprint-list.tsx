@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
 import { cn } from '@repo/ui/lib/utils';
-import { Plus, Calendar } from '@repo/ui/lib/icons';
+import { Plus, Calendar, Pencil, Archive, RefreshCw } from '@repo/ui/lib/icons';
 import {
   Sprint,
   updateSprintStatus,
@@ -46,7 +46,10 @@ type SprintListProps = {
   onAddSprint?: () => void;
   // eslint-disable-next-line no-unused-vars
   onEditSprint?: (sprint: Sprint) => void;
-  isManagerOrAdmin?: boolean;
+  // eslint-disable-next-line no-unused-vars
+  onArchiveSprint?: (sprint: Sprint) => void;
+  // eslint-disable-next-line no-unused-vars
+  onRestoreSprint?: (sprint: Sprint) => void;
 };
 
 const STATUS_STYLES = {
@@ -159,14 +162,18 @@ type SprintListItemProps = {
   onSprintUpdated?: (sprint: Sprint) => void;
   // eslint-disable-next-line no-unused-vars
   onEditSprint?: (sprint: Sprint) => void;
-  isManagerOrAdmin?: boolean;
+  // eslint-disable-next-line no-unused-vars
+  onArchiveSprint?: (sprint: Sprint) => void;
+  // eslint-disable-next-line no-unused-vars
+  onRestoreSprint?: (sprint: Sprint) => void;
 };
 
 function SprintListItem({
   sprint,
   onSprintUpdated,
   onEditSprint,
-  isManagerOrAdmin = false,
+  onArchiveSprint,
+  onRestoreSprint,
 }: Readonly<SprintListItemProps>) {
   const [mounted, setMounted] = useState(false);
 
@@ -187,7 +194,7 @@ function SprintListItem({
           <SprintStatusDropdown
             sprint={sprint}
             onSprintUpdated={onSprintUpdated}
-            disabled={!isManagerOrAdmin}
+            disabled={true}
           />
         </div>
         <p className="text-muted-foreground text-sm">
@@ -213,16 +220,42 @@ function SprintListItem({
         ) : (
           <div />
         )}
-        {onEditSprint && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onEditSprint(sprint)}
-            className="h-8 w-20 shrink-0 text-[11px] font-semibold shadow-sm"
-          >
-            Edit
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {onRestoreSprint && sprint.status === 'Archived' && (
+            <Button
+              type="button"
+              aria-label="Restore Sprint"
+              onClick={() => onRestoreSprint(sprint)}
+              className="focus-visible:ring-ring flex h-8 w-20 shrink-0 cursor-pointer items-center justify-center border-emerald-500/20 bg-emerald-500/10 text-[11px] font-semibold text-emerald-600 shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
+            >
+              <RefreshCw className="mr-1 h-3 w-3 shrink-0" />
+              <span>Restore</span>
+            </Button>
+          )}
+          {onArchiveSprint && sprint.status === 'Completed' && (
+            <Button
+              type="button"
+              aria-label="Archive Sprint"
+              onClick={() => onArchiveSprint(sprint)}
+              className="focus-visible:ring-ring flex h-8 w-28 shrink-0 items-center justify-center border border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
+            >
+              <Archive className="mr-1 h-3 w-3 shrink-0" />
+              <span>Archive</span>
+            </Button>
+          )}
+          {onEditSprint && sprint.status !== 'Archived' && (
+            <Button
+              type="button"
+              variant="outline"
+              aria-label="Edit Sprint"
+              onClick={() => onEditSprint(sprint)}
+              className="focus-visible:ring-ring flex h-8 w-20 shrink-0 items-center justify-center border-emerald-500/20 bg-emerald-500/10 text-[11px] font-semibold text-emerald-600 shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
+            >
+              <Pencil className="mr-1 h-3 w-3 shrink-0" />
+              <span>Edit</span>
+            </Button>
+          )}
+        </div>
       </div>
     </li>
   );
@@ -239,7 +272,10 @@ type SprintListContentProps = {
   onSprintUpdated?: (sprint: Sprint) => void;
   // eslint-disable-next-line no-unused-vars
   onEditSprint?: (sprint: Sprint) => void;
-  isManagerOrAdmin?: boolean;
+  // eslint-disable-next-line no-unused-vars
+  onArchiveSprint?: (sprint: Sprint) => void;
+  // eslint-disable-next-line no-unused-vars
+  onRestoreSprint?: (sprint: Sprint) => void;
 };
 
 function SprintListContent({
@@ -251,7 +287,8 @@ function SprintListContent({
   onRetry,
   onSprintUpdated,
   onEditSprint,
-  isManagerOrAdmin = false,
+  onArchiveSprint,
+  onRestoreSprint,
 }: Readonly<SprintListContentProps>) {
   if (isLoading) {
     return (
@@ -300,7 +337,8 @@ function SprintListContent({
           sprint={sprint}
           onSprintUpdated={onSprintUpdated}
           onEditSprint={onEditSprint}
-          isManagerOrAdmin={isManagerOrAdmin}
+          onArchiveSprint={onArchiveSprint}
+          onRestoreSprint={onRestoreSprint}
         />
       ))}
     </ul>
@@ -319,7 +357,8 @@ export function SprintList({
   onSprintUpdated,
   onAddSprint,
   onEditSprint,
-  isManagerOrAdmin = false,
+  onArchiveSprint,
+  onRestoreSprint,
 }: Readonly<SprintListProps>) {
   const filteredSprints = sprints;
 
@@ -358,7 +397,8 @@ export function SprintList({
           onRetry={onRetry}
           onSprintUpdated={onSprintUpdated}
           onEditSprint={onEditSprint}
-          isManagerOrAdmin={isManagerOrAdmin}
+          onArchiveSprint={onArchiveSprint}
+          onRestoreSprint={onRestoreSprint}
         />
         {pagination && pagination.totalCount > 0 && (
           <Pagination

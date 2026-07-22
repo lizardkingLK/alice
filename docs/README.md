@@ -12,11 +12,11 @@ Central docs for **Alice** (branded as **Jira Teams**).
 
 ## Start here
 
-| Doc                                          | Audience                             | Status |
-| -------------------------------------------- | ------------------------------------ | ------ |
-| [product/ARD.md](./product/ARD.md)           | Product / requirements               | Living |
-| [architecture/TRD.md](./architecture/TRD.md) | Engineering / architecture           | Living |
-| [guides/DATABASE.md](./guides/DATABASE.md)   | Anyone touching schema or migrations | Living |
+| Doc                                                                        | Audience                                            | Status |
+| -------------------------------------------------------------------------- | --------------------------------------------------- | ------ |
+| [product/ARD.md](./product/ARD.md)                                         | Product / requirements                              | Living |
+| [architecture/TRD.md](./architecture/TRD.md)                               | Engineering / architecture                          | Living |
+| [guides/DATABASE.md](./guides/DATABASE.md)                                 | Anyone touching schema or migrations                | Living |
 | [guides/TESTING_DEVELOPMENT_FLOW.md](./guides/TESTING_DEVELOPMENT_FLOW.md) | Anyone developing features & running unit/e2e tests | Living |
 
 ---
@@ -47,6 +47,7 @@ One folder per product area. Prefer a local `README.md` as the index.
 | Projects   | [features/projects/](./features/projects/)     |
 | Sprints    | [features/sprints/](./features/sprints/)       |
 | Dashboard  | [features/dashboard/](./features/dashboard/)   |
+| Profile    | [features/profile/](./features/profile/)       |
 
 ### Database
 
@@ -70,6 +71,7 @@ How we work day to day.
 
 - [TESTING_DEVELOPMENT_FLOW.md](./guides/TESTING_DEVELOPMENT_FLOW.md) — Project development & testing flow for all features
 - [DATABASE.md](./guides/DATABASE.md) — Prisma / Supabase workflow
+- [PERFORMANCE.md](./guides/PERFORMANCE.md) — RSC data loading, caching, parallel fetches + roadmap
 - [DEBUGGING.md](./guides/DEBUGGING.md) — IDE debug configs
 - [SEO.md](./guides/SEO.md) — metadata, sitemap, robots
 - [SONAR.md](./guides/SONAR.md) — SonarQube / SonarCloud
