@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { getInitials } from '@/app/_shared/utility';
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
@@ -38,6 +38,10 @@ import { updateWorkItem } from '@/app/work-items/_services/workItem.service.clie
 import WorkItemSidebar from '@/app/work-items/_components/workItem-details-sidebar';
 import { WorkItemTitleEditor } from '@/app/work-items/_components/workItem-title-editor';
 import { toast } from '@repo/ui/components/ui/sonner';
+import { createClient } from '@/lib/supabase/client';
+import { CommentsFeed } from '@/app/comments/_components/comments-feed';
+import { CommentItem } from '@/app/comments/_services/comments.service';
+
 
 const PLACEHOLDER_ATTACHMENTS = [
   {
@@ -138,6 +142,35 @@ export default function WorkItemDetails({
   );
 
   const childDonePercent = 0;
+
+  const [comments, setComments] = useState<CommentItem[]>([]);
+  const [loadingComments, setLoadingComments] = useState(true);
+
+  useEffect(() => {
+    async function loadComments() {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('comments')
+          .select(`
+            *,
+            author:users!comments_author_id_fkey(id, name, email, role, profile_picture),
+            work_item:work_items(id, title, type, project:projects(id, name, key))
+          `)
+          .eq('work_item_id', workItem.id)
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          setComments(data as unknown as CommentItem[]);
+        }
+      } catch (err) {
+        console.error('Failed to load comments:', err);
+      } finally {
+        setLoadingComments(false);
+      }
+    }
+    loadComments();
+  }, [workItem.id]);
 
   const handleDescriptionUpdate = async (content: Json) => {
     const formData = new FormData();
@@ -383,6 +416,32 @@ export default function WorkItemDetails({
             >
               No linked issues yet
             </div>
+          </section>
+
+          <Separator />
+
+          {/* Discussion */}
+          <section className="space-y-4 pt-2">
+            {loadingComments ? (
+              <div className="space-y-3">
+                <div className="h-4 w-32 bg-zinc-200 animate-pulse rounded dark:bg-zinc-800" />
+                <div className="h-20 w-full bg-zinc-200 animate-pulse rounded dark:bg-zinc-800" />
+              </div>
+            ) : (
+              <CommentsFeed
+                initialComments={comments}
+                workItemId={workItem.id}
+                workItems={[
+                  {
+                    id: workItem.id,
+                    title: workItem.title,
+                    key: workItem.id.slice(0, 8).toUpperCase(),
+                    type: workItem.type,
+                    project_id: workItem.project_id || '',
+                  },
+                ]}
+              />
+            )}
           </section>
         </div>
 
