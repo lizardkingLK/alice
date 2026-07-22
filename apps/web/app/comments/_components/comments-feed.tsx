@@ -334,6 +334,7 @@ export function CommentsFeed({
     setDropdown(false);
   };
 
+  
   // Generic helper to handle keyboard navigation inside dropdown menus
   const handleAutocompleteKeyDown = <T,>(
     e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>,
