@@ -1,7 +1,8 @@
-import { Suspense } from 'react';
-import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { ManagerData } from '@/app/manager/_components/manager-data';
-import { RegistryPageSkeleton } from '@/components/registry-page-skeleton';
+import {
+  REGISTRY_PAGES,
+  RegistrySuspensePage,
+} from '@/components/registry-page-shell';
 import type { RawSearchParams } from '@/lib/search-params';
 
 export default function ManagerDashboardPage({
@@ -10,14 +11,8 @@ export default function ManagerDashboardPage({
   searchParams: Promise<RawSearchParams>;
 }>) {
   return (
-    <DashboardShell description="Manage teams workload and engineering resources.">
-      <Suspense
-        fallback={
-          <RegistryPageSkeleton columnCount={6} rowCount={8} showTabs />
-        }
-      >
-        <ManagerData searchParams={searchParams} />
-      </Suspense>
-    </DashboardShell>
+    <RegistrySuspensePage meta={REGISTRY_PAGES.manager}>
+      <ManagerData searchParams={searchParams} />
+    </RegistrySuspensePage>
   );
 }

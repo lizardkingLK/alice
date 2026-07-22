@@ -1,8 +1,9 @@
 import { Metadata } from 'next';
-import { Suspense } from 'react';
-import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { SprintsData } from '@/app/sprints/_components/sprints-data';
-import { RegistryPageSkeleton } from '@/components/registry-page-skeleton';
+import {
+  REGISTRY_PAGES,
+  RegistrySuspensePage,
+} from '@/components/registry-page-shell';
 import type { RawSearchParams } from '@/lib/search-params';
 
 export const metadata: Metadata = {
@@ -19,14 +20,8 @@ export default function SprintsPage({
   searchParams: Promise<RawSearchParams>;
 }>) {
   return (
-    <DashboardShell description="Plan and track team sprints.">
-      <Suspense
-        fallback={
-          <RegistryPageSkeleton columnCount={5} rowCount={6} showTabs />
-        }
-      >
-        <SprintsData searchParams={searchParams} />
-      </Suspense>
-    </DashboardShell>
+    <RegistrySuspensePage meta={REGISTRY_PAGES.sprints}>
+      <SprintsData searchParams={searchParams} />
+    </RegistrySuspensePage>
   );
 }

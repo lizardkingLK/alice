@@ -1,10 +1,8 @@
-import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
-import { RegistryPageSkeleton } from '@/components/registry-page-skeleton';
+import {
+  REGISTRY_PAGES,
+  RegistryLoadingPage,
+} from '@/components/registry-page-shell';
 
 export default function WorkItemsLoading() {
-  return (
-    <DashboardShell description="Manage Work Items.">
-      <RegistryPageSkeleton columnCount={7} rowCount={8} />
-    </DashboardShell>
-  );
+  return <RegistryLoadingPage meta={REGISTRY_PAGES.workItems} />;
 }

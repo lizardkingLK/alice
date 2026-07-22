@@ -1,10 +1,8 @@
-import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
-import { RegistryPageSkeleton } from '@/components/registry-page-skeleton';
+import {
+  REGISTRY_PAGES,
+  RegistryLoadingPage,
+} from '@/components/registry-page-shell';
 
 export default function UsersLoading() {
-  return (
-    <DashboardShell description="Manage application users, assign workspace roles, and control access.">
-      <RegistryPageSkeleton columnCount={5} rowCount={8} />
-    </DashboardShell>
-  );
+  return <RegistryLoadingPage meta={REGISTRY_PAGES.users} />;
 }

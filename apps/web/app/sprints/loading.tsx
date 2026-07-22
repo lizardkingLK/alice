@@ -1,10 +1,8 @@
-import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
-import { RegistryPageSkeleton } from '@/components/registry-page-skeleton';
+import {
+  REGISTRY_PAGES,
+  RegistryLoadingPage,
+} from '@/components/registry-page-shell';
 
 export default function SprintsLoading() {
-  return (
-    <DashboardShell description="Plan and track team sprints.">
-      <RegistryPageSkeleton columnCount={5} rowCount={6} showTabs />
-    </DashboardShell>
-  );
+  return <RegistryLoadingPage meta={REGISTRY_PAGES.sprints} />;
 }

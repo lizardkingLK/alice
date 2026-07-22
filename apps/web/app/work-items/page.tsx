@@ -1,7 +1,8 @@
-import { Suspense } from 'react';
-import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { WorkItemsData } from '@/app/work-items/_components/work-items-data';
-import { RegistryPageSkeleton } from '@/components/registry-page-skeleton';
+import {
+  REGISTRY_PAGES,
+  RegistrySuspensePage,
+} from '@/components/registry-page-shell';
 import type { RawSearchParams } from '@/lib/search-params';
 
 export default function WorkItemsDashboard({
@@ -10,12 +11,8 @@ export default function WorkItemsDashboard({
   searchParams: Promise<RawSearchParams>;
 }>) {
   return (
-    <DashboardShell description="Manage Work Items.">
-      <Suspense
-        fallback={<RegistryPageSkeleton columnCount={7} rowCount={8} />}
-      >
-        <WorkItemsData searchParams={searchParams} />
-      </Suspense>
-    </DashboardShell>
+    <RegistrySuspensePage meta={REGISTRY_PAGES.workItems}>
+      <WorkItemsData searchParams={searchParams} />
+    </RegistrySuspensePage>
   );
 }
