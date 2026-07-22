@@ -63,9 +63,11 @@ vi.mock('@repo/ui/components/ui/dropdown-menu', () => {
     DropdownMenuItem: ({
       children,
       onClick,
+      ...props
     }: {
       children: ReactNode;
       onClick?: () => void;
+      [key: string]: unknown;
     }) => {
       // Extract main status name from children when children is an array [status, indicator]
       const text = Array.isArray(children) ? children[0] : children;
@@ -74,6 +76,7 @@ vi.mock('@repo/ui/components/ui/dropdown-menu', () => {
           type="button"
           data-testid={`dropdown-item-${text}`}
           onClick={onClick}
+          {...props}
         >
           {children}
         </button>
@@ -268,8 +271,7 @@ describe('SprintList Component', () => {
     expect(screen.getByTestId('mock-sprint-form')).toBeInTheDocument();
   });
 
-  it('triggers add and edit sprint callbacks', () => {
-    const onAddSprint = vi.fn();
+  it('triggers edit sprint callbacks', () => {
     const onEditSprint = vi.fn();
 
     render(
@@ -279,14 +281,9 @@ describe('SprintList Component', () => {
         filterTab="active"
         onPageChange={vi.fn()}
         onLimitChange={vi.fn()}
-        onAddSprint={onAddSprint}
         onEditSprint={onEditSprint}
       />
     );
-
-    const addSprintBtn = screen.getByRole('button', { name: /Add Sprint/i });
-    fireEvent.click(addSprintBtn);
-    expect(onAddSprint).toHaveBeenCalled();
 
     const editBtns = screen.getAllByRole('button', { name: 'Edit Sprint' });
     // First edit button belongs to Sprint Alpha
@@ -426,19 +423,19 @@ describe('SprintList Component', () => {
     );
 
     // Verify Archive button is rendered for Completed Sprint
-    const completedLi = screen.getByText('Completed Sprint').closest('li')!;
+    const completedLi = screen.getByText('Completed Sprint').closest('tr')!;
     const archiveBtn = within(completedLi).getByRole('button', {
       name: 'Archive Sprint',
     });
     expect(archiveBtn).toBeInTheDocument();
 
     // Verify Archive button is NOT rendered for Ongoing or Planned Sprint
-    const ongoingLi = screen.getByText('Ongoing Sprint').closest('li')!;
+    const ongoingLi = screen.getByText('Ongoing Sprint').closest('tr')!;
     expect(
       within(ongoingLi).queryByRole('button', { name: 'Archive Sprint' })
     ).not.toBeInTheDocument();
 
-    const plannedLi = screen.getByText('Planned Sprint').closest('li')!;
+    const plannedLi = screen.getByText('Planned Sprint').closest('tr')!;
     expect(
       within(plannedLi).queryByRole('button', { name: 'Archive Sprint' })
     ).not.toBeInTheDocument();
@@ -489,14 +486,14 @@ describe('SprintList Component', () => {
     );
 
     // Verify Restore button is rendered for Archived Sprint
-    const archivedLi = screen.getByText('Archived Sprint').closest('li')!;
+    const archivedLi = screen.getByText('Archived Sprint').closest('tr')!;
     const restoreBtn = within(archivedLi).getByRole('button', {
       name: 'Restore Sprint',
     });
     expect(restoreBtn).toBeInTheDocument();
 
     // Verify Restore button is NOT rendered for Completed Sprint
-    const completedLi = screen.getByText('Completed Sprint').closest('li')!;
+    const completedLi = screen.getByText('Completed Sprint').closest('tr')!;
     expect(
       within(completedLi).queryByRole('button', { name: 'Restore Sprint' })
     ).not.toBeInTheDocument();
@@ -535,7 +532,7 @@ describe('SprintList Component', () => {
     );
 
     // Verify Edit button is NOT rendered for Archived Sprint
-    const archivedLi = screen.getByText('Archived Sprint').closest('li')!;
+    const archivedLi = screen.getByText('Archived Sprint').closest('tr')!;
     expect(
       within(archivedLi).queryByRole('button', { name: 'Edit Sprint' })
     ).not.toBeInTheDocument();

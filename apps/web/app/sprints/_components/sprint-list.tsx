@@ -1,6 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
+import {
+  type ColumnDef,
+  getCoreRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Card,
@@ -16,12 +21,15 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
 import { cn } from '@repo/ui/lib/utils';
-import { Plus, Calendar, Pencil, Archive, RefreshCw } from '@repo/ui/lib/icons';
+import { Calendar, Pencil, Archive, RefreshCw, MoreHorizontal } from '@repo/ui/lib/icons';
 import {
   Sprint,
   updateSprintStatus,
 } from '@/app/sprints/_services/sprints.service';
 import { Pagination } from '@/components/pagination';
+import { DataTable } from '@/components/data-table';
+import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
+import { formatDate } from '@/app/_shared/utility';
 
 type SprintListProps = {
   sprints: Sprint[];
@@ -43,7 +51,6 @@ type SprintListProps = {
   onRetry?: () => void;
   // eslint-disable-next-line no-unused-vars
   onSprintUpdated?: (sprint: Sprint) => void;
-  onAddSprint?: () => void;
   // eslint-disable-next-line no-unused-vars
   onEditSprint?: (sprint: Sprint) => void;
   // eslint-disable-next-line no-unused-vars
@@ -138,129 +145,6 @@ export function SprintStatusDropdown({
   );
 }
 
-function formatDate(value: string): string {
-  const [year, month, day] = value.split('-');
-
-  if (!year || !month || !day) {
-    return value;
-  }
-
-  return new Date(
-    Number(year),
-    Number(month) - 1,
-    Number(day)
-  ).toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
-type SprintListItemProps = {
-  sprint: Sprint;
-  // eslint-disable-next-line no-unused-vars
-  onSprintUpdated?: (sprint: Sprint) => void;
-  // eslint-disable-next-line no-unused-vars
-  onEditSprint?: (sprint: Sprint) => void;
-  // eslint-disable-next-line no-unused-vars
-  onArchiveSprint?: (sprint: Sprint) => void;
-  // eslint-disable-next-line no-unused-vars
-  onRestoreSprint?: (sprint: Sprint) => void;
-};
-
-function SprintListItem({
-  sprint,
-  onSprintUpdated,
-  onEditSprint,
-  onArchiveSprint,
-  onRestoreSprint,
-}: Readonly<SprintListItemProps>) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  return (
-    <li className="space-y-2 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <h3 className="font-medium">{sprint.name}</h3>
-          {sprint.project ? (
-            <span className="bg-secondary text-secondary-foreground ring-secondary/20 inline-flex items-center rounded-md px-1.5 py-0.5 font-mono text-xs font-medium ring-1 ring-inset">
-              {sprint.project.key}
-            </span>
-          ) : null}
-          <SprintStatusDropdown
-            sprint={sprint}
-            onSprintUpdated={onSprintUpdated}
-            disabled={true}
-          />
-        </div>
-        <p className="text-muted-foreground text-sm">
-          {mounted ? (
-            <>
-              {formatDate(sprint.startDate)} – {formatDate(sprint.endDate)}
-            </>
-          ) : (
-            <span className="invisible">
-              {sprint.startDate} – {sprint.endDate}
-            </span>
-          )}
-        </p>
-      </div>
-      {sprint.project ? (
-        <p className="text-muted-foreground text-xs">
-          Project: <span className="font-medium">{sprint.project.name}</span>
-        </p>
-      ) : null}
-      <div className="flex items-center justify-between gap-4">
-        {sprint.goal ? (
-          <p className="text-muted-foreground text-sm">{sprint.goal}</p>
-        ) : (
-          <div />
-        )}
-        <div className="flex gap-2">
-          {onRestoreSprint && sprint.status === 'Archived' && (
-            <Button
-              type="button"
-              aria-label="Restore Sprint"
-              onClick={() => onRestoreSprint(sprint)}
-              className="focus-visible:ring-ring flex h-8 w-20 shrink-0 cursor-pointer items-center justify-center border-emerald-500/20 bg-emerald-500/10 text-[11px] font-semibold text-emerald-600 shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
-            >
-              <RefreshCw className="mr-1 h-3 w-3 shrink-0" />
-              <span>Restore</span>
-            </Button>
-          )}
-          {onArchiveSprint && sprint.status === 'Completed' && (
-            <Button
-              type="button"
-              aria-label="Archive Sprint"
-              onClick={() => onArchiveSprint(sprint)}
-              className="focus-visible:ring-ring flex h-8 w-28 shrink-0 items-center justify-center border border-rose-500/20 bg-rose-500/10 text-[11px] text-rose-600 shadow-sm transition-all hover:bg-rose-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
-            >
-              <Archive className="mr-1 h-3 w-3 shrink-0" />
-              <span>Archive</span>
-            </Button>
-          )}
-          {onEditSprint && sprint.status !== 'Archived' && (
-            <Button
-              type="button"
-              variant="outline"
-              aria-label="Edit Sprint"
-              onClick={() => onEditSprint(sprint)}
-              className="focus-visible:ring-ring flex h-8 w-20 shrink-0 items-center justify-center border-emerald-500/20 bg-emerald-500/10 text-[11px] font-semibold text-emerald-600 shadow-sm transition-all hover:bg-emerald-600 hover:text-white focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
-            >
-              <Pencil className="mr-1 h-3 w-3 shrink-0" />
-              <span>Edit</span>
-            </Button>
-          )}
-        </div>
-      </div>
-    </li>
-  );
-}
-
 type SprintListContentProps = {
   isLoading: boolean;
   error: string | null;
@@ -290,6 +174,147 @@ function SprintListContent({
   onArchiveSprint,
   onRestoreSprint,
 }: Readonly<SprintListContentProps>) {
+  const columns = useMemo<ColumnDef<Sprint>[]>(
+    () => [
+      {
+        accessorKey: 'name',
+        header: 'Sprint Name',
+        cell: ({ row }) => (
+          <div className="flex min-w-48 items-center gap-3">
+            <div
+              className={cn(
+                'bg-primary/10 text-primary border-primary/20',
+                'flex size-8 shrink-0 items-center justify-center',
+                'rounded-lg border text-xs font-bold'
+              )}
+            >
+              {row.original.name.slice(0, 1).toUpperCase()}
+            </div>
+            <div className="space-y-1 font-medium">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-foreground">
+                  {row.original.name}
+                </span>
+              </div>
+              {row.original.project ? (
+                <p className="text-muted-foreground text-xs font-normal">
+                  Project:{' '}
+                  <span className="font-medium">
+                    {row.original.project.name}
+                  </span>
+                </p>
+              ) : null}
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: 'duration',
+        header: 'Duration',
+        cell: ({ row }) => (
+          <span className="text-muted-foreground text-sm font-medium">
+            {formatDate(row.original.startDate)} –{' '}
+            {formatDate(row.original.endDate)}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: ({ row }) => (
+          <SprintStatusDropdown
+            sprint={row.original}
+            onSprintUpdated={onSprintUpdated}
+            disabled={true}
+          />
+        ),
+      },
+      {
+        accessorKey: 'goal',
+        header: 'Goal',
+        cell: ({ row }) => {
+          const goal = row.original.goal;
+          if (!goal) return <span className="text-muted-foreground">—</span>;
+          return (
+            <TruncatedText className="text-muted-foreground max-w-xs text-sm">
+              {goal}
+            </TruncatedText>
+          );
+        },
+      },
+      {
+        id: 'actions',
+        header: () => <span className="sr-only">Actions</span>,
+        cell: ({ row }) => {
+          const sprint = row.original;
+          const showEdit = onEditSprint && sprint.status !== 'Archived';
+          const showArchive = onArchiveSprint && sprint.status === 'Completed';
+          const showRestore = onRestoreSprint && sprint.status === 'Archived';
+
+          if (!showEdit && !showArchive && !showRestore) {
+            return null;
+          }
+
+          return (
+            <div className="flex justify-end">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="cursor-pointer"
+                    aria-label="Open Actions Menu"
+                  >
+                    <MoreHorizontal />
+                    <span className="sr-only">Open menu</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {showEdit && (
+                    <DropdownMenuItem
+                      onClick={() => onEditSprint(sprint)}
+                      aria-label="Edit Sprint"
+                    >
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Edit
+                    </DropdownMenuItem>
+                  )}
+                  {showArchive && (
+                    <DropdownMenuItem
+                      onClick={() => onArchiveSprint(sprint)}
+                      aria-label="Archive Sprint"
+                      className="text-rose-600 focus:text-rose-600 focus:bg-rose-50 dark:text-rose-400 dark:focus:text-rose-400 dark:focus:bg-rose-950/20"
+                    >
+                      <Archive className="mr-2 h-4 w-4" />
+                      Archive
+                    </DropdownMenuItem>
+                  )}
+                  {showRestore && (
+                    <DropdownMenuItem
+                      onClick={() => onRestoreSprint(sprint)}
+                      aria-label="Restore Sprint"
+                      className="text-emerald-600 focus:text-emerald-600 focus:bg-emerald-50 dark:text-emerald-400 dark:focus:text-emerald-400 dark:focus:bg-emerald-950/20"
+                    >
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Restore
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        },
+      },
+    ],
+    [onSprintUpdated, onEditSprint, onArchiveSprint, onRestoreSprint]
+  );
+
+  const table = useReactTable({
+    data: filteredSprints,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
   if (isLoading) {
     return (
       <div className="text-muted-foreground flex min-h-64 items-center justify-center text-sm">
@@ -330,18 +355,15 @@ function SprintListContent({
   }
 
   return (
-    <ul className="divide-border divide-y rounded-lg border">
-      {filteredSprints.map((sprint) => (
-        <SprintListItem
-          key={sprint.id}
-          sprint={sprint}
-          onSprintUpdated={onSprintUpdated}
-          onEditSprint={onEditSprint}
-          onArchiveSprint={onArchiveSprint}
-          onRestoreSprint={onRestoreSprint}
-        />
-      ))}
-    </ul>
+    <DataTable
+      table={table}
+      columnCount={columns.length}
+      emptyState={
+        <div className="flex flex-col items-center justify-center gap-2">
+          <p>No sprints found matching your search.</p>
+        </div>
+      }
+    />
   );
 }
 
@@ -349,13 +371,13 @@ export function SprintList({
   sprints,
   pagination,
   filterTab,
+  onTabChange,
   onPageChange,
   onLimitChange,
   isLoading = false,
   error = null,
   onRetry,
   onSprintUpdated,
-  onAddSprint,
   onEditSprint,
   onArchiveSprint,
   onRestoreSprint,
@@ -376,15 +398,33 @@ export function SprintList({
               : 'Archived sprints.'}
           </CardDescription>
         </div>
-        {onAddSprint && (
-          <Button
-            type="button"
-            onClick={onAddSprint}
-            className="h-10 text-xs font-semibold shadow-md duration-300 hover:shadow-lg"
-          >
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Add Sprint
-          </Button>
+        {onTabChange && (
+          <div className="bg-muted/50 border-border text-muted-foreground inline-flex h-10 items-center justify-center rounded-md border p-1">
+            <Button
+              variant="ghost"
+              onClick={() => onTabChange('active')}
+              className={cn(
+                'h-8 cursor-pointer rounded-sm px-3 text-xs font-semibold transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
+                filterTab === 'active'
+                  ? 'bg-background text-foreground hover:bg-background shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
+              )}
+            >
+              Active
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => onTabChange('archived')}
+              className={cn(
+                'h-8 cursor-pointer rounded-sm px-3 text-xs font-semibold transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
+                filterTab === 'archived'
+                  ? 'bg-background text-foreground hover:bg-background shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
+              )}
+            >
+              Archived
+            </Button>
+          </div>
         )}
       </CardHeader>
       <CardContent className="space-y-4">

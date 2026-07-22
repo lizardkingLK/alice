@@ -11,8 +11,7 @@ import {
 } from '@/app/sprints/_services/sprints.service';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
-import { cn } from '@repo/ui/lib/utils';
-import { Search } from '@repo/ui/lib/icons';
+import { Search, Plus } from '@repo/ui/lib/icons';
 
 interface SprintsWorkspaceProps {
   readonly sprints: Sprint[];
@@ -120,33 +119,16 @@ export function SprintsWorkspace({
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Tabs */}
-            <div className="bg-muted/50 border-border text-muted-foreground inline-flex h-10 items-center justify-center rounded-md border p-1">
+            {isManagerOrAdmin && (
               <Button
-                variant="ghost"
-                onClick={() => handleTabChange('active')}
-                className={cn(
-                  'h-8 cursor-pointer rounded-sm px-3 text-xs font-semibold transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
-                  filterTab === 'active'
-                    ? 'bg-background text-foreground hover:bg-background shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
-                )}
+                type="button"
+                onClick={() => setIsAddSprintOpen(true)}
+                className="h-10 text-xs font-semibold shadow-md duration-300 hover:shadow-lg"
               >
-                Active
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                Add Sprint
               </Button>
-              <Button
-                variant="ghost"
-                onClick={() => handleTabChange('archived')}
-                className={cn(
-                  'h-8 cursor-pointer rounded-sm px-3 text-xs font-semibold transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
-                  filterTab === 'archived'
-                    ? 'bg-background text-foreground hover:bg-background shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
-                )}
-              >
-                Archived
-              </Button>
-            </div>
+            )}
           </div>
         </div>
 
@@ -155,14 +137,12 @@ export function SprintsWorkspace({
             sprints={sprints}
             pagination={pagination}
             filterTab={filterTab}
+            onTabChange={handleTabChange}
             onPageChange={handlePageChange}
             onLimitChange={handleLimitChange}
             error={error}
             onRetry={handleRetry}
             onSprintUpdated={handleSprintUpdated}
-            onAddSprint={
-              isManagerOrAdmin ? () => setIsAddSprintOpen(true) : undefined
-            }
             onEditSprint={
               isManagerOrAdmin
                 ? (sprint) => setEditingSprint(sprint)
