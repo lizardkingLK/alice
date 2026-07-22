@@ -5,7 +5,7 @@ How Alice keeps dashboard pages fast, what has already been optimized, and the r
 | Field        | Value                                        |
 | ------------ | -------------------------------------------- |
 | Status       | **Living**                                   |
-| Last updated | 2026-07-22 (M3 list routes)                  |
+| Last updated | 2026-07-23 (M5 dropdown cache)               |
 | Scope        | `apps/web` RSC data loading, `apps/api` auth |
 
 Related:
@@ -173,6 +173,28 @@ Dashboard list pages no longer block the entire RSC on Supabase reads. Each rout
 - **Routes shipped:** `/work-items`, `/users`, `/projects`, `/manager`, `/sprints`.
 - **Not yet:** `/backlog`, detail pages (`/projects/[id]`, `/work-items/[id]`).
 
+### 2.7 Short-TTL dropdown cache (M5)
+
+Form dropdowns (`getUserList`, `getProjectList`) are shared across many pages and change infrequently. They now use Next.js `unstable_cache` with a **60s** safety-net TTL and **tag** invalidation on mutations.
+
+| Piece                 | Location                                                           |
+| --------------------- | ------------------------------------------------------------------ |
+| Tags + cached loaders | `apps/web/lib/cache/dropdown-cache.ts`                             |
+| Tag ids               | `dropdown-users`, `dropdown-projects`                              |
+| Consumers             | `getUserList()` / `getProjectList()` in `*.service.server.ts`      |
+| Invalidate            | Server Actions call `updateTag` via `invalidateDropdownCache(...)` |
+
+**Why a cookie-free admin client inside the cache:** `unstable_cache` cannot call `cookies()`. The service-role client loads the shared list once; the outer helper still gates with `getUser()` so anonymous callers get `[]`.
+
+**How refresh works (important):**
+
+1. Mutation succeeds → `updateTag('dropdown-users'|'dropdown-projects')` **expires** the Data Cache entry immediately (Next 16 Server Action API — prefer over `revalidateTag(tag, 'max')` for read-your-writes).
+2. Same action also calls `revalidatePath(...)` so the **current** route’s RSC payload refreshes.
+3. The **browser** does not receive a push. The next navigation / soft refresh / Server Action re-render that needs the dropdown hits Supabase again and stores a new cache entry.
+4. Tabs already open with old props keep showing that snapshot until they remount or re-fetch (normal App Router behavior).
+
+Paginated registry lists (`getUsersListPaginated`, `getProjectListPaginated`, etc.) are **not** cached this way — they stay request-fresh.
+
 ---
 
 ## 3. Contributor patterns
@@ -184,6 +206,7 @@ Follow these when adding or editing server-rendered pages:
 3. **Guard each concurrent call** — attach `.catch()` returning a safe fallback so a single failure degrades gracefully.
 4. **Don't fetch what SSR already has** — pass server-fetched data into client components as props rather than refetching on mount.
 5. **Prefer SSR/RSC prefetch** over client-side fetching for initial page data (see workspace rules).
+6. **Dropdown lists** — use `getUserList` / `getProjectList` (cached). After mutating users or projects, call `invalidateDropdownCache(DROPDOWN_CACHE_TAGS.*)` in the Server Action (already wired for `/users` and `/projects` actions).
 
 ---
 
@@ -191,16 +214,40 @@ Follow these when adding or editing server-rendered pages:
 
 Targeting sub-1.5s. Ordered by impact-to-effort.
 
-| ID     | Work                                                                                                                               | Effort | Risk    | Expected impact                           | Status                   |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------- | ------ | ------- | ----------------------------------------- | ------------------------ |
-| **M1** | Direct Supabase reads in RSC for GET/list pages — drop the `web → api` hop for reads; keep API for mutations/admin.                | M–L    | Medium  | 40–60% of remaining latency on read pages | ✅ Shipped (§2.4)        |
-| **M2** | Slim `requireApiAuth` — move profile auto-provisioning to login/signup/invite; keep JWT verify off the hot DB path.                | S      | Low–Med | −1 DB round trip per API call             | ✅ Shipped (§2.5)        |
-| **M3** | Suspense streaming — render the shell immediately, stream tables via `<Suspense>` + `loading.tsx`.                                 | M      | Low     | Large perceived speedup                   | ✅ Shipped (list routes) |
-| **M4** | Batch "workspace" API endpoints — collapse multi-call pages into one auth + fewer DB round trips (only where M1 isn't adopted).    | M      | Low     | Medium                                    | Planned                  |
-| **M5** | Short-TTL caching for stable dropdown data (`getUserList`, `getProjectList`) via `unstable_cache` + tag revalidation on mutations. | S–M    | Low–Med | Medium                                    | Planned                  |
-| **M6** | Infra alignment — same Vercel region for web/api/Supabase, verify prod API URL path, warm cold starts if needed.                   | S      | Low     | Medium (spiky)                            | Planned                  |
+| ID     | Work                                                                                                                          | Effort | Risk    | Expected impact                           | Status                   |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------- | ------ | ------- | ----------------------------------------- | ------------------------ |
+| **M1** | Direct Supabase reads in RSC for GET/list pages — drop the `web → api` hop for reads; keep API for mutations/admin.           | M–L    | Medium  | 40–60% of remaining latency on read pages | ✅ Shipped (§2.4)        |
+| **M2** | Slim `requireApiAuth` — move profile auto-provisioning to login/signup/invite; keep JWT verify off the hot DB path.           | S      | Low–Med | −1 DB round trip per API call             | ✅ Shipped (§2.5)        |
+| **M3** | Suspense streaming — render the shell immediately, stream tables via `<Suspense>` + `loading.tsx`.                            | M      | Low     | Large perceived speedup                   | ✅ Shipped (list routes) |
+| **M4** | Batch "workspace" loaders — see §5 (narrowed; deferred)                                                                       | M      | Low     | Medium on high fan-out pages              | Planned / deferred (§5)  |
+| **M5** | Short-TTL caching for stable dropdown data (`getUserList`, `getProjectList`) via `unstable_cache` + `updateTag` on mutations. | S–M    | Low–Med | Medium                                    | ✅ Shipped (§2.7)        |
+| **M6** | Infra alignment — same Vercel region for web/api/Supabase, verify prod API URL path, warm cold starts if needed.              | S      | Low     | Medium (spiky)                            | Planned                  |
 
-**RLS reminder:** M1 reads run with the `authenticated` role and RLS unenforced. Before enabling RLS, add SELECT policies for `work_items`, `projects`, `users`, `sprints`, `project_members`, `teams`, and `team_members`.
+**RLS reminder:** M1 reads run with the `authenticated` role and RLS unenforced. Before enabling RLS, add SELECT policies for `work_items`, `projects`, `users`, `sprints`, `project_members`, `teams`, and `team_members`. Dropdown cache (§2.7) uses the **service-role** client inside `unstable_cache` only.
+
+---
+
+## 5. M4 — narrowed plan (deferred)
+
+Classic M4 (“one Express workspace GET”) is largely obsolete after M1: list pages already do direct Supabase + `Promise.all`. Remaining value is **named RSC workspace loaders** for high fan-out surfaces — not re-batching list routes.
+
+### Audit (2026-07-23)
+
+| Route                                  | Parallel reads                           | Batching ROI | Notes                                                     |
+| -------------------------------------- | ---------------------------------------- | ------------ | --------------------------------------------------------- |
+| `/backlog`                             | 4 — projects, users, work items, sprints | **Highest**  | Biggest fan-out; no Suspense yet                          |
+| `/manager`                             | 4                                        | Low–Med      | Dropdown caching (M5) helps more                          |
+| `/work-items`, `/projects`, `/sprints` | 3                                        | Low          | M1 + Promise.all + M3 already                             |
+| `/projects/[id]`                       | 3                                        | Med          | Optional `getProjectWorkspace(id)` later                  |
+| `/board`                               | 1                                        | None         | No fan-out yet                                            |
+| Comments / discussions                 | —                                        | Future       | No feature code yet; design a single reader when PRs land |
+
+### When to implement
+
+1. **M4.1** — `getBacklogWorkspace()` when next editing `/backlog` (optionally add M3 Suspense then).
+2. **M4.2** — `getProjectWorkspace(id)` optional readability win.
+3. **M4.3** — `getWorkItemDiscussion(id)` when comments/discussions merge — one reader, not N client GETs.
+4. **Out of scope** — re-batching already-optimized list pages; new Express batch routers for web-only reads.
 
 ---
 
