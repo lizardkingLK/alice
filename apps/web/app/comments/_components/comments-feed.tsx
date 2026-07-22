@@ -64,6 +64,97 @@ type NumberCallback = (val: number) => void;
 type BooleanCallback = (val: boolean) => void;
 type VoidCallback = () => void;
 
+type MentionDropdownListProps = {
+  show: boolean;
+  usersList: CommentUser[];
+  highlightIdx: number;
+  onSelect: (user: CommentUser) => void;
+  position?: 'top' | 'bottom';
+};
+
+function MentionDropdownList({
+  show,
+  usersList,
+  highlightIdx,
+  onSelect,
+  position = 'top',
+}: Readonly<MentionDropdownListProps>) {
+  if (!show || usersList.length === 0) return null;
+  return (
+    <div
+      className={cn(
+        "absolute z-50 left-0 right-0 max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950",
+        position === 'top' ? "bottom-full mb-1" : "top-full mt-1"
+      )}
+    >
+      {usersList.map((user, idx) => (
+        <button
+          key={user.id}
+          type="button"
+          onClick={() => onSelect(user)}
+          className={cn(
+            "flex w-full items-center gap-2 px-3 py-2 text-left text-sm",
+            idx === highlightIdx
+              ? "bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+              : "text-zinc-700 dark:text-zinc-300"
+          )}
+        >
+          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 font-semibold text-white text-[10px]">
+            {user.name.split(' ').map((n) => n[0]).join('').toUpperCase()}
+          </div>
+          <span>{user.name}</span>
+          <span className="text-xs text-zinc-400">({user.email})</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+type WIDropdownListProps = {
+  show: boolean;
+  wiList: Array<{ id: string; key: string; title: string }>;
+  highlightIdx: number;
+  onSelect: (item: { id: string; key: string; title: string }) => void;
+  position?: 'top' | 'bottom';
+};
+
+function WIDropdownList({
+  show,
+  wiList,
+  highlightIdx,
+  onSelect,
+  position = 'top',
+}: Readonly<WIDropdownListProps>) {
+  if (!show || wiList.length === 0) return null;
+  return (
+    <div
+      className={cn(
+        "absolute z-50 left-0 right-0 max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950",
+        position === 'top' ? "bottom-full mb-1" : "top-full mt-1"
+      )}
+    >
+      {wiList.map((item, idx) => (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => onSelect(item)}
+          className={cn(
+            "flex w-full items-center gap-2 px-3 py-2 text-left text-sm",
+            idx === highlightIdx
+              ? "bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+              : "text-zinc-700 dark:text-zinc-300"
+          )}
+        >
+          <div className="flex h-5 w-12 items-center justify-center rounded-md bg-purple-500 font-bold text-white text-[10px]">
+            {item.key}
+          </div>
+          <span className="truncate flex-1 text-zinc-900 dark:text-zinc-100">{item.title}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function CommentsFeed({
   initialComments,
   workItems,
@@ -334,7 +425,6 @@ export function CommentsFeed({
     setDropdown(false);
   };
 
-  
   // Generic helper to handle keyboard navigation inside dropdown menus
   const handleAutocompleteKeyDown = <T,>(
     e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>,
@@ -1020,71 +1110,40 @@ export function CommentsFeed({
                       className="w-full rounded-lg border border-zinc-300 p-2.5 text-sm focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                       rows={3}
                     />
-                    {showEditMentionDropdown && filteredUsersEdit.length > 0 && (
-                      <div className="absolute z-50 left-0 right-0 top-full mt-1 max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950">
-                        {filteredUsersEdit.map((user, idx) => (
-                          <button
-                            key={user.id}
-                            type="button"
-                            onClick={() =>
-                              handleInsertMention(
-                                editContent,
-                                editMentionTriggerIdx,
-                                editCommentRef.current?.selectionStart || 0,
-                                `@${user.name}`,
-                                editCommentRef.current,
-                                setEditContent,
-                                setShowEditMentionDropdown
-                              )
-                            }
-                            className={cn(
-                              "flex w-full items-center gap-2 px-3 py-2 text-left text-sm",
-                              idx === editMentionHighlightIdx
-                                ? "bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
-                                : "text-zinc-700 dark:text-zinc-300"
-                            )}
-                          >
-                            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 font-semibold text-white text-[10px]">
-                              {user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
-                            </div>
-                            <span>{user.name}</span>
-                            <span className="text-xs text-zinc-400">({user.email})</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {showEditWISuggestions && filteredWorkItemsEdit.length > 0 && (
-                      <div className="absolute z-50 left-0 right-0 top-full mt-1 max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950">
-                        {filteredWorkItemsEdit.map((item, idx) => (
-                          <button
-                            key={item.id}
-                            type="button"
-                            onClick={() =>
-                              handleInsertMention(
-                                editContent,
-                                editWITriggerIdx,
-                                editCommentRef.current?.selectionStart || 0,
-                                `#${item.key}`,
-                                editCommentRef.current,
-                                setEditContent,
-                                setShowEditWISuggestions
-                              )
-                            }
-                            className={cn(
-                              "flex w-full items-center gap-2 px-3 py-2 text-left text-sm",
-                              idx === editWIHighlightIdx
-                                ? "bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
-                                : "text-zinc-700 dark:text-zinc-300"
-                            )}
-                          >
-                            <div className="flex h-5 w-12 items-center justify-center rounded-md bg-purple-500 font-bold text-white text-[10px]">
-                              {item.key}
-                            </div>
-                            <span className="truncate flex-1">{item.title}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                    <MentionDropdownList
+                      show={showEditMentionDropdown}
+                      usersList={filteredUsersEdit}
+                      highlightIdx={editMentionHighlightIdx}
+                      position="bottom"
+                      onSelect={(user) =>
+                        handleInsertMention(
+                          editContent,
+                          editMentionTriggerIdx,
+                          editCommentRef.current?.selectionStart || 0,
+                          `@${user.name}`,
+                          editCommentRef.current,
+                          setEditContent,
+                          setShowEditMentionDropdown
+                        )
+                      }
+                    />
+                    <WIDropdownList
+                      show={showEditWISuggestions}
+                      wiList={filteredWorkItemsEdit}
+                      highlightIdx={editWIHighlightIdx}
+                      position="bottom"
+                      onSelect={(item) =>
+                        handleInsertMention(
+                          editContent,
+                          editWITriggerIdx,
+                          editCommentRef.current?.selectionStart || 0,
+                          `#${item.key}`,
+                          editCommentRef.current,
+                          setEditContent,
+                          setShowEditWISuggestions
+                        )
+                      }
+                    />
                     <div className="flex justify-end gap-2">
                       <Button
                         size="sm"
@@ -1256,71 +1315,40 @@ export function CommentsFeed({
                         }}
                         className="flex-1 rounded-lg border border-zinc-200 bg-zinc-50 py-1.5 px-3 text-xs text-zinc-900 focus:border-blue-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
                       />
-                      {showReplyMentionDropdown && filteredUsersReply.length > 0 && (
-                        <div className="absolute z-50 left-0 right-0 bottom-full mb-1 max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950">
-                          {filteredUsersReply.map((user, idx) => (
-                            <button
-                              key={user.id}
-                              type="button"
-                              onClick={() =>
-                                handleInsertMention(
-                                  replyContent,
-                                  replyMentionTriggerIdx,
-                                  replyInputRef.current?.selectionStart || 0,
-                                  `@${user.name}`,
-                                  replyInputRef.current,
-                                  setReplyContent,
-                                  setShowReplyMentionDropdown
-                                )
-                              }
-                              className={cn(
-                                "flex w-full items-center gap-2 px-3 py-2 text-left text-sm",
-                                idx === replyMentionHighlightIdx
-                                  ? "bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
-                                  : "text-zinc-700 dark:text-zinc-300"
-                              )}
-                            >
-                              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 font-semibold text-white text-[10px]">
-                                {user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
-                              </div>
-                              <span>{user.name}</span>
-                              <span className="text-xs text-zinc-400">({user.email})</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      {showReplyWISuggestions && filteredWorkItemsReply.length > 0 && (
-                        <div className="absolute z-50 left-0 right-0 bottom-full mb-1 max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950">
-                          {filteredWorkItemsReply.map((item, idx) => (
-                            <button
-                              key={item.id}
-                              type="button"
-                              onClick={() =>
-                                handleInsertMention(
-                                  replyContent,
-                                  replyWITriggerIdx,
-                                  replyInputRef.current?.selectionStart || 0,
-                                  `#${item.key}`,
-                                  replyInputRef.current,
-                                  setReplyContent,
-                                  setShowReplyWISuggestions
-                                )
-                              }
-                              className={cn(
-                                "flex w-full items-center gap-2 px-3 py-2 text-left text-sm",
-                                idx === replyWIHighlightIdx
-                                  ? "bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
-                                  : "text-zinc-700 dark:text-zinc-300"
-                              )}
-                            >
-                              <div className="flex h-5 w-12 items-center justify-center rounded-md bg-purple-500 font-bold text-white text-[10px]">
-                                {item.key}
-                              </div>
-                              <span className="truncate flex-1">{item.title}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                      <MentionDropdownList
+                        show={showReplyMentionDropdown}
+                        usersList={filteredUsersReply}
+                        highlightIdx={replyMentionHighlightIdx}
+                        position="top"
+                        onSelect={(user) =>
+                          handleInsertMention(
+                            replyContent,
+                            replyMentionTriggerIdx,
+                            replyInputRef.current?.selectionStart || 0,
+                            `@${user.name}`,
+                            replyInputRef.current,
+                            setReplyContent,
+                            setShowReplyMentionDropdown
+                          )
+                        }
+                      />
+                      <WIDropdownList
+                        show={showReplyWISuggestions}
+                        wiList={filteredWorkItemsReply}
+                        highlightIdx={replyWIHighlightIdx}
+                        position="top"
+                        onSelect={(item) =>
+                          handleInsertMention(
+                            replyContent,
+                            replyWITriggerIdx,
+                            replyInputRef.current?.selectionStart || 0,
+                            `#${item.key}`,
+                            replyInputRef.current,
+                            setReplyContent,
+                            setShowReplyWISuggestions
+                          )
+                        }
+                      />
                       <Button
                         size="sm"
                         onClick={() => handleReplySubmit(parent.id, parent.work_item_id)}
@@ -1415,71 +1443,40 @@ export function CommentsFeed({
                 rows={3}
                 className="w-full rounded-lg border border-zinc-200 bg-zinc-50/50 p-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:bg-zinc-900"
               />
-              {showNewMentionDropdown && filteredUsersNew.length > 0 && (
-                <div className="absolute z-50 left-0 right-0 top-full mt-1 max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950">
-                  {filteredUsersNew.map((user, idx) => (
-                    <button
-                      key={user.id}
-                      type="button"
-                      onClick={() =>
-                        handleInsertMention(
-                          newContent,
-                          newMentionTriggerIdx,
-                          newCommentRef.current?.selectionStart || 0,
-                          `@${user.name}`,
-                          newCommentRef.current,
-                          setNewContent,
-                          setShowNewMentionDropdown
-                        )
-                      }
-                      className={cn(
-                        "flex w-full items-center gap-2 px-3 py-2 text-left text-sm",
-                        idx === newMentionHighlightIdx
-                          ? "bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
-                          : "text-zinc-700 dark:text-zinc-300"
-                      )}
-                    >
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 font-semibold text-white text-[10px]">
-                        {user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
-                      </div>
-                      <span>{user.name}</span>
-                      <span className="text-xs text-zinc-400">({user.email})</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {showNewWISuggestions && filteredWorkItemsNew.length > 0 && (
-                <div className="absolute z-50 left-0 right-0 top-full mt-1 max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950">
-                  {filteredWorkItemsNew.map((item, idx) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() =>
-                        handleInsertMention(
-                          newContent,
-                          newWITriggerIdx,
-                          newCommentRef.current?.selectionStart || 0,
-                          `#${item.key}`,
-                          newCommentRef.current,
-                          setNewContent,
-                          setShowNewWISuggestions
-                        )
-                      }
-                      className={cn(
-                        "flex w-full items-center gap-2 px-3 py-2 text-left text-sm",
-                        idx === newWIHighlightIdx
-                          ? "bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
-                          : "text-zinc-700 dark:text-zinc-300"
-                      )}
-                    >
-                      <div className="flex h-5 w-12 items-center justify-center rounded-md bg-purple-500 font-bold text-white text-[10px]">
-                        {item.key}
-                      </div>
-                      <span className="truncate flex-1">{item.title}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+              <MentionDropdownList
+                show={showNewMentionDropdown}
+                usersList={filteredUsersNew}
+                highlightIdx={newMentionHighlightIdx}
+                position="bottom"
+                onSelect={(user) =>
+                  handleInsertMention(
+                    newContent,
+                    newMentionTriggerIdx,
+                    newCommentRef.current?.selectionStart || 0,
+                    `@${user.name}`,
+                    newCommentRef.current,
+                    setNewContent,
+                    setShowNewMentionDropdown
+                  )
+                }
+              />
+              <WIDropdownList
+                show={showNewWISuggestions}
+                wiList={filteredWorkItemsNew}
+                highlightIdx={newWIHighlightIdx}
+                position="bottom"
+                onSelect={(item) =>
+                  handleInsertMention(
+                    newContent,
+                    newWITriggerIdx,
+                    newCommentRef.current?.selectionStart || 0,
+                    `#${item.key}`,
+                    newCommentRef.current,
+                    setNewContent,
+                    setShowNewWISuggestions
+                  )
+                }
+              />
             </div>
             <div className="flex justify-end">
               <Button
@@ -1606,71 +1603,40 @@ export function CommentsFeed({
                   required
                   className="w-full rounded-lg border border-zinc-200 bg-white p-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                 />
-                {showNewMentionDropdown && filteredUsersNew.length > 0 && (
-                  <div className="absolute z-50 left-0 right-0 top-full mt-1 max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950">
-                    {filteredUsersNew.map((user, idx) => (
-                      <button
-                        key={user.id}
-                        type="button"
-                        onClick={() =>
-                          handleInsertMention(
-                            newContent,
-                            newMentionTriggerIdx,
-                            newCommentRef.current?.selectionStart || 0,
-                            `@${user.name}`,
-                            newCommentRef.current,
-                            setNewContent,
-                            setShowNewMentionDropdown
-                          )
-                        }
-                        className={cn(
-                          "flex w-full items-center gap-2 px-3 py-2 text-left text-sm",
-                          idx === newMentionHighlightIdx
-                            ? "bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
-                            : "text-zinc-700 dark:text-zinc-300"
-                        )}
-                      >
-                        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 font-semibold text-white text-[10px]">
-                          {user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
-                        </div>
-                        <span>{user.name}</span>
-                        <span className="text-xs text-zinc-400">({user.email})</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {showNewWISuggestions && filteredWorkItemsNew.length > 0 && (
-                  <div className="absolute z-50 left-0 right-0 top-full mt-1 max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950">
-                    {filteredWorkItemsNew.map((item, idx) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() =>
-                          handleInsertMention(
-                            newContent,
-                            newWITriggerIdx,
-                            newCommentRef.current?.selectionStart || 0,
-                            `#${item.key}`,
-                            newCommentRef.current,
-                            setNewContent,
-                            setShowNewWISuggestions
-                          )
-                        }
-                        className={cn(
-                          "flex w-full items-center gap-2 px-3 py-2 text-left text-sm",
-                          idx === newWIHighlightIdx
-                            ? "bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
-                            : "text-zinc-700 dark:text-zinc-300"
-                        )}
-                      >
-                        <div className="flex h-5 w-12 items-center justify-center rounded-md bg-purple-500 font-bold text-white text-[10px]">
-                          {item.key}
-                        </div>
-                        <span className="truncate flex-1">{item.title}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <MentionDropdownList
+                  show={showNewMentionDropdown}
+                  usersList={filteredUsersNew}
+                  highlightIdx={newMentionHighlightIdx}
+                  position="bottom"
+                  onSelect={(user) =>
+                    handleInsertMention(
+                      newContent,
+                      newMentionTriggerIdx,
+                      newCommentRef.current?.selectionStart || 0,
+                      `@${user.name}`,
+                      newCommentRef.current,
+                      setNewContent,
+                      setShowNewMentionDropdown
+                    )
+                  }
+                />
+                <WIDropdownList
+                  show={showNewWISuggestions}
+                  wiList={filteredWorkItemsNew}
+                  highlightIdx={newWIHighlightIdx}
+                  position="bottom"
+                  onSelect={(item) =>
+                    handleInsertMention(
+                      newContent,
+                      newWITriggerIdx,
+                      newCommentRef.current?.selectionStart || 0,
+                      `#${item.key}`,
+                      newCommentRef.current,
+                      setNewContent,
+                      setShowNewWISuggestions
+                    )
+                  }
+                />
               </div>
             </div>
 

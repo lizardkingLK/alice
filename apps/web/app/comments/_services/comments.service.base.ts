@@ -52,32 +52,14 @@ type DbCommentRaw = CommentItem & {
   } | null;
 };
 
-async function createCommentDirect(input: CreateCommentInput): Promise<CommentItem> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from('comments')
-    .insert({
-      work_item_id: input.work_item_id,
-      content: input.content,
-      author_id: input.author_id,
-      parent_id: input.parent_id || null,
-      status: 'active',
-      updated_at: new Date().toISOString(),
-    })
-    .select(
-      `
-      *,
-      author:users!comments_author_id_fkey(id, name, email, role, profile_picture),
-      work_item:work_items(id, title, type, project:projects(id, name, key))
-    `
-    )
-    .single();
+const COMMENT_SELECT_FIELDS = `
+  *,
+  author:users!comments_author_id_fkey(id, name, email, role, profile_picture),
+  work_item:work_items(id, title, type, project:projects(id, name, key))
+`;
 
-  if (error) {
-    throw new Error(`Failed to create comment: ${error.message}`);
-  }
-
-  const raw = data as unknown as DbCommentRaw;
+function mapDbCommentToCommentItem(data: unknown): CommentItem {
+  const raw = data as DbCommentRaw;
   const projectKey = raw.work_item?.project?.key || 'ITEM';
   const computedKey = raw.work_item ? `${projectKey}-${raw.work_item.id.slice(0, 4).toUpperCase()}` : '';
 
@@ -92,6 +74,28 @@ async function createCommentDirect(input: CreateCommentInput): Promise<CommentIt
   } as CommentItem;
 }
 
+async function createCommentDirect(input: CreateCommentInput): Promise<CommentItem> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('comments')
+    .insert({
+      work_item_id: input.work_item_id,
+      content: input.content,
+      author_id: input.author_id,
+      parent_id: input.parent_id || null,
+      status: 'active',
+      updated_at: new Date().toISOString(),
+    })
+    .select(COMMENT_SELECT_FIELDS)
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to create comment: ${error.message}`);
+  }
+
+  return mapDbCommentToCommentItem(data);
+}
+
 async function updateCommentDirect(id: string, content: string): Promise<CommentItem> {
   const supabase = createClient();
   const { data, error } = await supabase
@@ -102,32 +106,14 @@ async function updateCommentDirect(id: string, content: string): Promise<Comment
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
-    .select(
-      `
-      *,
-      author:users!comments_author_id_fkey(id, name, email, role, profile_picture),
-      work_item:work_items(id, title, type, project:projects(id, name, key))
-    `
-    )
+    .select(COMMENT_SELECT_FIELDS)
     .single();
 
   if (error) {
     throw new Error(`Failed to update comment: ${error.message}`);
   }
 
-  const raw = data as unknown as DbCommentRaw;
-  const projectKey = raw.work_item?.project?.key || 'ITEM';
-  const computedKey = raw.work_item ? `${projectKey}-${raw.work_item.id.slice(0, 4).toUpperCase()}` : '';
-
-  return {
-    ...raw,
-    work_item: raw.work_item
-      ? {
-          ...raw.work_item,
-          key: computedKey,
-        }
-      : null,
-  } as CommentItem;
+  return mapDbCommentToCommentItem(data);
 }
 
 async function archiveCommentDirect(id: string): Promise<void> {
@@ -160,13 +146,7 @@ export function createCommentsService(
         const supabase = createClient();
         const { data } = await supabase
           .from('comments')
-          .select(
-            `
-            *,
-            author:users!comments_author_id_fkey(id, name, email, role, profile_picture),
-            work_item:work_items(id, title, type, project:projects(id, name, key))
-          `
-          )
+          .select(COMMENT_SELECT_FIELDS)
           .order('created_at', { ascending: false });
         return (data || []) as unknown as CommentItem[];
       }
