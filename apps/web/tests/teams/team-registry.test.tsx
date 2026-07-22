@@ -122,6 +122,7 @@ describe('TeamRegistry Component', () => {
         tab="active"
         search=""
         users={mockUsers}
+        activeProjects={[]}
         currentUserId="user-mgr-1"
         currentUserRole="manager"
       />
@@ -143,6 +144,7 @@ describe('TeamRegistry Component', () => {
         tab="active"
         search=""
         users={mockUsers}
+        activeProjects={[]}
         currentUserId="user-mgr-1"
         currentUserRole="manager"
       />
@@ -174,6 +176,7 @@ describe('TeamRegistry Component', () => {
         tab="active"
         search=""
         users={mockUsers}
+        activeProjects={[]}
         currentUserId="user-mgr-1"
         currentUserRole="manager"
       />
@@ -198,6 +201,7 @@ describe('TeamRegistry Component', () => {
         tab="active"
         search=""
         users={mockUsers}
+        activeProjects={[]}
         currentUserId="user-mgr-1"
         currentUserRole="manager"
       />
@@ -231,6 +235,7 @@ describe('TeamRegistry Component', () => {
         tab="archived"
         search=""
         users={mockUsers}
+        activeProjects={[]}
         currentUserId="user-admin-1"
         currentUserRole="admin"
       />
@@ -268,6 +273,7 @@ describe('TeamRegistry Component', () => {
         tab="archived"
         search=""
         users={mockUsers}
+        activeProjects={[]}
         currentUserId="user-mgr-1"
         currentUserRole="manager"
       />
@@ -293,6 +299,7 @@ describe('TeamRegistry Component', () => {
         tab="active"
         search=""
         users={mockUsers}
+        activeProjects={[]}
         currentUserId="user-mgr-1"
         currentUserRole="manager"
       />
@@ -316,6 +323,7 @@ describe('TeamRegistry Component', () => {
         tab="active"
         search=""
         users={mockUsers}
+        activeProjects={[]}
         currentUserId="user-mgr-1"
         currentUserRole="manager"
       />
@@ -341,6 +349,7 @@ describe('TeamRegistry Component', () => {
         tab="active"
         search=""
         users={mockUsers}
+        activeProjects={[]}
         currentUserId="user-dev-1"
         currentUserRole="member"
       />

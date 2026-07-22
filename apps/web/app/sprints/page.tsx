@@ -2,6 +2,8 @@ import { Metadata } from 'next';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { SprintsWorkspace } from '@/app/sprints/_components/sprints-workspace';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.service.server';
+import { getProjectList } from '@/app/projects/_services/projects.service.server';
+import { safeServerFetch } from '@/lib/safe-server-fetch';
 import {
   parseStandardParams,
   parseTabStatus,
@@ -35,7 +37,7 @@ export default async function SprintsPage({
 
   let fetchError: string | null = null;
 
-  const [dbUser, sprintsData] = await Promise.all([
+  const [dbUser, sprintsData, projects] = await Promise.all([
     getDbUser(),
     getSprintsPaginatedServer(status, page, limit, search).catch(
       (error: unknown) => {
@@ -48,6 +50,7 @@ export default async function SprintsPage({
         return EMPTY_SPRINTS;
       }
     ),
+    safeServerFetch(getProjectList(), [], 'fetch projects for sprint form'),
   ]);
 
   const userRole = dbUser?.role ?? 'member';
@@ -57,6 +60,7 @@ export default async function SprintsPage({
       <SprintsWorkspace
         sprints={sprintsData.sprints}
         pagination={sprintsData.pagination}
+        projects={projects}
         filterTab={status}
         search={search}
         userRole={userRole}

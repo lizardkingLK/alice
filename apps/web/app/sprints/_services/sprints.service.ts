@@ -84,21 +84,6 @@ export type PaginatedSprints = {
   };
 };
 
-export async function listSprints(
-  tab?: 'active' | 'archived',
-  page?: number,
-  limit?: number,
-  search?: string
-): Promise<PaginatedSprints> {
-  const params = new URLSearchParams();
-  if (tab) params.append('status', tab);
-  if (page) params.append('page', page.toString());
-  if (limit) params.append('limit', limit.toString());
-  if (search) params.append('search', search);
-
-  return apiFetch<PaginatedSprints>(`${apiSprints}?${params.toString()}`);
-}
-
 export async function updateSprintStatus(
   id: string,
   status: Sprint['status']
@@ -111,11 +96,6 @@ export async function updateSprintStatus(
     }
   );
 
-  return data.sprint;
-}
-
-export async function getSprint(id: string): Promise<Sprint> {
-  const data = await apiFetch<{ sprint: Sprint }>(`${apiSprints}/${id}`);
   return data.sprint;
 }
 

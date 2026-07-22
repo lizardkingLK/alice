@@ -34,14 +34,16 @@ vi.mock('@/app/sprints/_components/sprint-form', () => ({
   SprintForm: ({
     onClose,
     onSuccess,
-    sprintId,
+    sprintToEdit,
   }: {
     onClose?: () => void;
     onSuccess?: () => void;
-    sprintId?: string;
+    sprintToEdit?: Sprint | null;
   }) => (
     <div data-testid="mock-sprint-form">
-      <span>Mock Sprint Form - {sprintId || 'Create'}</span>
+      <span>
+        Mock Sprint Form - {sprintToEdit ? sprintToEdit.name : 'Create'}
+      </span>
       <button onClick={onClose}>Close Form</button>
       <button onClick={onSuccess}>Success Form</button>
     </div>
@@ -213,6 +215,7 @@ describe('SprintList Component', () => {
       <SprintsWorkspace
         sprints={mockSprints}
         pagination={mockPagination}
+        projects={[]}
         filterTab="active"
         search=""
         userRole="admin"
@@ -234,6 +237,7 @@ describe('SprintList Component', () => {
       <SprintsWorkspace
         sprints={mockSprints}
         pagination={mockPagination}
+        projects={[]}
         filterTab="active"
         search=""
         userRole="admin"
@@ -256,6 +260,7 @@ describe('SprintList Component', () => {
       <SprintsWorkspace
         sprints={mockSprints}
         pagination={mockPagination}
+        projects={[]}
         filterTab="active"
         search=""
         userRole="admin"

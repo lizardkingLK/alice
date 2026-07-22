@@ -13,6 +13,7 @@ import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { cn } from '@repo/ui/lib/utils';
 import { Search } from '@repo/ui/lib/icons';
+import type { Project } from '@/app/projects/_services/projects.service.base';
 
 interface SprintsWorkspaceProps {
   readonly sprints: Sprint[];
@@ -22,6 +23,7 @@ interface SprintsWorkspaceProps {
     totalCount: number;
     totalPages: number;
   };
+  readonly projects: Project[];
   readonly filterTab: 'active' | 'archived';
   readonly search: string;
   readonly error?: string | null;
@@ -32,6 +34,7 @@ interface SprintsWorkspaceProps {
 export function SprintsWorkspace({
   sprints,
   pagination,
+  projects,
   filterTab,
   search,
   error = null,
@@ -178,6 +181,7 @@ export function SprintsWorkspace({
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
           <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
             <SprintForm
+              projects={projects}
               onSprintUpdated={handleSprintCreated}
               onClose={() => setIsAddSprintOpen(false)}
               onSuccess={() => setIsAddSprintOpen(false)}
@@ -191,7 +195,8 @@ export function SprintsWorkspace({
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
           <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
             <SprintForm
-              sprintId={editingSprint.id}
+              projects={projects}
+              sprintToEdit={editingSprint}
               onSprintUpdated={handleSprintUpdated}
               onClose={() => setEditingSprint(null)}
               onSuccess={() => setEditingSprint(null)}

@@ -27,19 +27,19 @@ import {
 } from '@repo/ui/components/ui/select';
 import { Textarea } from '@repo/ui/components/ui/textarea';
 import { cn } from '@repo/ui/lib/utils';
-import type { Tables } from '@repo/types';
 import { Loader2, X, CalendarPlus, CalendarCog } from '@repo/ui/lib/icons';
 import {
   createSprint,
-  getSprint,
   updateSprint,
   Sprint,
 } from '../_services/sprints.service';
-import { apiFetch } from '@/lib/api/api-client';
+import type { Project } from '@/app/projects/_services/projects.service.base';
+import { filterActiveProjects } from '@/lib/projects/active-projects';
 
 type SprintFormProps = {
   className?: string;
-  sprintId?: string;
+  projects: Project[];
+  sprintToEdit?: Sprint | null;
   // eslint-disable-next-line no-unused-vars
   onSprintUpdated?: (sprint: Sprint) => void;
   onClose?: () => void;
@@ -65,27 +65,7 @@ function validateSprintForm(
   return null;
 }
 
-function filterAndSortProjects(
-  projects: Tables<'projects'>[]
-): Tables<'projects'>[] {
-  return projects
-    .filter((p: Tables<'projects'>) => p.status === 'active' && !p.deleted_at)
-    .sort((a: Tables<'projects'>, b: Tables<'projects'>) =>
-      a.name.localeCompare(b.name)
-    );
-}
-
-function renderProjectOptions(
-  isLoadingProjects: boolean,
-  projects: Tables<'projects'>[]
-) {
-  if (isLoadingProjects) {
-    return (
-      <SelectItem value="loading" disabled>
-        Loading projects...
-      </SelectItem>
-    );
-  }
+function renderProjectOptions(projects: Project[]) {
   if (projects.length === 0) {
     return (
       <SelectItem value="none" disabled>
@@ -93,7 +73,7 @@ function renderProjectOptions(
       </SelectItem>
     );
   }
-  return projects.map((proj: Tables<'projects'>) => (
+  return projects.map((proj) => (
     <SelectItem key={proj.id} value={proj.id}>
       {proj.name} ({proj.key})
     </SelectItem>
@@ -102,85 +82,57 @@ function renderProjectOptions(
 
 export function SprintForm({
   className,
-  sprintId,
+  projects,
+  sprintToEdit = null,
   onSprintUpdated,
   onClose,
   onSuccess,
   currentUserId,
 }: Readonly<SprintFormProps>) {
-  const isEditMode = !!sprintId;
+  const isEditMode = !!sprintToEdit;
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoadingSprint, setIsLoadingSprint] = useState(isEditMode);
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const [projects, setProjects] = useState<Tables<'projects'>[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
-  const [isLoadingProjects, setIsLoadingProjects] = useState(true);
-  const [name, setName] = useState('');
-  const [goal, setGoal] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const activeProjects = useMemo(
+    () => filterActiveProjects(projects),
+    [projects]
+  );
 
-  // Filter projects to only show user's own projects
-  // Plus the project of the sprint if in edit mode (even if they don't own it)
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(
+    sprintToEdit?.project?.id ?? ''
+  );
+  const [name, setName] = useState(sprintToEdit?.name ?? '');
+  const [goal, setGoal] = useState(sprintToEdit?.goal ?? '');
+  const [startDate, setStartDate] = useState(sprintToEdit?.startDate ?? '');
+  const [endDate, setEndDate] = useState(sprintToEdit?.endDate ?? '');
+
   const displayedProjects = useMemo(() => {
-    if (!currentUserId) return projects;
-    return projects.filter(
-      (p) => p.owner_id === currentUserId || p.id === selectedProjectId
+    if (!currentUserId) return activeProjects;
+    return activeProjects.filter(
+      (project) =>
+        project.owner_id === currentUserId || project.id === selectedProjectId
     );
-  }, [projects, currentUserId, selectedProjectId]);
+  }, [activeProjects, currentUserId, selectedProjectId]);
 
-  // Fetch active projects
   useEffect(() => {
-    setIsLoadingProjects(true);
-    apiFetch<{ projects: Tables<'projects'>[] }>('/api/projects')
-      .then((data: { projects: Tables<'projects'>[] }) => {
-        if (data.projects) {
-          const activeProjects = filterAndSortProjects(data.projects);
-          setProjects(activeProjects);
-          // If in create mode and we have active projects, pre-select the first one
-          if (!sprintId) {
-            const ownProjects = currentUserId
-              ? activeProjects.filter((p) => p.owner_id === currentUserId)
-              : activeProjects;
-            if (ownProjects.length > 0 && ownProjects[0]) {
-              setSelectedProjectId(ownProjects[0].id);
-            }
-          }
-        }
-      })
-      .catch((error: unknown) => {
-        console.error('Error fetching active projects:', error);
-      })
-      .finally(() => {
-        setIsLoadingProjects(false);
-      });
-  }, [sprintId, currentUserId]);
+    if (sprintToEdit) {
+      setName(sprintToEdit.name);
+      setGoal(sprintToEdit.goal ?? '');
+      setStartDate(sprintToEdit.startDate);
+      setEndDate(sprintToEdit.endDate);
+      setSelectedProjectId(sprintToEdit.project?.id ?? '');
+      return;
+    }
 
-  // Fetch sprint details if in edit mode
-  useEffect(() => {
-    if (!sprintId) return;
-    setIsLoadingSprint(true);
-    getSprint(sprintId)
-      .then((sprint: Sprint) => {
-        setName(sprint.name);
-        setGoal(sprint.goal ?? '');
-        setStartDate(sprint.startDate);
-        setEndDate(sprint.endDate);
-        setSelectedProjectId(sprint.project?.id ?? '');
-      })
-      .catch((error: unknown) => {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Failed to load sprint.';
-        setMessage(errorMessage);
-        setIsError(true);
-      })
-      .finally(() => {
-        setIsLoadingSprint(false);
-      });
-  }, [sprintId]);
+    const ownProjects = currentUserId
+      ? activeProjects.filter((project) => project.owner_id === currentUserId)
+      : activeProjects;
+    if (ownProjects.length > 0 && ownProjects[0]) {
+      setSelectedProjectId(ownProjects[0].id);
+    }
+  }, [sprintToEdit, activeProjects, currentUserId]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -212,8 +164,8 @@ export function SprintForm({
       };
 
       let result: Sprint;
-      if (sprintId) {
-        result = await updateSprint(sprintId, sprintData);
+      if (sprintToEdit) {
+        result = await updateSprint(sprintToEdit.id, sprintData);
         setMessage(`Sprint "${result.name}" updated.`);
       } else {
         result = await createSprint(sprintData);
@@ -223,7 +175,7 @@ export function SprintForm({
       setIsSuccess(true);
       onSprintUpdated?.(result);
     } catch (error) {
-      const modeText = sprintId ? 'update' : 'create';
+      const modeText = sprintToEdit ? 'update' : 'create';
       const errorMessage =
         error instanceof Error
           ? error.message
@@ -249,11 +201,11 @@ export function SprintForm({
     submitButtonContent = (
       <>
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        {sprintId ? 'Saving...' : 'Creating...'}
+        {isEditMode ? 'Saving...' : 'Creating...'}
       </>
     );
   } else {
-    submitButtonContent = sprintId ? 'Save Changes' : 'Create Sprint';
+    submitButtonContent = isEditMode ? 'Save Changes' : 'Create Sprint';
   }
 
   return (
@@ -278,130 +230,120 @@ export function SprintForm({
 
       <CardHeader className="space-y-1.5 pb-4">
         <CardTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight">
-          {sprintId ? (
+          {isEditMode ? (
             <CalendarCog className="text-primary h-5 w-5" />
           ) : (
             <CalendarPlus className="text-primary h-5 w-5 animate-pulse" />
           )}
-          {sprintId ? 'Edit Sprint' : 'Create Sprint'}
+          {isEditMode ? 'Edit Sprint' : 'Create Sprint'}
         </CardTitle>
         <CardDescription className="text-muted-foreground text-sm">
-          {sprintId
+          {isEditMode
             ? 'Update the name, goal, project and date range of this sprint.'
             : 'Plan a new sprint with a name, goal, project and date range.'}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {isLoadingSprint ? (
-          <div className="flex h-64 flex-col items-center justify-center gap-2">
-            <Loader2 className="text-primary h-8 w-8 animate-spin" />
-            <p className="text-muted-foreground text-sm">
-              Loading sprint details...
-            </p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="sprint-project">Project</Label>
-              <Select
-                value={selectedProjectId}
-                onValueChange={setSelectedProjectId}
-                disabled={isLoadingProjects}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="sprint-project">Project</Label>
+            <Select
+              value={selectedProjectId}
+              onValueChange={setSelectedProjectId}
+            >
+              <SelectTrigger
+                id="sprint-project"
+                className="bg-background/80 h-10 w-full"
               >
-                <SelectTrigger
-                  id="sprint-project"
-                  className="bg-background/80 h-10 w-full"
-                >
-                  <SelectValue placeholder="Select project..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {renderProjectOptions(isLoadingProjects, displayedProjects)}
-                </SelectContent>
-              </Select>
-            </div>
+                <SelectValue placeholder="Select project..." />
+              </SelectTrigger>
+              <SelectContent>
+                {renderProjectOptions(displayedProjects)}
+              </SelectContent>
+            </Select>
+          </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="sprint-name">Sprint name</Label>
+            <Input
+              id="sprint-name"
+              name="name"
+              value={name}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                setName(e.target.value)
+              }
+              placeholder="Sprint 1"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="sprint-goal">Goal</Label>
+            <Textarea
+              id="sprint-goal"
+              name="goal"
+              value={goal}
+              onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+                setGoal(e.target.value)
+              }
+              rows={3}
+              placeholder="What should this sprint achieve?"
+              className="bg-transparent"
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="sprint-name">Sprint name</Label>
+              <Label htmlFor="sprint-start-date">Start date</Label>
               <Input
-                id="sprint-name"
-                name="name"
-                value={name}
+                id="sprint-start-date"
+                name="startDate"
+                type="date"
+                value={startDate}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setName(e.target.value)
+                  setStartDate(e.target.value)
                 }
-                placeholder="Sprint 1"
                 required
               />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="sprint-goal">Goal</Label>
-              <Textarea
-                id="sprint-goal"
-                name="goal"
-                value={goal}
-                onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-                  setGoal(e.target.value)
+              <Label htmlFor="sprint-end-date">End date</Label>
+              <Input
+                id="sprint-end-date"
+                name="endDate"
+                type="date"
+                value={endDate}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setEndDate(e.target.value)
                 }
-                rows={3}
-                placeholder="What should this sprint achieve?"
-                className="bg-transparent"
+                required
               />
             </div>
+          </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="sprint-start-date">Start date</Label>
-                <Input
-                  id="sprint-start-date"
-                  name="startDate"
-                  type="date"
-                  value={startDate}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setStartDate(e.target.value)
-                  }
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="sprint-end-date">End date</Label>
-                <Input
-                  id="sprint-end-date"
-                  name="endDate"
-                  type="date"
-                  value={endDate}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setEndDate(e.target.value)
-                  }
-                  required
-                />
-              </div>
-            </div>
+          <FormAlertMessage message={message} isError={isError} />
 
-            <FormAlertMessage message={message} isError={isError} />
-
-            <div className="flex gap-3 pt-2">
-              {onClose && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={isSubmitting || isSuccess}
-                  onClick={onClose}
-                  className="w-1/3"
-                >
-                  Cancel
-                </Button>
-              )}
+          <div className="flex gap-3 pt-2">
+            {onClose && (
               <Button
-                type="submit"
+                type="button"
+                variant="outline"
                 disabled={isSubmitting || isSuccess}
-                className={`${onClose ? 'w-2/3' : 'w-full'}`}
+                onClick={onClose}
+                className="w-1/3"
               >
-                {submitButtonContent}
+                Cancel
               </Button>
-            </div>
-          </form>
-        )}
+            )}
+            <Button
+              type="submit"
+              disabled={isSubmitting || isSuccess}
+              className={`${onClose ? 'w-2/3' : 'w-full'}`}
+            >
+              {submitButtonContent}
+            </Button>
+          </div>
+        </form>
       </CardContent>
     </Card>
   );

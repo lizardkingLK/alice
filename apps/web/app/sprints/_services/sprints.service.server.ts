@@ -5,6 +5,7 @@ import {
   mapDbSprintToSprint,
   type DbSprintRelation,
   type PaginatedSprints,
+  type Sprint,
 } from './sprints.service';
 
 /**
@@ -44,4 +45,23 @@ export async function getSprintsPaginatedServer(
     sprints: rows.map(mapDbSprintToSprint),
     pagination: paginationMeta(count ?? 0, page, limit),
   };
+}
+
+/** Mirrors `sprintsRepository.findById` — same select and mapping as the list reader. */
+export async function getSprint(sprintId: string): Promise<Sprint | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('sprints')
+    .select('*, project:projects(id, name, key)')
+    .eq('id', sprintId)
+    .maybeSingle();
+
+  throwIfError(error, 'failed to find sprint', 'Failed to find sprint');
+
+  if (!data) {
+    return null;
+  }
+
+  return mapDbSprintToSprint(data as unknown as DbSprintRelation);
 }

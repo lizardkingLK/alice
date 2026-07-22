@@ -11,6 +11,8 @@ import {
   type Team,
 } from './_services/teams.service.server';
 import { getUserList } from '@/app/users/_services/users.service.server';
+import { getProjectList } from '@/app/projects/_services/projects.service.server';
+import { filterActiveProjects } from '@/lib/projects/active-projects';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 
 const EMPTY_TEAMS = {
@@ -30,15 +32,18 @@ export default async function ManagerDashboardPage({
   const { page, limit, search } = parseStandardParams(resolvedSearchParams, 10);
   const status = parseManagerTabStatus(resolvedSearchParams.tab);
 
-  const [dbUser, usersList, teamsResult] = await Promise.all([
+  const [dbUser, usersList, teamsResult, projectsList] = await Promise.all([
     getDbUser(),
-    safeServerFetch(getUserList(), [], 'fetch users via API'),
+    safeServerFetch(getUserList(), [], 'fetch users for team form'),
     safeServerFetch(
       getTeamListPaginated(page, limit, status, search),
       EMPTY_TEAMS,
-      'fetch teams list via API'
+      'fetch teams list'
     ),
+    safeServerFetch(getProjectList(), [], 'fetch projects for team form'),
   ]);
+
+  const activeProjects = filterActiveProjects(projectsList);
 
   const userRole = dbUser?.role ?? 'member';
 
@@ -53,6 +58,7 @@ export default async function ManagerDashboardPage({
         tab={status ?? 'active'}
         search={search}
         users={usersList}
+        activeProjects={activeProjects}
         currentUserId={dbUser?.id}
         currentUserRole={userRole}
       />

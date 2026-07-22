@@ -1193,6 +1193,7 @@ export function BacklogWorkspace({
           <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
             <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
               <SprintForm
+                projects={projects}
                 onSprintUpdated={handleCreateSprintSuccess}
                 onClose={() => setIsCreateSprintOpen(false)}
                 onSuccess={() => setIsCreateSprintOpen(false)}
