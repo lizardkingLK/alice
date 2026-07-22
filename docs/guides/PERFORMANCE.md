@@ -5,7 +5,7 @@ How Alice keeps dashboard pages fast, what has already been optimized, and the r
 | Field        | Value                                        |
 | ------------ | -------------------------------------------- |
 | Status       | **Living**                                   |
-| Last updated | 2026-07-22                                   |
+| Last updated | 2026-07-22 (M3 list routes)                  |
 | Scope        | `apps/web` RSC data loading, `apps/api` auth |
 
 Related:
@@ -163,6 +163,16 @@ export async function requireApiAuth(
 
 **Trade-off:** admin-only mutations still do their own `public.users` role lookup (`requireAdmin`), so authorization is unaffected. The only removed behavior is lazy self-provisioning on a random API call — which was already redundant given the entry-point provisioning above.
 
+### 2.6 Suspense streaming on list routes (M3)
+
+Dashboard list pages no longer block the entire RSC on Supabase reads. Each route renders `DashboardShell` immediately and streams table content inside `<Suspense>`:
+
+- **Pattern:** sync `page.tsx` → `DashboardShell` → `<Suspense fallback={<RegistryPageSkeleton />}>` → async `*Data` server component (owns `searchParams` + `Promise.all` fetches).
+- **Shared skeleton:** `apps/web/components/registry-page-skeleton.tsx` — mirrors search bar, optional tabs, card header, table rows, and pagination placeholders.
+- **Client navigations:** route-level `loading.tsx` reuses the same skeleton inside `DashboardShell` for instant feedback.
+- **Routes shipped:** `/work-items`, `/users`, `/projects`, `/manager`, `/sprints`.
+- **Not yet:** `/backlog`, detail pages (`/projects/[id]`, `/work-items/[id]`).
+
 ---
 
 ## 3. Contributor patterns
@@ -181,14 +191,14 @@ Follow these when adding or editing server-rendered pages:
 
 Targeting sub-1.5s. Ordered by impact-to-effort.
 
-| ID     | Work                                                                                                                               | Effort | Risk    | Expected impact                           | Status            |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------- | ------ | ------- | ----------------------------------------- | ----------------- |
-| **M1** | Direct Supabase reads in RSC for GET/list pages — drop the `web → api` hop for reads; keep API for mutations/admin.                | M–L    | Medium  | 40–60% of remaining latency on read pages | ✅ Shipped (§2.4) |
-| **M2** | Slim `requireApiAuth` — move profile auto-provisioning to login/signup/invite; keep JWT verify off the hot DB path.                | S      | Low–Med | −1 DB round trip per API call             | ✅ Shipped (§2.5) |
-| **M3** | Suspense streaming — render the shell immediately, stream tables via `<Suspense>` + `loading.tsx`.                                 | M      | Low     | Large perceived speedup                   | Planned           |
-| **M4** | Batch "workspace" API endpoints — collapse multi-call pages into one auth + fewer DB round trips (only where M1 isn't adopted).    | M      | Low     | Medium                                    | Planned           |
-| **M5** | Short-TTL caching for stable dropdown data (`getUserList`, `getProjectList`) via `unstable_cache` + tag revalidation on mutations. | S–M    | Low–Med | Medium                                    | Planned           |
-| **M6** | Infra alignment — same Vercel region for web/api/Supabase, verify prod API URL path, warm cold starts if needed.                   | S      | Low     | Medium (spiky)                            | Planned           |
+| ID     | Work                                                                                                                               | Effort | Risk    | Expected impact                           | Status                   |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------- | ------ | ------- | ----------------------------------------- | ------------------------ |
+| **M1** | Direct Supabase reads in RSC for GET/list pages — drop the `web → api` hop for reads; keep API for mutations/admin.                | M–L    | Medium  | 40–60% of remaining latency on read pages | ✅ Shipped (§2.4)        |
+| **M2** | Slim `requireApiAuth` — move profile auto-provisioning to login/signup/invite; keep JWT verify off the hot DB path.                | S      | Low–Med | −1 DB round trip per API call             | ✅ Shipped (§2.5)        |
+| **M3** | Suspense streaming — render the shell immediately, stream tables via `<Suspense>` + `loading.tsx`.                                 | M      | Low     | Large perceived speedup                   | ✅ Shipped (list routes) |
+| **M4** | Batch "workspace" API endpoints — collapse multi-call pages into one auth + fewer DB round trips (only where M1 isn't adopted).    | M      | Low     | Medium                                    | Planned                  |
+| **M5** | Short-TTL caching for stable dropdown data (`getUserList`, `getProjectList`) via `unstable_cache` + tag revalidation on mutations. | S–M    | Low–Med | Medium                                    | Planned                  |
+| **M6** | Infra alignment — same Vercel region for web/api/Supabase, verify prod API URL path, warm cold starts if needed.                   | S      | Low     | Medium (spiky)                            | Planned                  |
 
 **RLS reminder:** M1 reads run with the `authenticated` role and RLS unenforced. Before enabling RLS, add SELECT policies for `work_items`, `projects`, `users`, `sprints`, `project_members`, `teams`, and `team_members`.
 
