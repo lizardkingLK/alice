@@ -58,12 +58,6 @@ type CommentsFeedProps = {
   workItemId?: string;
 };
 
-// Autocomplete type signatures
-type StringCallback = (val: string) => void;
-type NumberCallback = (val: number) => void;
-type BooleanCallback = (val: boolean) => void;
-type VoidCallback = () => void;
-
 type MentionDropdownListProps = {
   show: boolean;
   usersList: CommentUser[];
@@ -155,6 +149,245 @@ function WIDropdownList({
   );
 }
 
+type AutocompleteInputProps = {
+  as?: 'input' | 'textarea';
+  value: string;
+  onChange: (val: string) => void;
+  onSubmit?: () => void;
+  placeholder?: string;
+  users: CommentUser[];
+  workItems: Array<{ id: string; key: string; title: string }>;
+  rows?: number;
+  className?: string;
+  position?: 'top' | 'bottom';
+  id?: string;
+  textareaRef?: React.RefObject<HTMLTextAreaElement | HTMLInputElement | null>;
+};
+
+function AutocompleteInput({
+  as = 'textarea',
+  value,
+  onChange,
+  onSubmit,
+  placeholder,
+  users,
+  workItems,
+  rows = 3,
+  className,
+  position = 'bottom',
+  id,
+  textareaRef,
+}: Readonly<AutocompleteInputProps>) {
+  const [showMentionDropdown, setShowMentionDropdown] = useState(false);
+  const [mentionSearch, setMentionSearch] = useState('');
+  const [mentionTriggerIdx, setMentionTriggerIdx] = useState(-1);
+  const [mentionHighlightIdx, setMentionHighlightIdx] = useState(0);
+
+  const [showWISuggestions, setShowWISuggestions] = useState(false);
+  const [wiSearch, setWISearch] = useState('');
+  const [wiTriggerIdx, setWiTriggerIdx] = useState(-1);
+  const [wiHighlightIdx, setWiHighlightIdx] = useState(0);
+
+  const localRef = useRef<HTMLTextAreaElement | HTMLInputElement | null>(null);
+  const activeRef = textareaRef || localRef;
+
+  const filteredUsers = useMemo(() => {
+    const q = mentionSearch.toLowerCase();
+    return users.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+  }, [users, mentionSearch]);
+
+  const filteredWorkItems = useMemo(() => {
+    const q = wiSearch.toLowerCase();
+    return workItems.filter(w => w.key.toLowerCase().includes(q) || w.title.toLowerCase().includes(q));
+  }, [workItems, wiSearch]);
+
+  const handleTextChangeMentionsLocal = (text: string, cursorPos: number) => {
+    const lastAtIdx = text.lastIndexOf('@', cursorPos - 1);
+    const lastHashIdx = text.lastIndexOf('#', cursorPos - 1);
+
+    if (lastAtIdx !== -1 && (lastHashIdx === -1 || lastAtIdx > lastHashIdx)) {
+      const charBeforeAt = lastAtIdx > 0 ? text[lastAtIdx - 1] : ' ';
+      const textBetween = text.slice(lastAtIdx + 1, cursorPos);
+      const hasSpace = textBetween.includes(' ') || textBetween.includes('\n');
+
+      if ((charBeforeAt === ' ' || charBeforeAt === '\n') && !hasSpace) {
+        setMentionTriggerIdx(lastAtIdx);
+        setMentionSearch(textBetween);
+        setShowMentionDropdown(true);
+        setMentionHighlightIdx(0);
+        return;
+      }
+    }
+    setShowMentionDropdown(false);
+  };
+
+  const handleTextChangeWorkItemsLocal = (text: string, cursorPos: number) => {
+    const lastAtIdx = text.lastIndexOf('@', cursorPos - 1);
+    const lastHashIdx = text.lastIndexOf('#', cursorPos - 1);
+
+    if (lastHashIdx !== -1 && (lastAtIdx === -1 || lastHashIdx > lastAtIdx)) {
+      const charBeforeHash = lastHashIdx > 0 ? text[lastHashIdx - 1] : ' ';
+      const textBetween = text.slice(lastHashIdx + 1, cursorPos);
+      const hasSpace = textBetween.includes(' ') || textBetween.includes('\n');
+
+      if ((charBeforeHash === ' ' || charBeforeHash === '\n') && !hasSpace) {
+        setWiTriggerIdx(lastHashIdx);
+        setWISearch(textBetween);
+        setShowWISuggestions(true);
+        setWiHighlightIdx(0);
+        return;
+      }
+    }
+    setShowWISuggestions(false);
+  };
+
+  const handleInsertMentionLocal = (insertText: string, triggerIdx: number, isWI: boolean) => {
+    const inputEl = activeRef.current;
+    const cursorPos = inputEl?.selectionStart || 0;
+    const before = value.slice(0, triggerIdx);
+    const after = value.slice(cursorPos);
+    const formatted = `${insertText} `;
+    const nextText = before + formatted + after;
+    onChange(nextText);
+    
+    if (isWI) {
+      setShowWISuggestions(false);
+    } else {
+      setShowMentionDropdown(false);
+    }
+
+    if (inputEl) {
+      const nextCursorPos = triggerIdx + formatted.length;
+      setTimeout(() => {
+        inputEl.focus();
+        inputEl.setSelectionRange(nextCursorPos, nextCursorPos);
+      }, 0);
+    }
+  };
+
+  const handleMentionKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+    if (!showMentionDropdown || filteredUsers.length === 0) return false;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setMentionHighlightIdx((mentionHighlightIdx + 1) % filteredUsers.length);
+      return true;
+    } 
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setMentionHighlightIdx((mentionHighlightIdx - 1 + filteredUsers.length) % filteredUsers.length);
+      return true;
+    } 
+    if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      const selected = filteredUsers[mentionHighlightIdx];
+      if (selected) {
+        handleInsertMentionLocal(`@${selected.name}`, mentionTriggerIdx, false);
+      }
+      return true;
+    } 
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setShowMentionDropdown(false);
+      return true;
+    }
+    return false;
+  };
+
+  const handleWIKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+    if (!showWISuggestions || filteredWorkItems.length === 0) return false;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setWiHighlightIdx((wiHighlightIdx + 1) % filteredWorkItems.length);
+      return true;
+    } 
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setWiHighlightIdx((wiHighlightIdx - 1 + filteredWorkItems.length) % filteredWorkItems.length);
+      return true;
+    } 
+    if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      const selected = filteredWorkItems[wiHighlightIdx];
+      if (selected) {
+        handleInsertMentionLocal(`#${selected.key}`, wiTriggerIdx, true);
+      }
+      return true;
+    } 
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setShowWISuggestions(false);
+      return true;
+    }
+    return false;
+  };
+
+  const handleKeyDownLocal = (e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+    if (handleMentionKeyDown(e)) return;
+    if (handleWIKeyDown(e)) return;
+
+    if (e.key === 'Enter' && as === 'input' && onSubmit) {
+      e.preventDefault();
+      onSubmit();
+    }
+  };
+
+  return (
+    <div className="relative flex-1">
+      {as === 'textarea' ? (
+        <textarea
+          id={id}
+          ref={activeRef as React.RefObject<HTMLTextAreaElement>}
+          value={value}
+          placeholder={placeholder}
+          rows={rows}
+          className={className}
+          onChange={(e) => {
+            const val = e.target.value;
+            const pos = e.target.selectionStart || 0;
+            onChange(val);
+            handleTextChangeMentionsLocal(val, pos);
+            handleTextChangeWorkItemsLocal(val, pos);
+          }}
+          onKeyDown={handleKeyDownLocal}
+        />
+      ) : (
+        <input
+          id={id}
+          ref={activeRef as React.RefObject<HTMLInputElement>}
+          type="text"
+          value={value}
+          placeholder={placeholder}
+          className={className}
+          onChange={(e) => {
+            const val = e.target.value;
+            const pos = e.target.selectionStart || 0;
+            onChange(val);
+            handleTextChangeMentionsLocal(val, pos);
+            handleTextChangeWorkItemsLocal(val, pos);
+          }}
+          onKeyDown={handleKeyDownLocal}
+        />
+      )}
+      <MentionDropdownList
+        show={showMentionDropdown}
+        usersList={filteredUsers}
+        highlightIdx={mentionHighlightIdx}
+        position={position}
+        onSelect={(user) => handleInsertMentionLocal(`@${user.name}`, mentionTriggerIdx, false)}
+      />
+      <WIDropdownList
+        show={showWISuggestions}
+        wiList={filteredWorkItems}
+        highlightIdx={wiHighlightIdx}
+        position={position}
+        onSelect={(item) => handleInsertMentionLocal(`#${item.key}`, wiTriggerIdx, true)}
+      />
+    </div>
+  );
+}
+
 export function CommentsFeed({
   initialComments,
   workItems,
@@ -182,39 +415,6 @@ export function CommentsFeed({
 
   // Users for mentions
   const [users, setUsers] = useState<CommentUser[]>([]);
-
-  // Autocomplete dropdown state for New Comment
-  const [showNewMentionDropdown, setShowNewMentionDropdown] = useState(false);
-  const [newMentionSearch, setNewMentionSearch] = useState('');
-  const [newMentionTriggerIdx, setNewMentionTriggerIdx] = useState(-1);
-  const [newMentionHighlightIdx, setNewMentionHighlightIdx] = useState(0);
-
-  const [showNewWISuggestions, setShowNewWISuggestions] = useState(false);
-  const [newWISearch, setNewWISearch] = useState('');
-  const [newWITriggerIdx, setNewWITriggerIdx] = useState(-1);
-  const [newWIHighlightIdx, setNewWIHighlightIdx] = useState(0);
-
-  // Autocomplete dropdown state for Reply
-  const [showReplyMentionDropdown, setShowReplyMentionDropdown] = useState(false);
-  const [replyMentionSearch, setReplyMentionSearch] = useState('');
-  const [replyMentionTriggerIdx, setReplyMentionTriggerIdx] = useState(-1);
-  const [replyMentionHighlightIdx, setReplyMentionHighlightIdx] = useState(0);
-
-  const [showReplyWISuggestions, setShowReplyWISuggestions] = useState(false);
-  const [replyWISearch, setReplyWISearch] = useState('');
-  const [replyWITriggerIdx, setReplyWITriggerIdx] = useState(-1);
-  const [replyWIHighlightIdx, setReplyWIHighlightIdx] = useState(0);
-
-  // Autocomplete dropdown state for Edit
-  const [showEditMentionDropdown, setShowEditMentionDropdown] = useState(false);
-  const [editMentionSearch, setEditMentionSearch] = useState('');
-  const [editMentionTriggerIdx, setEditMentionTriggerIdx] = useState(-1);
-  const [editMentionHighlightIdx, setEditMentionHighlightIdx] = useState(0);
-
-  const [showEditWISuggestions, setShowEditWISuggestions] = useState(false);
-  const [editWISearch, setEditWISearch] = useState('');
-  const [editWITriggerIdx, setEditWITriggerIdx] = useState(-1);
-  const [editWIHighlightIdx, setEditWIHighlightIdx] = useState(0);
 
   // Refs for focusing inputs
   const newCommentRef = useRef<HTMLTextAreaElement>(null);
@@ -283,38 +483,6 @@ export function CommentsFeed({
     }
   }, [workItemId]);
 
-  // Autocomplete suggestions filtering
-  const filteredUsersNew = useMemo(() => {
-    const q = newMentionSearch.toLowerCase();
-    return users.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
-  }, [users, newMentionSearch]);
-
-  const filteredUsersReply = useMemo(() => {
-    const q = replyMentionSearch.toLowerCase();
-    return users.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
-  }, [users, replyMentionSearch]);
-
-  const filteredUsersEdit = useMemo(() => {
-    const q = editMentionSearch.toLowerCase();
-    return users.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
-  }, [users, editMentionSearch]);
-
-  // Work item suggestions filtering
-  const filteredWorkItemsNew = useMemo(() => {
-    const q = newWISearch.toLowerCase();
-    return workItems.filter(w => w.key.toLowerCase().includes(q) || w.title.toLowerCase().includes(q));
-  }, [workItems, newWISearch]);
-
-  const filteredWorkItemsReply = useMemo(() => {
-    const q = replyWISearch.toLowerCase();
-    return workItems.filter(w => w.key.toLowerCase().includes(q) || w.title.toLowerCase().includes(q));
-  }, [workItems, replyWISearch]);
-
-  const filteredWorkItemsEdit = useMemo(() => {
-    const q = editWISearch.toLowerCase();
-    return workItems.filter(w => w.key.toLowerCase().includes(q) || w.title.toLowerCase().includes(q));
-  }, [workItems, editWISearch]);
-
   // Stats calculation
   const stats = useMemo(() => {
     const total = comments.length;
@@ -368,118 +536,6 @@ export function CommentsFeed({
       threadReplies: repliesMap.get(parent.id) || [],
     }));
   }, [filteredComments, comments]);
-
-  // Helper to handle text area change detection for mentions
-  const handleTextChangeMentions = (
-    text: string,
-    cursorPos: number,
-    setTriggerIdx: NumberCallback,
-    setSearch: StringCallback,
-    setDropdown: BooleanCallback,
-    setHighlightIdx: NumberCallback
-  ) => {
-    const lastAtIdx = text.lastIndexOf('@', cursorPos - 1);
-    const lastHashIdx = text.lastIndexOf('#', cursorPos - 1);
-
-    if (lastAtIdx !== -1 && (lastHashIdx === -1 || lastAtIdx > lastHashIdx)) {
-      const charBeforeAt = lastAtIdx > 0 ? text[lastAtIdx - 1] : ' ';
-      const textBetween = text.slice(lastAtIdx + 1, cursorPos);
-      const hasSpace = textBetween.includes(' ') || textBetween.includes('\n');
-
-      if ((charBeforeAt === ' ' || charBeforeAt === '\n') && !hasSpace) {
-        setTriggerIdx(lastAtIdx);
-        setSearch(textBetween);
-        setDropdown(true);
-        setHighlightIdx(0);
-        return;
-      }
-    }
-    setDropdown(false);
-  };
-
-  // Helper to handle text area change detection for work items
-  const handleTextChangeWorkItems = (
-    text: string,
-    cursorPos: number,
-    setTriggerIdx: NumberCallback,
-    setSearch: StringCallback,
-    setDropdown: BooleanCallback,
-    setHighlightIdx: NumberCallback
-  ) => {
-    const lastAtIdx = text.lastIndexOf('@', cursorPos - 1);
-    const lastHashIdx = text.lastIndexOf('#', cursorPos - 1);
-
-    if (lastHashIdx !== -1 && (lastAtIdx === -1 || lastHashIdx > lastAtIdx)) {
-      const charBeforeHash = lastHashIdx > 0 ? text[lastHashIdx - 1] : ' ';
-      const textBetween = text.slice(lastHashIdx + 1, cursorPos);
-      const hasSpace = textBetween.includes(' ') || textBetween.includes('\n');
-
-      if ((charBeforeHash === ' ' || charBeforeHash === '\n') && !hasSpace) {
-        setTriggerIdx(lastHashIdx);
-        setSearch(textBetween);
-        setDropdown(true);
-        setHighlightIdx(0);
-        return;
-      }
-    }
-    setDropdown(false);
-  };
-
-  // Generic helper to handle keyboard navigation inside dropdown menus
-  const handleAutocompleteKeyDown = <T,>(
-    e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>,
-    showDropdown: boolean,
-    list: T[],
-    highlightIdx: number,
-    setHighlightIdx: NumberCallback,
-    onSelect: (item: T) => void,
-    onClose: VoidCallback
-  ) => {
-    if (!showDropdown || list.length === 0) return;
-
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setHighlightIdx((highlightIdx + 1) % list.length);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setHighlightIdx((highlightIdx - 1 + list.length) % list.length);
-    } else if (e.key === 'Enter' || e.key === 'Tab') {
-      e.preventDefault();
-      const selected = list[highlightIdx];
-      if (selected) {
-        onSelect(selected);
-      }
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      onClose();
-    }
-  };
-
-  // Helper to insert autocomplete tag into input field
-  const handleInsertMention = (
-    text: string,
-    triggerIdx: number,
-    cursorPos: number,
-    insertText: string,
-    inputEl: HTMLTextAreaElement | HTMLInputElement | null,
-    setVal: StringCallback,
-    setDropdown: BooleanCallback
-  ) => {
-    const before = text.slice(0, triggerIdx);
-    const after = text.slice(cursorPos);
-    const formatted = `${insertText} `;
-    const nextText = before + formatted + after;
-    setVal(nextText);
-    setDropdown(false);
-
-    if (inputEl) {
-      const nextCursorPos = triggerIdx + formatted.length;
-      setTimeout(() => {
-        inputEl.focus();
-        inputEl.setSelectionRange(nextCursorPos, nextCursorPos);
-      }, 0);
-    }
-  };
 
   // Helper function to create database notifications for mentioned users
   const createMentionNotifications = async (
@@ -1041,108 +1097,16 @@ export function CommentsFeed({
                 {/* Comment Body / Edit Mode */}
                 {editingCommentId === parent.id ? (
                   <div className="space-y-2 pt-1 relative">
-                    <textarea
-                      ref={editCommentRef}
-                      aria-label="Edit comment content"
+                    <AutocompleteInput
+                      as="textarea"
+                      textareaRef={editCommentRef}
                       value={editContent}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const pos = e.target.selectionStart || 0;
-                        setEditContent(val);
-                        handleTextChangeMentions(
-                          val,
-                          pos,
-                          setEditMentionTriggerIdx,
-                          setEditMentionSearch,
-                          setShowEditMentionDropdown,
-                          setEditMentionHighlightIdx
-                        );
-                        handleTextChangeWorkItems(
-                          val,
-                          pos,
-                          setEditWITriggerIdx,
-                          setEditWISearch,
-                          setShowEditWISuggestions,
-                          setEditWIHighlightIdx
-                        );
-                      }}
-                      onKeyDown={(e) => {
-                        if (showEditMentionDropdown) {
-                          handleAutocompleteKeyDown(
-                            e,
-                            showEditMentionDropdown,
-                            filteredUsersEdit,
-                            editMentionHighlightIdx,
-                            setEditMentionHighlightIdx,
-                            (user) =>
-                              handleInsertMention(
-                                editContent,
-                                editMentionTriggerIdx,
-                                editCommentRef.current?.selectionStart || 0,
-                                `@${user.name}`,
-                                editCommentRef.current,
-                                setEditContent,
-                                setShowEditMentionDropdown
-                              ),
-                            () => setShowEditMentionDropdown(false)
-                          );
-                        } else if (showEditWISuggestions) {
-                          handleAutocompleteKeyDown(
-                            e,
-                            showEditWISuggestions,
-                            filteredWorkItemsEdit,
-                            editWIHighlightIdx,
-                            setEditWIHighlightIdx,
-                            (item) =>
-                              handleInsertMention(
-                                editContent,
-                                editWITriggerIdx,
-                                editCommentRef.current?.selectionStart || 0,
-                                `#${item.key}`,
-                                editCommentRef.current,
-                                setEditContent,
-                                setShowEditWISuggestions
-                              ),
-                            () => setShowEditWISuggestions(false)
-                          );
-                        }
-                      }}
-                      className="w-full rounded-lg border border-zinc-300 p-2.5 text-sm focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                      onChange={setEditContent}
+                      users={users}
+                      workItems={workItems}
                       rows={3}
-                    />
-                    <MentionDropdownList
-                      show={showEditMentionDropdown}
-                      usersList={filteredUsersEdit}
-                      highlightIdx={editMentionHighlightIdx}
                       position="bottom"
-                      onSelect={(user) =>
-                        handleInsertMention(
-                          editContent,
-                          editMentionTriggerIdx,
-                          editCommentRef.current?.selectionStart || 0,
-                          `@${user.name}`,
-                          editCommentRef.current,
-                          setEditContent,
-                          setShowEditMentionDropdown
-                        )
-                      }
-                    />
-                    <WIDropdownList
-                      show={showEditWISuggestions}
-                      wiList={filteredWorkItemsEdit}
-                      highlightIdx={editWIHighlightIdx}
-                      position="bottom"
-                      onSelect={(item) =>
-                        handleInsertMention(
-                          editContent,
-                          editWITriggerIdx,
-                          editCommentRef.current?.selectionStart || 0,
-                          `#${item.key}`,
-                          editCommentRef.current,
-                          setEditContent,
-                          setShowEditWISuggestions
-                        )
-                      }
+                      className="w-full rounded-lg border border-zinc-300 p-2.5 text-sm focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                     />
                     <div className="flex justify-end gap-2">
                       <Button
@@ -1243,111 +1207,17 @@ export function CommentsFeed({
                 {replyingParentId === parent.id && (
                   <div className="ml-12 pt-2 flex flex-col gap-2 relative">
                     <div className="flex items-center gap-2 relative w-full">
-                      <input
-                        ref={replyInputRef}
-                        type="text"
-                        aria-label="Write a reply"
-                        placeholder="Write a reply..."
+                      <AutocompleteInput
+                        as="input"
+                        textareaRef={replyInputRef}
                         value={replyContent}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          const pos = e.target.selectionStart || 0;
-                          setReplyContent(val);
-                          handleTextChangeMentions(
-                            val,
-                            pos,
-                            setReplyMentionTriggerIdx,
-                            setReplyMentionSearch,
-                            setShowReplyMentionDropdown,
-                            setReplyMentionHighlightIdx
-                          );
-                          handleTextChangeWorkItems(
-                            val,
-                            pos,
-                            setReplyWITriggerIdx,
-                            setReplyWISearch,
-                            setShowReplyWISuggestions,
-                            setReplyWIHighlightIdx
-                          );
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !showReplyMentionDropdown && !showReplyWISuggestions) {
-                            handleReplySubmit(parent.id, parent.work_item_id);
-                          } else if (showReplyMentionDropdown) {
-                            handleAutocompleteKeyDown(
-                              e,
-                              showReplyMentionDropdown,
-                              filteredUsersReply,
-                              replyMentionHighlightIdx,
-                              setReplyMentionHighlightIdx,
-                              (user) =>
-                                handleInsertMention(
-                                  replyContent,
-                                  replyMentionTriggerIdx,
-                                  replyInputRef.current?.selectionStart || 0,
-                                  `@${user.name}`,
-                                  replyInputRef.current,
-                                  setReplyContent,
-                                  setShowReplyMentionDropdown
-                                ),
-                              () => setShowReplyMentionDropdown(false)
-                            );
-                          } else if (showReplyWISuggestions) {
-                            handleAutocompleteKeyDown(
-                              e,
-                              showReplyWISuggestions,
-                              filteredWorkItemsReply,
-                              replyWIHighlightIdx,
-                              setReplyWIHighlightIdx,
-                              (item) =>
-                                handleInsertMention(
-                                  replyContent,
-                                  replyWITriggerIdx,
-                                  replyInputRef.current?.selectionStart || 0,
-                                  `#${item.key}`,
-                                  replyInputRef.current,
-                                  setReplyContent,
-                                  setShowReplyWISuggestions
-                                ),
-                              () => setShowReplyWISuggestions(false)
-                            );
-                          }
-                        }}
+                        onChange={setReplyContent}
+                        onSubmit={() => handleReplySubmit(parent.id, parent.work_item_id)}
+                        placeholder="Write a reply..."
+                        users={users}
+                        workItems={workItems}
+                        position="top"
                         className="flex-1 rounded-lg border border-zinc-200 bg-zinc-50 py-1.5 px-3 text-xs text-zinc-900 focus:border-blue-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
-                      />
-                      <MentionDropdownList
-                        show={showReplyMentionDropdown}
-                        usersList={filteredUsersReply}
-                        highlightIdx={replyMentionHighlightIdx}
-                        position="top"
-                        onSelect={(user) =>
-                          handleInsertMention(
-                            replyContent,
-                            replyMentionTriggerIdx,
-                            replyInputRef.current?.selectionStart || 0,
-                            `@${user.name}`,
-                            replyInputRef.current,
-                            setReplyContent,
-                            setShowReplyMentionDropdown
-                          )
-                        }
-                      />
-                      <WIDropdownList
-                        show={showReplyWISuggestions}
-                        wiList={filteredWorkItemsReply}
-                        highlightIdx={replyWIHighlightIdx}
-                        position="top"
-                        onSelect={(item) =>
-                          handleInsertMention(
-                            replyContent,
-                            replyWITriggerIdx,
-                            replyInputRef.current?.selectionStart || 0,
-                            `#${item.key}`,
-                            replyInputRef.current,
-                            setReplyContent,
-                            setShowReplyWISuggestions
-                          )
-                        }
                       />
                       <Button
                         size="sm"
@@ -1373,111 +1243,18 @@ export function CommentsFeed({
               <Plus className="h-4 w-4 text-blue-600" />
               Add to discussion
             </h4>
-            <div className="relative">
-              <textarea
-                ref={newCommentRef}
-                placeholder="Share your thoughts, feedback, or update... Use @ to mention someone, # to link a work item."
-                value={newContent}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  const pos = e.target.selectionStart || 0;
-                  setNewContent(val);
-                  handleTextChangeMentions(
-                    val,
-                    pos,
-                    setNewMentionTriggerIdx,
-                    setNewMentionSearch,
-                    setShowNewMentionDropdown,
-                    setNewMentionHighlightIdx
-                  );
-                  handleTextChangeWorkItems(
-                    val,
-                    pos,
-                    setNewWITriggerIdx,
-                    setNewWISearch,
-                    setShowNewWISuggestions,
-                    setNewWIHighlightIdx
-                  );
-                }}
-                onKeyDown={(e) => {
-                  if (showNewMentionDropdown) {
-                    handleAutocompleteKeyDown(
-                      e,
-                      showNewMentionDropdown,
-                      filteredUsersNew,
-                      newMentionHighlightIdx,
-                      setNewMentionHighlightIdx,
-                      (user) =>
-                        handleInsertMention(
-                          newContent,
-                          newMentionTriggerIdx,
-                          newCommentRef.current?.selectionStart || 0,
-                          `@${user.name}`,
-                          newCommentRef.current,
-                          setNewContent,
-                          setShowNewMentionDropdown
-                        ),
-                      () => setShowNewMentionDropdown(false)
-                    );
-                  } else if (showNewWISuggestions) {
-                    handleAutocompleteKeyDown(
-                      e,
-                      showNewWISuggestions,
-                      filteredWorkItemsNew,
-                      newWIHighlightIdx,
-                      setNewWIHighlightIdx,
-                      (item) =>
-                        handleInsertMention(
-                          newContent,
-                          newWITriggerIdx,
-                          newCommentRef.current?.selectionStart || 0,
-                          `#${item.key}`,
-                          newCommentRef.current,
-                          setNewContent,
-                          setShowNewWISuggestions
-                        ),
-                      () => setShowNewWISuggestions(false)
-                    );
-                  }
-                }}
-                rows={3}
-                className="w-full rounded-lg border border-zinc-200 bg-zinc-50/50 p-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:bg-zinc-900"
-              />
-              <MentionDropdownList
-                show={showNewMentionDropdown}
-                usersList={filteredUsersNew}
-                highlightIdx={newMentionHighlightIdx}
-                position="bottom"
-                onSelect={(user) =>
-                  handleInsertMention(
-                    newContent,
-                    newMentionTriggerIdx,
-                    newCommentRef.current?.selectionStart || 0,
-                    `@${user.name}`,
-                    newCommentRef.current,
-                    setNewContent,
-                    setShowNewMentionDropdown
-                  )
-                }
-              />
-              <WIDropdownList
-                show={showNewWISuggestions}
-                wiList={filteredWorkItemsNew}
-                highlightIdx={newWIHighlightIdx}
-                position="bottom"
-                onSelect={(item) =>
-                  handleInsertMention(
-                    newContent,
-                    newWITriggerIdx,
-                    newCommentRef.current?.selectionStart || 0,
-                    `#${item.key}`,
-                    newCommentRef.current,
-                    setNewContent,
-                    setShowNewWISuggestions
-                  )
-                }
-              />
-            </div>
+            <AutocompleteInput
+              as="textarea"
+              textareaRef={newCommentRef}
+              value={newContent}
+              onChange={setNewContent}
+              placeholder="Share your thoughts, feedback, or update... Use @ to mention someone, # to link a work item."
+              users={users}
+              workItems={workItems}
+              rows={3}
+              position="bottom"
+              className="w-full rounded-lg border border-zinc-200 bg-zinc-50/50 p-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:bg-zinc-900"
+            />
             <div className="flex justify-end">
               <Button
                 onClick={() => handleCreateComment()}
@@ -1531,113 +1308,19 @@ export function CommentsFeed({
               >
                 Comment Text
               </label>
-              <div className="relative">
-                <textarea
-                  id="new-comment-content-textarea"
-                  ref={newCommentRef}
-                  placeholder="Share your thoughts, feedback, or update... Use @ to mention someone, # to link a work item."
-                  value={newContent}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    const pos = e.target.selectionStart || 0;
-                    setNewContent(val);
-                    handleTextChangeMentions(
-                      val,
-                      pos,
-                      setNewMentionTriggerIdx,
-                      setNewMentionSearch,
-                      setShowNewMentionDropdown,
-                      setNewMentionHighlightIdx
-                    );
-                    handleTextChangeWorkItems(
-                      val,
-                      pos,
-                      setNewWITriggerIdx,
-                      setNewWISearch,
-                      setShowNewWISuggestions,
-                      setNewWIHighlightIdx
-                    );
-                  }}
-                  onKeyDown={(e) => {
-                    if (showNewMentionDropdown) {
-                      handleAutocompleteKeyDown(
-                        e,
-                        showNewMentionDropdown,
-                        filteredUsersNew,
-                        newMentionHighlightIdx,
-                        setNewMentionHighlightIdx,
-                        (user) =>
-                          handleInsertMention(
-                            newContent,
-                            newMentionTriggerIdx,
-                            newCommentRef.current?.selectionStart || 0,
-                            `@${user.name}`,
-                            newCommentRef.current,
-                            setNewContent,
-                            setShowNewMentionDropdown
-                          ),
-                        () => setShowNewMentionDropdown(false)
-                      );
-                    } else if (showNewWISuggestions) {
-                      handleAutocompleteKeyDown(
-                        e,
-                        showNewWISuggestions,
-                        filteredWorkItemsNew,
-                        newWIHighlightIdx,
-                        setNewWIHighlightIdx,
-                        (item) =>
-                          handleInsertMention(
-                            newContent,
-                            newWITriggerIdx,
-                            newCommentRef.current?.selectionStart || 0,
-                            `#${item.key}`,
-                            newCommentRef.current,
-                            setNewContent,
-                            setShowNewWISuggestions
-                          ),
-                        () => setShowNewWISuggestions(false)
-                      );
-                    }
-                  }}
-                  rows={4}
-                  required
-                  className="w-full rounded-lg border border-zinc-200 bg-white p-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
-                />
-                <MentionDropdownList
-                  show={showNewMentionDropdown}
-                  usersList={filteredUsersNew}
-                  highlightIdx={newMentionHighlightIdx}
-                  position="bottom"
-                  onSelect={(user) =>
-                    handleInsertMention(
-                      newContent,
-                      newMentionTriggerIdx,
-                      newCommentRef.current?.selectionStart || 0,
-                      `@${user.name}`,
-                      newCommentRef.current,
-                      setNewContent,
-                      setShowNewMentionDropdown
-                    )
-                  }
-                />
-                <WIDropdownList
-                  show={showNewWISuggestions}
-                  wiList={filteredWorkItemsNew}
-                  highlightIdx={newWIHighlightIdx}
-                  position="bottom"
-                  onSelect={(item) =>
-                    handleInsertMention(
-                      newContent,
-                      newWITriggerIdx,
-                      newCommentRef.current?.selectionStart || 0,
-                      `#${item.key}`,
-                      newCommentRef.current,
-                      setNewContent,
-                      setShowNewWISuggestions
-                    )
-                  }
-                />
-              </div>
+              <AutocompleteInput
+                id="new-comment-content-textarea"
+                as="textarea"
+                textareaRef={newCommentRef}
+                value={newContent}
+                onChange={setNewContent}
+                placeholder="Share your thoughts, feedback, or update... Use @ to mention someone, # to link a work item."
+                users={users}
+                workItems={workItems}
+                rows={4}
+                position="bottom"
+                className="w-full rounded-lg border border-zinc-200 bg-white p-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              />
             </div>
 
             <DialogFooter className="pt-2">
