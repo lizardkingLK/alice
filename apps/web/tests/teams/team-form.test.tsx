@@ -2,25 +2,21 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { TeamForm } from '@/app/manager/_components/team-form';
 import { createTeam, updateTeam } from '@/app/manager/_services/teams.service';
-import {
-  getProjectList,
-  getProjectMembers,
-} from '@/app/projects/_services/projects.service';
+import { fetchProjectMembersForForm } from '@/lib/form-read-actions';
 import type { User } from '@/app/users/_services/users.service';
 import type { Team } from '@/app/manager/_services/teams.service';
 import type {
   Project,
   ProjectMemberWithUser,
-} from '@/app/projects/_services/projects.service';
+} from '@/app/projects/_services/projects.service.base';
 
 vi.mock('@/app/manager/_services/teams.service', () => ({
   createTeam: vi.fn(),
   updateTeam: vi.fn(),
 }));
 
-vi.mock('@/app/projects/_services/projects.service', () => ({
-  getProjectList: vi.fn().mockResolvedValue([]),
-  getProjectMembers: vi.fn().mockResolvedValue([]),
+vi.mock('@/lib/form-read-actions', () => ({
+  fetchProjectMembersForForm: vi.fn().mockResolvedValue([]),
 }));
 
 const mockUsers: User[] = [
@@ -161,10 +157,8 @@ describe('TeamForm Component', () => {
     vi.clearAllMocks();
   });
 
-  it('renders inputs and manager select options correctly', async () => {
-    vi.mocked(getProjectList).mockResolvedValue(mockProjects);
-
-    render(<TeamForm users={mockUsers} />);
+  it('renders inputs and manager select options correctly', () => {
+    render(<TeamForm users={mockUsers} activeProjects={mockProjects} />);
 
     expect(
       screen.getByLabelText(/Team Identifier \/ Name/i)
@@ -177,14 +171,10 @@ describe('TeamForm Component', () => {
       screen.getByLabelText(/Designated Team Manager/i)
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/Associated Project/i)).toBeInTheDocument();
-
-    await waitFor(() => {
-      expect(getProjectList).toHaveBeenCalled();
-    });
   });
 
   it('validates mandatory fields on submit when empty', async () => {
-    render(<TeamForm users={mockUsers} />);
+    render(<TeamForm users={mockUsers} activeProjects={mockProjects} />);
 
     const submitBtn = screen.getByRole('button', { name: /Create Team/i });
     const form = submitBtn.closest('form')!;
@@ -199,9 +189,14 @@ describe('TeamForm Component', () => {
   it('submits correctly in create mode and triggers onSuccess callback', async () => {
     const onSuccess = vi.fn();
     vi.mocked(createTeam).mockResolvedValue(mockCreatedTeam);
-    vi.mocked(getProjectList).mockResolvedValue(mockProjects);
 
-    render(<TeamForm users={mockUsers} onSuccess={onSuccess} />);
+    render(
+      <TeamForm
+        users={mockUsers}
+        activeProjects={mockProjects}
+        onSuccess={onSuccess}
+      />
+    );
 
     fireEvent.change(screen.getByLabelText(/Team Identifier \/ Name/i), {
       target: { value: 'Frontend Squad' },
@@ -213,7 +208,6 @@ describe('TeamForm Component', () => {
       target: { value: 'UI development team' },
     });
 
-    // Select Manager
     const managerSelect = screen.getByLabelText(/Designated Team Manager/i);
     fireEvent.click(managerSelect);
 
@@ -251,16 +245,19 @@ describe('TeamForm Component', () => {
   it('populates fields and updates correctly in edit mode', async () => {
     const onSuccess = vi.fn();
     vi.mocked(updateTeam).mockResolvedValue(mockUpdatedTeam);
-    vi.mocked(getProjectList).mockResolvedValue(mockProjects);
-    vi.mocked(getProjectMembers).mockResolvedValue(mockProjectMembers);
+    vi.mocked(fetchProjectMembersForForm).mockResolvedValue(mockProjectMembers);
 
     render(
-      <TeamForm teamToEdit={mockTeam} users={mockUsers} onSuccess={onSuccess} />
+      <TeamForm
+        teamToEdit={mockTeam}
+        users={mockUsers}
+        activeProjects={mockProjects}
+        onSuccess={onSuccess}
+      />
     );
 
     await waitFor(() => {
-      expect(getProjectList).toHaveBeenCalled();
-      expect(getProjectMembers).toHaveBeenCalled();
+      expect(fetchProjectMembersForForm).toHaveBeenCalled();
     });
 
     const nameInput = screen.getByLabelText(/Team Identifier \/ Name/i);
@@ -297,14 +294,9 @@ describe('TeamForm Component', () => {
   });
 
   it('loads project members when project is selected and toggles checkbox selection', async () => {
-    vi.mocked(getProjectList).mockResolvedValue(mockProjects);
-    vi.mocked(getProjectMembers).mockResolvedValue(mockProjectMembers);
+    vi.mocked(fetchProjectMembersForForm).mockResolvedValue(mockProjectMembers);
 
-    render(<TeamForm users={mockUsers} />);
-
-    await waitFor(() => {
-      expect(getProjectList).toHaveBeenCalled();
-    });
+    render(<TeamForm users={mockUsers} activeProjects={mockProjects} />);
 
     const projectSelect = screen.getByLabelText(/Associated Project/i);
     fireEvent.click(projectSelect);
@@ -315,7 +307,7 @@ describe('TeamForm Component', () => {
     fireEvent.click(option);
 
     await waitFor(() => {
-      expect(getProjectMembers).toHaveBeenCalledWith('proj-1');
+      expect(fetchProjectMembersForForm).toHaveBeenCalledWith('proj-1');
     });
 
     const checkbox = await screen.findByRole('checkbox', {
@@ -327,13 +319,15 @@ describe('TeamForm Component', () => {
     expect(checkbox).toBeChecked();
   });
 
-  it('triggers onClose when dismiss/cancel button is clicked', async () => {
+  it('triggers onClose when dismiss/cancel button is clicked', () => {
     const onClose = vi.fn();
-    render(<TeamForm users={mockUsers} onClose={onClose} />);
-
-    await waitFor(() => {
-      expect(getProjectList).toHaveBeenCalled();
-    });
+    render(
+      <TeamForm
+        users={mockUsers}
+        activeProjects={mockProjects}
+        onClose={onClose}
+      />
+    );
 
     const cancelBtn = screen.getByRole('button', { name: /Cancel/i });
     fireEvent.click(cancelBtn);

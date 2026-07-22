@@ -2,6 +2,7 @@ import { apiFetch } from '@/lib/api/api-client.server';
 import { createClient } from '@/lib/supabase/server';
 import { pageRange, paginationMeta } from '@/lib/db/pagination';
 import { applyListSearch, throwIfError } from '@/lib/db/query';
+import { getCachedProjectList } from '@/lib/cache/dropdown-cache';
 import { createProjectsService } from './projects.service.base';
 import type {
   GetProjectsPaginatedResponse,
@@ -18,17 +19,13 @@ const OWNER_SELECT = 'owner:users!projects_owner_id_fkey(id, name, email)';
  * hop. Mutations still go through the API.
  */
 
+/**
+ * Projects for form dropdowns. Shared across requests via `unstable_cache`
+ * (see `lib/cache/dropdown-cache.ts`); invalidated on project mutations
+ * with `updateTag`.
+ */
 export async function getProjectList(): Promise<Project[]> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from('projects')
-    .select(`*, ${OWNER_SELECT}`)
-    .order('created_at', { ascending: false });
-
-  throwIfError(error, 'failed to list projects', 'Failed to list projects');
-
-  return (data ?? []) as unknown as Project[];
+  return (await getCachedProjectList()) as Project[];
 }
 
 export async function getProjectListPaginated(

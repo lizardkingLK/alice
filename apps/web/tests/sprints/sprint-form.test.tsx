@@ -1,51 +1,85 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { SprintForm } from '@/app/sprints/_components/sprint-form';
 import {
   createSprint,
-  getSprint,
   updateSprint,
 } from '@/app/sprints/_services/sprints.service';
-import { apiFetch } from '@/lib/api/api-client';
+import type { Project } from '@/app/projects/_services/projects.service.base';
 
 vi.mock('@/app/sprints/_services/sprints.service', () => ({
   createSprint: vi.fn(),
-  getSprint: vi.fn(),
   updateSprint: vi.fn(),
 }));
 
-vi.mock('@/lib/api/api-client', () => ({
-  apiFetch: vi.fn(),
-}));
-
-const mockProjects = [
+const mockProjects: Project[] = [
   {
     id: 'proj-1',
     name: 'Project Alpha',
     key: 'PAL',
+    description: null,
+    owner_id: 'user-1',
     status: 'active',
+    start_date: null,
+    end_date: null,
+    created_at: '2026-07-09T10:00:00Z',
+    updated_at: '2026-07-09T10:00:00Z',
+    created_by: null,
+    updated_by: null,
     deleted_at: null,
+    attributes_config: null,
+    workflow_config: null,
   },
   {
     id: 'proj-2',
     name: 'Project Beta',
     key: 'PBE',
+    description: null,
+    owner_id: 'user-1',
     status: 'active',
+    start_date: null,
+    end_date: null,
+    created_at: '2026-07-09T10:00:00Z',
+    updated_at: '2026-07-09T10:00:00Z',
+    created_by: null,
+    updated_by: null,
     deleted_at: null,
+    attributes_config: null,
+    workflow_config: null,
   },
   {
     id: 'proj-inactive',
     name: 'Inactive Project',
     key: 'INAC',
-    status: 'inactive',
+    description: null,
+    owner_id: 'user-1',
+    status: 'archived',
+    start_date: null,
+    end_date: null,
+    created_at: '2026-07-09T10:00:00Z',
+    updated_at: '2026-07-09T10:00:00Z',
+    created_by: null,
+    updated_by: null,
     deleted_at: null,
+    attributes_config: null,
+    workflow_config: null,
   },
   {
     id: 'proj-deleted',
     name: 'Deleted Project',
     key: 'DEL',
+    description: null,
+    owner_id: 'user-1',
     status: 'active',
+    start_date: null,
+    end_date: null,
+    created_at: '2026-07-09T10:00:00Z',
+    updated_at: '2026-07-09T10:00:00Z',
+    created_by: null,
+    updated_by: null,
     deleted_at: '2026-07-09T00:00:00Z',
+    attributes_config: null,
+    workflow_config: null,
   },
 ];
 
@@ -67,26 +101,12 @@ const mockSprint = {
 };
 
 describe('SprintForm Component', () => {
-  beforeEach(() => {
-    vi.mocked(apiFetch).mockResolvedValue({ projects: mockProjects });
-  });
-
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it('renders projects in dropdown sorted and filtered', async () => {
-    render(<SprintForm />);
-
-    // Loader should show initially
-    expect(screen.getByText(/Loading projects.../i)).toBeInTheDocument();
-
-    // After resolution, verify select options
-    await waitFor(() => {
-      expect(
-        screen.queryByText(/Loading projects.../i)
-      ).not.toBeInTheDocument();
-    });
+  it('renders projects in dropdown sorted and filtered', () => {
+    render(<SprintForm projects={mockProjects} />);
 
     const projectSelect = screen.getByLabelText(/Project/i);
     expect(projectSelect).toBeInTheDocument();
@@ -94,23 +114,14 @@ describe('SprintForm Component', () => {
     const options = screen
       .getAllByRole('option', { hidden: true })
       .filter((opt) => (opt as HTMLOptionElement).value !== '');
-    // active projects should be Project Alpha, Project Beta.
-    // Inactive and deleted should be filtered.
     expect(options).toHaveLength(2);
     expect(options[0]).toHaveTextContent('Project Alpha (PAL)');
     expect(options[1]).toHaveTextContent('Project Beta (PBE)');
   });
 
   it('performs validation on submit', async () => {
-    render(<SprintForm />);
+    render(<SprintForm projects={mockProjects} />);
 
-    await waitFor(() => {
-      expect(
-        screen.queryByText(/Loading projects.../i)
-      ).not.toBeInTheDocument();
-    });
-
-    // Populate with invalid dates (endDate < startDate)
     fireEvent.change(screen.getByLabelText(/Sprint name/i), {
       target: { value: 'Sprint 1' },
     });
@@ -119,7 +130,7 @@ describe('SprintForm Component', () => {
     });
     fireEvent.change(screen.getByLabelText(/End date/i), {
       target: { value: '2026-07-10' },
-    }); // earlier than start
+    });
 
     const form = screen.getByLabelText(/Sprint name/i).closest('form')!;
     fireEvent.submit(form);
@@ -128,7 +139,6 @@ describe('SprintForm Component', () => {
       await screen.findByText(/End date must be on or after the start date/i)
     ).toBeInTheDocument();
 
-    // Clear name to test required validation
     fireEvent.change(screen.getByLabelText(/Sprint name/i), {
       target: { value: '   ' },
     });
@@ -146,16 +156,13 @@ describe('SprintForm Component', () => {
     vi.mocked(createSprint).mockResolvedValue(mockSprint);
 
     render(
-      <SprintForm onSprintUpdated={onSprintUpdated} onSuccess={onSuccess} />
+      <SprintForm
+        projects={mockProjects}
+        onSprintUpdated={onSprintUpdated}
+        onSuccess={onSuccess}
+      />
     );
 
-    await waitFor(() => {
-      expect(
-        screen.queryByText(/Loading projects.../i)
-      ).not.toBeInTheDocument();
-    });
-
-    // Populate fields
     fireEvent.change(screen.getByLabelText(/Sprint name/i), {
       target: { value: 'Sprint 1' },
     });
@@ -163,7 +170,6 @@ describe('SprintForm Component', () => {
       target: { value: 'Achieve project milestone' },
     });
 
-    // Select project
     const projectSelect = screen.getByLabelText(/Project/i);
     fireEvent.click(projectSelect);
     const option = screen.getByRole('option', { name: 'Project Alpha (PAL)' });
@@ -189,48 +195,38 @@ describe('SprintForm Component', () => {
       });
     });
 
-    // Success alert should be shown
     expect(
       await screen.findByText(/Sprint "Sprint 1" created/i)
     ).toBeInTheDocument();
     expect(onSprintUpdated).toHaveBeenCalledWith(mockSprint);
 
-    // Wait for the 1500ms timeout naturally
     await new Promise((resolve) => setTimeout(resolve, 1600));
 
     expect(onSuccess).toHaveBeenCalled();
   });
 
-  it('fetches sprint details and updates correctly in edit mode', async () => {
+  it('populates fields from sprintToEdit and updates correctly in edit mode', async () => {
     const onSprintUpdated = vi.fn();
-    vi.mocked(getSprint).mockResolvedValue(mockSprint);
     vi.mocked(updateSprint).mockResolvedValue({
       ...mockSprint,
       name: 'Sprint 1 Updated',
     });
 
     render(
-      <SprintForm sprintId="sprint-123" onSprintUpdated={onSprintUpdated} />
+      <SprintForm
+        projects={mockProjects}
+        sprintToEdit={mockSprint}
+        onSprintUpdated={onSprintUpdated}
+      />
     );
 
-    // Initially loading sprint
-    expect(screen.getByText(/Loading sprint details.../i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Sprint name/i)).toHaveValue('Sprint 1');
+    expect(screen.getByLabelText(/Goal/i)).toHaveValue(
+      'Achieve project milestone'
+    );
+    expect(screen.getByLabelText(/Start date/i)).toHaveValue('2026-07-10');
+    expect(screen.getByLabelText(/End date/i)).toHaveValue('2026-07-24');
 
-    await waitFor(() => {
-      expect(getSprint).toHaveBeenCalledWith('sprint-123');
-    });
-
-    // Verify fields populated
-    await waitFor(() => {
-      expect(screen.getByLabelText(/Sprint name/i)).toHaveValue('Sprint 1');
-      expect(screen.getByLabelText(/Goal/i)).toHaveValue(
-        'Achieve project milestone'
-      );
-      expect(screen.getByLabelText(/Start date/i)).toHaveValue('2026-07-10');
-      expect(screen.getByLabelText(/End date/i)).toHaveValue('2026-07-24');
-    });
-
-    // Modify name
     fireEvent.change(screen.getByLabelText(/Sprint name/i), {
       target: { value: 'Sprint 1 Updated' },
     });
@@ -250,7 +246,7 @@ describe('SprintForm Component', () => {
 
     expect(
       screen.queryByText(/Sprint "Sprint 1" updated/i)
-    ).not.toBeInTheDocument(); // old name not shown as updated
+    ).not.toBeInTheDocument();
     expect(
       await screen.findByText(/Sprint "Sprint 1 Updated" updated/i)
     ).toBeInTheDocument();
@@ -260,15 +256,9 @@ describe('SprintForm Component', () => {
     });
   });
 
-  it('triggers onClose when close button clicked', async () => {
+  it('triggers onClose when close button clicked', () => {
     const onClose = vi.fn();
-    render(<SprintForm onClose={onClose} />);
-
-    await waitFor(() => {
-      expect(
-        screen.queryByText(/Loading projects.../i)
-      ).not.toBeInTheDocument();
-    });
+    render(<SprintForm projects={mockProjects} onClose={onClose} />);
 
     const closeBtn = screen.getByRole('button', { name: /Close modal/i });
     fireEvent.click(closeBtn);

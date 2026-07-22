@@ -322,7 +322,7 @@ export function ProjectRegistry({
           <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
             <ProjectForm
               users={users}
-              projectId={projectToEdit.id}
+              projectToEdit={projectToEdit}
               onClose={() => setProjectToEdit(null)}
               onSuccess={() => {
                 setProjectToEdit(null);

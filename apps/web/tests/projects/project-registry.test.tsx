@@ -38,14 +38,16 @@ vi.mock('@/app/projects/_components/project-form', () => ({
   ProjectForm: ({
     onClose,
     onSuccess,
-    projectId,
+    projectToEdit,
   }: {
     onClose?: () => void;
     onSuccess?: () => void;
-    projectId?: string;
+    projectToEdit?: Project | null;
   }) => (
     <div data-testid="mock-project-form">
-      <span>Mock Project Form - {projectId || 'Create'}</span>
+      <span>
+        Mock Project Form - {projectToEdit ? projectToEdit.name : 'Create'}
+      </span>
       <button onClick={onClose}>Close Form</button>
       <button onClick={onSuccess}>Success Form</button>
     </div>
@@ -246,7 +248,9 @@ describe('ProjectRegistry Component', () => {
     fireEvent.click(editBtn!);
 
     expect(screen.getByTestId('mock-project-form')).toBeInTheDocument();
-    expect(screen.getByText('Mock Project Form - proj-1')).toBeInTheDocument();
+    expect(
+      screen.getByText('Mock Project Form - Project Alpha')
+    ).toBeInTheDocument();
   });
 
   it('performs soft-delete action on confirmation', async () => {

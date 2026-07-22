@@ -38,6 +38,7 @@ import {
 import { Pagination } from '@/components/pagination';
 import type { Team } from '../_services/teams.service';
 import type { User } from '@/app/users/_services/users.service';
+import type { Project } from '@/app/projects/_services/projects.service.base';
 
 interface TeamRegistryProps {
   readonly teams: Team[];
@@ -48,6 +49,7 @@ interface TeamRegistryProps {
   readonly tab: 'active' | 'inactive' | 'archived';
   readonly search: string;
   readonly users: User[];
+  readonly activeProjects: Project[];
   readonly currentUserId?: string | null;
   readonly currentUserRole?: string | null;
 }
@@ -61,6 +63,7 @@ export function TeamRegistry({
   tab,
   search,
   users,
+  activeProjects,
   currentUserId,
   currentUserRole,
 }: Readonly<TeamRegistryProps>) {
@@ -440,6 +443,7 @@ export function TeamRegistry({
           <div className="w-full max-w-xl">
             <TeamForm
               users={users}
+              activeProjects={activeProjects}
               onClose={() => setIsAddTeamOpen(false)}
               onSuccess={() => {
                 setIsAddTeamOpen(false);
@@ -455,6 +459,7 @@ export function TeamRegistry({
           <div className="w-full max-w-xl">
             <TeamForm
               users={users}
+              activeProjects={activeProjects}
               teamToEdit={teamToEdit}
               onClose={() => setTeamToEdit(null)}
               onSuccess={() => {

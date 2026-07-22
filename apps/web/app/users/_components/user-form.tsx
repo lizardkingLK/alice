@@ -1,6 +1,6 @@
 'use client';
 
-import { FormAlertMessage } from '@/components/form-alert-message';
+import { FormCancelSubmitActions } from '@/components/form-cancel-submit-actions';
 import { FormEvent, useEffect, useState, type ChangeEvent } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
@@ -203,28 +203,13 @@ export function UserForm({
             </div>
           </div>
 
-          <FormAlertMessage message={message} isError={isError} />
-
-          <div className="flex gap-3 pt-2">
-            {onClose && (
-              <Button
-                type="button"
-                variant="outline"
-                disabled={isSubmitting || isSuccess}
-                onClick={onClose}
-                className="w-1/3"
-              >
-                Cancel
-              </Button>
-            )}
-            <Button
-              type="submit"
-              disabled={isSubmitting || isSuccess}
-              className={`${onClose ? 'w-2/3' : 'w-full'}`}
-            >
-              {submitButtonText}
-            </Button>
-          </div>
+          <FormCancelSubmitActions
+            message={message}
+            isError={isError}
+            isBusy={isSubmitting || isSuccess}
+            onCancel={onClose}
+            submitLabel={submitButtonText}
+          />
         </form>
       </CardContent>
     </Card>

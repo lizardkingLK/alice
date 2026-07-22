@@ -1,6 +1,6 @@
 'use client';
 
-import { FormAlertMessage } from '@/components/form-alert-message';
+import { FormCancelSubmitActions } from '@/components/form-cancel-submit-actions';
 import { FormEvent, useEffect, useState, type ChangeEvent } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
@@ -24,14 +24,13 @@ import type { User } from '@/app/users/_services/users.service';
 import {
   createProject,
   updateProject,
-  getProject,
   type Project,
 } from '../_services/projects.service';
 
 interface ProjectFormProps {
   readonly onClose?: () => void;
   readonly onSuccess?: () => void;
-  readonly projectId?: string;
+  readonly projectToEdit?: Project | null;
   readonly users: User[];
   // eslint-disable-next-line no-unused-vars
   readonly onProjectUpdated?: (project: Project) => void;
@@ -53,56 +52,55 @@ function getTodayDateString() {
 export function ProjectForm({
   onClose,
   onSuccess,
-  projectId,
+  projectToEdit = null,
   users,
   onProjectUpdated,
 }: Readonly<ProjectFormProps>) {
-  const isEditMode = !!projectId;
+  const isEditMode = !!projectToEdit;
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoadingProject, setIsLoadingProject] = useState(isEditMode);
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const [name, setName] = useState('');
-  const [key, setKey] = useState('');
-  const [description, setDescription] = useState('');
-  const [selectedOwnerId, setSelectedOwnerId] = useState('');
-  const [status, setStatus] = useState<'active' | 'archived'>('active');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [name, setName] = useState(projectToEdit?.name ?? '');
+  const [key, setKey] = useState(projectToEdit?.key ?? '');
+  const [description, setDescription] = useState(
+    projectToEdit?.description ?? ''
+  );
+  const [selectedOwnerId, setSelectedOwnerId] = useState(
+    projectToEdit?.owner_id ?? ''
+  );
+  const [status, setStatus] = useState<'active' | 'archived'>(
+    projectToEdit?.status ?? 'active'
+  );
+  const [startDate, setStartDate] = useState(
+    formatDateForInput(projectToEdit?.start_date)
+  );
+  const [endDate, setEndDate] = useState(
+    formatDateForInput(projectToEdit?.end_date)
+  );
 
-  // Set default start date to today's date for create mode
+  useEffect(() => {
+    if (!projectToEdit) {
+      setStartDate(getTodayDateString());
+      return;
+    }
+
+    setName(projectToEdit.name);
+    setKey(projectToEdit.key);
+    setDescription(projectToEdit.description ?? '');
+    setSelectedOwnerId(projectToEdit.owner_id);
+    setStatus(projectToEdit.status);
+    setStartDate(formatDateForInput(projectToEdit.start_date));
+    setEndDate(formatDateForInput(projectToEdit.end_date));
+  }, [projectToEdit]);
+
+  // Default start date to today in create mode
   useEffect(() => {
     if (!isEditMode) {
       setStartDate(getTodayDateString());
     }
   }, [isEditMode]);
-
-  // Fetch project details if in edit mode
-  useEffect(() => {
-    if (!projectId) return;
-    setIsLoadingProject(true);
-    getProject(projectId)
-      .then((project: Project) => {
-        setName(project.name);
-        setKey(project.key);
-        setDescription(project.description ?? '');
-        setSelectedOwnerId(project.owner_id);
-        setStatus(project.status);
-        setStartDate(formatDateForInput(project.start_date));
-        setEndDate(formatDateForInput(project.end_date));
-      })
-      .catch((error: unknown) => {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Failed to load project.';
-        setMessage(errorMessage);
-        setIsError(true);
-      })
-      .finally(() => {
-        setIsLoadingProject(false);
-      });
-  }, [projectId]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -132,8 +130,8 @@ export function ProjectForm({
       };
 
       let result;
-      if (projectId) {
-        result = await updateProject(projectId, projectData);
+      if (projectToEdit) {
+        result = await updateProject(projectToEdit.id, projectData);
         setMessage(`Project "${result.name}" updated.`);
       } else {
         result = await createProject(projectData);
@@ -143,7 +141,7 @@ export function ProjectForm({
       setIsSuccess(true);
       onProjectUpdated?.(result as Project);
     } catch (error) {
-      const modeText = projectId ? 'update' : 'create';
+      const modeText = projectToEdit ? 'update' : 'create';
       const errorMessage =
         error instanceof Error
           ? error.message
@@ -209,177 +207,148 @@ export function ProjectForm({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {isLoadingProject ? (
-          <div className="flex h-64 flex-col items-center justify-center gap-2">
-            <Loader2 className="text-primary h-8 w-8 animate-spin" />
-            <p className="text-muted-foreground text-sm">
-              Loading project details...
-            </p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-medium">
-                  Project Name
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={name}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setName(e.target.value)
-                  }
-                  placeholder="e.g. Alice Platform"
-                  required
-                  className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="key" className="text-sm font-medium">
-                  Project Key
-                </Label>
-                <Input
-                  id="key"
-                  name="key"
-                  value={key}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setKey(e.target.value)
-                  }
-                  placeholder="e.g. ALICE"
-                  required
-                  maxLength={10}
-                  className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 uppercase transition-colors"
-                />
-              </div>
-            </div>
-
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-sm font-medium">
-                Description
+              <Label htmlFor="name" className="text-sm font-medium">
+                Project Name
               </Label>
               <Input
-                id="description"
-                name="description"
-                value={description}
+                id="name"
+                name="name"
+                value={name}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setDescription(e.target.value)
+                  setName(e.target.value)
                 }
-                placeholder="e.g. Core platform squad for JIRA clone"
+                placeholder="e.g. Alice Platform"
+                required
                 className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="owner_id" className="text-sm font-medium">
-                  Project Owner
-                </Label>
-                <Select
-                  value={selectedOwnerId}
-                  onValueChange={setSelectedOwnerId}
-                  name="owner_id"
-                >
-                  <SelectTrigger
-                    id="owner_id"
-                    className="bg-background/80 h-10"
-                  >
-                    <SelectValue placeholder="Select Owner..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users
-                      .filter((u) => u.role === 'manager')
-                      .map((u) => (
-                        <SelectItem key={u.id} value={u.id}>
-                          {u.name} ({u.email})
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="status" className="text-sm font-medium">
-                  Status
-                </Label>
-                <Select
-                  value={status}
-                  onValueChange={(val) =>
-                    setStatus(val as 'active' | 'archived')
-                  }
-                  name="status"
-                >
-                  <SelectTrigger id="status" className="bg-background/80 h-10">
-                    <SelectValue placeholder="Select status..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="key" className="text-sm font-medium">
+                Project Key
+              </Label>
+              <Input
+                id="key"
+                name="key"
+                value={key}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setKey(e.target.value)
+                }
+                placeholder="e.g. ALICE"
+                required
+                maxLength={10}
+                className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 uppercase transition-colors"
+              />
             </div>
+          </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="start_date" className="text-sm font-medium">
-                  Start Date
-                </Label>
-                <Input
-                  id="start_date"
-                  name="start_date"
-                  type="date"
-                  value={startDate}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setStartDate(e.target.value)
-                  }
-                  min={isEditMode ? undefined : getTodayDateString()}
-                  className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
-                />
-              </div>
+          <div className="space-y-2">
+            <Label htmlFor="description" className="text-sm font-medium">
+              Description
+            </Label>
+            <Input
+              id="description"
+              name="description"
+              value={description}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                setDescription(e.target.value)
+              }
+              placeholder="e.g. Core platform squad for JIRA clone"
+              className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
+            />
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="end_date" className="text-sm font-medium">
-                  End Date
-                </Label>
-                <Input
-                  id="end_date"
-                  name="end_date"
-                  type="date"
-                  value={endDate}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setEndDate(e.target.value)
-                  }
-                  className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
-                />
-              </div>
-            </div>
-
-            <FormAlertMessage message={message} isError={isError} />
-
-            <div className="flex gap-3 pt-2">
-              {onClose && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={isSubmitting || isSuccess}
-                  onClick={onClose}
-                  className="w-1/3"
-                >
-                  Cancel
-                </Button>
-              )}
-              <Button
-                type="submit"
-                disabled={isSubmitting || isSuccess}
-                className={`${onClose ? 'w-2/3' : 'w-full'}`}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="owner_id" className="text-sm font-medium">
+                Project Owner
+              </Label>
+              <Select
+                value={selectedOwnerId}
+                onValueChange={setSelectedOwnerId}
+                name="owner_id"
               >
-                {submitButtonText}
-              </Button>
+                <SelectTrigger id="owner_id" className="bg-background/80 h-10">
+                  <SelectValue placeholder="Select Owner..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {users
+                    .filter((u) => u.role === 'manager')
+                    .map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.name} ({u.email})
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
-          </form>
-        )}
+
+            <div className="space-y-2">
+              <Label htmlFor="status" className="text-sm font-medium">
+                Status
+              </Label>
+              <Select
+                value={status}
+                onValueChange={(val) => setStatus(val as 'active' | 'archived')}
+                name="status"
+              >
+                <SelectTrigger id="status" className="bg-background/80 h-10">
+                  <SelectValue placeholder="Select status..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="archived">Archived</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="start_date" className="text-sm font-medium">
+                Start Date
+              </Label>
+              <Input
+                id="start_date"
+                name="start_date"
+                type="date"
+                value={startDate}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setStartDate(e.target.value)
+                }
+                min={isEditMode ? undefined : getTodayDateString()}
+                className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="end_date" className="text-sm font-medium">
+                End Date
+              </Label>
+              <Input
+                id="end_date"
+                name="end_date"
+                type="date"
+                value={endDate}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setEndDate(e.target.value)
+                }
+                className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
+              />
+            </div>
+          </div>
+
+          <FormCancelSubmitActions
+            message={message}
+            isError={isError}
+            isBusy={isSubmitting || isSuccess}
+            onCancel={onClose}
+            submitLabel={submitButtonText}
+          />
+        </form>
       </CardContent>
     </Card>
   );

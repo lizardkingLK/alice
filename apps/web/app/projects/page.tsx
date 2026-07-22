@@ -1,62 +1,18 @@
-import { getDbUser } from '@/lib/auth';
-import { ProjectRegistry } from '@/app/projects/_components/project-registry';
-import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
+import { ProjectsData } from '@/app/projects/_components/projects-data';
 import {
-  getProjectListPaginated,
-  type Project,
-} from '@/app/projects/_services/projects.service.server';
-import { getUserList } from '@/app/users/_services/users.service.server';
-import { safeServerFetch } from '@/lib/safe-server-fetch';
+  REGISTRY_PAGES,
+  RegistrySuspensePage,
+} from '@/components/registry-page-shell';
+import type { RawSearchParams } from '@/lib/search-params';
 
-import {
-  parseStandardParams,
-  parseTabStatus,
-  type RawSearchParams,
-} from '@/lib/search-params';
-
-const EMPTY_PROJECTS = {
-  projects: [] as Project[],
-  totalCount: 0,
-  page: 1,
-  limit: 10,
-  totalPages: 1,
-};
-
-export default async function ProjectsPage({
+export default function ProjectsPage({
   searchParams,
 }: Readonly<{
   searchParams: Promise<RawSearchParams>;
 }>) {
-  const resolvedSearchParams = await searchParams;
-  const { page, limit, search } = parseStandardParams(resolvedSearchParams, 10);
-  const status = parseTabStatus(resolvedSearchParams.tab);
-
-  const [dbUser, usersList, projectsResult] = await Promise.all([
-    getDbUser(),
-    safeServerFetch(getUserList(), [], 'fetch users via API'),
-    safeServerFetch(
-      getProjectListPaginated(page, limit, status, search),
-      EMPTY_PROJECTS,
-      'fetch projects list via API'
-    ),
-  ]);
-
-  const userRole = dbUser?.role ?? 'member';
-
   return (
-    <DashboardShell description="Organize project administration.">
-      <ProjectRegistry
-        projects={projectsResult.projects}
-        totalCount={projectsResult.totalCount}
-        page={projectsResult.page}
-        limit={projectsResult.limit}
-        totalPages={projectsResult.totalPages}
-        tab={status}
-        search={search}
-        users={usersList}
-        currentUserId={dbUser?.id}
-        currentUserRole={userRole}
-      />
-    </DashboardShell>
+    <RegistrySuspensePage meta={REGISTRY_PAGES.projects}>
+      <ProjectsData searchParams={searchParams} />
+    </RegistrySuspensePage>
   );
 }
