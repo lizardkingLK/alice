@@ -52,103 +52,103 @@ type DbCommentRaw = CommentItem & {
   } | null;
 };
 
+async function createCommentDirect(input: CreateCommentInput): Promise<CommentItem> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('comments')
+    .insert({
+      work_item_id: input.work_item_id,
+      content: input.content,
+      author_id: input.author_id,
+      parent_id: input.parent_id || null,
+      status: 'active',
+      updated_at: new Date().toISOString(),
+    })
+    .select(
+      `
+      *,
+      author:users!comments_author_id_fkey(id, name, email, role, profile_picture),
+      work_item:work_items(id, title, type, project:projects(id, name, key))
+    `
+    )
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to create comment: ${error.message}`);
+  }
+
+  const raw = data as unknown as DbCommentRaw;
+  const projectKey = raw.work_item?.project?.key || 'ITEM';
+  const computedKey = raw.work_item ? `${projectKey}-${raw.work_item.id.slice(0, 4).toUpperCase()}` : '';
+
+  return {
+    ...raw,
+    work_item: raw.work_item
+      ? {
+          ...raw.work_item,
+          key: computedKey,
+        }
+      : null,
+  } as CommentItem;
+}
+
+async function updateCommentDirect(id: string, content: string): Promise<CommentItem> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('comments')
+    .update({
+      content,
+      edited: true,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select(
+      `
+      *,
+      author:users!comments_author_id_fkey(id, name, email, role, profile_picture),
+      work_item:work_items(id, title, type, project:projects(id, name, key))
+    `
+    )
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to update comment: ${error.message}`);
+  }
+
+  const raw = data as unknown as DbCommentRaw;
+  const projectKey = raw.work_item?.project?.key || 'ITEM';
+  const computedKey = raw.work_item ? `${projectKey}-${raw.work_item.id.slice(0, 4).toUpperCase()}` : '';
+
+  return {
+    ...raw,
+    work_item: raw.work_item
+      ? {
+          ...raw.work_item,
+          key: computedKey,
+        }
+      : null,
+  } as CommentItem;
+}
+
+async function archiveCommentDirect(id: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from('comments')
+    .update({
+      status: 'archived',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+
+  if (error) {
+    throw new Error(`Failed to archive comment: ${error.message}`);
+  }
+}
+
 export function createCommentsService(
   apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>
 ) {
   const apiComments = '/api/comments';
-
-  async function createCommentDirect(input: CreateCommentInput): Promise<CommentItem> {
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from('comments')
-      .insert({
-        work_item_id: input.work_item_id,
-        content: input.content,
-        author_id: input.author_id,
-        parent_id: input.parent_id || null,
-        status: 'active',
-        updated_at: new Date().toISOString(),
-      })
-      .select(
-        `
-        *,
-        author:users!comments_author_id_fkey(id, name, email, role, profile_picture),
-        work_item:work_items(id, title, type, project:projects(id, name, key))
-      `
-      )
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to create comment: ${error.message}`);
-    }
-
-    const raw = data as unknown as DbCommentRaw;
-    const projectKey = raw.work_item?.project?.key || 'ITEM';
-    const computedKey = raw.work_item ? `${projectKey}-${raw.work_item.id.slice(0, 4).toUpperCase()}` : '';
-
-    return {
-      ...raw,
-      work_item: raw.work_item
-        ? {
-            ...raw.work_item,
-            key: computedKey,
-          }
-        : null,
-    } as CommentItem;
-  }
-
-  async function updateCommentDirect(id: string, content: string): Promise<CommentItem> {
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from('comments')
-      .update({
-        content,
-        edited: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .select(
-        `
-        *,
-        author:users!comments_author_id_fkey(id, name, email, role, profile_picture),
-        work_item:work_items(id, title, type, project:projects(id, name, key))
-      `
-      )
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to update comment: ${error.message}`);
-    }
-
-    const raw = data as unknown as DbCommentRaw;
-    const projectKey = raw.work_item?.project?.key || 'ITEM';
-    const computedKey = raw.work_item ? `${projectKey}-${raw.work_item.id.slice(0, 4).toUpperCase()}` : '';
-
-    return {
-      ...raw,
-      work_item: raw.work_item
-        ? {
-            ...raw.work_item,
-            key: computedKey,
-          }
-        : null,
-    } as CommentItem;
-  }
-
-  async function archiveCommentDirect(id: string): Promise<void> {
-    const supabase = createClient();
-    const { error } = await supabase
-      .from('comments')
-      .update({
-        status: 'archived',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id);
-
-    if (error) {
-      throw new Error(`Failed to archive comment: ${error.message}`);
-    }
-  }
 
   return {
     async getCommentsList(): Promise<CommentItem[]> {
