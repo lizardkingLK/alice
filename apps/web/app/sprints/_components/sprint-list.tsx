@@ -195,6 +195,9 @@ function SprintListContent({
                 <span className="font-semibold text-foreground">
                   {row.original.name}
                 </span>
+                {row.original.project ? (
+                  <span className="bg-secondary text-secondary-foreground ring-secondary/20 inline-flex items-center rounded-md px-1.5 py-0.5 font-mono text-[10px] font-medium ring-1 ring-inset">{row.original.project.key}</span>
+                ) : null}
               </div>
               {row.original.project ? (
                 <p className="text-muted-foreground text-xs font-normal">
