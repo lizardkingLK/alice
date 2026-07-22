@@ -129,4 +129,45 @@ describe('CommentsFeed Component', () => {
 
     expect(screen.getByText('No comments found')).toBeInTheDocument();
   });
+
+  it('renders mentions with styled badges', () => {
+    const commentWithMention: CommentItem = {
+      ...mockComments[0]!,
+      id: 'comment-mention-1',
+      content: 'Hey @[Alice Admin](user-admin-1) please check this.',
+    };
+
+    render(<CommentsFeed initialComments={[commentWithMention]} workItems={mockWorkItems} />);
+    expect(screen.getByText('@Alice Admin')).toBeInTheDocument();
+    expect(screen.getByText(/please check this/)).toBeInTheDocument();
+  });
+
+  it('renders work item links with styled badges', () => {
+    const commentWithIssue: CommentItem = {
+      ...mockComments[0]!,
+      id: 'comment-issue-1',
+      content: 'Please refer to #[AL-1](wi-1) for details.',
+    };
+
+    render(<CommentsFeed initialComments={[commentWithIssue]} workItems={mockWorkItems} />);
+    const link = screen.getByRole('link', { name: '#AL-1' });
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute('href', '/work-items');
+    expect(screen.getByText(/for details/)).toBeInTheDocument();
+  });
+
+  it('renders inline comments list and add box when workItemId is provided', () => {
+    render(
+      <CommentsFeed
+        initialComments={mockComments}
+        workItems={mockWorkItems}
+        workItemId="wi-1"
+      />
+    );
+
+    expect(screen.getByText('Discussion (2)')).toBeInTheDocument();
+    expect(screen.queryByText('Discussions & Comments')).not.toBeInTheDocument();
+    expect(screen.queryByText('New Comment')).not.toBeInTheDocument();
+    expect(screen.getByText('Add to discussion')).toBeInTheDocument();
+  });
 });
