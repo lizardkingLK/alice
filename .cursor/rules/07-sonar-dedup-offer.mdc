@@ -1,0 +1,25 @@
+---
+description: Offer explicit Sonar duplication prescan after substantive code edits; never auto-run.
+alwaysApply: true
+---
+
+# Sonar dedup enforcer (offer only)
+
+The duplication prescan skill (`sonar-duplication-prescan`) is **explicit-only** (`disable-model-invocation: true`).
+
+## After completing work
+
+When you finish a turn that **edited source code** under `apps/` or `packages/`:
+
+1. Do **not** run the prescan automatically.
+2. End with a **one-line offer**, e.g. *Want me to run `/sonar-duplication-prescan` on these changes?*
+3. If the user says yes, read and follow `.cursor/skills/sonar-duplication-prescan/SKILL.md`.
+
+## When to skip the offer
+
+- Question-only or review-only turns (no edits)
+- Docs-only, lockfile-only, or generated-file-only changes
+- The user already ran or declined a prescan in the same thread
+- Trivial one-line edits with no duplication risk
+
+Keep the offer brief — one sentence, no bullet list.
