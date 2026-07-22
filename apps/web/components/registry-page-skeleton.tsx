@@ -18,11 +18,19 @@ type RegistryPageSkeletonProps = {
   showTabs?: boolean;
 };
 
+/** Stable string ids for skeleton maps (avoids React array-index keys / S6479). */
+function skeletonKeys(prefix: string, count: number): string[] {
+  return Array.from({ length: count }, (_, i) => `${prefix}-${i}`);
+}
+
 export function RegistryPageSkeleton({
   columnCount = 5,
   rowCount = 8,
   showTabs = false,
 }: Readonly<RegistryPageSkeletonProps>) {
+  const headerKeys = skeletonKeys('header', columnCount);
+  const rowKeys = skeletonKeys('row', rowCount);
+
   return (
     <div
       className="space-y-6"
@@ -47,25 +55,29 @@ export function RegistryPageSkeleton({
             <Table>
               <TableHeader>
                 <TableRow>
-                  {Array.from({ length: columnCount }).map((_, index) => (
-                    <TableHead key={index}>
+                  {headerKeys.map((key) => (
+                    <TableHead key={key}>
                       <Skeleton className="h-4 w-20" />
                     </TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {Array.from({ length: rowCount }).map((_, rowIndex) => (
-                  <TableRow key={rowIndex}>
-                    {Array.from({ length: columnCount }).map((_, colIndex) => (
-                      <TableCell key={colIndex}>
-                        <Skeleton
-                          className={
-                            colIndex === 0 ? 'h-10 w-full max-w-48' : 'h-4 w-24'
-                          }
-                        />
-                      </TableCell>
-                    ))}
+                {rowKeys.map((rowKey) => (
+                  <TableRow key={rowKey}>
+                    {skeletonKeys(`cell-${rowKey}`, columnCount).map(
+                      (cellKey, colIndex) => (
+                        <TableCell key={cellKey}>
+                          <Skeleton
+                            className={
+                              colIndex === 0
+                                ? 'h-10 w-full max-w-48'
+                                : 'h-4 w-24'
+                            }
+                          />
+                        </TableCell>
+                      )
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
