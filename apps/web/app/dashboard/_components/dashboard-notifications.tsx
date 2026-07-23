@@ -401,6 +401,7 @@ export function NotificationInbox() {
           </div>
           {unreadCount > 0 && (
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 handleMarkAllAsRead();
