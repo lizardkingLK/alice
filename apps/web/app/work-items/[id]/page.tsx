@@ -1,12 +1,18 @@
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import WorkItemDetails from '@/app/work-items/_components/workItem-details';
 import { getWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import { getWorkItemDiscussion } from '@/app/comments/_services/comments.service.server';
 
 export default async function WorkItemPage({
   params,
 }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = await params;
-  const workItem = await getWorkItem(id);
+
+  const [workItem, initialComments] = await Promise.all([
+    getWorkItem(id),
+    getWorkItemDiscussion(id),
+  ]);
+
   const shortId = workItem.id.slice(0, 8).toUpperCase();
 
   return (
@@ -18,7 +24,10 @@ export default async function WorkItemPage({
         { label: shortId, url: `/work-items/${workItem.id}` },
       ]}
     >
-      <WorkItemDetails workItemDetails={workItem} />
+      <WorkItemDetails
+        workItemDetails={workItem}
+        initialComments={initialComments}
+      />
     </DashboardShell>
   );
 }

@@ -6,7 +6,11 @@ import {
 import { getUserList } from '@/app/users/_services/users.service.server';
 import { getProjectList } from '@/app/projects/_services/projects.service.server';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
-import { parseStandardParams, type RawSearchParams } from '@/lib/search-params';
+import {
+  parseStandardParams,
+  parseWorkItemFilters,
+  type RawSearchParams,
+} from '@/lib/search-params';
 
 const EMPTY_WORK_ITEMS = {
   workItems: [] as DbWorkItem[],
@@ -25,12 +29,18 @@ export async function WorkItemsData({
 }: Readonly<WorkItemsDataProps>) {
   const resolvedSearchParams = await searchParams;
   const { page, limit, search } = parseStandardParams(resolvedSearchParams, 10);
+  const { projectId, type, assigneeId } =
+    parseWorkItemFilters(resolvedSearchParams);
 
   const [projects, projectMembers, workItemsResult] = await Promise.all([
     safeServerFetch(getProjectList(), [], 'fetch projects for work items'),
     safeServerFetch(getUserList(), [], 'fetch users for work items'),
     safeServerFetch(
-      getWorkItemsPaginated(page, limit, search),
+      getWorkItemsPaginated(page, limit, search, {
+        projectId,
+        type,
+        assigneeId,
+      }),
       EMPTY_WORK_ITEMS,
       'fetch work items list'
     ),
@@ -46,6 +56,9 @@ export async function WorkItemsData({
       limit={workItemsResult.limit}
       totalPages={workItemsResult.totalPages}
       search={search}
+      projectFilter={projectId ?? ''}
+      typeFilter={type ?? ''}
+      assigneeFilter={assigneeId ?? ''}
     />
   );
 }

@@ -48,8 +48,11 @@ import { Pagination } from '@/components/pagination';
 import { DataTable } from '@/components/data-table';
 import { SearchInput } from '@/components/search-input';
 import { DismissibleError } from '@/components/dismissible-error';
+import { ListFilterSelect } from '@/components/list-filter-select';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
+import { useQueryFilter } from '@/hooks/use-query-filter';
+import { Constants } from '@repo/types/database';
 
 type WorkItemsTableProps = WorkItemWorkspaceProps & {
   currentUserId?: string | null;
@@ -136,6 +139,8 @@ const actionsRenderer = ({
   </DropdownMenu>
 );
 
+const WORK_ITEM_TYPES = Constants.public.Enums.WorkItemType;
+
 export default function WorkItemsTable({
   projects,
   projectMembers,
@@ -145,11 +150,19 @@ export default function WorkItemsTable({
   limit,
   totalPages,
   search,
+  projectFilter,
+  typeFilter,
+  assigneeFilter,
+  lockedProjectId,
   currentUserId,
 }: Readonly<WorkItemsTableProps>) {
   const { handlePageChange, handleLimitChange, router } =
     usePaginationNavigation(totalPages, limit);
   const { searchQuery, setSearchQuery } = useDebouncedSearch(search);
+  const projectQuery = useQueryFilter('project', projectFilter);
+  const typeQuery = useQueryFilter('type', typeFilter);
+  const assigneeQuery = useQueryFilter('assignee', assigneeFilter);
+  const isProjectLocked = Boolean(lockedProjectId);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<DbWorkItem | null>(null);
@@ -234,14 +247,60 @@ export default function WorkItemsTable({
       <DismissibleError message={error} onDismiss={() => setError(null)} />
 
       {/* Work-Items Options */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <SearchInput
-          value={searchQuery}
-          onValueChange={setSearchQuery}
-          placeholder="Search work items..."
-        />
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <SearchInput
+            value={searchQuery}
+            onValueChange={setSearchQuery}
+            placeholder="Search work items..."
+          />
 
-        <Button onClick={openCreateDialog}>
+          {isProjectLocked ? null : (
+            <ListFilterSelect
+              value={projectQuery.value}
+              onValueChange={projectQuery.setFilter}
+              allValue={projectQuery.allValue}
+              allLabel="All Projects"
+              ariaLabel="Filter by project"
+              placeholder="All Projects"
+              triggerClassName="sm:w-44"
+              options={projects.map((project) => ({
+                value: project.id,
+                label: project.name,
+              }))}
+            />
+          )}
+
+          <ListFilterSelect
+            value={typeQuery.value}
+            onValueChange={typeQuery.setFilter}
+            allValue={typeQuery.allValue}
+            allLabel="All Types"
+            ariaLabel="Filter by type"
+            placeholder="All Types"
+            triggerClassName="sm:w-36"
+            options={WORK_ITEM_TYPES.map((workItemType) => ({
+              value: workItemType,
+              label: workItemType,
+            }))}
+          />
+
+          <ListFilterSelect
+            value={assigneeQuery.value}
+            onValueChange={assigneeQuery.setFilter}
+            allValue={assigneeQuery.allValue}
+            allLabel="All Assignees"
+            ariaLabel="Filter by assignee"
+            placeholder="All Assignees"
+            triggerClassName="sm:w-44"
+            options={projectMembers.map((member) => ({
+              value: member.id,
+              label: member.name,
+            }))}
+          />
+        </div>
+
+        <Button onClick={openCreateDialog} className="shrink-0 self-start">
           <Plus />
           Add Work-Item
         </Button>
@@ -255,7 +314,9 @@ export default function WorkItemsTable({
             Work Items
           </CardTitle>
           <CardDescription>
-            View, filter, and manage work items across your workspace.
+            {isProjectLocked
+              ? 'View, filter, and manage work items for this project.'
+              : 'View, filter, and manage work items across your workspace.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -300,6 +361,7 @@ export default function WorkItemsTable({
             projects={projects}
             itemToEdit={itemToEdit}
             projectMembers={projectMembers}
+            lockProject={isProjectLocked}
             onClose={() => handleDialogChange(false)}
             onSuccess={() => handleUpdated()}
           />
