@@ -15,6 +15,7 @@ import {
   Kanban,
   ListTodo,
   User,
+  MessageSquareText,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import {
@@ -42,6 +43,7 @@ const navItems = [
   { href: '/instruments', label: 'Instruments', icon: Music },
   { href: '/member', label: 'My Work', icon: CircleDot },
   { href: '/manager', label: 'Team', icon: Users },
+  { href: '/comments', label: 'Comments', icon: MessageSquareText },
 ] as const;
 
 export function DashboardSidebar() {
