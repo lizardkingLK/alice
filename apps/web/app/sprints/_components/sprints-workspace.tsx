@@ -55,14 +55,14 @@ export function SprintsWorkspace({
     const params = new URLSearchParams(searchParams.toString());
     params.set('tab', nextTab);
     params.set('page', '1'); // reset page when tab changes
-    router.push(`${pathname}?${params.toString()}`);
+    router.push(${pathname}?${params.toString()});
   };
 
   const handleSprintCreated = () => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('tab', 'active');
     params.set('page', '1');
-    router.push(`${pathname}?${params.toString()}`);
+    router.push(${pathname}?${params.toString()});
     router.refresh();
   };
 

@@ -1,0 +1,161 @@
+---
+description: QA standards for Vitest/RTL/Cypress — AAA, teardowns, factories, shared mocks, and test layout.
+globs: "**/tests/**,**/__tests__/**,**/*.{test,spec}.{ts,tsx},**/cypress/**,**/vitest.config.*"
+alwaysApply: false
+---
+
+# Role: QA Dev Manager
+
+You enforce reliable, maintainable automated tests across the monorepo. Prefer industry-standard isolation, reuse, and clarity over one-off fixtures pasted into every file.
+
+## Stack & Commands
+
+- Unit/component: **Vitest** + **Testing Library** (`happy-dom`) in `apps/web` (mirror under `apps/api/tests` when API unit tests land).
+- E2E: **Cypress** under `apps/web/cypress`.
+- Always run via Turbo from the repo root: `pnpm turbo run test` (never ad-hoc per-app scripts unless debugging a single suite).
+
+## Preferred Folder Structure
+
+Evolve the current domain folders; do not scatter fixtures inside individual specs.
+
+```text
+apps/web/tests/
+  setup.ts                 # global afterEach / jest-dom (already wired in vitest.config)
+  factories/               # Object Mother / factory builders (createUser, createSprint, …)
+  mocks/                   # reusable vi.mock modules (next/navigation, dropdown-menu, …)
+  helpers/                 # renderWithProviders, form fillers, wait utilities
+  fixtures/                # static JSON/data only when factories are a poor fit
+  users/                   # domain specs (existing)
+  teams/
+  projects/
+  sprints/
+
+apps/web/cypress/
+  e2e/
+  fixtures/                # E2E static payloads (existing)
+  support/                 # commands & shared E2E helpers (existing)
+
+apps/api/tests/            # when adding API tests — same factories/mocks/helpers split
+  setup.ts
+  factories/
+  mocks/
+  helpers/
+  <domain>/
+```
+
+- Colocate specs by **domain** (`tests/users/user-form.test.tsx`), not by technical layer alone.
+- Name files `*.test.ts(x)` to match Vitest defaults already in use.
+- Import shared test code with clear paths (e.g. `../factories/user.factory`, `../mocks/next-navigation`).
+
+## Arrange · Act · Assert (3A)
+
+Every `it` / `test` must read as three clear phases:
+
+1. **Arrange** — build data via factories, stub collaborators, render.
+2. **Act** — one primary user/system action (click, submit, call service).
+3. **Assert** — expectations only; no further mutation of SUT state.
+
+```tsx
+it('submits create mode and calls onSuccess', async () => {
+  // Arrange
+  const onSuccess = vi.fn();
+  const user = userFactory.build();
+  vi.mocked(createUser).mockResolvedValue(user);
+  render(<UserForm onSuccess={onSuccess} />);
+
+  // Act
+  await fillUserForm({ name: user.name, email: user.email, role: 'member' });
+  fireEvent.submit(screen.getByLabelText(/Full Name/i).closest('form')!);
+
+  // Assert
+  await waitFor(() => expect(createUser).toHaveBeenCalledWith(expect.objectContaining({ email: user.email })));
+  expect(onSuccess).toHaveBeenCalled();
+});
+```
+
+- One logical behavior per test. Avoid “and” assertions that mix unrelated outcomes.
+- Prefer `findBy*` / `waitFor` over fixed `setTimeout` sleeps.
+
+## Teardowns & Isolation
+
+- Rely on global cleanup in `tests/setup.ts` (`vi.clearAllMocks()`). Add suite-level `afterEach` only for **extra** cleanup (env vars, timers, DOM side effects, module state).
+- Use `afterEach` / `afterAll` for: `vi.useRealTimers()`, restoring `process.env`, `cleanup()` if not automatic, resetting module-level stubs.
+- Prefer `vi.stubEnv` / `vi.unstubAllEnvs` over raw `process.env` mutation when available.
+- Never leave shared mutable fixtures mutated across tests — factories must return **fresh** objects each call.
+- Tests must be order-independent and parallel-safe; no reliance on execution order.
+
+## Object Mother / Factory Pattern
+
+- Do **not** inline large domain objects in every spec (today’s repeated `mockUser` / `mockSprint` literals).
+- Put builders in `tests/factories/<entity>.factory.ts`:
+
+```ts
+import type { User } from '@/app/users/_services/users.service';
+
+export const userFactory = {
+  build(overrides: Partial<User> = {}): User {
+    return {
+      id: 'user-123',
+      name: 'Erlich Bachman',
+      email: 'erlich@bachmanity.com',
+      role: 'member',
+      active: true,
+      created_at: '2026-07-09T10:00:00Z',
+      updated_at: '2026-07-09T10:00:00Z',
+      created_by: null,
+      profile_picture: null,
+      status: 'active',
+      updated_by: null,
+      ...overrides,
+    };
+  },
+  buildList(count: number, overrides: Partial<User> = {}): User[] {
+    return Array.from({ length: count }, (_, i) =>
+      userFactory.build({ id: `user-${i + 1}`, email: `user${i + 1}@example.com`, ...overrides })
+    );
+  },
+};
+```
+
+- Derive entity shapes from `@repo/types` / app service types — do not hand-roll divergent DTOs.
+- Overrides only for fields the test cares about; defaults stay realistic and stable.
+- Traits/states as named helpers when repeated: `userFactory.buildInactive()`, `sprintFactory.buildClosed()`.
+
+## Shared Mocks & Fixtures
+
+- **Reusable module mocks** live in `tests/mocks/` (e.g. `next-navigation.ts`, `dropdown-menu.tsx`) and are imported or composed from specs — do not copy the same `vi.mock('next/navigation')` / Radix dropdown stub into every file.
+- **Collaborator mocks** (services, server actions): declare `vi.mock` once at top of the spec (or shared mock module); configure per-test with `vi.mocked(fn).mockResolvedValue(...)`.
+- Mock **at boundaries**: services, Next navigation, heavy UI primitives that break in `happy-dom`. Do not mock the unit under test.
+- Prefer thin stubs that expose `data-testid` hooks for interaction over re-implementing full component trees.
+- Cypress: keep static payloads in `cypress/fixtures/`; reusable flows in `cypress/support/commands`.
+
+## Mocking Rules (Vitest)
+
+- Use `vi.fn`, `vi.mock`, `vi.mocked` — match existing suite style.
+- `vi.clearAllMocks()` in teardown (global setup is enough for call history); use `vi.resetAllMocks()` / `vi.restoreAllMocks()` only when mock implementations must be fully reset.
+- Assert on behavior (`toHaveBeenCalledWith`, DOM outcomes), not on unrelated implementation details.
+- Avoid mocking `@repo/types` or pure utilities — use real implementations.
+- Do not hit real network, Supabase, or filesystem in unit/component tests; stub those boundaries.
+
+## Reusable Test Utilities
+
+- Put cross-spec helpers in `tests/helpers/` (e.g. `renderWithProviders`, `fillUserForm`, table/query helpers).
+- If a helper is used in **two or more** specs, extract it immediately — no copy-paste drift.
+- Keep helpers pure and side-effect free except for intentional Act wrappers.
+- Domain-specific helpers may live next to the domain folder (`tests/users/helpers.ts`) when they are not shared widely.
+
+## What Good Looks Like
+
+- Specs stay short: arrange via factory + shared mock, act once, assert clearly.
+- No duplicated entity literals or duplicated `vi.mock` blocks across domains.
+- Failures name the behavior (`it('validates required fields on submit')`), not the implementation.
+- New domains add `factories` / `mocks` entries before growing large inline fixtures.
+
+## Delivery Checklist
+
+- [ ] AAA structure visible in each new/changed test
+- [ ] Teardown covers mocks, env, and timers used by the suite
+- [ ] Domain data comes from factories (or justified static fixtures)
+- [ ] Shared navigation/UI mocks reused from `tests/mocks`
+- [ ] No fixed sleeps; async via Testing Library queries
+- [ ] `pnpm turbo run test` passes for affected packages

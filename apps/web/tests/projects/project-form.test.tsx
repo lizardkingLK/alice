@@ -9,14 +9,12 @@ import {
 import { ProjectForm } from '@/app/projects/_components/project-form';
 import {
   createProject,
-  getProject,
   updateProject,
 } from '@/app/projects/_services/projects.service';
 import type { User } from '@/app/users/_services/users.service';
 
 vi.mock('@/app/projects/_services/projects.service', () => ({
   createProject: vi.fn(),
-  getProject: vi.fn(),
   updateProject: vi.fn(),
 }));
 
@@ -113,7 +111,6 @@ describe('ProjectForm Component', () => {
     const options = within(hiddenSelect as HTMLElement).getAllByRole('option', {
       hidden: true,
     });
-    // Options should be: "Select Owner..." option plus 2 managers = 3 total options.
     expect(options).toHaveLength(3);
     expect(options[0]).toHaveValue('');
     expect(options[1]).toHaveTextContent('Manager One (mgr1@alice.dev)');
@@ -144,12 +141,11 @@ describe('ProjectForm Component', () => {
       />
     );
 
-    // Fill form
     fireEvent.change(screen.getByLabelText(/Project Name/i), {
       target: { value: 'Project Alice' },
     });
     fireEvent.change(screen.getByLabelText(/Project Key/i), {
-      target: { value: 'alice' }, // testing uppercase conversion
+      target: { value: 'alice' },
     });
     fireEvent.change(screen.getByLabelText(/Description/i), {
       target: { value: 'Project description details' },
@@ -189,14 +185,12 @@ describe('ProjectForm Component', () => {
     ).toBeInTheDocument();
     expect(onProjectUpdated).toHaveBeenCalledWith(mockProject);
 
-    // Wait for the success timeout
     await new Promise((resolve) => setTimeout(resolve, 1300));
     expect(onSuccess).toHaveBeenCalled();
   });
 
-  it('fetches project details and updates correctly in edit mode', async () => {
+  it('populates fields from projectToEdit and updates correctly in edit mode', async () => {
     const onProjectUpdated = vi.fn();
-    vi.mocked(getProject).mockResolvedValue(mockProject);
     vi.mocked(updateProject).mockResolvedValue({
       ...mockProject,
       name: 'Project Alice Updated',
@@ -204,34 +198,23 @@ describe('ProjectForm Component', () => {
 
     render(
       <ProjectForm
-        projectId="proj-123"
+        projectToEdit={mockProject}
         users={mockUsers}
         onProjectUpdated={onProjectUpdated}
       />
     );
 
-    expect(screen.getByText(/Loading project details.../i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Project Name/i)).toHaveValue('Project Alice');
+    expect(screen.getByLabelText(/Project Key/i)).toHaveValue('ALICE');
+    expect(screen.getByLabelText(/Description/i)).toHaveValue(
+      'Project description details'
+    );
+    expect(screen.getByLabelText(/Project Owner/i)).toHaveTextContent(
+      'Manager One (mgr1@alice.dev)'
+    );
+    expect(screen.getByLabelText(/Start Date/i)).toHaveValue('2026-07-10');
+    expect(screen.getByLabelText(/End Date/i)).toHaveValue('2026-08-10');
 
-    await waitFor(() => {
-      expect(getProject).toHaveBeenCalledWith('proj-123');
-    });
-
-    await waitFor(() => {
-      expect(screen.getByLabelText(/Project Name/i)).toHaveValue(
-        'Project Alice'
-      );
-      expect(screen.getByLabelText(/Project Key/i)).toHaveValue('ALICE');
-      expect(screen.getByLabelText(/Description/i)).toHaveValue(
-        'Project description details'
-      );
-      expect(screen.getByLabelText(/Project Owner/i)).toHaveTextContent(
-        'Manager One (mgr1@alice.dev)'
-      );
-      expect(screen.getByLabelText(/Start Date/i)).toHaveValue('2026-07-10');
-      expect(screen.getByLabelText(/End Date/i)).toHaveValue('2026-08-10');
-    });
-
-    // Modify fields
     fireEvent.change(screen.getByLabelText(/Project Name/i), {
       target: { value: 'Project Alice Updated' },
     });

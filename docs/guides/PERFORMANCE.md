@@ -5,7 +5,7 @@ How Alice keeps dashboard pages fast, what has already been optimized, and the r
 | Field        | Value                                        |
 | ------------ | -------------------------------------------- |
 | Status       | **Living**                                   |
-| Last updated | 2026-07-21                                   |
+| Last updated | 2026-07-23 (M5 dropdown cache)               |
 | Scope        | `apps/web` RSC data loading, `apps/api` auth |
 
 Related:
@@ -97,12 +97,12 @@ Paginated readers also share `pageRange` / `paginationMeta` (`apps/web/lib/db/pa
 
 GET/list pages now read **straight from Supabase in the server component** instead of hopping through the Express API. This removes one full network round trip (`web → api → Supabase`) per read, plus the `requireApiAuth` JWT verify + `public.users` touch that came with it.
 
-- **Reads (direct):** work items, users, projects (list/detail/members), sprints — implemented in each feature's `_services/*.server.ts` using the SSR Supabase client (`@/lib/supabase/server`).
+- **Reads (direct):** work items, users, projects (list/detail/members), sprints (list + `getSprint`), teams — implemented in each feature's `_services/*.server.ts` using the SSR Supabase client (`@/lib/supabase/server`).
 - **Mutations (unchanged):** create / update / delete / toggle still go through the API, which keeps Zod validation, audit columns, and the service-role client.
 
 Each server reader mirrors the query in the matching API repository (same `select`, filters, ordering, and pagination) so results are identical.
 
-**Security note:** the API uses the Supabase **service-role** key (bypasses RLS); the web SSR client uses the **anon key + user session**. Reads rely on default table grants for the `authenticated` role with RLS unenforced. If RLS is ever enforced, list/detail policies must be added for `work_items`, `projects`, `users`, `sprints`, `project_members` before these reads keep working.
+**Security note:** the API uses the Supabase **service-role** key (bypasses RLS); the web SSR client uses the **anon key + user session**. Reads rely on default table grants for the `authenticated` role with RLS unenforced. If RLS is ever enforced, list/detail policies must be added for `work_items`, `projects`, `users`, `sprints`, `project_members`, `teams`, and `team_members` before these reads keep working.
 
 ```1:10:apps/web/app/work-items/_services/workItem.service.server.ts
 import { User as DbUser } from '@/app/users/_services/users.service';
@@ -163,6 +163,38 @@ export async function requireApiAuth(
 
 **Trade-off:** admin-only mutations still do their own `public.users` role lookup (`requireAdmin`), so authorization is unaffected. The only removed behavior is lazy self-provisioning on a random API call — which was already redundant given the entry-point provisioning above.
 
+### 2.6 Suspense streaming on list routes (M3)
+
+Dashboard list pages no longer block the entire RSC on Supabase reads. Each route renders `DashboardShell` immediately and streams table content inside `<Suspense>`:
+
+- **Pattern:** sync `page.tsx` → `DashboardShell` → `<Suspense fallback={<RegistryPageSkeleton />}>` → async `*Data` server component (owns `searchParams` + `Promise.all` fetches).
+- **Shared skeleton:** `apps/web/components/registry-page-skeleton.tsx` — mirrors search bar, optional tabs, card header, table rows, and pagination placeholders.
+- **Client navigations:** route-level `loading.tsx` reuses the same skeleton inside `DashboardShell` for instant feedback.
+- **Routes shipped:** `/work-items`, `/users`, `/projects`, `/manager`, `/sprints`.
+- **Not yet:** `/backlog`, detail pages (`/projects/[id]`, `/work-items/[id]`).
+
+### 2.7 Short-TTL dropdown cache (M5)
+
+Form dropdowns (`getUserList`, `getProjectList`) are shared across many pages and change infrequently. They now use Next.js `unstable_cache` with a **60s** safety-net TTL and **tag** invalidation on mutations.
+
+| Piece                 | Location                                                           |
+| --------------------- | ------------------------------------------------------------------ |
+| Tags + cached loaders | `apps/web/lib/cache/dropdown-cache.ts`                             |
+| Tag ids               | `dropdown-users`, `dropdown-projects`                              |
+| Consumers             | `getUserList()` / `getProjectList()` in `*.service.server.ts`      |
+| Invalidate            | Server Actions call `updateTag` via `invalidateDropdownCache(...)` |
+
+**Why a cookie-free admin client inside the cache:** `unstable_cache` cannot call `cookies()`. The service-role client loads the shared list once; the outer helper still gates with `getUser()` so anonymous callers get `[]`.
+
+**How refresh works (important):**
+
+1. Mutation succeeds → `updateTag('dropdown-users'|'dropdown-projects')` **expires** the Data Cache entry immediately (Next 16 Server Action API — prefer over `revalidateTag(tag, 'max')` for read-your-writes).
+2. Same action also calls `revalidatePath(...)` so the **current** route’s RSC payload refreshes.
+3. The **browser** does not receive a push. The next navigation / soft refresh / Server Action re-render that needs the dropdown hits Supabase again and stores a new cache entry.
+4. Tabs already open with old props keep showing that snapshot until they remount or re-fetch (normal App Router behavior).
+
+Paginated registry lists (`getUsersListPaginated`, `getProjectListPaginated`, etc.) are **not** cached this way — they stay request-fresh.
+
 ---
 
 ## 3. Contributor patterns
@@ -174,6 +206,7 @@ Follow these when adding or editing server-rendered pages:
 3. **Guard each concurrent call** — attach `.catch()` returning a safe fallback so a single failure degrades gracefully.
 4. **Don't fetch what SSR already has** — pass server-fetched data into client components as props rather than refetching on mount.
 5. **Prefer SSR/RSC prefetch** over client-side fetching for initial page data (see workspace rules).
+6. **Dropdown lists** — use `getUserList` / `getProjectList` (cached). After mutating users or projects, call `invalidateDropdownCache(DROPDOWN_CACHE_TAGS.*)` in the Server Action (already wired for `/users` and `/projects` actions).
 
 ---
 
@@ -181,20 +214,101 @@ Follow these when adding or editing server-rendered pages:
 
 Targeting sub-1.5s. Ordered by impact-to-effort.
 
-| ID     | Work                                                                                                                               | Effort | Risk    | Expected impact                           | Status            |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------- | ------ | ------- | ----------------------------------------- | ----------------- |
-| **M1** | Direct Supabase reads in RSC for GET/list pages — drop the `web → api` hop for reads; keep API for mutations/admin.                | M–L    | Medium  | 40–60% of remaining latency on read pages | ✅ Shipped (§2.4) |
-| **M2** | Slim `requireApiAuth` — move profile auto-provisioning to login/signup/invite; keep JWT verify off the hot DB path.                | S      | Low–Med | −1 DB round trip per API call             | ✅ Shipped (§2.5) |
-| **M3** | Suspense streaming — render the shell immediately, stream tables via `<Suspense>` + `loading.tsx`.                                 | M      | Low     | Large perceived speedup                   | Planned           |
-| **M4** | Batch "workspace" API endpoints — collapse multi-call pages into one auth + fewer DB round trips (only where M1 isn't adopted).    | M      | Low     | Medium                                    | Planned           |
-| **M5** | Short-TTL caching for stable dropdown data (`getUserList`, `getProjectList`) via `unstable_cache` + tag revalidation on mutations. | S–M    | Low–Med | Medium                                    | Planned           |
-| **M6** | Infra alignment — same Vercel region for web/api/Supabase, verify prod API URL path, warm cold starts if needed.                   | S      | Low     | Medium (spiky)                            | Planned           |
+| ID     | Work                                                                                                                          | Effort | Risk    | Expected impact                           | Status                   |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------- | ------ | ------- | ----------------------------------------- | ------------------------ |
+| **M1** | Direct Supabase reads in RSC for GET/list pages — drop the `web → api` hop for reads; keep API for mutations/admin.           | M–L    | Medium  | 40–60% of remaining latency on read pages | ✅ Shipped (§2.4)        |
+| **M2** | Slim `requireApiAuth` — move profile auto-provisioning to login/signup/invite; keep JWT verify off the hot DB path.           | S      | Low–Med | −1 DB round trip per API call             | ✅ Shipped (§2.5)        |
+| **M3** | Suspense streaming — render the shell immediately, stream tables via `<Suspense>` + `loading.tsx`.                            | M      | Low     | Large perceived speedup                   | ✅ Shipped (list routes) |
+| **M4** | Batch "workspace" loaders — see §5 (narrowed; deferred)                                                                       | M      | Low     | Medium on high fan-out pages              | Planned / deferred (§5)  |
+| **M5** | Short-TTL caching for stable dropdown data (`getUserList`, `getProjectList`) via `unstable_cache` + `updateTag` on mutations. | S–M    | Low–Med | Medium                                    | ✅ Shipped (§2.7)        |
+| **M6** | Infra alignment — same Vercel region for web/api/Supabase, verify prod API URL path, warm cold starts if needed.              | S      | Low     | Medium (spiky)                            | Planned                  |
 
-**RLS reminder:** M1 reads run with the `authenticated` role and RLS unenforced. Before enabling RLS, add SELECT policies for `work_items`, `projects`, `users`, `sprints`, `project_members`.
+**RLS reminder:** M1 reads run with the `authenticated` role and RLS unenforced. Before enabling RLS, add SELECT policies for `work_items`, `projects`, `users`, `sprints`, `project_members`, `teams`, and `team_members`. Dropdown cache (§2.7) uses the **service-role** client inside `unstable_cache` only.
 
 ---
 
-## 5. How to measure
+## 5. M4 — narrowed plan (deferred)
+
+Classic M4 (“one Express workspace GET”) is largely obsolete after M1: list pages already do direct Supabase + `Promise.all`. Remaining value is **named RSC workspace loaders** for high fan-out surfaces — not re-batching list routes.
+
+### Audit (2026-07-23)
+
+| Route                                  | Parallel reads                           | Batching ROI | Notes                                                     |
+| -------------------------------------- | ---------------------------------------- | ------------ | --------------------------------------------------------- |
+| `/backlog`                             | 4 — projects, users, work items, sprints | **Highest**  | Biggest fan-out; no Suspense yet                          |
+| `/manager`                             | 4                                        | Low–Med      | Dropdown caching (M5) helps more                          |
+| `/work-items`, `/projects`, `/sprints` | 3                                        | Low          | M1 + Promise.all + M3 already                             |
+| `/projects/[id]`                       | 3                                        | Med          | Optional `getProjectWorkspace(id)` later                  |
+| `/board`                               | 1                                        | None         | No fan-out yet                                            |
+| Comments / discussions                 | —                                        | Future       | No feature code yet; design a single reader when PRs land |
+
+### When to implement
+
+1. **M4.1** — `getBacklogWorkspace()` when next editing `/backlog` (optionally add M3 Suspense then).
+2. **M4.2** — `getProjectWorkspace(id)` optional readability win.
+3. **M4.3** — `getWorkItemDiscussion(id)` when comments/discussions merge — one reader, not N client GETs.
+4. **Out of scope** — re-batching already-optimized list pages; new Express batch routers for web-only reads.
+
+---
+
+## 6. Unused API read paths (post-M1)
+
+After M1, dashboard **RSC pages** read from Supabase directly. The Express API remains the write path (Zod, audit, service-role). Several **GET** routes are no longer on the hot path from `apps/web`.
+
+Legend:
+
+| Status                 | Meaning                                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------------- |
+| **Unused (web)**       | No current `apps/web` caller; safe to treat as legacy read surface                          |
+| **Client-only**        | Still hit from client components (`*.service.ts` / `apiFetch`) — migrate in next M1 cleanup |
+| **Active (mutations)** | POST/PUT/PATCH/DELETE still used — keep                                                     |
+
+### Read routes — web usage audit
+
+| API route                       | Status           | Web caller today   | Notes                                                                                                         |
+| ------------------------------- | ---------------- | ------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `GET /api/users`                | **Unused (web)** | —                  | `/users` uses `users.service.server.ts`                                                                       |
+| `GET /api/users/secure`         | **Unused (web)** | —                  | Auth smoke test only                                                                                          |
+| `GET /api/projects`             | **Unused (web)** | —                  | SSR + forms pass `getProjectList()` from `projects.service.server.ts` (since 2026-07-22)                      |
+| `GET /api/projects/:id`         | **Unused (web)** | —                  | Edit form uses row data via `projectToEdit`; detail page uses server `getProjectDetails`                      |
+| `GET /api/projects/:id/members` | **Unused (web)** | —                  | `team-form` uses server action `fetchProjectMembersForForm`; `/projects/[id]` uses server `getProjectMembers` |
+| `GET /api/teams`                | **Unused (web)** | —                  | `/manager` uses `teams.service.server.ts` (since 2026-07-22)                                                  |
+| `GET /api/sprints`              | **Unused (web)** | —                  | `/sprints`, `/backlog` use `sprints.service.server.ts`                                                        |
+| `GET /api/sprints/:id`          | **Unused (web)** | —                  | Server mirror `getSprint()` in `sprints.service.server.ts`; forms use `sprintToEdit` from list state          |
+| `GET /api/workItems`            | **Unused (web)** | —                  | List/detail use `workItem.service.server.ts`                                                                  |
+| `GET /api/workItems/:id`        | **Unused (web)** | —                  | `[id]/page` uses server `getWorkItem`                                                                         |
+| `GET /` (health)                | Active           | Deploy / probes    | Not a data read                                                                                               |
+| `POST /api/notifications/send`  | Active           | Server-side notify | No GET on this router                                                                                         |
+| `POST /api/files`               | Active           | `upload-form.tsx`  | Upload only                                                                                                   |
+
+There is **no** `/api/team-members` or `/api/project-members` router. Membership is nested:
+
+- **Team members** — embedded in `GET /api/teams` select (`members:team_members(*)`) and in team create/update; profile reads `team_members` direct from Supabase.
+- **Project members** — `GET /api/projects/:id/members`; server mirror in `getProjectMembers()`.
+
+### Dead client exports (mirror API GET, removed)
+
+These were removed from `*.service.ts` after client forms stopped refetching (2026-07-22). Client modules now export **mutations only** plus shared types:
+
+| Module                | Removed GET helpers                                                                                 |
+| --------------------- | --------------------------------------------------------------------------------------------------- |
+| `users.service.ts`    | `getUsersList`, `getUsersListPaginated`, `getUserList`                                              |
+| `projects.service.ts` | `getProjectList`, `getProjectListPaginated`, `getProjectDetails`, `getProject`, `getProjectMembers` |
+| `teams.service.ts`    | `getTeamList`, `getTeamListPaginated`                                                               |
+| `sprints.service.ts`  | `listSprints`, `getSprint`                                                                          |
+
+Dynamic form reads that still need a round trip (e.g. project members on project select in `team-form`) use the server action `fetchProjectMembersForForm` in `apps/web/lib/form-read-actions.ts` — direct Supabase, not Express.
+
+### Cleanup order (remaining)
+
+1. ~~**Client forms** — stop read refetch via `projects.service.ts` / `sprints.service.ts`~~ ✅ Done (2026-07-22).
+2. ~~**Add `getSprint` server reader**~~ ✅ Done — `sprints.service.server.ts` mirrors `sprintsRepository.findById`.
+3. **Optional:** mark unused GET handlers deprecated in API or keep for non-web consumers / M4 batch endpoints.
+4. **Dedup refactor (deferred):** shared paginated-list helper for `*.service.server.ts` files.
+
+---
+
+## 7. How to measure
 
 - **Chrome DevTools → Network:** `document` timing = server RSC time; split TTFB vs download. Watch for multiple sequential calls to `NEXT_PUBLIC_API_URL`.
 - **Vercel logs:** compare `web` vs `api` function durations for one navigation; look for 1–3s cold starts on API invocations.

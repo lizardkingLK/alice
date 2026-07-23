@@ -70,13 +70,13 @@ Skip files matching Sonar exclusions (see `sonar-project.properties`):
 
 Within changed files, look for duplication SonarCloud would flag:
 
-| Signal | Examples in this monorepo |
-| ------ | ------------------------- |
-| Copy-pasted handlers | repeated server-action boilerplate across `apps/web/app/**/actions.ts` |
-| Repeated validation/parsing | duplicate Zod or `FormData` parsing in forms |
-| Near-identical components | registry + form pairs with shared layout/logic |
-| Repeated repository queries | same Supabase `.select()` / error handling in multiple routes |
-| Repeated audit spreads | manual `created_by` / `updated_at` instead of `@repo/types/audit` helpers |
+| Signal                      | Examples in this monorepo                                                 |
+| --------------------------- | ------------------------------------------------------------------------- |
+| Copy-pasted handlers        | repeated server-action boilerplate across `apps/web/app/**/actions.ts`    |
+| Repeated validation/parsing | duplicate Zod or `FormData` parsing in forms                              |
+| Near-identical components   | registry + form pairs with shared layout/logic                            |
+| Repeated repository queries | same Supabase `.select()` / error handling in multiple routes             |
+| Repeated audit spreads      | manual `created_by` / `updated_at` instead of `@repo/types/audit` helpers |
 
 Heuristics (align with Sonar duplication defaults):
 
@@ -100,9 +100,9 @@ If no duplication found:
 
 If issues found, use this table:
 
-| Severity | Location | Duplicated with | Suggestion |
-| -------- | -------- | --------------- | ---------- |
-| High | `path:a–b` | `other:c–d` | Extract to `…` |
+| Severity | Location   | Duplicated with | Suggestion     |
+| -------- | ---------- | --------------- | -------------- |
+| High     | `path:a–b` | `other:c–d`     | Extract to `…` |
 
 Severity guide:
 
@@ -114,13 +114,13 @@ Severity guide:
 
 Follow monorepo conventions:
 
-| Duplication type | Prefer extraction to |
-| ---------------- | -------------------- |
-| Web server actions | `apps/web/lib/server-actions.ts` or domain `apps/web/lib/<domain>/` |
-| Admin/project CRUD | `apps/web/lib/projects/` (see existing `admin-project.ts` pattern) |
-| API route boilerplate | service + repository under `apps/api/src/routes/api/<domain>/` |
-| Shared types/audit | `@repo/types` or `@repo/types/audit` |
-| UI primitives | `@repo/ui` when reusable across apps |
+| Duplication type      | Prefer extraction to                                                |
+| --------------------- | ------------------------------------------------------------------- |
+| Web server actions    | `apps/web/lib/server-actions.ts` or domain `apps/web/lib/<domain>/` |
+| Admin/project CRUD    | `apps/web/lib/projects/` (see existing `admin-project.ts` pattern)  |
+| API route boilerplate | service + repository under `apps/api/src/routes/api/<domain>/`      |
+| Shared types/audit    | `@repo/types` or `@repo/types/audit`                                |
+| UI primitives         | `@repo/ui` when reusable across apps                                |
 
 After proposing extractions, run `pnpm lint` on affected packages if code was changed.
 
@@ -128,11 +128,11 @@ After proposing extractions, run `pnpm lint` on affected packages if code was ch
 
 ## Relationship to other quality layers
 
-| Layer | What it does | This skill |
-| ----- | ------------ | ---------- |
-| Husky `pre-commit` | Runs `lint-staged` (ESLint) | Does not auto-run on commit |
-| ESLint `sonarjs/*` | Some Sonar-style rules at lint time | Complements; not full duplication detection |
-| SonarCloud CI | Server-side duplication metric + quality gate | This skill catches issues **before** push |
+| Layer              | What it does                                  | This skill                                  |
+| ------------------ | --------------------------------------------- | ------------------------------------------- |
+| Husky `pre-commit` | Runs `lint-staged` (ESLint)                   | Does not auto-run on commit                 |
+| ESLint `sonarjs/*` | Some Sonar-style rules at lint time           | Complements; not full duplication detection |
+| SonarCloud CI      | Server-side duplication metric + quality gate | This skill catches issues **before** push   |
 
 Optional later: wire `jscpd` or Sonar scanner into Husky — separate from this agent skill.
 

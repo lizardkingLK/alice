@@ -12,6 +12,10 @@ import {
   resolveRequestOrigin,
 } from '@/lib/auth-redirect';
 import { getDbUser } from '@/lib/auth';
+import {
+  DROPDOWN_CACHE_TAGS,
+  invalidateDropdownCache,
+} from '@/lib/cache/dropdown-cache';
 import { createUserSchema, updateUserSchema } from '@repo/types';
 
 export type ActionState = {
@@ -67,6 +71,7 @@ export async function createUser(
     });
 
     revalidatePath('/users');
+    invalidateDropdownCache(DROPDOWN_CACHE_TAGS.users);
     return {
       success: true,
       error: null,
@@ -112,6 +117,7 @@ export async function toggleUserActive(
     await apiToggleUserActive(userId, active);
 
     revalidatePath('/users');
+    invalidateDropdownCache(DROPDOWN_CACHE_TAGS.users);
     return {
       success: true,
       error: null,
@@ -167,6 +173,7 @@ export async function updateUser(
     });
 
     revalidatePath('/users');
+    invalidateDropdownCache(DROPDOWN_CACHE_TAGS.users);
     return {
       success: true,
       error: null,

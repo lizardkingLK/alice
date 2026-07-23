@@ -19,6 +19,15 @@ import {
   type ActionState,
 } from '@/lib/server-actions';
 import { getDbUser } from '@/lib/auth';
+import {
+  DROPDOWN_CACHE_TAGS,
+  invalidateDropdownCache,
+} from '@/lib/cache/dropdown-cache';
+
+function revalidateProjects() {
+  revalidatePath('/projects');
+  invalidateDropdownCache(DROPDOWN_CACHE_TAGS.projects);
+}
 
 // eslint-disable-next-line no-unused-vars
 type MutationAction = (actorId: string) => Promise<ActionState>;
@@ -61,7 +70,7 @@ export async function createProject(
       workflow_config: null,
     });
 
-    revalidatePath('/projects');
+    revalidateProjects();
     return { ...actionSuccess(), projectId: project.id };
   });
 }
@@ -88,7 +97,7 @@ export async function updateProject(
       status: parsed.data.status,
     });
 
-    revalidatePath('/projects');
+    revalidateProjects();
     return actionSuccess();
   });
 }
@@ -98,7 +107,7 @@ export async function softDeleteProject(
 ): Promise<ActionState> {
   return runProjectMutation(async () => {
     await apiSoftDeleteProject(projectId);
-    revalidatePath('/projects');
+    revalidateProjects();
     return actionSuccess();
   });
 }
@@ -106,7 +115,7 @@ export async function softDeleteProject(
 export async function restoreProject(projectId: string): Promise<ActionState> {
   return runProjectMutation(async () => {
     await apiRestoreProject(projectId);
-    revalidatePath('/projects');
+    revalidateProjects();
     return actionSuccess();
   });
 }
@@ -127,7 +136,7 @@ export async function hardDeleteProject(
 
   try {
     await apiHardDeleteProject(projectId);
-    revalidatePath('/projects');
+    revalidateProjects();
     return actionSuccess();
   } catch (err) {
     return unexpectedActionError(err);

@@ -1,6 +1,7 @@
 import { apiFetch } from '@/lib/api/api-client.server';
 import { createClient } from '@/lib/supabase/server';
 import { pageRange, paginationMeta } from '@/lib/db/pagination';
+import { getCachedUserList } from '@/lib/cache/dropdown-cache';
 import { createUsersService } from './users.service.base';
 import type { GetUsersPaginatedResponse, User } from './users.service.base';
 
@@ -58,11 +59,13 @@ export async function getUsersListPaginated(
   };
 }
 
+/**
+ * Active users for form dropdowns. Shared across requests via
+ * `unstable_cache` (see `lib/cache/dropdown-cache.ts`); invalidated on
+ * user mutations with `updateTag`.
+ */
 export async function getUserList(): Promise<User[]> {
-  const users = await getUsersList();
-  return users
-    .filter((u) => u.active)
-    .sort((a, b) => a.name.localeCompare(b.name));
+  return (await getCachedUserList()) as User[];
 }
 
 export const createUser = service.createUser;

@@ -1,6 +1,6 @@
 'use client';
 
-import { FormAlertMessage } from '@/components/form-alert-message';
+import { FormCancelSubmitActions } from '@/components/form-cancel-submit-actions';
 import { FormEvent, useEffect, useState, type ChangeEvent } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
@@ -21,13 +21,12 @@ import {
 } from '@repo/ui/components/ui/card';
 import { Users, Loader2, X } from '@repo/ui/lib/icons';
 import type { User } from '@/app/users/_services/users.service';
+import { fetchProjectMembersForForm } from '@/lib/form-read-actions';
 import { createTeam, updateTeam } from '../_services/teams.service';
-import {
-  getProjectList,
-  getProjectMembers,
-  type Project,
-  type ProjectMemberWithUser,
-} from '@/app/projects/_services/projects.service';
+import type {
+  Project,
+  ProjectMemberWithUser,
+} from '@/app/projects/_services/projects.service.base';
 import type { Team } from '../_services/teams.service';
 
 interface ProjectMembersListProps {
@@ -114,7 +113,7 @@ async function findBestProjectForTeamMembers(
 
   for (const proj of activeProjects) {
     try {
-      const projMembers = await getProjectMembers(proj.id);
+      const projMembers = await fetchProjectMembersForForm(proj.id);
       const projMemberIds = new Set(projMembers.map((pm) => pm.user_id));
       const overlap = currentMemberIds.filter((id: string) =>
         projMemberIds.has(id)
@@ -136,6 +135,7 @@ interface TeamFormProps {
   readonly onSuccess?: () => void;
   readonly teamToEdit?: Team | null;
   readonly users: User[];
+  readonly activeProjects: Project[];
 }
 
 export function TeamForm({
@@ -143,6 +143,7 @@ export function TeamForm({
   onSuccess,
   teamToEdit = null,
   users,
+  activeProjects,
 }: Readonly<TeamFormProps>) {
   const editActionActive = !!teamToEdit;
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -160,56 +161,45 @@ export function TeamForm({
       : 'active'
   );
 
-  const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [projectMembers, setProjectMembers] = useState<ProjectMemberWithUser[]>(
     []
   );
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
-  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
 
   useEffect(() => {
+    if (!editActionActive || !teamToEdit?.members) {
+      return;
+    }
+
     const initEditData = async () => {
-      setIsLoadingProjects(true);
-      try {
-        const list = await getProjectList();
-        const activeProjects = list.filter((p) => p.status === 'active');
-        setProjects(activeProjects);
+      const members = teamToEdit?.members;
+      if (!members) return;
 
-        if (editActionActive && teamToEdit?.members) {
-          const currentMemberIds = teamToEdit.members.map(
-            (m: { user_id: string }) => m.user_id
-          );
-          setSelectedMemberIds(currentMemberIds);
+      const currentMemberIds = members.map((member) => member.user_id);
+      setSelectedMemberIds(currentMemberIds);
 
-          const bestProjectId = await findBestProjectForTeamMembers(
-            currentMemberIds,
-            activeProjects
-          );
-          if (bestProjectId) {
-            setSelectedProjectId(bestProjectId);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to fetch projects:', err);
-      } finally {
-        setIsLoadingProjects(false);
+      const bestProjectId = await findBestProjectForTeamMembers(
+        currentMemberIds,
+        activeProjects
+      );
+      if (bestProjectId) {
+        setSelectedProjectId(bestProjectId);
       }
     };
 
-    initEditData();
-  }, [editActionActive, teamToEdit]);
+    void initEditData();
+  }, [editActionActive, teamToEdit, activeProjects]);
 
   useEffect(() => {
     if (selectedProjectId) {
       const fetchMembers = async () => {
         setIsLoadingMembers(true);
         try {
-          const membersList = await getProjectMembers(selectedProjectId);
-          setProjectMembers(
-            membersList.filter((m) => m.status === 'active' && m.user)
-          );
+          const membersList =
+            await fetchProjectMembersForForm(selectedProjectId);
+          setProjectMembers(membersList);
         } catch (err) {
           console.error('Failed to fetch project members:', err);
         } finally {
@@ -457,21 +447,11 @@ export function TeamForm({
                   id="project_id"
                   className="bg-background/80 h-10 w-full cursor-pointer"
                 >
-                  <SelectValue
-                    placeholder={
-                      isLoadingProjects
-                        ? 'Loading projects...'
-                        : 'Select Project...'
-                    }
-                  />
+                  <SelectValue placeholder="Select Project..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">
-                    {isLoadingProjects
-                      ? 'Loading projects...'
-                      : 'Select Project...'}
-                  </SelectItem>
-                  {projects.map((p) => (
+                  <SelectItem value="none">Select Project...</SelectItem>
+                  {activeProjects.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.name} ({p.key})
                     </SelectItem>
@@ -496,28 +476,13 @@ export function TeamForm({
             )}
           </div>
 
-          <FormAlertMessage message={message} isError={isError} />
-
-          <div className="flex gap-3 pt-2">
-            {onClose && (
-              <Button
-                type="button"
-                variant="outline"
-                disabled={isSubmitting || isSuccess}
-                onClick={onClose}
-                className="w-1/3"
-              >
-                Cancel
-              </Button>
-            )}
-            <Button
-              type="submit"
-              disabled={isSubmitting || isSuccess}
-              className={`${onClose ? 'w-2/3' : 'w-full'}`}
-            >
-              {buttonLabelContent}
-            </Button>
-          </div>
+          <FormCancelSubmitActions
+            message={message}
+            isError={isError}
+            isBusy={isSubmitting || isSuccess}
+            onCancel={onClose}
+            submitLabel={buttonLabelContent}
+          />
         </form>
       </CardContent>
     </Card>
