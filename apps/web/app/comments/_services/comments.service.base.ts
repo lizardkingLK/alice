@@ -58,6 +58,8 @@ const COMMENT_SELECT_FIELDS = `
   work_item:work_items(id, title, type, project:projects(id, name, key))
 `;
 
+export { COMMENT_SELECT_FIELDS };
+
 function mapDbCommentToCommentItem(data: unknown): CommentItem {
   const raw = data as DbCommentRaw;
   const projectKey = raw.work_item?.project?.key || 'ITEM';
@@ -75,6 +77,8 @@ function mapDbCommentToCommentItem(data: unknown): CommentItem {
       : null,
   } as CommentItem;
 }
+
+export { mapDbCommentToCommentItem };
 
 async function createCommentDirect(
   input: CreateCommentInput

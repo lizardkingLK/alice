@@ -6,10 +6,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@repo/ui/components/ui/button';
 import { Badge } from '@repo/ui/components/ui/badge';
-import {
-  Avatar,
-  AvatarFallback,
-} from '@repo/ui/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
 import {
   Card,
   CardContent,
@@ -213,7 +210,10 @@ function WIDropdownList({
               : 'text-foreground hover:bg-muted/80'
           )}
         >
-          <Badge variant="outline" className={cn('shrink-0 font-mono', ISSUE_BADGE_CLASS)}>
+          <Badge
+            variant="outline"
+            className={cn('shrink-0 font-mono', ISSUE_BADGE_CLASS)}
+          >
             {item.key}
           </Badge>
           <TruncatedText className="text-foreground min-w-0 flex-1 text-sm">
@@ -1148,7 +1148,10 @@ export function CommentsFeed({
                       <Badge
                         variant="outline"
                         asChild
-                        className={cn('gap-1.5 font-semibold', ISSUE_BADGE_CLASS)}
+                        className={cn(
+                          'gap-1.5 font-semibold',
+                          ISSUE_BADGE_CLASS
+                        )}
                       >
                         <Link href="/work-items">
                           <Tag className="size-3 shrink-0" />
