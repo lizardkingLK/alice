@@ -77,8 +77,8 @@ function MentionDropdownList({
   return (
     <div
       className={cn(
-        "absolute z-50 left-0 right-0 max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950",
-        position === 'top' ? "bottom-full mb-1" : "top-full mt-1"
+        'absolute right-0 left-0 z-50 max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950',
+        position === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
       )}
     >
       {usersList.map((user, idx) => (
@@ -87,14 +87,18 @@ function MentionDropdownList({
           type="button"
           onClick={() => onSelect(user)}
           className={cn(
-            "flex w-full items-center gap-2 px-3 py-2 text-left text-sm",
+            'flex w-full items-center gap-2 px-3 py-2 text-left text-sm',
             idx === highlightIdx
-              ? "bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
-              : "text-zinc-700 dark:text-zinc-300"
+              ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100'
+              : 'text-zinc-700 dark:text-zinc-300'
           )}
         >
-          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 font-semibold text-white text-[10px]">
-            {user.name.split(' ').map((n) => n[0]).join('').toUpperCase()}
+          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-[10px] font-semibold text-white">
+            {user.name
+              .split(' ')
+              .map((n) => n[0])
+              .join('')
+              .toUpperCase()}
           </div>
           <span>{user.name}</span>
           <span className="text-xs text-zinc-400">({user.email})</span>
@@ -123,8 +127,8 @@ function WIDropdownList({
   return (
     <div
       className={cn(
-        "absolute z-50 left-0 right-0 max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950",
-        position === 'top' ? "bottom-full mb-1" : "top-full mt-1"
+        'absolute right-0 left-0 z-50 max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950',
+        position === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
       )}
     >
       {wiList.map((item, idx) => (
@@ -133,16 +137,18 @@ function WIDropdownList({
           type="button"
           onClick={() => onSelect(item)}
           className={cn(
-            "flex w-full items-center gap-2 px-3 py-2 text-left text-sm",
+            'flex w-full items-center gap-2 px-3 py-2 text-left text-sm',
             idx === highlightIdx
-              ? "bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
-              : "text-zinc-700 dark:text-zinc-300"
+              ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100'
+              : 'text-zinc-700 dark:text-zinc-300'
           )}
         >
-          <div className="flex h-5 w-12 items-center justify-center rounded-md bg-purple-500 font-bold text-white text-[10px]">
+          <div className="flex h-5 w-12 items-center justify-center rounded-md bg-purple-500 text-[10px] font-bold text-white">
             {item.key}
           </div>
-          <span className="truncate flex-1 text-zinc-900 dark:text-zinc-100">{item.title}</span>
+          <span className="flex-1 truncate text-zinc-900 dark:text-zinc-100">
+            {item.title}
+          </span>
         </button>
       ))}
     </div>
@@ -193,12 +199,18 @@ function AutocompleteInput({
 
   const filteredUsers = useMemo(() => {
     const q = mentionSearch.toLowerCase();
-    return users.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+    return users.filter(
+      (u) =>
+        u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+    );
   }, [users, mentionSearch]);
 
   const filteredWorkItems = useMemo(() => {
     const q = wiSearch.toLowerCase();
-    return workItems.filter(w => w.key.toLowerCase().includes(q) || w.title.toLowerCase().includes(q));
+    return workItems.filter(
+      (w) =>
+        w.key.toLowerCase().includes(q) || w.title.toLowerCase().includes(q)
+    );
   }, [workItems, wiSearch]);
 
   const handleTextChangeMentionsLocal = (text: string, cursorPos: number) => {
@@ -241,7 +253,11 @@ function AutocompleteInput({
     setShowWISuggestions(false);
   };
 
-  const handleInsertMentionLocal = (insertText: string, triggerIdx: number, isWI: boolean) => {
+  const handleInsertMentionLocal = (
+    insertText: string,
+    triggerIdx: number,
+    isWI: boolean
+  ) => {
     const inputEl = activeRef.current;
     const cursorPos = inputEl?.selectionStart || 0;
     const before = value.slice(0, triggerIdx);
@@ -249,7 +265,7 @@ function AutocompleteInput({
     const formatted = `${insertText} `;
     const nextText = before + formatted + after;
     onChange(nextText);
-    
+
     if (isWI) {
       setShowWISuggestions(false);
     } else {
@@ -265,19 +281,23 @@ function AutocompleteInput({
     }
   };
 
-  const handleMentionKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+  const handleMentionKeyDown = (
+    e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>
+  ) => {
     if (!showMentionDropdown || filteredUsers.length === 0) return false;
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setMentionHighlightIdx((mentionHighlightIdx + 1) % filteredUsers.length);
       return true;
-    } 
+    }
     if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setMentionHighlightIdx((mentionHighlightIdx - 1 + filteredUsers.length) % filteredUsers.length);
+      setMentionHighlightIdx(
+        (mentionHighlightIdx - 1 + filteredUsers.length) % filteredUsers.length
+      );
       return true;
-    } 
+    }
     if (e.key === 'Enter' || e.key === 'Tab') {
       e.preventDefault();
       const selected = filteredUsers[mentionHighlightIdx];
@@ -285,7 +305,7 @@ function AutocompleteInput({
         handleInsertMentionLocal(`@${selected.name}`, mentionTriggerIdx, false);
       }
       return true;
-    } 
+    }
     if (e.key === 'Escape') {
       e.preventDefault();
       setShowMentionDropdown(false);
@@ -294,19 +314,24 @@ function AutocompleteInput({
     return false;
   };
 
-  const handleWIKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+  const handleWIKeyDown = (
+    e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>
+  ) => {
     if (!showWISuggestions || filteredWorkItems.length === 0) return false;
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setWiHighlightIdx((wiHighlightIdx + 1) % filteredWorkItems.length);
       return true;
-    } 
+    }
     if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setWiHighlightIdx((wiHighlightIdx - 1 + filteredWorkItems.length) % filteredWorkItems.length);
+      setWiHighlightIdx(
+        (wiHighlightIdx - 1 + filteredWorkItems.length) %
+          filteredWorkItems.length
+      );
       return true;
-    } 
+    }
     if (e.key === 'Enter' || e.key === 'Tab') {
       e.preventDefault();
       const selected = filteredWorkItems[wiHighlightIdx];
@@ -314,7 +339,7 @@ function AutocompleteInput({
         handleInsertMentionLocal(`#${selected.key}`, wiTriggerIdx, true);
       }
       return true;
-    } 
+    }
     if (e.key === 'Escape') {
       e.preventDefault();
       setShowWISuggestions(false);
@@ -323,7 +348,9 @@ function AutocompleteInput({
     return false;
   };
 
-  const handleKeyDownLocal = (e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+  const handleKeyDownLocal = (
+    e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>
+  ) => {
     if (handleMentionKeyDown(e)) return;
     if (handleWIKeyDown(e)) return;
 
@@ -375,14 +402,18 @@ function AutocompleteInput({
         usersList={filteredUsers}
         highlightIdx={mentionHighlightIdx}
         position={position}
-        onSelect={(user) => handleInsertMentionLocal(`@${user.name}`, mentionTriggerIdx, false)}
+        onSelect={(user) =>
+          handleInsertMentionLocal(`@${user.name}`, mentionTriggerIdx, false)
+        }
       />
       <WIDropdownList
         show={showWISuggestions}
         wiList={filteredWorkItems}
         highlightIdx={wiHighlightIdx}
         position={position}
-        onSelect={(item) => handleInsertMentionLocal(`#${item.key}`, wiTriggerIdx, true)}
+        onSelect={(item) =>
+          handleInsertMentionLocal(`#${item.key}`, wiTriggerIdx, true)
+        }
       />
     </div>
   );
@@ -397,11 +428,15 @@ export function CommentsFeed({
   const [comments, setComments] = useState<CommentItem[]>(initialComments);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedWorkItemId, setSelectedWorkItemId] = useState<string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<'all' | 'active' | 'archived'>('active');
+  const [selectedStatus, setSelectedStatus] = useState<
+    'all' | 'active' | 'archived'
+  >('active');
   const [showNewCommentModal, setShowNewCommentModal] = useState(false);
 
   // New Comment Form State
-  const [newWorkItemId, setNewWorkItemId] = useState(workItemId || workItems[0]?.id || '');
+  const [newWorkItemId, setNewWorkItemId] = useState(
+    workItemId || workItems[0]?.id || ''
+  );
   const [newContent, setNewContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -431,7 +466,7 @@ export function CommentsFeed({
           .select('id, name, email, profile_picture')
           .eq('active', true)
           .order('name');
-        
+
         const fallbackUsers = [
           { id: 'user-admin-1', name: 'Alana Admin', email: 'admin@alice.dev' },
           { id: 'user-mgr-1', name: 'Marcus Lead', email: 'marcus@alice.dev' },
@@ -487,8 +522,10 @@ export function CommentsFeed({
   const stats = useMemo(() => {
     const total = comments.length;
     const active = comments.filter((c) => c.status === 'active').length;
-    const authors = new Set(comments.map((c) => c.author?.name || c.author_id)).size;
-    const workItemsDiscussed = new Set(comments.map((c) => c.work_item_id)).size;
+    const authors = new Set(comments.map((c) => c.author?.name || c.author_id))
+      .size;
+    const workItemsDiscussed = new Set(comments.map((c) => c.work_item_id))
+      .size;
 
     return { total, active, authors, workItemsDiscussed };
   }, [comments]);
@@ -499,7 +536,10 @@ export function CommentsFeed({
       // Work Item lock
       if (workItemId) {
         if (c.work_item_id !== workItemId) return false;
-      } else if (selectedWorkItemId !== 'all' && c.work_item_id !== selectedWorkItemId) {
+      } else if (
+        selectedWorkItemId !== 'all' &&
+        c.work_item_id !== selectedWorkItemId
+      ) {
         return false;
       }
 
@@ -546,8 +586,9 @@ export function CommentsFeed({
     if (mentionedUserIds.length === 0) return;
     try {
       const supabase = createClient();
-      const actorName = users.find(u => u.id === currentUserId)?.name || 'A teammate';
-      
+      const actorName =
+        users.find((u) => u.id === currentUserId)?.name || 'A teammate';
+
       const { data: wi } = await supabase
         .from('work_items')
         .select('title')
@@ -555,7 +596,8 @@ export function CommentsFeed({
         .maybeSingle();
 
       const titleSnippet = wi?.title ? `"${wi.title}"` : 'work item';
-      const rawTextSnippet = rawContent.length > 60 ? rawContent.slice(0, 60) + '...' : rawContent;
+      const rawTextSnippet =
+        rawContent.length > 60 ? rawContent.slice(0, 60) + '...' : rawContent;
 
       for (const mId of mentionedUserIds) {
         if (mId === currentUserId) continue;
@@ -578,14 +620,22 @@ export function CommentsFeed({
   };
 
   // Helper to parse mentions, notify users, and format before saving comment to DB
-  const processCommentBeforeSave = async (rawContent: string, targetWorkItemId: string) => {
+  const processCommentBeforeSave = async (
+    rawContent: string,
+    targetWorkItemId: string
+  ) => {
     let processed = rawContent;
     const mentionedUserIds: string[] = [];
-    
-    const sortedUsers = [...users].sort((a, b) => b.name.length - a.name.length);
+
+    const sortedUsers = [...users].sort(
+      (a, b) => b.name.length - a.name.length
+    );
 
     for (const u of sortedUsers) {
-      const escapedName = u.name.replace(/[-\\^$*+?.()|[\]{}]/g, String.raw`\$&`);
+      const escapedName = u.name.replace(
+        /[-\\^$*+?.()|[\]{}]/g,
+        String.raw`\$&`
+      );
       const regex = new RegExp(String.raw`@${escapedName}\b`, 'g');
       if (regex.test(processed)) {
         processed = processed.replace(regex, `@[${u.name}](${u.id})`);
@@ -594,7 +644,9 @@ export function CommentsFeed({
     }
 
     // Process work item references (#KEY -> #[KEY](id))
-    const sortedWorkItems = [...workItems].sort((a, b) => b.key.length - a.key.length);
+    const sortedWorkItems = [...workItems].sort(
+      (a, b) => b.key.length - a.key.length
+    );
 
     for (const w of sortedWorkItems) {
       const escapedKey = w.key.replace(/[-\\^$*+?.()|[\]{}]/g, String.raw`\$&`);
@@ -605,7 +657,11 @@ export function CommentsFeed({
     }
 
     // Insert database notifications for mentioned users
-    await createMentionNotifications(mentionedUserIds, rawContent, targetWorkItemId);
+    await createMentionNotifications(
+      mentionedUserIds,
+      rawContent,
+      targetWorkItemId
+    );
 
     return processed;
   };
@@ -633,7 +689,7 @@ export function CommentsFeed({
         parts.push(
           <span
             key={`mention-${match.index}-${id}`}
-            className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 font-semibold text-xs border border-blue-500/20 shadow-xs animate-fade-in"
+            className="animate-fade-in inline-flex items-center rounded border border-blue-500/20 bg-blue-500/10 px-1.5 py-0.5 text-xs font-semibold text-blue-600 shadow-xs dark:bg-blue-500/20 dark:text-blue-400"
           >
             @{label}
           </span>
@@ -643,7 +699,7 @@ export function CommentsFeed({
           <Link
             key={`issue-${match.index}-${id}`}
             href="/work-items"
-            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-600 hover:bg-purple-500/20 dark:bg-purple-500/20 dark:text-purple-400 font-semibold text-xs border border-purple-500/20 shadow-xs transition-colors"
+            className="inline-flex items-center gap-1 rounded border border-purple-500/20 bg-purple-500/10 px-1.5 py-0.5 text-xs font-semibold text-purple-600 shadow-xs transition-colors hover:bg-purple-500/20 dark:bg-purple-500/20 dark:text-purple-400"
           >
             #{label}
           </Link>
@@ -668,7 +724,10 @@ export function CommentsFeed({
 
     setIsSubmitting(true);
     try {
-      const processedContent = await processCommentBeforeSave(newContent.trim(), newWorkItemId);
+      const processedContent = await processCommentBeforeSave(
+        newContent.trim(),
+        newWorkItemId
+      );
       const created = await createComment({
         work_item_id: newWorkItemId,
         content: processedContent,
@@ -682,7 +741,10 @@ export function CommentsFeed({
       console.error('Failed to create comment:', err);
       // Fallback local update for mock environment
       const selectedItem = workItems.find((w) => w.id === newWorkItemId);
-      const processedContent = await processCommentBeforeSave(newContent.trim(), newWorkItemId);
+      const processedContent = await processCommentBeforeSave(
+        newContent.trim(),
+        newWorkItemId
+      );
       const mockCreated: CommentItem = {
         id: `comment-${Date.now()}`,
         work_item_id: newWorkItemId,
@@ -695,7 +757,8 @@ export function CommentsFeed({
         updated_at: new Date().toISOString(),
         author: {
           id: currentUserId,
-          name: users.find((u) => u.id === currentUserId)?.name || 'Current User',
+          name:
+            users.find((u) => u.id === currentUserId)?.name || 'Current User',
           email: 'user@alice.dev',
           role: 'admin',
         },
@@ -726,7 +789,10 @@ export function CommentsFeed({
     if (!replyContent.trim()) return;
 
     try {
-      const processedContent = await processCommentBeforeSave(replyContent.trim(), workItemId);
+      const processedContent = await processCommentBeforeSave(
+        replyContent.trim(),
+        workItemId
+      );
       const created = await createComment({
         work_item_id: workItemId,
         content: processedContent,
@@ -738,7 +804,10 @@ export function CommentsFeed({
       console.error('Failed to post reply:', err);
       // Local fallback
       const parentComment = comments.find((c) => c.id === parentId);
-      const processedContent = await processCommentBeforeSave(replyContent.trim(), workItemId);
+      const processedContent = await processCommentBeforeSave(
+        replyContent.trim(),
+        workItemId
+      );
       const mockReply: CommentItem = {
         id: `reply-${Date.now()}`,
         work_item_id: workItemId,
@@ -751,7 +820,8 @@ export function CommentsFeed({
         updated_at: new Date().toISOString(),
         author: {
           id: currentUserId,
-          name: users.find((u) => u.id === currentUserId)?.name || 'Current User',
+          name:
+            users.find((u) => u.id === currentUserId)?.name || 'Current User',
           email: 'user@alice.dev',
         },
         work_item: parentComment?.work_item || null,
@@ -771,14 +841,20 @@ export function CommentsFeed({
     const targetWIId = targetComment?.work_item_id || newWorkItemId;
 
     try {
-      const processedContent = await processCommentBeforeSave(editContent.trim(), targetWIId);
+      const processedContent = await processCommentBeforeSave(
+        editContent.trim(),
+        targetWIId
+      );
       const updated = await updateComment(commentId, processedContent);
       setComments((prev) =>
         prev.map((c) => (c.id === commentId ? updated : c))
       );
     } catch (err) {
       console.error('Failed to update comment:', err);
-      const processedContent = await processCommentBeforeSave(editContent.trim(), targetWIId);
+      const processedContent = await processCommentBeforeSave(
+        editContent.trim(),
+        targetWIId
+      );
       setComments((prev) =>
         prev.map((c) =>
           c.id === commentId
@@ -818,12 +894,13 @@ export function CommentsFeed({
                 Discussions & Comments
               </h1>
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Collaborate, review feedback, and track conversation threads across all project work items.
+                Collaborate, review feedback, and track conversation threads
+                across all project work items.
               </p>
             </div>
             <Button
               onClick={() => setShowNewCommentModal(true)}
-              className="inline-flex items-center gap-2 bg-blue-600 font-medium text-white hover:bg-blue-700 shadow-sm"
+              className="inline-flex items-center gap-2 bg-blue-600 font-medium text-white shadow-sm hover:bg-blue-700"
             >
               <Plus className="h-4 w-4" />
               <span>New Comment</span>
@@ -903,7 +980,7 @@ export function CommentsFeed({
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 {/* Search Input */}
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                  <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-400" />
                   <input
                     id="search-comments-input"
                     type="text"
@@ -911,7 +988,7 @@ export function CommentsFeed({
                     placeholder="Search comments by text, author, or issue key..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full rounded-lg border border-zinc-200 bg-zinc-50/50 py-2 pl-9 pr-4 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:bg-zinc-900"
+                    className="w-full rounded-lg border border-zinc-200 bg-zinc-50/50 py-2 pr-4 pl-9 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:bg-zinc-900"
                   />
                 </div>
 
@@ -939,7 +1016,9 @@ export function CommentsFeed({
                     aria-label="Filter by Status"
                     value={selectedStatus}
                     onChange={(e) =>
-                      setSelectedStatus(e.target.value as 'all' | 'active' | 'archived')
+                      setSelectedStatus(
+                        e.target.value as 'all' | 'active' | 'archived'
+                      )
                     }
                     className="rounded-lg border border-zinc-200 bg-zinc-50/50 px-3 py-2 text-xs font-medium text-zinc-700 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-300"
                   >
@@ -955,8 +1034,8 @@ export function CommentsFeed({
       )}
 
       {workItemId && (
-        <div className="flex items-center justify-between pb-2 border-b border-zinc-200 dark:border-zinc-800">
-          <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+        <div className="flex items-center justify-between border-b border-zinc-200 pb-2 dark:border-zinc-800">
+          <h3 className="flex items-center gap-2 text-lg font-bold text-zinc-900 dark:text-zinc-100">
             <MessageSquareText className="h-5 w-5 text-blue-600" />
             Discussion ({stats.active})
           </h3>
@@ -996,15 +1075,16 @@ export function CommentsFeed({
               key={parent.id}
               className={cn(
                 'border-zinc-200/80 transition-all dark:border-zinc-800',
-                parent.status === 'archived' && 'opacity-60 bg-zinc-50/50 dark:bg-zinc-900/30'
+                parent.status === 'archived' &&
+                  'bg-zinc-50/50 opacity-60 dark:bg-zinc-900/30'
               )}
             >
-              <CardContent className="p-5 space-y-4">
+              <CardContent className="space-y-4 p-5">
                 {/* Parent Comment Header */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     {/* User Avatar Badge */}
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-indigo-600 font-semibold text-white text-xs shadow-sm">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-indigo-600 text-xs font-semibold text-white shadow-sm">
                       {parent.author?.name
                         ? parent.author.name
                             .split(' ')
@@ -1031,13 +1111,16 @@ export function CommentsFeed({
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                      <div className="mt-0.5 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
                         <Clock className="h-3 w-3" />
                         <span>
-                          {new Date(parent.created_at).toLocaleString(undefined, {
-                            dateStyle: 'medium',
-                            timeStyle: 'short',
-                          })}
+                          {new Date(parent.created_at).toLocaleString(
+                            undefined,
+                            {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            }
+                          )}
                         </span>
                       </div>
                     </div>
@@ -1096,7 +1179,7 @@ export function CommentsFeed({
 
                 {/* Comment Body / Edit Mode */}
                 {editingCommentId === parent.id ? (
-                  <div className="space-y-2 pt-1 relative">
+                  <div className="relative space-y-2 pt-1">
                     <AutocompleteInput
                       as="textarea"
                       textareaRef={editCommentRef}
@@ -1126,14 +1209,14 @@ export function CommentsFeed({
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300 pl-12">
+                  <p className="pl-12 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
                     {renderCommentContent(parent.content)}
                   </p>
                 )}
 
                 {/* Work Item Context Details Banner */}
                 {!workItemId && parent.work_item && (
-                  <div className="ml-12 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/40 p-2 rounded-md border border-zinc-100 dark:border-zinc-800">
+                  <div className="ml-12 flex items-center gap-2 rounded-md border border-zinc-100 bg-zinc-50 p-2 text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/40 dark:text-zinc-400">
                     <Building2 className="h-3.5 w-3.5 text-zinc-400" />
                     <span>
                       Item:{' '}
@@ -1143,7 +1226,9 @@ export function CommentsFeed({
                     </span>
                     {parent.work_item.project && (
                       <>
-                        <span className="text-zinc-300 dark:text-zinc-600">•</span>
+                        <span className="text-zinc-300 dark:text-zinc-600">
+                          •
+                        </span>
                         <span>
                           Project:{' '}
                           <span className="font-medium text-zinc-600 dark:text-zinc-300">
@@ -1157,7 +1242,7 @@ export function CommentsFeed({
 
                 {/* Thread Replies */}
                 {parent.threadReplies.length > 0 && (
-                  <div className="ml-12 border-l-2 border-zinc-200 dark:border-zinc-800 pl-4 space-y-3 pt-2">
+                  <div className="ml-12 space-y-3 border-l-2 border-zinc-200 pt-2 pl-4 dark:border-zinc-800">
                     {parent.threadReplies.map((reply) => (
                       <div key={reply.id} className="space-y-1">
                         <div className="flex items-center justify-between">
@@ -1166,10 +1251,13 @@ export function CommentsFeed({
                               {reply.author?.name || 'Reply User'}
                             </span>
                             <span className="text-[11px] text-zinc-400">
-                              {new Date(reply.created_at).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
+                              {new Date(reply.created_at).toLocaleTimeString(
+                                [],
+                                {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                }
+                              )}
                             </span>
                           </div>
                         </div>
@@ -1182,7 +1270,7 @@ export function CommentsFeed({
                 )}
 
                 {/* Reply Bar Action */}
-                <div className="ml-12 pt-1 flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800/60">
+                <div className="ml-12 flex items-center justify-between border-t border-zinc-100 pt-1 dark:border-zinc-800/60">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -1196,7 +1284,7 @@ export function CommentsFeed({
                     <Reply className="h-3.5 w-3.5" />
                     <span>Reply</span>
                     {parent.threadReplies.length > 0 && (
-                      <span className="ml-1 rounded-full bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.2 text-[10px]">
+                      <span className="py-0.2 ml-1 rounded-full bg-zinc-100 px-1.5 text-[10px] dark:bg-zinc-800">
                         {parent.threadReplies.length}
                       </span>
                     )}
@@ -1205,26 +1293,30 @@ export function CommentsFeed({
 
                 {/* Reply Form Collapse */}
                 {replyingParentId === parent.id && (
-                  <div className="ml-12 pt-2 flex flex-col gap-2 relative">
-                    <div className="flex items-center gap-2 relative w-full">
+                  <div className="relative ml-12 flex flex-col gap-2 pt-2">
+                    <div className="relative flex w-full items-center gap-2">
                       <AutocompleteInput
                         as="input"
                         textareaRef={replyInputRef}
                         value={replyContent}
                         onChange={setReplyContent}
-                        onSubmit={() => handleReplySubmit(parent.id, parent.work_item_id)}
+                        onSubmit={() =>
+                          handleReplySubmit(parent.id, parent.work_item_id)
+                        }
                         placeholder="Write a reply..."
                         users={users}
                         workItems={workItems}
                         position="top"
-                        className="flex-1 rounded-lg border border-zinc-200 bg-zinc-50 py-1.5 px-3 text-xs text-zinc-900 focus:border-blue-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
+                        className="flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs text-zinc-900 focus:border-blue-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
                       />
                       <Button
                         size="sm"
-                        onClick={() => handleReplySubmit(parent.id, parent.work_item_id)}
+                        onClick={() =>
+                          handleReplySubmit(parent.id, parent.work_item_id)
+                        }
                         className="h-8 bg-blue-600 px-3 text-white hover:bg-blue-700"
                       >
-                        <Send className="h-3 w-3 mr-1" /> Post
+                        <Send className="mr-1 h-3 w-3" /> Post
                       </Button>
                     </div>
                   </div>
@@ -1238,8 +1330,8 @@ export function CommentsFeed({
       {/* Inline Comment Box for specific Work Item */}
       {workItemId && (
         <Card className="border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-          <CardContent className="p-4 space-y-4">
-            <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+          <CardContent className="space-y-4 p-4">
+            <h4 className="flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
               <Plus className="h-4 w-4 text-blue-600" />
               Add to discussion
             </h4>
@@ -1259,7 +1351,7 @@ export function CommentsFeed({
               <Button
                 onClick={() => handleCreateComment()}
                 disabled={isSubmitting || !newContent.trim()}
-                className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2"
+                className="bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
               >
                 {isSubmitting ? 'Posting...' : 'Post Comment'}
               </Button>
@@ -1282,7 +1374,7 @@ export function CommentsFeed({
             <div>
               <label
                 htmlFor="new-comment-work-item-select"
-                className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1"
+                className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300"
               >
                 Select Work Item
               </label>
@@ -1304,7 +1396,7 @@ export function CommentsFeed({
             <div>
               <label
                 htmlFor="new-comment-content-textarea"
-                className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1"
+                className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300"
               >
                 Comment Text
               </label>

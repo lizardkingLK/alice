@@ -70,10 +70,11 @@ describe('Sprints Workspace', () => {
     cy.contains(goal).should('exist');
 
     // 5. Edit the newly created sprint
-    // We find the table row containing the sprint name, and click the edit button (which has aria-label="Edit Sprint")
+    // We open the actions menu and click the edit button
     cy.contains('tr', sprintName).within(() => {
-      cy.get('button[aria-label="Edit Sprint"]').click();
+      cy.get('button[aria-label="Open Actions Menu"]').click();
     });
+    cy.get('[aria-label="Edit Sprint"]').click();
 
     // The modal should open with the sprint details
     cy.get('input#sprint-name').first().should('have.value', sprintName);
@@ -133,8 +134,9 @@ describe('Sprints Workspace', () => {
 
     // 6. Edit the sprint as non-creator
     cy.contains('tr', sprintName).within(() => {
-      cy.get('button[aria-label="Edit Sprint"]').click();
+      cy.get('button[aria-label="Open Actions Menu"]').click();
     });
+    cy.get('[aria-label="Edit Sprint"]').click();
 
     cy.get('input#sprint-name').first().should('have.value', sprintName);
     const updatedGoal = 'Goal updated by member';

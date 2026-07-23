@@ -11,8 +11,7 @@ import {
 } from '@/app/sprints/_services/sprints.service';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
-import { cn } from '@repo/ui/lib/utils';
-import { Search } from '@repo/ui/lib/icons';
+import { Search, Plus } from '@repo/ui/lib/icons';
 import type { Project } from '@/app/projects/_services/projects.service.base';
 
 interface SprintsWorkspaceProps {
@@ -58,7 +57,7 @@ export function SprintsWorkspace({
   const handleTabChange = (nextTab: 'active' | 'archived') => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('tab', nextTab);
-    params.set('page', '1'); // reset page when tab changes
+    params.set('page', '1');
     router.push(`${pathname}?${params.toString()}`);
   };
 
@@ -88,8 +87,8 @@ export function SprintsWorkspace({
     try {
       const updated = await updateSprintStatus(sprint.id, 'Archived');
       handleSprintUpdated(updated);
-    } catch (error) {
-      console.error('Failed to archive sprint:', error);
+    } catch (archiveError) {
+      console.error('Failed to archive sprint:', archiveError);
     }
   };
 
@@ -97,8 +96,8 @@ export function SprintsWorkspace({
     try {
       const updated = await updateSprintStatus(sprint.id, 'Completed');
       handleSprintUpdated(updated);
-    } catch (error) {
-      console.error('Failed to restore sprint:', error);
+    } catch (restoreError) {
+      console.error('Failed to restore sprint:', restoreError);
     }
   };
 
@@ -109,7 +108,6 @@ export function SprintsWorkspace({
   return (
     <>
       <div className="space-y-6">
-        {/* Control Bar */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative max-w-md flex-1">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
@@ -123,33 +121,16 @@ export function SprintsWorkspace({
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Tabs */}
-            <div className="bg-muted/50 border-border text-muted-foreground inline-flex h-10 items-center justify-center rounded-md border p-1">
+            {isManagerOrAdmin ? (
               <Button
-                variant="ghost"
-                onClick={() => handleTabChange('active')}
-                className={cn(
-                  'h-8 cursor-pointer rounded-sm px-3 text-xs font-semibold transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
-                  filterTab === 'active'
-                    ? 'bg-background text-foreground hover:bg-background shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
-                )}
+                type="button"
+                onClick={() => setIsAddSprintOpen(true)}
+                className="h-10 text-xs font-semibold shadow-md duration-300 hover:shadow-lg"
               >
-                Active
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                Add Sprint
               </Button>
-              <Button
-                variant="ghost"
-                onClick={() => handleTabChange('archived')}
-                className={cn(
-                  'h-8 cursor-pointer rounded-sm px-3 text-xs font-semibold transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
-                  filterTab === 'archived'
-                    ? 'bg-background text-foreground hover:bg-background shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
-                )}
-              >
-                Archived
-              </Button>
-            </div>
+            ) : null}
           </div>
         </div>
 
@@ -158,14 +139,12 @@ export function SprintsWorkspace({
             sprints={sprints}
             pagination={pagination}
             filterTab={filterTab}
+            onTabChange={handleTabChange}
             onPageChange={handlePageChange}
             onLimitChange={handleLimitChange}
             error={error}
             onRetry={handleRetry}
             onSprintUpdated={handleSprintUpdated}
-            onAddSprint={
-              isManagerOrAdmin ? () => setIsAddSprintOpen(true) : undefined
-            }
             onEditSprint={
               isManagerOrAdmin
                 ? (sprint) => setEditingSprint(sprint)
@@ -177,7 +156,7 @@ export function SprintsWorkspace({
         </div>
       </div>
 
-      {isAddSprintOpen && (
+      {isAddSprintOpen ? (
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
           <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
             <SprintForm
@@ -189,9 +168,9 @@ export function SprintsWorkspace({
             />
           </div>
         </div>
-      )}
+      ) : null}
 
-      {editingSprint && (
+      {editingSprint ? (
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
           <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
             <SprintForm
@@ -204,7 +183,7 @@ export function SprintsWorkspace({
             />
           </div>
         </div>
-      )}
+      ) : null}
     </>
   );
 }

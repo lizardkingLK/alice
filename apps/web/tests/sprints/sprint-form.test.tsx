@@ -170,10 +170,10 @@ describe('SprintForm Component', () => {
       target: { value: 'Achieve project milestone' },
     });
 
-    const projectSelect = screen.getByLabelText(/Project/i);
-    fireEvent.click(projectSelect);
-    const option = screen.getByRole('option', { name: 'Project Alpha (PAL)' });
-    fireEvent.click(option);
+    fireEvent.click(screen.getByLabelText(/Project/i));
+    fireEvent.click(
+      await screen.findByRole('option', { name: 'Project Alpha (PAL)' })
+    );
 
     fireEvent.change(screen.getByLabelText(/Start date/i), {
       target: { value: '2026-07-10' },
@@ -200,10 +200,10 @@ describe('SprintForm Component', () => {
     ).toBeInTheDocument();
     expect(onSprintUpdated).toHaveBeenCalledWith(mockSprint);
 
-    await new Promise((resolve) => setTimeout(resolve, 1600));
-
-    expect(onSuccess).toHaveBeenCalled();
-  });
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled(), {
+      timeout: 2000,
+    });
+  }, 10000);
 
   it('populates fields from sprintToEdit and updates correctly in edit mode', async () => {
     const onSprintUpdated = vi.fn();

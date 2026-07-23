@@ -27,7 +27,8 @@ const mockSeedComments: CommentItem[] = [
     work_item_id: 'wi-101',
     author_id: 'user-admin-1',
     parent_id: null,
-    content: 'Reviewed the user registration service logic. The RLS policies look solid and session refresh behavior is verified.',
+    content:
+      'Reviewed the user registration service logic. The RLS policies look solid and session refresh behavior is verified.',
     edited: false,
     status: 'active',
     created_at: '2026-07-20T14:32:00Z',
@@ -55,7 +56,8 @@ const mockSeedComments: CommentItem[] = [
     work_item_id: 'wi-101',
     author_id: 'user-mgr-1',
     parent_id: 'comment-seed-1',
-    content: 'Great update! Let us ensure we add e2e test cases covering edge-case token expiration in Cypress.',
+    content:
+      'Great update! Let us ensure we add e2e test cases covering edge-case token expiration in Cypress.',
     edited: false,
     status: 'active',
     created_at: '2026-07-20T15:10:00Z',
@@ -78,7 +80,8 @@ const mockSeedComments: CommentItem[] = [
     work_item_id: 'wi-102',
     author_id: 'user-dev-1',
     parent_id: null,
-    content: 'Updated the drag-and-drop column transitions on the Kanban board. Column ordering persists smoothly now.',
+    content:
+      'Updated the drag-and-drop column transitions on the Kanban board. Column ordering persists smoothly now.',
     edited: true,
     status: 'active',
     created_at: '2026-07-21T09:15:00Z',
@@ -189,7 +192,9 @@ async function CommentsData() {
     commentsList = mockSeedComments;
   }
 
-  return <CommentsFeed initialComments={commentsList} workItems={workItemsList} />;
+  return (
+    <CommentsFeed initialComments={commentsList} workItems={workItemsList} />
+  );
 }
 
 export default async function CommentsPage() {
