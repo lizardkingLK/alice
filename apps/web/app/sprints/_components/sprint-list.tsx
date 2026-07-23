@@ -162,6 +162,150 @@ type SprintListContentProps = {
   onRestoreSprint?: (sprint: Sprint) => void;
 };
 
+type CreateColumnsArgs = {
+  onSprintUpdated: SprintListContentProps['onSprintUpdated'];
+  onEditSprint: SprintListContentProps['onEditSprint'];
+  onArchiveSprint: SprintListContentProps['onArchiveSprint'];
+  onRestoreSprint: SprintListContentProps['onRestoreSprint'];
+};
+
+const createColumns = ({
+  onSprintUpdated,
+  onEditSprint,
+  onArchiveSprint,
+  onRestoreSprint,
+}: CreateColumnsArgs): ColumnDef<Sprint>[] => [
+  {
+    accessorKey: 'name',
+    header: 'Sprint Name',
+    cell: ({ row }) => (
+      <div className="flex min-w-48 items-center gap-3">
+        <div
+          className={cn(
+            'bg-primary/10 text-primary border-primary/20',
+            'flex size-8 shrink-0 items-center justify-center',
+            'rounded-lg border text-xs font-bold'
+          )}
+        >
+          {row.original.name.slice(0, 1).toUpperCase()}
+        </div>
+        <div className="space-y-1 font-medium">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-foreground">
+              {row.original.name}
+            </span>
+          </div>
+          {row.original.project ? (
+            <p className="text-muted-foreground text-xs font-normal">
+              Project:{' '}
+              <span className="font-medium">
+                {row.original.project.name}
+              </span>
+            </p>
+          ) : null}
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'duration',
+    header: 'Duration',
+    cell: ({ row }) => (
+      <span className="text-muted-foreground text-sm font-medium">
+        {formatDate(row.original.startDate)} –{' '}
+        {formatDate(row.original.endDate)}
+      </span>
+    ),
+  },
+  {
+    accessorKey: 'status',
+    header: 'Status',
+    cell: ({ row }) => (
+      <SprintStatusDropdown
+        sprint={row.original}
+        onSprintUpdated={onSprintUpdated}
+        disabled={true}
+      />
+    ),
+  },
+  {
+    accessorKey: 'goal',
+    header: 'Goal',
+    cell: ({ row }) => {
+      const goal = row.original.goal;
+      if (!goal) return <span className="text-muted-foreground">—</span>;
+      return (
+        <TruncatedText className="text-muted-foreground max-w-xs text-sm">
+          {goal}
+        </TruncatedText>
+      );
+    },
+  },
+  {
+    id: 'actions',
+    header: () => <span className="sr-only">Actions</span>,
+    cell: ({ row }) => {
+      const sprint = row.original;
+      const showEdit = onEditSprint && sprint.status !== 'Archived';
+      const showArchive = onArchiveSprint && sprint.status === 'Completed';
+      const showRestore = onRestoreSprint && sprint.status === 'Archived';
+
+      if (!showEdit && !showArchive && !showRestore) {
+        return null;
+      }
+
+      return (
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="cursor-pointer"
+                aria-label="Open Actions Menu"
+              >
+                <MoreHorizontal />
+                <span className="sr-only">Open menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {showEdit && (
+                <DropdownMenuItem
+                  onClick={() => onEditSprint(sprint)}
+                  aria-label="Edit Sprint"
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit
+                </DropdownMenuItem>
+              )}
+              {showArchive && (
+                <DropdownMenuItem
+                  onClick={() => onArchiveSprint(sprint)}
+                  aria-label="Archive Sprint"
+                  className="text-rose-600 focus:text-rose-600 focus:bg-rose-50 dark:text-rose-400 dark:focus:text-rose-400 dark:focus:bg-rose-950/20"
+                >
+                  <Archive className="mr-2 h-4 w-4" />
+                  Archive
+                </DropdownMenuItem>
+              )}
+              {showRestore && (
+                <DropdownMenuItem
+                  onClick={() => onRestoreSprint(sprint)}
+                  aria-label="Restore Sprint"
+                  className="text-emerald-600 focus:text-emerald-600 focus:bg-emerald-50 dark:text-emerald-400 dark:focus:text-emerald-400 dark:focus:bg-emerald-950/20"
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Restore
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      );
+    },
+  },
+];
+
 function SprintListContent({
   isLoading,
   error,
@@ -175,140 +319,13 @@ function SprintListContent({
   onRestoreSprint,
 }: Readonly<SprintListContentProps>) {
   const columns = useMemo<ColumnDef<Sprint>[]>(
-    () => [
-      {
-        accessorKey: 'name',
-        header: 'Sprint Name',
-        cell: ({ row }) => (
-          <div className="flex min-w-48 items-center gap-3">
-            <div
-              className={cn(
-                'bg-primary/10 text-primary border-primary/20',
-                'flex size-8 shrink-0 items-center justify-center',
-                'rounded-lg border text-xs font-bold'
-              )}
-            >
-              {row.original.name.slice(0, 1).toUpperCase()}
-            </div>
-            <div className="space-y-1 font-medium">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-foreground">
-                  {row.original.name}
-                </span>
-                {row.original.project ? (
-                  <span className="bg-secondary text-secondary-foreground ring-secondary/20 inline-flex items-center rounded-md px-1.5 py-0.5 font-mono text-[10px] font-medium ring-1 ring-inset">{row.original.project.key}</span>
-                ) : null}
-              </div>
-              {row.original.project ? (
-                <p className="text-muted-foreground text-xs font-normal">
-                  Project:{' '}
-                  <span className="font-medium">
-                    {row.original.project.name}
-                  </span>
-                </p>
-              ) : null}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'duration',
-        header: 'Duration',
-        cell: ({ row }) => (
-          <span className="text-muted-foreground text-sm font-medium">
-            {formatDate(row.original.startDate)} –{' '}
-            {formatDate(row.original.endDate)}
-          </span>
-        ),
-      },
-      {
-        accessorKey: 'status',
-        header: 'Status',
-        cell: ({ row }) => (
-          <SprintStatusDropdown
-            sprint={row.original}
-            onSprintUpdated={onSprintUpdated}
-            disabled={true}
-          />
-        ),
-      },
-      {
-        accessorKey: 'goal',
-        header: 'Goal',
-        cell: ({ row }) => {
-          const goal = row.original.goal;
-          if (!goal) return <span className="text-muted-foreground">—</span>;
-          return (
-            <TruncatedText className="text-muted-foreground max-w-xs text-sm">
-              {goal}
-            </TruncatedText>
-          );
-        },
-      },
-      {
-        id: 'actions',
-        header: () => <span className="sr-only">Actions</span>,
-        cell: ({ row }) => {
-          const sprint = row.original;
-          const showEdit = onEditSprint && sprint.status !== 'Archived';
-          const showArchive = onArchiveSprint && sprint.status === 'Completed';
-          const showRestore = onRestoreSprint && sprint.status === 'Archived';
-
-          if (!showEdit && !showArchive && !showRestore) {
-            return null;
-          }
-
-          return (
-            <div className="flex justify-end">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className="cursor-pointer"
-                    aria-label="Open Actions Menu"
-                  >
-                    <MoreHorizontal />
-                    <span className="sr-only">Open menu</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {showEdit && (
-                    <DropdownMenuItem
-                      onClick={() => onEditSprint(sprint)}
-                      aria-label="Edit Sprint"
-                    >
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                  )}
-                  {showArchive && (
-                    <DropdownMenuItem
-                      onClick={() => onArchiveSprint(sprint)}
-                      aria-label="Archive Sprint"
-                      className="text-rose-600 focus:text-rose-600 focus:bg-rose-50 dark:text-rose-400 dark:focus:text-rose-400 dark:focus:bg-rose-950/20"
-                    >
-                      <Archive className="mr-2 h-4 w-4" />
-                      Archive
-                    </DropdownMenuItem>
-                  )}
-                  {showRestore && (
-                    <DropdownMenuItem
-                      onClick={() => onRestoreSprint(sprint)}
-                      aria-label="Restore Sprint"
-                      className="text-emerald-600 focus:text-emerald-600 focus:bg-emerald-50 dark:text-emerald-400 dark:focus:text-emerald-400 dark:focus:bg-emerald-950/20"
-                    >
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Restore
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          );
-        },
-      },
-    ],
+    () =>
+      createColumns({
+        onSprintUpdated,
+        onEditSprint,
+        onArchiveSprint,
+        onRestoreSprint,
+      }),
     [onSprintUpdated, onEditSprint, onArchiveSprint, onRestoreSprint]
   );
 
