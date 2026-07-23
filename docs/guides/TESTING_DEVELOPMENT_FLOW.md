@@ -55,6 +55,9 @@ Testing is split into two primary layers to balance execution speed and integrat
 apps/web/
 ├── tests/                           # Unit & Component Tests (Vitest + RTL)
 │   ├── setup.ts                     # Testing Library setup & mock resets
+│   ├── factories/                   # Object Mother builders (user, project, workItem, …)
+│   ├── mocks/                       # Shared vi.mock modules (next/navigation, dropdown-menu)
+│   ├── helpers/                     # Optional shared Act/render utilities
 │   ├── comments/
 │   │   └── comments-feed.test.tsx   # Comments feed, search & reply unit tests
 │   ├── teams/
@@ -66,6 +69,9 @@ apps/web/
 │   ├── sprints/
 │   │   ├── sprint-form.test.tsx     # Sprint creation modal tests
 │   │   └── sprint-list.test.tsx     # Sprint management & status filter tests
+│   ├── work-items/
+│   │   ├── workItem-form.test.tsx   # Work item create/edit form tests
+│   │   └── workItems-table.test.tsx # Work items table, search, pagination tests
 │   └── users/
 │       ├── user-form.test.tsx       # User creation & edit form tests
 │       └── user-registry.test.tsx   # User directory & active toggle tests
@@ -76,12 +82,15 @@ apps/web/
     └── support/                     # Cypress custom commands & helpers
 ```
 
+Standards for new suites: `.cursor/rules/08-qa-dev-manager.mdc` (AAA, teardowns, factories, shared mocks).
+
 ### 3.1 Unit & Component Testing Layer
 
 - **Framework**: [Vitest](https://vitest.dev/) with `happy-dom` environment and `@testing-library/react`.
 - **Configuration**: Defined in [apps/web/vitest.config.ts](../../apps/web/vitest.config.ts).
 - **Setup & Mocks**: Global test setup is handled in [apps/web/tests/setup.ts](../../apps/web/tests/setup.ts), extending `@testing-library/jest-dom` and performing `vi.clearAllMocks()` after each test execution.
 - **Service Mocking Strategy**: Feature components mock API services (e.g. `@/app/projects/_services/projects.service`) using Vitest `vi.fn()` to isolate UI components from network calls.
+- **Factories & shared mocks**: Prefer `apps/web/tests/factories/` for domain fixtures and `apps/web/tests/mocks/` for reusable module stubs (e.g. `next/navigation`, Radix dropdown). Avoid large inline literals and copy-pasted `vi.mock` blocks in new specs.
 
 ### 3.2 Integration & End-to-End Testing Layer
 
@@ -96,6 +105,21 @@ apps/web/
 
 The table below maps all project features to their implementation paths, descriptions, unit test suites, and integrated test suites:
 
+| Feature                    | Path                                                                                                                     | Description                                                                                                                                                | Unit Test Paths                                                                                            | Integrated Test Paths                                                     |
+| :------------------------- | :----------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------ |
+| **Users Management**       | `apps/web/app/users`<br>`apps/web/app/users/_components/`<br>`apps/web/app/users/_services/users.service.ts`             | User registry directory, role assignment (Admin, Manager, Member), user status toggle (active/inactive), and profile management.                           | `apps/web/tests/users/user-form.test.tsx`<br>`apps/web/tests/users/user-registry.test.tsx`                 | `apps/web/cypress/e2e/home.cy.ts`                                         |
+| **Team Management**        | `apps/web/app/_components/team-*`<br>`apps/web/app/users/_components/team-form.tsx`                                      | Team creation, member lookup and assignment, team registry listing, and team lead configuration.                                                           | `apps/web/tests/teams/team-form.test.tsx`<br>`apps/web/tests/teams/team-registry.test.tsx`                 | `apps/web/cypress/e2e/home.cy.ts`                                         |
+| **Projects Management**    | `apps/web/app/projects`<br>`apps/web/app/projects/_components/`<br>`apps/web/app/projects/_services/projects.service.ts` | Project creation, project key generator, manager allocation, project list search/filtering, and project details configuration.                             | `apps/web/tests/projects/project-form.test.tsx`<br>`apps/web/tests/projects/project-registry.test.tsx`     | `apps/web/cypress/e2e/home.cy.ts`                                         |
+| **Sprints Management**     | `apps/web/app/sprints`<br>`apps/web/app/sprints/_components/`<br>`apps/web/app/sprints/_services/sprints.service.ts`     | Sprint planning, start/complete sprint lifecycle, sprint duration dates, goal tracking, and sprint list filters.                                           | `apps/web/tests/sprints/sprint-form.test.tsx`<br>`apps/web/tests/sprints/sprint-list.test.tsx`             | `apps/web/cypress/e2e/sprints.cy.ts`                                      |
+| **Work Items & Backlog**   | `apps/web/app/work-items`<br>`apps/web/app/backlog`<br>`apps/web/app/work-items/_components/`                            | Work item creation (Story, Task, Bug, Epic), table search/pagination, estimation, sprint allocation, backlog prioritization, and TipTap rich text descriptions. | `apps/web/tests/work-items/workItem-form.test.tsx`<br>`apps/web/tests/work-items/workItems-table.test.tsx` | `apps/web/cypress/e2e/sprints.cy.ts` (work-item E2E TBD)                  |
+| **Kanban / Active Board**  | `apps/web/app/board`<br>`apps/web/app/board/_components/`                                                                | Interactive kanban board visualization, drag-and-drop column transitions (To Do, In Progress, Done), and assignee quick-filters.                           | `apps/web/tests/sprints/sprint-list.test.tsx`                                                              | `apps/web/cypress/e2e/sprints.cy.ts`                                      |
+| **Dashboard & Metrics**    | `apps/web/app/dashboard`<br>`apps/web/app/dashboard/_components/`                                                        | Analytics summary, role-based dashboard views (Admin/Manager/Member), velocity tracking, and sprint overview widgets.                                      | `apps/web/tests/teams/team-registry.test.tsx`                                                              | `apps/web/cypress/e2e/home.cy.ts`                                         |
+| **Discussions & Comments** | `apps/web/app/comments`<br>`apps/web/app/comments/_components/`<br>`apps/web/app/comments/_services/comments.service.ts` | Threaded discussions across work items, search, filtering, inline replies, edit/archive comments, and metrics summary.                                     | `apps/web/tests/comments/comments-feed.test.tsx`                                                           | `apps/web/cypress/e2e/home.cy.ts`                                         |
+| **Auth & RBAC Middleware** | `apps/web/app/login`<br>`apps/web/app/signup`<br>`apps/web/proxy.ts`<br>`apps/web/app/auth/`                             | Supabase Auth integration, OAuth, magic links, session cookies, password reset, and Next.js middleware route protection.                                   | `apps/web/tests/setup.ts`                                                                                  | `apps/web/cypress/e2e/home.cy.ts`                                         |
+| **Backend API Service**    | `apps/api/src/`<br>`apps/api/src/routes/`<br>`apps/api/src/controllers/`                                                 | Express REST API server providing backend endpoints, Zod input validation, Novu notification integration, and Supabase DB calls.                           | `apps/api` (Vitest configured)                                                                             | `apps/web/cypress/e2e/sprints.cy.ts`<br>`apps/web/cypress/e2e/home.cy.ts` |
+| **Shared UI Components**   | `packages/ui/src/`<br>`packages/ui/src/components/`                                                                      | Shared Shadcn & Radix UI accessible component primitives (Buttons, Dialogs, Tables, Form fields, Dropdowns).                                               | Workspace unit testing via `@repo/ui`                                                                      | All Cypress E2E flows                                                     |
+| **Database & ORM Schema**  | `packages/db/prisma/`<br>`packages/db/src/`                                                                              | Database schema definitions, Prisma ORM queries, Supabase Postgres migrations, and database seed scripts.                                                  | Schema validation scripts                                                                                  | Cypress DB Cleanup Tasks (`cleanTestSprints`)                             |
+| **Shared Types & DTOs**    | `packages/types/src/`<br>`packages/types/src/generated/`                                                                 | TypeScript interfaces, Zod validation schemas, and shared type contracts between web and API services.                                                     | Typecheck (`pnpm checktypes`)                                                                              | End-to-end type safety verification                                       |
 | Feature                    | Path                                                                                                                     | Description                                                                                                                            | Unit Test Paths                                                                                        | Integrated Test Paths                                                     |
 | :------------------------- | :----------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------ |
 | **Users Management**       | `apps/web/app/users`<br>`apps/web/app/users/_components/`<br>`apps/web/app/users/_services/users.service.ts`             | User registry directory, role assignment (Admin, Manager, Member), user status toggle (active/inactive), and profile management.       | `apps/web/tests/users/user-form.test.tsx`<br>`apps/web/tests/users/user-registry.test.tsx`             | `apps/web/cypress/e2e/home.cy.ts`                                         |
