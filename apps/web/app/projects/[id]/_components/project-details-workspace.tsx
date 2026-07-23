@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useActionState } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   Card,
   CardContent,
@@ -29,6 +30,12 @@ import type {
   ProjectMemberWithUser,
 } from '../../_services/projects.service';
 import type { User } from '@/app/users/_services/users.service';
+import WorkItemsWorkspace from '@/app/work-items/_components/workItems-workspace';
+import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import {
+  parseProjectDetailsTab,
+  type ProjectDetailsTab,
+} from '@/lib/search-params';
 import {
   Info,
   Users,
@@ -40,7 +47,22 @@ import {
   Loader2,
   AlertTriangle,
   Folder,
+  ClipboardPenLine,
 } from '@repo/ui/lib/icons';
+
+const PROJECT_DETAILS_TAB_TRIGGER_CLASS =
+  'text-muted-foreground hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground flex h-auto cursor-pointer items-center gap-1.5 rounded-none border-b-2 border-transparent bg-transparent px-1 pt-0 pb-3 text-sm font-semibold whitespace-nowrap shadow-none transition-all hover:bg-transparent focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=active]:shadow-none';
+
+interface ProjectWorkItemsProps {
+  readonly initialWorkItems: DbWorkItem[];
+  readonly totalCount: number;
+  readonly page: number;
+  readonly limit: number;
+  readonly totalPages: number;
+  readonly search: string;
+  readonly typeFilter: string;
+  readonly assigneeFilter: string;
+}
 
 interface ProjectDetailsWorkspaceProps {
   readonly project: Project;
@@ -48,6 +70,7 @@ interface ProjectDetailsWorkspaceProps {
   readonly allUsers: User[];
   readonly currentUserId?: string | null;
   readonly currentUserRole?: string | null;
+  readonly workItems: ProjectWorkItemsProps;
 }
 
 export function ProjectDetailsWorkspace({
@@ -56,8 +79,13 @@ export function ProjectDetailsWorkspace({
   allUsers,
   currentUserId,
   currentUserRole,
+  workItems,
 }: Readonly<ProjectDetailsWorkspaceProps>) {
-  const [activeTab, setActiveTab] = useState<'details' | 'members'>('details');
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeTab = parseProjectDetailsTab(searchParams.get('tab'));
+
   const [error, setError] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -75,6 +103,18 @@ export function ProjectDetailsWorkspace({
     boundAddMember,
     { success: false, error: null }
   );
+
+  const handleTabChange = (value: string) => {
+    const nextTab = value as ProjectDetailsTab;
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextTab === 'details') {
+      params.delete('tab');
+    } else {
+      params.set('tab', nextTab);
+    }
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
+  };
 
   const handleRemoveMember = (userId: string) => {
     setError(null);
@@ -121,23 +161,30 @@ export function ProjectDetailsWorkspace({
       {/* Tabs Selector */}
       <Tabs
         value={activeTab}
-        onValueChange={(value) => setActiveTab(value as 'details' | 'members')}
+        onValueChange={handleTabChange}
         className="w-full space-y-6"
       >
         <TabsList className="border-border flex h-auto justify-start gap-4 rounded-none border-b bg-transparent p-0">
           <TabsTrigger
             value="details"
-            className="text-muted-foreground hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground flex h-auto cursor-pointer items-center gap-1.5 rounded-none border-b-2 border-transparent bg-transparent px-1 pt-0 pb-3 text-sm font-semibold whitespace-nowrap shadow-none transition-all hover:bg-transparent focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=active]:shadow-none"
+            className={PROJECT_DETAILS_TAB_TRIGGER_CLASS}
           >
             <Info className="h-4 w-4" />
             Project Details
           </TabsTrigger>
           <TabsTrigger
             value="members"
-            className="text-muted-foreground hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground flex h-auto cursor-pointer items-center gap-1.5 rounded-none border-b-2 border-transparent bg-transparent px-1 pt-0 pb-3 text-sm font-semibold whitespace-nowrap shadow-none transition-all hover:bg-transparent focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=active]:shadow-none"
+            className={PROJECT_DETAILS_TAB_TRIGGER_CLASS}
           >
             <Users className="h-4 w-4" />
             Project Members ({members.length})
+          </TabsTrigger>
+          <TabsTrigger
+            value="work-items"
+            className={PROJECT_DETAILS_TAB_TRIGGER_CLASS}
+          >
+            <ClipboardPenLine className="h-4 w-4" />
+            Work Items ({workItems.totalCount})
           </TabsTrigger>
         </TabsList>
 
@@ -436,6 +483,26 @@ export function ProjectDetailsWorkspace({
               </Card>
             )}
           </div>
+        </TabsContent>
+
+        <TabsContent
+          value="work-items"
+          className="m-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+        >
+          <WorkItemsWorkspace
+            projects={[project]}
+            projectMembers={allUsers}
+            initialWorkItems={workItems.initialWorkItems}
+            totalCount={workItems.totalCount}
+            page={workItems.page}
+            limit={workItems.limit}
+            totalPages={workItems.totalPages}
+            search={workItems.search}
+            projectFilter={project.id}
+            typeFilter={workItems.typeFilter}
+            assigneeFilter={workItems.assigneeFilter}
+            lockedProjectId={project.id}
+          />
         </TabsContent>
       </Tabs>
     </div>

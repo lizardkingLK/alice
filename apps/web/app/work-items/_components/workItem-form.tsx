@@ -30,6 +30,8 @@ interface WorkItemFormProps {
   projects: DbProject[];
   itemToEdit?: DbWorkItem | null;
   projectMembers: DbUser[];
+  /** When true, project select is disabled (value still submitted). */
+  lockProject?: boolean;
 }
 
 const taskTypes = ['Epic', 'Story', 'Task'] as const;
@@ -60,13 +62,16 @@ export function WorkItemForm({
   itemToEdit = null,
   projectMembers,
   projects,
+  lockProject = false,
 }: Readonly<WorkItemFormProps>) {
   const [isPending, setPending] = useState(false);
   const [state, setState] = useState<{
     success: string | null;
     error: string | null;
   } | null>(null);
-  const [projectId, setProjectId] = useState(itemToEdit?.project_id ?? '');
+  const [projectId, setProjectId] = useState(
+    itemToEdit?.project_id ?? (lockProject ? (projects[0]?.id ?? '') : '')
+  );
   const [assigneeId, setAssigneeId] = useState(itemToEdit?.assignee_id ?? '');
   const [type, setType] = useState(itemToEdit?.type ?? '');
   const isEditMode = itemToEdit !== null;
@@ -123,7 +128,11 @@ export function WorkItemForm({
         {/* Project */}
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="project_id">Project</Label>
-          <Select value={projectId} onValueChange={setProjectId}>
+          <Select
+            value={projectId}
+            onValueChange={setProjectId}
+            disabled={lockProject}
+          >
             <SelectTrigger id="project_id">
               <SelectValue placeholder="Select project..." />
             </SelectTrigger>

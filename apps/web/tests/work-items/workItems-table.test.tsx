@@ -54,6 +54,9 @@ function renderTable(
     limit: number;
     totalCount: number;
     totalPages: number;
+    projectFilter: string;
+    typeFilter: string;
+    assigneeFilter: string;
   }> = {}
 ) {
   const projects = projectFactory.buildList(1);
@@ -81,6 +84,9 @@ function renderTable(
       limit={pagination.limit}
       totalPages={pagination.totalPages}
       search={overrides.search ?? ''}
+      projectFilter={overrides.projectFilter ?? ''}
+      typeFilter={overrides.typeFilter ?? ''}
+      assigneeFilter={overrides.assigneeFilter ?? ''}
       currentUserId={overrides.currentUserId}
     />
   );
@@ -199,7 +205,9 @@ describe('WorkItemsTable', () => {
     });
 
     // Act — rows per page
-    const limitSelect = screen.getByRole('combobox');
+    const limitSelect = screen.getByRole('combobox', {
+      name: /Rows per page/i,
+    });
     fireEvent.click(limitSelect);
     fireEvent.click(screen.getByRole('option', { name: '20' }));
 
@@ -211,6 +219,58 @@ describe('WorkItemsTable', () => {
 
     // Assert
     expect(mockPush).toHaveBeenCalledWith('/work-items?page=1&limit=5');
+  });
+
+  it('navigates when project type or assignee filters change', () => {
+    // Arrange
+    const projects = projectFactory.buildList(1);
+    const projectMembers = userFactory.buildList(1);
+    render(
+      <WorkItemsTable
+        projects={projects}
+        projectMembers={projectMembers}
+        initialWorkItems={workItemFactory.buildList(1)}
+        totalCount={1}
+        page={1}
+        limit={10}
+        totalPages={1}
+        search=""
+        projectFilter=""
+        typeFilter=""
+        assigneeFilter=""
+      />
+    );
+
+    // Act — project
+    fireEvent.click(
+      screen.getByRole('combobox', { name: /Filter by project/i })
+    );
+    fireEvent.click(screen.getByRole('option', { name: projects[0]!.name }));
+
+    // Assert
+    expect(mockPush).toHaveBeenCalledWith(
+      `/work-items?project=${projects[0]!.id}&page=1`
+    );
+
+    // Act — type
+    fireEvent.click(screen.getByRole('combobox', { name: /Filter by type/i }));
+    fireEvent.click(screen.getByRole('option', { name: 'Task' }));
+
+    // Assert
+    expect(mockPush).toHaveBeenCalledWith('/work-items?type=Task&page=1');
+
+    // Act — assignee
+    fireEvent.click(
+      screen.getByRole('combobox', { name: /Filter by assignee/i })
+    );
+    fireEvent.click(
+      screen.getByRole('option', { name: projectMembers[0]!.name })
+    );
+
+    // Assert
+    expect(mockPush).toHaveBeenCalledWith(
+      `/work-items?assignee=${projectMembers[0]!.id}&page=1`
+    );
   });
 
   it('opens create and edit dialogs with the mocked form', () => {

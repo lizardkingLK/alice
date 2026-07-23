@@ -1,11 +1,22 @@
 /* eslint-disable no-unused-vars */
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@repo/ui/components/ui/button';
-import { Card, CardContent } from '@repo/ui/components/ui/card';
+import { Badge } from '@repo/ui/components/ui/badge';
+import {
+  Avatar,
+  AvatarFallback,
+} from '@repo/ui/components/ui/avatar';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@repo/ui/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -19,10 +30,23 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
+import { Input } from '@repo/ui/components/ui/input';
+import { Label } from '@repo/ui/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@repo/ui/components/ui/select';
+import { Separator } from '@repo/ui/components/ui/separator';
+import { Textarea } from '@repo/ui/components/ui/textarea';
+import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';
+import { getInitials } from '@/app/_shared/utility';
+import { SearchInput } from '@/components/search-input';
 import {
   MessageSquareText,
-  Search,
   Plus,
   MoreVertical,
   Reply,
@@ -58,6 +82,54 @@ type CommentsFeedProps = {
   workItemId?: string;
 };
 
+const MENTION_BADGE_CLASS =
+  'border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400';
+const ISSUE_BADGE_CLASS =
+  'border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400';
+
+type StatMetricCardProps = {
+  label: string;
+  value: number;
+  icon: ReactNode;
+  iconClassName: string;
+};
+
+function StatMetricCard({
+  label,
+  value,
+  icon,
+  iconClassName,
+}: Readonly<StatMetricCardProps>) {
+  return (
+    <Card>
+      <CardContent className="flex items-center gap-4">
+        <div
+          className={cn(
+            'flex size-10 shrink-0 items-center justify-center rounded-lg',
+            iconClassName
+          )}
+        >
+          {icon}
+        </div>
+        <div>
+          <p className="text-muted-foreground text-xs font-medium">{label}</p>
+          <p className="text-foreground text-xl font-bold">{value}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CommentAvatar({ name }: Readonly<{ name?: string | null }>) {
+  return (
+    <Avatar size="default">
+      <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+        {getInitials(name ?? 'U')}
+      </AvatarFallback>
+    </Avatar>
+  );
+}
+
 type MentionDropdownListProps = {
   show: boolean;
   usersList: CommentUser[];
@@ -77,7 +149,7 @@ function MentionDropdownList({
   return (
     <div
       className={cn(
-        'absolute right-0 left-0 z-50 max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950',
+        'border-border bg-popover text-popover-foreground absolute right-0 left-0 z-50 max-h-40 overflow-y-auto rounded-lg border shadow-md',
         position === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
       )}
     >
@@ -89,19 +161,17 @@ function MentionDropdownList({
           className={cn(
             'flex w-full items-center gap-2 px-3 py-2 text-left text-sm',
             idx === highlightIdx
-              ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100'
-              : 'text-zinc-700 dark:text-zinc-300'
+              ? 'bg-accent text-accent-foreground'
+              : 'text-foreground hover:bg-muted/80'
           )}
         >
-          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-[10px] font-semibold text-white">
-            {user.name
-              .split(' ')
-              .map((n) => n[0])
-              .join('')
-              .toUpperCase()}
-          </div>
+          <Avatar size="sm">
+            <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-semibold">
+              {getInitials(user.name)}
+            </AvatarFallback>
+          </Avatar>
           <span>{user.name}</span>
-          <span className="text-xs text-zinc-400">({user.email})</span>
+          <span className="text-muted-foreground text-xs">({user.email})</span>
         </button>
       ))}
     </div>
@@ -127,7 +197,7 @@ function WIDropdownList({
   return (
     <div
       className={cn(
-        'absolute right-0 left-0 z-50 max-h-40 overflow-y-auto rounded-md border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950',
+        'border-border bg-popover text-popover-foreground absolute right-0 left-0 z-50 max-h-40 overflow-y-auto rounded-lg border shadow-md',
         position === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
       )}
     >
@@ -139,16 +209,16 @@ function WIDropdownList({
           className={cn(
             'flex w-full items-center gap-2 px-3 py-2 text-left text-sm',
             idx === highlightIdx
-              ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100'
-              : 'text-zinc-700 dark:text-zinc-300'
+              ? 'bg-accent text-accent-foreground'
+              : 'text-foreground hover:bg-muted/80'
           )}
         >
-          <div className="flex h-5 w-12 items-center justify-center rounded-md bg-purple-500 text-[10px] font-bold text-white">
+          <Badge variant="outline" className={cn('shrink-0 font-mono', ISSUE_BADGE_CLASS)}>
             {item.key}
-          </div>
-          <span className="flex-1 truncate text-zinc-900 dark:text-zinc-100">
+          </Badge>
+          <TruncatedText className="text-foreground min-w-0 flex-1 text-sm">
             {item.title}
-          </span>
+          </TruncatedText>
         </button>
       ))}
     </div>
@@ -363,7 +433,7 @@ function AutocompleteInput({
   return (
     <div className="relative flex-1">
       {as === 'textarea' ? (
-        <textarea
+        <Textarea
           id={id}
           ref={activeRef as React.RefObject<HTMLTextAreaElement>}
           value={value}
@@ -380,7 +450,7 @@ function AutocompleteInput({
           onKeyDown={handleKeyDownLocal}
         />
       ) : (
-        <input
+        <Input
           id={id}
           ref={activeRef as React.RefObject<HTMLInputElement>}
           type="text"
@@ -687,22 +757,24 @@ export function CommentsFeed({
 
       if (type === '@') {
         parts.push(
-          <span
+          <Badge
             key={`mention-${match.index}-${id}`}
-            className="animate-fade-in inline-flex items-center rounded border border-blue-500/20 bg-blue-500/10 px-1.5 py-0.5 text-xs font-semibold text-blue-600 shadow-xs dark:bg-blue-500/20 dark:text-blue-400"
+            variant="outline"
+            className={cn('animate-fade-in font-semibold', MENTION_BADGE_CLASS)}
           >
             @{label}
-          </span>
+          </Badge>
         );
       } else {
         parts.push(
-          <Link
+          <Badge
             key={`issue-${match.index}-${id}`}
-            href="/work-items"
-            className="inline-flex items-center gap-1 rounded border border-purple-500/20 bg-purple-500/10 px-1.5 py-0.5 text-xs font-semibold text-purple-600 shadow-xs transition-colors hover:bg-purple-500/20 dark:bg-purple-500/20 dark:text-purple-400"
+            variant="outline"
+            asChild
+            className={cn('animate-fade-in font-semibold', ISSUE_BADGE_CLASS)}
           >
-            #{label}
-          </Link>
+            <Link href="/work-items">#{label}</Link>
+          </Badge>
         );
       }
 
@@ -887,146 +959,100 @@ export function CommentsFeed({
     <div className="space-y-6">
       {!workItemId && (
         <>
-          {/* Header Banner */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+              <h1 className="text-foreground text-2xl font-bold tracking-tight">
                 Discussions & Comments
               </h1>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="text-muted-foreground text-sm">
                 Collaborate, review feedback, and track conversation threads
                 across all project work items.
               </p>
             </div>
-            <Button
-              onClick={() => setShowNewCommentModal(true)}
-              className="inline-flex items-center gap-2 bg-blue-600 font-medium text-white shadow-sm hover:bg-blue-700"
-            >
-              <Plus className="h-4 w-4" />
-              <span>New Comment</span>
+            <Button onClick={() => setShowNewCommentModal(true)}>
+              <Plus className="size-4" />
+              New Comment
             </Button>
           </div>
 
-          {/* Metrics Bar */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Card className="border-zinc-200/80 bg-white/60 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/60">
-              <CardContent className="flex items-center gap-4 p-4">
-                <div className="rounded-xl bg-blue-500/10 p-3 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400">
-                  <MessageSquareText className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                    Total Comments
-                  </p>
-                  <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-                    {stats.total}
-                  </h3>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-zinc-200/80 bg-white/60 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/60">
-              <CardContent className="flex items-center gap-4 p-4">
-                <div className="rounded-xl bg-emerald-500/10 p-3 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
-                  <MessageCircle className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                    Active Discussions
-                  </p>
-                  <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-                    {stats.active}
-                  </h3>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-zinc-200/80 bg-white/60 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/60">
-              <CardContent className="flex items-center gap-4 p-4">
-                <div className="rounded-xl bg-violet-500/10 p-3 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400">
-                  <Users className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                    Contributors
-                  </p>
-                  <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-                    {stats.authors}
-                  </h3>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-zinc-200/80 bg-white/60 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/60">
-              <CardContent className="flex items-center gap-4 p-4">
-                <div className="rounded-xl bg-amber-500/10 p-3 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
-                  <Tag className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                    Discussed Items
-                  </p>
-                  <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-                    {stats.workItemsDiscussed}
-                  </h3>
-                </div>
-              </CardContent>
-            </Card>
+            <StatMetricCard
+              label="Total Comments"
+              value={stats.total}
+              icon={<MessageSquareText className="size-5" />}
+              iconClassName="bg-primary/10 text-primary"
+            />
+            <StatMetricCard
+              label="Active Discussions"
+              value={stats.active}
+              icon={<MessageCircle className="size-5" />}
+              iconClassName="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+            />
+            <StatMetricCard
+              label="Contributors"
+              value={stats.authors}
+              icon={<Users className="size-5" />}
+              iconClassName="bg-violet-500/10 text-violet-600 dark:text-violet-400"
+            />
+            <StatMetricCard
+              label="Discussed Items"
+              value={stats.workItemsDiscussed}
+              icon={<Tag className="size-5" />}
+              iconClassName="bg-amber-500/10 text-amber-600 dark:text-amber-400"
+            />
           </div>
 
-          {/* Search & Filters Controls */}
-          <Card className="border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-            <CardContent className="p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                {/* Search Input */}
-                <div className="relative flex-1">
-                  <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-                  <input
-                    id="search-comments-input"
-                    type="text"
-                    aria-label="Search comments"
-                    placeholder="Search comments by text, author, or issue key..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full rounded-lg border border-zinc-200 bg-zinc-50/50 py-2 pr-4 pl-9 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:bg-zinc-900"
-                  />
-                </div>
+          <Card>
+            <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <SearchInput
+                value={searchQuery}
+                onValueChange={setSearchQuery}
+                placeholder="Search comments by text, author, or issue key..."
+                className="max-w-none"
+              />
 
-                {/* Filters */}
-                <div className="flex items-center gap-2">
-                  {/* Work Item Select */}
-                  <select
+              <div className="flex flex-wrap items-center gap-2">
+                <Select
+                  value={selectedWorkItemId}
+                  onValueChange={setSelectedWorkItemId}
+                >
+                  <SelectTrigger
                     id="select-work-item-filter"
                     aria-label="Filter by Work Item"
-                    value={selectedWorkItemId}
-                    onChange={(e) => setSelectedWorkItemId(e.target.value)}
-                    className="rounded-lg border border-zinc-200 bg-zinc-50/50 px-3 py-2 text-xs font-medium text-zinc-700 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-300"
+                    className="w-[min(100%,14rem)]"
                   >
-                    <option value="all">All Work Items</option>
+                    <SelectValue placeholder="All Work Items" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Work Items</SelectItem>
                     {workItems.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.key} — {item.title.slice(0, 25)}...
-                      </option>
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.key} — {item.title.slice(0, 25)}
+                        {item.title.length > 25 ? '…' : ''}
+                      </SelectItem>
                     ))}
-                  </select>
+                  </SelectContent>
+                </Select>
 
-                  {/* Status Select */}
-                  <select
+                <Select
+                  value={selectedStatus}
+                  onValueChange={(value) =>
+                    setSelectedStatus(value as 'all' | 'active' | 'archived')
+                  }
+                >
+                  <SelectTrigger
                     id="select-status-filter"
                     aria-label="Filter by Status"
-                    value={selectedStatus}
-                    onChange={(e) =>
-                      setSelectedStatus(
-                        e.target.value as 'all' | 'active' | 'archived'
-                      )
-                    }
-                    className="rounded-lg border border-zinc-200 bg-zinc-50/50 px-3 py-2 text-xs font-medium text-zinc-700 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-300"
+                    className="w-[min(100%,10rem)]"
                   >
-                    <option value="active">Active Comments</option>
-                    <option value="archived">Archived</option>
-                    <option value="all">All Statuses</option>
-                  </select>
-                </div>
+                    <SelectValue placeholder="Active Comments" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active Comments</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>
@@ -1034,26 +1060,25 @@ export function CommentsFeed({
       )}
 
       {workItemId && (
-        <div className="flex items-center justify-between border-b border-zinc-200 pb-2 dark:border-zinc-800">
-          <h3 className="flex items-center gap-2 text-lg font-bold text-zinc-900 dark:text-zinc-100">
-            <MessageSquareText className="h-5 w-5 text-blue-600" />
+        <div className="border-border flex items-center justify-between border-b pb-2">
+          <h3 className="text-foreground flex items-center gap-2 text-lg font-bold">
+            <MessageSquareText className="text-primary size-5" />
             Discussion ({stats.active})
           </h3>
         </div>
       )}
 
-      {/* Comments Feed List */}
       <div className="space-y-4">
         {parentComments.length === 0 ? (
-          <Card className="border-dashed border-zinc-200 py-12 text-center dark:border-zinc-800">
-            <CardContent className="space-y-3">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-                <MessageSquareText className="h-6 w-6 text-zinc-400" />
+          <Card className="border-dashed">
+            <CardContent className="space-y-3 py-12 text-center">
+              <div className="bg-muted mx-auto flex size-12 items-center justify-center rounded-full">
+                <MessageSquareText className="text-muted-foreground size-6" />
               </div>
-              <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+              <h3 className="text-foreground text-base font-semibold">
                 No comments found
               </h3>
-              <p className="mx-auto max-w-sm text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="text-muted-foreground mx-auto max-w-sm text-sm">
                 {searchQuery || selectedWorkItemId !== 'all'
                   ? 'Try adjusting your search query or filter settings.'
                   : 'Be the first to start a conversation on this work item!'}
@@ -1064,7 +1089,8 @@ export function CommentsFeed({
                   variant="outline"
                   className="mt-2"
                 >
-                  <Plus className="mr-2 h-4 w-4" /> Add Comment
+                  <Plus className="size-4" />
+                  Add Comment
                 </Button>
               )}
             </CardContent>
@@ -1074,45 +1100,36 @@ export function CommentsFeed({
             <Card
               key={parent.id}
               className={cn(
-                'border-zinc-200/80 transition-all dark:border-zinc-800',
-                parent.status === 'archived' &&
-                  'bg-zinc-50/50 opacity-60 dark:bg-zinc-900/30'
+                parent.status === 'archived' && 'bg-muted/40 opacity-70'
               )}
             >
-              <CardContent className="space-y-4 p-5">
-                {/* Parent Comment Header */}
+              <CardContent className="space-y-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    {/* User Avatar Badge */}
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-indigo-600 text-xs font-semibold text-white shadow-sm">
-                      {parent.author?.name
-                        ? parent.author.name
-                            .split(' ')
-                            .map((n) => n[0])
-                            .join('')
-                            .toUpperCase()
-                        : 'U'}
-                    </div>
+                    <CommentAvatar name={parent.author?.name} />
 
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                        <span className="text-foreground text-sm font-semibold">
                           {parent.author?.name || 'Anonymous User'}
                         </span>
                         {parent.status === 'archived' && (
-                          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-950/60 dark:text-amber-400">
+                          <Badge
+                            variant="outline"
+                            className="border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                          >
                             Archived
-                          </span>
+                          </Badge>
                         )}
                         {parent.edited && (
-                          <span className="text-[11px] text-zinc-400 italic">
+                          <span className="text-muted-foreground text-[11px] italic">
                             (edited)
                           </span>
                         )}
                       </div>
 
-                      <div className="mt-0.5 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                        <Clock className="h-3 w-3" />
+                      <div className="text-muted-foreground mt-0.5 flex items-center gap-2 text-xs">
+                        <Clock className="size-3 shrink-0" />
                         <span>
                           {new Date(parent.created_at).toLocaleString(
                             undefined,
@@ -1126,28 +1143,30 @@ export function CommentsFeed({
                     </div>
                   </div>
 
-                  {/* Right Header Badges & Actions */}
                   <div className="flex items-center gap-2">
                     {!workItemId && parent.work_item && (
-                      <Link
-                        href="/work-items"
-                        className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-blue-900/60"
+                      <Badge
+                        variant="outline"
+                        asChild
+                        className={cn('gap-1.5 font-semibold', ISSUE_BADGE_CLASS)}
                       >
-                        <Tag className="h-3 w-3" />
-                        <span>{parent.work_item.key}</span>
-                        <ExternalLink className="h-3 w-3 opacity-60" />
-                      </Link>
+                        <Link href="/work-items">
+                          <Tag className="size-3 shrink-0" />
+                          {parent.work_item.key}
+                          <ExternalLink className="size-3 opacity-60" />
+                        </Link>
+                      </Badge>
                     )}
 
-                    {/* Menu Actions */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                          size="icon-sm"
+                          className="text-muted-foreground"
                         >
-                          <MoreVertical className="h-4 w-4" />
+                          <MoreVertical className="size-4" />
+                          <span className="sr-only">Open menu</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
@@ -1162,14 +1181,16 @@ export function CommentsFeed({
                           }}
                           className="gap-2"
                         >
-                          <Pencil className="h-3.5 w-3.5" /> Edit
+                          <Pencil className="size-3.5" />
+                          Edit
                         </DropdownMenuItem>
                         {parent.status === 'active' && (
                           <DropdownMenuItem
                             onClick={() => handleArchive(parent.id)}
-                            className="gap-2 text-amber-600 dark:text-amber-400"
+                            className="text-amber-600 focus:text-amber-600 dark:text-amber-400"
                           >
-                            <Archive className="h-3.5 w-3.5" /> Archive
+                            <Archive className="size-3.5" />
+                            Archive
                           </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>
@@ -1177,7 +1198,6 @@ export function CommentsFeed({
                   </div>
                 </div>
 
-                {/* Comment Body / Edit Mode */}
                 {editingCommentId === parent.id ? (
                   <div className="relative space-y-2 pt-1">
                     <AutocompleteInput
@@ -1189,7 +1209,6 @@ export function CommentsFeed({
                       workItems={workItems}
                       rows={3}
                       position="bottom"
-                      className="w-full rounded-lg border border-zinc-300 p-2.5 text-sm focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                     />
                     <div className="flex justify-end gap-2">
                       <Button
@@ -1202,36 +1221,32 @@ export function CommentsFeed({
                       <Button
                         size="sm"
                         onClick={() => handleSaveEdit(parent.id)}
-                        className="bg-blue-600 text-white hover:bg-blue-700"
                       >
                         Save
                       </Button>
                     </div>
                   </div>
                 ) : (
-                  <p className="pl-12 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+                  <p className="text-foreground pl-12 text-sm leading-relaxed">
                     {renderCommentContent(parent.content)}
                   </p>
                 )}
 
-                {/* Work Item Context Details Banner */}
                 {!workItemId && parent.work_item && (
-                  <div className="ml-12 flex items-center gap-2 rounded-md border border-zinc-100 bg-zinc-50 p-2 text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/40 dark:text-zinc-400">
-                    <Building2 className="h-3.5 w-3.5 text-zinc-400" />
+                  <div className="border-border bg-muted/50 text-muted-foreground ml-12 flex items-center gap-2 rounded-lg border p-2 text-xs">
+                    <Building2 className="size-3.5 shrink-0" />
                     <span>
                       Item:{' '}
-                      <strong className="text-zinc-700 dark:text-zinc-200">
+                      <span className="text-foreground font-medium">
                         {parent.work_item.title}
-                      </strong>
+                      </span>
                     </span>
                     {parent.work_item.project && (
                       <>
-                        <span className="text-zinc-300 dark:text-zinc-600">
-                          •
-                        </span>
+                        <Separator orientation="vertical" className="h-3" />
                         <span>
                           Project:{' '}
-                          <span className="font-medium text-zinc-600 dark:text-zinc-300">
+                          <span className="text-foreground font-medium">
                             {parent.work_item.project.name}
                           </span>
                         </span>
@@ -1240,17 +1255,16 @@ export function CommentsFeed({
                   </div>
                 )}
 
-                {/* Thread Replies */}
                 {parent.threadReplies.length > 0 && (
-                  <div className="ml-12 space-y-3 border-l-2 border-zinc-200 pt-2 pl-4 dark:border-zinc-800">
+                  <div className="border-border ml-12 space-y-3 border-l-2 pt-2 pl-4">
                     {parent.threadReplies.map((reply) => (
                       <div key={reply.id} className="space-y-1">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                            <span className="text-foreground text-xs font-semibold">
                               {reply.author?.name || 'Reply User'}
                             </span>
-                            <span className="text-[11px] text-zinc-400">
+                            <span className="text-muted-foreground text-[11px]">
                               {new Date(reply.created_at).toLocaleTimeString(
                                 [],
                                 {
@@ -1261,7 +1275,7 @@ export function CommentsFeed({
                             </span>
                           </div>
                         </div>
-                        <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                        <p className="text-muted-foreground text-xs">
                           {renderCommentContent(reply.content)}
                         </p>
                       </div>
@@ -1269,8 +1283,7 @@ export function CommentsFeed({
                   </div>
                 )}
 
-                {/* Reply Bar Action */}
-                <div className="ml-12 flex items-center justify-between border-t border-zinc-100 pt-1 dark:border-zinc-800/60">
+                <div className="border-border ml-12 flex items-center justify-between border-t pt-1">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -1279,19 +1292,18 @@ export function CommentsFeed({
                         replyingParentId === parent.id ? null : parent.id
                       )
                     }
-                    className="h-8 gap-1.5 text-xs font-medium text-zinc-500 hover:text-blue-600 dark:text-zinc-400 dark:hover:text-blue-400"
+                    className="text-muted-foreground hover:text-primary h-8 gap-1.5 text-xs font-medium"
                   >
-                    <Reply className="h-3.5 w-3.5" />
-                    <span>Reply</span>
+                    <Reply className="size-3.5" />
+                    Reply
                     {parent.threadReplies.length > 0 && (
-                      <span className="py-0.2 ml-1 rounded-full bg-zinc-100 px-1.5 text-[10px] dark:bg-zinc-800">
+                      <Badge variant="secondary" className="ml-1">
                         {parent.threadReplies.length}
-                      </span>
+                      </Badge>
                     )}
                   </Button>
                 </div>
 
-                {/* Reply Form Collapse */}
                 {replyingParentId === parent.id && (
                   <div className="relative ml-12 flex flex-col gap-2 pt-2">
                     <div className="relative flex w-full items-center gap-2">
@@ -1307,16 +1319,15 @@ export function CommentsFeed({
                         users={users}
                         workItems={workItems}
                         position="top"
-                        className="flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs text-zinc-900 focus:border-blue-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
                       />
                       <Button
                         size="sm"
                         onClick={() =>
                           handleReplySubmit(parent.id, parent.work_item_id)
                         }
-                        className="h-8 bg-blue-600 px-3 text-white hover:bg-blue-700"
                       >
-                        <Send className="mr-1 h-3 w-3" /> Post
+                        <Send className="size-3" />
+                        Post
                       </Button>
                     </div>
                   </div>
@@ -1327,31 +1338,33 @@ export function CommentsFeed({
         )}
       </div>
 
-      {/* Inline Comment Box for specific Work Item */}
       {workItemId && (
-        <Card className="border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-          <CardContent className="space-y-4 p-4">
-            <h4 className="flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-              <Plus className="h-4 w-4 text-blue-600" />
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Plus className="text-primary size-4" />
               Add to discussion
-            </h4>
+            </CardTitle>
+            <CardDescription>
+              Use @ to mention someone or # to link a work item.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <AutocompleteInput
               as="textarea"
               textareaRef={newCommentRef}
               value={newContent}
               onChange={setNewContent}
-              placeholder="Share your thoughts, feedback, or update... Use @ to mention someone, # to link a work item."
+              placeholder="Share your thoughts, feedback, or update..."
               users={users}
               workItems={workItems}
               rows={3}
               position="bottom"
-              className="w-full rounded-lg border border-zinc-200 bg-zinc-50/50 p-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:bg-zinc-900"
             />
             <div className="flex justify-end">
               <Button
                 onClick={() => handleCreateComment()}
                 disabled={isSubmitting || !newContent.trim()}
-                className="bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
               >
                 {isSubmitting ? 'Posting...' : 'Post Comment'}
               </Button>
@@ -1360,58 +1373,47 @@ export function CommentsFeed({
         </Card>
       )}
 
-      {/* New Comment Modal */}
       <Dialog open={showNewCommentModal} onOpenChange={setShowNewCommentModal}>
         <DialogContent className="sm:max-w-125">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg font-bold">
-              <MessageSquareText className="h-5 w-5 text-blue-600" />
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquareText className="text-primary size-5" />
               Post New Comment
             </DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleCreateComment} className="space-y-4 pt-2">
-            <div>
-              <label
-                htmlFor="new-comment-work-item-select"
-                className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300"
-              >
+            <div className="space-y-2">
+              <Label htmlFor="new-comment-work-item-select">
                 Select Work Item
-              </label>
-              <select
-                id="new-comment-work-item-select"
-                value={newWorkItemId}
-                onChange={(e) => setNewWorkItemId(e.target.value)}
-                className="w-full rounded-lg border border-zinc-200 bg-white p-2.5 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
-                required
-              >
-                {workItems.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    [{item.key}] {item.title}
-                  </option>
-                ))}
-              </select>
+              </Label>
+              <Select value={newWorkItemId} onValueChange={setNewWorkItemId}>
+                <SelectTrigger id="new-comment-work-item-select">
+                  <SelectValue placeholder="Choose a work item" />
+                </SelectTrigger>
+                <SelectContent>
+                  {workItems.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      [{item.key}] {item.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <div>
-              <label
-                htmlFor="new-comment-content-textarea"
-                className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300"
-              >
-                Comment Text
-              </label>
+            <div className="space-y-2">
+              <Label htmlFor="new-comment-content-textarea">Comment Text</Label>
               <AutocompleteInput
                 id="new-comment-content-textarea"
                 as="textarea"
                 textareaRef={newCommentRef}
                 value={newContent}
                 onChange={setNewContent}
-                placeholder="Share your thoughts, feedback, or update... Use @ to mention someone, # to link a work item."
+                placeholder="Share your thoughts, feedback, or update..."
                 users={users}
                 workItems={workItems}
                 rows={4}
                 position="bottom"
-                className="w-full rounded-lg border border-zinc-200 bg-white p-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
               />
             </div>
 
@@ -1419,14 +1421,13 @@ export function CommentsFeed({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowNewCommentModal(true)}
+                onClick={() => setShowNewCommentModal(false)}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting || !newContent.trim()}
-                className="bg-blue-600 text-white hover:bg-blue-700"
               >
                 {isSubmitting ? 'Posting...' : 'Post Comment'}
               </Button>

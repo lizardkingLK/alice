@@ -12,6 +12,11 @@ export interface WorkItemWorkspaceProps {
   limit: number;
   totalPages: number;
   search: string;
+  projectFilter: string;
+  typeFilter: string;
+  assigneeFilter: string;
+  /** When set, list is scoped to this project and create/edit locks project. */
+  lockedProjectId?: string;
 }
 
 export default function WorkItemsWorkspace(
