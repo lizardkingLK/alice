@@ -11,7 +11,10 @@ function createSprintFromBacklog(sprintName: string, goal: string) {
   cy.get('button#sprint-project').should('be.visible').click();
 
   // Select the AlicePlatform project explicitly to align with the work item project
-  cy.get('[role="option"]').contains('AlicePlatform').should('be.visible').click();
+  cy.get('[role="option"]')
+    .contains('AlicePlatform')
+    .should('be.visible')
+    .click();
 
   cy.get('input#sprint-name').first().type(sprintName, { delay: 30 });
   cy.get('textarea#sprint-goal').first().type(goal, { delay: 30 });
@@ -44,11 +47,17 @@ function createWorkItemFromBacklog(title: string) {
 
   // Select AlicePlatform project explicitly
   cy.get('button#project_id').first().click();
-  cy.get('[role="option"]').contains('AlicePlatform').should('be.visible').click();
+  cy.get('[role="option"]')
+    .contains('AlicePlatform')
+    .should('be.visible')
+    .click();
 
   // Select type (click trigger and select "Task")
   cy.get('button#type').first().click();
-  cy.get('[role="option"]:not([data-disabled])').should('be.visible').contains('Task').click();
+  cy.get('[role="option"]:not([data-disabled])')
+    .should('be.visible')
+    .contains('Task')
+    .click();
 
   // Enter due date
   const today = new Date().toISOString().split('T')[0]!;
@@ -56,7 +65,10 @@ function createWorkItemFromBacklog(title: string) {
 
   // Select assignee (click trigger and select first enabled option)
   cy.get('button#assignee_id').first().click();
-  cy.get('[role="option"]:not([data-disabled])').should('be.visible').first().click();
+  cy.get('[role="option"]:not([data-disabled])')
+    .should('be.visible')
+    .first()
+    .click();
 
   // Submit the form
   cy.get('form').first().submit();

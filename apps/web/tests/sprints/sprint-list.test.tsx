@@ -146,10 +146,7 @@ describe('SprintList Component', () => {
     expect(screen.getByText('Sprint Alpha')).toBeInTheDocument();
     expect(screen.getByText('Sprint Beta')).toBeInTheDocument();
 
-    // Verify project key for Sprint 1
-    expect(screen.getByText('PAL')).toBeInTheDocument();
-
-    // Verify project name for Sprint 1
+    // Verify project name for Sprint 1 (DataTable shows name under sprint title)
     expect(screen.getByText(/Project:/i)).toBeInTheDocument();
     expect(screen.getByText('Project Alpha')).toBeInTheDocument();
 

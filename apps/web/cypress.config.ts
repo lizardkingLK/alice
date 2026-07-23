@@ -1,5 +1,9 @@
 import { defineConfig } from 'cypress';
-import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js';
+import {
+  createClient,
+  type SupabaseClient,
+  type User,
+} from '@supabase/supabase-js';
 import fs from 'node:fs';
 import path from 'node:path';
 

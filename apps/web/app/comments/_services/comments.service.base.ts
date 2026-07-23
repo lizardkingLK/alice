@@ -61,7 +61,9 @@ const COMMENT_SELECT_FIELDS = `
 function mapDbCommentToCommentItem(data: unknown): CommentItem {
   const raw = data as DbCommentRaw;
   const projectKey = raw.work_item?.project?.key || 'ITEM';
-  const computedKey = raw.work_item ? `${projectKey}-${raw.work_item.id.slice(0, 4).toUpperCase()}` : '';
+  const computedKey = raw.work_item
+    ? `${projectKey}-${raw.work_item.id.slice(0, 4).toUpperCase()}`
+    : '';
 
   return {
     ...raw,
@@ -74,7 +76,9 @@ function mapDbCommentToCommentItem(data: unknown): CommentItem {
   } as CommentItem;
 }
 
-async function createCommentDirect(input: CreateCommentInput): Promise<CommentItem> {
+async function createCommentDirect(
+  input: CreateCommentInput
+): Promise<CommentItem> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from('comments')
@@ -96,7 +100,10 @@ async function createCommentDirect(input: CreateCommentInput): Promise<CommentIt
   return mapDbCommentToCommentItem(data);
 }
 
-async function updateCommentDirect(id: string, content: string): Promise<CommentItem> {
+async function updateCommentDirect(
+  id: string,
+  content: string
+): Promise<CommentItem> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from('comments')
@@ -142,7 +149,10 @@ export function createCommentsService(
         const data = await apiFetch<{ comments: CommentItem[] }>(apiComments);
         return data.comments;
       } catch (error) {
-        console.warn('API getCommentsList failed, using direct client fallback:', error);
+        console.warn(
+          'API getCommentsList failed, using direct client fallback:',
+          error
+        );
         const supabase = createClient();
         const { data } = await supabase
           .from('comments')
@@ -160,20 +170,29 @@ export function createCommentsService(
         });
         return data.comment;
       } catch (error) {
-        console.warn('API createComment failed, using direct client fallback:', error);
+        console.warn(
+          'API createComment failed, using direct client fallback:',
+          error
+        );
         return await createCommentDirect(input);
       }
     },
 
     async updateComment(id: string, content: string): Promise<CommentItem> {
       try {
-        const data = await apiFetch<{ comment: CommentItem }>(`${apiComments}/${id}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ content }),
-        });
+        const data = await apiFetch<{ comment: CommentItem }>(
+          `${apiComments}/${id}`,
+          {
+            method: 'PATCH',
+            body: JSON.stringify({ content }),
+          }
+        );
         return data.comment;
       } catch (error) {
-        console.warn('API updateComment failed, using direct client fallback:', error);
+        console.warn(
+          'API updateComment failed, using direct client fallback:',
+          error
+        );
         return await updateCommentDirect(id, content);
       }
     },
@@ -184,7 +203,10 @@ export function createCommentsService(
           method: 'DELETE',
         });
       } catch (error) {
-        console.warn('API archiveComment failed, using direct client fallback:', error);
+        console.warn(
+          'API archiveComment failed, using direct client fallback:',
+          error
+        );
         await archiveCommentDirect(id);
       }
     },

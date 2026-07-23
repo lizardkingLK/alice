@@ -4,7 +4,10 @@ import { CommentsFeed } from '@/app/comments/_components/comments-feed';
 import type { CommentItem } from '@/app/comments/_services/comments.service';
 
 vi.mock('@/app/comments/_services/comments.service', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/app/comments/_services/comments.service')>();
+  const actual =
+    await importOriginal<
+      typeof import('@/app/comments/_services/comments.service')
+    >();
   return {
     ...actual,
     createComment: vi.fn(),
@@ -92,27 +95,43 @@ describe('CommentsFeed Component', () => {
   });
 
   it('renders stats bar, search input, and comment items', () => {
-    render(<CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />);
+    render(
+      <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
+    );
 
     expect(screen.getByText('Discussions & Comments')).toBeInTheDocument();
-    expect(screen.getByText('Security audit completed for the auth module.')).toBeInTheDocument();
-    expect(screen.getByText('Navigation CSS alignment fix is ready for review.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Security audit completed for the auth module.')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Navigation CSS alignment fix is ready for review.')
+    ).toBeInTheDocument();
     expect(screen.getByText('Alice Admin')).toBeInTheDocument();
     expect(screen.getByText('Bob Developer')).toBeInTheDocument();
   });
 
   it('filters comments based on search query', () => {
-    render(<CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />);
+    render(
+      <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
+    );
 
-    const searchInput = screen.getByPlaceholderText(/Search comments by text, author, or issue key/i);
+    const searchInput = screen.getByPlaceholderText(
+      /Search comments by text, author, or issue key/i
+    );
     fireEvent.change(searchInput, { target: { value: 'Security audit' } });
 
-    expect(screen.getByText('Security audit completed for the auth module.')).toBeInTheDocument();
-    expect(screen.queryByText('Navigation CSS alignment fix is ready for review.')).not.toBeInTheDocument();
+    expect(
+      screen.getByText('Security audit completed for the auth module.')
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('Navigation CSS alignment fix is ready for review.')
+    ).not.toBeInTheDocument();
   });
 
   it('opens new comment dialog when New Comment button is clicked', () => {
-    render(<CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />);
+    render(
+      <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
+    );
 
     const newCommentBtn = screen.getByRole('button', { name: /New Comment/i });
     fireEvent.click(newCommentBtn);
@@ -122,10 +141,16 @@ describe('CommentsFeed Component', () => {
   });
 
   it('shows no comments message when search returns no matches', () => {
-    render(<CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />);
+    render(
+      <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
+    );
 
-    const searchInput = screen.getByPlaceholderText(/Search comments by text, author, or issue key/i);
-    fireEvent.change(searchInput, { target: { value: 'Nonexistent text search query' } });
+    const searchInput = screen.getByPlaceholderText(
+      /Search comments by text, author, or issue key/i
+    );
+    fireEvent.change(searchInput, {
+      target: { value: 'Nonexistent text search query' },
+    });
 
     expect(screen.getByText('No comments found')).toBeInTheDocument();
   });
@@ -137,7 +162,12 @@ describe('CommentsFeed Component', () => {
       content: 'Hey @[Alice Admin](user-admin-1) please check this.',
     };
 
-    render(<CommentsFeed initialComments={[commentWithMention]} workItems={mockWorkItems} />);
+    render(
+      <CommentsFeed
+        initialComments={[commentWithMention]}
+        workItems={mockWorkItems}
+      />
+    );
     expect(screen.getByText('@Alice Admin')).toBeInTheDocument();
     expect(screen.getByText(/please check this/)).toBeInTheDocument();
   });
@@ -149,7 +179,12 @@ describe('CommentsFeed Component', () => {
       content: 'Please refer to #[AL-1](wi-1) for details.',
     };
 
-    render(<CommentsFeed initialComments={[commentWithIssue]} workItems={mockWorkItems} />);
+    render(
+      <CommentsFeed
+        initialComments={[commentWithIssue]}
+        workItems={mockWorkItems}
+      />
+    );
     const link = screen.getByRole('link', { name: '#AL-1' });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute('href', '/work-items');
@@ -166,7 +201,9 @@ describe('CommentsFeed Component', () => {
     );
 
     expect(screen.getByText('Discussion (2)')).toBeInTheDocument();
-    expect(screen.queryByText('Discussions & Comments')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Discussions & Comments')
+    ).not.toBeInTheDocument();
     expect(screen.queryByText('New Comment')).not.toBeInTheDocument();
     expect(screen.getByText('Add to discussion')).toBeInTheDocument();
   });

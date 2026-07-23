@@ -42,7 +42,6 @@ import { createClient } from '@/lib/supabase/client';
 import { CommentsFeed } from '@/app/comments/_components/comments-feed';
 import { CommentItem } from '@/app/comments/_services/comments.service';
 
-
 const PLACEHOLDER_ATTACHMENTS = [
   {
     id: '1',
@@ -152,11 +151,13 @@ export default function WorkItemDetails({
         const supabase = createClient();
         const { data, error } = await supabase
           .from('comments')
-          .select(`
+          .select(
+            `
             *,
             author:users!comments_author_id_fkey(id, name, email, role, profile_picture),
             work_item:work_items(id, title, type, project:projects(id, name, key))
-          `)
+          `
+          )
           .eq('work_item_id', workItem.id)
           .order('created_at', { ascending: false });
 
@@ -424,8 +425,8 @@ export default function WorkItemDetails({
           <section className="space-y-4 pt-2">
             {loadingComments ? (
               <div className="space-y-3">
-                <div className="h-4 w-32 bg-zinc-200 animate-pulse rounded dark:bg-zinc-800" />
-                <div className="h-20 w-full bg-zinc-200 animate-pulse rounded dark:bg-zinc-800" />
+                <div className="h-4 w-32 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+                <div className="h-20 w-full animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
               </div>
             ) : (
               <CommentsFeed
