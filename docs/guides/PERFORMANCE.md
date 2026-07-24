@@ -2,11 +2,11 @@
 
 How Alice keeps dashboard pages fast, what has already been optimized, and the roadmap for further wins.
 
-| Field        | Value                                        |
-| ------------ | -------------------------------------------- |
-| Status       | **Living**                                   |
-| Last updated | 2026-07-23 (M6 infra + M4.3 discussion SSR)  |
-| Scope        | `apps/web` RSC data loading, `apps/api` auth |
+| Field        | Value                                             |
+| ------------ | ------------------------------------------------- |
+| Status       | **Living**                                        |
+| Last updated | 2026-07-24 (detail/board/profile Suspense + M4.2) |
+| Scope        | `apps/web` RSC data loading, `apps/api` auth      |
 
 Related:
 
@@ -170,8 +170,7 @@ Dashboard list pages no longer block the entire RSC on Supabase reads. Each rout
 - **Pattern:** sync `page.tsx` → `DashboardShell` → `<Suspense fallback={<RegistryPageSkeleton />}>` → async `*Data` server component (owns `searchParams` + `Promise.all` fetches).
 - **Shared skeleton:** `apps/web/components/registry-page-skeleton.tsx` — mirrors search bar, optional tabs, card header, table rows, and pagination placeholders.
 - **Client navigations:** route-level `loading.tsx` reuses the same skeleton inside `DashboardShell` for instant feedback.
-- **Routes shipped:** `/work-items`, `/users`, `/projects`, `/manager`, `/sprints`, `/backlog`.
-- **Not yet:** detail pages (`/projects/[id]`, `/work-items/[id]`).
+- **Routes shipped:** `/work-items`, `/users`, `/projects`, `/manager`, `/sprints`, `/backlog`, `/board`, `/profile`, `/projects/[id]`, `/work-items/[id]`.
 
 ### 2.7 Short-TTL dropdown cache (M5)
 
@@ -233,6 +232,29 @@ Production stack colocated in APAC (2026-07-23):
 
 Serverless functions no longer execute in US-East while the database runs in Sydney — RSC/API Supabase reads use Singapore → Sydney instead of New York → Sydney.
 
+### 2.11 Project workspace loader (M4.2)
+
+`/projects/[id]` fans out to details, members, users dropdown, and project-scoped work items. Loading is centralized and streamed:
+
+| Piece              | Location                                                              |
+| ------------------ | --------------------------------------------------------------------- |
+| Workspace loader   | `apps/web/app/projects/_services/project-workspace.server.ts`         |
+| Async RSC boundary | `apps/web/app/projects/[id]/_components/project-details-data.tsx`     |
+| Skeleton           | `apps/web/app/projects/[id]/_components/project-details-skeleton.tsx` |
+| Route shell        | `apps/web/app/projects/[id]/page.tsx` + `loading.tsx`                 |
+
+### 2.12 Detail / board / profile streaming (M3 follow-on)
+
+Same shell-first Suspense pattern applied to remaining authenticated surfaces (2026-07-24):
+
+| Route              | Data component               | Skeleton                         |
+| ------------------ | ---------------------------- | -------------------------------- |
+| `/work-items/[id]` | `work-item-details-data.tsx` | `work-item-details-skeleton.tsx` |
+| `/board`           | `board-data.tsx`             | `board-page-skeleton.tsx`        |
+| `/profile`         | `profile-data.tsx`           | `profile-page-skeleton.tsx`      |
+
+With these, the original medium-wins roadmap is **complete for existing product surfaces**. New features (e.g. richer board filters, discussion boards) should follow the same patterns in §3.
+
 ---
 
 ## 3. Contributor patterns
@@ -252,40 +274,43 @@ Follow these when adding or editing server-rendered pages:
 
 Targeting sub-1.5s. Ordered by impact-to-effort.
 
-| ID     | Work                                                                                                                          | Effort | Risk    | Expected impact                           | Status                   |
-| ------ | ----------------------------------------------------------------------------------------------------------------------------- | ------ | ------- | ----------------------------------------- | ------------------------ |
-| **M1** | Direct Supabase reads in RSC for GET/list pages — drop the `web → api` hop for reads; keep API for mutations/admin.           | M–L    | Medium  | 40–60% of remaining latency on read pages | ✅ Shipped (§2.4)        |
-| **M2** | Slim `requireApiAuth` — move profile auto-provisioning to login/signup/invite; keep JWT verify off the hot DB path.           | S      | Low–Med | −1 DB round trip per API call             | ✅ Shipped (§2.5)        |
-| **M3** | Suspense streaming — render the shell immediately, stream tables via `<Suspense>` + `loading.tsx`.                            | M      | Low     | Large perceived speedup                   | ✅ Shipped (list routes) |
-| **M4** | Batch "workspace" loaders — see §5 (M4.1 backlog + M4.3 discussion shipped)                                                   | M      | Low     | Medium on high fan-out pages              | Partial (§5)             |
-| **M5** | Short-TTL caching for stable dropdown data (`getUserList`, `getProjectList`) via `unstable_cache` + `updateTag` on mutations. | S–M    | Low–Med | Medium                                    | ✅ Shipped (§2.7)        |
-| **M6** | Infra alignment — same Vercel region for web/api/Supabase, verify prod API URL path, warm cold starts if needed.              | S      | Low     | Medium (spiky)                            | ✅ Shipped (§2.10)       |
+| ID     | Work                                                                                                                          | Effort | Risk    | Expected impact                           | Status                       |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------- | ------ | ------- | ----------------------------------------- | ---------------------------- |
+| **M1** | Direct Supabase reads in RSC for GET/list pages — drop the `web → api` hop for reads; keep API for mutations/admin.           | M–L    | Medium  | 40–60% of remaining latency on read pages | ✅ Shipped (§2.4)            |
+| **M2** | Slim `requireApiAuth` — move profile auto-provisioning to login/signup/invite; keep JWT verify off the hot DB path.           | S      | Low–Med | −1 DB round trip per API call             | ✅ Shipped (§2.5)            |
+| **M3** | Suspense streaming — render the shell immediately, stream tables via `<Suspense>` + `loading.tsx`.                            | M      | Low     | Large perceived speedup                   | ✅ Shipped (lists + details) |
+| **M4** | Batch "workspace" loaders — see §5                                                                                            | M      | Low     | Medium on high fan-out pages              | ✅ Shipped (§5)              |
+| **M5** | Short-TTL caching for stable dropdown data (`getUserList`, `getProjectList`) via `unstable_cache` + `updateTag` on mutations. | S–M    | Low–Med | Medium                                    | ✅ Shipped (§2.7)            |
+| **M6** | Infra alignment — same Vercel region for web/api/Supabase, verify prod API URL path, warm cold starts if needed.              | S      | Low     | Medium (spiky)                            | ✅ Shipped (§2.10)           |
+
+**Roadmap complete for existing features (2026-07-24).** Optional hygiene remains in §6 (deprecate unused API GETs, shared paginated-list helper). New surfaces should adopt §3 patterns as they land.
 
 **RLS reminder:** M1 reads run with the `authenticated` role and RLS unenforced. Before enabling RLS, add SELECT policies for `work_items`, `projects`, `users`, `sprints`, `project_members`, `teams`, and `team_members`. Dropdown cache (§2.7) uses the **service-role** client inside `unstable_cache` only.
 
 ---
 
-## 5. M4 — narrowed plan (deferred)
+## 5. M4 — workspace loaders (shipped)
 
-Classic M4 (“one Express workspace GET”) is largely obsolete after M1: list pages already do direct Supabase + `Promise.all`. Remaining value is **named RSC workspace loaders** for high fan-out surfaces — not re-batching list routes.
+Classic M4 (“one Express workspace GET”) was superseded by named RSC loaders after M1.
 
-### Audit (2026-07-23)
+### Audit
 
-| Route                                  | Parallel reads                           | Batching ROI | Notes                                                          |
-| -------------------------------------- | ---------------------------------------- | ------------ | -------------------------------------------------------------- |
-| `/backlog`                             | 4 — projects, users, work items, sprints | **Shipped**  | `getBacklogWorkspace()` + M3 Suspense (2026-07-23)             |
-| `/manager`                             | 4                                        | Low–Med      | Dropdown caching (M5) helps more                               |
-| `/work-items`, `/projects`, `/sprints` | 3                                        | Low          | M1 + Promise.all + M3 already                                  |
-| `/projects/[id]`                       | 3                                        | Med          | Optional `getProjectWorkspace(id)` later                       |
-| `/board`                               | 1                                        | None         | No fan-out yet                                                 |
-| Comments / discussions                 | —                                        | **Shipped**  | `getWorkItemDiscussion(id)` on `/work-items/[id]` (2026-07-23) |
+| Route                                  | Parallel reads                           | Status      | Notes                                              |
+| -------------------------------------- | ---------------------------------------- | ----------- | -------------------------------------------------- |
+| `/backlog`                             | 4 — projects, users, work items, sprints | ✅ Shipped  | `getBacklogWorkspace()` + Suspense                 |
+| `/projects/[id]`                       | 4 — details, members, users, work items  | ✅ Shipped  | `getProjectWorkspace(id)` + Suspense (§2.11)       |
+| `/work-items/[id]`                     | 2 — item + discussion                    | ✅ Shipped  | `getWorkItemDiscussion` + Suspense (§2.9 / §2.12)  |
+| `/manager`                             | 4                                        | N/A         | Dropdown caching (M5) + list Suspense sufficient   |
+| `/work-items`, `/projects`, `/sprints` | 3                                        | N/A         | M1 + Promise.all + M3                              |
+| `/board`                               | 1                                        | ✅ Streamed | Suspense + skeleton (§2.12); no multi-read fan-out |
+| `/profile`                             | auth + teams + worked-on                 | ✅ Streamed | Suspense + skeleton (§2.12)                        |
 
-### When to implement
+### Delivered
 
-1. ~~**M4.1** — `getBacklogWorkspace()` when next editing `/backlog` (optionally add M3 Suspense then).~~ ✅ Shipped — `apps/web/app/backlog/_services/backlog.service.server.ts`, `backlog-data.tsx`, `backlog-page-skeleton.tsx`.
-2. **M4.2** — `getProjectWorkspace(id)` optional readability win.
-3. ~~**M4.3** — `getWorkItemDiscussion(id)` when comments/discussions merge — one reader, not N client GETs.~~ ✅ Shipped — `apps/web/app/comments/_services/comments.service.server.ts`, wired in `/work-items/[id]/page.tsx`.
-4. **Out of scope** — re-batching already-optimized list pages; new Express batch routers for web-only reads.
+1. ~~**M4.1** — `getBacklogWorkspace()`~~ ✅
+2. ~~**M4.2** — `getProjectWorkspace(id)`~~ ✅ — `apps/web/app/projects/_services/project-workspace.server.ts`
+3. ~~**M4.3** — `getWorkItemDiscussion(id)`~~ ✅
+4. **Out of scope (kept)** — re-batching already-optimized list pages; new Express batch routers for web-only reads.
 
 ---
 
