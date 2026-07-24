@@ -54,3 +54,23 @@ export const getInitials = (name: string | null | undefined): string => {
     .map((part) => part[0]?.toUpperCase() ?? '')
     .join('');
 };
+
+const UUID_SEGMENT =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** First 8 chars of a UUID (or any id), uppercased — breadcrumb / list key display. */
+export function toShortId(id: string): string {
+  return id.slice(0, 8).toUpperCase();
+}
+
+/** True when a path segment looks like a UUID (used to shorten breadcrumb labels). */
+export function isUuidSegment(segment: string): boolean {
+  return UUID_SEGMENT.test(segment);
+}
+
+/**
+ * Stable string ids for skeleton maps (avoids React array-index keys / S6479).
+ */
+export function skeletonKeys(prefix: string, count: number): string[] {
+  return Array.from({ length: count }, (_, i) => `${prefix}-${i}`);
+}

@@ -59,7 +59,12 @@ import { Constants } from '@repo/types/database';
 /** Match DialogContent `duration-200` so edit UI doesn't flash to create while closing. */
 const DIALOG_CLOSE_MS = 200;
 
-const WORK_ITEM_FILTER_PARAMS = ['search', 'project', 'type', 'assignee'] as const;
+const WORK_ITEM_FILTER_PARAMS = [
+  'search',
+  'project',
+  'type',
+  'assignee',
+] as const;
 
 type WorkItemsTableProps = WorkItemWorkspaceProps & {
   currentUserId?: string | null;

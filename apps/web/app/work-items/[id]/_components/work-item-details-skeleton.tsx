@@ -1,6 +1,6 @@
 import { Card, CardContent } from '@repo/ui/components/ui/card';
 import { Skeleton } from '@repo/ui/components/ui/skeleton';
-import { skeletonKeys } from '@/components/skeleton-keys';
+import { skeletonKeys } from '@/app/_shared/utility';
 
 export function WorkItemDetailsSkeleton() {
   return (

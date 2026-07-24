@@ -74,14 +74,16 @@ export const workItemCoreObject = z.object({
       z.uuid({ message: 'Please select a valid sprint' }).nullable()
     )
     .optional(),
-  story_points: z.preprocess(
-    stringToNumberOrNull,
-    z
-      .number()
-      .int({ message: 'Story points must be a whole number' })
-      .min(0, { message: 'Story points must be at least 0' })
-      .nullable()
-  ).optional(),
+  story_points: z
+    .preprocess(
+      stringToNumberOrNull,
+      z
+        .number()
+        .int({ message: 'Story points must be a whole number' })
+        .min(0, { message: 'Story points must be at least 0' })
+        .nullable()
+    )
+    .optional(),
 });
 
 export const createUpdateWorkItemBodySchema = workItemCoreObject.refine(

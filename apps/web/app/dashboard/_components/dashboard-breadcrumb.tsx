@@ -11,6 +11,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@repo/ui/components/ui/breadcrumb';
+import { isUuidSegment, toShortId } from '@/app/_shared/utility';
 
 export type DashboardBreadcrumbOverride = {
   label: string;
@@ -41,6 +42,17 @@ function humanizeSegment(segment: string): string {
     .join(' ');
 }
 
+/**
+ * Path UUIDs use the short-id label so `loading.tsx` (no overrides) and the
+ * loaded page never flash full id → short id.
+ */
+function labelForSegment(segment: string): string {
+  if (isUuidSegment(segment)) {
+    return toShortId(segment);
+  }
+  return humanizeSegment(segment);
+}
+
 function buildBreadcrumbItems(
   pathname: string,
   overrides: DashboardBreadcrumbOverride[]
@@ -65,7 +77,7 @@ function buildBreadcrumbItems(
       overrideByUrl.get(accumulated) ?? overrideBySegment.get(segment);
 
     items.push({
-      label: override?.label ?? humanizeSegment(segment),
+      label: override?.label ?? labelForSegment(segment),
       url: override?.url ?? accumulated,
     });
   }

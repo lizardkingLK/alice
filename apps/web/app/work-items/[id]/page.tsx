@@ -2,12 +2,13 @@ import { Suspense } from 'react';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { WorkItemDetailsData } from '@/app/work-items/[id]/_components/work-item-details-data';
 import { WorkItemDetailsSkeleton } from '@/app/work-items/[id]/_components/work-item-details-skeleton';
+import { toShortId } from '@/app/_shared/utility';
 
 export default async function WorkItemPage({
   params,
 }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = await params;
-  const shortId = id.slice(0, 8).toUpperCase();
+  const shortId = toShortId(id);
 
   return (
     <DashboardShell

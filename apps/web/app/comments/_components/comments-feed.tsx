@@ -62,10 +62,7 @@ import {
   AlertTriangle,
   Loader2,
 } from '@repo/ui/lib/icons';
-import {
-  CommentItem,
-  CommentUser,
-} from '../_services/comments.service';
+import { CommentItem, CommentUser } from '../_services/comments.service';
 import {
   createCommentAction,
   updateCommentAction,
@@ -528,7 +525,9 @@ export function CommentsFeed({
   const [editContent, setEditContent] = useState('');
 
   // Delete Confirmation State
-  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(
+    null
+  );
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Users for mentions
@@ -1271,7 +1270,10 @@ export function CommentsFeed({
                                   // Replace @[Name](userId) with @Name, and #[KEY](id) with #KEY
                                   const rawText = parent.content
                                     .replace(/@\[([^\]]+)\]\(([^)]+)\)/g, '@$1')
-                                    .replace(/#\[([^\]]+)\]\(([^)]+)\)/g, '#$1');
+                                    .replace(
+                                      /#\[([^\]]+)\]\(([^)]+)\)/g,
+                                      '#$1'
+                                    );
                                   setEditContent(rawText);
                                 }}
                                 className="gap-2"
@@ -1281,18 +1283,18 @@ export function CommentsFeed({
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleArchive(parent.id)}
-                                className="text-amber-600 focus:text-amber-600 dark:text-amber-400 gap-2"
+                                className="gap-2 text-amber-600 focus:text-amber-600 dark:text-amber-400"
                               >
                                 <Archive className="size-3.5" />
                                 Archive
                               </DropdownMenuItem>
                             </>
                           )}
-                           {parent.status === 'archived' && (
+                          {parent.status === 'archived' && (
                             <>
                               <DropdownMenuItem
                                 onClick={() => handleRestore(parent.id)}
-                                className="text-emerald-600 focus:text-emerald-600 dark:text-emerald-400 gap-2"
+                                className="gap-2 text-emerald-600 focus:text-emerald-600 dark:text-emerald-400"
                               >
                                 <RotateCcw className="size-3.5" />
                                 Restore
@@ -1405,8 +1407,14 @@ export function CommentsFeed({
                                   onClick={() => {
                                     setEditingCommentId(reply.id);
                                     const rawText = reply.content
-                                      .replace(/@\[([^\]]+)\]\(([^)]+)\)/g, '@$1')
-                                      .replace(/#\[([^\]]+)\]\(([^)]+)\)/g, '#$1');
+                                      .replace(
+                                        /@\[([^\]]+)\]\(([^)]+)\)/g,
+                                        '@$1'
+                                      )
+                                      .replace(
+                                        /#\[([^\]]+)\]\(([^)]+)\)/g,
+                                        '#$1'
+                                      );
                                     setEditContent(rawText);
                                   }}
                                   className="gap-2 text-xs"
@@ -1415,7 +1423,9 @@ export function CommentsFeed({
                                   Edit
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() => handleDeletePermanent(reply.id)}
+                                  onClick={() =>
+                                    handleDeletePermanent(reply.id)
+                                  }
                                   className="text-destructive focus:text-destructive gap-2 text-xs"
                                 >
                                   <Trash2 className="size-3" />
@@ -1454,7 +1464,7 @@ export function CommentsFeed({
                             </div>
                           </div>
                         ) : (
-                          <p className="text-muted-foreground text-xs pl-1">
+                          <p className="text-muted-foreground pl-1 text-xs">
                             {renderCommentContent(reply.content)}
                           </p>
                         )}
@@ -1629,7 +1639,9 @@ export function CommentsFeed({
               Confirm Delete
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to permanently delete this comment? This action cannot be undone and will remove the comment record from the database.
+              Are you sure you want to permanently delete this comment? This
+              action cannot be undone and will remove the comment record from
+              the database.
             </DialogDescription>
           </DialogHeader>
 
@@ -1650,7 +1662,7 @@ export function CommentsFeed({
             >
               {isDeleting ? (
                 <>
-                  <Loader2 className="animate-spin mr-1.5 size-4" />
+                  <Loader2 className="mr-1.5 size-4 animate-spin" />
                   Deleting...
                 </>
               ) : (

@@ -2,11 +2,11 @@
 
 How Alice keeps dashboard pages fast, what has already been optimized, and the roadmap for further wins.
 
-| Field        | Value                                             |
-| ------------ | ------------------------------------------------- |
-| Status       | **Living**                                        |
-| Last updated | 2026-07-24 (detail/board/profile Suspense + M4.2) |
-| Scope        | `apps/web` RSC data loading, `apps/api` auth      |
+| Field        | Value                                        |
+| ------------ | -------------------------------------------- |
+| Status       | **Living**                                   |
+| Last updated | 2026-07-24 (route-group Suspense isolation)  |
+| Scope        | `apps/web` RSC data loading, `apps/api` auth |
 
 Related:
 
@@ -172,6 +172,8 @@ Dashboard list pages no longer block the entire RSC on Supabase reads. Each rout
 - **Client navigations:** route-level `loading.tsx` reuses the same skeleton inside `DashboardShell` for instant feedback.
 - **Routes shipped:** `/work-items`, `/users`, `/projects`, `/manager`, `/sprints`, `/backlog`, `/board`, `/profile`, `/projects/[id]`, `/work-items/[id]`.
 
+**Important:** a parent `loading.tsx` also wraps **nested child segments** under that folder. See §2.13 before adding list+detail pairs under one directory.
+
 ### 2.7 Short-TTL dropdown cache (M5)
 
 Form dropdowns (`getUserList`, `getProjectList`) are shared across many pages and change infrequently. They now use Next.js `unstable_cache` with a **60s** safety-net TTL and **tag** invalidation on mutations.
@@ -255,6 +257,65 @@ Same shell-first Suspense pattern applied to remaining authenticated surfaces (2
 
 With these, the original medium-wins roadmap is **complete for existing product surfaces**. New features (e.g. richer board filters, discussion boards) should follow the same patterns in §3.
 
+### 2.13 Isolating Suspense boundaries (`loading.tsx` + route groups)
+
+#### Why this matters
+
+In the App Router, `loading.tsx` in a folder wraps that folder’s `page.js` **and nested children** in a Suspense boundary. Instant client navigations therefore can flash the **parent** skeleton before (or instead of briefly alongside) the **child** skeleton.
+
+Symptom we hit: click a row on `/work-items` → briefly see the **registry/table** skeleton (`work-items/loading.tsx`), then the **detail** skeleton (`work-items/[id]/loading.tsx` / page Suspense). Same class of bug exists for projects list → project detail.
+
+#### Inventory (2026-07-24)
+
+| Parent `loading.tsx`            | Nested page route?            | Awkward dual-skeleton risk                     | Status                  |
+| ------------------------------- | ----------------------------- | ---------------------------------------------- | ----------------------- |
+| `work-items/(list)/loading.tsx` | Sibling of `[id]`, not parent | Resolved — list loading no longer wraps detail | ✅ Shipped (2026-07-24) |
+| `projects/(list)/loading.tsx`   | Sibling of `[id]`, not parent | Resolved — list loading no longer wraps detail | ✅ Shipped (2026-07-24) |
+| `users/loading.tsx`             | No                            | No                                             | OK                      |
+| `sprints/loading.tsx`           | No                            | No                                             | OK                      |
+| `manager/loading.tsx`           | No                            | No                                             | OK                      |
+| `backlog/loading.tsx`           | No                            | No                                             | OK                      |
+| `board/loading.tsx`             | No                            | No                                             | OK                      |
+| `profile/loading.tsx`           | No                            | No                                             | OK                      |
+| `work-items/[id]/loading.tsx`   | No (leaf)                     | No                                             | OK                      |
+| `projects/[id]/loading.tsx`     | No (leaf)                     | No                                             | OK                      |
+
+When adding nested routes under a folder that already has `loading.tsx`, re-check this table — prefer a `(list)` (or similar) route group so list loading stays a sibling of detail, not a parent.
+
+#### Fix applied: route groups (URLs unchanged)
+
+List vs detail each own their Suspense boundary:
+
+```text
+work-items/
+  layout.tsx                 # shared metadata / section wrapper
+  (list)/                    # route group — does not appear in the URL
+    page.tsx                 # /work-items
+    loading.tsx              # registry skeleton ONLY for the list
+  [id]/
+    page.tsx                 # /work-items/[id]
+    loading.tsx              # detail skeleton ONLY for the detail
+
+projects/
+  layout.tsx
+  (list)/
+    page.tsx                 # /projects
+    loading.tsx
+  [id]/
+    page.tsx                 # /projects/[id]
+    loading.tsx
+```
+
+**Why route groups (not “delete parent loading”):**
+
+- List navigations from elsewhere still get an instant `loading.tsx` fallback.
+- Detail navigations no longer inherit the list Suspense boundary.
+- Public URLs stay `/work-items` and `/work-items/[id]` — `(list)` is organizational only.
+
+**Also keep** the in-page `<Suspense>` around async `*Data` components so the shell can stream on first paint; `loading.tsx` covers **client soft navigations**, page Suspense covers **RSC streaming within the segment**.
+
+Both tracked pairs (`work-items`, `projects`) use this grouping.
+
 ---
 
 ## 3. Contributor patterns
@@ -267,6 +328,7 @@ Follow these when adding or editing server-rendered pages:
 4. **Don't fetch what SSR already has** — pass server-fetched data into client components as props rather than refetching on mount.
 5. **Prefer SSR/RSC prefetch** over client-side fetching for initial page data (see workspace rules).
 6. **Dropdown lists** — use `getUserList` / `getProjectList` (cached). After mutating users or projects, call `invalidateDropdownCache(DROPDOWN_CACHE_TAGS.*)` in the Server Action (already wired for `/users` and `/projects` actions).
+7. **Nested routes + `loading.tsx`** — never leave a list `loading.tsx` as the parent of a detail segment. Use a `(list)` route group (§2.13) so list and detail Suspense boundaries stay isolated.
 
 ---
 

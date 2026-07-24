@@ -130,10 +130,7 @@ export class CommentsRepository {
   }
 
   async hardDelete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('comments')
-      .delete()
-      .eq('id', id);
+    const { error } = await supabase.from('comments').delete().eq('id', id);
 
     if (error) {
       console.error('database error hard delete comment:', error.message);
