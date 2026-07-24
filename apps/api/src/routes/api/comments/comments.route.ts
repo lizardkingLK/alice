@@ -79,11 +79,31 @@ commentsRouter.delete(
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
     try {
-      await commentsService.archiveComment(req.params.id!);
+      const permanent = req.query.permanent === 'true';
+      if (permanent) {
+        await commentsService.hardDeleteComment(req.params.id!);
+      } else {
+        await commentsService.archiveComment(req.params.id!);
+      }
       res.json({ success: true });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to archive comment';
+        error instanceof Error ? error.message : 'Failed to delete comment';
+      res.status(500).json({ error: message });
+    }
+  }
+);
+
+commentsRouter.post(
+  '/:id/restore',
+  requireApiAuth,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      await commentsService.restoreComment(req.params.id!);
+      res.json({ success: true });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to restore comment';
       res.status(500).json({ error: message });
     }
   }

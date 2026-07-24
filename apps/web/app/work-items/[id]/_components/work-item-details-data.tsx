@@ -1,6 +1,7 @@
 import WorkItemDetails from '@/app/work-items/_components/workItem-details';
 import { getWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { getWorkItemDiscussion } from '@/app/comments/_services/comments.service.server';
+import { getDbUser } from '@/lib/auth';
 
 type WorkItemDetailsDataProps = {
   readonly workItemId: string;
@@ -9,15 +10,19 @@ type WorkItemDetailsDataProps = {
 export async function WorkItemDetailsData({
   workItemId,
 }: Readonly<WorkItemDetailsDataProps>) {
-  const [workItem, initialComments] = await Promise.all([
+  const [workItem, initialComments, dbUser] = await Promise.all([
     getWorkItem(workItemId),
     getWorkItemDiscussion(workItemId),
+    getDbUser(),
   ]);
+
+  const currentUserId = dbUser?.id ?? 'user-admin-1';
 
   return (
     <WorkItemDetails
       workItemDetails={workItem}
       initialComments={initialComments}
+      currentUserId={currentUserId}
     />
   );
 }

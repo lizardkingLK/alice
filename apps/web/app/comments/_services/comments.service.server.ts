@@ -21,3 +21,8 @@ export async function getWorkItemDiscussion(
     `fetch discussion for work item ${workItemId}`
   );
 }
+
+export const createComment = service.createComment;
+export const updateComment = service.updateComment;
+export const archiveComment = service.archiveComment;
+export const restoreComment = service.restoreComment;

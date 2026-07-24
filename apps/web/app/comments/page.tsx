@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { Skeleton } from '@repo/ui/components/ui/skeleton';
 import { createClient } from '@/lib/supabase/server';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
+import { getDbUser } from '@/lib/auth';
 import { CommentsFeed } from './_components/comments-feed';
 import { CommentItem } from './_services/comments.service';
 
@@ -192,8 +193,15 @@ async function CommentsData() {
     commentsList = mockSeedComments;
   }
 
+  const dbUser = await getDbUser();
+  const currentUserId = dbUser?.id ?? 'user-admin-1';
+
   return (
-    <CommentsFeed initialComments={commentsList} workItems={workItemsList} />
+    <CommentsFeed
+      initialComments={commentsList}
+      workItems={workItemsList}
+      currentUserId={currentUserId}
+    />
   );
 }
 

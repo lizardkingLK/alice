@@ -129,9 +129,11 @@ function AttachmentCard({
 export default function WorkItemDetails({
   workItemDetails,
   initialComments = [],
+  currentUserId,
 }: Readonly<{
   workItemDetails: DbWorkItem;
   initialComments?: CommentItem[];
+  currentUserId?: string;
 }>) {
   const [workItem, setWorkItem] = useState<DbWorkItem>(workItemDetails);
   const [isEditing, setEditing] = useState(false);
@@ -412,6 +414,7 @@ export default function WorkItemDetails({
               initialComments={initialComments}
               workItemId={workItem.id}
               workItems={discussionWorkItems}
+              currentUserId={currentUserId}
             />
           </section>
         </div>

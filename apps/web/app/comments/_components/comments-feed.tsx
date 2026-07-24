@@ -19,6 +19,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@repo/ui/components/ui/dialog';
 import {
@@ -56,14 +57,21 @@ import {
   Send,
   Building2,
   Tag,
+  RotateCcw,
+  Trash2,
+  AlertTriangle,
+  Loader2,
 } from '@repo/ui/lib/icons';
 import {
   CommentItem,
   CommentUser,
-  createComment,
-  updateComment,
-  archiveComment,
 } from '../_services/comments.service';
+import {
+  createCommentAction,
+  updateCommentAction,
+  archiveCommentAction,
+  restoreCommentAction,
+} from './actions';
 
 type CommentsFeedProps = {
   initialComments: CommentItem[];
@@ -495,6 +503,7 @@ export function CommentsFeed({
   currentUserId = 'user-admin-1',
   workItemId,
 }: Readonly<CommentsFeedProps>) {
+  const [activeUserId, setActiveUserId] = useState<string>(currentUserId);
   const [comments, setComments] = useState<CommentItem[]>(initialComments);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedWorkItemId, setSelectedWorkItemId] = useState<string>('all');
@@ -518,6 +527,10 @@ export function CommentsFeed({
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
 
+  // Delete Confirmation State
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Users for mentions
   const [users, setUsers] = useState<CommentUser[]>([]);
 
@@ -526,7 +539,12 @@ export function CommentsFeed({
   const replyInputRef = useRef<HTMLInputElement>(null);
   const editCommentRef = useRef<HTMLTextAreaElement>(null);
 
-  // Load active users from database on mount
+  // Sync activeUserId with currentUserId prop if it changes
+  useEffect(() => {
+    setActiveUserId(currentUserId);
+  }, [currentUserId]);
+
+  // Load active users from database and get current user on mount
   useEffect(() => {
     async function loadUsers() {
       try {
@@ -555,6 +573,14 @@ export function CommentsFeed({
         } else {
           setUsers(fallbackUsers);
         }
+
+        // Get logged in user UUID dynamically to set activeUserId
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          setActiveUserId(user.id);
+        }
       } catch (err) {
         console.error('Failed to load users for mentions autocomplete:', err);
         setUsers([
@@ -565,7 +591,7 @@ export function CommentsFeed({
       }
     }
     loadUsers();
-  }, []);
+  }, [currentUserId]);
 
   // Update comments if initialComments changes
   useEffect(() => {
@@ -657,7 +683,7 @@ export function CommentsFeed({
     try {
       const supabase = createClient();
       const actorName =
-        users.find((u) => u.id === currentUserId)?.name || 'A teammate';
+        users.find((u) => u.id === activeUserId)?.name || 'A teammate';
 
       const { data: wi } = await supabase
         .from('work_items')
@@ -670,7 +696,7 @@ export function CommentsFeed({
         rawContent.length > 60 ? rawContent.slice(0, 60) + '...' : rawContent;
 
       for (const mId of mentionedUserIds) {
-        if (mId === currentUserId) continue;
+        if (mId === activeUserId) continue;
 
         await supabase.from('notifications').insert({
           user_id: mId,
@@ -678,8 +704,8 @@ export function CommentsFeed({
           message: `${actorName} mentioned you in a comment on ${titleSnippet}: "${rawTextSnippet}"`,
           related_item_id: targetWorkItemId,
           read_status: false,
-          created_by: currentUserId,
-          updated_by: currentUserId,
+          created_by: activeUserId,
+          updated_by: activeUserId,
           updated_at: new Date().toISOString(),
           status: 'active',
         });
@@ -803,11 +829,14 @@ export function CommentsFeed({
         newContent.trim(),
         newWorkItemId
       );
-      const created = await createComment({
+      const res = await createCommentAction({
         work_item_id: newWorkItemId,
         content: processedContent,
-        author_id: currentUserId,
       });
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to create comment');
+      }
+      const created = res.data!;
 
       setComments((prev) => [created, ...prev]);
       setNewContent('');
@@ -824,7 +853,7 @@ export function CommentsFeed({
       const mockCreated: CommentItem = {
         id: `comment-${Date.now()}`,
         work_item_id: newWorkItemId,
-        author_id: currentUserId,
+        author_id: activeUserId,
         parent_id: null,
         content: processedContent,
         edited: false,
@@ -832,9 +861,9 @@ export function CommentsFeed({
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         author: {
-          id: currentUserId,
+          id: activeUserId,
           name:
-            users.find((u) => u.id === currentUserId)?.name || 'Current User',
+            users.find((u) => u.id === activeUserId)?.name || 'Current User',
           email: 'user@alice.dev',
           role: 'admin',
         },
@@ -869,12 +898,15 @@ export function CommentsFeed({
         replyContent.trim(),
         workItemId
       );
-      const created = await createComment({
+      const res = await createCommentAction({
         work_item_id: workItemId,
         content: processedContent,
-        author_id: currentUserId,
         parent_id: parentId,
       });
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to post reply');
+      }
+      const created = res.data!;
       setComments((prev) => [...prev, created]);
     } catch (err) {
       console.error('Failed to post reply:', err);
@@ -888,7 +920,7 @@ export function CommentsFeed({
       const mockReply: CommentItem = {
         id: `reply-${Date.now()}`,
         work_item_id: workItemId,
-        author_id: currentUserId,
+        author_id: activeUserId,
         parent_id: parentId,
         content: processedContent,
         edited: false,
@@ -896,9 +928,9 @@ export function CommentsFeed({
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         author: {
-          id: currentUserId,
+          id: activeUserId,
           name:
-            users.find((u) => u.id === currentUserId)?.name || 'Current User',
+            users.find((u) => u.id === activeUserId)?.name || 'Current User',
           email: 'user@alice.dev',
         },
         work_item: parentComment?.work_item || null,
@@ -922,7 +954,11 @@ export function CommentsFeed({
         editContent.trim(),
         targetWIId
       );
-      const updated = await updateComment(commentId, processedContent);
+      const res = await updateCommentAction(commentId, processedContent);
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to update comment');
+      }
+      const updated = res.data!;
       setComments((prev) =>
         prev.map((c) => (c.id === commentId ? updated : c))
       );
@@ -946,18 +982,65 @@ export function CommentsFeed({
     }
   };
 
+  // Helper to locally update status of a comment in state
+  const updateCommentStatusLocal = (
+    commentId: string,
+    status: 'active' | 'archived'
+  ) => {
+    setComments((prev) =>
+      prev.map((c) => (c.id === commentId ? { ...c, status } : c))
+    );
+  };
+
   // Handle Archive
   const handleArchive = async (commentId: string) => {
     try {
-      await archiveComment(commentId);
-      setComments((prev) =>
-        prev.map((c) => (c.id === commentId ? { ...c, status: 'archived' } : c))
-      );
+      const res = await archiveCommentAction(commentId);
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to archive comment');
+      }
+      updateCommentStatusLocal(commentId, 'archived');
     } catch (err) {
       console.error('Failed to archive comment:', err);
-      setComments((prev) =>
-        prev.map((c) => (c.id === commentId ? { ...c, status: 'archived' } : c))
-      );
+      updateCommentStatusLocal(commentId, 'archived');
+    }
+  };
+
+  // Handle Restore
+  const handleRestore = async (commentId: string) => {
+    try {
+      const res = await restoreCommentAction(commentId);
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to restore comment');
+      }
+      updateCommentStatusLocal(commentId, 'active');
+    } catch (err) {
+      console.error('Failed to restore comment:', err);
+      updateCommentStatusLocal(commentId, 'active');
+    }
+  };
+
+  // Handle Permanent Delete
+  const handleDeletePermanent = (commentId: string) => {
+    setDeletingCommentId(commentId);
+  };
+
+  // Confirm and execute delete from modal
+  const confirmDelete = async () => {
+    if (!deletingCommentId) return;
+    setIsDeleting(true);
+    try {
+      const res = await archiveCommentAction(deletingCommentId, true);
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to delete comment');
+      }
+      setComments((prev) => prev.filter((c) => c.id !== deletingCommentId));
+    } catch (err) {
+      console.error('Failed to delete comment permanently:', err);
+      setComments((prev) => prev.filter((c) => c.id !== deletingCommentId));
+    } finally {
+      setIsDeleting(false);
+      setDeletingCommentId(null);
     }
   };
 
@@ -1167,43 +1250,65 @@ export function CommentsFeed({
                       </Badge>
                     )}
 
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          className="text-muted-foreground"
-                        >
-                          <MoreVertical className="size-4" />
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setEditingCommentId(parent.id);
-                            // Replace @[Name](userId) with @Name, and #[KEY](id) with #KEY
-                            const rawText = parent.content
-                              .replace(/@\[([^\]]+)\]\(([^)]+)\)/g, '@$1')
-                              .replace(/#\[([^\]]+)\]\(([^)]+)\)/g, '#$1');
-                            setEditContent(rawText);
-                          }}
-                          className="gap-2"
-                        >
-                          <Pencil className="size-3.5" />
-                          Edit
-                        </DropdownMenuItem>
-                        {parent.status === 'active' && (
-                          <DropdownMenuItem
-                            onClick={() => handleArchive(parent.id)}
-                            className="text-amber-600 focus:text-amber-600 dark:text-amber-400"
+                    {parent.author_id === activeUserId && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="text-muted-foreground"
                           >
-                            <Archive className="size-3.5" />
-                            Archive
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                            <MoreVertical className="size-4" />
+                            <span className="sr-only">Open menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {parent.status === 'active' && (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setEditingCommentId(parent.id);
+                                  // Replace @[Name](userId) with @Name, and #[KEY](id) with #KEY
+                                  const rawText = parent.content
+                                    .replace(/@\[([^\]]+)\]\(([^)]+)\)/g, '@$1')
+                                    .replace(/#\[([^\]]+)\]\(([^)]+)\)/g, '#$1');
+                                  setEditContent(rawText);
+                                }}
+                                className="gap-2"
+                              >
+                                <Pencil className="size-3.5" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleArchive(parent.id)}
+                                className="text-amber-600 focus:text-amber-600 dark:text-amber-400 gap-2"
+                              >
+                                <Archive className="size-3.5" />
+                                Archive
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                           {parent.status === 'archived' && (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => handleRestore(parent.id)}
+                                className="text-emerald-600 focus:text-emerald-600 dark:text-emerald-400 gap-2"
+                              >
+                                <RotateCcw className="size-3.5" />
+                                Restore
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeletePermanent(parent.id)}
+                                className="text-destructive focus:text-destructive gap-2"
+                              >
+                                <Trash2 className="size-3.5" />
+                                Delete Permanently
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </div>
                 </div>
 
@@ -1283,10 +1388,76 @@ export function CommentsFeed({
                               )}
                             </span>
                           </div>
+                          {reply.author_id === activeUserId && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-xs"
+                                  className="text-muted-foreground h-6 w-6"
+                                >
+                                  <MoreVertical className="size-3.5" />
+                                  <span className="sr-only">Open menu</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setEditingCommentId(reply.id);
+                                    const rawText = reply.content
+                                      .replace(/@\[([^\]]+)\]\(([^)]+)\)/g, '@$1')
+                                      .replace(/#\[([^\]]+)\]\(([^)]+)\)/g, '#$1');
+                                    setEditContent(rawText);
+                                  }}
+                                  className="gap-2 text-xs"
+                                >
+                                  <Pencil className="size-3" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeletePermanent(reply.id)}
+                                  className="text-destructive focus:text-destructive gap-2 text-xs"
+                                >
+                                  <Trash2 className="size-3" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
                         </div>
-                        <p className="text-muted-foreground text-xs">
-                          {renderCommentContent(reply.content)}
-                        </p>
+                        {editingCommentId === reply.id ? (
+                          <div className="relative space-y-2 pt-1">
+                            <AutocompleteInput
+                              as="textarea"
+                              textareaRef={editCommentRef}
+                              value={editContent}
+                              onChange={setEditContent}
+                              users={users}
+                              workItems={workItems}
+                              rows={2}
+                              position="top"
+                            />
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                size="xs"
+                                variant="ghost"
+                                onClick={() => setEditingCommentId(null)}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                size="xs"
+                                onClick={() => handleSaveEdit(reply.id)}
+                              >
+                                Save
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground text-xs pl-1">
+                            {renderCommentContent(reply.content)}
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1442,6 +1613,51 @@ export function CommentsFeed({
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deletingCommentId !== null}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) setDeletingCommentId(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-rose-500">
+              <AlertTriangle className="size-5 shrink-0" />
+              Confirm Delete
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently delete this comment? This action cannot be undone and will remove the comment record from the database.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isDeleting}
+              onClick={() => setDeletingCommentId(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={isDeleting}
+              onClick={confirmDelete}
+              className="bg-rose-600 text-white hover:bg-rose-700"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="animate-spin mr-1.5 size-4" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete Comment'
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
