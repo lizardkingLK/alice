@@ -8,6 +8,8 @@ import ReactGridLayout, {
 } from 'react-grid-layout';
 import { Button } from '@repo/ui/components/ui/button';
 import { RotateCcw } from '@repo/ui/lib/icons';
+import { cn } from '@repo/ui/lib/utils';
+import { useSidebarLayoutSettling } from '@/hooks/use-sidebar-layout-settling';
 import {
   DEFAULT_LAYOUT,
   LAYOUT_STORAGE_KEY,
@@ -65,6 +67,8 @@ export function DashboardOverview() {
   const { width, containerRef, mounted } = useContainerWidth({
     initialWidth: 1200,
   });
+  const isSidebarSettling = useSidebarLayoutSettling();
+  const [stableWidth, setStableWidth] = useState(width);
   const [layout, setLayout] = useState<LayoutItem[]>(() => [...DEFAULT_LAYOUT]);
   const [hydrated, setHydrated] = useState(false);
 
@@ -72,6 +76,13 @@ export function DashboardOverview() {
     setLayout(readStoredLayout());
     setHydrated(true);
   }, []);
+
+  // Freeze grid width while the sidebar CSS width transition runs, then snap once.
+  useEffect(() => {
+    if (!isSidebarSettling) {
+      setStableWidth(width);
+    }
+  }, [width, isSidebarSettling]);
 
   const handleLayoutChange = (next: Layout) => {
     const nextLayout = [...next];
@@ -111,11 +122,17 @@ export function DashboardOverview() {
         </Button>
       </div>
 
-      <div ref={containerRef} className="dashboard-grid w-full">
+      <div
+        ref={containerRef}
+        className={cn(
+          'dashboard-grid w-full transition-opacity duration-150',
+          isSidebarSettling && 'pointer-events-none opacity-80'
+        )}
+      >
         {mounted ? (
           <ReactGridLayout
             className="layout"
-            width={width}
+            width={stableWidth}
             layout={layout}
             gridConfig={{
               cols: 12,
@@ -140,7 +157,7 @@ export function DashboardOverview() {
             ))}
           </ReactGridLayout>
         ) : (
-          <div className="bg-muted/20 h-[28rem] animate-pulse rounded-xl" />
+          <div className="bg-muted/20 h-112 animate-pulse rounded-xl" />
         )}
       </div>
     </div>
