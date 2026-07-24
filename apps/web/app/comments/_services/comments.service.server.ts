@@ -1,11 +1,10 @@
-import { createClient } from '@/lib/supabase/server';
+import { apiFetch } from '@/lib/api/api-client.server';
+import { createCommentsService } from './comments.service.base';
+import type { CommentItem } from './comments.service.base';
 import { getUser } from '@/lib/auth';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
-import {
-  COMMENT_SELECT_FIELDS,
-  mapDbCommentToCommentItem,
-  type CommentItem,
-} from './comments.service.base';
+
+const service = createCommentsService(apiFetch);
 
 /** M4.3 — server reader for work-item discussion threads (no client mount fetch). */
 export async function getWorkItemDiscussion(
@@ -17,20 +16,7 @@ export async function getWorkItemDiscussion(
   }
 
   return safeServerFetch(
-    (async () => {
-      const supabase = await createClient();
-      const { data, error } = await supabase
-        .from('comments')
-        .select(COMMENT_SELECT_FIELDS)
-        .eq('work_item_id', workItemId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw error;
-      }
-
-      return (data ?? []).map(mapDbCommentToCommentItem);
-    })(),
+    service.getCommentsList(workItemId),
     [],
     `fetch discussion for work item ${workItemId}`
   );

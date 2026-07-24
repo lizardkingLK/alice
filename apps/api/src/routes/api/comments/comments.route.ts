@@ -9,9 +9,10 @@ import { createCommentSchema, updateCommentSchema } from './comments.schemas';
 
 const commentsRouter: Router = Router();
 
-commentsRouter.get('/', requireApiAuth, async (_req, res) => {
+commentsRouter.get('/', requireApiAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const comments = await commentsService.listComments();
+    const workItemId = req.query.work_item_id as string | undefined;
+    const comments = await commentsService.listComments(workItemId);
     res.json({ comments });
   } catch (error) {
     const message =

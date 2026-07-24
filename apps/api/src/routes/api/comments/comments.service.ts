@@ -1,8 +1,8 @@
 import { commentsRepository, type CommentRow } from './comments.repository';
 
 export class CommentsService {
-  async listComments(): Promise<CommentRow[]> {
-    return await commentsRepository.listAll();
+  async listComments(workItemId?: string): Promise<CommentRow[]> {
+    return await commentsRepository.listAll(workItemId);
   }
 
   async createComment(
