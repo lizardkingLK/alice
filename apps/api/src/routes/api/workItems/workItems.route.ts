@@ -68,8 +68,8 @@ function shouldNotifyAssigneeChange(
 ) {
   return Boolean(
     workItem?.assignee_id &&
-      workItem.assignee_id !== existingWorkItem.assignee_id &&
-      workItem.assignee_id !== actorId
+    workItem.assignee_id !== existingWorkItem.assignee_id &&
+    workItem.assignee_id !== actorId
   );
 }
 

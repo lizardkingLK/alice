@@ -22,17 +22,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Pnpm Core Engine
-        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
-
-      - name: Initialize Structured Node Environment
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm'
-
-      - name: Install Workspace Dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Setup Workspace
+        uses: ./.github/actions/setup-workspace
 
       - name: Build App With Packages
         run: pnpm build
@@ -87,17 +78,8 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Install Pnpm Core Engine
-        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
-
-      - name: Initialize Structured Node Environment
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm'
-
-      - name: Install workspace Dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Setup Workspace
+        uses: ./.github/actions/setup-workspace
 
       - name: Check migration status against database
         run: pnpm db migrate:status
@@ -107,83 +89,43 @@ jobs:
   deploy_backend_api:
     name: Deploy Express API to Vercel
     needs: [validate_and_test, validate_database]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: >-
+      always() &&
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'push' &&
+      needs.validate_and_test.result == 'success' &&
+      needs.validate_database.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Install Pnpm Core Engine
-        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
+      - name: Setup Workspace
+        uses: ./.github/actions/setup-workspace
 
-      - name: Initialize Structured Node Environment
-        uses: actions/setup-node@v4
+      - name: Deploy API to Vercel
+        uses: ./.github/actions/deploy-vercel
         with:
-          node-version: 20
-          cache: 'pnpm'
-
-      - name: Install workspace Dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts
-
-      - name: Build shared types package
-        run: pnpm turbo build --filter=@repo/types
-
-      - name: Install Global Vercel CLI Execution Agent
-        run: pnpm install --global vercel@latest --ignore-scripts
-
-      - name: Pull Vercel Environment Variables
-        run: vercel pull --yes --environment=production --token=$VERCEL_TOKEN
-        env:
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_API }}
-
-      - name: Build Local App Context via Vercel CLI
-        run: vercel build --prod --token=$VERCEL_TOKEN
-        env:
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_API }}
-
-      - name: Execute Controlled Production Deployment
-        run: vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
-        env:
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_API }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID_API }}
 
   deploy_frontend_web:
     name: Deploy Web Frontend to Vercel
     needs: [validate_and_test, validate_database]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: >-
+      always() &&
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'push' &&
+      needs.validate_and_test.result == 'success' &&
+      needs.validate_database.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Install Pnpm Core Engine
-        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
+      - name: Setup Workspace
+        uses: ./.github/actions/setup-workspace
 
-      - name: Initialize Structured Node Environment
-        uses: actions/setup-node@v4
+      - name: Deploy Web to Vercel
+        uses: ./.github/actions/deploy-vercel
         with:
-          node-version: 20
-          cache: 'pnpm'
-
-      - name: Install Workspace Dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts
-
-      - name: Build shared types package
-        run: pnpm turbo build --filter=@repo/types
-
-      - name: Install Global Vercel CLI Execution Agent
-        run: pnpm install --global vercel@latest --ignore-scripts
-
-      - name: Pull Vercel Environment Variables
-        run: vercel pull --yes --environment=production --token=$VERCEL_TOKEN
-        env:
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_WEB }}
-
-      - name: Build Local App Context via Vercel CLI
-        run: vercel build --prod --token=$VERCEL_TOKEN
-        env:
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_WEB }}
-
-      - name: Execute Controlled Production Deployment
-        run: vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
-        env:
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_WEB }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID_WEB }}

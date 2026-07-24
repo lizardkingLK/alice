@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from '@repo/ui/components/ui/table';
-import { skeletonKeys } from '@/components/skeleton-keys';
+import { skeletonKeys } from '@/app/_shared/utility';
 
 type RegistryPageSkeletonProps = {
   /** Number of table columns (including actions). */

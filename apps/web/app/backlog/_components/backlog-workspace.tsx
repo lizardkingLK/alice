@@ -999,7 +999,11 @@ export function BacklogWorkspace({
                     <Select
                       value={selectedItem.project_id}
                       onValueChange={(val) =>
-                        handleUpdateItemField(selectedItem.id, 'project_id', val)
+                        handleUpdateItemField(
+                          selectedItem.id,
+                          'project_id',
+                          val
+                        )
                       }
                     >
                       <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
@@ -1173,9 +1177,14 @@ export function BacklogWorkspace({
                       value={selectedItem.story_points ?? ''}
                       onChange={(e) => {
                         const val = e.target.value;
-                        const num = val === '' ? null : Number.parseInt(val, 10);
+                        const num =
+                          val === '' ? null : Number.parseInt(val, 10);
                         if (num === null || (!Number.isNaN(num) && num >= 0)) {
-                          handleUpdateItemField(selectedItem.id, 'story_points', num);
+                          handleUpdateItemField(
+                            selectedItem.id,
+                            'story_points',
+                            num
+                          );
                         }
                       }}
                       className="bg-background/50 border-border/80 h-9 w-full"

@@ -1,0 +1,43 @@
+name: Deploy Vercel App
+description: >-
+  Build @repo/types, install the Vercel CLI, then pull / build / deploy a
+  production prebuilt project. Requires checkout + setup-workspace first.
+  Expects VERCEL_TOKEN (and VERCEL_ORG_ID) in the job environment.
+
+inputs:
+  vercel-project-id:
+    description: Vercel project id (VERCEL_PROJECT_ID_API or VERCEL_PROJECT_ID_WEB).
+    required: true
+  environment:
+    description: Vercel environment for `vercel pull` (usually production).
+    required: false
+    default: production
+
+runs:
+  using: composite
+  steps:
+    - name: Build shared types package
+      shell: bash
+      run: pnpm turbo build --filter=@repo/types
+
+    - name: Install Global Vercel CLI Execution Agent
+      shell: bash
+      run: pnpm install --global vercel@latest --ignore-scripts
+
+    - name: Pull Vercel Environment Variables
+      shell: bash
+      run: vercel pull --yes --environment=${{ inputs.environment }} --token=$VERCEL_TOKEN
+      env:
+        VERCEL_PROJECT_ID: ${{ inputs.vercel-project-id }}
+
+    - name: Build Local App Context via Vercel CLI
+      shell: bash
+      run: vercel build --prod --token=$VERCEL_TOKEN
+      env:
+        VERCEL_PROJECT_ID: ${{ inputs.vercel-project-id }}
+
+    - name: Execute Controlled Production Deployment
+      shell: bash
+      run: vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+      env:
+        VERCEL_PROJECT_ID: ${{ inputs.vercel-project-id }}

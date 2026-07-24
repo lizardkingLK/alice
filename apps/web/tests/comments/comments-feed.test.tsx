@@ -66,11 +66,17 @@ vi.mock('@repo/ui/components/ui/select', () => {
       </select>
     ),
     SelectTrigger: ({ children }: { children: ReactNode }) => <>{children}</>,
-    SelectValue: ({ placeholder }: { placeholder: string }) => <>{placeholder}</>,
-    SelectContent: ({ children }: { children: ReactNode }) => <>{children}</>,
-    SelectItem: ({ children, value }: { children: ReactNode; value: string }) => (
-      <option value={value}>{children}</option>
+    SelectValue: ({ placeholder }: { placeholder: string }) => (
+      <>{placeholder}</>
     ),
+    SelectContent: ({ children }: { children: ReactNode }) => <>{children}</>,
+    SelectItem: ({
+      children,
+      value,
+    }: {
+      children: ReactNode;
+      value: string;
+    }) => <option value={value}>{children}</option>,
   };
 });
 
@@ -295,7 +301,10 @@ describe('CommentsFeed Component', () => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    vi.mocked(createCommentAction).mockResolvedValue({ success: true, data: mockCreatedComment });
+    vi.mocked(createCommentAction).mockResolvedValue({
+      success: true,
+      data: mockCreatedComment,
+    });
 
     render(
       <CommentsFeed
@@ -305,8 +314,12 @@ describe('CommentsFeed Component', () => {
       />
     );
 
-    const textarea = screen.getByPlaceholderText(/Share your thoughts, feedback, or update/i);
-    fireEvent.change(textarea, { target: { value: 'New testing comment text.' } });
+    const textarea = screen.getByPlaceholderText(
+      /Share your thoughts, feedback, or update/i
+    );
+    fireEvent.change(textarea, {
+      target: { value: 'New testing comment text.' },
+    });
 
     const postBtn = screen.getByRole('button', { name: /Post Comment/i });
     await waitFor(() => expect(postBtn).not.toBeDisabled());
@@ -326,7 +339,10 @@ describe('CommentsFeed Component', () => {
       content: 'Security audit completed for the auth module (Updated).',
       edited: true,
     };
-    vi.mocked(updateCommentAction).mockResolvedValue({ success: true, data: mockUpdatedComment });
+    vi.mocked(updateCommentAction).mockResolvedValue({
+      success: true,
+      data: mockUpdatedComment,
+    });
 
     render(
       <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
@@ -341,18 +357,31 @@ describe('CommentsFeed Component', () => {
     fireEvent.click(editBtn);
 
     // Wait for the edit textarea to be populated and rendered
-    const textarea = await screen.findByDisplayValue('Security audit completed for the auth module.');
+    const textarea = await screen.findByDisplayValue(
+      'Security audit completed for the auth module.'
+    );
 
     // Modify the textarea content
-    fireEvent.change(textarea, { target: { value: 'Security audit completed for the auth module (Updated).' } });
-    await waitFor(() => expect(textarea).toHaveValue('Security audit completed for the auth module (Updated).'));
+    fireEvent.change(textarea, {
+      target: {
+        value: 'Security audit completed for the auth module (Updated).',
+      },
+    });
+    await waitFor(() =>
+      expect(textarea).toHaveValue(
+        'Security audit completed for the auth module (Updated).'
+      )
+    );
 
     // Click Save
     const saveBtn = screen.getByRole('button', { name: 'Save' });
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(updateCommentAction).toHaveBeenCalledWith('comment-1', 'Security audit completed for the auth module (Updated).');
+      expect(updateCommentAction).toHaveBeenCalledWith(
+        'comment-1',
+        'Security audit completed for the auth module (Updated).'
+      );
     });
   });
 
@@ -394,7 +423,10 @@ describe('CommentsFeed Component', () => {
         role: 'admin',
       },
     };
-    vi.mocked(updateCommentAction).mockResolvedValue({ success: true, data: mockUpdatedReply });
+    vi.mocked(updateCommentAction).mockResolvedValue({
+      success: true,
+      data: mockUpdatedReply,
+    });
 
     render(
       <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
@@ -409,18 +441,31 @@ describe('CommentsFeed Component', () => {
     fireEvent.click(editBtn);
 
     // Wait for the edit textarea to be populated and rendered
-    const textarea = await screen.findByDisplayValue('Yes, this is a reply to the security audit.');
+    const textarea = await screen.findByDisplayValue(
+      'Yes, this is a reply to the security audit.'
+    );
 
     // Modify the textarea content
-    fireEvent.change(textarea, { target: { value: 'Yes, this is a reply to the security audit (Updated).' } });
-    await waitFor(() => expect(textarea).toHaveValue('Yes, this is a reply to the security audit (Updated).'));
+    fireEvent.change(textarea, {
+      target: {
+        value: 'Yes, this is a reply to the security audit (Updated).',
+      },
+    });
+    await waitFor(() =>
+      expect(textarea).toHaveValue(
+        'Yes, this is a reply to the security audit (Updated).'
+      )
+    );
 
     // Click Save
     const saveBtn = screen.getByRole('button', { name: 'Save' });
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(updateCommentAction).toHaveBeenCalledWith('reply-1', 'Yes, this is a reply to the security audit (Updated).');
+      expect(updateCommentAction).toHaveBeenCalledWith(
+        'reply-1',
+        'Yes, this is a reply to the security audit (Updated).'
+      );
     });
   });
 
@@ -512,7 +557,10 @@ describe('CommentsFeed Component', () => {
     fireEvent.click(confirmBtn);
 
     await waitFor(() => {
-      expect(archiveCommentAction).toHaveBeenCalledWith('comment-archived-1', true);
+      expect(archiveCommentAction).toHaveBeenCalledWith(
+        'comment-archived-1',
+        true
+      );
     });
   });
 });
