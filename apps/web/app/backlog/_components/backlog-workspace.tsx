@@ -1242,7 +1242,11 @@ export function BacklogWorkspace({
 
         {/* Dialog: Create Issue */}
         <Dialog open={isCreateIssueOpen} onOpenChange={setIsCreateIssueOpen}>
-          <DialogContent className="bg-card border-border/80 backdrop-blur-md sm:max-w-2xl">
+          <DialogContent
+            className="bg-card border-border/80 backdrop-blur-md sm:max-w-2xl"
+            onPointerDownOutside={(e) => e.preventDefault()}
+            onInteractOutside={(e) => e.preventDefault()}
+          >
             <DialogHeader>
               <DialogTitle className="text-lg font-bold">
                 Create Work Item
