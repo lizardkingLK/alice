@@ -2,23 +2,18 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { CommentsFeed } from '@/app/comments/_components/comments-feed';
+import type { CommentItem } from '@/app/comments/_services/comments.service';
 import {
-  createComment,
-  updateComment,
-  archiveComment,
-  type CommentItem,
-} from '@/app/comments/_services/comments.service';
+  createCommentAction,
+  updateCommentAction,
+  archiveCommentAction,
+} from '@/app/comments/_components/actions';
 
-vi.mock('@/app/comments/_services/comments.service', async (importOriginal) => {
-  const actual =
-    await importOriginal<
-      typeof import('@/app/comments/_services/comments.service')
-    >();
+vi.mock('@/app/comments/_components/actions', () => {
   return {
-    ...actual,
-    createComment: vi.fn(),
-    updateComment: vi.fn(),
-    archiveComment: vi.fn(),
+    createCommentAction: vi.fn(),
+    updateCommentAction: vi.fn(),
+    archiveCommentAction: vi.fn(),
   };
 });
 
@@ -269,7 +264,7 @@ describe('CommentsFeed Component', () => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    vi.mocked(createComment).mockResolvedValue(mockCreatedComment);
+    vi.mocked(createCommentAction).mockResolvedValue({ success: true, data: mockCreatedComment });
 
     render(
       <CommentsFeed
@@ -287,10 +282,9 @@ describe('CommentsFeed Component', () => {
     fireEvent.click(postBtn);
 
     await waitFor(() => {
-      expect(createComment).toHaveBeenCalledWith({
+      expect(createCommentAction).toHaveBeenCalledWith({
         work_item_id: 'wi-1',
         content: 'New testing comment text.',
-        author_id: 'user-admin-1',
       });
     });
   });
@@ -301,7 +295,7 @@ describe('CommentsFeed Component', () => {
       content: 'Security audit completed for the auth module (Updated).',
       edited: true,
     };
-    vi.mocked(updateComment).mockResolvedValue(mockUpdatedComment);
+    vi.mocked(updateCommentAction).mockResolvedValue({ success: true, data: mockUpdatedComment });
 
     render(
       <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
@@ -327,12 +321,12 @@ describe('CommentsFeed Component', () => {
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(updateComment).toHaveBeenCalledWith('comment-1', 'Security audit completed for the auth module (Updated).');
+      expect(updateCommentAction).toHaveBeenCalledWith('comment-1', 'Security audit completed for the auth module (Updated).');
     });
   });
 
   it('calls archiveComment when a comment is archived', async () => {
-    vi.mocked(archiveComment).mockResolvedValue(undefined);
+    vi.mocked(archiveCommentAction).mockResolvedValue({ success: true });
 
     render(
       <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
@@ -347,7 +341,7 @@ describe('CommentsFeed Component', () => {
     fireEvent.click(archiveBtn);
 
     await waitFor(() => {
-      expect(archiveComment).toHaveBeenCalledWith('comment-1');
+      expect(archiveCommentAction).toHaveBeenCalledWith('comment-1');
     });
   });
 
@@ -369,7 +363,7 @@ describe('CommentsFeed Component', () => {
         role: 'admin',
       },
     };
-    vi.mocked(updateComment).mockResolvedValue(mockUpdatedReply);
+    vi.mocked(updateCommentAction).mockResolvedValue({ success: true, data: mockUpdatedReply });
 
     render(
       <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
@@ -395,12 +389,12 @@ describe('CommentsFeed Component', () => {
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(updateComment).toHaveBeenCalledWith('reply-1', 'Yes, this is a reply to the security audit (Updated).');
+      expect(updateCommentAction).toHaveBeenCalledWith('reply-1', 'Yes, this is a reply to the security audit (Updated).');
     });
   });
 
   it('calls archiveComment when a thread reply is archived', async () => {
-    vi.mocked(archiveComment).mockResolvedValue(undefined);
+    vi.mocked(archiveCommentAction).mockResolvedValue({ success: true });
 
     render(
       <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
@@ -415,7 +409,7 @@ describe('CommentsFeed Component', () => {
     fireEvent.click(archiveBtn);
 
     await waitFor(() => {
-      expect(archiveComment).toHaveBeenCalledWith('reply-1');
+      expect(archiveCommentAction).toHaveBeenCalledWith('reply-1');
     });
   });
 });

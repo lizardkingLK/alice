@@ -60,10 +60,12 @@ import {
 import {
   CommentItem,
   CommentUser,
-  createComment,
-  updateComment,
-  archiveComment,
 } from '../_services/comments.service';
+import {
+  createCommentAction,
+  updateCommentAction,
+  archiveCommentAction,
+} from './actions';
 
 type CommentsFeedProps = {
   initialComments: CommentItem[];
@@ -817,11 +819,14 @@ export function CommentsFeed({
         newContent.trim(),
         newWorkItemId
       );
-      const created = await createComment({
+      const res = await createCommentAction({
         work_item_id: newWorkItemId,
         content: processedContent,
-        author_id: activeUserId,
       });
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to create comment');
+      }
+      const created = res.data!;
 
       setComments((prev) => [created, ...prev]);
       setNewContent('');
@@ -883,12 +888,15 @@ export function CommentsFeed({
         replyContent.trim(),
         workItemId
       );
-      const created = await createComment({
+      const res = await createCommentAction({
         work_item_id: workItemId,
         content: processedContent,
-        author_id: activeUserId,
         parent_id: parentId,
       });
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to post reply');
+      }
+      const created = res.data!;
       setComments((prev) => [...prev, created]);
     } catch (err) {
       console.error('Failed to post reply:', err);
@@ -936,7 +944,11 @@ export function CommentsFeed({
         editContent.trim(),
         targetWIId
       );
-      const updated = await updateComment(commentId, processedContent);
+      const res = await updateCommentAction(commentId, processedContent);
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to update comment');
+      }
+      const updated = res.data!;
       setComments((prev) =>
         prev.map((c) => (c.id === commentId ? updated : c))
       );
@@ -963,7 +975,10 @@ export function CommentsFeed({
   // Handle Archive
   const handleArchive = async (commentId: string) => {
     try {
-      await archiveComment(commentId);
+      const res = await archiveCommentAction(commentId);
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to archive comment');
+      }
       setComments((prev) =>
         prev.map((c) => (c.id === commentId ? { ...c, status: 'archived' } : c))
       );
