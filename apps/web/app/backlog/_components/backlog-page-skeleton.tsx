@@ -1,9 +1,6 @@
 import { Card } from '@repo/ui/components/ui/card';
 import { Skeleton } from '@repo/ui/components/ui/skeleton';
-
-function skeletonKeys(prefix: string, count: number): string[] {
-  return Array.from({ length: count }, (_, i) => `${prefix}-${i}`);
-}
+import { skeletonKeys } from '@/components/skeleton-keys';
 
 function SprintColumnSkeleton({ id }: Readonly<{ id: string }>) {
   const itemKeys = skeletonKeys(`${id}-item`, 3);

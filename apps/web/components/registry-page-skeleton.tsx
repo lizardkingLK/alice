@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from '@repo/ui/components/ui/table';
+import { skeletonKeys } from '@/components/skeleton-keys';
 
 type RegistryPageSkeletonProps = {
   /** Number of table columns (including actions). */
@@ -17,11 +18,6 @@ type RegistryPageSkeletonProps = {
   /** Show tab-pill placeholders in the toolbar (projects, teams, sprints). */
   showTabs?: boolean;
 };
-
-/** Stable string ids for skeleton maps (avoids React array-index keys / S6479). */
-function skeletonKeys(prefix: string, count: number): string[] {
-  return Array.from({ length: count }, (_, i) => `${prefix}-${i}`);
-}
 
 export function RegistryPageSkeleton({
   columnCount = 5,
