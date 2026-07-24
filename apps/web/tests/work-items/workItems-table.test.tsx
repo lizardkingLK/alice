@@ -309,4 +309,34 @@ describe('WorkItemsTable', () => {
     expect(mockRefresh).toHaveBeenCalled();
     expect(screen.queryByTestId('mock-work-item-form')).not.toBeInTheDocument();
   });
+
+  it('shows clear filters when URL has filters and clears them', () => {
+    // Arrange
+    configureNextNavigationMock({
+      pathname: '/work-items',
+      searchParams: { search: 'ship', type: 'Task' },
+    });
+    renderTable({ search: 'ship', typeFilter: 'Task' });
+
+    // Assert — visible when filters are in the URL
+    expect(
+      screen.getByRole('button', { name: /Clear filters/i })
+    ).toBeInTheDocument();
+
+    // Act
+    fireEvent.click(screen.getByRole('button', { name: /Clear filters/i }));
+
+    // Assert — drops filter params (keeps bare path)
+    expect(mockPush).toHaveBeenCalledWith('/work-items');
+  });
+
+  it('hides clear filters when URL has no filter params', () => {
+    // Arrange / Act
+    renderTable();
+
+    // Assert
+    expect(
+      screen.queryByRole('button', { name: /Clear filters/i })
+    ).not.toBeInTheDocument();
+  });
 });

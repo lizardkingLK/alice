@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type ColumnDef,
   getCoreRowModel,
@@ -29,6 +29,7 @@ import {
   Pencil,
   Plus,
   Trash,
+  X,
 } from '@repo/ui/lib/icons';
 import {
   DropdownMenu,
@@ -52,7 +53,13 @@ import { ListFilterSelect } from '@/components/list-filter-select';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { useQueryFilter } from '@/hooks/use-query-filter';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Constants } from '@repo/types/database';
+
+/** Match DialogContent `duration-200` so edit UI doesn't flash to create while closing. */
+const DIALOG_CLOSE_MS = 200;
+
+const WORK_ITEM_FILTER_PARAMS = ['search', 'project', 'type', 'assignee'] as const;
 
 type WorkItemsTableProps = WorkItemWorkspaceProps & {
   currentUserId?: string | null;
@@ -158,42 +165,95 @@ export default function WorkItemsTable({
 }: Readonly<WorkItemsTableProps>) {
   const { handlePageChange, handleLimitChange, router } =
     usePaginationNavigation(totalPages, limit);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { searchQuery, setSearchQuery } = useDebouncedSearch(search);
   const projectQuery = useQueryFilter('project', projectFilter);
   const typeQuery = useQueryFilter('type', typeFilter);
   const assigneeQuery = useQueryFilter('assignee', assigneeFilter);
   const isProjectLocked = Boolean(lockedProjectId);
 
+  const hasActiveFilters = WORK_ITEM_FILTER_PARAMS.some((key) => {
+    if (key === 'project' && isProjectLocked) {
+      return false;
+    }
+    return Boolean(searchParams.get(key)?.trim());
+  });
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    const next = new URLSearchParams();
+    const limitParam = searchParams.get('limit');
+    const tabParam = searchParams.get('tab');
+    if (limitParam) {
+      next.set('limit', limitParam);
+    }
+    if (tabParam) {
+      next.set('tab', tabParam);
+    }
+    const query = next.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
+  };
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<DbWorkItem | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const clearEditTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
   const isEditMode = itemToEdit !== null;
   const workItems = initialWorkItems;
 
+  const cancelPendingEditClear = useCallback(() => {
+    if (clearEditTimeoutRef.current) {
+      clearTimeout(clearEditTimeoutRef.current);
+      clearEditTimeoutRef.current = null;
+    }
+  }, []);
+
+  const clearItemToEditAfterClose = useCallback(() => {
+    cancelPendingEditClear();
+    clearEditTimeoutRef.current = setTimeout(() => {
+      setItemToEdit(null);
+      clearEditTimeoutRef.current = null;
+    }, DIALOG_CLOSE_MS);
+  }, [cancelPendingEditClear]);
+
+  useEffect(() => {
+    return () => {
+      cancelPendingEditClear();
+    };
+  }, [cancelPendingEditClear]);
+
   const openCreateDialog = () => {
+    cancelPendingEditClear();
     setItemToEdit(null);
     setDialogOpen(true);
   };
 
-  const openEditDialog = useCallback((workItem: DbWorkItem) => {
-    setItemToEdit(workItem);
-    setDialogOpen(true);
-  }, []);
+  const openEditDialog = useCallback(
+    (workItem: DbWorkItem) => {
+      cancelPendingEditClear();
+      setItemToEdit(workItem);
+      setDialogOpen(true);
+    },
+    [cancelPendingEditClear]
+  );
 
   const handleDialogChange = (open: boolean) => {
     setDialogOpen(open);
     if (!open) {
-      setItemToEdit(null);
+      clearItemToEditAfterClose();
     }
   };
 
   const handleUpdated = useCallback(() => {
     setError(null);
     setDialogOpen(false);
-    setItemToEdit(null);
+    clearItemToEditAfterClose();
     router.refresh();
-  }, [router]);
+  }, [router, clearItemToEditAfterClose]);
 
   const columns = useMemo<ColumnDef<DbWorkItem>[]>(
     () => [
@@ -298,6 +358,19 @@ export default function WorkItemsTable({
               label: member.name,
             }))}
           />
+
+          {hasActiveFilters ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleClearFilters}
+              className="text-muted-foreground hover:text-foreground h-9 cursor-pointer px-3 text-xs"
+            >
+              Clear filters
+              <X className="size-3.5" />
+            </Button>
+          ) : null}
         </div>
 
         <Button onClick={openCreateDialog} className="shrink-0 self-start">
@@ -345,7 +418,11 @@ export default function WorkItemsTable({
 
       {/* Work-Item Create/Edit */}
       <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent
+          className="sm:max-w-xl"
+          onPointerDownOutside={(event) => event.preventDefault()}
+          onInteractOutside={(event) => event.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>
               {isEditMode ? 'Edit Work Item' : 'Create Work Item'}
