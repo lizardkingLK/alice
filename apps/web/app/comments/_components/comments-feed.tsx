@@ -1043,7 +1043,7 @@ export function CommentsFeed({
                   <SelectTrigger
                     id="select-status-filter"
                     aria-label="Filter by Status"
-                    className="w-[min(100%,10rem)]"
+                    className="w-[min(100%,14rem)]"
                   >
                     <SelectValue placeholder="Active Comments" />
                   </SelectTrigger>
