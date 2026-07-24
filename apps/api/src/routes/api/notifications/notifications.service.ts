@@ -1,10 +1,9 @@
 import { supabase } from '../../../lib/supabase';
+import { NotificationBuilder, AssignNotification } from '@repo/types';
+
+
 
 export class NotificationsService {
-  async ensureSubscriber(_subscriberId: string, _email?: string) {
-    // No-op - Novu is deprecated
-  }
-
   async sendInAppNotification(params: {
     subscriberId: string;
     message: string;
@@ -50,17 +49,15 @@ export class NotificationsService {
       const actorName = actor?.name || 'A teammate';
 
       // Insert notification
-      const { error } = await supabase.from('notifications').insert({
-        user_id: params.assigneeId,
-        type: 'assign',
-        message: `${actorName} assigned a task to you: "${params.taskTitle}"`,
-        related_item_id: params.taskId,
-        read_status: false,
-        created_by: params.actorId,
-        updated_by: params.actorId,
-        updated_at: new Date().toISOString(),
-        status: 'active',
-      });
+      const notification = new NotificationBuilder(AssignNotification)
+        .ToUser(params.assigneeId)
+        .WithMessage(`${actorName} assigned a task to you: "${params.taskTitle}"`)
+        .WithRelatedItem(params.taskId)
+        .WithCreatedBy(params.actorId)
+        .WithUpdatedBy(params.actorId)
+        .Build();
+
+      const { error } = await supabase.from('notifications').insert(notification);
 
       if (error) {
         console.error('Failed to insert assign notification to Supabase:', error);
