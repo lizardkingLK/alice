@@ -27,6 +27,17 @@ function emptyStringToNull(value: unknown): unknown {
   return value === '' || value === undefined ? null : value;
 }
 
+function stringToNumberOrNull(value: unknown): unknown {
+  if (value === '' || value === undefined || value === null) {
+    return null;
+  }
+  if (typeof value === 'string') {
+    const num = Number(value);
+    return Number.isNaN(num) ? value : num;
+  }
+  return value;
+}
+
 const literalSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 type Literal = z.infer<typeof literalSchema>;
 export type SupabaseJson =
@@ -63,6 +74,14 @@ export const workItemCoreObject = z.object({
       z.uuid({ message: 'Please select a valid sprint' }).nullable()
     )
     .optional(),
+  story_points: z.preprocess(
+    stringToNumberOrNull,
+    z
+      .number()
+      .int({ message: 'Story points must be a whole number' })
+      .min(0, { message: 'Story points must be at least 0' })
+      .nullable()
+  ).optional(),
 });
 
 export const createUpdateWorkItemBodySchema = workItemCoreObject.refine(
