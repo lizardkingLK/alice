@@ -31,6 +31,7 @@ import {
   type WidgetId,
 } from './dashboard-mock-data';
 import { DashboardWidgetShell } from './dashboard-widget-shell';
+import { SIDEBAR_LAYOUT_SETTLE_MS } from '@/hooks/use-sidebar-layout-settling';
 
 const widgetById = Object.fromEntries(
   WIDGET_CATALOG.map((widget) => [widget.id, widget])
@@ -67,6 +68,8 @@ type ChartViewportType = {
 function ChartViewport({ config, children }: Readonly<ChartViewportType>) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<ChartSize | null>(null);
+  const pendingSizeRef = useRef<ChartSize | null>(null);
+  const settleTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const element = viewportRef.current;
@@ -74,31 +77,61 @@ function ChartViewport({ config, children }: Readonly<ChartViewportType>) {
       return;
     }
 
-    const updateSize = () => {
+    const applySize = (next: ChartSize) => {
+      setSize((previous) => {
+        if (previous?.width === next.width && previous.height === next.height) {
+          return previous;
+        }
+        return next;
+      });
+    };
+
+    const measure = (): ChartSize | null => {
       const { width, height } = element.getBoundingClientRect();
       const nextWidth = Math.floor(width);
       const nextHeight = Math.floor(height);
 
       if (nextWidth <= 0 || nextHeight <= 0) {
+        return null;
+      }
+
+      return { width: nextWidth, height: nextHeight };
+    };
+
+    const scheduleSizeUpdate = () => {
+      const next = measure();
+      if (!next) {
         return;
       }
 
-      setSize((previous) => {
-        if (previous?.width === nextWidth && previous.height === nextHeight) {
-          return previous;
-        }
+      pendingSizeRef.current = next;
 
-        return { width: nextWidth, height: nextHeight };
-      });
+      if (settleTimerRef.current !== null) {
+        window.clearTimeout(settleTimerRef.current);
+      }
+
+      // Coalesce ResizeObserver spam (sidebar / grid transitions) into one paint.
+      settleTimerRef.current = window.setTimeout(() => {
+        settleTimerRef.current = null;
+        if (pendingSizeRef.current) {
+          applySize(pendingSizeRef.current);
+        }
+      }, SIDEBAR_LAYOUT_SETTLE_MS);
     };
 
-    updateSize();
+    const initial = measure();
+    if (initial) {
+      applySize(initial);
+    }
 
-    const observer = new ResizeObserver(updateSize);
+    const observer = new ResizeObserver(scheduleSizeUpdate);
     observer.observe(element);
 
     return () => {
       observer.disconnect();
+      if (settleTimerRef.current !== null) {
+        window.clearTimeout(settleTimerRef.current);
+      }
     };
   }, []);
 
