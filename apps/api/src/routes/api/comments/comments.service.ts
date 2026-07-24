@@ -5,7 +5,6 @@ import {
   createCommentSnippet,
 } from './comments.utils';
 
-
 export class CommentsService {
   async listComments(workItemId?: string): Promise<CommentRow[]> {
     return await commentsRepository.listAll(workItemId);
@@ -15,28 +14,19 @@ export class CommentsService {
     actorId: string,
     comment: CommentRow
   ): Promise<void> {
-
     const mentionedUserIds = extractMentionedUserIds(
       comment.content,
       actorId
-    )
-    .filter(id => id !== actorId);
-
+    ).filter((id) => id !== actorId);
 
     if (!mentionedUserIds.length) {
       return;
     }
 
-
-    const snippet = createCommentSnippet(
-      comment.content
-    );
-
+    const snippet = createCommentSnippet(comment.content);
 
     try {
-
       for (const userId of mentionedUserIds) {
-
         await notificationsService.createMentionNotification({
           mentionedUserId: userId,
           actorId,
@@ -44,16 +34,9 @@ export class CommentsService {
           taskId: comment.work_item_id,
           commentContentSnippet: snippet,
         });
-
       }
-
-    } catch(error) {
-
-      console.error(
-        'Failed to send mention notification:',
-        error
-      );
-
+    } catch (error) {
+      console.error('Failed to send mention notification:', error);
     }
   }
 
@@ -69,7 +52,7 @@ export class CommentsService {
       ...input,
       author_id: actorId,
     });
-    
+
     this.notifyMentionedUsers(actorId, created).catch((err) => {
       console.error('Failed to notify mentioned users in createComment:', err);
     });
@@ -77,10 +60,13 @@ export class CommentsService {
     return created;
   }
 
-  async updateComment(id: string, content: string, actorId?: string): Promise<CommentRow> {
+  async updateComment(
+    id: string,
+    content: string,
+    actorId?: string
+  ): Promise<CommentRow> {
     const updated = await commentsRepository.update(id, content);
-    
-    
+
     const editorId = actorId || updated.author_id;
     this.notifyMentionedUsers(editorId, updated).catch((err) => {
       console.error('Failed to notify mentioned users in updateComment:', err);

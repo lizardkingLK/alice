@@ -1,8 +1,9 @@
 import { supabase } from '../../../lib/supabase';
-import { NotificationBuilder, AssignNotification, MentionNotification } from '@repo/types';
-
-
-
+import {
+  NotificationBuilder,
+  AssignNotification,
+  MentionNotification,
+} from '@repo/types';
 
 export class NotificationsService {
   async sendInAppNotification(params: {
@@ -11,7 +12,8 @@ export class NotificationsService {
     title?: string;
   }) {
     // Save to Supabase notifications table if subscriberId is a valid UUID
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (uuidRegex.test(params.subscriberId)) {
       try {
         const { error } = await supabase.from('notifications').insert({
@@ -52,16 +54,23 @@ export class NotificationsService {
       // Insert notification
       const notification = new NotificationBuilder(AssignNotification)
         .ToUser(params.assigneeId)
-        .WithMessage(`${actorName} assigned a task to you: "${params.taskTitle}"`)
+        .WithMessage(
+          `${actorName} assigned a task to you: "${params.taskTitle}"`
+        )
         .WithRelatedItem(params.taskId)
         .WithCreatedBy(params.actorId)
         .WithUpdatedBy(params.actorId)
         .Build();
 
-      const { error } = await supabase.from('notifications').insert(notification);
+      const { error } = await supabase
+        .from('notifications')
+        .insert(notification);
 
       if (error) {
-        console.error('Failed to insert assign notification to Supabase:', error);
+        console.error(
+          'Failed to insert assign notification to Supabase:',
+          error
+        );
       }
     } catch (err) {
       console.error('Error creating assign notification:', err);
@@ -89,16 +98,23 @@ export class NotificationsService {
 
       const notification = new NotificationBuilder(MentionNotification)
         .ToUser(params.mentionedUserId)
-        .WithMessage(`${actorName} mentioned you in a comment on "${params.taskTitle}": "${params.commentContentSnippet}"`)
+        .WithMessage(
+          `${actorName} mentioned you in a comment on "${params.taskTitle}": "${params.commentContentSnippet}"`
+        )
         .WithRelatedItem(params.taskId)
         .WithCreatedBy(params.actorId)
         .WithUpdatedBy(params.actorId)
         .Build();
 
-      const { error } = await supabase.from('notifications').insert(notification);
+      const { error } = await supabase
+        .from('notifications')
+        .insert(notification);
 
       if (error) {
-        console.error('Failed to insert mention notification to Supabase:', error);
+        console.error(
+          'Failed to insert mention notification to Supabase:',
+          error
+        );
       }
     } catch (err) {
       console.error('Error creating mention notification:', err);

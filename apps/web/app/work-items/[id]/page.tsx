@@ -1,23 +1,13 @@
+import { Suspense } from 'react';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
-import WorkItemDetails from '@/app/work-items/_components/workItem-details';
-import { getWorkItem } from '@/app/work-items/_services/workItem.service.server';
-import { getWorkItemDiscussion } from '@/app/comments/_services/comments.service.server';
-import { getDbUser } from '@/lib/auth';
+import { WorkItemDetailsData } from '@/app/work-items/[id]/_components/work-item-details-data';
+import { WorkItemDetailsSkeleton } from '@/app/work-items/[id]/_components/work-item-details-skeleton';
 
 export default async function WorkItemPage({
   params,
 }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = await params;
-
-  const [workItem, initialComments] = await Promise.all([
-    getWorkItem(id),
-    getWorkItemDiscussion(id),
-  ]);
-
-  const shortId = workItem.id.slice(0, 8).toUpperCase();
-
-  const dbUser = await getDbUser();
-  const currentUserId = dbUser?.id ?? 'user-admin-1';
+  const shortId = id.slice(0, 8).toUpperCase();
 
   return (
     <DashboardShell
@@ -25,14 +15,12 @@ export default async function WorkItemPage({
       breadcrumbOverrides={[
         { label: 'Dashboard', url: '/dashboard' },
         { label: 'Work Items', url: '/work-items' },
-        { label: shortId, url: `/work-items/${workItem.id}` },
+        { label: shortId, url: `/work-items/${id}` },
       ]}
     >
-      <WorkItemDetails
-        workItemDetails={workItem}
-        initialComments={initialComments}
-        currentUserId={currentUserId}
-      />
+      <Suspense fallback={<WorkItemDetailsSkeleton />}>
+        <WorkItemDetailsData workItemId={id} />
+      </Suspense>
     </DashboardShell>
   );
 }

@@ -103,12 +103,16 @@ workItemsRouter.post(
       );
 
       if (workItem?.assignee_id && workItem.assignee_id !== req.userId) {
-        notificationsService.createAssignNotification({
-          assigneeId: workItem.assignee_id,
-          actorId: req.userId!,
-          taskTitle: workItem.title,
-          taskId: workItem.id,
-        }).catch((err) => console.error('Failed to trigger assign notification:', err));
+        notificationsService
+          .createAssignNotification({
+            assigneeId: workItem.assignee_id,
+            actorId: req.userId!,
+            taskTitle: workItem.title,
+            taskId: workItem.id,
+          })
+          .catch((err) =>
+            console.error('Failed to trigger assign notification:', err)
+          );
       }
 
       res.status(201).json({ data: workItem, error: null });
@@ -182,14 +186,26 @@ workItemsRouter.patch(
         payload
       );
 
-      const assigneeChanged = workItem && workItem.assignee_id !== existingWorkItem.assignee_id;
-      if (assigneeChanged && workItem.assignee_id && workItem.assignee_id !== req.userId) {
-        notificationsService.createAssignNotification({
-          assigneeId: workItem.assignee_id,
-          actorId: req.userId!,
-          taskTitle: workItem.title,
-          taskId: workItem.id,
-        }).catch((err) => console.error('Failed to trigger assign notification on update:', err));
+      const assigneeChanged =
+        workItem && workItem.assignee_id !== existingWorkItem.assignee_id;
+      if (
+        assigneeChanged &&
+        workItem.assignee_id &&
+        workItem.assignee_id !== req.userId
+      ) {
+        notificationsService
+          .createAssignNotification({
+            assigneeId: workItem.assignee_id,
+            actorId: req.userId!,
+            taskTitle: workItem.title,
+            taskId: workItem.id,
+          })
+          .catch((err) =>
+            console.error(
+              'Failed to trigger assign notification on update:',
+              err
+            )
+          );
       }
 
       res.status(200).json({ data: workItem, error: null });

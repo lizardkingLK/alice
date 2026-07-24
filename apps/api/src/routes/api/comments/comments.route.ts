@@ -9,17 +9,21 @@ import { createCommentSchema, updateCommentSchema } from './comments.schemas';
 
 const commentsRouter: Router = Router();
 
-commentsRouter.get('/', requireApiAuth, async (req: AuthenticatedRequest, res) => {
-  try {
-    const workItemId = req.query.work_item_id as string | undefined;
-    const comments = await commentsService.listComments(workItemId);
-    res.json({ comments });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Failed to retrieve comments';
-    res.status(500).json({ error: message });
+commentsRouter.get(
+  '/',
+  requireApiAuth,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const workItemId = req.query.work_item_id as string | undefined;
+      const comments = await commentsService.listComments(workItemId);
+      res.json({ comments });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to retrieve comments';
+      res.status(500).json({ error: message });
+    }
   }
-});
+);
 
 commentsRouter.post(
   '/',
