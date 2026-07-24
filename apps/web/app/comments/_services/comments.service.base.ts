@@ -76,9 +76,19 @@ export function createCommentsService(
       return data.comment;
     },
 
-    async archiveComment(id: string): Promise<void> {
-      await apiFetch(`${apiComments}/${id}`, {
+    async archiveComment(id: string, permanent?: boolean): Promise<void> {
+      let url = `${apiComments}/${id}`;
+      if (permanent) {
+        url += `?permanent=true`;
+      }
+      await apiFetch(url, {
         method: 'DELETE',
+      });
+    },
+
+    async restoreComment(id: string): Promise<void> {
+      await apiFetch(`${apiComments}/${id}/restore`, {
+        method: 'POST',
       });
     },
   };

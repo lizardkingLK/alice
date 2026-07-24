@@ -6,6 +6,7 @@ import {
   createComment as apiCreateComment,
   updateComment as apiUpdateComment,
   archiveComment as apiArchiveComment,
+  restoreComment as apiRestoreComment,
 } from '../_services/comments.service.server';
 import type { CommentItem } from '../_services/comments.service.base';
 
@@ -66,6 +67,27 @@ export async function updateCommentAction(
 }
 
 export async function archiveCommentAction(
+  commentId: string,
+  permanent?: boolean
+): Promise<{ success: boolean; error?: string }> {
+  const currentUser = await getDbUser();
+  if (!currentUser) {
+    return { success: false, error: 'Not authenticated.' };
+  }
+
+  try {
+    await apiArchiveComment(commentId, permanent);
+
+    revalidatePath('/comments');
+    return { success: true };
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : 'An unexpected error occurred.';
+    return { success: false, error: message };
+  }
+}
+
+export async function restoreCommentAction(
   commentId: string
 ): Promise<{ success: boolean; error?: string }> {
   const currentUser = await getDbUser();
@@ -74,7 +96,7 @@ export async function archiveCommentAction(
   }
 
   try {
-    await apiArchiveComment(commentId);
+    await apiRestoreComment(commentId);
 
     revalidatePath('/comments');
     return { success: true };

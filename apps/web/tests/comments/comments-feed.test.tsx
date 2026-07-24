@@ -7,6 +7,7 @@ import {
   createCommentAction,
   updateCommentAction,
   archiveCommentAction,
+  restoreCommentAction,
 } from '@/app/comments/_components/actions';
 
 vi.mock('@/app/comments/_components/actions', () => {
@@ -14,6 +15,7 @@ vi.mock('@/app/comments/_components/actions', () => {
     createCommentAction: vi.fn(),
     updateCommentAction: vi.fn(),
     archiveCommentAction: vi.fn(),
+    restoreCommentAction: vi.fn(),
   };
 });
 
@@ -39,6 +41,35 @@ vi.mock('@repo/ui/components/ui/dropdown-menu', () => {
       <button type="button" onClick={onClick}>
         {children}
       </button>
+    ),
+  };
+});
+
+vi.mock('@repo/ui/components/ui/select', () => {
+  return {
+    Select: ({
+      children,
+      value,
+      onValueChange,
+    }: {
+      children: ReactNode;
+      value: string;
+      // eslint-disable-next-line no-unused-vars
+      onValueChange: (val: string) => void;
+    }) => (
+      <select
+        value={value}
+        onChange={(e) => onValueChange(e.target.value)}
+        data-testid="status-select"
+      >
+        {children}
+      </select>
+    ),
+    SelectTrigger: ({ children }: { children: ReactNode }) => <>{children}</>,
+    SelectValue: ({ placeholder }: { placeholder: string }) => <>{placeholder}</>,
+    SelectContent: ({ children }: { children: ReactNode }) => <>{children}</>,
+    SelectItem: ({ children, value }: { children: ReactNode; value: string }) => (
+      <option value={value}>{children}</option>
     ),
   };
 });
@@ -393,7 +424,7 @@ describe('CommentsFeed Component', () => {
     });
   });
 
-  it('calls archiveComment when a thread reply is archived', async () => {
+  it('calls archiveCommentAction (permanent) when a thread reply is deleted', async () => {
     vi.mocked(archiveCommentAction).mockResolvedValue({ success: true });
 
     render(
@@ -404,12 +435,84 @@ describe('CommentsFeed Component', () => {
     const menuBtn = screen.getAllByRole('button', { name: /Open menu/i })[1]!;
     fireEvent.click(menuBtn);
 
-    // Click Archive button (the second Archive button)
-    const archiveBtn = screen.getAllByText('Archive')[1]!;
-    fireEvent.click(archiveBtn);
+    // Click Delete button to open modal
+    const deleteBtn = screen.getByText('Delete');
+    fireEvent.click(deleteBtn);
+
+    // Click confirm delete button
+    const confirmBtn = screen.getByRole('button', { name: 'Delete Comment' });
+    fireEvent.click(confirmBtn);
 
     await waitFor(() => {
-      expect(archiveCommentAction).toHaveBeenCalledWith('reply-1');
+      expect(archiveCommentAction).toHaveBeenCalledWith('reply-1', true);
+    });
+  });
+
+  it('calls restoreCommentAction when an archived parent comment is restored', async () => {
+    const archivedComment: CommentItem = {
+      ...mockComments[0]!,
+      id: 'comment-archived-1',
+      status: 'archived',
+    };
+    vi.mocked(restoreCommentAction).mockResolvedValue({ success: true });
+
+    render(
+      <CommentsFeed
+        initialComments={[archivedComment]}
+        workItems={mockWorkItems}
+      />
+    );
+
+    // Switch status filter to "archived"
+    const select = screen.getAllByTestId('status-select')[1]!;
+    fireEvent.change(select, { target: { value: 'archived' } });
+
+    // Open dropdown menu
+    const menuBtn = screen.getByRole('button', { name: /Open menu/i });
+    fireEvent.click(menuBtn);
+
+    // Click Restore button
+    const restoreBtn = screen.getByText('Restore');
+    fireEvent.click(restoreBtn);
+
+    await waitFor(() => {
+      expect(restoreCommentAction).toHaveBeenCalledWith('comment-archived-1');
+    });
+  });
+
+  it('calls archiveCommentAction (permanent) when an archived parent comment is deleted permanently', async () => {
+    const archivedComment: CommentItem = {
+      ...mockComments[0]!,
+      id: 'comment-archived-1',
+      status: 'archived',
+    };
+    vi.mocked(archiveCommentAction).mockResolvedValue({ success: true });
+
+    render(
+      <CommentsFeed
+        initialComments={[archivedComment]}
+        workItems={mockWorkItems}
+      />
+    );
+
+    // Switch status filter to "archived"
+    const select = screen.getAllByTestId('status-select')[1]!;
+    fireEvent.change(select, { target: { value: 'archived' } });
+
+    // Open dropdown menu
+    const menuBtn = screen.getByRole('button', { name: /Open menu/i });
+    fireEvent.click(menuBtn);
+
+    // Click Delete Permanently button to open confirm modal
+    const deleteBtn = screen.getByText('Delete Permanently');
+    fireEvent.click(deleteBtn);
+
+    // Click Delete Comment in the confirm modal
+    const confirmBtn = screen.getByRole('button', { name: 'Delete Comment' });
+    fireEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(archiveCommentAction).toHaveBeenCalledWith('comment-archived-1', true);
     });
   });
 });

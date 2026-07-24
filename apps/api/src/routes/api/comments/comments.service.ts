@@ -92,6 +92,14 @@ export class CommentsService {
   async archiveComment(id: string): Promise<void> {
     await commentsRepository.archive(id);
   }
+
+  async restoreComment(id: string): Promise<void> {
+    await commentsRepository.restore(id);
+  }
+
+  async hardDeleteComment(id: string): Promise<void> {
+    await commentsRepository.hardDelete(id);
+  }
 }
 
 export const commentsService = new CommentsService();

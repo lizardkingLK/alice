@@ -113,6 +113,33 @@ export class CommentsRepository {
       throw new Error(`Failed to archive comment: ${error.message}`);
     }
   }
+
+  async restore(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('comments')
+      .update({
+        status: 'active',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('database error restore comment:', error.message);
+      throw new Error(`Failed to restore comment: ${error.message}`);
+    }
+  }
+
+  async hardDelete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('comments')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('database error hard delete comment:', error.message);
+      throw new Error(`Failed to delete comment: ${error.message}`);
+    }
+  }
 }
 
 export const commentsRepository = new CommentsRepository();

@@ -19,6 +19,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@repo/ui/components/ui/dialog';
 import {
@@ -56,6 +57,10 @@ import {
   Send,
   Building2,
   Tag,
+  RotateCcw,
+  Trash2,
+  AlertTriangle,
+  Loader2,
 } from '@repo/ui/lib/icons';
 import {
   CommentItem,
@@ -65,6 +70,7 @@ import {
   createCommentAction,
   updateCommentAction,
   archiveCommentAction,
+  restoreCommentAction,
 } from './actions';
 
 type CommentsFeedProps = {
@@ -520,6 +526,10 @@ export function CommentsFeed({
   // Edit State
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+
+  // Delete Confirmation State
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Users for mentions
   const [users, setUsers] = useState<CommentUser[]>([]);
@@ -990,6 +1000,48 @@ export function CommentsFeed({
     }
   };
 
+  // Handle Restore
+  const handleRestore = async (commentId: string) => {
+    try {
+      const res = await restoreCommentAction(commentId);
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to restore comment');
+      }
+      setComments((prev) =>
+        prev.map((c) => (c.id === commentId ? { ...c, status: 'active' } : c))
+      );
+    } catch (err) {
+      console.error('Failed to restore comment:', err);
+      setComments((prev) =>
+        prev.map((c) => (c.id === commentId ? { ...c, status: 'active' } : c))
+      );
+    }
+  };
+
+  // Handle Permanent Delete
+  const handleDeletePermanent = (commentId: string) => {
+    setDeletingCommentId(commentId);
+  };
+
+  // Confirm and execute delete from modal
+  const confirmDelete = async () => {
+    if (!deletingCommentId) return;
+    setIsDeleting(true);
+    try {
+      const res = await archiveCommentAction(deletingCommentId, true);
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to delete comment');
+      }
+      setComments((prev) => prev.filter((c) => c.id !== deletingCommentId));
+    } catch (err) {
+      console.error('Failed to delete comment permanently:', err);
+      setComments((prev) => prev.filter((c) => c.id !== deletingCommentId));
+    } finally {
+      setIsDeleting(false);
+      setDeletingCommentId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {!workItemId && (
@@ -1209,28 +1261,48 @@ export function CommentsFeed({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setEditingCommentId(parent.id);
-                              // Replace @[Name](userId) with @Name, and #[KEY](id) with #KEY
-                              const rawText = parent.content
-                                .replace(/@\[([^\]]+)\]\(([^)]+)\)/g, '@$1')
-                                .replace(/#\[([^\]]+)\]\(([^)]+)\)/g, '#$1');
-                              setEditContent(rawText);
-                            }}
-                            className="gap-2"
-                          >
-                            <Pencil className="size-3.5" />
-                            Edit
-                          </DropdownMenuItem>
                           {parent.status === 'active' && (
-                            <DropdownMenuItem
-                              onClick={() => handleArchive(parent.id)}
-                              className="text-amber-600 focus:text-amber-600 dark:text-amber-400"
-                            >
-                              <Archive className="size-3.5" />
-                              Archive
-                            </DropdownMenuItem>
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setEditingCommentId(parent.id);
+                                  // Replace @[Name](userId) with @Name, and #[KEY](id) with #KEY
+                                  const rawText = parent.content
+                                    .replace(/@\[([^\]]+)\]\(([^)]+)\)/g, '@$1')
+                                    .replace(/#\[([^\]]+)\]\(([^)]+)\)/g, '#$1');
+                                  setEditContent(rawText);
+                                }}
+                                className="gap-2"
+                              >
+                                <Pencil className="size-3.5" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleArchive(parent.id)}
+                                className="text-amber-600 focus:text-amber-600 dark:text-amber-400 gap-2"
+                              >
+                                <Archive className="size-3.5" />
+                                Archive
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                           {parent.status === 'archived' && (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => handleRestore(parent.id)}
+                                className="text-emerald-600 focus:text-emerald-600 dark:text-emerald-400 gap-2"
+                              >
+                                <RotateCcw className="size-3.5" />
+                                Restore
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeletePermanent(parent.id)}
+                                className="text-destructive focus:text-destructive gap-2"
+                              >
+                                <Trash2 className="size-3.5" />
+                                Delete Permanently
+                              </DropdownMenuItem>
+                            </>
                           )}
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -1340,15 +1412,13 @@ export function CommentsFeed({
                                   <Pencil className="size-3" />
                                   Edit
                                 </DropdownMenuItem>
-                                {reply.status === 'active' && (
-                                  <DropdownMenuItem
-                                    onClick={() => handleArchive(reply.id)}
-                                    className="text-amber-600 focus:text-amber-600 dark:text-amber-400 gap-2 text-xs"
-                                  >
-                                    <Archive className="size-3" />
-                                    Archive
-                                  </DropdownMenuItem>
-                                )}
+                                <DropdownMenuItem
+                                  onClick={() => handleDeletePermanent(reply.id)}
+                                  className="text-destructive focus:text-destructive gap-2 text-xs"
+                                >
+                                  <Trash2 className="size-3" />
+                                  Delete
+                                </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           )}
@@ -1541,6 +1611,51 @@ export function CommentsFeed({
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deletingCommentId !== null}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) setDeletingCommentId(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-rose-500">
+              <AlertTriangle className="size-5 shrink-0" />
+              Confirm Delete
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently delete this comment? This action cannot be undone and will remove the comment record from the database.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isDeleting}
+              onClick={() => setDeletingCommentId(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={isDeleting}
+              onClick={confirmDelete}
+              className="bg-rose-600 text-white hover:bg-rose-700"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="animate-spin mr-1.5 size-4" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete Comment'
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

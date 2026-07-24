@@ -25,3 +25,4 @@ export async function getWorkItemDiscussion(
 export const createComment = service.createComment;
 export const updateComment = service.updateComment;
 export const archiveComment = service.archiveComment;
+export const restoreComment = service.restoreComment;
