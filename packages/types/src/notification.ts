@@ -19,6 +19,14 @@ export class AssignNotification extends NotificationType {
   }
 }
 
+export class MentionNotification extends NotificationType {
+  constructor() {
+    super();
+    this.type = 'mention';
+  }
+}
+
+
 export class NotificationBuilder<T extends NotificationType> {
   private readonly instance: T;
 

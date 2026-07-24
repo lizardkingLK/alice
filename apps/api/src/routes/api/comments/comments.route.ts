@@ -58,7 +58,8 @@ commentsRouter.patch(
     try {
       const updated = await commentsService.updateComment(
         req.params.id!,
-        validation.data.content
+        validation.data.content,
+        req.userId!
       );
       res.json({ comment: updated });
     } catch (error) {

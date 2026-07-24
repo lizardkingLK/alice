@@ -692,7 +692,8 @@ export function CommentsFeed({
   // Helper to parse mentions, notify users, and format before saving comment to DB
   const processCommentBeforeSave = async (
     rawContent: string,
-    targetWorkItemId: string
+    targetWorkItemId: string,
+    shouldNotify = false
   ) => {
     let processed = rawContent;
     const mentionedUserIds: string[] = [];
@@ -727,11 +728,13 @@ export function CommentsFeed({
     }
 
     // Insert database notifications for mentioned users
-    await createMentionNotifications(
-      mentionedUserIds,
-      rawContent,
-      targetWorkItemId
-    );
+    if (shouldNotify) {
+      await createMentionNotifications(
+        mentionedUserIds,
+        rawContent,
+        targetWorkItemId
+      );
+    }
 
     return processed;
   };
@@ -815,7 +818,8 @@ export function CommentsFeed({
       const selectedItem = workItems.find((w) => w.id === newWorkItemId);
       const processedContent = await processCommentBeforeSave(
         newContent.trim(),
-        newWorkItemId
+        newWorkItemId,
+        true
       );
       const mockCreated: CommentItem = {
         id: `comment-${Date.now()}`,
@@ -878,7 +882,8 @@ export function CommentsFeed({
       const parentComment = comments.find((c) => c.id === parentId);
       const processedContent = await processCommentBeforeSave(
         replyContent.trim(),
-        workItemId
+        workItemId,
+        true
       );
       const mockReply: CommentItem = {
         id: `reply-${Date.now()}`,
@@ -925,7 +930,8 @@ export function CommentsFeed({
       console.error('Failed to update comment:', err);
       const processedContent = await processCommentBeforeSave(
         editContent.trim(),
-        targetWIId
+        targetWIId,
+        true
       );
       setComments((prev) =>
         prev.map((c) =>
