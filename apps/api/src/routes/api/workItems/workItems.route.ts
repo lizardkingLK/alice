@@ -14,6 +14,78 @@ import {
 } from './workItems.schemas';
 import type { DbWorkItem } from './workItems.repository';
 
+type PatchUpdateWorkItemPayload = z.infer<typeof patchUpdateWorkItemBodySchema>;
+
+function parsePatchBody(body: Record<string, unknown>) {
+  const processedBody = { ...body };
+
+  if (typeof body.description === 'string') {
+    try {
+      processedBody.description = JSON.parse(body.description);
+    } catch {
+      return null;
+    }
+  }
+
+  return processedBody;
+}
+
+function buildWorkItemPayload(
+  parsedData: PatchUpdateWorkItemPayload,
+  existingWorkItem: DbWorkItem
+) {
+  return {
+    title: parsedData.title ?? existingWorkItem.title,
+    project_id: parsedData.project_id ?? existingWorkItem.project_id,
+    type: parsedData.type ?? existingWorkItem.type,
+    assignee_id:
+      parsedData.assignee_id !== undefined
+        ? parsedData.assignee_id
+        : existingWorkItem.assignee_id,
+    due_date:
+      parsedData.due_date !== undefined
+        ? parsedData.due_date
+        : existingWorkItem.due_date,
+    description: (parsedData.description !== undefined
+      ? parsedData.description
+      : existingWorkItem.description) as SupabaseJson,
+    status: parsedData.status ?? existingWorkItem.status,
+    sprint_id:
+      parsedData.sprint_id !== undefined
+        ? parsedData.sprint_id
+        : existingWorkItem.sprint_id,
+    story_points:
+      parsedData.story_points !== undefined
+        ? parsedData.story_points
+        : existingWorkItem.story_points,
+  };
+}
+
+function shouldNotifyAssigneeChange(
+  existingWorkItem: DbWorkItem,
+  workItem: DbWorkItem | null,
+  actorId?: string
+) {
+  return Boolean(
+    workItem?.assignee_id &&
+      workItem.assignee_id !== existingWorkItem.assignee_id &&
+      workItem.assignee_id !== actorId
+  );
+}
+
+function createAssignNotification(workItem: DbWorkItem, actorId: string) {
+  notificationsService
+    .createAssignNotification({
+      assigneeId: workItem.assignee_id!,
+      actorId,
+      taskTitle: workItem.title,
+      taskId: workItem.id,
+    })
+    .catch((err) =>
+      console.error('Failed to trigger assign notification on update:', err)
+    );
+}
+
 const workItemsRouter: Router = Router();
 
 workItemsRouter.get(
@@ -129,17 +201,12 @@ workItemsRouter.patch(
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
     try {
-      const processedBody = { ...req.body };
-
-      if (typeof req.body.description === 'string') {
-        try {
-          processedBody.description = JSON.parse(req.body.description);
-        } catch {
-          return res.status(400).json({
-            data: null,
-            error: 'Invalid JSON format provided for description field',
-          });
-        }
+      const processedBody = parsePatchBody(req.body as Record<string, unknown>);
+      if (!processedBody) {
+        return res.status(400).json({
+          data: null,
+          error: 'Invalid JSON format provided for description field',
+        });
       }
 
       const parsed = patchUpdateWorkItemBodySchema.safeParse(processedBody);
@@ -158,54 +225,18 @@ workItemsRouter.patch(
           .json({ data: null, error: 'Work item not found' });
       }
 
-      const payload = {
-        title: parsed.data.title ?? existingWorkItem.title,
-        project_id: parsed.data.project_id ?? existingWorkItem.project_id,
-        type: parsed.data.type ?? existingWorkItem.type,
-        assignee_id:
-          parsed.data.assignee_id !== undefined
-            ? parsed.data.assignee_id
-            : existingWorkItem.assignee_id,
-        due_date:
-          parsed.data.due_date !== undefined
-            ? parsed.data.due_date
-            : existingWorkItem.due_date,
-        description: (parsed.data.description !== undefined
-          ? parsed.data.description
-          : existingWorkItem.description) as SupabaseJson,
-        status: parsed.data.status ?? existingWorkItem.status,
-        sprint_id:
-          parsed.data.sprint_id !== undefined
-            ? parsed.data.sprint_id
-            : existingWorkItem.sprint_id,
-      };
-
+      const payload = buildWorkItemPayload(parsed.data, existingWorkItem);
       const workItem = await workItemService.updateWorkItem(
         req.userId!,
         req.params.id!,
         payload
       );
 
-      const assigneeChanged =
-        workItem && workItem.assignee_id !== existingWorkItem.assignee_id;
       if (
-        assigneeChanged &&
-        workItem.assignee_id &&
-        workItem.assignee_id !== req.userId
+        workItem &&
+        shouldNotifyAssigneeChange(existingWorkItem, workItem, req.userId)
       ) {
-        notificationsService
-          .createAssignNotification({
-            assigneeId: workItem.assignee_id,
-            actorId: req.userId!,
-            taskTitle: workItem.title,
-            taskId: workItem.id,
-          })
-          .catch((err) =>
-            console.error(
-              'Failed to trigger assign notification on update:',
-              err
-            )
-          );
+        createAssignNotification(workItem, req.userId!);
       }
 
       res.status(200).json({ data: workItem, error: null });

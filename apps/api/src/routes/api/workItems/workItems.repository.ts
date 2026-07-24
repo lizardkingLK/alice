@@ -115,6 +115,7 @@ export class WorkItemRepository {
         sprint_id: input.sprint_id,
         reporter_id: input.createdBy,
         status: 'New',
+        story_points: input.story_points,
         ...auditCreateWithoutStatus(input.createdBy),
       })
       .select('*, assignee:users!assignee_id(id, name, email)')
@@ -140,6 +141,7 @@ export class WorkItemRepository {
         description: input.description,
         status: input.status,
         sprint_id: input.sprint_id,
+        story_points: input.story_points,
         updated_by: input.updatedBy,
         updated_at: new Date().toISOString(),
       })

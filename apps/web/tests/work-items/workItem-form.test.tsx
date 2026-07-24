@@ -46,6 +46,7 @@ describe('WorkItemForm', () => {
     expect(screen.getByLabelText(/^Type$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Due date/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Assign to/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Story points/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText(/^Project$/i));
     expect(
@@ -98,6 +99,9 @@ describe('WorkItemForm', () => {
         name: `${projectMembers[0]!.name} (${projectMembers[0]!.email})`,
       })
     );
+    fireEvent.change(screen.getByLabelText(/Story points/i), {
+      target: { value: '8' },
+    });
 
     fireEvent.submit(screen.getByLabelText(/^Title$/i).closest('form')!);
 
@@ -112,6 +116,7 @@ describe('WorkItemForm', () => {
     expect(formData.get('type')).toBe('Task');
     expect(formData.get('due_date')).toBe('2026-08-01');
     expect(formData.get('assignee_id')).toBe(projectMembers[0]!.id);
+    expect(formData.get('story_points')).toBe('8');
 
     expect(
       await screen.findByText(/Work item created successfully/i)
@@ -131,6 +136,7 @@ describe('WorkItemForm', () => {
       type: 'Story',
       due_date: '2026-07-20',
       assignee_id: projectMembers[0]!.id,
+      story_points: 5,
     });
     const updated = workItemFactory.build({
       ...itemToEdit,
@@ -153,6 +159,7 @@ describe('WorkItemForm', () => {
     // Assert — populated
     expect(screen.getByLabelText(/^Title$/i)).toHaveValue('Original title');
     expect(screen.getByLabelText(/Due date/i)).toHaveValue('2026-07-20');
+    expect(screen.getByLabelText(/Story points/i)).toHaveValue(5);
     expect(
       screen.getByRole('button', { name: /Save Changes/i })
     ).toBeInTheDocument();
@@ -160,6 +167,9 @@ describe('WorkItemForm', () => {
     // Act
     fireEvent.change(screen.getByLabelText(/^Title$/i), {
       target: { value: 'Updated title' },
+    });
+    fireEvent.change(screen.getByLabelText(/Story points/i), {
+      target: { value: '13' },
     });
     fireEvent.submit(screen.getByLabelText(/^Title$/i).closest('form')!);
 
@@ -171,6 +181,7 @@ describe('WorkItemForm', () => {
 
     const formData = vi.mocked(updateWorkItem).mock.calls[0]![1] as FormData;
     expect(formData.get('title')).toBe('Updated title');
+    expect(formData.get('story_points')).toBe('13');
 
     expect(
       await screen.findByText(/Work item updated successfully/i)

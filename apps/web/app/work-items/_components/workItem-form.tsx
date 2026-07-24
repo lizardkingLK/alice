@@ -193,6 +193,20 @@ export function WorkItemForm({
           </Select>
           <input type="hidden" name="assignee_id" value={assigneeId} />
         </div>
+
+        {/* Story Points */}
+        <div className="space-y-2 sm:col-span-2">
+          <Label htmlFor="story_points">Story points</Label>
+          <Input
+            id="story_points"
+            name="story_points"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="Enter Story Points"
+            defaultValue={itemToEdit?.story_points ?? ''}
+          />
+        </div>
       </div>
 
       {state?.error ? (

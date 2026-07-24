@@ -731,7 +731,10 @@ export function BacklogWorkspace({
 
                       <div className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-2">
-                          <span className="text-foreground font-semibold">
+                          <span
+                            className="text-foreground max-w-45 truncate font-semibold sm:max-w-[320px] md:max-w-120"
+                            title={sprint.name}
+                          >
                             {sprint.name}
                           </span>
                           {sprint.status === 'Ongoing' && (
@@ -992,158 +995,192 @@ export function BacklogWorkspace({
                   <span className="text-muted-foreground self-center">
                     Project
                   </span>
-                  <Select
-                    value={selectedItem.project_id}
-                    onValueChange={(val) =>
-                      handleUpdateItemField(selectedItem.id, 'project_id', val)
-                    }
-                  >
-                    <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {projects.map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="min-w-0">
+                    <Select
+                      value={selectedItem.project_id}
+                      onValueChange={(val) =>
+                        handleUpdateItemField(selectedItem.id, 'project_id', val)
+                      }
+                    >
+                      <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {projects.map((project) => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
                   {/* Status Dropdown */}
                   <span className="text-muted-foreground self-center">
                     Status
                   </span>
-                  <Select
-                    value={selectedItem.status}
-                    onValueChange={(val) =>
-                      handleUpdateItemField(
-                        selectedItem.id,
-                        'status',
-                        val as DbWorkItem['status']
-                      )
-                    }
-                  >
-                    <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Draft">Draft</SelectItem>
-                      <SelectItem value="New">New</SelectItem>
-                      <SelectItem value="ToDo">To Do</SelectItem>
-                      <SelectItem value="InProgress">In Progress</SelectItem>
-                      <SelectItem value="Testing">Testing</SelectItem>
-                      <SelectItem value="Done">Done</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="min-w-0">
+                    <Select
+                      value={selectedItem.status}
+                      onValueChange={(val) =>
+                        handleUpdateItemField(
+                          selectedItem.id,
+                          'status',
+                          val as DbWorkItem['status']
+                        )
+                      }
+                    >
+                      <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Draft">Draft</SelectItem>
+                        <SelectItem value="New">New</SelectItem>
+                        <SelectItem value="ToDo">To Do</SelectItem>
+                        <SelectItem value="InProgress">In Progress</SelectItem>
+                        <SelectItem value="Testing">Testing</SelectItem>
+                        <SelectItem value="Done">Done</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
                   {/* Priority Dropdown */}
                   <span className="text-muted-foreground self-center">
                     Priority
                   </span>
-                  <Select
-                    value={mapPriority(selectedItem.priority)}
-                    onValueChange={(val) =>
-                      handleUpdateItemField(
-                        selectedItem.id,
-                        'priority',
-                        val as DbWorkItem['priority']
-                      )
-                    }
-                  >
-                    <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="high">▲ High</SelectItem>
-                      <SelectItem value="medium">▪ Medium</SelectItem>
-                      <SelectItem value="low">▼ Low</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="min-w-0">
+                    <Select
+                      value={mapPriority(selectedItem.priority)}
+                      onValueChange={(val) =>
+                        handleUpdateItemField(
+                          selectedItem.id,
+                          'priority',
+                          val as DbWorkItem['priority']
+                        )
+                      }
+                    >
+                      <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="high">▲ High</SelectItem>
+                        <SelectItem value="medium">▪ Medium</SelectItem>
+                        <SelectItem value="low">▼ Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
                   {/* Assignee Dropdown */}
                   <span className="text-muted-foreground self-center">
                     Assignee
                   </span>
-                  <Select
-                    value={selectedItem.assignee_id || 'unassigned'}
-                    onValueChange={(val) =>
-                      handleUpdateItemField(
-                        selectedItem.id,
-                        'assignee_id',
-                        val === 'unassigned' ? null : val
-                      )
-                    }
-                  >
-                    <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {projectMembers.map((member) => (
-                        <SelectItem key={member.id} value={member.id}>
-                          <div className="flex items-center gap-2 text-xs">
-                            <Avatar size="sm" className="size-5">
-                              <AvatarFallback className="text-[8px]">
-                                {getInitials(member.name)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span>{member.name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="min-w-0">
+                    <Select
+                      value={selectedItem.assignee_id || 'unassigned'}
+                      onValueChange={(val) =>
+                        handleUpdateItemField(
+                          selectedItem.id,
+                          'assignee_id',
+                          val === 'unassigned' ? null : val
+                        )
+                      }
+                    >
+                      <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
+                        {projectMembers.map((member) => (
+                          <SelectItem key={member.id} value={member.id}>
+                            <div className="flex items-center gap-2 text-xs">
+                              <Avatar size="sm" className="size-5">
+                                <AvatarFallback className="text-[8px]">
+                                  {getInitials(member.name)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span>{member.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
                   {/* Sprint Selection */}
                   <span className="text-muted-foreground self-center">
                     Sprint
                   </span>
-                  <Select
-                    value={selectedItem.sprint_id || 'backlog'}
-                    onValueChange={(val) =>
-                      handleUpdateItemField(
-                        selectedItem.id,
-                        'sprint_id',
-                        val === 'backlog' ? null : val
-                      )
-                    }
-                  >
-                    <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="backlog">Backlog</SelectItem>
-                      {sprintList.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.name} ({s.status})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="min-w-0">
+                    <Select
+                      value={selectedItem.sprint_id || 'backlog'}
+                      onValueChange={(val) =>
+                        handleUpdateItemField(
+                          selectedItem.id,
+                          'sprint_id',
+                          val === 'backlog' ? null : val
+                        )
+                      }
+                    >
+                      <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="backlog">Backlog</SelectItem>
+                        {sprintList.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name} ({s.status})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
                   {/* Due Date */}
                   <span className="text-muted-foreground self-center">
                     Due Date
                   </span>
-                  <Input
-                    type="date"
-                    value={
-                      selectedItem.due_date
-                        ? new Date(selectedItem.due_date)
-                            .toISOString()
-                            .split('T')[0]
-                        : ''
-                    }
-                    onChange={(e) =>
-                      handleUpdateItemField(
-                        selectedItem.id,
-                        'due_date',
-                        e.target.value
-                      )
-                    }
-                    className="bg-background/50 border-border/80 h-9 w-full"
-                  />
+                  <div className="min-w-0">
+                    <Input
+                      type="date"
+                      value={
+                        selectedItem.due_date
+                          ? new Date(selectedItem.due_date)
+                              .toISOString()
+                              .split('T')[0]
+                          : ''
+                      }
+                      onChange={(e) =>
+                        handleUpdateItemField(
+                          selectedItem.id,
+                          'due_date',
+                          e.target.value
+                        )
+                      }
+                      className="bg-background/50 border-border/80 h-9 w-full"
+                    />
+                  </div>
+
+                  {/* Story Points */}
+                  <span className="text-muted-foreground self-center">
+                    Story Points
+                  </span>
+                  <div className="min-w-0">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="Enter Story Points"
+                      value={selectedItem.story_points ?? ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const num = val === '' ? null : Number.parseInt(val, 10);
+                        if (num === null || (!Number.isNaN(num) && num >= 0)) {
+                          handleUpdateItemField(selectedItem.id, 'story_points', num);
+                        }
+                      }}
+                      className="bg-background/50 border-border/80 h-9 w-full"
+                    />
+                  </div>
                 </div>
 
                 <Separator className="my-4" />
