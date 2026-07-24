@@ -15,8 +15,8 @@ export type CommentRow = {
 };
 
 export class CommentsRepository {
-  async listAll(): Promise<CommentRow[]> {
-    const { data, error } = await supabase
+  async listAll(workItemId?: string): Promise<CommentRow[]> {
+    let query = supabase
       .from('comments')
       .select(
         `
@@ -24,8 +24,13 @@ export class CommentsRepository {
         author:users!comments_author_id_fkey(id, name, email, role, profile_picture),
         work_item:work_items(id, title, type, project:projects(id, name, key))
       `
-      )
-      .order('created_at', { ascending: false });
+      );
+
+    if (workItemId) {
+      query = query.eq('work_item_id', workItemId);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       console.error('database error list all comments:', error.message);
