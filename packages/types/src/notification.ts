@@ -26,7 +26,6 @@ export class MentionNotification extends NotificationType {
   }
 }
 
-
 export class NotificationBuilder<T extends NotificationType> {
   private readonly instance: T;
 

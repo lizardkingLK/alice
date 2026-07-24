@@ -1,4 +1,7 @@
-export function extractMentionedUserIds(content: string, actorId: string): string[] {
+export function extractMentionedUserIds(
+  content: string,
+  actorId: string
+): string[] {
   const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
   const mentionedUserIds = new Set<string>();
   let match;
