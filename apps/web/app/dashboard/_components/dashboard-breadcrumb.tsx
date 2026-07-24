@@ -20,6 +20,11 @@ export type DashboardBreadcrumbOverride = {
 
 type DashboardBreadcrumbProps = {
   overrides?: DashboardBreadcrumbOverride[];
+  /**
+   * When true, `overrides` is the complete crumb list (not path label overlays).
+   * Use this when the trail must differ from the URL (e.g. project-scoped work item).
+   */
+  asTrail?: boolean;
 };
 
 const DEFAULT_OVERRIDES: DashboardBreadcrumbOverride[] = [
@@ -94,9 +99,10 @@ function buildBreadcrumbItems(
 
 export function DashboardBreadcrumb({
   overrides = DEFAULT_OVERRIDES,
+  asTrail = false,
 }: Readonly<DashboardBreadcrumbProps>) {
   const pathname = usePathname();
-  const items = buildBreadcrumbItems(pathname, overrides);
+  const items = asTrail ? overrides : buildBreadcrumbItems(pathname, overrides);
 
   return (
     <Breadcrumb>

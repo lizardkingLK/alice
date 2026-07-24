@@ -6,6 +6,8 @@ export interface RawSearchParams {
   project?: string;
   type?: string;
   assignee?: string;
+  fromProject?: string;
+  fromAssignee?: string;
 }
 
 export interface ParsedStandardParams {

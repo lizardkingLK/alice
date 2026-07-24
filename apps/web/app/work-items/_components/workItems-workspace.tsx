@@ -17,6 +17,9 @@ export interface WorkItemWorkspaceProps {
   assigneeFilter: string;
   /** When set, list is scoped to this project and create/edit locks project. */
   lockedProjectId?: string;
+  /** When set, list is scoped to this assignee and create locks assignee. */
+  lockedAssigneeId?: string;
+  currentUserId?: string | null;
 }
 
 export default function WorkItemsWorkspace(

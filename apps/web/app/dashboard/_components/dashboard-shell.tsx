@@ -9,6 +9,8 @@ import type { DashboardBreadcrumbOverride } from './dashboard-breadcrumb';
 type DashboardShellProps = {
   description?: string;
   breadcrumbOverrides?: DashboardBreadcrumbOverride[];
+  /** When true, `breadcrumbOverrides` is rendered as the full crumb trail. */
+  breadcrumbAsTrail?: boolean;
   children: ReactNode;
   /** When false, sidebar starts collapsed (icon rail). */
   sidebarDefaultOpen?: boolean;
@@ -18,6 +20,7 @@ type DashboardShellProps = {
 export async function DashboardShell({
   description,
   breadcrumbOverrides,
+  breadcrumbAsTrail,
   children,
   sidebarDefaultOpen = true,
   contentClassName,
@@ -30,6 +33,7 @@ export async function DashboardShell({
           <DashboardHeader
             description={description}
             breadcrumbOverrides={breadcrumbOverrides}
+            breadcrumbAsTrail={breadcrumbAsTrail}
           />
           <div
             className={cn(
