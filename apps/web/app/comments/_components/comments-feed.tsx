@@ -982,6 +982,16 @@ export function CommentsFeed({
     }
   };
 
+  // Helper to locally update status of a comment in state
+  const updateCommentStatusLocal = (
+    commentId: string,
+    status: 'active' | 'archived'
+  ) => {
+    setComments((prev) =>
+      prev.map((c) => (c.id === commentId ? { ...c, status } : c))
+    );
+  };
+
   // Handle Archive
   const handleArchive = async (commentId: string) => {
     try {
@@ -989,14 +999,10 @@ export function CommentsFeed({
       if (!res.success) {
         throw new Error(res.error || 'Failed to archive comment');
       }
-      setComments((prev) =>
-        prev.map((c) => (c.id === commentId ? { ...c, status: 'archived' } : c))
-      );
+      updateCommentStatusLocal(commentId, 'archived');
     } catch (err) {
       console.error('Failed to archive comment:', err);
-      setComments((prev) =>
-        prev.map((c) => (c.id === commentId ? { ...c, status: 'archived' } : c))
-      );
+      updateCommentStatusLocal(commentId, 'archived');
     }
   };
 
@@ -1007,14 +1013,10 @@ export function CommentsFeed({
       if (!res.success) {
         throw new Error(res.error || 'Failed to restore comment');
       }
-      setComments((prev) =>
-        prev.map((c) => (c.id === commentId ? { ...c, status: 'active' } : c))
-      );
+      updateCommentStatusLocal(commentId, 'active');
     } catch (err) {
       console.error('Failed to restore comment:', err);
-      setComments((prev) =>
-        prev.map((c) => (c.id === commentId ? { ...c, status: 'active' } : c))
-      );
+      updateCommentStatusLocal(commentId, 'active');
     }
   };
 
