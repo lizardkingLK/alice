@@ -55,6 +55,7 @@ import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { useQueryFilter } from '@/hooks/use-query-filter';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Constants } from '@repo/types/database';
+import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
 
 /** Match DialogContent `duration-200` so edit UI doesn't flash to create while closing. */
 const DIALOG_CLOSE_MS = 200;
@@ -66,16 +67,24 @@ const WORK_ITEM_FILTER_PARAMS = [
   'assignee',
 ] as const;
 
-type WorkItemsTableProps = WorkItemWorkspaceProps & {
-  currentUserId?: string | null;
-};
+type WorkItemsTableProps = WorkItemWorkspaceProps;
 
 export type RendererProps = { row: Row<DbWorkItem> };
 
-const titleRenderer = ({ row }: RendererProps) => (
+const titleRenderer = ({
+  row,
+  fromProjectId,
+  fromAssigneeId,
+}: RendererProps & {
+  fromProjectId?: string | null;
+  fromAssigneeId?: string | null;
+}) => (
   <Link
     className="flex min-w-48 items-center gap-3"
-    href={`/work-items/${row.original.id}`}
+    href={workItemDetailHref(row.original.id, {
+      fromProjectId,
+      fromAssigneeId,
+    })}
   >
     <div
       className={cn(
@@ -166,6 +175,7 @@ export default function WorkItemsTable({
   typeFilter,
   assigneeFilter,
   lockedProjectId,
+  lockedAssigneeId,
   currentUserId,
 }: Readonly<WorkItemsTableProps>) {
   const { handlePageChange, handleLimitChange, router } =
@@ -177,9 +187,21 @@ export default function WorkItemsTable({
   const typeQuery = useQueryFilter('type', typeFilter);
   const assigneeQuery = useQueryFilter('assignee', assigneeFilter);
   const isProjectLocked = Boolean(lockedProjectId);
+  const isAssigneeLocked = Boolean(lockedAssigneeId);
+
+  let listDescription =
+    'View, filter, and manage work items across your workspace.';
+  if (isAssigneeLocked) {
+    listDescription = 'View and manage work items assigned to you.';
+  } else if (isProjectLocked) {
+    listDescription = 'View, filter, and manage work items for this project.';
+  }
 
   const hasActiveFilters = WORK_ITEM_FILTER_PARAMS.some((key) => {
     if (key === 'project' && isProjectLocked) {
+      return false;
+    }
+    if (key === 'assignee' && isAssigneeLocked) {
       return false;
     }
     return Boolean(searchParams.get(key)?.trim());
@@ -265,7 +287,12 @@ export default function WorkItemsTable({
       {
         accessorKey: 'title',
         header: 'Title',
-        cell: titleRenderer,
+        cell: ({ row }) =>
+          titleRenderer({
+            row,
+            fromProjectId: lockedProjectId,
+            fromAssigneeId: lockedAssigneeId,
+          }),
       },
       {
         accessorKey: 'type',
@@ -298,7 +325,7 @@ export default function WorkItemsTable({
         cell: ({ row }) => actionsRenderer({ row, openEditDialog }),
       },
     ],
-    [currentUserId, openEditDialog]
+    [currentUserId, openEditDialog, lockedProjectId, lockedAssigneeId]
   );
 
   const table = useReactTable({
@@ -350,19 +377,21 @@ export default function WorkItemsTable({
             }))}
           />
 
-          <ListFilterSelect
-            value={assigneeQuery.value}
-            onValueChange={assigneeQuery.setFilter}
-            allValue={assigneeQuery.allValue}
-            allLabel="All Assignees"
-            ariaLabel="Filter by assignee"
-            placeholder="All Assignees"
-            triggerClassName="sm:w-44"
-            options={projectMembers.map((member) => ({
-              value: member.id,
-              label: member.name,
-            }))}
-          />
+          {isAssigneeLocked ? null : (
+            <ListFilterSelect
+              value={assigneeQuery.value}
+              onValueChange={assigneeQuery.setFilter}
+              allValue={assigneeQuery.allValue}
+              allLabel="All Assignees"
+              ariaLabel="Filter by assignee"
+              placeholder="All Assignees"
+              triggerClassName="sm:w-44"
+              options={projectMembers.map((member) => ({
+                value: member.id,
+                label: member.name,
+              }))}
+            />
+          )}
 
           {hasActiveFilters ? (
             <Button
@@ -391,11 +420,7 @@ export default function WorkItemsTable({
             <ClipboardPenLine className="text-primary size-5" />
             Work Items
           </CardTitle>
-          <CardDescription>
-            {isProjectLocked
-              ? 'View, filter, and manage work items for this project.'
-              : 'View, filter, and manage work items across your workspace.'}
-          </CardDescription>
+          <CardDescription>{listDescription}</CardDescription>
         </CardHeader>
         <CardContent>
           <DataTable
@@ -444,6 +469,7 @@ export default function WorkItemsTable({
             itemToEdit={itemToEdit}
             projectMembers={projectMembers}
             lockProject={isProjectLocked}
+            lockAssigneeId={lockedAssigneeId}
             onClose={() => handleDialogChange(false)}
             onSuccess={() => handleUpdated()}
           />

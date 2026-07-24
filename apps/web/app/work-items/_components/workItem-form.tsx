@@ -32,6 +32,8 @@ interface WorkItemFormProps {
   projectMembers: DbUser[];
   /** When true, project select is disabled (value still submitted). */
   lockProject?: boolean;
+  /** When set, assignee select is disabled and defaults to this user on create. */
+  lockAssigneeId?: string;
 }
 
 const taskTypes = ['Epic', 'Story', 'Task'] as const;
@@ -63,6 +65,7 @@ export function WorkItemForm({
   projectMembers,
   projects,
   lockProject = false,
+  lockAssigneeId,
 }: Readonly<WorkItemFormProps>) {
   const [isPending, setPending] = useState(false);
   const [state, setState] = useState<{
@@ -72,9 +75,12 @@ export function WorkItemForm({
   const [projectId, setProjectId] = useState(
     itemToEdit?.project_id ?? (lockProject ? (projects[0]?.id ?? '') : '')
   );
-  const [assigneeId, setAssigneeId] = useState(itemToEdit?.assignee_id ?? '');
+  const [assigneeId, setAssigneeId] = useState(
+    itemToEdit?.assignee_id ?? lockAssigneeId ?? ''
+  );
   const [type, setType] = useState(itemToEdit?.type ?? '');
   const isEditMode = itemToEdit !== null;
+  const lockAssignee = Boolean(lockAssigneeId);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -179,7 +185,11 @@ export function WorkItemForm({
         {/* Assign To */}
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="assignee_id">Assign to</Label>
-          <Select value={assigneeId} onValueChange={setAssigneeId}>
+          <Select
+            value={assigneeId}
+            onValueChange={setAssigneeId}
+            disabled={lockAssignee}
+          >
             <SelectTrigger id="assignee_id">
               <SelectValue placeholder="Select assignee..." />
             </SelectTrigger>

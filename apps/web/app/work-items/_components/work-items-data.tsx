@@ -22,15 +22,25 @@ const EMPTY_WORK_ITEMS = {
 
 type WorkItemsDataProps = {
   readonly searchParams: Promise<RawSearchParams>;
+  /** Force assignee filter (e.g. My Work /member). */
+  readonly lockedAssigneeId?: string;
+  /** Force project filter when embedded in a project workspace. */
+  readonly lockedProjectId?: string;
+  readonly currentUserId?: string | null;
 };
 
 export async function WorkItemsData({
   searchParams,
+  lockedAssigneeId,
+  lockedProjectId,
+  currentUserId,
 }: Readonly<WorkItemsDataProps>) {
   const resolvedSearchParams = await searchParams;
   const { page, limit, search } = parseStandardParams(resolvedSearchParams, 10);
-  const { projectId, type, assigneeId } =
-    parseWorkItemFilters(resolvedSearchParams);
+  const filters = parseWorkItemFilters(resolvedSearchParams);
+  const projectId = lockedProjectId ?? filters.projectId;
+  const assigneeId = lockedAssigneeId ?? filters.assigneeId;
+  const { type } = filters;
 
   const [projects, projectMembers, workItemsResult] = await Promise.all([
     safeServerFetch(getProjectList(), [], 'fetch projects for work items'),
@@ -59,6 +69,9 @@ export async function WorkItemsData({
       projectFilter={projectId ?? ''}
       typeFilter={type ?? ''}
       assigneeFilter={assigneeId ?? ''}
+      lockedProjectId={lockedProjectId}
+      lockedAssigneeId={lockedAssigneeId}
+      currentUserId={currentUserId}
     />
   );
 }

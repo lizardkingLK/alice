@@ -15,11 +15,13 @@ import {
 type DashboardHeaderProps = {
   description?: string;
   breadcrumbOverrides?: DashboardBreadcrumbOverride[];
+  breadcrumbAsTrail?: boolean;
 };
 
 export async function DashboardHeader({
   description,
   breadcrumbOverrides,
+  breadcrumbAsTrail,
 }: Readonly<DashboardHeaderProps>) {
   const user = await getUser();
 
@@ -43,6 +45,7 @@ export async function DashboardHeader({
       <DashboardPageMeta
         description={description}
         breadcrumbOverrides={breadcrumbOverrides}
+        breadcrumbAsTrail={breadcrumbAsTrail}
       />
       <section>
         <NotificationInbox />
