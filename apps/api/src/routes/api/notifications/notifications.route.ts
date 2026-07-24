@@ -19,7 +19,6 @@ notificationsRouter.post('/send', async (req, res) => {
   const { subscriberId, message, title } = parsed.data;
 
   try {
-    await notificationsService.ensureSubscriber(subscriberId);
     await notificationsService.sendInAppNotification({
       subscriberId,
       message,
