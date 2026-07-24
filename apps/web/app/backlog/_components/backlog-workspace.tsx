@@ -1,53 +1,33 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { cn } from '@repo/ui/lib/utils';
-import {
-  Search,
-  Plus,
-  Calendar,
-  ChevronRight,
-  ChevronDown,
-  GripVertical,
-  Layers,
-  X,
-  Play,
-  Check,
-  AlertCircle,
-  HelpCircle,
-} from '@repo/ui/lib/icons';
-
-import { Card } from '@repo/ui/components/ui/card';
-import { Badge } from '@repo/ui/components/ui/badge';
-import { Button } from '@repo/ui/components/ui/button';
-import { Input } from '@repo/ui/components/ui/input';
-import { Textarea } from '@repo/ui/components/ui/textarea';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@repo/ui/components/ui/dialog';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@repo/ui/components/ui/select';
+import { AlertCircle, HelpCircle } from '@repo/ui/lib/icons';
 import { TooltipProvider } from '@repo/ui/components/ui/tooltip';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from '@repo/ui/components/ui/sheet';
-import { Separator } from '@repo/ui/components/ui/separator';
-import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
 
-import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
+import { useBacklogLayout } from '@/app/backlog/_components/backlog-layout-menu';
+import { BacklogToolbar } from '@/app/backlog/_components/backlog-toolbar';
+import { BacklogSprintCard } from '@/app/backlog/_components/backlog-sprint-card';
+import { BacklogPanel } from '@/app/backlog/_components/backlog-panel';
+import { BacklogItemDetailsSheet } from '@/app/backlog/_components/backlog-item-details-sheet';
+import {
+  BacklogCompleteSprintDialog,
+  BacklogCreateIssueDialog,
+  BacklogCreateSprintDialog,
+  BacklogMismatchDialog,
+  BacklogStartSprintDialog,
+} from '@/app/backlog/_components/backlog-dialogs';
+import {
+  getBacklogIssuesPaneClass,
+  getBacklogLayoutContainerClass,
+  getBacklogSprintsPaneClass,
+} from '@/app/backlog/_helpers/backlog-layout-storage';
+import {
+  getFormDataStringValue,
+  mapPriority,
+  updateWorkItemField,
+  type BacklogActiveTab,
+  type BacklogAssignee,
+} from '@/app/backlog/_helpers/backlog-item-utils';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import {
   Sprint,
@@ -55,8 +35,6 @@ import {
 } from '@/app/sprints/_services/sprints.service';
 import { Project as DbProject } from '@/app/projects/_services/projects.service';
 import { User as DbUser } from '@/app/users/_services/users.service';
-import { SprintForm } from '@/app/sprints/_components/sprint-form';
-import { WorkItemForm } from '@/app/work-items/_components/workItem-form';
 import { updateWorkItem } from '@/app/work-items/_services/workItem.service.client';
 
 interface BacklogWorkspaceProps {
@@ -69,29 +47,6 @@ interface BacklogWorkspaceProps {
   error?: string | null;
 }
 
-const mapPriority = (p: string): 'low' | 'medium' | 'high' => {
-  if (p === 'highest') return 'high';
-  if (p === 'lowest') return 'low';
-  return p as 'low' | 'medium' | 'high';
-};
-
-const updateWorkItemField = <K extends keyof DbWorkItem>(
-  item: DbWorkItem,
-  itemId: string,
-  field: K,
-  value: DbWorkItem[K],
-  updatedAssignee: { id: string; name: string; email: string } | null
-): DbWorkItem => {
-  if (item.id === itemId) {
-    const updated = { ...item, [field]: value };
-    if (field === 'assignee_id') {
-      updated.assignee = updatedAssignee;
-    }
-    return updated;
-  }
-  return item;
-};
-
 export function BacklogWorkspace({
   projects,
   projectMembers,
@@ -102,12 +57,16 @@ export function BacklogWorkspace({
   error = null,
 }: Readonly<BacklogWorkspaceProps>) {
   const isManagerOrAdmin = userRole === 'admin' || userRole === 'manager';
+
   // Client state
   const [sprintList, setSprintList] = useState<Sprint[]>(sprints);
   const [workItems, setWorkItems] = useState<DbWorkItem[]>(initialWorkItems);
 
   // Active Tab: active sprints & backlog vs completed sprints
-  const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
+  const [activeTab, setActiveTab] = useState<BacklogActiveTab>('active');
+  const showBacklogPane = activeTab === 'active';
+  const { preferredLayout, effectiveLayout, setPreferredLayout } =
+    useBacklogLayout(currentUserId, showBacklogPane);
 
   // Filters state
   const [searchQuery, setSearchQuery] = useState('');
@@ -134,33 +93,6 @@ export function BacklogWorkspace({
   const [actionError, setActionError] = useState<string | null>(null);
   const [isActionPending, setIsActionPending] = useState(false);
   const [isMismatchOpen, setIsMismatchOpen] = useState(false);
-
-  // Helper: date format range
-  const formatDateRange = (
-    start: string | null | Date,
-    end: string | null | Date
-  ) => {
-    if (!start || !end) return 'No dates set';
-    const s = new Date(start);
-    const e = new Date(end);
-    const options: Intl.DateTimeFormatOptions = {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    };
-    return `${s.toLocaleDateString('en-US', options)} - ${e.toLocaleDateString('en-US', options)}`;
-  };
-
-  // Helper: Get user initials
-  const getInitials = (name?: string | null) => {
-    if (!name) return '?';
-    return name
-      .split(' ')
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase())
-      .join('');
-  };
 
   // Helper: Drag-and-Drop Handlers
   const handleDragStart = (e: React.DragEvent, itemId: string) => {
@@ -277,7 +209,6 @@ export function BacklogWorkspace({
   const sprintStats = useMemo(() => {
     const stats: Record<string, { count: number }> = {};
 
-    // Sprints stats
     sprintList.forEach((sprint) => {
       const sprintItems = workItems.filter(
         (item) => item.sprint_id === sprint.id
@@ -287,7 +218,6 @@ export function BacklogWorkspace({
       };
     });
 
-    // Backlog stats
     const backlogWIs = workItems.filter((item) => !item.sprint_id);
     stats['backlog'] = {
       count: backlogWIs.length,
@@ -464,28 +394,12 @@ export function BacklogWorkspace({
   const getUpdatedAssignee = (
     field: string,
     value: unknown
-  ): { id: string; name: string; email: string } | null => {
+  ): BacklogAssignee | null => {
     if (field !== 'assignee_id') {
       return null;
     }
     const m = projectMembers.find((member) => member.id === value);
     return m ? { id: m.id, name: m.name, email: m.email } : null;
-  };
-
-  const getFormDataStringValue = (value: unknown): string => {
-    if (value === null || value === undefined) {
-      return '';
-    }
-    if (typeof value === 'string') {
-      return value;
-    }
-    if (typeof value === 'number' || typeof value === 'boolean') {
-      return String(value);
-    }
-    if (typeof value === 'object') {
-      return JSON.stringify(value);
-    }
-    return '';
   };
 
   // Update inline value of item from details sheet
@@ -535,11 +449,23 @@ export function BacklogWorkspace({
     setPriorityFilter('all');
   };
 
-  const isFiltersActive =
+  const isFiltersActive = Boolean(
     searchQuery ||
     projectFilter !== 'all' ||
     assigneeFilter !== 'all' ||
-    priorityFilter !== 'all';
+    priorityFilter !== 'all'
+  );
+
+  // Derived counts for the sprint confirmation dialogs
+  const startSprintItems = sprintToStart
+    ? workItems.filter((item) => item.sprint_id === sprintToStart.id)
+    : [];
+  const completeSprintItems = sprintToComplete
+    ? workItems.filter((item) => item.sprint_id === sprintToComplete.id)
+    : [];
+  const completeSprintIncompleteCount = completeSprintItems.filter(
+    (item) => item.status !== 'Done'
+  ).length;
 
   return (
     <TooltipProvider>
@@ -553,1051 +479,143 @@ export function BacklogWorkspace({
         )}
 
         {/* Toolbar & Filters */}
-        <div className="bg-card/40 border-border/60 flex flex-col gap-4 rounded-xl border p-4 shadow-sm backdrop-blur-md">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <Layers className="h-5 w-5 text-indigo-500" />
-              <h2 className="text-foreground text-xl font-bold tracking-tight">
-                Sprint Planning
-              </h2>
-
-              {/* Active / Completed tabs */}
-              <div className="bg-muted/50 border-border text-muted-foreground ml-4 inline-flex h-9 items-center justify-center rounded-md border p-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setActiveTab('active')}
-                  className={cn(
-                    'h-7 cursor-pointer rounded-sm px-3 text-xs font-semibold transition-all',
-                    activeTab === 'active'
-                      ? 'bg-background text-foreground hover:bg-background shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
-                  )}
-                >
-                  Active
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setActiveTab('completed')}
-                  className={cn(
-                    'h-7 cursor-pointer rounded-sm px-3 text-xs font-semibold transition-all',
-                    activeTab === 'completed'
-                      ? 'bg-background text-foreground hover:bg-background shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
-                  )}
-                >
-                  Completed
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {isManagerOrAdmin && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="cursor-pointer border-indigo-500/20 bg-indigo-500/5 font-semibold text-indigo-600 hover:bg-indigo-500/10 dark:text-indigo-400"
-                  onClick={() => setIsCreateSprintOpen(true)}
-                >
-                  <Plus className="mr-1.5 h-4 w-4" />
-                  Create Sprint
-                </Button>
-              )}
-              <Button
-                size="sm"
-                className="cursor-pointer bg-linear-to-r from-indigo-500 to-violet-600 font-semibold text-white hover:from-indigo-600 hover:to-violet-700"
-                onClick={() => setIsCreateIssueOpen(true)}
-              >
-                <Plus className="mr-1.5 h-4 w-4" />
-                Create Issue
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Search Input */}
-            <div className="relative w-full sm:max-w-xs">
-              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-              <Input
-                placeholder="Search backlog issues..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-background/50 border-border/80 h-9 pl-9 transition-colors focus:border-indigo-500"
-              />
-            </div>
-
-            {/* Project Filter */}
-            <Select value={projectFilter} onValueChange={setProjectFilter}>
-              <SelectTrigger className="bg-background/50 border-border/80 h-9 w-37.5 text-xs">
-                <SelectValue placeholder="All Projects" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Projects</SelectItem>
-                {projects.map((proj) => (
-                  <SelectItem key={proj.id} value={proj.id}>
-                    {proj.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Assignee Filter */}
-            <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-              <SelectTrigger className="bg-background/50 border-border/80 h-9 w-40 text-xs">
-                <SelectValue placeholder="All Assignees" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Assignees</SelectItem>
-                {projectMembers.map((member) => (
-                  <SelectItem key={member.id} value={member.id}>
-                    {member.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Priority Filter */}
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="bg-background/50 border-border/80 h-9 w-35 text-xs">
-                <SelectValue placeholder="All Priorities" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Priorities</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Clear Filters Button */}
-            {isFiltersActive && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClearFilters}
-                className="text-muted-foreground hover:text-foreground h-9 cursor-pointer px-3 text-xs"
-              >
-                Clear Filters
-                <X className="ml-1 h-3.5 w-3.5" />
-              </Button>
-            )}
-          </div>
-        </div>
+        <BacklogToolbar
+          projects={projects}
+          projectMembers={projectMembers}
+          isManagerOrAdmin={isManagerOrAdmin}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          preferredLayout={preferredLayout}
+          onLayoutChange={setPreferredLayout}
+          onCreateSprint={() => setIsCreateSprintOpen(true)}
+          onCreateIssue={() => setIsCreateIssueOpen(true)}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          projectFilter={projectFilter}
+          onProjectFilterChange={setProjectFilter}
+          assigneeFilter={assigneeFilter}
+          onAssigneeFilterChange={setAssigneeFilter}
+          priorityFilter={priorityFilter}
+          onPriorityFilterChange={setPriorityFilter}
+          isFiltersActive={isFiltersActive}
+          onClearFilters={handleClearFilters}
+        />
 
         {/* Sprints & Backlog Containers */}
-        <div className="space-y-4">
-          {/* Display Sprints */}
-          {displayedSprints.length === 0 ? (
-            <div className="bg-card/35 border-border text-muted-foreground rounded-xl border border-dashed px-4 py-12 text-center text-sm">
-              <HelpCircle className="text-muted-foreground/30 mx-auto mb-3 h-8 w-8" />
-              <p className="font-medium">No {activeTab} sprints found</p>
-              <p className="text-muted-foreground/75 mt-1 text-xs">
-                Create a sprint to organize upcoming deliverable workflows.
-              </p>
-            </div>
-          ) : (
-            displayedSprints.map((sprint) => {
-              const sprintWIs = itemsBySprint[sprint.id] || [];
-              const isCollapsed = !!collapsedSprints[sprint.id];
-              const stats = sprintStats[sprint.id] || { count: 0 };
-              const isDragOver = dragOverTargetId === sprint.id;
-
-              return (
-                <Card
+        <div className={getBacklogLayoutContainerClass(effectiveLayout)}>
+          <div className={getBacklogSprintsPaneClass(effectiveLayout)}>
+            {displayedSprints.length === 0 ? (
+              <div className="bg-card/35 border-border text-muted-foreground rounded-xl border border-dashed px-4 py-12 text-center text-sm">
+                <HelpCircle className="text-muted-foreground/30 mx-auto mb-3 h-8 w-8" />
+                <p className="font-medium">No {activeTab} sprints found</p>
+                <p className="text-muted-foreground/75 mt-1 text-xs">
+                  Create a sprint to organize upcoming deliverable workflows.
+                </p>
+              </div>
+            ) : (
+              displayedSprints.map((sprint) => (
+                <BacklogSprintCard
                   key={sprint.id}
-                  className={cn(
-                    'border-border/70 overflow-hidden shadow-sm transition-all duration-200',
-                    sprint.status === 'Ongoing'
-                      ? 'border-l-4 border-l-blue-500 dark:border-l-blue-600'
-                      : 'border-l-4 border-l-zinc-300 dark:border-l-zinc-700'
-                  )}
-                >
-                  {/* Sprint Header */}
-                  <div className="bg-muted/30 hover:bg-muted/50 border-border/50 flex flex-col justify-between gap-3 border-b px-4 py-3 transition-colors md:flex-row md:items-center">
-                    <div className="flex items-center gap-3">
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className="cursor-pointer"
-                        onClick={() => toggleSprint(sprint.id)}
-                      >
-                        {isCollapsed ? (
-                          <ChevronRight className="text-muted-foreground h-4 w-4" />
-                        ) : (
-                          <ChevronDown className="text-muted-foreground h-4 w-4" />
-                        )}
-                      </Button>
-
-                      <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="text-foreground max-w-45 truncate font-semibold sm:max-w-[320px] md:max-w-120"
-                            title={sprint.name}
-                          >
-                            {sprint.name}
-                          </span>
-                          {sprint.status === 'Ongoing' && (
-                            <Badge
-                              variant="outline"
-                              className="border-blue-500/20 bg-blue-500/10 px-2 py-0 font-semibold text-blue-600 dark:text-blue-400"
-                            >
-                              Ongoing
-                            </Badge>
-                          )}
-                          {sprint.status === 'Completed' && (
-                            <Badge
-                              variant="outline"
-                              className="border-emerald-500/20 bg-emerald-500/10 px-2 py-0 font-semibold text-emerald-600 dark:text-emerald-400"
-                            >
-                              Completed
-                            </Badge>
-                          )}
-                          {sprint.status === 'Not Started' && (
-                            <Badge
-                              variant="outline"
-                              className="border-zinc-500/20 bg-zinc-500/10 px-2 py-0 font-semibold text-zinc-600 dark:text-zinc-400"
-                            >
-                              Planned
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="text-muted-foreground flex items-center gap-2 text-xs">
-                          <Calendar className="h-3.5 w-3.5" />
-                          <span>
-                            {formatDateRange(sprint.startDate, sprint.endDate)}
-                          </span>
-                          {sprint.project && (
-                            <>
-                              <span className="text-muted-foreground/60">
-                                •
-                              </span>
-                              <span className="font-semibold text-indigo-600 dark:text-indigo-400">
-                                {sprint.project.name}
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-end gap-3 md:flex-nowrap">
-                      {/* Issue Count badge */}
-                      <div className="mr-2 flex items-center gap-1.5">
-                        <span className="text-muted-foreground bg-muted/65 rounded-full px-2.5 py-0.5 text-xs font-semibold">
-                          {stats.count} issue{stats.count === 1 ? '' : 's'}
-                        </span>
-                      </div>
-
-                      <Separator
-                        orientation="vertical"
-                        className="hidden h-6 md:block"
-                      />
-
-                      {/* Sprint Actions */}
-                      {isManagerOrAdmin && sprint.status === 'Not Started' && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleStartSprint(sprint.id)}
-                          className="h-8 cursor-pointer bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-700"
-                        >
-                          <Play className="mr-1 h-3 w-3 fill-current" />
-                          Start Sprint
-                        </Button>
-                      )}
-                      {isManagerOrAdmin && sprint.status === 'Ongoing' && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleCompleteSprint(sprint.id)}
-                          className="h-8 cursor-pointer bg-indigo-600 text-xs font-semibold text-white hover:bg-indigo-700"
-                        >
-                          <Check className="mr-1 h-3.5 w-3.5" />
-                          Complete Sprint
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Sprint Content Drop Zone */}
-                  {!isCollapsed && (
-                    <div
-                      onDragOver={(e) => handleDragOver(e, sprint.id)}
-                      onDragLeave={handleDragLeave}
-                      onDrop={(e) => handleDrop(e, sprint.id)}
-                      className={cn(
-                        'min-h-22.5 space-y-1.5 p-3 transition-all duration-200',
-                        isDragOver
-                          ? 'scale-[0.99] rounded-lg border-2 border-dashed border-indigo-500/30 bg-indigo-500/5'
-                          : 'bg-card'
-                      )}
-                    >
-                      {sprintWIs.length === 0 ? (
-                        <div className="text-muted-foreground flex flex-col items-center justify-center py-6 text-center text-xs">
-                          <HelpCircle className="text-muted-foreground/40 mb-1.5 h-5 w-5" />
-                          <p>Plan this sprint by dragging backlog items here</p>
-                        </div>
-                      ) : (
-                        sprintWIs.map((item) => (
-                          <IssueRow
-                            key={item.id}
-                            item={item}
-                            projects={projects}
-                            onSelect={setSelectedItem}
-                            onDragStart={handleDragStart}
-                            getInitials={getInitials}
-                          />
-                        ))
-                      )}
-                    </div>
-                  )}
-                </Card>
-              );
-            })
-          )}
+                  sprint={sprint}
+                  items={itemsBySprint[sprint.id] || []}
+                  issueCount={(sprintStats[sprint.id] || { count: 0 }).count}
+                  isCollapsed={!!collapsedSprints[sprint.id]}
+                  isDragOver={dragOverTargetId === sprint.id}
+                  isManagerOrAdmin={isManagerOrAdmin}
+                  projects={projects}
+                  onToggle={toggleSprint}
+                  onStartSprint={handleStartSprint}
+                  onCompleteSprint={handleCompleteSprint}
+                  onSelectItem={setSelectedItem}
+                  onItemDragStart={handleDragStart}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                />
+              ))
+            )}
+          </div>
 
           {/* Backlog Section (Only visible on Active Tab) */}
-          {activeTab === 'active' && (
-            <Card className="border-border/70 overflow-hidden shadow-sm">
-              <div className="bg-muted/20 hover:bg-muted/40 border-border/50 flex flex-col justify-between gap-3 border-b px-4 py-3 transition-colors sm:flex-row sm:items-center">
-                <div className="flex items-center gap-3">
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className="cursor-pointer"
-                    onClick={() => setIsBacklogCollapsed(!isBacklogCollapsed)}
-                  >
-                    {isBacklogCollapsed ? (
-                      <ChevronRight className="text-muted-foreground h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="text-muted-foreground h-4 w-4" />
-                    )}
-                  </Button>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-foreground flex items-center gap-2 font-semibold">
-                      Backlog
-                    </span>
-                    <p className="text-muted-foreground text-xs">
-                      Unassigned to any active or planned sprint
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 cursor-pointer border-indigo-500/20 bg-indigo-500/5 font-semibold text-indigo-600 hover:bg-indigo-500/10 dark:text-indigo-400"
-                    onClick={() => setIsCreateIssueOpen(true)}
-                  >
-                    <Plus className="mr-1.5 h-3.5 w-3.5" />
-                    New Issue
-                  </Button>
-                  <span className="text-muted-foreground bg-muted/65 rounded-full px-2.5 py-0.5 text-xs font-semibold">
-                    {backlogItems.length} issue
-                    {backlogItems.length === 1 ? '' : 's'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Backlog Drop Target Container */}
-              {!isBacklogCollapsed && (
-                <div
-                  onDragOver={(e) => handleDragOver(e, null)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, null)}
-                  className={cn(
-                    'min-h-37.5 space-y-1.5 p-3 transition-all duration-200',
-                    dragOverTargetId === 'backlog'
-                      ? 'scale-[0.99] rounded-lg border-2 border-dashed border-indigo-500/30 bg-indigo-500/5'
-                      : 'bg-card'
-                  )}
-                >
-                  {backlogItems.length === 0 ? (
-                    <div className="text-muted-foreground flex flex-col items-center justify-center py-10 text-center text-xs">
-                      <HelpCircle className="text-muted-foreground/40 mb-2 h-6 w-6" />
-                      <p>Backlog is empty</p>
-                    </div>
-                  ) : (
-                    backlogItems.map((item) => (
-                      <IssueRow
-                        key={item.id}
-                        item={item}
-                        projects={projects}
-                        onSelect={setSelectedItem}
-                        onDragStart={handleDragStart}
-                        getInitials={getInitials}
-                      />
-                    ))
-                  )}
-                </div>
-              )}
-            </Card>
+          {showBacklogPane && (
+            <div className={getBacklogIssuesPaneClass(effectiveLayout)}>
+              <BacklogPanel
+                items={backlogItems}
+                projects={projects}
+                isCollapsed={isBacklogCollapsed}
+                isDragOver={dragOverTargetId === 'backlog'}
+                onToggle={() => setIsBacklogCollapsed(!isBacklogCollapsed)}
+                onCreateIssue={() => setIsCreateIssueOpen(true)}
+                onSelectItem={setSelectedItem}
+                onItemDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              />
+            </div>
           )}
         </div>
 
-        {/* Slide-out Sheet details panel (Clean, spacious layout with good margins) */}
-        <Sheet
-          open={!!selectedItem}
-          onOpenChange={(open) => !open && setSelectedItem(null)}
-        >
-          <SheetContent
-            onPointerDownOutside={(e) => {
-              if (isMismatchOpen) {
-                e.preventDefault();
-              }
-            }}
-            onInteractOutside={(e) => {
-              if (isMismatchOpen) {
-                e.preventDefault();
-              }
-            }}
-            className="border-border bg-card/95 overflow-y-auto border-l px-8 py-8 shadow-xl backdrop-blur-md transition-all duration-200 sm:max-w-2xl"
-          >
-            {selectedItem && (
-              <div className="space-y-6">
-                <SheetHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <Badge
-                      variant="outline"
-                      className="border-indigo-500/20 bg-indigo-500/10 text-[10px] font-semibold text-indigo-600 uppercase dark:text-indigo-400"
-                    >
-                      {selectedItem.type}
-                    </Badge>
-                    <span className="text-muted-foreground font-mono text-xs">
-                      {projects.find((p) => p.id === selectedItem.project_id)
-                        ?.key || 'ALICE'}
-                      -{selectedItem.id.slice(0, 4).toUpperCase()}
-                    </span>
-                  </div>
-                  <SheetTitle className="text-foreground mt-2 text-xl font-bold tracking-tight">
-                    <Input
-                      value={selectedItem.title}
-                      onChange={(e) =>
-                        handleUpdateItemField(
-                          selectedItem.id,
-                          'title',
-                          e.target.value
-                        )
-                      }
-                      className="hover:bg-muted/30 focus-visible:bg-background h-auto border-none px-1.5 py-1 text-lg font-bold shadow-none transition-colors"
-                    />
-                  </SheetTitle>
-                  <SheetDescription className="text-muted-foreground text-xs">
-                    Edit and manage issue parameters in real-time.
-                  </SheetDescription>
-                </SheetHeader>
-
-                <Separator />
-
-                {/* Grid details (generous gap-6 and px-2 padding to stay away from borders) */}
-                <div className="grid grid-cols-[120px_1fr] gap-x-6 gap-y-5 px-2 text-sm">
-                  {/* Project Dropdown */}
-                  <span className="text-muted-foreground self-center">
-                    Project
-                  </span>
-                  <div className="min-w-0">
-                    <Select
-                      value={selectedItem.project_id}
-                      onValueChange={(val) =>
-                        handleUpdateItemField(
-                          selectedItem.id,
-                          'project_id',
-                          val
-                        )
-                      }
-                    >
-                      <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {projects.map((project) => (
-                          <SelectItem key={project.id} value={project.id}>
-                            {project.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Status Dropdown */}
-                  <span className="text-muted-foreground self-center">
-                    Status
-                  </span>
-                  <div className="min-w-0">
-                    <Select
-                      value={selectedItem.status}
-                      onValueChange={(val) =>
-                        handleUpdateItemField(
-                          selectedItem.id,
-                          'status',
-                          val as DbWorkItem['status']
-                        )
-                      }
-                    >
-                      <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Draft">Draft</SelectItem>
-                        <SelectItem value="New">New</SelectItem>
-                        <SelectItem value="ToDo">To Do</SelectItem>
-                        <SelectItem value="InProgress">In Progress</SelectItem>
-                        <SelectItem value="Testing">Testing</SelectItem>
-                        <SelectItem value="Done">Done</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Priority Dropdown */}
-                  <span className="text-muted-foreground self-center">
-                    Priority
-                  </span>
-                  <div className="min-w-0">
-                    <Select
-                      value={mapPriority(selectedItem.priority)}
-                      onValueChange={(val) =>
-                        handleUpdateItemField(
-                          selectedItem.id,
-                          'priority',
-                          val as DbWorkItem['priority']
-                        )
-                      }
-                    >
-                      <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="high">▲ High</SelectItem>
-                        <SelectItem value="medium">▪ Medium</SelectItem>
-                        <SelectItem value="low">▼ Low</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Assignee Dropdown */}
-                  <span className="text-muted-foreground self-center">
-                    Assignee
-                  </span>
-                  <div className="min-w-0">
-                    <Select
-                      value={selectedItem.assignee_id || 'unassigned'}
-                      onValueChange={(val) =>
-                        handleUpdateItemField(
-                          selectedItem.id,
-                          'assignee_id',
-                          val === 'unassigned' ? null : val
-                        )
-                      }
-                    >
-                      <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="unassigned">Unassigned</SelectItem>
-                        {projectMembers.map((member) => (
-                          <SelectItem key={member.id} value={member.id}>
-                            <div className="flex items-center gap-2 text-xs">
-                              <Avatar size="sm" className="size-5">
-                                <AvatarFallback className="text-[8px]">
-                                  {getInitials(member.name)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span>{member.name}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Sprint Selection */}
-                  <span className="text-muted-foreground self-center">
-                    Sprint
-                  </span>
-                  <div className="min-w-0">
-                    <Select
-                      value={selectedItem.sprint_id || 'backlog'}
-                      onValueChange={(val) =>
-                        handleUpdateItemField(
-                          selectedItem.id,
-                          'sprint_id',
-                          val === 'backlog' ? null : val
-                        )
-                      }
-                    >
-                      <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="backlog">Backlog</SelectItem>
-                        {sprintList.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.name} ({s.status})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Due Date */}
-                  <span className="text-muted-foreground self-center">
-                    Due Date
-                  </span>
-                  <div className="min-w-0">
-                    <Input
-                      type="date"
-                      value={
-                        selectedItem.due_date
-                          ? new Date(selectedItem.due_date)
-                              .toISOString()
-                              .split('T')[0]
-                          : ''
-                      }
-                      onChange={(e) =>
-                        handleUpdateItemField(
-                          selectedItem.id,
-                          'due_date',
-                          e.target.value
-                        )
-                      }
-                      className="bg-background/50 border-border/80 h-9 w-full"
-                    />
-                  </div>
-
-                  {/* Story Points */}
-                  <span className="text-muted-foreground self-center">
-                    Story Points
-                  </span>
-                  <div className="min-w-0">
-                    <Input
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="Enter Story Points"
-                      value={selectedItem.story_points ?? ''}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const num =
-                          val === '' ? null : Number.parseInt(val, 10);
-                        if (num === null || (!Number.isNaN(num) && num >= 0)) {
-                          handleUpdateItemField(
-                            selectedItem.id,
-                            'story_points',
-                            num
-                          );
-                        }
-                      }}
-                      className="bg-background/50 border-border/80 h-9 w-full"
-                    />
-                  </div>
-                </div>
-
-                <Separator className="my-4" />
-
-                {/* Description (Editable block with good spacing) */}
-                <div className="space-y-3 px-2">
-                  <h4 className="text-foreground text-sm font-semibold">
-                    Description
-                  </h4>
-                  <Textarea
-                    placeholder="Describe the objective, scope, and validation criteria..."
-                    value={
-                      selectedItem.description &&
-                      typeof selectedItem.description === 'string'
-                        ? selectedItem.description
-                        : ''
-                    }
-                    onChange={(e) =>
-                      handleUpdateItemField(
-                        selectedItem.id,
-                        'description',
-                        e.target.value
-                      )
-                    }
-                    className="bg-background/50 border-border/80 min-h-36 p-3 text-sm leading-relaxed transition-colors focus:border-indigo-500"
-                  />
-                </div>
-
-                <Separator className="my-4" />
-
-                {/* Save button */}
-                <div className="flex justify-end px-2 pt-2 pb-4">
-                  <Button
-                    onClick={() => setSelectedItem(null)}
-                    className="h-9 cursor-pointer bg-linear-to-r from-indigo-500 to-violet-600 px-6 font-semibold text-white shadow-md transition-all duration-150 hover:from-indigo-600 hover:to-violet-700"
-                  >
-                    Save Changes
-                  </Button>
-                </div>
-              </div>
-            )}
-          </SheetContent>
-        </Sheet>
+        {/* Slide-out details panel */}
+        <BacklogItemDetailsSheet
+          item={selectedItem}
+          projects={projects}
+          projectMembers={projectMembers}
+          sprints={sprintList}
+          blockOutsideClose={isMismatchOpen}
+          onClose={() => setSelectedItem(null)}
+          onUpdateField={handleUpdateItemField}
+        />
 
         {/* Dialog: Create Sprint */}
-        {isManagerOrAdmin && isCreateSprintOpen && (
-          <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
-            <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
-              <SprintForm
-                projects={projects}
-                onSprintUpdated={handleCreateSprintSuccess}
-                onClose={() => setIsCreateSprintOpen(false)}
-                onSuccess={() => setIsCreateSprintOpen(false)}
-                currentUserId={currentUserId}
-              />
-            </div>
-          </div>
+        {isManagerOrAdmin && (
+          <BacklogCreateSprintDialog
+            open={isCreateSprintOpen}
+            projects={projects}
+            currentUserId={currentUserId}
+            onClose={() => setIsCreateSprintOpen(false)}
+            onCreated={handleCreateSprintSuccess}
+          />
         )}
 
         {/* Dialog: Create Issue */}
-        <Dialog open={isCreateIssueOpen} onOpenChange={setIsCreateIssueOpen}>
-          <DialogContent
-            className="bg-card border-border/80 backdrop-blur-md sm:max-w-2xl"
-            onPointerDownOutside={(e) => e.preventDefault()}
-            onInteractOutside={(e) => e.preventDefault()}
-          >
-            <DialogHeader>
-              <DialogTitle className="text-lg font-bold">
-                Create Work Item
-              </DialogTitle>
-              <DialogDescription className="text-muted-foreground text-xs">
-                Add a new work item and assign it to a team member.
-              </DialogDescription>
-            </DialogHeader>
-            <WorkItemForm
-              projects={projects}
-              projectMembers={projectMembers}
-              onClose={() => setIsCreateIssueOpen(false)}
-              onSuccess={handleCreateIssueSuccess}
-            />
-          </DialogContent>
-        </Dialog>
+        <BacklogCreateIssueDialog
+          open={isCreateIssueOpen}
+          projects={projects}
+          projectMembers={projectMembers}
+          onOpenChange={setIsCreateIssueOpen}
+          onClose={() => setIsCreateIssueOpen(false)}
+          onCreated={handleCreateIssueSuccess}
+        />
 
         {/* Dialog: Start Sprint Confirmation */}
-        <Dialog
-          open={!!sprintToStart}
+        <BacklogStartSprintDialog
+          sprint={sprintToStart}
+          itemCount={startSprintItems.length}
+          actionError={actionError}
+          isPending={isActionPending}
           onOpenChange={(open) => !open && setSprintToStart(null)}
-        >
-          <DialogContent className="bg-card border-border/80 backdrop-blur-md sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-bold">
-                Start Sprint: {sprintToStart?.name}?
-              </DialogTitle>
-              <DialogDescription className="text-muted-foreground text-xs">
-                Review the sprint details before starting.
-              </DialogDescription>
-            </DialogHeader>
-
-            {sprintToStart &&
-              (() => {
-                const sprintWIs = workItems.filter(
-                  (item) => item.sprint_id === sprintToStart.id
-                );
-                const isEmpty = sprintWIs.length === 0;
-
-                return (
-                  <div className="space-y-4 py-2">
-                    {isEmpty ? (
-                      <div className="bg-destructive/15 border-destructive/20 text-destructive flex items-center gap-2 rounded-lg border px-4 py-3 text-sm">
-                        <AlertCircle className="h-5 w-5 shrink-0" />
-                        <span>
-                          {
-                            "If sprint haven't any work items cannot start the sprint."
-                          }
-                        </span>
-                      </div>
-                    ) : (
-                      <p className="text-foreground text-sm">
-                        This sprint contains{' '}
-                        <span className="font-semibold">
-                          {sprintWIs.length}
-                        </span>{' '}
-                        work items. Starting it will change its status to{' '}
-                        <span className="font-semibold text-indigo-500">
-                          Ongoing
-                        </span>
-                        {'.'}
-                      </p>
-                    )}
-
-                    {actionError && (
-                      <div className="bg-destructive/15 border-destructive/20 text-destructive flex items-center gap-2 rounded-lg border px-4 py-3 text-sm">
-                        <AlertCircle className="h-5 w-5 shrink-0" />
-                        <span>{actionError}</span>
-                      </div>
-                    )}
-
-                    <div className="flex justify-end gap-2 pt-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSprintToStart(null)}
-                        disabled={isActionPending}
-                      >
-                        Cancel
-                      </Button>
-                      {!isEmpty && (
-                        <Button
-                          size="sm"
-                          className="bg-emerald-600 font-semibold text-white hover:bg-emerald-700"
-                          onClick={() => confirmStartSprint(sprintToStart.id)}
-                          disabled={isActionPending}
-                        >
-                          {isActionPending ? 'Starting...' : 'Start Sprint'}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })()}
-          </DialogContent>
-        </Dialog>
+          onConfirm={confirmStartSprint}
+        />
 
         {/* Dialog: Complete Sprint Confirmation */}
-        <Dialog
-          open={!!sprintToComplete}
+        <BacklogCompleteSprintDialog
+          sprint={sprintToComplete}
+          itemCount={completeSprintItems.length}
+          incompleteCount={completeSprintIncompleteCount}
+          actionError={actionError}
+          isPending={isActionPending}
           onOpenChange={(open) => !open && setSprintToComplete(null)}
-        >
-          <DialogContent className="bg-card border-border/80 backdrop-blur-md sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-bold">
-                Complete Sprint: {sprintToComplete?.name}?
-              </DialogTitle>
-              <DialogDescription className="text-muted-foreground text-xs">
-                Review incomplete items before completing.
-              </DialogDescription>
-            </DialogHeader>
-
-            {sprintToComplete &&
-              (() => {
-                const sprintWIs = workItems.filter(
-                  (item) => item.sprint_id === sprintToComplete.id
-                );
-                const isEmpty = sprintWIs.length === 0;
-                const incompleteWIs = sprintWIs.filter(
-                  (item) => item.status !== 'Done'
-                );
-                const hasIncomplete = incompleteWIs.length > 0;
-
-                let statusSection;
-                if (isEmpty) {
-                  statusSection = (
-                    <div className="bg-destructive/15 border-destructive/20 text-destructive flex items-center gap-2 rounded-lg border px-4 py-3 text-sm">
-                      <AlertCircle className="h-5 w-5 shrink-0" />
-                      <span>
-                        {
-                          "If sprint haven't any work items cannot complete the sprint."
-                        }
-                      </span>
-                    </div>
-                  );
-                } else if (hasIncomplete) {
-                  statusSection = (
-                    <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/15 px-4 py-3 text-sm text-amber-600 dark:text-amber-400">
-                      <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-                      <div>
-                        <p className="mb-1 font-semibold">
-                          Cannot Complete Sprint
-                        </p>
-                        <p className="text-xs">
-                          {
-                            "Can't complete the sprint all the work items are not done."
-                          }
-                        </p>
-                      </div>
-                    </div>
-                  );
-                } else {
-                  statusSection = (
-                    <p className="text-foreground text-sm">
-                      Excellent! All{' '}
-                      <span className="font-semibold">{sprintWIs.length}</span>{' '}
-                      work items in this sprint are completed. Ready to close?
-                    </p>
-                  );
-                }
-
-                return (
-                  <div className="space-y-4 py-2">
-                    {statusSection}
-
-                    {actionError && (
-                      <div className="bg-destructive/15 border-destructive/20 text-destructive flex items-center gap-2 rounded-lg border px-4 py-3 text-sm">
-                        <AlertCircle className="h-5 w-5 shrink-0" />
-                        <span>{actionError}</span>
-                      </div>
-                    )}
-
-                    <div className="flex justify-end gap-2 pt-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSprintToComplete(null)}
-                        disabled={isActionPending}
-                      >
-                        Cancel
-                      </Button>
-                      {!isEmpty && !hasIncomplete && (
-                        <Button
-                          size="sm"
-                          className="bg-indigo-600 font-semibold text-white hover:bg-indigo-700"
-                          onClick={() =>
-                            confirmCompleteSprint(sprintToComplete.id)
-                          }
-                          disabled={isActionPending}
-                        >
-                          {isActionPending
-                            ? 'Completing...'
-                            : 'Complete Sprint'}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })()}
-          </DialogContent>
-        </Dialog>
+          onConfirm={confirmCompleteSprint}
+        />
 
         {/* Dialog: Project Mismatch Error */}
-        <Dialog open={isMismatchOpen} onOpenChange={setIsMismatchOpen}>
-          <DialogContent
-            onPointerDownOutside={(e) => e.preventDefault()}
-            onInteractOutside={(e) => e.preventDefault()}
-            onPointerDown={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
-            className="bg-card border-border/80 backdrop-blur-md sm:max-w-md"
-          >
-            <DialogHeader className="flex flex-col items-center pb-2 text-center">
-              <div className="bg-destructive/15 mb-2 rounded-full p-3">
-                <AlertCircle className="text-destructive h-6 w-6 animate-bounce" />
-              </div>
-              <DialogTitle className="text-lg font-bold">
-                Project Mismatch
-              </DialogTitle>
-              <DialogDescription className="text-muted-foreground text-xs">
-                This task cannot be assigned to this sprint because they belong
-                to different projects.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="flex justify-end pt-2">
-              <Button
-                size="sm"
-                className="cursor-pointer bg-indigo-600 font-semibold text-white hover:bg-indigo-700"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsMismatchOpen(false);
-                }}
-              >
-                OK
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <BacklogMismatchDialog
+          open={isMismatchOpen}
+          onOpenChange={setIsMismatchOpen}
+          onAcknowledge={() => setIsMismatchOpen(false)}
+        />
       </div>
     </TooltipProvider>
-  );
-}
-
-/* eslint-disable no-unused-vars */
-interface IssueRowProps {
-  item: DbWorkItem;
-  projects: DbProject[];
-  onSelect: (item: DbWorkItem) => void;
-  onDragStart: (e: React.DragEvent, id: string) => void;
-  getInitials: (name?: string | null) => string;
-}
-/* eslint-enable no-unused-vars */
-
-function IssueRow({
-  item,
-  projects,
-  onSelect,
-  onDragStart,
-  getInitials,
-}: Readonly<IssueRowProps>) {
-  const projectKey =
-    projects.find((p) => p.id === item.project_id)?.key || 'ALICE';
-  const displayKey = `${projectKey}-${item.id.slice(0, 4).toUpperCase()}`;
-
-  const typeStyles: Record<string, string> = {
-    Epic: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
-    Story: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-    Task: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
-  };
-
-  const normalizedPriority = mapPriority(item.priority);
-  const priorityStyles: Record<string, string> = {
-    high: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
-    medium:
-      'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
-    low: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-  };
-
-  return (
-    <button
-      type="button"
-      draggable
-      onDragStart={(e) => onDragStart(e, item.id)}
-      onClick={() => onSelect(item)}
-      className={cn(
-        'group border-border/60 relative flex w-full items-center justify-between gap-4 rounded-lg border px-3 py-2 text-left font-normal',
-        'bg-card/45 hover:bg-muted/30 cursor-grab hover:border-indigo-500/30 active:cursor-grabbing',
-        'shadow-sm transition-all duration-150',
-        'focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-hidden'
-      )}
-    >
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        {/* Grab Handle */}
-        <div className="text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors">
-          <GripVertical className="h-4 w-4" />
-        </div>
-
-        {/* Issue Type Indicator */}
-        <Badge
-          variant="outline"
-          className={cn(
-            'h-4 border px-1.5 py-0 text-[9px] uppercase',
-            typeStyles[item.type]
-          )}
-        >
-          {item.type}
-        </Badge>
-
-        {/* Key */}
-        <span className="text-muted-foreground min-w-17.5 font-mono text-xs font-semibold tracking-tight whitespace-nowrap">
-          {displayKey}
-        </span>
-
-        {/* Title */}
-        <span className="text-foreground max-w-md truncate text-sm font-medium transition-colors group-hover:text-indigo-600 sm:max-w-xl dark:group-hover:text-indigo-400">
-          {item.title}
-        </span>
-      </div>
-
-      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-        {/* Status */}
-        <WorkItemStatusBadge status={item.status} />
-
-        {/* Priority Badge */}
-        <Badge
-          variant="outline"
-          className={cn(
-            'h-4 border px-1.5 py-0 text-[9px] font-medium whitespace-nowrap capitalize',
-            priorityStyles[normalizedPriority]
-          )}
-        >
-          {item.priority}
-        </Badge>
-
-        {/* Assignee Avatar */}
-        <Avatar size="sm" className="border-border/80 size-6 border">
-          <AvatarFallback className="bg-muted-foreground/15 text-muted-foreground text-[9px] font-semibold">
-            {getInitials(item.assignee?.name)}
-          </AvatarFallback>
-        </Avatar>
-      </div>
-    </button>
   );
 }
