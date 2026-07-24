@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabase';
-import { NotificationBuilder, AssignNotification } from '@repo/types';
+import { NotificationBuilder, AssignNotification, MentionNotification } from '@repo/types';
+
 
 
 
@@ -64,6 +65,43 @@ export class NotificationsService {
       }
     } catch (err) {
       console.error('Error creating assign notification:', err);
+    }
+  }
+
+  async createMentionNotification(params: {
+    mentionedUserId: string;
+    actorId: string;
+    taskTitle: string;
+    taskId: string;
+    commentContentSnippet: string;
+  }) {
+    if (params.mentionedUserId === params.actorId) return;
+
+    try {
+      // Fetch actor name
+      const { data: actor } = await supabase
+        .from('users')
+        .select('name')
+        .eq('id', params.actorId)
+        .maybeSingle();
+
+      const actorName = actor?.name || 'A teammate';
+
+      const notification = new NotificationBuilder(MentionNotification)
+        .ToUser(params.mentionedUserId)
+        .WithMessage(`${actorName} mentioned you in a comment on "${params.taskTitle}": "${params.commentContentSnippet}"`)
+        .WithRelatedItem(params.taskId)
+        .WithCreatedBy(params.actorId)
+        .WithUpdatedBy(params.actorId)
+        .Build();
+
+      const { error } = await supabase.from('notifications').insert(notification);
+
+      if (error) {
+        console.error('Failed to insert mention notification to Supabase:', error);
+      }
+    } catch (err) {
+      console.error('Error creating mention notification:', err);
     }
   }
 }
