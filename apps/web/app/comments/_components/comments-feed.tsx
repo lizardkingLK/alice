@@ -495,6 +495,7 @@ export function CommentsFeed({
   currentUserId = 'user-admin-1',
   workItemId,
 }: Readonly<CommentsFeedProps>) {
+  const [activeUserId, setActiveUserId] = useState<string>(currentUserId);
   const [comments, setComments] = useState<CommentItem[]>(initialComments);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedWorkItemId, setSelectedWorkItemId] = useState<string>('all');
@@ -526,7 +527,12 @@ export function CommentsFeed({
   const replyInputRef = useRef<HTMLInputElement>(null);
   const editCommentRef = useRef<HTMLTextAreaElement>(null);
 
-  // Load active users from database on mount
+  // Sync activeUserId with currentUserId prop if it changes
+  useEffect(() => {
+    setActiveUserId(currentUserId);
+  }, [currentUserId]);
+
+  // Load active users from database and get current user on mount
   useEffect(() => {
     async function loadUsers() {
       try {
@@ -555,6 +561,14 @@ export function CommentsFeed({
         } else {
           setUsers(fallbackUsers);
         }
+
+        // Get logged in user UUID dynamically to set activeUserId
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          setActiveUserId(user.id);
+        }
       } catch (err) {
         console.error('Failed to load users for mentions autocomplete:', err);
         setUsers([
@@ -565,7 +579,7 @@ export function CommentsFeed({
       }
     }
     loadUsers();
-  }, []);
+  }, [currentUserId]);
 
   // Update comments if initialComments changes
   useEffect(() => {
@@ -657,7 +671,7 @@ export function CommentsFeed({
     try {
       const supabase = createClient();
       const actorName =
-        users.find((u) => u.id === currentUserId)?.name || 'A teammate';
+        users.find((u) => u.id === activeUserId)?.name || 'A teammate';
 
       const { data: wi } = await supabase
         .from('work_items')
@@ -670,7 +684,7 @@ export function CommentsFeed({
         rawContent.length > 60 ? rawContent.slice(0, 60) + '...' : rawContent;
 
       for (const mId of mentionedUserIds) {
-        if (mId === currentUserId) continue;
+        if (mId === activeUserId) continue;
 
         await supabase.from('notifications').insert({
           user_id: mId,
@@ -678,8 +692,8 @@ export function CommentsFeed({
           message: `${actorName} mentioned you in a comment on ${titleSnippet}: "${rawTextSnippet}"`,
           related_item_id: targetWorkItemId,
           read_status: false,
-          created_by: currentUserId,
-          updated_by: currentUserId,
+          created_by: activeUserId,
+          updated_by: activeUserId,
           updated_at: new Date().toISOString(),
           status: 'active',
         });
@@ -806,7 +820,7 @@ export function CommentsFeed({
       const created = await createComment({
         work_item_id: newWorkItemId,
         content: processedContent,
-        author_id: currentUserId,
+        author_id: activeUserId,
       });
 
       setComments((prev) => [created, ...prev]);
@@ -824,7 +838,7 @@ export function CommentsFeed({
       const mockCreated: CommentItem = {
         id: `comment-${Date.now()}`,
         work_item_id: newWorkItemId,
-        author_id: currentUserId,
+        author_id: activeUserId,
         parent_id: null,
         content: processedContent,
         edited: false,
@@ -832,9 +846,9 @@ export function CommentsFeed({
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         author: {
-          id: currentUserId,
+          id: activeUserId,
           name:
-            users.find((u) => u.id === currentUserId)?.name || 'Current User',
+            users.find((u) => u.id === activeUserId)?.name || 'Current User',
           email: 'user@alice.dev',
           role: 'admin',
         },
@@ -872,7 +886,7 @@ export function CommentsFeed({
       const created = await createComment({
         work_item_id: workItemId,
         content: processedContent,
-        author_id: currentUserId,
+        author_id: activeUserId,
         parent_id: parentId,
       });
       setComments((prev) => [...prev, created]);
@@ -888,7 +902,7 @@ export function CommentsFeed({
       const mockReply: CommentItem = {
         id: `reply-${Date.now()}`,
         work_item_id: workItemId,
-        author_id: currentUserId,
+        author_id: activeUserId,
         parent_id: parentId,
         content: processedContent,
         edited: false,
@@ -896,9 +910,9 @@ export function CommentsFeed({
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         author: {
-          id: currentUserId,
+          id: activeUserId,
           name:
-            users.find((u) => u.id === currentUserId)?.name || 'Current User',
+            users.find((u) => u.id === activeUserId)?.name || 'Current User',
           email: 'user@alice.dev',
         },
         work_item: parentComment?.work_item || null,
@@ -1167,43 +1181,45 @@ export function CommentsFeed({
                       </Badge>
                     )}
 
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          className="text-muted-foreground"
-                        >
-                          <MoreVertical className="size-4" />
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setEditingCommentId(parent.id);
-                            // Replace @[Name](userId) with @Name, and #[KEY](id) with #KEY
-                            const rawText = parent.content
-                              .replace(/@\[([^\]]+)\]\(([^)]+)\)/g, '@$1')
-                              .replace(/#\[([^\]]+)\]\(([^)]+)\)/g, '#$1');
-                            setEditContent(rawText);
-                          }}
-                          className="gap-2"
-                        >
-                          <Pencil className="size-3.5" />
-                          Edit
-                        </DropdownMenuItem>
-                        {parent.status === 'active' && (
-                          <DropdownMenuItem
-                            onClick={() => handleArchive(parent.id)}
-                            className="text-amber-600 focus:text-amber-600 dark:text-amber-400"
+                    {parent.author_id === activeUserId && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="text-muted-foreground"
                           >
-                            <Archive className="size-3.5" />
-                            Archive
+                            <MoreVertical className="size-4" />
+                            <span className="sr-only">Open menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setEditingCommentId(parent.id);
+                              // Replace @[Name](userId) with @Name, and #[KEY](id) with #KEY
+                              const rawText = parent.content
+                                .replace(/@\[([^\]]+)\]\(([^)]+)\)/g, '@$1')
+                                .replace(/#\[([^\]]+)\]\(([^)]+)\)/g, '#$1');
+                              setEditContent(rawText);
+                            }}
+                            className="gap-2"
+                          >
+                            <Pencil className="size-3.5" />
+                            Edit
                           </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                          {parent.status === 'active' && (
+                            <DropdownMenuItem
+                              onClick={() => handleArchive(parent.id)}
+                              className="text-amber-600 focus:text-amber-600 dark:text-amber-400"
+                            >
+                              <Archive className="size-3.5" />
+                              Archive
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </div>
                 </div>
 
@@ -1283,10 +1299,78 @@ export function CommentsFeed({
                               )}
                             </span>
                           </div>
+                          {reply.author_id === activeUserId && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-xs"
+                                  className="text-muted-foreground h-6 w-6"
+                                >
+                                  <MoreVertical className="size-3.5" />
+                                  <span className="sr-only">Open menu</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setEditingCommentId(reply.id);
+                                    const rawText = reply.content
+                                      .replace(/@\[([^\]]+)\]\(([^)]+)\)/g, '@$1')
+                                      .replace(/#\[([^\]]+)\]\(([^)]+)\)/g, '#$1');
+                                    setEditContent(rawText);
+                                  }}
+                                  className="gap-2 text-xs"
+                                >
+                                  <Pencil className="size-3" />
+                                  Edit
+                                </DropdownMenuItem>
+                                {reply.status === 'active' && (
+                                  <DropdownMenuItem
+                                    onClick={() => handleArchive(reply.id)}
+                                    className="text-amber-600 focus:text-amber-600 dark:text-amber-400 gap-2 text-xs"
+                                  >
+                                    <Archive className="size-3" />
+                                    Archive
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
                         </div>
-                        <p className="text-muted-foreground text-xs">
-                          {renderCommentContent(reply.content)}
-                        </p>
+                        {editingCommentId === reply.id ? (
+                          <div className="relative space-y-2 pt-1">
+                            <AutocompleteInput
+                              as="textarea"
+                              textareaRef={editCommentRef}
+                              value={editContent}
+                              onChange={setEditContent}
+                              users={users}
+                              workItems={workItems}
+                              rows={2}
+                              position="top"
+                            />
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                size="xs"
+                                variant="ghost"
+                                onClick={() => setEditingCommentId(null)}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                size="xs"
+                                onClick={() => handleSaveEdit(reply.id)}
+                              >
+                                Save
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground text-xs pl-1">
+                            {renderCommentContent(reply.content)}
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>

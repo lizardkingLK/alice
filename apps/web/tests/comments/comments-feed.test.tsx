@@ -1,7 +1,13 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { CommentsFeed } from '@/app/comments/_components/comments-feed';
-import type { CommentItem } from '@/app/comments/_services/comments.service';
+import {
+  createComment,
+  updateComment,
+  archiveComment,
+  type CommentItem,
+} from '@/app/comments/_services/comments.service';
 
 vi.mock('@/app/comments/_services/comments.service', async (importOriginal) => {
   const actual =
@@ -13,6 +19,32 @@ vi.mock('@/app/comments/_services/comments.service', async (importOriginal) => {
     createComment: vi.fn(),
     updateComment: vi.fn(),
     archiveComment: vi.fn(),
+  };
+});
+
+// Mock Dropdown Menu to avoid testing Radix internals in the jsdom environment
+vi.mock('@repo/ui/components/ui/dropdown-menu', () => {
+  return {
+    DropdownMenu: ({ children }: { children: ReactNode }) => (
+      <div data-testid="dropdown-menu">{children}</div>
+    ),
+    DropdownMenuTrigger: ({ children }: { children: ReactNode }) => (
+      <div data-testid="dropdown-menu-trigger">{children}</div>
+    ),
+    DropdownMenuContent: ({ children }: { children: ReactNode }) => (
+      <div data-testid="dropdown-menu-content">{children}</div>
+    ),
+    DropdownMenuItem: ({
+      children,
+      onClick,
+    }: {
+      children: ReactNode;
+      onClick?: () => void;
+    }) => (
+      <button type="button" onClick={onClick}>
+        {children}
+      </button>
+    ),
   };
 });
 
@@ -87,6 +119,23 @@ const mockComments: CommentItem[] = [
       type: 'Bug',
     },
   },
+  {
+    id: 'reply-1',
+    work_item_id: 'wi-1',
+    author_id: 'user-admin-1',
+    parent_id: 'comment-1',
+    content: 'Yes, this is a reply to the security audit.',
+    edited: false,
+    status: 'active',
+    created_at: '2026-07-20T11:00:00Z',
+    updated_at: '2026-07-20T11:00:00Z',
+    author: {
+      id: 'user-admin-1',
+      name: 'Alice Admin',
+      email: 'admin@alice.dev',
+      role: 'admin',
+    },
+  },
 ];
 
 describe('CommentsFeed Component', () => {
@@ -106,7 +155,7 @@ describe('CommentsFeed Component', () => {
     expect(
       screen.getByText('Navigation CSS alignment fix is ready for review.')
     ).toBeInTheDocument();
-    expect(screen.getByText('Alice Admin')).toBeInTheDocument();
+    expect(screen.getAllByText('Alice Admin')[0]).toBeInTheDocument();
     expect(screen.getByText('Bob Developer')).toBeInTheDocument();
   });
 
@@ -200,11 +249,173 @@ describe('CommentsFeed Component', () => {
       />
     );
 
-    expect(screen.getByText('Discussion (2)')).toBeInTheDocument();
+    expect(screen.getByText('Discussion (3)')).toBeInTheDocument();
     expect(
       screen.queryByText('Discussions & Comments')
     ).not.toBeInTheDocument();
     expect(screen.queryByText('New Comment')).not.toBeInTheDocument();
     expect(screen.getByText('Add to discussion')).toBeInTheDocument();
+  });
+
+  it('calls createComment when a new comment is submitted', async () => {
+    const mockCreatedComment: CommentItem = {
+      id: 'comment-new',
+      work_item_id: 'wi-1',
+      author_id: 'user-admin-1',
+      parent_id: null,
+      content: 'New testing comment text.',
+      edited: false,
+      status: 'active',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    vi.mocked(createComment).mockResolvedValue(mockCreatedComment);
+
+    render(
+      <CommentsFeed
+        initialComments={mockComments}
+        workItems={mockWorkItems}
+        workItemId="wi-1"
+      />
+    );
+
+    const textarea = screen.getByPlaceholderText(/Share your thoughts, feedback, or update/i);
+    fireEvent.change(textarea, { target: { value: 'New testing comment text.' } });
+
+    const postBtn = screen.getByRole('button', { name: /Post Comment/i });
+    await waitFor(() => expect(postBtn).not.toBeDisabled());
+    fireEvent.click(postBtn);
+
+    await waitFor(() => {
+      expect(createComment).toHaveBeenCalledWith({
+        work_item_id: 'wi-1',
+        content: 'New testing comment text.',
+        author_id: 'user-admin-1',
+      });
+    });
+  });
+
+  it('calls updateComment when a comment is edited and saved', async () => {
+    const mockUpdatedComment: CommentItem = {
+      ...mockComments[0]!,
+      content: 'Security audit completed for the auth module (Updated).',
+      edited: true,
+    };
+    vi.mocked(updateComment).mockResolvedValue(mockUpdatedComment);
+
+    render(
+      <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
+    );
+
+    // Open dropdown menu
+    const menuBtn = screen.getAllByRole('button', { name: /Open menu/i })[0]!;
+    fireEvent.click(menuBtn);
+
+    // Click Edit button
+    const editBtn = screen.getAllByText('Edit')[0]!;
+    fireEvent.click(editBtn);
+
+    // Wait for the edit textarea to be populated and rendered
+    const textarea = await screen.findByDisplayValue('Security audit completed for the auth module.');
+
+    // Modify the textarea content
+    fireEvent.change(textarea, { target: { value: 'Security audit completed for the auth module (Updated).' } });
+    await waitFor(() => expect(textarea).toHaveValue('Security audit completed for the auth module (Updated).'));
+
+    // Click Save
+    const saveBtn = screen.getByRole('button', { name: 'Save' });
+    fireEvent.click(saveBtn);
+
+    await waitFor(() => {
+      expect(updateComment).toHaveBeenCalledWith('comment-1', 'Security audit completed for the auth module (Updated).');
+    });
+  });
+
+  it('calls archiveComment when a comment is archived', async () => {
+    vi.mocked(archiveComment).mockResolvedValue(undefined);
+
+    render(
+      <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
+    );
+
+    // Open dropdown menu
+    const menuBtn = screen.getAllByRole('button', { name: /Open menu/i })[0]!;
+    fireEvent.click(menuBtn);
+
+    // Click Archive button
+    const archiveBtn = screen.getAllByText('Archive')[0]!;
+    fireEvent.click(archiveBtn);
+
+    await waitFor(() => {
+      expect(archiveComment).toHaveBeenCalledWith('comment-1');
+    });
+  });
+
+  it('calls updateComment when a thread reply is edited and saved', async () => {
+    const mockUpdatedReply: CommentItem = {
+      id: 'reply-1',
+      work_item_id: 'wi-1',
+      author_id: 'user-admin-1',
+      parent_id: 'comment-1',
+      content: 'Yes, this is a reply to the security audit (Updated).',
+      edited: true,
+      status: 'active',
+      created_at: '2026-07-20T11:00:00Z',
+      updated_at: '2026-07-20T11:00:00Z',
+      author: {
+        id: 'user-admin-1',
+        name: 'Alice Admin',
+        email: 'admin@alice.dev',
+        role: 'admin',
+      },
+    };
+    vi.mocked(updateComment).mockResolvedValue(mockUpdatedReply);
+
+    render(
+      <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
+    );
+
+    // Open dropdown menu for reply (the second Open menu button)
+    const menuBtn = screen.getAllByRole('button', { name: /Open menu/i })[1]!;
+    fireEvent.click(menuBtn);
+
+    // Click Edit button (the second Edit button)
+    const editBtn = screen.getAllByText('Edit')[1]!;
+    fireEvent.click(editBtn);
+
+    // Wait for the edit textarea to be populated and rendered
+    const textarea = await screen.findByDisplayValue('Yes, this is a reply to the security audit.');
+
+    // Modify the textarea content
+    fireEvent.change(textarea, { target: { value: 'Yes, this is a reply to the security audit (Updated).' } });
+    await waitFor(() => expect(textarea).toHaveValue('Yes, this is a reply to the security audit (Updated).'));
+
+    // Click Save
+    const saveBtn = screen.getByRole('button', { name: 'Save' });
+    fireEvent.click(saveBtn);
+
+    await waitFor(() => {
+      expect(updateComment).toHaveBeenCalledWith('reply-1', 'Yes, this is a reply to the security audit (Updated).');
+    });
+  });
+
+  it('calls archiveComment when a thread reply is archived', async () => {
+    vi.mocked(archiveComment).mockResolvedValue(undefined);
+
+    render(
+      <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
+    );
+
+    // Open dropdown menu for reply (the second Open menu button)
+    const menuBtn = screen.getAllByRole('button', { name: /Open menu/i })[1]!;
+    fireEvent.click(menuBtn);
+
+    // Click Archive button (the second Archive button)
+    const archiveBtn = screen.getAllByText('Archive')[1]!;
+    fireEvent.click(archiveBtn);
+
+    await waitFor(() => {
+      expect(archiveComment).toHaveBeenCalledWith('reply-1');
+    });
   });
 });
