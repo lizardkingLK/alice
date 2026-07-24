@@ -2,6 +2,11 @@
 
 import { useEffect, useRef } from 'react';
 import { Editor, JSONContent } from '@tiptap/react';
+import {
+  getLocalStorageJson,
+  removeLocalStorageItem,
+  setLocalStorageJson,
+} from '@/lib/local-storage';
 
 interface UseEditorAutosaveProps {
   editor: Editor | null;
@@ -22,28 +27,20 @@ export function useEditorAutosave({
       return;
     }
 
-    try {
-      const savedData = localStorage.getItem(storageKey);
-      if (!savedData) {
-        return;
-      }
+    const parsed = getLocalStorageJson<JSONContent>(storageKey);
+    if (!parsed) {
+      return;
+    }
 
-      const parsed = JSON.parse(savedData) as JSONContent;
-      // Only load if the editor is currently empty to avoid overwriting network content
-      if (editor.isEmpty) {
-        // Defer execution out of React's active lifecycle batching window
-        queueMicrotask(() => {
-          // Guard to make sure the editor wasn't destroyed while waiting
-          if (editor && !editor.isDestroyed) {
-            editor.commands.setContent(parsed);
-          }
-        });
-      }
-    } catch (error) {
-      console.error(
-        'Failed to load autosaved content from localStorage:',
-        error
-      );
+    // Only load if the editor is currently empty to avoid overwriting network content
+    if (editor.isEmpty) {
+      // Defer execution out of React's active lifecycle batching window
+      queueMicrotask(() => {
+        // Guard to make sure the editor wasn't destroyed while waiting
+        if (editor && !editor.isDestroyed) {
+          editor.commands.setContent(parsed);
+        }
+      });
     }
   }, [editor, storageKey]);
 
@@ -53,12 +50,7 @@ export function useEditorAutosave({
       const currentEditor = editorRef.current;
       if (!currentEditor || currentEditor.isEmpty) return;
 
-      try {
-        const content = currentEditor.getJSON();
-        localStorage.setItem(storageKey, JSON.stringify(content));
-      } catch (error) {
-        console.error('Failed to autosave content to localStorage:', error);
-      }
+      setLocalStorageJson(storageKey, currentEditor.getJSON());
     }, 5000);
 
     return () => clearInterval(saveInterval);
@@ -66,11 +58,7 @@ export function useEditorAutosave({
 
   // Helper utility to clean up the storage key on clean save operations
   const clearAutosave = () => {
-    try {
-      localStorage.removeItem(storageKey);
-    } catch (error) {
-      console.error('Failed to clear autosaved content:', error);
-    }
+    removeLocalStorageItem(storageKey);
   };
 
   return { clearAutosave };

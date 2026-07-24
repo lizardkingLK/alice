@@ -1,9 +1,101 @@
-import { getWorkItems } from '@/app/work-items/_services/workItem.service.server';
 import { KanbanBoard } from '@/app/board/_components/kanban-board';
+import {
+  getActiveMemberProjectIds,
+  resolveDefaultBoardProject,
+  resolveDefaultBoardSprint,
+} from '@/app/board/_services/board-defaults.server';
+import { getProjectList } from '@/app/projects/_services/projects.service.server';
+import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.service.server';
+import { getWorkItems } from '@/app/work-items/_services/workItem.service.server';
+import { getDbUser } from '@/lib/auth';
+import { filterActiveProjects } from '@/lib/projects/active-projects';
+import { safeServerFetch } from '@/lib/safe-server-fetch';
+import {
+  parseWorkItemFilters,
+  type RawSearchParams,
+} from '@/lib/search-params';
 
-export async function BoardData() {
-  const workItems = await getWorkItems();
+const EMPTY_SPRINTS = {
+  sprints: [],
+  pagination: { page: 1, limit: 100, totalCount: 0, totalPages: 1 },
+};
+
+type BoardDataProps = {
+  readonly searchParams: Promise<RawSearchParams>;
+};
+
+export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
+  const resolvedSearchParams = await searchParams;
+  const { projectId, sprintId } = parseWorkItemFilters(resolvedSearchParams);
+  const dbUser = await getDbUser();
+  const role = dbUser?.role ?? 'member';
+  const isAdmin = role === 'admin';
+
+  const [projects, sprintsResult] = await Promise.all([
+    safeServerFetch(getProjectList(), [], 'fetch projects for board'),
+    safeServerFetch(
+      getSprintsPaginatedServer('active', 1, 100),
+      EMPTY_SPRINTS,
+      'fetch sprints for board'
+    ),
+  ]);
+
+  const activeProjects = filterActiveProjects(projects);
+  const sprints = sprintsResult.sprints;
+
+  let suggestedDefaults: {
+    projectId: string;
+    sprintId: string | null;
+  } | null = null;
+
+  if (!isAdmin && dbUser) {
+    const memberProjectIds = await safeServerFetch(
+      getActiveMemberProjectIds(dbUser.id),
+      [],
+      'fetch member project ids for board defaults'
+    );
+    const defaultProject = resolveDefaultBoardProject(projects, {
+      userId: dbUser.id,
+      role,
+      memberProjectIds,
+    });
+    if (defaultProject) {
+      const defaultSprint = resolveDefaultBoardSprint(
+        sprints,
+        defaultProject.id
+      );
+      suggestedDefaults = {
+        projectId: defaultProject.id,
+        sprintId: defaultSprint?.id ?? null,
+      };
+    }
+  }
+
+  // Non-admins without a URL project wait for client bootstrap (localStorage).
+  const needsClientBootstrap = !isAdmin && !projectId;
+  const workItems = needsClientBootstrap
+    ? []
+    : await safeServerFetch(
+        getWorkItems({
+          projectId,
+          sprintId,
+        }),
+        [],
+        'fetch work items for board'
+      );
   const boardItems = workItems.filter((item) => item.status !== 'Draft');
 
-  return <KanbanBoard initialWorkItems={boardItems} />;
+  return (
+    <KanbanBoard
+      initialWorkItems={boardItems}
+      projects={activeProjects}
+      sprints={sprints}
+      projectFilter={projectId ?? ''}
+      sprintFilter={sprintId ?? ''}
+      allowAllFilters={isAdmin}
+      userId={dbUser?.id ?? null}
+      suggestedDefaults={suggestedDefaults}
+      needsClientBootstrap={needsClientBootstrap}
+    />
+  );
 }

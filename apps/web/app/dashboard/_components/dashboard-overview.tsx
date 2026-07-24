@@ -11,6 +11,11 @@ import { RotateCcw } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { useSidebarLayoutSettling } from '@/hooks/use-sidebar-layout-settling';
 import {
+  getLocalStorageJson,
+  removeLocalStorageItem,
+  setLocalStorageJson,
+} from '@/lib/local-storage';
+import {
   DEFAULT_LAYOUT,
   LAYOUT_STORAGE_KEY,
   WIDGET_CATALOG,
@@ -25,42 +30,29 @@ function isWidgetId(value: string): value is WidgetId {
 }
 
 function readStoredLayout(): LayoutItem[] {
-  if (typeof window === 'undefined') {
+  const parsed = getLocalStorageJson<LayoutItem[]>(LAYOUT_STORAGE_KEY);
+  if (!Array.isArray(parsed) || parsed.length === 0) {
     return [...DEFAULT_LAYOUT];
   }
 
-  try {
-    const raw = window.localStorage.getItem(LAYOUT_STORAGE_KEY);
-    if (!raw) {
-      return [...DEFAULT_LAYOUT];
+  const byId = new Map(
+    parsed.filter((item) => isWidgetId(item.i)).map((item) => [item.i, item])
+  );
+
+  return DEFAULT_LAYOUT.map((fallback) => {
+    const stored = byId.get(fallback.i);
+    if (!stored) {
+      return { ...fallback };
     }
 
-    const parsed = JSON.parse(raw) as LayoutItem[];
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      return [...DEFAULT_LAYOUT];
-    }
-
-    const byId = new Map(
-      parsed.filter((item) => isWidgetId(item.i)).map((item) => [item.i, item])
-    );
-
-    return DEFAULT_LAYOUT.map((fallback) => {
-      const stored = byId.get(fallback.i);
-      if (!stored) {
-        return { ...fallback };
-      }
-
-      return {
-        ...fallback,
-        x: stored.x,
-        y: stored.y,
-        w: stored.w,
-        h: stored.h,
-      };
-    });
-  } catch {
-    return [...DEFAULT_LAYOUT];
-  }
+    return {
+      ...fallback,
+      x: stored.x,
+      y: stored.y,
+      w: stored.w,
+      h: stored.h,
+    };
+  });
 }
 
 export function DashboardOverview() {
@@ -92,13 +84,13 @@ export function DashboardOverview() {
       return;
     }
 
-    window.localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(nextLayout));
+    setLocalStorageJson(LAYOUT_STORAGE_KEY, nextLayout);
   };
 
   const handleResetLayout = () => {
     const nextLayout = DEFAULT_LAYOUT.map((item) => ({ ...item }));
     setLayout(nextLayout);
-    window.localStorage.removeItem(LAYOUT_STORAGE_KEY);
+    removeLocalStorageItem(LAYOUT_STORAGE_KEY);
   };
 
   return (
@@ -108,7 +100,7 @@ export function DashboardOverview() {
           <p className="text-sm font-medium">Overview</p>
           <p className="text-muted-foreground text-sm">
             Hold the ellipsis to drag widgets. Resize from the bottom-right
-            corner. Layout is saved in this browser.
+            corner. Layout is saved automatically.
           </p>
         </div>
         <Button

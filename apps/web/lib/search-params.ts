@@ -4,6 +4,7 @@ export interface RawSearchParams {
   tab?: string;
   search?: string;
   project?: string;
+  sprint?: string;
   type?: string;
   assignee?: string;
   fromProject?: string;
@@ -20,6 +21,7 @@ export type WorkItemTypeFilter = 'Epic' | 'Story' | 'Task';
 
 export interface ParsedWorkItemFilters {
   projectId?: string;
+  sprintId?: string;
   type?: WorkItemTypeFilter;
   assigneeId?: string;
 }
@@ -43,6 +45,7 @@ export function parseWorkItemFilters(
   resolvedParams: RawSearchParams
 ): ParsedWorkItemFilters {
   const projectId = resolvedParams.project?.trim() || undefined;
+  const sprintId = resolvedParams.sprint?.trim() || undefined;
   const assigneeId = resolvedParams.assignee?.trim() || undefined;
   const rawType = resolvedParams.type?.trim();
   const type =
@@ -50,7 +53,7 @@ export function parseWorkItemFilters(
       ? (rawType as WorkItemTypeFilter)
       : undefined;
 
-  return { projectId, type, assigneeId };
+  return { projectId, sprintId, type, assigneeId };
 }
 
 export function parseTabStatus(tab?: string): 'active' | 'archived' {
