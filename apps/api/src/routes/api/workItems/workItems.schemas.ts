@@ -23,6 +23,31 @@ function todayDateString(): string {
   return `${year}-${month}-${day}`;
 }
 
+/** Normalize DB/ISO timestamps to `YYYY-MM-DD` for comparisons. */
+export function toDateOnly(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+  return value.split('T')[0] ?? null;
+}
+
+/**
+ * PATCH may resubmit an existing past due date (edit forms). Block only when
+ * the client changes due_date to a *new* past date.
+ */
+export function isBlockedPastDueDateChange(
+  nextDueDate: string | null | undefined,
+  existingDueDate: string | null | undefined
+): boolean {
+  if (nextDueDate === undefined || nextDueDate === null) {
+    return false;
+  }
+  if (nextDueDate >= todayDateString()) {
+    return false;
+  }
+  return nextDueDate !== toDateOnly(existingDueDate);
+}
+
 function emptyStringToNull(value: unknown): unknown {
   return value === '' || value === undefined ? null : value;
 }
@@ -103,6 +128,7 @@ export const createUpdateWorkItemBodySchema = workItemCoreObject.refine(
   }
 );
 
+/** PATCH: past due dates allowed when unchanged; see isBlockedPastDueDateChange. */
 export const patchUpdateWorkItemBodySchema = workItemCoreObject
   .extend({
     status: workItemStatusSchema,
@@ -110,19 +136,7 @@ export const patchUpdateWorkItemBodySchema = workItemCoreObject
   .partial()
   .refine((data) => Object.keys(data).length > 0, {
     message: 'At least one field must be provided for update',
-  })
-  .refine(
-    (data) => {
-      if (data.due_date) {
-        return data.due_date >= todayDateString();
-      }
-      return true;
-    },
-    {
-      message: 'Due date must be on or after today',
-      path: ['due_date'],
-    }
-  );
+  });
 
 export type WorkItemBody = z.infer<typeof createUpdateWorkItemBodySchema>;
 export type PatchWorkItemBody = z.infer<typeof patchUpdateWorkItemBodySchema>;
