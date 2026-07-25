@@ -22,17 +22,15 @@ export function resolveDefaultBoardProject(
   const memberSet = new Set(options.memberProjectIds);
 
   if (options.role === 'manager') {
-    const owned = active.filter(
-      (project) => project.owner_id === options.userId
-    );
-    if (owned[0]) {
-      return owned[0];
+    const owned = active.find((project) => project.owner_id === options.userId);
+    if (owned) {
+      return owned;
     }
   }
 
-  const membership = active.filter((project) => memberSet.has(project.id));
-  if (membership[0]) {
-    return membership[0];
+  const membership = active.find((project) => memberSet.has(project.id));
+  if (membership) {
+    return membership;
   }
 
   // Fallback: first active project (keeps board usable if membership lags).
