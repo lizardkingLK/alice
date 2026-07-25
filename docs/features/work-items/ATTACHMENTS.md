@@ -12,7 +12,7 @@ Related:
 - Performance: [PERFORMANCE.md](../../guides/PERFORMANCE.md) §2.4, §2.9, §3
 - Profile / public avatars (separate): [EDIT_PROFILE.md](../profile/EDIT_PROFILE.md)
 - Schema: `attachments` in `packages/db/prisma/schema.prisma`
-- Storage: `alice_storage_attachments` (**private**), shared `files.repository`
+- Storage: `alice_storage_attachments` (**private**), shared `apps/api/src/lib/file-helpers.ts`
 
 ---
 
@@ -38,17 +38,17 @@ Related:
 
 ## Locked decisions
 
-| Topic | Decision |
-| ----- | -------- |
-| Bucket | `alice_storage_attachments` — **private** |
-| DB row | Store `storage_path` (+ name, mime, size, uploader); **never** a forever public file URL |
-| Initial load | Same pattern as discussion: parallel RSC loader next to `getWorkItem` |
+| Topic            | Decision                                                                                                                    |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Bucket           | `alice_storage_attachments` — **private**                                                                                   |
+| DB row           | Store `storage_path` (+ name, mime, size, uploader); **never** a forever public file URL                                    |
+| Initial load     | Same pattern as discussion: parallel RSC loader next to `getWorkItem`                                                       |
 | Join vs parallel | **Parallel** `getWorkItemAttachments(id)` — do **not** embed attachments (or comments) in a single mega `work_items` select |
-| List UI | Type icon + name + size; no private `<img src>` thumbnails in v1 |
-| Signed URL | Mint on click via authenticated API (`createSignedUrl`) |
-| Client cache | In-memory `Map` per details visit: `{ previewUrl, downloadUrl, expiresAt? }` |
-| Expiry | No automatic refresh; show expired state + **Generate new link** / **Refresh link** |
-| Viewer | Alice modal: image / PDF when possible + Download; else download-only |
+| List UI          | Type icon + name + size; no private `<img src>` thumbnails in v1                                                            |
+| Signed URL       | Mint on click via authenticated API (`createSignedUrl`)                                                                     |
+| Client cache     | In-memory `Map` per details visit: `{ previewUrl, downloadUrl, expiresAt? }`                                                |
+| Expiry           | No automatic refresh; show expired state + **Generate new link** / **Refresh link**                                         |
+| Viewer           | Alice modal: image / PDF when possible + Download; else download-only                                                       |
 
 ```mermaid
 flowchart TD
@@ -86,13 +86,13 @@ const [workItem, initialComments, initialAttachments, dbUser] =
 
 ### Why not one Supabase join of work item + comments + attachments?
 
-| Concern | Parallel loaders | Mega-join |
-| ------- | ---------------- | --------- |
-| Shape | Comments (threaded tree) ≠ flat attachments | Awkward nested select + client reshape |
-| Failure isolation | One `safeServerFetch` can fail soft | One bad embed can fail the whole details payload |
-| Caching / invalidation | Revalidate or refresh one domain | Coarser invalidation |
-| Query cost | Three focused queries (already the comments pattern) | Large payload even when UI only needs one section |
-| PERFORMANCE.md | Matches §2.9 discussion SSR | Optional later if profiling proves one round trip wins |
+| Concern                | Parallel loaders                                     | Mega-join                                              |
+| ---------------------- | ---------------------------------------------------- | ------------------------------------------------------ |
+| Shape                  | Comments (threaded tree) ≠ flat attachments          | Awkward nested select + client reshape                 |
+| Failure isolation      | One `safeServerFetch` can fail soft                  | One bad embed can fail the whole details payload       |
+| Caching / invalidation | Revalidate or refresh one domain                     | Coarser invalidation                                   |
+| Query cost             | Three focused queries (already the comments pattern) | Large payload even when UI only needs one section      |
+| PERFORMANCE.md         | Matches §2.9 discussion SSR                          | Optional later if profiling proves one round trip wins |
 
 **Do not merge comments into the same join** for the same reasons. Keep
 `getWorkItemDiscussion` and `getWorkItemAttachments` as siblings.
@@ -106,17 +106,16 @@ attachment reads should prefer the direct-server path from day one.
 
 ## API sketch (mutations + signed URL)
 
-| Endpoint | Role |
-| -------- | ---- |
-| `GET /api/attachments/:id/url` (or `POST`) | Auth + project access → `{ previewUrl?, downloadUrl, expiresAt }` |
-| `POST /api/attachments` | Upload or accept path from `/api/files` → insert `attachments` row |
-| `DELETE /api/attachments/:id` | Remove/archive row + best-effort Storage delete |
+| Endpoint                                   | Role                                                                                       |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| `GET /api/attachments/:id/url` (or `POST`) | Auth + project access → `{ previewUrl?, downloadUrl, expiresAt }`                          |
+| `POST /api/attachments`                    | Upload to attachments bucket (signed URL in response); later also insert `attachments` row |
+| `DELETE /api/attachments/:id`              | Remove/archive row + best-effort Storage delete                                            |
 
 Optional `GET /api/attachments?work_item_id=` for non-web clients — **not** the
 hot path for `/work-items/[id]` first paint.
 
-Reuse `apps/api/src/routes/api/files/files.repository.ts` for upload / signed URL
-/ remove.
+Reuse `apps/api/src/lib/file-helpers.ts` for upload / signed URL / remove.
 
 ---
 
@@ -131,24 +130,25 @@ Reuse `apps/api/src/routes/api/files/files.repository.ts` for upload / signed UR
 
 ## Phased rollout
 
-| Section | Work | Status |
-| ------- | ---- | ------ |
-| 0 | This document + work-items README index | Done when landed |
-| 1 | `getWorkItemAttachments` server reader + wire into `WorkItemDetailsData` | |
-| 2 | API signed-url (+ upload/delete) via files repository | |
-| 3 | Attachment cards + in-memory URL cache + regenerate control | |
-| 4 | Preview modal + download | |
-| 5 | Add-attachment upload from details | |
+| Section | Work                                                                                                  | Status           |
+| ------- | ----------------------------------------------------------------------------------------------------- | ---------------- |
+| 0       | This document + work-items README index                                                               | Done when landed |
+| 0b      | Rename `/api/files` → `/api/attachments`; shared `file-helpers.ts`; `/files` UI posts to new endpoint | Done             |
+| 1       | `getWorkItemAttachments` server reader + wire into `WorkItemDetailsData`                              |                  |
+| 2       | API signed-url (+ upload/delete) via `file-helpers`                                                   |                  |
+| 3       | Attachment cards + in-memory URL cache + regenerate control                                           |                  |
+| 4       | Preview modal + download                                                                              |                  |
+| 5       | Add-attachment upload from details                                                                    |                  |
 
 ---
 
 ## Implementation pointers
 
-| Area | Path |
-| ---- | ---- |
-| Details RSC | `apps/web/app/work-items/[id]/_components/work-item-details-data.tsx` |
-| Details UI | `apps/web/app/work-items/_components/workItem-details.tsx` |
-| Discussion pattern | `apps/web/app/comments/_services/comments.service.server.ts` |
-| Attachments server reader | `apps/web/app/…/attachments.service.server.ts` (to add) |
-| Files repository | `apps/api/src/routes/api/files/files.repository.ts` |
-| Attachments API | `apps/api/src/routes/api/attachments/` (to add) |
+| Area                      | Path                                                                                 |
+| ------------------------- | ------------------------------------------------------------------------------------ |
+| Details RSC               | `apps/web/app/work-items/[id]/_components/work-item-details-data.tsx`                |
+| Details UI                | `apps/web/app/work-items/_components/workItem-details.tsx`                           |
+| Discussion pattern        | `apps/web/app/comments/_services/comments.service.server.ts`                         |
+| Attachments server reader | `apps/web/app/…/attachments.service.server.ts` (to add)                              |
+| Storage helpers           | `apps/api/src/lib/file-helpers.ts`                                                   |
+| Attachments API           | `apps/api/src/routes/api/attachments/` (`POST /` upload today; signed-url/CRUD next) |

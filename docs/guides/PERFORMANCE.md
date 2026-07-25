@@ -404,7 +404,7 @@ Legend:
 | `GET /api/workItems/:id`        | **Unused (web)** | —                  | `[id]/page` uses server `getWorkItem`                                                                         |
 | `GET /` (health)                | Active           | Deploy / probes    | Not a data read                                                                                               |
 | `POST /api/notifications/send`  | Active           | Server-side notify | No GET on this router                                                                                         |
-| `POST /api/files`               | Active           | `upload-form.tsx`  | Upload only                                                                                                   |
+| `POST /api/attachments`         | Active           | `upload-form.tsx`  | Upload only (private bucket; signed URL)                                                                      |
 
 There is **no** `/api/team-members` or `/api/project-members` router. Membership is nested:
 

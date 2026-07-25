@@ -5,9 +5,9 @@ import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
-import { filesService } from './files.service';
+import { uploadAttachmentFile } from './attachments.service';
 
-const filesRouter: Router = express.Router();
+const attachmentsRouter: Router = express.Router();
 
 const upload: Multer = multer({
   storage: multer.memoryStorage(),
@@ -17,7 +17,11 @@ const upload: Multer = multer({
   },
 });
 
-filesRouter.post(
+/**
+ * Upload a single file to the private attachments bucket.
+ * One file per request (`upload.single`) — concurrent-safe across requests.
+ */
+attachmentsRouter.post(
   '/',
   requireApiAuth,
   upload.single('file'),
@@ -31,12 +35,12 @@ filesRouter.post(
     }
 
     try {
-      const result = await filesService.uploadAttachment(file);
+      const result = await uploadAttachmentFile(file);
       res.json(result);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'error. file uploading failed';
-      console.error('error. file upload failed:', message);
+      console.error('error. attachment upload failed:', message);
       res.status(500).json({
         error: 'error. file uploading failed',
       });
@@ -44,4 +48,4 @@ filesRouter.post(
   }
 );
 
-export default filesRouter;
+export default attachmentsRouter;
