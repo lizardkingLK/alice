@@ -31,7 +31,11 @@ export type ProjectMemberWithUser = {
   user_id: string;
   status: 'active' | 'inactive' | 'archived' | 'deleted';
   created_at: string;
-  user: Pick<User, 'id' | 'name' | 'email' | 'role'> | null;
+  user:
+    | (Pick<User, 'id' | 'name' | 'email' | 'role'> & {
+        profile_picture?: string | null;
+      })
+    | null;
 };
 
 export function createProjectsService(

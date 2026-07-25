@@ -1,3 +1,4 @@
+import { USER_PROJECTION_WITH_ROLE, userRelationSelect } from '@repo/types';
 import { apiFetch } from '@/lib/api/api-client.server';
 import { createClient } from '@/lib/supabase/server';
 import { pageRange, paginationMeta } from '@/lib/db/pagination';
@@ -13,6 +14,11 @@ import type {
 const service = createProjectsService(apiFetch);
 
 const OWNER_SELECT = 'owner:users!projects_owner_id_fkey(id, name, email)';
+const PROJECT_MEMBER_USER_SELECT = userRelationSelect(
+  'user',
+  'project_members_user_id_fkey',
+  USER_PROJECTION_WITH_ROLE
+);
 
 /**
  * Reads query Supabase directly from the RSC layer to skip the `web → api`
@@ -94,7 +100,7 @@ export async function getProjectMembers(
 
   const { data, error } = await supabase
     .from('project_members')
-    .select('*, user:users!project_members_user_id_fkey(id, name, email, role)')
+    .select(`*, ${PROJECT_MEMBER_USER_SELECT}`)
     .eq('project_id', projectId)
     .eq('status', 'active');
 

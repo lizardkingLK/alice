@@ -8,6 +8,7 @@ export type BacklogAssignee = {
   id: string;
   name: string;
   email: string;
+  profile_picture?: string | null;
 };
 
 export const BACKLOG_TYPE_STYLES: Record<string, string> = {

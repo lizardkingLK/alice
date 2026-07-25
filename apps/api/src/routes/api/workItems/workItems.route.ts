@@ -42,6 +42,10 @@ function buildWorkItemPayload(
       parsedData.assignee_id !== undefined
         ? parsedData.assignee_id
         : existingWorkItem.assignee_id,
+    reporter_id:
+      parsedData.reporter_id !== undefined
+        ? parsedData.reporter_id
+        : existingWorkItem.reporter_id,
     due_date:
       parsedData.due_date !== undefined
         ? parsedData.due_date

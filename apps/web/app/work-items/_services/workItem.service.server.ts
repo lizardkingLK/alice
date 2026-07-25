@@ -2,9 +2,11 @@ import { User as DbUser } from '@/app/users/_services/users.service';
 import { createClient } from '@/lib/supabase/server';
 import { pageRange, paginationMeta } from '@/lib/db/pagination';
 import { throwIfError } from '@/lib/db/query';
-import { Enums, Tables } from '@repo/types';
+import { Enums, Tables, userRelationSelect } from '@repo/types';
 
-type DbUserEssentials = Pick<DbUser, 'id' | 'name' | 'email'>;
+type DbUserEssentials = Pick<DbUser, 'id' | 'name' | 'email'> & {
+  profile_picture?: string | null;
+};
 
 export type DbWorkItem = Tables<'work_items'> & {
   assignee: DbUserEssentials | null;
@@ -26,8 +28,8 @@ export type GetWorkItemsPaginatedResponse = {
   totalPages: number;
 };
 
-const ASSIGNEE_SELECT = 'assignee:users!assignee_id(id, name, email)';
-const REPORTER_SELECT = 'reporter:users!reporter_id(id, name, email)';
+const ASSIGNEE_SELECT = userRelationSelect('assignee', 'assignee_id');
+const REPORTER_SELECT = userRelationSelect('reporter', 'reporter_id');
 
 // Structural shape of the Supabase builder's `.eq()` / `.is()`.
 /* eslint-disable no-unused-vars */

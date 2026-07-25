@@ -1,4 +1,4 @@
-import { Tables } from '@repo/types';
+import { Tables, userRelationSelect } from '@repo/types';
 import { supabase } from '../../../lib/supabase';
 import { auditCreateWithoutStatus } from '../../../lib/audit';
 import { WorkItemBody, WorkItemUpdateBody } from './workItems.schemas';
@@ -14,11 +14,14 @@ export type UpdateWorkItemRecord = WorkItemUpdateBody & {
   updatedBy: string;
 };
 
+const ASSIGNEE_SELECT = userRelationSelect('assignee', 'assignee_id');
+const REPORTER_SELECT = userRelationSelect('reporter', 'reporter_id');
+const WORK_ITEM_WITH_ASSIGNEE = `*, ${ASSIGNEE_SELECT}`;
+const WORK_ITEM_WITH_PEOPLE = `*, ${ASSIGNEE_SELECT}, ${REPORTER_SELECT}`;
+
 export class WorkItemRepository {
   async get(filters?: { sprint_id?: string | null }): Promise<DbWorkItem[]> {
-    let query = supabase
-      .from('work_items')
-      .select('*, assignee:users!assignee_id(id, name, email)');
+    let query = supabase.from('work_items').select(WORK_ITEM_WITH_ASSIGNEE);
 
     if (filters) {
       if (filters.sprint_id === null) {
@@ -37,7 +40,7 @@ export class WorkItemRepository {
       throw new Error('Failed to list work-items');
     }
 
-    return data as DbWorkItem[];
+    return data as unknown as DbWorkItem[];
   }
 
   async listPaginated(
@@ -49,11 +52,9 @@ export class WorkItemRepository {
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    let query = supabase
-      .from('work_items')
-      .select('*, assignee:users!assignee_id(id, name, email)', {
-        count: 'exact',
-      });
+    let query = supabase.from('work_items').select(WORK_ITEM_WITH_ASSIGNEE, {
+      count: 'exact',
+    });
 
     if (search?.trim()) {
       query = query.ilike('title', `%${search.trim()}%`);
@@ -80,18 +81,15 @@ export class WorkItemRepository {
     }
 
     return {
-      workItems: (data ?? []) as DbWorkItem[],
+      workItems: (data ?? []) as unknown as DbWorkItem[],
       totalCount: count ?? 0,
     };
   }
 
   async getById(workItemId: string): Promise<DbWorkItem> {
-    const assignee = 'assignee:users!assignee_id(id, name, email)';
-    const reporter = 'reporter:users!reporter_id(id, name, email)';
-
     const { data, error } = await supabase
       .from('work_items')
-      .select(`*, ${assignee}, ${reporter}`)
+      .select(WORK_ITEM_WITH_PEOPLE)
       .eq('id', workItemId)
       .maybeSingle();
 
@@ -100,7 +98,7 @@ export class WorkItemRepository {
       throw new Error('Failed to get work-item');
     }
 
-    return data as DbWorkItem;
+    return data as unknown as DbWorkItem;
   }
 
   async create(input: CreateWorkItemRecord): Promise<DbWorkItem> {
@@ -118,7 +116,7 @@ export class WorkItemRepository {
         story_points: input.story_points,
         ...auditCreateWithoutStatus(input.createdBy),
       })
-      .select('*, assignee:users!assignee_id(id, name, email)')
+      .select(WORK_ITEM_WITH_ASSIGNEE)
       .single();
 
     if (error) {
@@ -126,7 +124,7 @@ export class WorkItemRepository {
       throw new Error('Failed to create work-item');
     }
 
-    return data as DbWorkItem;
+    return data as unknown as DbWorkItem;
   }
 
   async update(input: UpdateWorkItemRecord): Promise<DbWorkItem> {
@@ -137,6 +135,7 @@ export class WorkItemRepository {
         project_id: input.project_id,
         type: input.type,
         assignee_id: input.assignee_id,
+        reporter_id: input.reporter_id,
         due_date: input.due_date,
         description: input.description,
         status: input.status,
@@ -146,7 +145,7 @@ export class WorkItemRepository {
         updated_at: new Date().toISOString(),
       })
       .eq('id', input.id)
-      .select('*, assignee:users!assignee_id(id, name, email)')
+      .select(WORK_ITEM_WITH_PEOPLE)
       .single();
 
     if (error) {
@@ -154,7 +153,7 @@ export class WorkItemRepository {
       throw new Error('Failed to update work-item');
     }
 
-    return data as DbWorkItem;
+    return data as unknown as DbWorkItem;
   }
 }
 
