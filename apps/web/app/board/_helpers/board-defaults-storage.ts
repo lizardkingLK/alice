@@ -97,7 +97,7 @@ export function validateBoardDefaultsPreference(
   }
 
   const sprint = sprintById.get(preference.sprintId);
-  if (!sprint || sprint.projectId !== preference.projectId) {
+  if (sprint?.projectId !== preference.projectId) {
     return null;
   }
 
