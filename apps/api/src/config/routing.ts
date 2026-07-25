@@ -8,6 +8,7 @@ import projectsRouter from '../routes/api/projects/projects.route';
 import workItemsRouter from '../routes/api/workItems/workItems.route';
 import teamsRouter from '../routes/api/teams/teams.route';
 import commentsRouter from '../routes/api/comments/comments.route';
+import profileRouter from '../routes/api/profile/profile.route';
 
 const routesConfig: Router = Router();
 
@@ -15,6 +16,7 @@ routesConfig.use('/', healthRouter);
 routesConfig.use('/api/comments', commentsRouter);
 routesConfig.use('/api/files', filesRouter);
 routesConfig.use('/api/notifications', notificationsRouter);
+routesConfig.use('/api/profile', profileRouter);
 routesConfig.use('/api/projects', projectsRouter);
 routesConfig.use('/api/sprints', sprintsRouter);
 routesConfig.use('/api/teams', teamsRouter);

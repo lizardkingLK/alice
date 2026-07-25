@@ -27,6 +27,7 @@ const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 type UploadResult = {
   success: boolean;
   path: string;
+  url: string;
 };
 
 type UploadStatus = 'uploading' | 'success' | 'error';

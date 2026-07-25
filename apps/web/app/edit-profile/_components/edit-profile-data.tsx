@@ -1,0 +1,33 @@
+import { redirect } from 'next/navigation';
+import { EditProfileView } from '@/app/edit-profile/_components/edit-profile-view';
+import {
+  handleFromEmail,
+  metadataString,
+} from '@/app/profile/_helpers/profile-identity';
+import { getDbUser, getUser } from '@/lib/auth';
+
+export async function EditProfileData() {
+  const [user, dbUser] = await Promise.all([getUser(), getDbUser()]);
+
+  if (!user || !dbUser) {
+    redirect('/login');
+  }
+
+  const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const email = user.email ?? dbUser.email;
+  const name =
+    dbUser.name || metadataString(metadata, 'name', 'full_name') || email;
+  const emailVerified =
+    Boolean(user.email_confirmed_at) || metadata.email_verified === true;
+
+  return (
+    <EditProfileView
+      name={name}
+      handle={handleFromEmail(email)}
+      email={email}
+      emailVerified={emailVerified}
+      role={dbUser.role}
+      avatarUrl={dbUser.profile_picture ?? null}
+    />
+  );
+}

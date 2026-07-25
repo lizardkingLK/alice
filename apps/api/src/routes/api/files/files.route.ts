@@ -5,7 +5,7 @@ import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
-import { supabase } from '../../../lib/supabase';
+import { filesService } from './files.service';
 
 const filesRouter: Router = express.Router();
 
@@ -30,33 +30,17 @@ filesRouter.post(
       return;
     }
 
-    if (!process.env.STORAGE_BUCKET_NAME) {
-      res.status(500).json({
-        error: 'error. configuration erorr on server',
-      });
-      return;
-    }
-
-    const fileName = `${Date.now()}-${file.originalname}`;
-
-    const { data, error } = await supabase.storage
-      .from(process.env.STORAGE_BUCKET_NAME)
-      .upload(fileName, file.buffer, {
-        contentType: file.mimetype,
-      });
-
-    if (error) {
-      console.error('error. file upload failed:', error.message);
+    try {
+      const result = await filesService.uploadAttachment(file);
+      res.json(result);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'error. file uploading failed';
+      console.error('error. file upload failed:', message);
       res.status(500).json({
         error: 'error. file uploading failed',
       });
-      return;
     }
-
-    res.json({
-      success: true,
-      path: data.path,
-    });
   }
 );
 
