@@ -1,4 +1,4 @@
-import { getUser } from '@/lib/auth';
+import { getDbUser, getUser } from '@/lib/auth';
 import Link from 'next/link';
 import { Button } from '@repo/ui/components/ui/button';
 import { AuthControls } from '@/app/dashboard/_components/dashboard-auth';
@@ -13,7 +13,7 @@ type HomeProps = {
 };
 
 export default async function Home({ searchParams }: Readonly<HomeProps>) {
-  const user = await getUser();
+  const [user, dbUser] = await Promise.all([getUser(), getDbUser()]);
 
   const { reset } = await searchParams;
   const resetSuccess = reset === 'success';
@@ -22,7 +22,10 @@ export default async function Home({ searchParams }: Readonly<HomeProps>) {
     <main className="h-dvh snap-y snap-mandatory overflow-y-auto">
       <section className="relative flex min-h-dvh snap-start snap-always flex-col items-center justify-center px-6">
         <div className="absolute top-0 right-0 p-4">
-          <AuthControls email={user?.email} />
+          <AuthControls
+            email={user?.email}
+            profilePicture={dbUser?.profile_picture}
+          />
         </div>
         {resetSuccess ? (
           <output className="absolute top-16 text-sm text-emerald-600">
