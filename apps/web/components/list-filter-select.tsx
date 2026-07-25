@@ -24,6 +24,8 @@ type ListFilterSelectProps = {
   readonly placeholder: string;
   readonly options: readonly ListFilterOption[];
   readonly triggerClassName?: string;
+  /** When false, omit the "All …" option (e.g. role-locked board filters). */
+  readonly showAllOption?: boolean;
 };
 
 /**
@@ -39,6 +41,7 @@ export function ListFilterSelect({
   placeholder,
   options,
   triggerClassName,
+  showAllOption = true,
 }: ListFilterSelectProps) {
   return (
     <Select value={value} onValueChange={onValueChange}>
@@ -52,7 +55,9 @@ export function ListFilterSelect({
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={allValue}>{allLabel}</SelectItem>
+        {showAllOption ? (
+          <SelectItem value={allValue}>{allLabel}</SelectItem>
+        ) : null}
         {options.map((option) => (
           <SelectItem key={option.value} value={option.value}>
             {option.label}

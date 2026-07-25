@@ -1,15 +1,23 @@
 'use client';
 
-import { useMemo, useState, type DragEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type DragEvent,
+} from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@repo/ui/lib/utils';
 import {
   AlertCircle,
+  BadgeCheck,
   Calendar,
-  Filter,
   FolderDot,
-  Search,
+  Settings2,
   SquareArrowOutUpRight,
   Tag,
+  X,
 } from '@repo/ui/lib/icons';
 import {
   Avatar,
@@ -29,16 +37,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
-import { Input } from '@repo/ui/components/ui/input';
-import { Label } from '@repo/ui/components/ui/label';
-import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@repo/ui/components/ui/select';
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@repo/ui/components/ui/dropdown-menu';
+import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
 import { Separator } from '@repo/ui/components/ui/separator';
 import {
   Tooltip,
@@ -47,12 +54,20 @@ import {
 } from '@repo/ui/components/ui/tooltip';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { formatLabelWithSpace } from '@/app/_shared/utility';
+import { BoardDefaultsDialog } from '@/app/board/_components/board-defaults-dialog';
+import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
+import { resolveDefaultBoardSprint } from '@/app/board/_services/board-defaults';
+import type { Project } from '@/app/projects/_services/projects.service.base';
+import type { Sprint } from '@/app/sprints/_services/sprints.service';
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
 import { DescriptionView } from '@/app/work-items/_components/workItem-description-view';
 import { descriptionToPlainText } from '@/app/work-items/_helpers/work-item-description';
 import { updateWorkItemStatus } from '@/app/work-items/_services/workItem.service.client';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import { ListFilterSelect } from '@/components/list-filter-select';
+import { SearchInput } from '@/components/search-input';
+import { useQueryFilter } from '@/hooks/use-query-filter';
 
 type BoardStatus = Exclude<DbWorkItem['status'], 'Draft'>;
 type BoardPriority = DbWorkItem['priority'];
@@ -75,6 +90,8 @@ const PRIORITY_BORDERS: Record<BoardPriority, string> = {
   low: 'border-l-border',
   lowest: 'border-l-border',
 };
+
+const MAX_VISIBLE_ASSIGNEES = 3;
 
 const PRIORITIES: BoardPriority[] = [
   'highest',
@@ -102,14 +119,99 @@ function assigneeName(item: DbWorkItem) {
 }
 
 type KanbanBoardProps = {
-  initialWorkItems: DbWorkItem[];
+  readonly initialWorkItems: DbWorkItem[];
+  readonly projects: Project[];
+  readonly sprints: Sprint[];
+  readonly projectFilter: string;
+  readonly sprintFilter: string;
+  readonly allowAllFilters: boolean;
+  readonly userId: string | null;
+  readonly suggestedDefaults: {
+    readonly projectId: string;
+    readonly sprintId: string | null;
+  } | null;
+  readonly needsClientBootstrap: boolean;
 };
 
-export function KanbanBoard({ initialWorkItems }: Readonly<KanbanBoardProps>) {
+export function KanbanBoard({
+  initialWorkItems,
+  projects,
+  sprints,
+  projectFilter,
+  sprintFilter,
+  allowAllFilters,
+  userId,
+  suggestedDefaults,
+  needsClientBootstrap,
+}: Readonly<KanbanBoardProps>) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [workItems, setWorkItems] = useState<DbWorkItem[]>(initialWorkItems);
   const [search, setSearch] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);
+
+  useEffect(() => {
+    setWorkItems(initialWorkItems);
+  }, [initialWorkItems]);
+
+  const {
+    defaultsDialogOpen,
+    setDefaultsDialogOpen,
+    allowSkipInDialog,
+    dialogInitialPreference,
+    savedDefaultsApplied,
+    urlFiltersActive,
+    openDefaultsDialog,
+    handleSaveDefaults,
+    handleSkipDefaults,
+    resetUrlFilters,
+  } = useBoardDefaultsBootstrap({
+    userId,
+    allowAllFilters,
+    needsClientBootstrap,
+    projectFilter,
+    sprintFilter,
+    projects,
+    sprints,
+    suggestedDefaults,
+  });
+
+  const sprintQuery = useQueryFilter('sprint', sprintFilter);
+
+  const handleProjectChange = useCallback(
+    (nextProject: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (!nextProject || nextProject === 'all') {
+        params.delete('project');
+        params.delete('sprint');
+      } else {
+        params.set('project', nextProject);
+        const defaultSprint = resolveDefaultBoardSprint(sprints, nextProject);
+        if (defaultSprint) {
+          params.set('sprint', defaultSprint.id);
+        } else {
+          params.delete('sprint');
+        }
+      }
+      params.delete('page');
+      const query = params.toString();
+      router.push(query ? `${pathname}?${query}` : pathname);
+    },
+    [pathname, router, searchParams, sprints]
+  );
+
+  const projectSelectValue = projectFilter || 'all';
+  const sprintOptions = useMemo(() => {
+    const scoped = projectFilter
+      ? sprints.filter((sprint) => sprint.project?.id === projectFilter)
+      : sprints;
+    return scoped.map((sprint) => ({
+      value: sprint.id,
+      label: sprint.name,
+    }));
+  }, [projectFilter, sprints]);
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [activeDropCol, setActiveDropCol] = useState<BoardStatus | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -130,6 +232,35 @@ export function KanbanBoard({ initialWorkItems }: Readonly<KanbanBoardProps>) {
 
     return Array.from(byId.entries()).map(([id, name]) => ({ id, name }));
   }, [workItems]);
+
+  const visibleAssignees = uniqueAssignees.slice(0, MAX_VISIBLE_ASSIGNEES);
+  const overflowAssignees = uniqueAssignees.slice(MAX_VISIBLE_ASSIGNEES);
+  const isOverflowAssigneeSelected = overflowAssignees.some(
+    (assignee) => assignee.id === assigneeFilter
+  );
+
+  const handlePriorityChange = (value: string) => {
+    setPriorityFilter(value || 'all');
+  };
+
+  const toggleAssignee = (assigneeId: string) => {
+    setAssigneeFilter((previous) =>
+      previous === assigneeId ? null : assigneeId
+    );
+  };
+
+  const hasLocalFilters =
+    search.trim() !== '' || priorityFilter !== 'all' || assigneeFilter !== null;
+  const hasActiveFilters = hasLocalFilters || urlFiltersActive;
+
+  const handleClearFilters = () => {
+    setSearch('');
+    setPriorityFilter('all');
+    setAssigneeFilter(null);
+    if (urlFiltersActive) {
+      resetUrlFilters();
+    }
+  };
 
   const filteredItems = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -271,6 +402,12 @@ export function KanbanBoard({ initialWorkItems }: Readonly<KanbanBoardProps>) {
 
   return (
     <div className="flex h-full w-full flex-col gap-6">
+      {needsClientBootstrap ? (
+        <div className="text-muted-foreground rounded-lg border px-3 py-2 text-sm">
+          Loading your board defaults…
+        </div>
+      ) : null}
+
       {statusError ? (
         <div className="bg-destructive/10 text-destructive border-destructive/20 flex items-start gap-2 rounded-lg border px-3 py-2 text-sm">
           <AlertCircle className="mt-0.5 size-4 shrink-0" />
@@ -290,116 +427,174 @@ export function KanbanBoard({ initialWorkItems }: Readonly<KanbanBoardProps>) {
       ) : null}
 
       <Card className="shadow-none">
-        <CardContent className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="flex w-full flex-1 flex-col gap-4 sm:flex-row sm:items-end">
-            <div className="w-full space-y-2 sm:max-w-xs">
-              <Label htmlFor="board-search">Search</Label>
-              <div className="relative">
-                <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-                <Input
-                  id="board-search"
-                  placeholder="Search work items..."
-                  className="pl-9"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                />
-              </div>
-            </div>
+        <CardContent className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <SearchInput
+              value={search}
+              onValueChange={setSearch}
+              placeholder="Search work items..."
+              className="sm:w-64"
+            />
 
-            <div className="space-y-2">
-              <Label>Assignees</Label>
-              <div className="flex items-center gap-2">
-                <AvatarGroup className="*:data-[slot=avatar]:size-8">
-                  {uniqueAssignees.slice(0, 3).map((assignee) => {
-                    const isSelected = assigneeFilter === assignee.id;
-                    return (
-                      <Tooltip key={assignee.id}>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setAssigneeFilter((previous) =>
-                                previous === assignee.id ? null : assignee.id
-                              )
-                            }
-                            className={cn(
-                              'focus-visible:ring-ring rounded-full outline-none focus-visible:ring-2',
-                              isSelected &&
-                                'ring-primary ring-offset-background ring-2 ring-offset-2',
-                              assigneeFilter && !isSelected && 'opacity-40'
-                            )}
-                            aria-pressed={isSelected}
-                            aria-label={`Filter by ${assignee.name}`}
-                          >
-                            <Avatar size="default">
-                              <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-                                {getInitials(assignee.name)}
-                              </AvatarFallback>
-                            </Avatar>
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">
-                          {assignee.name}
-                          {isSelected ? ' · filtering' : ''}
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  })}
-                  {uniqueAssignees.length > 3 ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <AvatarGroupCount className="text-xs font-medium">
-                          +{uniqueAssignees.length - 3}
-                        </AvatarGroupCount>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="space-y-1">
-                        {uniqueAssignees.slice(3).map((assignee) => (
-                          <p key={assignee.id}>{assignee.name}</p>
-                        ))}
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : null}
-                </AvatarGroup>
+            <ListFilterSelect
+              value={projectSelectValue}
+              onValueChange={handleProjectChange}
+              allValue="all"
+              allLabel="All Projects"
+              ariaLabel="Filter by project"
+              placeholder="All Projects"
+              showAllOption={allowAllFilters}
+              triggerClassName="sm:w-44"
+              options={projects.map((project) => ({
+                value: project.id,
+                label: project.name,
+              }))}
+            />
 
-                {assigneeFilter ? (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setAssigneeFilter(null)}
-                  >
-                    Clear
-                  </Button>
-                ) : null}
-              </div>
-            </div>
+            <ListFilterSelect
+              value={sprintQuery.value}
+              onValueChange={sprintQuery.setFilter}
+              allValue={sprintQuery.allValue}
+              allLabel="All Sprints"
+              ariaLabel="Filter by sprint"
+              placeholder="All Sprints"
+              triggerClassName="sm:w-44"
+              options={sprintOptions}
+            />
+
+            <ListFilterSelect
+              value={priorityFilter}
+              onValueChange={handlePriorityChange}
+              allValue="all"
+              allLabel="All Priorities"
+              ariaLabel="Filter by priority"
+              placeholder="All Priorities"
+              triggerClassName="sm:w-36"
+              options={PRIORITIES.map((priority) => ({
+                value: priority,
+                label: formatLabelWithSpace(priority),
+              }))}
+            />
+
+            {hasActiveFilters ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFilters}
+                className="text-muted-foreground hover:text-foreground h-9 px-3 text-xs"
+              >
+                Clear filters
+                <X className="size-3.5" />
+              </Button>
+            ) : null}
           </div>
 
-          <div className="w-full space-y-2 md:w-48">
-            <Label htmlFor="board-priority">Priority</Label>
-            <div className="flex items-center gap-2">
-              <Filter className="text-muted-foreground size-4 shrink-0" />
-              <Select
-                value={priorityFilter}
-                onValueChange={(value) => {
-                  if (value) {
-                    setPriorityFilter(value);
-                  }
-                }}
-              >
-                <SelectTrigger id="board-priority" className="w-full">
-                  <SelectValue placeholder="All priorities" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All priorities</SelectItem>
-                  {PRIORITIES.map((priority) => (
-                    <SelectItem key={priority} value={priority}>
-                      {formatLabelWithSpace(priority)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="flex items-center gap-3 lg:shrink-0">
+            <AvatarGroup className="*:data-[slot=avatar]:size-8">
+              {visibleAssignees.map((assignee) => {
+                const isSelected = assigneeFilter === assignee.id;
+                return (
+                  <Tooltip key={assignee.id}>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => toggleAssignee(assignee.id)}
+                        className={cn(
+                          'focus-visible:ring-ring rounded-full outline-none focus-visible:ring-2',
+                          isSelected &&
+                            'ring-primary ring-offset-background ring-2 ring-offset-2',
+                          assigneeFilter && !isSelected && 'opacity-40'
+                        )}
+                        aria-pressed={isSelected}
+                        aria-label={`Filter by ${assignee.name}`}
+                      >
+                        <Avatar size="default">
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                            {getInitials(assignee.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      {assignee.name}
+                      {isSelected ? ' · filtering' : ''}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+
+              {overflowAssignees.length > 0 ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className={cn(
+                        'focus-visible:ring-ring rounded-full outline-none focus-visible:ring-2',
+                        assigneeFilter &&
+                          !isOverflowAssigneeSelected &&
+                          'opacity-40'
+                      )}
+                      aria-label="Show more assignees"
+                    >
+                      <AvatarGroupCount
+                        className={cn(
+                          'text-xs font-medium',
+                          isOverflowAssigneeSelected &&
+                            'ring-primary ring-offset-background ring-2 ring-offset-2'
+                        )}
+                      >
+                        +{overflowAssignees.length}
+                      </AvatarGroupCount>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>More assignees</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {overflowAssignees.map((assignee) => (
+                      <DropdownMenuCheckboxItem
+                        key={assignee.id}
+                        checked={assigneeFilter === assignee.id}
+                        onCheckedChange={() => toggleAssignee(assignee.id)}
+                      >
+                        {assignee.name}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : null}
+            </AvatarGroup>
+
+            {!allowAllFilters && userId ? (
+              <div className="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9"
+                  onClick={openDefaultsDialog}
+                >
+                  <Settings2 className="size-4" />
+                  Defaults
+                </Button>
+
+                {savedDefaultsApplied ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        className="text-primary inline-flex"
+                        aria-label="Saved board defaults applied"
+                      >
+                        <BadgeCheck className="size-4" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      Your saved defaults are applied
+                    </TooltipContent>
+                  </Tooltip>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </CardContent>
       </Card>
@@ -641,6 +836,19 @@ export function KanbanBoard({ initialWorkItems }: Readonly<KanbanBoardProps>) {
           ) : null}
         </DialogContent>
       </Dialog>
+
+      {!allowAllFilters && userId ? (
+        <BoardDefaultsDialog
+          open={defaultsDialogOpen}
+          onOpenChange={setDefaultsDialogOpen}
+          projects={projects}
+          sprints={sprints}
+          initialPreference={dialogInitialPreference}
+          onSave={handleSaveDefaults}
+          onSkip={handleSkipDefaults}
+          allowSkip={allowSkipInDialog}
+        />
+      ) : null}
     </div>
   );
 }
