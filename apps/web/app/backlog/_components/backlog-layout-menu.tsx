@@ -33,13 +33,12 @@ export function useBacklogLayout(
   userId: string | null | undefined,
   showBacklogPane: boolean
 ): UseBacklogLayoutResult {
-  const [preferredLayout, setPreferredLayoutState] =
-    useState<BacklogLayoutId>('stack');
+  const [backlogLayout, setBacklogLayout] = useState<BacklogLayoutId>('stack');
   const [isDesktop, setIsDesktop] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setPreferredLayoutState(readBacklogLayout(userId));
+    setBacklogLayout(readBacklogLayout(userId));
     setHydrated(true);
   }, [userId]);
 
@@ -52,19 +51,19 @@ export function useBacklogLayout(
   }, []);
 
   const setPreferredLayout = (layout: BacklogLayoutId) => {
-    setPreferredLayoutState(layout);
+    setBacklogLayout(layout);
     writeBacklogLayout(userId, layout);
   };
 
   const effectiveLayout = hydrated
-    ? getEffectiveBacklogLayout(preferredLayout, {
+    ? getEffectiveBacklogLayout(backlogLayout, {
         isDesktop,
         showBacklogPane,
       })
     : 'stack';
 
   return {
-    preferredLayout,
+    preferredLayout: backlogLayout,
     effectiveLayout,
     setPreferredLayout,
   };
