@@ -1,4 +1,4 @@
-import type { AuthenticatedRequest } from '../middlewares/auth';
+import type { AuthenticatedRequest } from '@/middlewares/auth';
 
 export {
   auditCreate,

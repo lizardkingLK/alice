@@ -1,7 +1,10 @@
 import { Tables, userRelationSelect } from '@repo/types';
-import { supabase } from '../../../lib/supabase';
-import { auditCreateWithoutStatus } from '../../../lib/audit';
-import { WorkItemBody, WorkItemUpdateBody } from './workItems.schemas';
+import { supabase } from '@/lib/supabase';
+import { auditCreateWithoutStatus } from '@/lib/audit';
+import {
+  WorkItemBody,
+  WorkItemUpdateBody,
+} from '@/routes/api/workItems/workItems.schemas';
 
 export type DbWorkItem = Tables<'work_items'>;
 

@@ -1,9 +1,9 @@
-import { env } from '../../../config/env';
+import { env } from '@/config/env';
 import {
   createSignedStorageUrl,
   sanitizeFileName,
   uploadToStorage,
-} from '../../../lib/file-helpers';
+} from '@/lib/file-helpers';
 
 export type UploadedAttachmentResult = {
   success: true;

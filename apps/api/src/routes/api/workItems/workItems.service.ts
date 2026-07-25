@@ -1,5 +1,11 @@
-import { DbWorkItem, workItemRepository } from './workItems.repository';
-import { WorkItemBody, WorkItemUpdateBody } from './workItems.schemas';
+import {
+  DbWorkItem,
+  workItemRepository,
+} from '@/routes/api/workItems/workItems.repository';
+import {
+  WorkItemBody,
+  WorkItemUpdateBody,
+} from '@/routes/api/workItems/workItems.schemas';
 
 export class WorkItemService {
   async getWorkItems(filters?: {

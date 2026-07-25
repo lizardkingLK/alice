@@ -1,5 +1,5 @@
-import { supabase } from '../../../lib/supabase';
-import { auditCreateWithoutStatus, auditUpdate } from '../../../lib/audit';
+import { supabase } from '@/lib/supabase';
+import { auditCreateWithoutStatus, auditUpdate } from '@/lib/audit';
 
 export type TeamRow = {
   id: string;

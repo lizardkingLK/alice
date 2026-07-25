@@ -1,9 +1,9 @@
-import { requireUserWithRole } from '../../../lib/auth-helpers';
+import { requireUserWithRole } from '@/lib/auth-helpers';
 import {
   teamsRepository,
   type TeamRow,
   type TeamRowWithManager,
-} from './teams.repository';
+} from '@/routes/api/teams/teams.repository';
 
 async function requireTeamManager(actorId: string) {
   return await requireUserWithRole(

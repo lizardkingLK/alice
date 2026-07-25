@@ -2,13 +2,13 @@ import type {
   CreateSprintBody,
   SprintResponse,
   UpdateSprintBody,
-} from './sprints.schemas';
+} from '@/routes/api/sprints/sprints.schemas';
 import {
   sprintsRepository,
   type SprintRowWithProject,
   type SprintRow,
-} from './sprints.repository';
-import { requireUserWithRole } from '../../../lib/auth-helpers';
+} from '@/routes/api/sprints/sprints.repository';
+import { requireUserWithRole } from '@/lib/auth-helpers';
 
 async function requireManagerOrAdmin(actorId: string) {
   return await requireUserWithRole(

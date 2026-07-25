@@ -1,5 +1,5 @@
 import { USER_PROJECTION_WITH_ROLE, userRelationSelect } from '@repo/types';
-import { supabase } from '../../../lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 export type CommentRow = {
   id: string;
