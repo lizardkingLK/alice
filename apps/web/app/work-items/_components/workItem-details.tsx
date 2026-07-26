@@ -36,6 +36,7 @@ import { Json } from '@repo/types';
 import { updateWorkItem } from '@/app/work-items/_services/workItem.service.client';
 import WorkItemSidebar from '@/app/work-items/_components/workItem-details-sidebar';
 import { WorkItemTitleEditor } from '@/app/work-items/_components/workItem-title-editor';
+import { WorkItemPathBreadcrumb } from '@/app/work-items/_components/work-item-path-breadcrumb';
 import type { WorkItemPatchMemberOption } from '@/app/work-items/_components/workItem-field-patch-dialog';
 import { toast } from '@repo/ui/components/ui/sonner';
 import { CommentsFeed } from '@/app/comments/_components/comments-feed';
@@ -134,12 +135,7 @@ export default function WorkItemDetails({
       <div className="space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">{workItem.type}</Badge>
-              <span className="text-muted-foreground font-mono text-xs">
-                {workItem.id.slice(0, 8).toUpperCase()}
-              </span>
-            </div>
+            <WorkItemPathBreadcrumb workItem={workItem} />
             <WorkItemTitleEditor
               title={workItem.title}
               onSave={handleTitleUpdate}
