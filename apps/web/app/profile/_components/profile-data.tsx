@@ -4,26 +4,12 @@ import {
   getProfileTeams,
   getProfileWorkedOn,
 } from '@/app/profile/_services/profile.service.server';
+import {
+  displayHandleFromEmail,
+  metadataString,
+} from '@/app/profile/_helpers/profile-identity';
 import { getDbUser, getUser } from '@/lib/auth';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
-
-function metadataString(
-  metadata: Record<string, unknown>,
-  ...keys: string[]
-): string | null {
-  for (const key of keys) {
-    const value = metadata[key];
-    if (typeof value === 'string' && value.trim()) {
-      return value;
-    }
-  }
-  return null;
-}
-
-function handleFromEmail(email: string): string {
-  const local = email.split('@')[0] ?? '';
-  return local ? `@${local}` : '@user';
-}
 
 export async function ProfileData() {
   const [user, dbUser] = await Promise.all([getUser(), getDbUser()]);
@@ -50,7 +36,7 @@ export async function ProfileData() {
   return (
     <ProfileView
       name={name}
-      handle={handleFromEmail(email)}
+      handle={displayHandleFromEmail(email)}
       email={email}
       phone={user.phone || null}
       avatarUrl={avatarUrl}

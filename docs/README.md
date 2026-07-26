@@ -39,15 +39,15 @@ How the monorepo fits together (apps, auth, deployment).
 
 One folder per product area. Prefer a local `README.md` as the index.
 
-| Area       | Index                                          |
-| ---------- | ---------------------------------------------- |
-| Users      | [features/users/](./features/users/)           |
-| Work items | [features/work-items/](./features/work-items/) |
-| Board      | [features/board/](./features/board/)           |
-| Projects   | [features/projects/](./features/projects/)     |
-| Sprints    | [features/sprints/](./features/sprints/)       |
-| Dashboard  | [features/dashboard/](./features/dashboard/)   |
-| Profile    | [features/profile/](./features/profile/)       |
+| Area       | Index                                                                                            |
+| ---------- | ------------------------------------------------------------------------------------------------ |
+| Users      | [features/users/](./features/users/)                                                             |
+| Work items | [features/work-items/](./features/work-items/)                                                   |
+| Board      | [features/board/](./features/board/)                                                             |
+| Projects   | [features/projects/](./features/projects/)                                                       |
+| Sprints    | [features/sprints/](./features/sprints/)                                                         |
+| Dashboard  | [features/dashboard/](./features/dashboard/)                                                     |
+| Profile    | [features/profile/](./features/profile/) ([EDIT_PROFILE.md](./features/profile/EDIT_PROFILE.md)) |
 
 ### Database
 

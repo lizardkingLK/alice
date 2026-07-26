@@ -1,5 +1,5 @@
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
-import { EditProfileView } from '@/app/edit-profile/_components/edit-profile-view';
+import { EditProfileData } from '@/app/edit-profile/_components/edit-profile-data';
 
 export default function EditProfilePage() {
   return (
@@ -8,7 +8,7 @@ export default function EditProfilePage() {
       sidebarDefaultOpen={false}
       contentClassName="p-0"
     >
-      <EditProfileView />
+      <EditProfileData />
     </DashboardShell>
   );
 }

@@ -7,7 +7,8 @@ const serverSchema = z.object({
   SUPABASE_ANON_KEY: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   NOVU_SECRET_KEY: z.string().min(1),
-  STORAGE_BUCKET_NAME: z.string().min(1),
+  STORAGE_BUCKET_ATTACHMENTS: z.string().min(1),
+  STORAGE_BUCKET_PROFILE_PICTURES: z.string().min(1),
 });
 
 type EnvSchemaType = z.infer<typeof serverSchema>;
@@ -19,7 +20,8 @@ const mock: EnvSchemaType = {
   SUPABASE_ANON_KEY: 'mock',
   SUPABASE_SERVICE_ROLE_KEY: 'mock',
   NOVU_SECRET_KEY: 'mock',
-  STORAGE_BUCKET_NAME: 'mock',
+  STORAGE_BUCKET_ATTACHMENTS: 'alice_storage_attachments',
+  STORAGE_BUCKET_PROFILE_PICTURES: 'alice_storage_profile_pictures',
 };
 
 const processEnv = {
@@ -29,7 +31,8 @@ const processEnv = {
   SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   NOVU_SECRET_KEY: process.env.NOVU_SECRET_KEY,
-  STORAGE_BUCKET_NAME: process.env.STORAGE_BUCKET_NAME,
+  STORAGE_BUCKET_ATTACHMENTS: process.env.STORAGE_BUCKET_ATTACHMENTS,
+  STORAGE_BUCKET_PROFILE_PICTURES: process.env.STORAGE_BUCKET_PROFILE_PICTURES,
 };
 
 let data: EnvSchemaType;
