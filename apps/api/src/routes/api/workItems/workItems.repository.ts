@@ -1,5 +1,5 @@
-import { Tables, userRelationSelect } from '@repo/types';
-import { supabase } from '@/lib/supabase';
+import { Tables, userRelationSelect, type Database } from '@repo/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { auditCreateWithoutStatus } from '@/lib/audit';
 import {
   WorkItemBody,
@@ -22,17 +22,37 @@ const REPORTER_SELECT = userRelationSelect('reporter', 'reporter_id');
 const WORK_ITEM_WITH_ASSIGNEE = `*, ${ASSIGNEE_SELECT}`;
 const WORK_ITEM_WITH_PEOPLE = `*, ${ASSIGNEE_SELECT}, ${REPORTER_SELECT}`;
 
-export class WorkItemRepository {
-  async get(filters?: { sprint_id?: string | null }): Promise<DbWorkItem[]> {
-    let query = supabase.from('work_items').select(WORK_ITEM_WITH_ASSIGNEE);
+type SprintIdFilters = { sprint_id?: string | null };
 
-    if (filters) {
-      if (filters.sprint_id === null) {
-        query = query.is('sprint_id', null);
-      } else if (filters.sprint_id) {
-        query = query.eq('sprint_id', filters.sprint_id);
-      }
-    }
+type SprintFilterableQuery = {
+  is: (column: 'sprint_id', value: null) => SprintFilterableQuery;
+  eq: (column: 'sprint_id', value: string) => SprintFilterableQuery;
+};
+
+function applySprintIdFilter<Q extends SprintFilterableQuery>(
+  query: Q,
+  filters?: SprintIdFilters
+): Q {
+  if (!filters) {
+    return query;
+  }
+  if (filters.sprint_id === null) {
+    return query.is('sprint_id', null) as Q;
+  }
+  if (filters.sprint_id) {
+    return query.eq('sprint_id', filters.sprint_id) as Q;
+  }
+  return query;
+}
+
+export class WorkItemRepository {
+  constructor(private readonly db: SupabaseClient<Database>) {}
+
+  async get(filters?: SprintIdFilters): Promise<DbWorkItem[]> {
+    const query = applySprintIdFilter(
+      this.db.from('work_items').select(WORK_ITEM_WITH_ASSIGNEE),
+      filters
+    );
 
     const { data, error } = await query.order('created_at', {
       ascending: false,
@@ -50,12 +70,12 @@ export class WorkItemRepository {
     page: number,
     limit: number,
     search?: string,
-    filters?: { sprint_id?: string | null }
+    filters?: SprintIdFilters
   ): Promise<{ workItems: DbWorkItem[]; totalCount: number }> {
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    let query = supabase.from('work_items').select(WORK_ITEM_WITH_ASSIGNEE, {
+    let query = this.db.from('work_items').select(WORK_ITEM_WITH_ASSIGNEE, {
       count: 'exact',
     });
 
@@ -63,13 +83,7 @@ export class WorkItemRepository {
       query = query.ilike('title', `%${search.trim()}%`);
     }
 
-    if (filters) {
-      if (filters.sprint_id === null) {
-        query = query.is('sprint_id', null);
-      } else if (filters.sprint_id) {
-        query = query.eq('sprint_id', filters.sprint_id);
-      }
-    }
+    query = applySprintIdFilter(query, filters);
 
     const { data, error, count } = await query
       .order('created_at', { ascending: false })
@@ -90,7 +104,7 @@ export class WorkItemRepository {
   }
 
   async getById(workItemId: string): Promise<DbWorkItem> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('work_items')
       .select(WORK_ITEM_WITH_PEOPLE)
       .eq('id', workItemId)
@@ -105,7 +119,7 @@ export class WorkItemRepository {
   }
 
   async create(input: CreateWorkItemRecord): Promise<DbWorkItem> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('work_items')
       .insert({
         title: input.title,
@@ -131,7 +145,7 @@ export class WorkItemRepository {
   }
 
   async update(input: UpdateWorkItemRecord): Promise<DbWorkItem> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('work_items')
       .update({
         title: input.title,
@@ -159,5 +173,3 @@ export class WorkItemRepository {
     return data as unknown as DbWorkItem;
   }
 }
-
-export const workItemRepository = new WorkItemRepository();
