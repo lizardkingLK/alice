@@ -16,11 +16,12 @@ import { cn } from '@repo/ui/lib/utils';
 
 type AuthControlsProps = {
   email?: string | null;
-  meta?: { avatar_url?: string };
+  /** Avatar URL from `public.users.profile_picture` (not Auth metadata). */
+  profilePicture?: string | null;
 };
 
 type UserProfileProps = {
-  image?: string;
+  image?: string | null;
 };
 
 const UserProfile = ({ image }: Readonly<UserProfileProps>) => {
@@ -70,11 +71,14 @@ const UserProfile = ({ image }: Readonly<UserProfileProps>) => {
   );
 };
 
-export function AuthControls({ email, meta }: Readonly<AuthControlsProps>) {
+export function AuthControls({
+  email,
+  profilePicture,
+}: Readonly<AuthControlsProps>) {
   if (email) {
     return (
       <section className="flex items-center gap-4">
-        <UserProfile image={meta?.avatar_url} />
+        <UserProfile image={profilePicture} />
       </section>
     );
   }

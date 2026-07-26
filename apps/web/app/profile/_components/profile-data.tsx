@@ -36,9 +36,7 @@ export async function ProfileData() {
   const email = user.email ?? dbUser?.email ?? '';
   const name =
     dbUser?.name ?? metadataString(metadata, 'name', 'full_name') ?? email;
-  const avatarUrl =
-    dbUser?.profile_picture ??
-    metadataString(metadata, 'avatar_url', 'picture');
+  const avatarUrl = dbUser?.profile_picture ?? null;
   const role = dbUser?.role ?? metadataString(metadata, 'role') ?? 'member';
   const provider = user.app_metadata?.provider ?? 'email';
   const emailVerified =
