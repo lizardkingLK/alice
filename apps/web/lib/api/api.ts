@@ -7,6 +7,17 @@ type ApiErrorResponse = {
   error: unknown;
 };
 
+/** Error carrying the HTTP status so callers can branch (e.g. 410 Gone). */
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 type TreeifiedError = {
   errors?: string[];
   properties?: Record<string, TreeifiedError | undefined>;
@@ -138,7 +149,7 @@ export async function getResponse<T>(
 
   if (!response.ok) {
     const message = getApiErrorMessage(data);
-    throw new Error(message);
+    throw new ApiError(message, response.status);
   }
 
   return data as T;

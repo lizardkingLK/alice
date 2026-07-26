@@ -1,6 +1,6 @@
 # Work-item attachments
 
-Status: **Plan**
+Status: **Implemented** (Part 2 §§0–5)
 
 Private Storage attachments on work-item details: SSR metadata with the page,
 signed preview/download URLs minted on demand, client-side URL cache with
@@ -104,27 +104,27 @@ attachment reads should prefer the direct-server path from day one.
 
 ---
 
-## API sketch (mutations + signed URL)
+## API (mutations + signed URL)
 
-| Endpoint                                   | Role                                                                                       |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| `GET /api/attachments/:id/url` (or `POST`) | Auth + project access → `{ previewUrl?, downloadUrl, expiresAt }`                          |
-| `POST /api/attachments`                    | Upload to attachments bucket (signed URL in response); later also insert `attachments` row |
-| `DELETE /api/attachments/:id`              | Remove/archive row + best-effort Storage delete                                            |
+| Endpoint                      | Role                                                                                                                                                                                        |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/attachments/:id`    | Auth → `{ previewUrl, downloadUrl, expiresAt }`. Verifies the Storage object exists first — returns **410** when the row is orphaned (object gone). `404` when the row is missing/archived. |
+| `POST /api/attachments`       | Upload to attachments bucket. Optional multipart `work_item_id` also inserts an `attachments` row (returns the row). Without it, storage-only (`/files` playground).                        |
+| `DELETE /api/attachments/:id` | Archive row (`status: 'archived'`) + best-effort Storage delete                                                                                                                             |
 
-Optional `GET /api/attachments?work_item_id=` for non-web clients — **not** the
-hot path for `/work-items/[id]` first paint.
+> The URL endpoint is `:/id` (not `/:id/url`) to match the `:id` resource convention used by other features.
 
-Reuse `apps/api/src/lib/file-helpers.ts` for upload / signed URL / remove.
+Reuse `apps/api/src/lib/file-helpers.ts` for upload / signed URL / existence check / remove.
 
 ---
 
 ## Web UI
 
-1. **List** — replace placeholders; props from RSC.
+1. **List** — real rows; props from RSC.
 2. **Click** — if cache has URLs, try them; else mint and cache.
-3. **Expired** — broken preview / 403 → message + explicit regenerate (overwrite cache).
-4. **Add** — wire Plus → upload mutation → `router.refresh()` (or local append after success).
+3. **Expired** — broken preview → message + explicit regenerate (overwrite cache).
+4. **Gone (410)** — object missing → distinct "no longer available" state + **Remove attachment** (regenerate is hidden, since re-minting can't recover a deleted object).
+5. **Add** — top **Attach** button and section **+** both open a shared multi-file `Dropzone` dialog → sequential upload → local append + `router.refresh()`.
 
 ---
 
@@ -135,20 +135,25 @@ Reuse `apps/api/src/lib/file-helpers.ts` for upload / signed URL / remove.
 | 0       | This document + work-items README index                                                               | Done when landed |
 | 0b      | Rename `/api/files` → `/api/attachments`; shared `file-helpers.ts`; `/files` UI posts to new endpoint | Done             |
 | 1       | `getWorkItemAttachments` server reader + wire into `WorkItemDetailsData`                              | Done             |
-| 2       | API signed-url (+ upload/delete) via `file-helpers`                                                   |                  |
-| 3       | Attachment cards + in-memory URL cache + regenerate control                                           |                  |
-| 4       | Preview modal + download                                                                              |                  |
-| 5       | Add-attachment upload from details                                                                    |                  |
+| 2       | API signed-url (+ upload/delete) via `file-helpers`                                                   | Done             |
+| 3       | Attachment cards + in-memory URL cache + regenerate control                                           | Done             |
+| 4       | Preview modal + download                                                                              | Done             |
+| 5       | Add-attachment upload from details                                                                    | Done             |
 
 ---
 
 ## Implementation pointers
 
-| Area                      | Path                                                                                 |
-| ------------------------- | ------------------------------------------------------------------------------------ |
-| Details RSC               | `apps/web/app/work-items/[id]/_components/work-item-details-data.tsx`                |
-| Details UI                | `apps/web/app/work-items/_components/workItem-details.tsx`                           |
-| Discussion pattern        | `apps/web/app/comments/_services/comments.service.server.ts`                         |
-| Attachments server reader | `apps/web/app/work-items/_services/attachments.service.server.ts`                    |
-| Storage helpers           | `apps/api/src/lib/file-helpers.ts`                                                   |
-| Attachments API           | `apps/api/src/routes/api/attachments/` (`POST /` upload today; signed-url/CRUD next) |
+| Area                       | Path                                                                             |
+| -------------------------- | -------------------------------------------------------------------------------- |
+| Details RSC                | `apps/web/app/work-items/[id]/_components/work-item-details-data.tsx`            |
+| Details UI                 | `apps/web/app/work-items/_components/workItem-details.tsx`                       |
+| Attachments section (UI)   | `apps/web/app/work-items/_components/work-item-attachments-section.tsx`          |
+| Upload dialog (multi-file) | `apps/web/app/work-items/_components/work-item-attachment-upload-dialog.tsx`     |
+| Client ApiError (status)   | `apps/web/lib/api/api.ts` (`ApiError` carries HTTP status for 410 branching)     |
+| Discussion pattern         | `apps/web/app/comments/_services/comments.service.server.ts`                     |
+| Attachments shared types   | `packages/types/src/attachments.ts`                                              |
+| Attachments server reader  | `apps/web/app/work-items/_services/attachments.service.server.ts`                |
+| Attachments client API     | `apps/web/app/work-items/_services/attachments.service.ts`                       |
+| Storage helpers            | `apps/api/src/lib/file-helpers.ts`                                               |
+| Attachments API            | `apps/api/src/routes/api/attachments/` (`GET /:id/url`, `POST /`, `DELETE /:id`) |

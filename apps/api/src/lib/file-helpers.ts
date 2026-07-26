@@ -12,7 +12,13 @@ export type StorageUploadResult = {
   path: string;
 };
 
-const DEFAULT_SIGNED_URL_SECONDS = 60 * 60;
+export const DEFAULT_SIGNED_URL_SECONDS = 60 * 60;
+
+export type CreateSignedUrlOptions = {
+  expiresInSeconds?: number;
+  /** When set, browser treats the URL as a download (`true` or custom filename). */
+  download?: boolean | string;
+};
 
 /** Sanitize an original filename for Storage object keys. */
 export function sanitizeFileName(
@@ -22,6 +28,13 @@ export function sanitizeFileName(
   const base = originalName.split(/[/\\]/).pop() ?? fallback;
   const cleaned = base.replaceAll(/[^\w.-]+/g, '_').slice(0, 120);
   return cleaned.length > 0 ? cleaned : fallback;
+}
+
+/** ISO timestamp when a signed URL minted now will expire. */
+export function signedUrlExpiresAt(
+  expiresInSeconds: number = DEFAULT_SIGNED_URL_SECONDS
+): string {
+  return new Date(Date.now() + expiresInSeconds * 1000).toISOString();
 }
 
 /** Upload a buffer to a Storage bucket. Stateless — safe under concurrent requests. */
@@ -55,11 +68,20 @@ export function getPublicStorageUrl(bucket: string, path: string): string {
 export async function createSignedStorageUrl(
   bucket: string,
   path: string,
-  expiresInSeconds: number = DEFAULT_SIGNED_URL_SECONDS
+  expiresInSecondsOrOptions:
+    number | CreateSignedUrlOptions = DEFAULT_SIGNED_URL_SECONDS
 ): Promise<string> {
+  const options =
+    typeof expiresInSecondsOrOptions === 'number'
+      ? { expiresInSeconds: expiresInSecondsOrOptions }
+      : expiresInSecondsOrOptions;
+  const expiresIn = options.expiresInSeconds ?? DEFAULT_SIGNED_URL_SECONDS;
+
   const { data, error } = await supabase.storage
     .from(bucket)
-    .createSignedUrl(path, expiresInSeconds);
+    .createSignedUrl(path, expiresIn, {
+      download: options.download,
+    });
 
   if (error || !data?.signedUrl) {
     console.error(
@@ -70,6 +92,34 @@ export async function createSignedStorageUrl(
   }
 
   return data.signedUrl;
+}
+
+/**
+ * Whether a Storage object exists. Fails open (returns `true`) on transient
+ * list errors so a flaky check never wrongly flags a file as missing.
+ */
+export async function storageObjectExists(
+  bucket: string,
+  path: string
+): Promise<boolean> {
+  const lastSlash = path.lastIndexOf('/');
+  const dir = lastSlash === -1 ? '' : path.slice(0, lastSlash);
+  const name = lastSlash === -1 ? path : path.slice(lastSlash + 1);
+
+  const { data, error } = await supabase.storage.from(bucket).list(dir, {
+    search: name,
+    limit: 100,
+  });
+
+  if (error) {
+    console.warn(
+      'warn. failed to check storage object existence:',
+      error.message
+    );
+    return true;
+  }
+
+  return Boolean(data?.some((object) => object.name === name));
 }
 
 /** Best-effort delete of Storage objects. */
