@@ -4,6 +4,7 @@
 import { useState, useMemo, useEffect, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { USER_PROJECTION } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
@@ -550,7 +551,7 @@ export function CommentsFeed({
         const supabase = createClient();
         const { data, error } = await supabase
           .from('users')
-          .select('id, name, email, profile_picture')
+          .select(USER_PROJECTION)
           .eq('active', true)
           .order('name');
 

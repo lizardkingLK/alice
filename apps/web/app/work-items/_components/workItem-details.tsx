@@ -37,6 +37,7 @@ import { Json } from '@repo/types';
 import { updateWorkItem } from '@/app/work-items/_services/workItem.service.client';
 import WorkItemSidebar from '@/app/work-items/_components/workItem-details-sidebar';
 import { WorkItemTitleEditor } from '@/app/work-items/_components/workItem-title-editor';
+import type { WorkItemPatchMemberOption } from '@/app/work-items/_components/workItem-field-patch-dialog';
 import { toast } from '@repo/ui/components/ui/sonner';
 import { CommentsFeed } from '@/app/comments/_components/comments-feed';
 import { CommentItem } from '@/app/comments/_services/comments.service';
@@ -130,15 +131,21 @@ export default function WorkItemDetails({
   workItemDetails,
   initialComments = [],
   currentUserId,
+  projectMembers = [],
 }: Readonly<{
   workItemDetails: DbWorkItem;
   initialComments?: CommentItem[];
   currentUserId?: string;
+  projectMembers?: readonly WorkItemPatchMemberOption[];
 }>) {
   const [workItem, setWorkItem] = useState<DbWorkItem>(workItemDetails);
   const [isEditing, setEditing] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(true);
   const [moreFieldsOpen, setMoreFieldsOpen] = useState(false);
+
+  const handleWorkItemPatched = (updated: Partial<DbWorkItem>) => {
+    setWorkItem((prev) => ({ ...prev, ...updated }));
+  };
 
   const descriptionContent = useMemo(
     () => toTiptapContent(workItem.description),
@@ -422,10 +429,12 @@ export default function WorkItemDetails({
         {/* Sidebar */}
         <WorkItemSidebar
           workItem={workItem}
+          projectMembers={projectMembers}
           detailsOpen={detailsOpen}
           setDetailsOpen={setDetailsOpen}
           moreFieldsOpen={moreFieldsOpen}
           setMoreFieldsOpen={setMoreFieldsOpen}
+          onWorkItemPatched={handleWorkItemPatched}
         />
       </div>
     </div>

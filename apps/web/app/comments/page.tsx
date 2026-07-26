@@ -1,10 +1,17 @@
 import { Suspense } from 'react';
 import { Skeleton } from '@repo/ui/components/ui/skeleton';
+import { USER_PROJECTION_WITH_ROLE, userRelationSelect } from '@repo/types';
 import { createClient } from '@/lib/supabase/server';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { getDbUser } from '@/lib/auth';
 import { CommentsFeed } from './_components/comments-feed';
 import { CommentItem } from './_services/comments.service';
+
+const COMMENT_AUTHOR_SELECT = userRelationSelect(
+  'author',
+  'comments_author_id_fkey',
+  USER_PROJECTION_WITH_ROLE
+);
 
 function CommentsSkeleton() {
   return (
@@ -147,7 +154,7 @@ async function CommentsData() {
       .select(
         `
         *,
-        author:users!comments_author_id_fkey(id, name, email, role, profile_picture),
+        ${COMMENT_AUTHOR_SELECT},
         work_item:work_items(id, title, type, project:projects(id, name, key))
       `
       )

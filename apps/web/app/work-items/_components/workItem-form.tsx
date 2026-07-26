@@ -12,13 +12,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@repo/ui/components/ui/select';
-import { AlertCircle, CheckCircle, Loader2 } from '@repo/ui/lib/icons';
+import { Loader2 } from '@repo/ui/lib/icons';
 import { User as DbUser } from '@/app/users/_services/users.service';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import {
   createWorkItem,
   updateWorkItem,
 } from '@/app/work-items/_services/workItem.service.client';
+import { FormStatusAlerts } from '@/app/work-items/_components/workItem-form-alerts';
 import { Project as DbProject } from '@/app/projects/_services/projects.service';
 import { delay } from '@/app/_shared/utility';
 import { ResponseDTO } from '@repo/types/connection';
@@ -219,19 +220,7 @@ export function WorkItemForm({
         </div>
       </div>
 
-      {state?.error ? (
-        <div className="text-destructive bg-destructive/10 border-destructive/20 flex items-center gap-2 rounded-lg border p-3 text-sm">
-          <AlertCircle className="size-4 shrink-0" />
-          <span>{state.error}</span>
-        </div>
-      ) : null}
-
-      {state?.success ? (
-        <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-600 dark:text-emerald-400">
-          <CheckCircle className="size-4 shrink-0" />
-          <span>{state.success}</span>
-        </div>
-      ) : null}
+      <FormStatusAlerts error={state?.error} success={state?.success} />
 
       <DialogFooter>
         {onClose ? (

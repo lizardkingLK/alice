@@ -66,6 +66,12 @@ export const workItemCoreObject = z.object({
     emptyStringToNull,
     z.uuid({ message: 'Please select a valid assignee' }).nullable()
   ),
+  reporter_id: z
+    .preprocess(
+      emptyStringToNull,
+      z.uuid({ message: 'Please select a valid reporter' }).nullable()
+    )
+    .optional(),
   due_date: z.preprocess(emptyStringToNull, dateStringSchema.nullable()),
   description: jsonSchema.nullable().optional(),
   sprint_id: z

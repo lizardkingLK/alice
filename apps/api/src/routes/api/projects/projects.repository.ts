@@ -1,3 +1,4 @@
+import { USER_PROJECTION_WITH_ROLE, userRelationSelect } from '@repo/types';
 import { supabase } from '../../../lib/supabase';
 import {
   auditCreate,
@@ -37,8 +38,15 @@ export type ProjectMemberWithUser = {
     name: string;
     email: string;
     role: string;
+    profile_picture?: string | null;
   } | null;
 };
+
+const PROJECT_MEMBER_USER_SELECT = userRelationSelect(
+  'user',
+  'project_members_user_id_fkey',
+  USER_PROJECTION_WITH_ROLE
+);
 
 function unsafeCast<T>(val: unknown): T {
   return val as T;
@@ -134,9 +142,7 @@ export class ProjectsRepository {
   async listMembers(projectId: string): Promise<ProjectMemberWithUser[]> {
     const { data, error } = await supabase
       .from('project_members')
-      .select(
-        '*, user:users!project_members_user_id_fkey(id, name, email, role)'
-      )
+      .select(`*, ${PROJECT_MEMBER_USER_SELECT}`)
       .eq('project_id', projectId)
       .eq('status', 'active');
 
