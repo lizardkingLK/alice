@@ -1,3 +1,8 @@
+import {
+  BACKEND_UNREACHABLE_MESSAGE,
+  BackendUnreachableError,
+} from '@/lib/errors/backend-unreachable';
+
 type ApiErrorResponse = {
   error: unknown;
 };
@@ -63,11 +68,37 @@ function getApiErrorMessage(data: unknown): string {
   return 'Request failed. Please try again.';
 }
 
+function isNetworkConnectivityError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const message = error.message.toLowerCase();
+  const name = error.name.toLowerCase();
+
+  return (
+    message === 'fetch failed' ||
+    message.includes('failed to fetch') ||
+    message.includes('networkerror') ||
+    message.includes('econnrefused') ||
+    message.includes('econnreset') ||
+    message.includes('enotfound') ||
+    message.includes('socket hang up') ||
+    name === 'aborterror' ||
+    name === 'timeouterror'
+  );
+}
+
 export async function getResponse<T>(
   path: string,
   token: string,
   init?: RequestInit
 ): Promise<T> {
+  const apiUrl = getAPIUrl();
+  if (!apiUrl) {
+    throw new BackendUnreachableError();
+  }
+
   const headers = new Headers(init?.headers);
   headers.set('Authorization', `Bearer ${token}`);
 
@@ -81,13 +112,29 @@ export async function getResponse<T>(
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(`${getAPIUrl()}${path}`, {
-    cache: 'no-store',
-    ...init,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${apiUrl}${path}`, {
+      cache: 'no-store',
+      ...init,
+      headers,
+    });
+  } catch (error) {
+    if (isNetworkConnectivityError(error)) {
+      throw new BackendUnreachableError();
+    }
+    throw error;
+  }
 
-  const data: T | ApiErrorResponse = await response.json();
+  let data: T | ApiErrorResponse;
+  try {
+    data = (await response.json()) as T | ApiErrorResponse;
+  } catch {
+    if (!response.ok) {
+      throw new BackendUnreachableError();
+    }
+    throw new Error('Request failed. Please try again.');
+  }
 
   if (!response.ok) {
     const message = getApiErrorMessage(data);
@@ -96,3 +143,5 @@ export async function getResponse<T>(
 
   return data as T;
 }
+
+export { BACKEND_UNREACHABLE_MESSAGE };
