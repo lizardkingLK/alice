@@ -1,10 +1,11 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { getInitials } from '@/app/_shared/utility';
+import { formatDate, getInitials } from '@/app/_shared/utility';
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import type { WorkItemAttachment } from '@/app/work-items/_services/attachments.service.server';
 import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
@@ -42,33 +43,6 @@ import { toast } from '@repo/ui/components/ui/sonner';
 import { CommentsFeed } from '@/app/comments/_components/comments-feed';
 import { CommentItem } from '@/app/comments/_services/comments.service';
 
-const PLACEHOLDER_ATTACHMENTS = [
-  {
-    id: '1',
-    name: 'Requirements.pdf',
-    meta: '10 Apr 2020 10:01 pm',
-    kind: 'pdf' as const,
-  },
-  {
-    id: '2',
-    name: 'wireframe-hero.png',
-    meta: '10 Apr 2020 10:01 pm',
-    kind: 'image' as const,
-  },
-  {
-    id: '3',
-    name: 'Spec-notes.docx',
-    meta: '9 Apr 2020 4:22 pm',
-    kind: 'doc' as const,
-  },
-  {
-    id: '4',
-    name: 'flow-diagram.png',
-    meta: '8 Apr 2020 11:15 am',
-    kind: 'image' as const,
-  },
-] as const;
-
 const PLACEHOLDER_CHILD_ISSUES = [
   {
     id: 'c1',
@@ -93,6 +67,32 @@ const PLACEHOLDER_CHILD_ISSUES = [
   },
 ] as const;
 
+type AttachmentKind = 'pdf' | 'image' | 'doc';
+
+function attachmentKindFromMime(mimeType: string): AttachmentKind {
+  if (mimeType.startsWith('image/')) {
+    return 'image';
+  }
+  if (mimeType === 'application/pdf') {
+    return 'pdf';
+  }
+  return 'doc';
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function attachmentMeta(attachment: WorkItemAttachment): string {
+  return `${formatDate(attachment.created_at)} · ${formatFileSize(attachment.file_size)}`;
+}
+
 function AttachmentCard({
   name,
   meta,
@@ -100,7 +100,7 @@ function AttachmentCard({
 }: Readonly<{
   name: string;
   meta: string;
-  kind: 'pdf' | 'image' | 'doc';
+  kind: AttachmentKind;
 }>) {
   return (
     <Card
@@ -130,11 +130,13 @@ function AttachmentCard({
 export default function WorkItemDetails({
   workItemDetails,
   initialComments = [],
+  initialAttachments = [],
   currentUserId,
   projectMembers = [],
 }: Readonly<{
   workItemDetails: DbWorkItem;
   initialComments?: CommentItem[];
+  initialAttachments?: WorkItemAttachment[];
   currentUserId?: string;
   projectMembers?: readonly WorkItemPatchMemberOption[];
 }>) {
@@ -261,7 +263,7 @@ export default function WorkItemDetails({
               <h2 className="text-sm font-semibold">
                 Attachments{' '}
                 <span className="text-muted-foreground font-normal">
-                  ({PLACEHOLDER_ATTACHMENTS.length})
+                  ({initialAttachments.length})
                 </span>
               </h2>
               <div className="flex items-center gap-1">
@@ -284,16 +286,22 @@ export default function WorkItemDetails({
               </div>
             </div>
 
-            <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
-              {PLACEHOLDER_ATTACHMENTS.map((attachment) => (
-                <AttachmentCard
-                  key={attachment.id}
-                  name={attachment.name}
-                  meta={attachment.meta}
-                  kind={attachment.kind}
-                />
-              ))}
-            </div>
+            {initialAttachments.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                No attachments yet.
+              </p>
+            ) : (
+              <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+                {initialAttachments.map((attachment) => (
+                  <AttachmentCard
+                    key={attachment.id}
+                    name={attachment.file_name}
+                    meta={attachmentMeta(attachment)}
+                    kind={attachmentKindFromMime(attachment.mime_type)}
+                  />
+                ))}
+              </div>
+            )}
           </section>
 
           <Separator />

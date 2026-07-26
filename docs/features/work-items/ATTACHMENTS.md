@@ -134,7 +134,7 @@ Reuse `apps/api/src/lib/file-helpers.ts` for upload / signed URL / remove.
 | ------- | ----------------------------------------------------------------------------------------------------- | ---------------- |
 | 0       | This document + work-items README index                                                               | Done when landed |
 | 0b      | Rename `/api/files` → `/api/attachments`; shared `file-helpers.ts`; `/files` UI posts to new endpoint | Done             |
-| 1       | `getWorkItemAttachments` server reader + wire into `WorkItemDetailsData`                              |                  |
+| 1       | `getWorkItemAttachments` server reader + wire into `WorkItemDetailsData`                              | Done             |
 | 2       | API signed-url (+ upload/delete) via `file-helpers`                                                   |                  |
 | 3       | Attachment cards + in-memory URL cache + regenerate control                                           |                  |
 | 4       | Preview modal + download                                                                              |                  |
@@ -149,6 +149,6 @@ Reuse `apps/api/src/lib/file-helpers.ts` for upload / signed URL / remove.
 | Details RSC               | `apps/web/app/work-items/[id]/_components/work-item-details-data.tsx`                |
 | Details UI                | `apps/web/app/work-items/_components/workItem-details.tsx`                           |
 | Discussion pattern        | `apps/web/app/comments/_services/comments.service.server.ts`                         |
-| Attachments server reader | `apps/web/app/…/attachments.service.server.ts` (to add)                              |
+| Attachments server reader | `apps/web/app/work-items/_services/attachments.service.server.ts`                    |
 | Storage helpers           | `apps/api/src/lib/file-helpers.ts`                                                   |
 | Attachments API           | `apps/api/src/routes/api/attachments/` (`POST /` upload today; signed-url/CRUD next) |
