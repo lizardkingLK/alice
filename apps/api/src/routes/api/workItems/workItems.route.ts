@@ -9,6 +9,7 @@ import { workItemService } from './workItems.service';
 import { notificationsService } from '../notifications/notifications.service';
 import {
   createUpdateWorkItemBodySchema,
+  isBlockedPastDueDateChange,
   patchUpdateWorkItemBodySchema,
   SupabaseJson,
 } from './workItems.schemas';
@@ -227,6 +228,18 @@ workItemsRouter.patch(
         return res
           .status(404)
           .json({ data: null, error: 'Work item not found' });
+      }
+
+      if (
+        isBlockedPastDueDateChange(
+          parsed.data.due_date,
+          existingWorkItem.due_date
+        )
+      ) {
+        return res.status(400).json({
+          data: null,
+          error: 'Due date must be on or after today',
+        });
       }
 
       const payload = buildWorkItemPayload(parsed.data, existingWorkItem);
