@@ -1,5 +1,6 @@
 import WorkItemDetails from '@/app/work-items/_components/workItem-details';
 import { getWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import { getWorkItemAttachments } from '@/app/work-items/_services/attachments.service.server';
 import { getWorkItemDiscussion } from '@/app/comments/_services/comments.service.server';
 import { getProjectMembers } from '@/app/projects/_services/projects.service.server';
 import { getDbUser } from '@/lib/auth';
@@ -13,11 +14,13 @@ type WorkItemDetailsDataProps = {
 export async function WorkItemDetailsData({
   workItemId,
 }: Readonly<WorkItemDetailsDataProps>) {
-  const [workItem, initialComments, dbUser] = await Promise.all([
-    getWorkItem(workItemId),
-    getWorkItemDiscussion(workItemId),
-    getDbUser(),
-  ]);
+  const [workItem, initialComments, initialAttachments, dbUser] =
+    await Promise.all([
+      getWorkItem(workItemId),
+      getWorkItemDiscussion(workItemId),
+      getWorkItemAttachments(workItemId),
+      getDbUser(),
+    ]);
 
   const projectMembers = workItem.project_id
     ? await safeServerFetch(
@@ -43,6 +46,7 @@ export async function WorkItemDetailsData({
     <WorkItemDetails
       workItemDetails={workItem}
       initialComments={initialComments}
+      initialAttachments={initialAttachments}
       currentUserId={currentUserId}
       projectMembers={memberOptions}
     />
