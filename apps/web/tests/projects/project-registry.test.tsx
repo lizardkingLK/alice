@@ -28,6 +28,8 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
+vi.mock('@repo/ui/components/ui/dropdown-menu', () => import('../mocks/dropdown-menu'));
+
 vi.mock('@/app/projects/_components/actions', () => ({
   softDeleteProject: vi.fn(),
   restoreProject: vi.fn(),

@@ -20,7 +20,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from '@repo/ui/components/ui/dialog';
 import {
@@ -44,6 +43,7 @@ import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';
 import { getInitials } from '@/app/_shared/utility';
 import { SearchInput } from '@/components/search-input';
+import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import {
   MessageSquareText,
   Plus,
@@ -60,8 +60,7 @@ import {
   Tag,
   RotateCcw,
   Trash2,
-  AlertTriangle,
-  Loader2,
+  X,
 } from '@repo/ui/lib/icons';
 import { CommentItem, CommentUser } from '../_services/comments.service';
 import {
@@ -1097,10 +1096,10 @@ export function CommentsFeed({
                 value={searchQuery}
                 onValueChange={setSearchQuery}
                 placeholder="Search comments by text, author, or issue key..."
-                className="max-w-none"
+                className="w-full sm:max-w-70 md:max-w-90"
               />
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-row items-center gap-2 w-full sm:w-auto">
                 <Select
                   value={selectedWorkItemId}
                   onValueChange={setSelectedWorkItemId}
@@ -1108,7 +1107,7 @@ export function CommentsFeed({
                   <SelectTrigger
                     id="select-work-item-filter"
                     aria-label="Filter by Work Item"
-                    className="w-[min(100%,14rem)]"
+                    className="w-1/2 sm:w-44"
                   >
                     <SelectValue placeholder="All Work Items" />
                   </SelectTrigger>
@@ -1132,7 +1131,7 @@ export function CommentsFeed({
                   <SelectTrigger
                     id="select-status-filter"
                     aria-label="Filter by Status"
-                    className="w-[min(100%,14rem)]"
+                    className="w-1/2 sm:w-44"
                   >
                     <SelectValue placeholder="Active Comments" />
                   </SelectTrigger>
@@ -1305,7 +1304,7 @@ export function CommentsFeed({
                                 className="text-destructive focus:text-destructive gap-2"
                               >
                                 <Trash2 className="size-3.5" />
-                                Delete Permanently
+                                Purge
                               </DropdownMenuItem>
                             </>
                           )}
@@ -1520,6 +1519,18 @@ export function CommentsFeed({
                         <Send className="size-3" />
                         Post
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => {
+                          setReplyingParentId(null);
+                          setReplyContent('');
+                        }}
+                        className="text-muted-foreground hover:text-foreground shrink-0"
+                        title="Cancel reply"
+                      >
+                        <X className="size-4" />
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -1627,52 +1638,19 @@ export function CommentsFeed({
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={deletingCommentId !== null}
-        onOpenChange={(open) => {
-          if (!open && !isDeleting) setDeletingCommentId(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-rose-500">
-              <AlertTriangle className="size-5 shrink-0" />
-              Confirm Delete
-            </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to permanently delete this comment? This
-              action cannot be undone and will remove the comment record from
-              the database.
-            </DialogDescription>
-          </DialogHeader>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isDeleting}
-              onClick={() => setDeletingCommentId(null)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={isDeleting}
-              onClick={confirmDelete}
-              className="bg-rose-600 text-white hover:bg-rose-700"
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="mr-1.5 size-4 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                'Delete Comment'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {deletingCommentId !== null ? (
+        <RegistryConfirmDialog
+          title="Confirm Purge"
+          subject="this comment"
+          detail="This action cannot be undone and will permanently remove the comment record from the database."
+          confirmLabel="Purge Comment"
+          pendingLabel="Purging..."
+          isPending={isDeleting}
+          isSoft={false}
+          onCancel={() => setDeletingCommentId(null)}
+          onConfirm={confirmDelete}
+        />
+      ) : null}
     </div>
   );
 }
