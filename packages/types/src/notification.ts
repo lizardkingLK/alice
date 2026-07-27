@@ -1,4 +1,15 @@
 import type { Enums } from './generated/supabase/database.types.js';
+import { z } from 'zod';
+
+/** Contact / access-request form payload (web action + API). */
+export const contactRequestSchema = z.object({
+  email: z.email(),
+  name: z.string().min(1).max(200).optional(),
+  title: z.string().min(1).max(200).optional(),
+  message: z.string().min(1).max(4000),
+});
+
+export type ContactRequestInput = z.infer<typeof contactRequestSchema>;
 
 export class NotificationType {
   user_id!: string;

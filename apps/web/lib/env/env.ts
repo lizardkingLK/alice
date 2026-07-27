@@ -51,19 +51,9 @@ function buildOptionalEnvInput() {
   const input: Record<string, string | undefined> = {};
 
   const siteUrl = readEnv('NEXT_PUBLIC_SITE_URL');
-  const novuAppId = readEnv('NEXT_PUBLIC_NOVU_APP_ID');
-  const novuSubscriberId = readEnv('NEXT_PUBLIC_NOVU_SUBSCRIBER_ID');
 
   if (siteUrl) {
     input.NEXT_PUBLIC_SITE_URL = siteUrl;
-  }
-
-  if (novuAppId) {
-    input.NEXT_PUBLIC_NOVU_APP_ID = novuAppId;
-  }
-
-  if (novuSubscriberId) {
-    input.NEXT_PUBLIC_NOVU_SUBSCRIBER_ID = novuSubscriberId;
   }
 
   return input;
@@ -77,8 +67,6 @@ function formatEnvIssues(error: z.ZodError): string {
 
 function warnOptionalEnv(): void {
   const siteUrl = readEnv('NEXT_PUBLIC_SITE_URL');
-  const novuAppId = readEnv('NEXT_PUBLIC_NOVU_APP_ID');
-  const novuSubscriberId = readEnv('NEXT_PUBLIC_NOVU_SUBSCRIBER_ID');
   const serviceRoleKey = readEnv('SUPABASE_SERVICE_ROLE_KEY');
   const externalAuthKey = readEnv(
     'SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET'
@@ -87,12 +75,6 @@ function warnOptionalEnv(): void {
   if (!siteUrl) {
     console.warn(
       'warn. NEXT_PUBLIC_SITE_URL is not set. Auth email links will use the request origin instead.'
-    );
-  }
-
-  if (!novuAppId || !novuSubscriberId) {
-    console.warn(
-      'warn. Novu is not fully configured (NEXT_PUBLIC_NOVU_APP_ID / NEXT_PUBLIC_NOVU_SUBSCRIBER_ID). Notification inbox will be hidden.'
     );
   }
 

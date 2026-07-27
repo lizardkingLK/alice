@@ -1,5 +1,6 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import { z } from 'zod';
+import { contactRequestSchema } from '@repo/types';
 import { notificationsService } from '@/routes/api/notifications/notifications.service';
 
 const notificationsRouter: Router = Router();
@@ -9,6 +10,12 @@ const sendSchema = z.object({
   message: z.string().min(1),
   title: z.string().optional(),
 });
+
+function routeError(res: Response, error: unknown): void {
+  const messageStr =
+    error instanceof Error ? error.message : 'Failed to send notification';
+  res.status(500).json({ error: messageStr });
+}
 
 notificationsRouter.post('/send', async (req, res) => {
   const parsed = sendSchema.safeParse(req.body);
@@ -27,9 +34,29 @@ notificationsRouter.post('/send', async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    const messageStr =
-      error instanceof Error ? error.message : 'Failed to send notification';
-    res.status(500).json({ error: messageStr });
+    routeError(res, error);
+  }
+});
+
+notificationsRouter.post('/contact', async (req, res) => {
+  const parsed = contactRequestSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: z.treeifyError(parsed.error) });
+  }
+
+  const { email, name, title, message } = parsed.data;
+
+  try {
+    await notificationsService.sendAdminContactNotification({
+      fromEmail: email,
+      fromName: name,
+      title,
+      message,
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    routeError(res, error);
   }
 });
 

@@ -18,7 +18,7 @@ export const REGISTRY_PAGES = {
   users: {
     description:
       'Manage application users, assign workspace roles, and control access.',
-    skeleton: { columnCount: 5, rowCount: 8 },
+    skeleton: { columnCount: 5, rowCount: 8, showTabs: true },
   },
   projects: {
     description: 'Organize project administration.',

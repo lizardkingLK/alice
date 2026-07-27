@@ -1,4 +1,5 @@
 import { getDbUser, getUser } from '@/lib/auth';
+import { isEmailAllowed } from '@/lib/access-allowlist';
 import Link from 'next/link';
 import { Button } from '@repo/ui/components/ui/button';
 import { AuthControls } from '@/app/dashboard/_components/dashboard-auth';
@@ -14,6 +15,10 @@ type HomeProps = {
 
 export default async function Home({ searchParams }: Readonly<HomeProps>) {
   const [user, dbUser] = await Promise.all([getUser(), getDbUser()]);
+
+  const showAppLinks = user?.email
+    ? await isEmailAllowed(user.email)
+    : false;
 
   const { reset } = await searchParams;
   const resetSuccess = reset === 'success';
@@ -46,7 +51,7 @@ export default async function Home({ searchParams }: Readonly<HomeProps>) {
       <HomeFeatures />
       <HomeHowItWorks />
       <HomeCta isSignedIn={Boolean(user)} />
-      <HomeFooter />
+      <HomeFooter showAppLinks={showAppLinks} />
     </main>
   );
 }

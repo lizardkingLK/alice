@@ -800,10 +800,61 @@ async function seedNotifications(
   }
 }
 
+/** Company domain so seed users (@alice.dev) pass the admission gate. */
+async function seedAccessAllowlist(actorId: string): Promise<void> {
+  const domain = 'alice.dev';
+
+  const { data: existing, error: lookupError } = await supabase
+    .from('access_allowlist')
+    .select('id')
+    .eq('kind', 'domain')
+    .eq('value', domain)
+    .maybeSingle();
+
+  if (lookupError) {
+    throw new Error(
+      `Failed to lookup access_allowlist domain: ${lookupError.message}`
+    );
+  }
+
+  if (existing) {
+    const { error } = await supabase
+      .from('access_allowlist')
+      .update({
+        label: 'Alice seed / company domain',
+        status: 'active',
+        expires_at: null,
+        ...auditUpdate(actorId),
+      })
+      .eq('id', existing.id);
+
+    if (error) {
+      throw new Error(
+        `Failed to refresh access_allowlist domain: ${error.message}`
+      );
+    }
+    return;
+  }
+
+  const { error } = await supabase.from('access_allowlist').insert({
+    kind: 'domain',
+    value: domain,
+    label: 'Alice seed / company domain',
+    ...auditCreate(actorId),
+  });
+
+  if (error) {
+    throw new Error(`Failed to seed access_allowlist domain: ${error.message}`);
+  }
+}
+
 async function main(): Promise<void> {
   console.log('info. seeding users and auth accounts...');
   const userIds = await seedUsers();
   const adminId = userIds['admin@alice.dev'];
+
+  console.log('info. seeding access allowlist...');
+  await seedAccessAllowlist(adminId);
 
   console.log('info. seeding instruments...');
   await seedInstruments(adminId);

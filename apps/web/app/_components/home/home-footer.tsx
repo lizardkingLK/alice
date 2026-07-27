@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Separator } from '@repo/ui/components/ui/separator';
+import { cn } from '@repo/ui/lib/utils';
 
 const footerColumns = [
   {
@@ -40,11 +41,29 @@ const footerColumns = [
   },
 ] as const;
 
-export function HomeFooter() {
+const APP_ONLY_COLUMN_TITLES = new Set(['Workspace', 'Team']);
+
+type HomeFooterProps = {
+  /** Show Workspace / Team links (allowlisted signed-in users). */
+  showAppLinks?: boolean;
+};
+
+export function HomeFooter({ showAppLinks = false }: Readonly<HomeFooterProps>) {
+  const columns = showAppLinks
+    ? footerColumns
+    : footerColumns.filter((column) => !APP_ONLY_COLUMN_TITLES.has(column.title));
+
   return (
     <footer className="border-border/60 bg-muted/20 flex min-h-dvh snap-start snap-always flex-col border-t px-6 pt-12 pb-8">
       <div className="mx-auto mt-auto w-full max-w-6xl">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_repeat(4,minmax(0,1fr))] lg:gap-8">
+        <div
+          className={cn(
+            'grid gap-10 sm:grid-cols-2 lg:gap-8',
+            columns.length === footerColumns.length
+              ? 'lg:grid-cols-[1.4fr_repeat(4,minmax(0,1fr))]'
+              : 'lg:grid-cols-[1.4fr_repeat(2,minmax(0,1fr))]'
+          )}
+        >
           <div className="max-w-xs">
             <p className="text-base font-semibold tracking-tight">Jira Teams</p>
             <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
@@ -52,7 +71,7 @@ export function HomeFooter() {
             </p>
           </div>
 
-          {footerColumns.map((column) => (
+          {columns.map((column) => (
             <nav key={column.title} aria-label={column.title}>
               <p className="text-sm font-medium tracking-tight">
                 {column.title}

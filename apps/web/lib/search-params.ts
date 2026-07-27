@@ -76,3 +76,9 @@ export function parseManagerTabStatus(
   if (tab === 'inactive') return 'inactive';
   return 'active';
 }
+
+export type UsersPageTab = 'users' | 'allowlist';
+
+export function parseUsersPageTab(tab?: string | null): UsersPageTab {
+  return tab === 'allowlist' ? 'allowlist' : 'users';
+}

@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { resolveSafeRedirectPath } from '@/lib/auth-redirect';
 import { ensurePublicUser } from '@/lib/ensure-public-user';
+import { isEmailAllowed } from '@/lib/access-allowlist';
 import { createServerClient } from '@supabase/ssr';
-import type { EmailOtpType } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { EmailOtpType, User } from '@supabase/supabase-js';
 import type { Database } from '@repo/types';
 
 function buildRedirectUrl(request: Request, path: string): string {
@@ -19,6 +21,29 @@ function buildRedirectUrl(request: Request, path: string): string {
   }
 
   return `${origin}${path}`;
+}
+
+/**
+ * Check allowlist then ensure a public profile.
+ * Returns an error path string on failure, or null on success.
+ */
+async function admitUser(
+  supabase: SupabaseClient<Database>,
+  user: User
+): Promise<string | null> {
+  const allowed = await isEmailAllowed(user.email ?? '');
+  if (!allowed) {
+    await supabase.auth.signOut();
+    return '/access-denied';
+  }
+
+  const { error: profileError } = await ensurePublicUser(user);
+  if (profileError) {
+    const msg = `Could not create user profile: ${profileError}`;
+    return `/login?error=${encodeURIComponent(msg)}`;
+  }
+
+  return null;
 }
 
 export async function GET(request: Request) {
@@ -70,10 +95,8 @@ export async function GET(request: Request) {
       } = await supabase.auth.getUser();
 
       if (user) {
-        const { error: profileError } = await ensurePublicUser(user);
-        if (profileError) {
-          const errorContent = `Could not create user profile: ${profileError}`;
-          const errorPath = `/login?error=${encodeURIComponent(errorContent)}`;
+        const errorPath = await admitUser(supabase, user);
+        if (errorPath) {
           return NextResponse.redirect(buildRedirectUrl(request, errorPath));
         }
       }

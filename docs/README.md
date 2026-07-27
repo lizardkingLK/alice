@@ -42,6 +42,7 @@ One folder per product area. Prefer a local `README.md` as the index.
 | Area       | Index                                                                                            |
 | ---------- | ------------------------------------------------------------------------------------------------ |
 | Users      | [features/users/](./features/users/)                                                             |
+| Access     | [features/access/](./features/access/) ([ACCESS_ALLOWLIST.md](./features/access/ACCESS_ALLOWLIST.md)) |
 | Work items | [features/work-items/](./features/work-items/)                                                   |
 | Board      | [features/board/](./features/board/)                                                             |
 | Projects   | [features/projects/](./features/projects/)                                                       |
@@ -64,6 +65,7 @@ Authentication and authorization. Index: [auth/README.md](./auth/README.md).
 - [AUTHENTICATION.md](./auth/AUTHENTICATION.md) — sign up, sign in, Google, linking, admin invite, password reset + sequence diagrams (**Living**)
 - [RBAC_AUTHORIZATION_SKELETON.md](./auth/RBAC_AUTHORIZATION_SKELETON.md) — RBAC rollout (**Plan**)
 - [FORGOT_PASSWORD_AUTH_PLAN.md](./auth/FORGOT_PASSWORD_AUTH_PLAN.md) — original recovery plan (**Plan**; see AUTHENTICATION.md §7 for as-built)
+- Admission allowlist: [features/access/ACCESS_ALLOWLIST.md](./features/access/ACCESS_ALLOWLIST.md) (**Living**)
 
 ### Guides
 
