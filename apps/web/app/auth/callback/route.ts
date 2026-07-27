@@ -3,8 +3,7 @@ import { resolveSafeRedirectPath } from '@/lib/auth-redirect';
 import { ensurePublicUser } from '@/lib/ensure-public-user';
 import { isEmailAllowed } from '@/lib/access-allowlist';
 import { createServerClient } from '@supabase/ssr';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { EmailOtpType, User } from '@supabase/supabase-js';
+import type { EmailOtpType, SupabaseClient, User } from '@supabase/supabase-js';
 import type { Database } from '@repo/types';
 
 function buildRedirectUrl(request: Request, path: string): string {

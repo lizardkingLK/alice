@@ -132,7 +132,7 @@ export class AccessAllowlistRepository {
       } else {
         const parsed = new Date(params.expires_at);
         if (Number.isNaN(parsed.getTime())) {
-          throw new Error('Invalid expires_at');
+          throw new TypeError('Invalid expires_at');
         }
         expires_at = parsed.toISOString();
       }
