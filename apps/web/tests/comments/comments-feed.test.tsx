@@ -485,7 +485,7 @@ describe('CommentsFeed Component', () => {
     fireEvent.click(deleteBtn);
 
     // Click confirm delete button
-    const confirmBtn = screen.getByRole('button', { name: 'Delete Comment' });
+    const confirmBtn = screen.getByRole('button', { name: 'Purge Comment' });
     fireEvent.click(confirmBtn);
 
     await waitFor(() => {
@@ -548,12 +548,12 @@ describe('CommentsFeed Component', () => {
     const menuBtn = screen.getByRole('button', { name: /Open menu/i });
     fireEvent.click(menuBtn);
 
-    // Click Delete Permanently button to open confirm modal
-    const deleteBtn = screen.getByText('Delete Permanently');
+    // Click Purge button to open confirm modal
+    const deleteBtn = screen.getByText('Purge');
     fireEvent.click(deleteBtn);
 
-    // Click Delete Comment in the confirm modal
-    const confirmBtn = screen.getByRole('button', { name: 'Delete Comment' });
+    // Click Purge Comment in the confirm modal
+    const confirmBtn = screen.getByRole('button', { name: 'Purge Comment' });
     fireEvent.click(confirmBtn);
 
     await waitFor(() => {
