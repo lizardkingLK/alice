@@ -1,17 +1,17 @@
-import {
-  DbWorkItem,
-  workItemRepository,
-} from '@/routes/api/workItems/workItems.repository';
+import { WorkItemRepository } from '@/routes/api/workItems/workItems.repository';
+import type { DbWorkItem } from '@/routes/api/workItems/workItems.repository';
 import {
   WorkItemBody,
   WorkItemUpdateBody,
 } from '@/routes/api/workItems/workItems.schemas';
 
 export class WorkItemService {
+  constructor(private readonly workItems: WorkItemRepository) {}
+
   async getWorkItems(filters?: {
     sprint_id?: string | null;
   }): Promise<DbWorkItem[]> {
-    return await workItemRepository.get(filters);
+    return await this.workItems.get(filters);
   }
 
   async listWorkItems(
@@ -21,26 +21,21 @@ export class WorkItemService {
     filters?: { sprint_id?: string | null }
   ): Promise<{ workItems: DbWorkItem[]; totalCount: number } | DbWorkItem[]> {
     if (page !== undefined && limit !== undefined) {
-      return await workItemRepository.listPaginated(
-        page,
-        limit,
-        search,
-        filters
-      );
+      return await this.workItems.listPaginated(page, limit, search, filters);
     }
 
-    return await workItemRepository.get(filters);
+    return await this.workItems.get(filters);
   }
 
   async getWorkItem(workItemId: string): Promise<DbWorkItem> {
-    return await workItemRepository.getById(workItemId);
+    return await this.workItems.getById(workItemId);
   }
 
   async createWorkItem(
     userId: string,
     input: WorkItemBody
   ): Promise<DbWorkItem> {
-    return await workItemRepository.create({
+    return await this.workItems.create({
       ...input,
       createdBy: userId,
     });
@@ -51,12 +46,10 @@ export class WorkItemService {
     workItemId: string,
     input: WorkItemUpdateBody
   ): Promise<DbWorkItem> {
-    return await workItemRepository.update({
+    return await this.workItems.update({
       ...input,
       id: workItemId,
       updatedBy: userId,
     });
   }
 }
-
-export const workItemService = new WorkItemService();
