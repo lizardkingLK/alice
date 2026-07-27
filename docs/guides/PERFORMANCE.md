@@ -211,15 +211,15 @@ Each read uses `safeServerFetch` (or `.catch` for sprints) so one failed query d
 
 ### 2.9 Work-item discussion SSR (M4.3)
 
-`/work-items/[id]` no longer client-fetches comments on mount. Discussion data loads in RSC alongside the work item:
+`/work-items/[id]` no longer client-fetches comments on mount. Discussion data loads in RSC alongside the work item via a **direct Supabase read** (same M1 pattern as `getWorkItem` — no Express/`apiFetch` hop):
 
 | Piece             | Location                                                                          |
 | ----------------- | --------------------------------------------------------------------------------- |
-| Discussion reader | `apps/web/app/comments/_services/comments.service.server.ts`                      |
-| Parallel fetch    | `apps/web/app/work-items/[id]/page.tsx` — `getWorkItem` + `getWorkItemDiscussion` |
+| Discussion reader | `getWorkItemDiscussion` → `listComments` in `comments.service.server.ts`          |
+| Parallel fetch    | `work-item-details-data.tsx` — item + discussion + attachments                    |
 | Props-only client | `apps/web/app/work-items/_components/workItem-details.tsx`                        |
 
-`CommentsFeed` still handles mutations client-side; only the **initial** thread is prefetched on the server.
+`CommentsFeed` still handles mutations client-side (API); only the **initial** thread is prefetched on the server.
 
 ### 2.10 Infra alignment (M6)
 
@@ -402,6 +402,7 @@ Legend:
 | `GET /api/sprints/:id`          | **Unused (web)** | —                  | Server mirror `getSprint()` in `sprints.service.server.ts`; forms use `sprintToEdit` from list state          |
 | `GET /api/workItems`            | **Unused (web)** | —                  | List/detail use `workItem.service.server.ts`                                                                  |
 | `GET /api/workItems/:id`        | **Unused (web)** | —                  | `[id]/page` uses server `getWorkItem`                                                                         |
+| `GET /api/comments`             | **Client-only**  | Mutations + legacy | RSC reads use `listComments` / `getWorkItemDiscussion` in `comments.service.server.ts` (direct Supabase)       |
 | `GET /` (health)                | Active           | Deploy / probes    | Not a data read                                                                                               |
 | `POST /api/notifications/send`  | Active           | Server-side notify | No GET on this router                                                                                         |
 | `POST /api/attachments`         | Active           | `upload-form.tsx`  | Upload only (private bucket; signed URL)                                                                      |
