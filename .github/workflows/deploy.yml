@@ -2,7 +2,7 @@ name: Continuous Integration & Vercel deployment
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main]
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches: [main, dev]
@@ -44,8 +44,8 @@ jobs:
     name: Execute SonarCloud Scan
     needs: validate_and_test
     if: >-
-      (github.base_ref == 'dev' || github.ref == 'refs/heads/dev') &&
-      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source Code
