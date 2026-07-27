@@ -109,7 +109,7 @@ export async function getAttachmentSignedUrls(
   attachmentId: string
 ): Promise<AttachmentSignedUrls> {
   const attachment = await attachmentsRepository.getById(attachmentId);
-  if (!attachment || attachment.status !== 'active') {
+  if (attachment?.status !== 'active') {
     throw new AttachmentNotFoundError();
   }
 
@@ -150,7 +150,7 @@ export async function deleteAttachment(
   actorId: string
 ): Promise<void> {
   const attachment = await attachmentsRepository.getById(attachmentId);
-  if (!attachment || attachment.status !== 'active') {
+  if (attachment?.status !== 'active') {
     throw new AttachmentNotFoundError();
   }
 
