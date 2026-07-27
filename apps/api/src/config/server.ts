@@ -1,8 +1,9 @@
+import type { Express } from 'express';
 import detectPort from 'detect-port';
 
 const TARGET_PORT = Number.parseInt(process.env.PORT || '3001', 10);
 
-export default async function startServer() {
+async function reservePort() {
   try {
     const availablePort = await detectPort(TARGET_PORT);
     if (availablePort !== TARGET_PORT) {
@@ -16,4 +17,11 @@ export default async function startServer() {
     console.error('error. critical error during API initialization:', error);
     process.exit(1);
   }
+}
+
+export default async function startServer(app: Express) {
+  const port = await reservePort();
+  app.listen(port, () =>
+    console.log(`info. listening on http://localhost:${port}`)
+  );
 }

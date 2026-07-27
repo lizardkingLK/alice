@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { Tables } from '@repo/types';
+import { projectRelationSelect, Tables } from '@repo/types';
 
 export type ProfileTeam = {
   id: string;
@@ -63,7 +63,7 @@ export async function getProfileWorkedOn(
 
   const { data, error } = await supabase
     .from('work_items')
-    .select('id, title, status, updated_at, project:projects(key, name)')
+    .select(`id, title, status, updated_at, ${projectRelationSelect()}`)
     .or(`assignee_id.eq.${userId},reporter_id.eq.${userId}`)
     .order('updated_at', { ascending: false })
     .limit(limit);

@@ -26,8 +26,6 @@ const requiredPublicSchema = z.object({
 
 const optionalPublicSchema = z.object({
   NEXT_PUBLIC_SITE_URL: z.url().optional(),
-  NEXT_PUBLIC_NOVU_APP_ID: z.string().min(1).optional(),
-  NEXT_PUBLIC_NOVU_SUBSCRIBER_ID: z.string().min(1).optional(),
 });
 
 export type PublicEnv = z.infer<typeof requiredPublicSchema> &
@@ -97,7 +95,7 @@ function requiredEnvHints(): string {
     '- NEXT_PUBLIC_API_URL',
     '- NEXT_PUBLIC_SUPABASE_URL',
     '- NEXT_PUBLIC_SUPABASE_ANON_KEY',
-    'Optional (warn only): NEXT_PUBLIC_SITE_URL, NEXT_PUBLIC_NOVU_*, SUPABASE_SERVICE_ROLE_KEY (server secret in Vercel, not in sample.env).',
+    'Optional (warn only): NEXT_PUBLIC_SITE_URL, SUPABASE_SERVICE_ROLE_KEY (server secret in Vercel, not in sample.env).',
   ].join(' ');
 }
 

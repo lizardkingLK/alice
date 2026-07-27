@@ -15,12 +15,13 @@ import {
   AlertCircle,
   CheckCircle2,
   FileIcon,
-  Loader2,
   UploadCloud,
   X,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
+import { formatFileSize } from '@/app/_shared/utility';
 import { apiFetch } from '@/lib/api/api-client';
+import { UploadStatusIcon } from '@/components/upload-status-icon';
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
@@ -40,16 +41,6 @@ type UploadItem = {
   path?: string;
   error?: string;
 };
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) {
-    return `${bytes} B`;
-  }
-  if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(1)} KB`;
-  }
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 async function uploadFileToApi(file: File): Promise<UploadResult> {
   const formData = new FormData();
@@ -112,18 +103,6 @@ async function uploadOneItem(
     });
     return false;
   }
-}
-
-function UploadStatusIcon({ status }: Readonly<{ status: UploadStatus }>) {
-  if (status === 'uploading') {
-    return <Loader2 className="size-4 animate-spin" />;
-  }
-
-  if (status === 'success') {
-    return <CheckCircle2 className="size-4" />;
-  }
-
-  return <AlertCircle className="size-4" />;
 }
 
 function uploadStatusLabel(status: UploadStatus): string {
@@ -251,7 +230,7 @@ function UploadItemCard({
                   </TruncatedText>
                 </div>
                 <p className="text-muted-foreground text-xs">
-                  {formatBytes(item.file.size)}
+                  {formatFileSize(item.file.size)}
                   {item.path ? ` · ${item.path}` : null}
                   {item.error ? ` · ${item.error}` : null}
                 </p>

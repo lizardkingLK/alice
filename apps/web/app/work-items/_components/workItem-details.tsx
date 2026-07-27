@@ -5,10 +5,11 @@ import { getInitials } from '@/app/_shared/utility';
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import type { AttachmentWithUploader } from '@repo/types';
+import { AttachmentsSection } from '@/app/work-items/_components/work-item-attachments-section';
 import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
-import { Card, CardContent } from '@repo/ui/components/ui/card';
 import { Progress } from '@repo/ui/components/ui/progress';
 import { Separator } from '@repo/ui/components/ui/separator';
 import {
@@ -21,8 +22,6 @@ import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';
 import {
   ChevronDown,
-  FileImage,
-  FileText,
   Link2,
   MessageSquare,
   MoreHorizontal,
@@ -37,37 +36,11 @@ import { Json } from '@repo/types';
 import { updateWorkItem } from '@/app/work-items/_services/workItem.service.client';
 import WorkItemSidebar from '@/app/work-items/_components/workItem-details-sidebar';
 import { WorkItemTitleEditor } from '@/app/work-items/_components/workItem-title-editor';
+import { WorkItemPathBreadcrumb } from '@/app/work-items/_components/work-item-path-breadcrumb';
 import type { WorkItemPatchMemberOption } from '@/app/work-items/_components/workItem-field-patch-dialog';
 import { toast } from '@repo/ui/components/ui/sonner';
 import { CommentsFeed } from '@/app/comments/_components/comments-feed';
 import { CommentItem } from '@/app/comments/_services/comments.service';
-
-const PLACEHOLDER_ATTACHMENTS = [
-  {
-    id: '1',
-    name: 'Requirements.pdf',
-    meta: '10 Apr 2020 10:01 pm',
-    kind: 'pdf' as const,
-  },
-  {
-    id: '2',
-    name: 'wireframe-hero.png',
-    meta: '10 Apr 2020 10:01 pm',
-    kind: 'image' as const,
-  },
-  {
-    id: '3',
-    name: 'Spec-notes.docx',
-    meta: '9 Apr 2020 4:22 pm',
-    kind: 'doc' as const,
-  },
-  {
-    id: '4',
-    name: 'flow-diagram.png',
-    meta: '8 Apr 2020 11:15 am',
-    kind: 'image' as const,
-  },
-] as const;
 
 const PLACEHOLDER_CHILD_ISSUES = [
   {
@@ -93,48 +66,16 @@ const PLACEHOLDER_CHILD_ISSUES = [
   },
 ] as const;
 
-function AttachmentCard({
-  name,
-  meta,
-  kind,
-}: Readonly<{
-  name: string;
-  meta: string;
-  kind: 'pdf' | 'image' | 'doc';
-}>) {
-  return (
-    <Card
-      className={cn(
-        'border-border bg-card min-w-42 shrink-0 overflow-hidden py-0 shadow-none'
-      )}
-    >
-      <div
-        className={cn(
-          'bg-muted flex h-24 items-center justify-center border-b'
-        )}
-      >
-        {kind === 'image' ? (
-          <FileImage className="text-muted-foreground size-8" />
-        ) : (
-          <FileText className="text-muted-foreground size-8" />
-        )}
-      </div>
-      <CardContent className="space-y-0.5 px-3 py-2.5">
-        <TruncatedText className="text-sm font-medium">{name}</TruncatedText>
-        <p className="text-muted-foreground text-xs">{meta}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
 export default function WorkItemDetails({
   workItemDetails,
   initialComments = [],
+  initialAttachments = [],
   currentUserId,
   projectMembers = [],
 }: Readonly<{
   workItemDetails: DbWorkItem;
   initialComments?: CommentItem[];
+  initialAttachments?: AttachmentWithUploader[];
   currentUserId?: string;
   projectMembers?: readonly WorkItemPatchMemberOption[];
 }>) {
@@ -142,6 +83,7 @@ export default function WorkItemDetails({
   const [isEditing, setEditing] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(true);
   const [moreFieldsOpen, setMoreFieldsOpen] = useState(false);
+  const [attachmentUploadOpen, setAttachmentUploadOpen] = useState(false);
 
   const handleWorkItemPatched = (updated: Partial<DbWorkItem>) => {
     setWorkItem((prev) => ({ ...prev, ...updated }));
@@ -193,12 +135,7 @@ export default function WorkItemDetails({
       <div className="space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">{workItem.type}</Badge>
-              <span className="text-muted-foreground font-mono text-xs">
-                {workItem.id.slice(0, 8).toUpperCase()}
-              </span>
-            </div>
+            <WorkItemPathBreadcrumb workItem={workItem} />
             <WorkItemTitleEditor
               title={workItem.title}
               onSave={handleTitleUpdate}
@@ -207,7 +144,12 @@ export default function WorkItemDetails({
         </div>
 
         <div className="flex flex-wrap items-center gap-1">
-          <Button variant="ghost" size="sm" className="cursor-pointer">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="cursor-pointer"
+            onClick={() => setAttachmentUploadOpen(true)}
+          >
             <Paperclip data-icon="inline-start" />
             Attach
           </Button>
@@ -255,46 +197,12 @@ export default function WorkItemDetails({
 
           <Separator />
 
-          {/* Attachments */}
-          <section className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-sm font-semibold">
-                Attachments{' '}
-                <span className="text-muted-foreground font-normal">
-                  ({PLACEHOLDER_ATTACHMENTS.length})
-                </span>
-              </h2>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="cursor-pointer"
-                  aria-label="Add attachment"
-                >
-                  <Plus />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="cursor-pointer"
-                  aria-label="More attachment actions"
-                >
-                  <MoreHorizontal />
-                </Button>
-              </div>
-            </div>
-
-            <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
-              {PLACEHOLDER_ATTACHMENTS.map((attachment) => (
-                <AttachmentCard
-                  key={attachment.id}
-                  name={attachment.name}
-                  meta={attachment.meta}
-                  kind={attachment.kind}
-                />
-              ))}
-            </div>
-          </section>
+          <AttachmentsSection
+            workItemId={workItem.id}
+            initialAttachments={initialAttachments}
+            uploadOpen={attachmentUploadOpen}
+            onUploadOpenChange={setAttachmentUploadOpen}
+          />
 
           <Separator />
 
