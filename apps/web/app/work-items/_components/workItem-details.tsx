@@ -1,15 +1,15 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { formatDate, getInitials } from '@/app/_shared/utility';
+import { getInitials } from '@/app/_shared/utility';
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
-import type { WorkItemAttachment } from '@/app/work-items/_services/attachments.service.server';
+import type { AttachmentWithUploader } from '@repo/types';
+import { AttachmentsSection } from '@/app/work-items/_components/work-item-attachments-section';
 import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
-import { Card, CardContent } from '@repo/ui/components/ui/card';
 import { Progress } from '@repo/ui/components/ui/progress';
 import { Separator } from '@repo/ui/components/ui/separator';
 import {
@@ -22,8 +22,6 @@ import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';
 import {
   ChevronDown,
-  FileImage,
-  FileText,
   Link2,
   MessageSquare,
   MoreHorizontal,
@@ -67,66 +65,6 @@ const PLACEHOLDER_CHILD_ISSUES = [
   },
 ] as const;
 
-type AttachmentKind = 'pdf' | 'image' | 'doc';
-
-function attachmentKindFromMime(mimeType: string): AttachmentKind {
-  if (mimeType.startsWith('image/')) {
-    return 'image';
-  }
-  if (mimeType === 'application/pdf') {
-    return 'pdf';
-  }
-  return 'doc';
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) {
-    return `${bytes} B`;
-  }
-  if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(1)} KB`;
-  }
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function attachmentMeta(attachment: WorkItemAttachment): string {
-  return `${formatDate(attachment.created_at)} · ${formatFileSize(attachment.file_size)}`;
-}
-
-function AttachmentCard({
-  name,
-  meta,
-  kind,
-}: Readonly<{
-  name: string;
-  meta: string;
-  kind: AttachmentKind;
-}>) {
-  return (
-    <Card
-      className={cn(
-        'border-border bg-card min-w-42 shrink-0 overflow-hidden py-0 shadow-none'
-      )}
-    >
-      <div
-        className={cn(
-          'bg-muted flex h-24 items-center justify-center border-b'
-        )}
-      >
-        {kind === 'image' ? (
-          <FileImage className="text-muted-foreground size-8" />
-        ) : (
-          <FileText className="text-muted-foreground size-8" />
-        )}
-      </div>
-      <CardContent className="space-y-0.5 px-3 py-2.5">
-        <TruncatedText className="text-sm font-medium">{name}</TruncatedText>
-        <p className="text-muted-foreground text-xs">{meta}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
 export default function WorkItemDetails({
   workItemDetails,
   initialComments = [],
@@ -136,7 +74,7 @@ export default function WorkItemDetails({
 }: Readonly<{
   workItemDetails: DbWorkItem;
   initialComments?: CommentItem[];
-  initialAttachments?: WorkItemAttachment[];
+  initialAttachments?: AttachmentWithUploader[];
   currentUserId?: string;
   projectMembers?: readonly WorkItemPatchMemberOption[];
 }>) {
@@ -144,6 +82,7 @@ export default function WorkItemDetails({
   const [isEditing, setEditing] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(true);
   const [moreFieldsOpen, setMoreFieldsOpen] = useState(false);
+  const [attachmentUploadOpen, setAttachmentUploadOpen] = useState(false);
 
   const handleWorkItemPatched = (updated: Partial<DbWorkItem>) => {
     setWorkItem((prev) => ({ ...prev, ...updated }));
@@ -209,7 +148,12 @@ export default function WorkItemDetails({
         </div>
 
         <div className="flex flex-wrap items-center gap-1">
-          <Button variant="ghost" size="sm" className="cursor-pointer">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="cursor-pointer"
+            onClick={() => setAttachmentUploadOpen(true)}
+          >
             <Paperclip data-icon="inline-start" />
             Attach
           </Button>
@@ -257,52 +201,12 @@ export default function WorkItemDetails({
 
           <Separator />
 
-          {/* Attachments */}
-          <section className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-sm font-semibold">
-                Attachments{' '}
-                <span className="text-muted-foreground font-normal">
-                  ({initialAttachments.length})
-                </span>
-              </h2>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="cursor-pointer"
-                  aria-label="Add attachment"
-                >
-                  <Plus />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="cursor-pointer"
-                  aria-label="More attachment actions"
-                >
-                  <MoreHorizontal />
-                </Button>
-              </div>
-            </div>
-
-            {initialAttachments.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
-                No attachments yet.
-              </p>
-            ) : (
-              <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
-                {initialAttachments.map((attachment) => (
-                  <AttachmentCard
-                    key={attachment.id}
-                    name={attachment.file_name}
-                    meta={attachmentMeta(attachment)}
-                    kind={attachmentKindFromMime(attachment.mime_type)}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
+          <AttachmentsSection
+            workItemId={workItem.id}
+            initialAttachments={initialAttachments}
+            uploadOpen={attachmentUploadOpen}
+            onUploadOpenChange={setAttachmentUploadOpen}
+          />
 
           <Separator />
 

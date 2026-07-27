@@ -48,6 +48,22 @@ import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 ## Use Link instead of anchor tags
 - When writing anchor tags use the component `Link` from module `next/link` to avoid full page reloads.
 - Avoid when anchor tag parsing in work-item descriptions as they are generated in code.
+- **Exception — Supabase / Storage signed download URLs** (cross-origin, short-lived): use a real `<a href={signedUrl}>`, not `next/link`, not `window.open`, and not a programmatic `document.createElement('a').click()`. Those approaches are unreliable (popup blockers, noopener quirks, ignored `download` on cross-origin).
+
+### Supabase signed URL downloads
+- Prefer a visible anchor with the signed URL as `href`. Style it with `Button asChild` when it should look like a button.
+- Set `download={fileName}` and `rel="noopener noreferrer"`. Do **not** set `target="_blank"` unless you intentionally want a new tab (download disposition usually does not need it).
+- When minting the download URL on the API, pass a **sanitized** filename to `createSignedUrl`’s `download` option (e.g. `sanitizeFileName`). Do **not** `encodeURIComponent` the name yourself — the Storage SDK encodes the final URL and double-encoding breaks the link.
+- Example:
+
+```tsx
+<Button asChild size="sm">
+  <a href={signedDownloadUrl} download={fileName} rel="noopener noreferrer">
+    <Download data-icon="inline-start" />
+    Download
+  </a>
+</Button>
+```
 
 ## Ambiguous JSX child spacing
 - Never leave literal text on its own line directly before/after a JSX element — it triggers the "Ambiguous spacing after previous element" warning because whether a space renders is unclear.
