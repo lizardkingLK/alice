@@ -1,20 +1,20 @@
+// Prevent ResizeObserver errors from failing the tests
+Cypress.on('uncaught:exception', (err) => {
+  return !err.message.includes('ResizeObserver');
+});
+
 function createSprint(sprintName: string, goal: string) {
   // Click "Add Sprint" button
   cy.contains('button', 'Add Sprint').click();
 
-  // Wait for project options to load and select the first project
-  cy.get('select#sprint-project option')
-    .should('have.length.at.least', 1)
-    .and('not.have.value', '');
+  // Wait for the select trigger to be visible and click it
+  cy.get('button#sprint-project').should('be.visible').click();
 
-  cy.get('select#sprint-project')
+  // Select the first option in the dropdown list
+  cy.get('[role="option"]')
     .first()
-    .then(($select) => {
-      const options = $select.find('option');
-      cy.get('select#sprint-project')
-        .first()
-        .select(options.eq(0).val() as string);
-    });
+    .should('be.visible')
+    .click();
 
   cy.get('input#sprint-name').first().type(sprintName, { delay: 30 });
   cy.get('textarea#sprint-goal').first().type(goal, { delay: 30 });

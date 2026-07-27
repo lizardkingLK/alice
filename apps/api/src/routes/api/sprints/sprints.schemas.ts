@@ -39,6 +39,7 @@ export type SprintResponse = {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  summaryReport?: Record<string, unknown>;
   project?: {
     id: string;
     name: string;
