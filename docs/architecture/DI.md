@@ -17,7 +17,7 @@ export const workItemService = new WorkItemService();
 That works for a single process and is fine while services stay **stateless**. It becomes brittle when we want to:
 
 - Unit-test a route/service with fakes (without mocking the module graph)
-- Swap clients (Supabase, Novu) at the edge of the process
+- Swap clients (e.g. Supabase) at the edge of the process
 - Self-host or run multiple workers with a clear boot boundary
 - Avoid accidentally parking request/session state on a shared instance
 
@@ -115,7 +115,7 @@ const router = createWorkItemsRouter({ workItemService, notificationsService });
 
 ## 7. Multi-instance note
 
-Process singletons are safe across multiple hosts **only if they hold no in-memory business state**. Prefer Postgres / Redis / Novu for anything that must be shared. DI makes the boot graph explicit; it does not by itself make stateful singletons safe.
+Process singletons are safe across multiple hosts **only if they hold no in-memory business state**. Prefer Postgres / Redis for anything that must be shared. DI makes the boot graph explicit; it does not by itself make stateful singletons safe.
 
 ## Related
 
