@@ -16,6 +16,7 @@ Related:
 - `docs/auth/RBAC_AUTHORIZATION_SKELETON.md` — full RBAC rollout plan
 - `docs/auth/FORGOT_PASSWORD_AUTH_PLAN.md` — original password-reset plan
 - `docs/guides/DATABASE.md` — `public.users` schema and migrations
+- `docs/features/access/ACCESS_ALLOWLIST.md` — admission allowlist; admin UI at `/users?tab=allowlist`
 
 ---
 

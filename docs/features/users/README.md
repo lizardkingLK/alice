@@ -10,3 +10,4 @@ Quick links:
 - Schema: `public.users` in `packages/db/prisma/schema.prisma`
 - Auth flows (invite + reset diagrams): `docs/auth/AUTHENTICATION.md`
 - Authorization plan: `docs/auth/RBAC_AUTHORIZATION_SKELETON.md`
+- Access allowlist (admission + `/users?tab=allowlist` admin UI): [../access/](../access/) (**Living**)

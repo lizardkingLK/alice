@@ -33,6 +33,56 @@ export class NotificationsService {
     }
   }
 
+  /**
+   * Contact / access-request form: notify all active admins.
+   * This endpoint intentionally uses a deterministic notification type so the
+   * inbox can render an appropriate icon.
+   */
+  async sendAdminContactNotification(params: {
+    fromEmail: string;
+    fromName?: string;
+    message: string;
+    title?: string;
+  }) {
+    const { data: admins, error: adminsError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('role', 'admin')
+      .eq('active', true);
+
+    if (adminsError) {
+      throw new Error(`Failed to query admins: ${adminsError.message}`);
+    }
+
+    const adminIds = (admins ?? []).map((a) => a.id);
+    if (!adminIds.length) {
+      return;
+    }
+
+    const fromNamePart = params.fromName ? ` (${params.fromName})` : '';
+    const titlePrefix = params.title ? `${params.title}\n\n` : '';
+    const fullMessage = `${titlePrefix}From: ${params.fromEmail}${fromNamePart}\n\n${params.message}`;
+
+    const { error: insertError } = await supabase
+      .from('notifications')
+      .insert(
+        adminIds.map((adminId) => ({
+          user_id: adminId,
+          type: 'comment',
+          message: fullMessage,
+          read_status: false,
+          status: 'active',
+          updated_at: new Date().toISOString(),
+        }))
+      );
+
+    if (insertError) {
+      throw new Error(
+        `Failed to insert admin contact notifications: ${insertError.message}`
+      );
+    }
+  }
+
   async createAssignNotification(params: {
     assigneeId: string;
     actorId: string;
