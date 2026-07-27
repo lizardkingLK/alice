@@ -1,10 +1,10 @@
 import { USER_PROJECTION_WITH_ROLE, userRelationSelect } from '@repo/types';
-import { supabase } from '../../../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import {
   auditCreate,
   auditCreateWithoutStatus,
   auditUpdate,
-} from '../../../lib/audit';
+} from '@/lib/audit';
 
 export type ProjectRow = {
   id: string;

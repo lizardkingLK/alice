@@ -29,7 +29,7 @@ i.e.
   - users.repository.ts
 ```
 
-7. **Imports**: Keep dependencies local to the package/app `package.json` where they are used.
+7. **Imports**: Keep dependencies local to the package/app `package.json` where they are used. In `apps/api`, use `@/` path aliases for internal `src/` imports (see `.cursor/rules/03-global-architect.mdc`); avoid deep relative `../` imports.
 
 8. **Documentation**: Always escape glob patterns accurately so the parsing does not break.
 i.e.:

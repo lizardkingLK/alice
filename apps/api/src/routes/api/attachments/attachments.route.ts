@@ -1,11 +1,8 @@
 import multer, { Multer } from 'multer';
 import express, { type Router } from 'express';
 
-import {
-  requireApiAuth,
-  type AuthenticatedRequest,
-} from '../../../middlewares/auth';
-import { uploadAttachmentFile } from './attachments.service';
+import { requireApiAuth, type AuthenticatedRequest } from '@/middlewares/auth';
+import { uploadAttachmentFile } from '@/routes/api/attachments/attachments.service';
 
 const attachmentsRouter: Router = express.Router();
 

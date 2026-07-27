@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { notificationsService } from './notifications.service';
+import { notificationsService } from '@/routes/api/notifications/notifications.service';
 
 const notificationsRouter: Router = Router();
 

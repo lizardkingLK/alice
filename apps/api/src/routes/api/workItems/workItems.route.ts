@@ -1,19 +1,16 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import {
-  requireApiAuth,
-  type AuthenticatedRequest,
-} from '../../../middlewares/auth';
-import { parsePagination } from '../../../lib/pagination';
-import { workItemService } from './workItems.service';
-import { notificationsService } from '../notifications/notifications.service';
+import { requireApiAuth, type AuthenticatedRequest } from '@/middlewares/auth';
+import { parsePagination } from '@/lib/pagination';
+import { workItemService } from '@/routes/api/workItems/workItems.service';
+import { notificationsService } from '@/routes/api/notifications/notifications.service';
 import {
   createUpdateWorkItemBodySchema,
   isBlockedPastDueDateChange,
   patchUpdateWorkItemBodySchema,
   SupabaseJson,
-} from './workItems.schemas';
-import type { DbWorkItem } from './workItems.repository';
+} from '@/routes/api/workItems/workItems.schemas';
+import type { DbWorkItem } from '@/routes/api/workItems/workItems.repository';
 
 type PatchUpdateWorkItemPayload = z.infer<typeof patchUpdateWorkItemBodySchema>;
 

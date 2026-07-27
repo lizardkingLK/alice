@@ -23,7 +23,7 @@ Related project docs:
 Run only when:
 
 - the user invokes `/sonar-duplication-prescan` or `@sonar-duplication-prescan`
-- the user confirms after the agent offers a post-task prescan (see `.cursor/rules/07-sonar-dedup-offer.mdc`)
+- the user confirms after the agent offers a post-task prescan (see `.cursor/rules/07-qa-dev-member.mdc`)
 
 Do **not** start the prescan silently at the end of unrelated tasks.
 
