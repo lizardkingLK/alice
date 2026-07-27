@@ -1,4 +1,8 @@
-import { USER_PROJECTION_WITH_ROLE, userRelationSelect } from '@repo/types';
+import {
+  USER_PROJECTION_WITH_ROLE,
+  projectRelationSelect,
+  userRelationSelect,
+} from '@repo/types';
 import { supabase } from '@/lib/supabase';
 
 export type CommentRow = {
@@ -24,7 +28,7 @@ const COMMENT_AUTHOR_SELECT = userRelationSelect(
 const COMMENT_WITH_RELATIONS = `
         *,
         ${COMMENT_AUTHOR_SELECT},
-        work_item:work_items(id, title, type, project:projects(id, name, key))
+        work_item:work_items(id, title, type, ${projectRelationSelect()})
       `;
 
 export class CommentsRepository {

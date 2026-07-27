@@ -1550,7 +1550,7 @@ export function CommentsFeed({
               users={users}
               workItems={workItems}
               rows={3}
-              position="bottom"
+              position="top"
             />
             <div className="flex justify-end">
               <Button
@@ -1604,7 +1604,7 @@ export function CommentsFeed({
                 users={users}
                 workItems={workItems}
                 rows={4}
-                position="bottom"
+                position="top"
               />
             </div>
 

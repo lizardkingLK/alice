@@ -2,7 +2,12 @@ import { User as DbUser } from '@/app/users/_services/users.service';
 import { createClient } from '@/lib/supabase/server';
 import { pageRange, paginationMeta } from '@/lib/db/pagination';
 import { throwIfError } from '@/lib/db/query';
-import { Enums, Tables, userRelationSelect } from '@repo/types';
+import {
+  Enums,
+  Tables,
+  projectRelationSelect,
+  userRelationSelect,
+} from '@repo/types';
 
 type DbUserEssentials = Pick<DbUser, 'id' | 'name' | 'email'> & {
   profile_picture?: string | null;
@@ -11,6 +16,15 @@ type DbUserEssentials = Pick<DbUser, 'id' | 'name' | 'email'> & {
 export type DbWorkItem = Tables<'work_items'> & {
   assignee: DbUserEssentials | null;
   reporter?: DbUserEssentials | null;
+  project?: {
+    id: string;
+    key: string;
+    name: string;
+  } | null;
+  sprint?: {
+    id: string;
+    name: string;
+  } | null;
 };
 
 export type WorkItemListFilters = {
@@ -30,6 +44,7 @@ export type GetWorkItemsPaginatedResponse = {
 
 const ASSIGNEE_SELECT = userRelationSelect('assignee', 'assignee_id');
 const REPORTER_SELECT = userRelationSelect('reporter', 'reporter_id');
+const PROJECT_SELECT = projectRelationSelect();
 
 // Structural shape of the Supabase builder's `.eq()` / `.is()`.
 /* eslint-disable no-unused-vars */
@@ -137,7 +152,9 @@ export async function getWorkItem(workItemId: string): Promise<DbWorkItem> {
 
   const { data, error } = await supabase
     .from('work_items')
-    .select(`*, ${ASSIGNEE_SELECT}, ${REPORTER_SELECT}`)
+    .select(
+      `*, ${ASSIGNEE_SELECT}, ${REPORTER_SELECT}, ${PROJECT_SELECT}, sprint:sprints(id, name)`
+    )
     .eq('id', workItemId)
     .maybeSingle();
 

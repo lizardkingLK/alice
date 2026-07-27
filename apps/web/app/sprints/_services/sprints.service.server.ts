@@ -1,12 +1,15 @@
 import { createClient } from '@/lib/supabase/server';
 import { pageRange, paginationMeta } from '@/lib/db/pagination';
 import { applyListSearch, throwIfError } from '@/lib/db/query';
+import { projectRelationSelect } from '@repo/types';
 import {
   mapDbSprintToSprint,
   type DbSprintRelation,
   type PaginatedSprints,
   type Sprint,
 } from './sprints.service';
+
+const SPRINT_WITH_PROJECT = `*, ${projectRelationSelect()}`;
 
 /**
  * Reads query Supabase directly from the RSC layer to skip the `web → api`
@@ -23,7 +26,7 @@ export async function getSprintsPaginatedServer(
 
   let query = supabase
     .from('sprints')
-    .select('*, project:projects(id, name, key)', { count: 'exact' });
+    .select(SPRINT_WITH_PROJECT, { count: 'exact' });
 
   if (tab === 'archived') {
     query = query.in('status', ['archived']);
@@ -53,7 +56,7 @@ export async function getSprint(sprintId: string): Promise<Sprint | null> {
 
   const { data, error } = await supabase
     .from('sprints')
-    .select('*, project:projects(id, name, key)')
+    .select(SPRINT_WITH_PROJECT)
     .eq('id', sprintId)
     .maybeSingle();
 
