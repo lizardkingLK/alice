@@ -44,7 +44,7 @@ Both apps deploy to Vercel. The API runs as Vercel Serverless Functions. Protect
 - `src/routes/api/attachments/` — attachments upload router (Storage via `lib/file-helpers.ts`)
 - `src/lib/file-helpers.ts` — shared Storage upload / public URL / signed URL helpers
 - Internal imports use `@/` → `src/*` (tsconfig `paths`; build runs `tsc-alias`)
-- `src/routes/api/notifications/notifications.route.ts` — Novu notifications router
+- `src/routes/api/notifications/notifications.route.ts` — in-app notifications router (Supabase `notifications` table)
 - `src/middlewares/auth/index.ts` — `requireApiAuth` (Supabase JWT verification)
 - `src/lib/supabase.ts` — service-role Supabase client for server tasks
 - `vercel.json` — Vercel serverless routing (all requests to `src/index.ts`)
