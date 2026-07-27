@@ -1,4 +1,4 @@
-import type { Tables } from '@repo/types';
+import { projectRelationSelect, type Tables } from '@repo/types';
 import { supabase } from '@/lib/supabase';
 
 export type SprintRow = Tables<'sprints'>;
@@ -10,6 +10,8 @@ export type SprintRowWithProject = SprintRow & {
     key: string;
   } | null;
 };
+
+const SPRINT_WITH_PROJECT = `*, ${projectRelationSelect()}`;
 
 export type CreateSprintRecord = {
   name: string;
@@ -33,7 +35,7 @@ export class SprintsRepository {
         project_id: input.projectId,
         updated_at: new Date().toISOString(),
       })
-      .select('*, project:projects(id, name, key)')
+      .select(SPRINT_WITH_PROJECT)
       .single();
 
     if (error) {
@@ -59,7 +61,7 @@ export class SprintsRepository {
 
     let query = supabase
       .from('sprints')
-      .select('*, project:projects(id, name, key)', { count: 'exact' });
+      .select(SPRINT_WITH_PROJECT, { count: 'exact' });
 
     if (tab === 'archived') {
       query = query.in('status', ['archived']);
@@ -96,7 +98,7 @@ export class SprintsRepository {
       .from('sprints')
       .update({ status })
       .eq('id', sprintId)
-      .select('*, project:projects(id, name, key)')
+      .select(SPRINT_WITH_PROJECT)
       .single();
 
     if (error) {
@@ -145,7 +147,7 @@ export class SprintsRepository {
   ): Promise<SprintRowWithProject | null> {
     const { data, error } = await supabase
       .from('sprints')
-      .select('*, project:projects(id, name, key)')
+      .select(SPRINT_WITH_PROJECT)
       .eq('id', sprintId)
       .maybeSingle();
 
@@ -179,7 +181,7 @@ export class SprintsRepository {
         updated_at: new Date().toISOString(),
       })
       .eq('id', sprintId)
-      .select('*, project:projects(id, name, key)')
+      .select(SPRINT_WITH_PROJECT)
       .single();
 
     if (error) {

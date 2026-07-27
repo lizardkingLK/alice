@@ -1,6 +1,10 @@
 import { Suspense } from 'react';
 import { Skeleton } from '@repo/ui/components/ui/skeleton';
-import { USER_PROJECTION_WITH_ROLE, userRelationSelect } from '@repo/types';
+import {
+  USER_PROJECTION_WITH_ROLE,
+  projectRelationSelect,
+  userRelationSelect,
+} from '@repo/types';
 import { createClient } from '@/lib/supabase/server';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { getDbUser } from '@/lib/auth';
@@ -155,7 +159,7 @@ async function CommentsData() {
         `
         *,
         ${COMMENT_AUTHOR_SELECT},
-        work_item:work_items(id, title, type, project:projects(id, name, key))
+        work_item:work_items(id, title, type, ${projectRelationSelect()})
       `
       )
       .order('created_at', { ascending: false });
@@ -167,7 +171,7 @@ async function CommentsData() {
     // Fetch work items for modal dropdown
     const { data: dbWorkItems, error: wiError } = await supabase
       .from('work_items')
-      .select('id, title, type, project_id, project:projects(name, key)')
+      .select(`id, title, type, project_id, ${projectRelationSelect()}`)
       .limit(50);
 
     type DbWorkItemRow = {

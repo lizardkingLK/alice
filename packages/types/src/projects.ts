@@ -1,5 +1,22 @@
 import { z } from 'zod';
 
+/** Shared Supabase project column list for embeds / selects. */
+export const PROJECT_PROJECTION = 'id, name, key' as const;
+
+export type ProjectProjection = typeof PROJECT_PROJECTION;
+
+/**
+ * Build a PostgREST project relation embed, e.g. `project:projects(id, name, key)`.
+ * Pass a nested parent select when needed:
+ * `work_item:work_items(id, title, type, ${projectRelationSelect()})`.
+ */
+export function projectRelationSelect(
+  alias = 'project',
+  projection: ProjectProjection = PROJECT_PROJECTION
+): string {
+  return `${alias}:projects(${projection})`;
+}
+
 export const createProjectSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   key: z
