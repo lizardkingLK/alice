@@ -1,8 +1,14 @@
 import { z } from 'zod';
 import { auditUpdate } from '../../../lib/audit';
 import { env } from '../../../config/env';
+import {
+  getPublicStorageUrl,
+  removeStorageObjects,
+  sanitizeFileName,
+  storagePathFromPublicUrl,
+  uploadToStorage,
+} from '../../../lib/file-helpers';
 import { supabase } from '../../../lib/supabase';
-import { filesRepository } from '../files/files.repository';
 
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
@@ -65,10 +71,7 @@ export class ProfileService {
     }
 
     const bucket = env.STORAGE_BUCKET_PROFILE_PICTURES;
-    const safeName = filesRepository.sanitizeFileName(
-      file.originalname,
-      'avatar'
-    );
+    const safeName = sanitizeFileName(file.originalname, 'avatar');
     const objectPath = `${userId}/${Date.now()}-${safeName}`;
 
     const { data: existing, error: lookupError } = await supabase
@@ -89,14 +92,14 @@ export class ProfileService {
       throw new Error('User profile not found.');
     }
 
-    const uploaded = await filesRepository.upload({
+    const uploaded = await uploadToStorage({
       bucket,
       path: objectPath,
       buffer: file.buffer,
       contentType: file.mimetype,
     });
 
-    const publicUrl = filesRepository.getPublicUrl(bucket, uploaded.path);
+    const publicUrl = getPublicStorageUrl(bucket, uploaded.path);
 
     const { data: updated, error: updateError } = await supabase
       .from('users')
@@ -113,18 +116,15 @@ export class ProfileService {
         'error. failed to persist profile picture URL:',
         updateError?.message ?? 'missing user'
       );
-      await filesRepository.remove(bucket, [uploaded.path]);
+      await removeStorageObjects(bucket, [uploaded.path]);
       throw new Error('Failed to save profile picture.');
     }
 
     const previousUrl = existing.profile_picture;
     if (previousUrl) {
-      const previousPath = filesRepository.storagePathFromPublicUrl(
-        previousUrl,
-        bucket
-      );
+      const previousPath = storagePathFromPublicUrl(previousUrl, bucket);
       if (previousPath && previousPath !== uploaded.path) {
-        await filesRepository.remove(bucket, [previousPath]);
+        await removeStorageObjects(bucket, [previousPath]);
       }
     }
 

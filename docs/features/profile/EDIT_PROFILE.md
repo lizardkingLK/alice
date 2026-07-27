@@ -122,8 +122,8 @@ through this edit-profile / `POST|PATCH /api/profile` path.
 - Auth required (JWT).
 - Multipart image only (e.g. `image/jpeg`, `image/png`, `image/webp`, `image/gif`).
 - Size limit smaller than generic files (e.g. **2 MB**).
-- Upload via shared `files.repository` to `STORAGE_BUCKET_PROFILE_PICTURES`
-  under `{userId}/…`.
+- Upload via shared `apps/api/src/lib/file-helpers.ts` to
+  `STORAGE_BUCKET_PROFILE_PICTURES` under `{userId}/…`.
 - Profile service persists forever **public** URL on `public.users.profile_picture`
   and best-effort deletes the previous object when it belonged to this bucket.
 - Response: `{ success: true, url, path, user }`.
@@ -136,8 +136,9 @@ through this edit-profile / `POST|PATCH /api/profile` path.
 
 ### Attachments upload
 
-- `POST /api/files` uses `STORAGE_BUCKET_ATTACHMENTS` via `files.service` /
-  `files.repository`.
+- `POST /api/attachments` uses `STORAGE_BUCKET_ATTACHMENTS` via
+  `attachments.service` + `file-helpers.ts`.
+- Web `/files` page posts to this endpoint.
 - Response always includes `{ success, path, url }`. For a **private**
   attachments bucket, `url` is a **signed** URL (time-limited).
 
@@ -156,23 +157,23 @@ through this edit-profile / `POST|PATCH /api/profile` path.
 
 ## Phased rollout
 
-| Section | Work                                                                    | Status |
-| ------- | ----------------------------------------------------------------------- | ------ |
-| 0       | This document + profile README index                                    | Done   |
-| 1       | Dual bucket env (`sample.env`, API `env.ts`, `turbo.json`, files route) | Done   |
-| 2       | Profile-picture upload API + persist URL on `public.users`              | Done   |
-| 3       | Load current user on `/edit-profile` + wire photo UI                    | Done   |
-| 4       | Controlled `name` input + persist; leave deferred sections unpersisted  | Done   |
+| Section | Work                                                                          | Status |
+| ------- | ----------------------------------------------------------------------------- | ------ |
+| 0       | This document + profile README index                                          | Done   |
+| 1       | Dual bucket env (`sample.env`, API `env.ts`, `turbo.json`, attachments route) | Done   |
+| 2       | Profile-picture upload API + persist URL on `public.users`                    | Done   |
+| 3       | Load current user on `/edit-profile` + wire photo UI                          | Done   |
+| 4       | Controlled `name` input + persist; leave deferred sections unpersisted        | Done   |
 
 ---
 
 ## Implementation pointers
 
-| Area                       | Path                                                                                    |
-| -------------------------- | --------------------------------------------------------------------------------------- |
-| Edit page                  | `apps/web/app/edit-profile/`                                                            |
-| Edit data loader           | `apps/web/app/edit-profile/_components/edit-profile-data.tsx`                           |
-| Profile page               | `apps/web/app/profile/`                                                                 |
-| Files upload (attachments) | `apps/api/src/routes/api/files/` (`files.route` → `files.service` → `files.repository`) |
-| Self-service profile       | `apps/api/src/routes/api/profile/` (`POST` picture, `PATCH` name via `profile.service`) |
-| Ensure user on signup      | `apps/web/lib/ensure-public-user.ts`                                                    |
+| Area                  | Path                                                                                    |
+| --------------------- | --------------------------------------------------------------------------------------- |
+| Edit page             | `apps/web/app/edit-profile/`                                                            |
+| Edit data loader      | `apps/web/app/edit-profile/_components/edit-profile-data.tsx`                           |
+| Profile page          | `apps/web/app/profile/`                                                                 |
+| Attachments upload    | `apps/api/src/routes/api/attachments/` + `apps/api/src/lib/file-helpers.ts`             |
+| Self-service profile  | `apps/api/src/routes/api/profile/` (`POST` picture, `PATCH` name via `profile.service`) |
+| Ensure user on signup | `apps/web/lib/ensure-public-user.ts`                                                    |

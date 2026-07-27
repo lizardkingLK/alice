@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import filesRouter from '../routes/api/files/files.route';
+import attachmentsRouter from '../routes/api/attachments/attachments.route';
 import usersRouter from '../routes/api/users/users.route';
 import healthRouter from '../routes/health.route';
 import notificationsRouter from '../routes/api/notifications/notifications.route';
@@ -13,8 +13,8 @@ import profileRouter from '../routes/api/profile/profile.route';
 const routesConfig: Router = Router();
 
 routesConfig.use('/', healthRouter);
+routesConfig.use('/api/attachments', attachmentsRouter);
 routesConfig.use('/api/comments', commentsRouter);
-routesConfig.use('/api/files', filesRouter);
 routesConfig.use('/api/notifications', notificationsRouter);
 routesConfig.use('/api/profile', profileRouter);
 routesConfig.use('/api/projects', projectsRouter);

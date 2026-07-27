@@ -15,7 +15,6 @@ Quick links:
 - Related: [board](../board/), [database ER diagram](../../database/ER_DIAGRAM.md)
 - Testing guide: [TESTING_DEVELOPMENT_FLOW.md](../../guides/TESTING_DEVELOPMENT_FLOW.md)
 
-
 ## Unit tests (Vitest)
 
 P0 component coverage lives under `apps/web/tests/work-items/`:

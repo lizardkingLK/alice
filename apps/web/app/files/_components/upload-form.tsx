@@ -55,7 +55,7 @@ async function uploadFileToApi(file: File): Promise<UploadResult> {
   const formData = new FormData();
   formData.append('file', file);
 
-  return apiFetch<UploadResult>('/api/files', {
+  return apiFetch<UploadResult>('/api/attachments', {
     method: 'POST',
     body: formData,
   });

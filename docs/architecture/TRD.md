@@ -41,7 +41,8 @@ Both apps deploy to Vercel. The API runs as Vercel Serverless Functions. Protect
 - `src/routes/api/projects/` — projects router, service, repository, and schema validation supporting full project CRUD (with soft delete)
 - `src/routes/api/sprints/` — sprints router, service, repository, and schema validation supporting sprint lifecycle (planned, active, closed, archived)
 - `src/routes/api/attributes/` — attributes router, service, and repository to retrieve custom fields metadata
-- `src/routes/api/files/files.route.ts` — file upload router
+- `src/routes/api/attachments/` — attachments upload router (Storage via `lib/file-helpers.ts`)
+- `src/lib/file-helpers.ts` — shared Storage upload / public URL / signed URL helpers
 - `src/routes/api/notifications/notifications.route.ts` — Novu notifications router
 - `src/middlewares/auth/index.ts` — `requireApiAuth` (Supabase JWT verification)
 - `src/lib/supabase.ts` — service-role Supabase client for server tasks
@@ -311,8 +312,9 @@ One Supabase project serves both development and production. Migrations must be 
 - **Notifications**
   - Exposes routers in `/api/notifications/`.
 
-- **Files**
-  - Exposes file upload utility in `/api/files/`.
+- **Attachments**
+  - Exposes upload utility in `/api/attachments/` (private bucket; signed URL in response).
+  - Shared Storage helpers live in `src/lib/file-helpers.ts` (also used by profile picture upload).
 
 **Route mounting (`src/index.ts` / `src/config/routing.ts`)**
 
