@@ -1,9 +1,10 @@
 # Work items feature documentation
 
-| Document                                                            | Description                                                  | Status |
-| ------------------------------------------------------------------- | ------------------------------------------------------------ | ------ |
-| [WORK_ITEM_DESCRIPTION.md](../../database/WORK_ITEM_DESCRIPTION.md) | TipTap / ProseMirror JSON stored in `work_items.description` | Living |
-| [ATTACHMENTS.md](./ATTACHMENTS.md)                                  | Private Storage attachments, SSR list, signed URLs on click  | Plan   |
+| Document                                                            | Description                                                  | Status      |
+| ------------------------------------------------------------------- | ------------------------------------------------------------ | ----------- |
+| [WORK_ITEM_DESCRIPTION.md](../../database/WORK_ITEM_DESCRIPTION.md) | TipTap / ProseMirror JSON stored in `work_items.description` | Living      |
+| [ATTACHMENTS.md](./ATTACHMENTS.md)                                  | Private Storage attachments, SSR list, signed URLs on click  | Implemented |
+| [ACTIVITY.md](./ACTIVITY.md)                                        | Work-item activity timeline next to Discussion               | Plan        |
 
 Quick links:
 
