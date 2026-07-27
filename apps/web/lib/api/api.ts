@@ -1,7 +1,6 @@
-import {
-  BACKEND_UNREACHABLE_MESSAGE,
-  BackendUnreachableError,
-} from '@/lib/errors/backend-unreachable';
+import { BackendUnreachableError } from '@/lib/errors/backend-unreachable';
+
+export { BACKEND_UNREACHABLE_MESSAGE } from '@/lib/errors/backend-unreachable';
 
 type ApiErrorResponse = {
   error: unknown;
@@ -143,5 +142,3 @@ export async function getResponse<T>(
 
   return data as T;
 }
-
-export { BACKEND_UNREACHABLE_MESSAGE };
