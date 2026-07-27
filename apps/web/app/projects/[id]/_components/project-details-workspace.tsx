@@ -36,6 +36,7 @@ import {
   parseProjectDetailsTab,
   type ProjectDetailsTab,
 } from '@/lib/search-params';
+import { UNDERLINE_TAB_TRIGGER_CLASS } from '@/components/underline-tab-trigger';
 import {
   Info,
   Users,
@@ -49,9 +50,6 @@ import {
   Folder,
   ClipboardPenLine,
 } from '@repo/ui/lib/icons';
-
-const PROJECT_DETAILS_TAB_TRIGGER_CLASS =
-  'text-muted-foreground hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground flex h-auto cursor-pointer items-center gap-1.5 rounded-none border-b-2 border-transparent bg-transparent px-1 pt-0 pb-3 text-sm font-semibold whitespace-nowrap shadow-none transition-all hover:bg-transparent focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=active]:shadow-none';
 
 interface ProjectWorkItemsProps {
   readonly initialWorkItems: DbWorkItem[];
@@ -167,21 +165,21 @@ export function ProjectDetailsWorkspace({
         <TabsList className="border-border flex h-auto justify-start gap-4 rounded-none border-b bg-transparent p-0">
           <TabsTrigger
             value="details"
-            className={PROJECT_DETAILS_TAB_TRIGGER_CLASS}
+            className={UNDERLINE_TAB_TRIGGER_CLASS}
           >
             <Info className="h-4 w-4" />
             Project Details
           </TabsTrigger>
           <TabsTrigger
             value="members"
-            className={PROJECT_DETAILS_TAB_TRIGGER_CLASS}
+            className={UNDERLINE_TAB_TRIGGER_CLASS}
           >
             <Users className="h-4 w-4" />
             Project Members ({members.length})
           </TabsTrigger>
           <TabsTrigger
             value="work-items"
-            className={PROJECT_DETAILS_TAB_TRIGGER_CLASS}
+            className={UNDERLINE_TAB_TRIGGER_CLASS}
           >
             <ClipboardPenLine className="h-4 w-4" />
             Work Items ({workItems.totalCount})

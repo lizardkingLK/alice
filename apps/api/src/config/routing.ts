@@ -8,6 +8,7 @@ import projectsRouter from '@/routes/api/projects/projects.route';
 import teamsRouter from '@/routes/api/teams/teams.route';
 import commentsRouter from '@/routes/api/comments/comments.route';
 import profileRouter from '@/routes/api/profile/profile.route';
+import accessAllowlistRouter from '@/routes/api/accessAllowlist/accessAllowlist.route';
 import { workItems } from '@/config/composition';
 
 const routesConfig: Router = Router();
@@ -22,5 +23,6 @@ routesConfig.use('/api/sprints', sprintsRouter);
 routesConfig.use('/api/teams', teamsRouter);
 routesConfig.use('/api/users', usersRouter);
 routesConfig.use('/api/workItems', workItems.router);
+routesConfig.use('/api/accessAllowlist', accessAllowlistRouter);
 
 export default routesConfig;
