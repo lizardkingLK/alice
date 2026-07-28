@@ -8,8 +8,15 @@ import { createClient } from '@/lib/supabase/server';
 import { getUser } from '@/lib/auth';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import { throwIfError } from '@/lib/db/query';
-import { createCommentsService } from './comments.service.base';
-import type { CommentItem } from './comments.service.base';
+import {
+  createCommentsService,
+  mapCommentWorkItemOption,
+} from './comments.service.base';
+import type {
+  CommentItem,
+  CommentWorkItemOption,
+  CommentWorkItemOptionRow,
+} from './comments.service.base';
 
 const service = createCommentsService(apiFetch);
 
@@ -51,6 +58,28 @@ export async function listComments(
   );
 
   return (data ?? []) as unknown as CommentItem[];
+}
+
+/** Work-item options for the comments compose/filter dropdown (direct RSC read). */
+export async function listCommentWorkItemOptions(
+  limit = 50
+): Promise<CommentWorkItemOption[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('work_items')
+    .select(`id, title, type, project_id, ${projectRelationSelect()}`)
+    .limit(limit);
+
+  throwIfError(
+    error,
+    'failed to list work items for comments',
+    'Failed to retrieve work items for comments'
+  );
+
+  return ((data ?? []) as unknown as CommentWorkItemOptionRow[]).map(
+    mapCommentWorkItemOption
+  );
 }
 
 /** M4.3 — work-item discussion thread via direct RSC read (no Express hop). */

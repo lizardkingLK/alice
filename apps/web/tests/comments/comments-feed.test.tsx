@@ -2,7 +2,10 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { CommentsFeed } from '@/app/comments/_components/comments-feed';
-import type { CommentItem } from '@/app/comments/_services/comments.service';
+import type {
+  CommentItem,
+  CommentWorkItemOption,
+} from '@/app/comments/_services/comments.service';
 import {
   createCommentAction,
   updateCommentAction,
@@ -80,7 +83,7 @@ vi.mock('@repo/ui/components/ui/select', () => {
   };
 });
 
-const mockWorkItems = [
+const mockWorkItems: CommentWorkItemOption[] = [
   {
     id: 'wi-1',
     title: 'Implement Authentication Flow',
@@ -93,7 +96,7 @@ const mockWorkItems = [
     id: 'wi-2',
     title: 'Fix Navigation Sidebar Glitch',
     key: 'ALICE-2',
-    type: 'Bug',
+    type: 'Task',
     project_id: 'proj-1',
     project_name: 'Jira Teams Core',
   },
@@ -148,7 +151,7 @@ const mockComments: CommentItem[] = [
       id: 'wi-2',
       title: 'Fix Navigation Sidebar Glitch',
       key: 'ALICE-2',
-      type: 'Bug',
+      type: 'Task',
     },
   },
   {

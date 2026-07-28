@@ -73,15 +73,14 @@ export async function getProfileWorkedOn(
     throw new Error('Failed to list profile worked-on');
   }
 
-  type Row = {
-    id: string;
-    title: string;
-    status: Tables<'work_items'>['status'];
-    updated_at: string;
-    project: { key: string | null; name: string | null } | null;
+  type ProfileWorkedOnRow = Pick<
+    Tables<'work_items'>,
+    'id' | 'title' | 'status' | 'updated_at'
+  > & {
+    project: Pick<Tables<'projects'>, 'key' | 'name'> | null;
   };
 
-  return ((data ?? []) as unknown as Row[]).map((row) => ({
+  return ((data ?? []) as unknown as ProfileWorkedOnRow[]).map((row) => ({
     id: row.id,
     title: row.title,
     status: row.status,
