@@ -7,99 +7,55 @@ import {
 } from '@/app/sprints/_services/sprints.service';
 import type { Project } from '@/app/projects/_services/projects.service.base';
 
+import { projectFactory } from '../factories/project.factory';
+import { sprintFactory, formatDateToISOString } from '../factories/sprint.factory';
+
 vi.mock('@/app/sprints/_services/sprints.service', () => ({
   createSprint: vi.fn(),
   updateSprint: vi.fn(),
 }));
 
 const mockProjects: Project[] = [
-  {
+  projectFactory.build({
     id: 'proj-1',
     name: 'Project Alpha',
     key: 'PAL',
-    description: null,
     owner_id: 'user-1',
     status: 'active',
-    start_date: null,
-    end_date: null,
-    created_at: '2026-07-09T10:00:00Z',
-    updated_at: '2026-07-09T10:00:00Z',
-    created_by: null,
-    updated_by: null,
-    deleted_at: null,
-    attributes_config: null,
-    workflow_config: null,
-  },
-  {
+    created_at: formatDateToISOString(2026, 6, 9, 10, 0, 0),
+    updated_at: formatDateToISOString(2026, 6, 9, 10, 0, 0),
+  }),
+  projectFactory.build({
     id: 'proj-2',
     name: 'Project Beta',
     key: 'PBE',
-    description: null,
     owner_id: 'user-1',
     status: 'active',
-    start_date: null,
-    end_date: null,
-    created_at: '2026-07-09T10:00:00Z',
-    updated_at: '2026-07-09T10:00:00Z',
-    created_by: null,
-    updated_by: null,
-    deleted_at: null,
-    attributes_config: null,
-    workflow_config: null,
-  },
-  {
+    created_at: formatDateToISOString(2026, 6, 9, 10, 0, 0),
+    updated_at: formatDateToISOString(2026, 6, 9, 10, 0, 0),
+  }),
+  projectFactory.build({
     id: 'proj-inactive',
     name: 'Inactive Project',
     key: 'INAC',
-    description: null,
     owner_id: 'user-1',
     status: 'archived',
-    start_date: null,
-    end_date: null,
-    created_at: '2026-07-09T10:00:00Z',
-    updated_at: '2026-07-09T10:00:00Z',
-    created_by: null,
-    updated_by: null,
-    deleted_at: null,
-    attributes_config: null,
-    workflow_config: null,
-  },
-  {
+    created_at: formatDateToISOString(2026, 6, 9, 10, 0, 0),
+    updated_at: formatDateToISOString(2026, 6, 9, 10, 0, 0),
+  }),
+  projectFactory.build({
     id: 'proj-deleted',
     name: 'Deleted Project',
     key: 'DEL',
-    description: null,
     owner_id: 'user-1',
     status: 'active',
-    start_date: null,
-    end_date: null,
-    created_at: '2026-07-09T10:00:00Z',
-    updated_at: '2026-07-09T10:00:00Z',
-    created_by: null,
-    updated_by: null,
+    created_at: formatDateToISOString(2026, 6, 9, 10, 0, 0),
+    updated_at: formatDateToISOString(2026, 6, 9, 10, 0, 0),
     deleted_at: '2026-07-09T00:00:00Z',
-    attributes_config: null,
-    workflow_config: null,
-  },
+  }),
 ];
 
-const mockSprint = {
-  id: 'sprint-123',
-  name: 'Sprint 1',
-  goal: 'Achieve project milestone',
-  status: 'Not Started' as const,
-  startDate: '2026-07-10',
-  endDate: '2026-07-24',
-  createdBy: 'user-1',
-  updatedBy: null,
-  createdAt: '2026-07-09T10:00:00Z',
-  updatedAt: '2026-07-09T10:00:00Z',
-  project: {
-    id: 'proj-1',
-    name: 'Project Alpha',
-    key: 'PAL',
-  },
-};
+const mockSprint = sprintFactory.build();
 
 describe('SprintForm Component', () => {
   afterEach(() => {
