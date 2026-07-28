@@ -1,21 +1,13 @@
 import { Suspense } from 'react';
 import { Skeleton } from '@repo/ui/components/ui/skeleton';
-import {
-  USER_PROJECTION_WITH_ROLE,
-  projectRelationSelect,
-  userRelationSelect,
-} from '@repo/types';
+import { projectRelationSelect } from '@repo/types';
 import { createClient } from '@/lib/supabase/server';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { getDbUser } from '@/lib/auth';
+import { safeServerFetch } from '@/lib/safe-server-fetch';
 import { CommentsFeed } from './_components/comments-feed';
+import { listComments } from './_services/comments.service.server';
 import { CommentItem } from './_services/comments.service';
-
-const COMMENT_AUTHOR_SELECT = userRelationSelect(
-  'author',
-  'comments_author_id_fkey',
-  USER_PROJECTION_WITH_ROLE
-);
 
 function CommentsSkeleton() {
   return (
@@ -146,57 +138,58 @@ const mockWorkItems = [
 ];
 
 async function CommentsData() {
-  let commentsList: CommentItem[] = [];
+  const supabase = await createClient();
+
+  const [commentsResult, workItemsResult] = await Promise.all([
+    safeServerFetch(listComments(), [], 'fetch comments list'),
+    safeServerFetch(
+      (async () => {
+        const { data, error } = await supabase
+          .from('work_items')
+          .select(`id, title, type, project_id, ${projectRelationSelect()}`)
+          .limit(50);
+
+        if (error) {
+          console.error('error. fetch work items for comments:', error.message);
+          return [] as Array<{
+            id: string;
+            title: string;
+            type: string;
+            project_id: string;
+            project?: { name?: string; key?: string } | null;
+          }>;
+        }
+
+        return data ?? [];
+      })(),
+      [],
+      'fetch work items for comments dropdown'
+    ),
+  ]);
+
+  let commentsList = commentsResult;
   let workItemsList = mockWorkItems;
 
-  try {
-    const supabase = await createClient();
+  type DbWorkItemRow = {
+    id: string;
+    title: string;
+    type: string;
+    project_id: string;
+    project?: {
+      name?: string;
+      key?: string;
+    } | null;
+  };
 
-    // Fetch comments with author and work item
-    const { data: dbComments, error: commentsError } = await supabase
-      .from('comments')
-      .select(
-        `
-        *,
-        ${COMMENT_AUTHOR_SELECT},
-        work_item:work_items(id, title, type, ${projectRelationSelect()})
-      `
-      )
-      .order('created_at', { ascending: false });
-
-    if (!commentsError && dbComments && dbComments.length > 0) {
-      commentsList = dbComments as unknown as CommentItem[];
-    }
-
-    // Fetch work items for modal dropdown
-    const { data: dbWorkItems, error: wiError } = await supabase
-      .from('work_items')
-      .select(`id, title, type, project_id, ${projectRelationSelect()}`)
-      .limit(50);
-
-    type DbWorkItemRow = {
-      id: string;
-      title: string;
-      type: string;
-      project_id: string;
-      project?: {
-        name?: string;
-        key?: string;
-      } | null;
-    };
-
-    if (!wiError && dbWorkItems && dbWorkItems.length > 0) {
-      workItemsList = (dbWorkItems as unknown as DbWorkItemRow[]).map((wi) => ({
-        id: wi.id,
-        title: wi.title,
-        key: `${wi.project?.key || 'ITEM'}-${wi.id.slice(0, 4).toUpperCase()}`,
-        type: wi.type,
-        project_id: wi.project_id,
-        project_name: wi.project?.name || 'Project',
-      }));
-    }
-  } catch (err) {
-    console.error('Error fetching comments from Supabase:', err);
+  if (workItemsResult.length > 0) {
+    workItemsList = (workItemsResult as DbWorkItemRow[]).map((wi) => ({
+      id: wi.id,
+      title: wi.title,
+      key: `${wi.project?.key || 'ITEM'}-${wi.id.slice(0, 4).toUpperCase()}`,
+      type: wi.type,
+      project_id: wi.project_id,
+      project_name: wi.project?.name || 'Project',
+    }));
   }
 
   // Fallback to seed comments if database has none
