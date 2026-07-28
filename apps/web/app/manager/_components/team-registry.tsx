@@ -44,7 +44,10 @@ import {
 } from '@repo/ui/components/ui/select';
 import type { Team } from '../_services/teams.service';
 import type { User } from '@/app/users/_services/users.service';
-import type { Project } from '@/app/projects/_services/projects.service.base';
+import type {
+  Project,
+  ProjectMembersByProjectId,
+} from '@/app/projects/_services/projects.service.base';
 
 type TeamTab = 'active' | 'inactive' | 'archived';
 
@@ -58,6 +61,7 @@ interface TeamRegistryProps {
   readonly search: string;
   readonly users: User[];
   readonly activeProjects: Project[];
+  readonly projectMembersByProjectId: ProjectMembersByProjectId;
   readonly currentUserId?: string | null;
   readonly currentUserRole?: string | null;
 }
@@ -191,6 +195,7 @@ export function TeamRegistry({
   search,
   users,
   activeProjects,
+  projectMembersByProjectId,
   currentUserId,
   currentUserRole,
 }: Readonly<TeamRegistryProps>) {
@@ -337,7 +342,7 @@ export function TeamRegistry({
             <SelectTrigger
               id="team-status-filter"
               aria-label="Filter by Status"
-              className="w-40 bg-background/50 h-10"
+              className="bg-background/50 h-10 w-40"
             >
               <SelectValue />
             </SelectTrigger>
@@ -404,6 +409,7 @@ export function TeamRegistry({
             <TeamForm
               users={users}
               activeProjects={activeProjects}
+              projectMembersByProjectId={projectMembersByProjectId}
               onClose={() => setIsAddTeamOpen(false)}
               onSuccess={() => {
                 setIsAddTeamOpen(false);
@@ -420,6 +426,7 @@ export function TeamRegistry({
             <TeamForm
               users={users}
               activeProjects={activeProjects}
+              projectMembersByProjectId={projectMembersByProjectId}
               teamToEdit={teamToEdit}
               onClose={() => setTeamToEdit(null)}
               onSuccess={() => {

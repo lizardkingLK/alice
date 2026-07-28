@@ -153,6 +153,7 @@ model projects {
   created_by_user users?            @relation("ProjectCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
   updated_by_user users?            @relation("ProjectUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
   members         project_members[]
+  teams           teams[]
   sprints         sprints[]
   work_items      work_items[]
 }
@@ -179,6 +180,7 @@ model teams {
   name        String
   description String?
   manager_id  String       @db.Uuid
+  project_id  String?      @db.Uuid
   tech_stack  String?
   status      RecordStatus @default(active)
   created_by  String?      @db.Uuid
@@ -187,9 +189,12 @@ model teams {
   updated_at  DateTime     @updatedAt @db.Timestamptz(6)
 
   manager         users          @relation("TeamManager", fields: [manager_id], references: [id])
+  project         projects?      @relation(fields: [project_id], references: [id], onDelete: SetNull)
   created_by_user users?         @relation("TeamCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
   updated_by_user users?         @relation("TeamUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
   members         team_members[]
+
+  @@index([project_id])
 }
 
 model team_members {
