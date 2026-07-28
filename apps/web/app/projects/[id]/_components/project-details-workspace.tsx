@@ -163,17 +163,11 @@ export function ProjectDetailsWorkspace({
         className="w-full space-y-6"
       >
         <TabsList className="border-border flex h-auto justify-start gap-4 rounded-none border-b bg-transparent p-0">
-          <TabsTrigger
-            value="details"
-            className={UNDERLINE_TAB_TRIGGER_CLASS}
-          >
+          <TabsTrigger value="details" className={UNDERLINE_TAB_TRIGGER_CLASS}>
             <Info className="h-4 w-4" />
             Project Details
           </TabsTrigger>
-          <TabsTrigger
-            value="members"
-            className={UNDERLINE_TAB_TRIGGER_CLASS}
-          >
+          <TabsTrigger value="members" className={UNDERLINE_TAB_TRIGGER_CLASS}>
             <Users className="h-4 w-4" />
             Project Members ({members.length})
           </TabsTrigger>

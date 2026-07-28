@@ -34,6 +34,22 @@ export class AccessAllowlistService {
     return await accessAllowlistRepository.listAll(status);
   }
 
+  async listAccessAllowlistPaginated(
+    actorId: string,
+    page: number,
+    limit: number,
+    status?: AccessAllowlistStatus,
+    search?: string
+  ): Promise<{ items: AccessAllowlistRow[]; totalCount: number }> {
+    await requireAdmin(actorId);
+    return await accessAllowlistRepository.listPaginated(
+      page,
+      limit,
+      status,
+      search
+    );
+  }
+
   async createAccessAllowlist(
     actorId: string,
     input: CreateAccessAllowlistInput
@@ -66,14 +82,10 @@ export class AccessAllowlistService {
     });
   }
 
-  async deleteAccessAllowlist(
-    actorId: string,
-    id: string
-  ): Promise<void> {
+  async deleteAccessAllowlist(actorId: string, id: string): Promise<void> {
     await requireAdmin(actorId);
     return await accessAllowlistRepository.softDelete({ actorId, id });
   }
 }
 
 export const accessAllowlistService = new AccessAllowlistService();
-

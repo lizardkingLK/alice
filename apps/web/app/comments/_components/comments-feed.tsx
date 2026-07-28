@@ -1096,7 +1096,7 @@ export function CommentsFeed({
                 className="w-full sm:max-w-70 md:max-w-90"
               />
 
-              <div className="flex flex-row items-center gap-2 w-full sm:w-auto">
+              <div className="flex w-full flex-row items-center gap-2 sm:w-auto">
                 <Select
                   value={selectedWorkItemId}
                   onValueChange={setSelectedWorkItemId}

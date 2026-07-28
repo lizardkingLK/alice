@@ -38,7 +38,7 @@ export async function submitContact(formData: FormData) {
   if (!response.ok) {
     const data: { error?: unknown } = await response
       .json()
-      .catch(() => ({} as { error?: unknown }));
+      .catch(() => ({}) as { error?: unknown });
 
     const message =
       typeof data?.error === 'string' ? data.error : 'Request failed';

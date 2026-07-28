@@ -5,7 +5,7 @@ import {
   type User,
 } from '@/app/users/_services/users.service.server';
 import { listAccessAllowlist } from '@/app/access-allowlist/_services/accessAllowlist.service.server';
-import type { AccessAllowlistEntry } from '@/app/access-allowlist/_services/accessAllowlist.service.base';
+import type { AccessAllowlistListResult } from '@/app/access-allowlist/_services/accessAllowlist.service.base';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import { parseStandardParams, type RawSearchParams } from '@/lib/search-params';
 
@@ -17,7 +17,13 @@ const EMPTY_USERS = {
   totalPages: 1,
 };
 
-const EMPTY_ALLOWLIST: AccessAllowlistEntry[] = [];
+const EMPTY_ALLOWLIST: AccessAllowlistListResult = {
+  items: [],
+  totalCount: 0,
+  page: 1,
+  limit: 10,
+  totalPages: 1,
+};
 
 type UsersDataProps = {
   readonly searchParams: Promise<RawSearchParams>;
@@ -31,7 +37,7 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
   const currentUserRole = dbUser?.role ?? 'member';
   const isAdmin = currentUserRole === 'admin';
 
-  const [usersData, allowlistEntries] = await Promise.all([
+  const [usersData, allowlistData] = await Promise.all([
     safeServerFetch(
       getUsersListPaginated(page, limit, search),
       EMPTY_USERS,
@@ -39,7 +45,12 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
     ),
     isAdmin
       ? safeServerFetch(
-          listAccessAllowlist('all'),
+          listAccessAllowlist({
+            status: 'all',
+            page,
+            limit,
+            search,
+          }),
           EMPTY_ALLOWLIST,
           'fetch access allowlist'
         )
@@ -56,7 +67,11 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
       search={search}
       currentUserId={dbUser?.id}
       currentUserRole={currentUserRole}
-      allowlistEntries={allowlistEntries}
+      allowlistEntries={allowlistData.items}
+      allowlistTotalCount={allowlistData.totalCount}
+      allowlistPage={allowlistData.page}
+      allowlistLimit={allowlistData.limit}
+      allowlistTotalPages={allowlistData.totalPages}
     />
   );
 }
