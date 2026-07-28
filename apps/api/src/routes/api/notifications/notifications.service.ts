@@ -63,18 +63,16 @@ export class NotificationsService {
     const titlePrefix = params.title ? `${params.title}\n\n` : '';
     const fullMessage = `${titlePrefix}From: ${params.fromEmail}${fromNamePart}\n\n${params.message}`;
 
-    const { error: insertError } = await supabase
-      .from('notifications')
-      .insert(
-        adminIds.map((adminId) => ({
-          user_id: adminId,
-          type: 'comment',
-          message: fullMessage,
-          read_status: false,
-          status: 'active',
-          updated_at: new Date().toISOString(),
-        }))
-      );
+    const { error: insertError } = await supabase.from('notifications').insert(
+      adminIds.map((adminId) => ({
+        user_id: adminId,
+        type: 'comment',
+        message: fullMessage,
+        read_status: false,
+        status: 'active',
+        updated_at: new Date().toISOString(),
+      }))
+    );
 
     if (insertError) {
       throw new Error(

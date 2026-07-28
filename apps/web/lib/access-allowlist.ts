@@ -33,12 +33,13 @@ export function isPublicAccessPath(pathname: string): boolean {
  */
 export function normalizeEmail(email: string): string | null {
   const normalized = email.trim().toLowerCase();
-  if (!normalized.includes('@')) {
+  const parts = normalized.split('@');
+  if (parts.length !== 2) {
     return null;
   }
 
-  const [local, domain] = normalized.split('@');
-  if (!local || !domain || domain.includes('@')) {
+  const [local, domain] = parts;
+  if (!local || !domain) {
     return null;
   }
 

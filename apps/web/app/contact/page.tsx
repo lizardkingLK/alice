@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { submitContact } from './actions';
+import { FormAlertMessage } from '@/components/form-alert-message';
 import { getDbUser, getUser } from '@/lib/auth';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
@@ -19,6 +20,15 @@ export default async function ContactPage({
   const defaultEmail = authUser?.email ?? dbUser?.email ?? '';
   const defaultName = dbUser?.name ?? '';
 
+  let alertMessage: string | null = null;
+  let alertIsError = false;
+  if (error) {
+    alertMessage = error;
+    alertIsError = true;
+  } else if (sent) {
+    alertMessage = "Thanks — we've sent your message to the admins.";
+  }
+
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
       <div className="border-border w-full max-w-xl space-y-6 rounded-xl border p-6">
@@ -28,18 +38,6 @@ export default async function ContactPage({
             Send an access request or message. We&apos;ll notify admins in-app.
           </p>
         </div>
-
-        {sent ? (
-          <output className="text-emerald-600 text-sm" aria-live="polite">
-            Thanks — we&apos;ve sent your message to the admins.
-          </output>
-        ) : null}
-
-        {error ? (
-          <p className="text-destructive text-sm" role="alert">
-            {error}
-          </p>
-        ) : null}
 
         <form action={submitContact} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -88,6 +86,8 @@ export default async function ContactPage({
               rows={6}
             />
           </div>
+
+          <FormAlertMessage message={alertMessage} isError={alertIsError} />
 
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <Button type="submit" className="w-full cursor-pointer sm:w-auto">

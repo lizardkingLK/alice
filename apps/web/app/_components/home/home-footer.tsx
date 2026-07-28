@@ -48,10 +48,14 @@ type HomeFooterProps = {
   showAppLinks?: boolean;
 };
 
-export function HomeFooter({ showAppLinks = false }: Readonly<HomeFooterProps>) {
+export function HomeFooter({
+  showAppLinks = false,
+}: Readonly<HomeFooterProps>) {
   const columns = showAppLinks
     ? footerColumns
-    : footerColumns.filter((column) => !APP_ONLY_COLUMN_TITLES.has(column.title));
+    : footerColumns.filter(
+        (column) => !APP_ONLY_COLUMN_TITLES.has(column.title)
+      );
 
   return (
     <footer className="border-border/60 bg-muted/20 flex min-h-dvh snap-start snap-always flex-col border-t px-6 pt-12 pb-8">

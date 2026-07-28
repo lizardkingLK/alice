@@ -15,5 +15,6 @@ export type {
   AccessAllowlistCreateInput,
   AccessAllowlistUpdateInput,
   AccessAllowlistListStatus,
+  AccessAllowlistListParams,
+  AccessAllowlistListResult,
 } from './accessAllowlist.service.base';
-

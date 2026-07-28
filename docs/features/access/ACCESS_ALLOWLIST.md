@@ -48,13 +48,13 @@ Related:
 and org settings. This feature is an **admission allowlist** (domains + emails),
 including one-off external addresses that are not “an organization.”
 
-| Candidate | Verdict |
-| --- | --- |
-| `organizations` | Reject — overloaded; poor fit for email exceptions |
-| `allowed_domains` alone | Incomplete — no exact-email rows |
-| `access_allowlist` | **Preferred** — clear purpose; one table, two kinds |
-| `email_allowlist` | Good alternative if we want email-centric naming |
-| `login_allowlist` | OK; slightly narrower than “app access” |
+| Candidate               | Verdict                                             |
+| ----------------------- | --------------------------------------------------- |
+| `organizations`         | Reject — overloaded; poor fit for email exceptions  |
+| `allowed_domains` alone | Incomplete — no exact-email rows                    |
+| `access_allowlist`      | **Preferred** — clear purpose; one table, two kinds |
+| `email_allowlist`       | Good alternative if we want email-centric naming    |
+| `login_allowlist`       | OK; slightly narrower than “app access”             |
 
 **Locked recommendation:** table `access_allowlist` (Prisma model
 `access_allowlist` / `AccessAllowlist`).
@@ -99,12 +99,12 @@ Given login email `user@SomeOrgName.com` (normalize to lowercase):
 
 Examples that must work:
 
-| Allowlist row | Login | Result |
-| --- | --- | --- |
-| domain `someorgname.com` | `****@someOrgName.com` | Allow |
-| email `theGuy123@someOrgName.com` | same | Allow (even if domain not listed) |
-| email `theGirl321@someOtherOrgName.com` | same | Allow |
-| domain `acme.com` only | `outsider@gmail.com` | Deny |
+| Allowlist row                           | Login                  | Result                            |
+| --------------------------------------- | ---------------------- | --------------------------------- |
+| domain `someorgname.com`                | `****@someOrgName.com` | Allow                             |
+| email `theGuy123@someOrgName.com`       | same                   | Allow (even if domain not listed) |
+| email `theGirl321@someOtherOrgName.com` | same                   | Allow                             |
+| domain `acme.com` only                  | `outsider@gmail.com`   | Deny                              |
 
 ---
 
@@ -321,12 +321,12 @@ Route: `/access-denied` (`apps/web/app/access-denied/page.tsx`).
 The home page (`app/page.tsx`) sets it via `isEmailAllowed(user.email)` when
 signed in.
 
-| Column | Anonymous / not allowlisted | Allowlisted signed-in |
-| --- | --- | --- |
-| Workspace (dashboard, board, …) | **Hidden** | Shown |
-| Team (users, manager, …) | **Hidden** | Shown |
-| Account (login / signup / forgot) | Shown | Shown |
-| Company (about, contact) | Shown | Shown |
+| Column                            | Anonymous / not allowlisted | Allowlisted signed-in |
+| --------------------------------- | --------------------------- | --------------------- |
+| Workspace (dashboard, board, …)   | **Hidden**                  | Shown                 |
+| Team (users, manager, …)          | **Hidden**                  | Shown                 |
+| Account (login / signup / forgot) | Shown                       | Shown                 |
+| Company (about, contact)          | Shown                       | Shown                 |
 
 ---
 
@@ -334,11 +334,11 @@ signed in.
 
 How admins learn someone needs access is **not locked**. Candidates:
 
-| Option | Flow | Pros | Cons |
-| --- | --- | --- | --- |
-| **A. Contact → admin notification** | Contact form writes `notifications` (or mail) to admins | Fits “about/contact allowed” | Need admin user ids; spam risk |
-| **B. Dedicated request on denied page** | Form stores `access_requests` table; admins review in Users UI | Clear audit trail | More schema/UI |
-| **C. Manual only** | User emails admin outside app; admin inserts allowlist row | Simplest v1 | No in-app trail |
+| Option                                  | Flow                                                           | Pros                         | Cons                           |
+| --------------------------------------- | -------------------------------------------------------------- | ---------------------------- | ------------------------------ |
+| **A. Contact → admin notification**     | Contact form writes `notifications` (or mail) to admins        | Fits “about/contact allowed” | Need admin user ids; spam risk |
+| **B. Dedicated request on denied page** | Form stores `access_requests` table; admins review in Users UI | Clear audit trail            | More schema/UI                 |
+| **C. Manual only**                      | User emails admin outside app; admin inserts allowlist row     | Simplest v1                  | No in-app trail                |
 
 **Lean recommendation:** v1 = **A or C**; v1.1 = **B** if request volume grows.
 **Locked decision (implemented):** **A. Contact → admin notification.**
@@ -415,22 +415,54 @@ Seed at least one company domain for prod.
    Admin UI: `/users?tab=allowlist` tabbed panel (`UsersWorkspace` +
    `AccessAllowlistRegistry`).
 10. ~~Docs → **Living**; link from auth README + users README.~~
-   **Done:** this doc is **Living**; indexed from
-   [features/access/README.md](./README.md),
-   [auth/README.md](../../auth/README.md), and
-   [features/users/README.md](../users/README.md).
+    **Done:** this doc is **Living**; indexed from
+    [features/access/README.md](./README.md),
+    [auth/README.md](../../auth/README.md), and
+    [features/users/README.md](../users/README.md).
+
+---
+
+## Unit tests (Vitest)
+
+Coverage lives under `apps/web/tests/access/` (see also
+[TESTING_DEVELOPMENT_FLOW.md](../../guides/TESTING_DEVELOPMENT_FLOW.md)):
+
+| Spec                                 | SUT                                                                                | Focus                                                                                 |
+| ------------------------------------ | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `access-allowlist.test.ts`           | `isPublicAccessPath`, `normalizeEmail`, `extractEmailDomain`, `isAllowlistExpired` | Public path set, email normalize/reject, domain extract, expiry edge cases            |
+| `access-allowlist-gate.test.ts`      | `isEmailAllowed`                                                                   | Email/domain hits, expiry deny, invalid email short-circuit, DB error                 |
+| `access-allowlist-schema.test.ts`    | `@repo/types` allowlist Zod                                                        | Domain requires TLD (`fff` reject / `fff.com` accept); email shape                    |
+| `accessAllowlist.service.test.ts`    | `createAccessAllowlistService`                                                     | List/create/update/delete paths via fake `apiFetch` (incl. search + pagination query) |
+| `access-allowlist-form.test.tsx`     | `AccessAllowlistForm`                                                              | Zod domain/email alerts, create/edit submit, no HTML `required`                       |
+| `access-allowlist-registry.test.tsx` | `AccessAllowlistRegistry`                                                          | Debounced search, pagination, add dialog, delete confirm                              |
+| `home-footer.test.tsx`               | `HomeFooter`                                                                       | Hide/show Workspace + Team when `showAppLinks`                                        |
+| `contact-request-schema.test.ts`     | `contactRequestSchema`                                                             | Shared Zod contact payload validation                                                 |
+
+Shared factory / mocks:
+
+- `apps/web/tests/factories/accessAllowlist.factory.ts`
+- `apps/web/tests/mocks/supabase-admin.ts` — admin client stub + allowlist row helpers
+
+Run:
+
+```bash
+pnpm --filter web vitest --run tests/access
+```
+
+API route/service unit tests are deferred until `apps/api/tests` scaffolding lands
+(follow `.cursor/rules/08-qa-dev-manager.mdc`).
 
 ---
 
 ## Open decisions
 
-| Topic | Candidates | Notes |
-| --- | --- | --- |
-| Table name | **`access_allowlist` (locked)** | Avoid `organizations` |
-| Subdomains | Exact domain only vs include `*.parent.com` | Prefer exact in v1 |
-| Denied path | **`/access-denied` (locked)** | Implemented |
-| Request handling | **Contact notify (Option A)** | Implemented |
-| Recovery / invite | **`/reset-password` public** (locked) | Callback still gates allowlist before redirect |
-| Footer for allowed signed-in | Full footer vs still hide Account signup | Product polish |
+| Topic                        | Candidates                                  | Notes                                          |
+| ---------------------------- | ------------------------------------------- | ---------------------------------------------- |
+| Table name                   | **`access_allowlist` (locked)**             | Avoid `organizations`                          |
+| Subdomains                   | Exact domain only vs include `*.parent.com` | Prefer exact in v1                             |
+| Denied path                  | **`/access-denied` (locked)**               | Implemented                                    |
+| Request handling             | **Contact notify (Option A)**               | Implemented                                    |
+| Recovery / invite            | **`/reset-password` public** (locked)       | Callback still gates allowlist before redirect |
+| Footer for allowed signed-in | Full footer vs still hide Account signup    | Product polish                                 |
 
 Remaining polish only — core admission gate is shipped.

@@ -16,9 +16,7 @@ type HomeProps = {
 export default async function Home({ searchParams }: Readonly<HomeProps>) {
   const [user, dbUser] = await Promise.all([getUser(), getDbUser()]);
 
-  const showAppLinks = user?.email
-    ? await isEmailAllowed(user.email)
-    : false;
+  const showAppLinks = user?.email ? await isEmailAllowed(user.email) : false;
 
   const { reset } = await searchParams;
   const resetSuccess = reset === 'success';

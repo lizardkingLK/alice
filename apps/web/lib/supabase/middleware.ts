@@ -1,10 +1,7 @@
 import type { Database } from '@repo/types';
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import {
-  isEmailAllowed,
-  isPublicAccessPath,
-} from '@/lib/access-allowlist';
+import { isEmailAllowed, isPublicAccessPath } from '@/lib/access-allowlist';
 import { redirectAuthCodeToCallback } from '@/lib/auth-redirect';
 
 function copyCookies(from: NextResponse, to: NextResponse): NextResponse {

@@ -20,3 +20,4 @@ export * from './users.js';
 export * from './teams.js';
 export * from './notification.js';
 export * from './attachments.js';
+export * from './access-allowlist.js';

@@ -20,7 +20,23 @@ export type AccessAllowlistUpdateInput = {
   status?: AccessAllowlistStatus;
 };
 
-export type AccessAllowlistListStatus = 'active' | 'inactive' | 'archived' | 'deleted' | 'all';
+export type AccessAllowlistListStatus =
+  'active' | 'inactive' | 'archived' | 'deleted' | 'all';
+
+export type AccessAllowlistListParams = {
+  status?: AccessAllowlistListStatus;
+  page?: number;
+  limit?: number;
+  search?: string;
+};
+
+export type AccessAllowlistListResult = {
+  items: AccessAllowlistEntry[];
+  totalCount: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
 
 export function createAccessAllowlistService(
   apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>
@@ -28,19 +44,23 @@ export function createAccessAllowlistService(
   const apiAccessAllowlist = '/api/accessAllowlist';
 
   async function listAccessAllowlist(
-    status: AccessAllowlistListStatus = 'active'
-  ): Promise<AccessAllowlistEntry[]> {
-    const params = new URLSearchParams();
+    params: AccessAllowlistListParams = {}
+  ): Promise<AccessAllowlistListResult> {
+    const { status = 'active', page = 1, limit = 10, search = '' } = params;
+
+    const query = new URLSearchParams();
+    query.set('page', String(page));
+    query.set('limit', String(limit));
     if (status && status !== 'active') {
-      params.set('status', status);
+      query.set('status', status);
+    }
+    if (search) {
+      query.set('search', search);
     }
 
-    const url = params.toString()
-      ? `${apiAccessAllowlist}?${params.toString()}`
-      : apiAccessAllowlist;
-
-    const data = await apiFetch<{ items: AccessAllowlistEntry[] }>(url);
-    return data.items;
+    return await apiFetch<AccessAllowlistListResult>(
+      `${apiAccessAllowlist}?${query.toString()}`
+    );
   }
 
   async function createAccessAllowlistEntry(
@@ -85,4 +105,3 @@ export function createAccessAllowlistService(
     deleteAccessAllowlistEntry,
   };
 }
-

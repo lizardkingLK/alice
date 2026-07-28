@@ -21,6 +21,10 @@ import {
 import { Loader2, Shield, X } from '@repo/ui/lib/icons';
 import { Button } from '@repo/ui/components/ui/button';
 import {
+  accessAllowlistDomainValueSchema,
+  accessAllowlistEmailValueSchema,
+} from '@repo/types';
+import {
   createAccessAllowlistEntry,
   updateAccessAllowlistEntry,
   type AccessAllowlistEntry,
@@ -49,6 +53,24 @@ function fromDateInputValue(value: string): string | null {
   return date.toISOString();
 }
 
+function validateAllowlistValue(
+  kind: AccessAllowlistKind,
+  rawValue: string
+): { ok: true; value: string } | { ok: false; message: string } {
+  const schema =
+    kind === 'domain'
+      ? accessAllowlistDomainValueSchema
+      : accessAllowlistEmailValueSchema;
+  const parsed = schema.safeParse(rawValue);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: parsed.error.issues[0]?.message ?? 'Invalid value.',
+    };
+  }
+  return { ok: true, value: parsed.data };
+}
+
 export function AccessAllowlistForm({
   entry,
   onClose,
@@ -60,7 +82,9 @@ export function AccessAllowlistForm({
   const [isError, setIsError] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const [kind, setKind] = useState<AccessAllowlistKind>(entry?.kind ?? 'domain');
+  const [kind, setKind] = useState<AccessAllowlistKind>(
+    entry?.kind ?? 'domain'
+  );
   const [value, setValue] = useState(entry?.value ?? '');
   const [label, setLabel] = useState(entry?.label ?? '');
   const [expiresAt, setExpiresAt] = useState(
@@ -76,14 +100,6 @@ export function AccessAllowlistForm({
     setMessage(null);
     setIsError(false);
 
-    const trimmedValue = value.trim();
-    if (!trimmedValue) {
-      setMessage('Value is required.');
-      setIsError(true);
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
       if (isEdit && entry) {
         await updateAccessAllowlistEntry(entry.id, {
@@ -93,9 +109,16 @@ export function AccessAllowlistForm({
         });
         setMessage('Allowlist entry updated.');
       } else {
+        const validated = validateAllowlistValue(kind, value);
+        if (!validated.ok) {
+          setMessage(validated.message);
+          setIsError(true);
+          return;
+        }
+
         await createAccessAllowlistEntry({
           kind,
-          value: trimmedValue,
+          value: validated.value,
           label: label.trim() || null,
           expires_at: fromDateInputValue(expiresAt),
           status,
@@ -166,9 +189,7 @@ export function AccessAllowlistForm({
               <Label htmlFor="allowlist-kind">Kind</Label>
               <Select
                 value={kind}
-                onValueChange={(next) =>
-                  setKind(next as AccessAllowlistKind)
-                }
+                onValueChange={(next) => setKind(next as AccessAllowlistKind)}
                 disabled={isEdit || isSubmitting || isSuccess}
               >
                 <SelectTrigger id="allowlist-kind" className="w-full">
@@ -213,7 +234,6 @@ export function AccessAllowlistForm({
               placeholder={
                 kind === 'domain' ? 'acme.com' : 'client@partner.com'
               }
-              required
               disabled={isEdit || isSubmitting || isSuccess}
               autoComplete="off"
             />

@@ -4,12 +4,9 @@ import { createAccessAllowlistService } from './accessAllowlist.service.base';
 const service = createAccessAllowlistService(apiFetch);
 
 export const listAccessAllowlist = service.listAccessAllowlist;
-export const createAccessAllowlistEntry =
-  service.createAccessAllowlistEntry;
-export const updateAccessAllowlistEntry =
-  service.updateAccessAllowlistEntry;
-export const deleteAccessAllowlistEntry =
-  service.deleteAccessAllowlistEntry;
+export const createAccessAllowlistEntry = service.createAccessAllowlistEntry;
+export const updateAccessAllowlistEntry = service.updateAccessAllowlistEntry;
+export const deleteAccessAllowlistEntry = service.deleteAccessAllowlistEntry;
 
 export type {
   AccessAllowlistEntry,
@@ -18,5 +15,6 @@ export type {
   AccessAllowlistCreateInput,
   AccessAllowlistUpdateInput,
   AccessAllowlistListStatus,
+  AccessAllowlistListParams,
+  AccessAllowlistListResult,
 } from './accessAllowlist.service.base';
-
