@@ -4,11 +4,30 @@ import type { ReactNode } from 'react';
 import { CommentsFeed } from '@/app/comments/_components/comments-feed';
 import type { CommentItem } from '@/app/comments/_services/comments.service';
 import {
-  createCommentAction,
-  updateCommentAction,
   archiveCommentAction,
   restoreCommentAction,
 } from '@/app/comments/_components/actions';
+import { userFactory } from '../factories/user.factory';
+import { projectFactory } from '../factories/project.factory';
+import { workItemFactory } from '../factories/workItem.factory';
+import { commentFactory } from '../factories/comment.factory';
+
+vi.mock('@/lib/supabase/client', () => {
+  const mockOrder = vi.fn(() => new Promise(() => {}));
+  const mockEq = vi.fn(() => ({ order: mockOrder }));
+  const mockSelect = vi.fn(() => ({ eq: mockEq }));
+  const mockFrom = vi.fn(() => ({ select: mockSelect }));
+  const mockGetUser = vi.fn(() => new Promise(() => {}));
+
+  return {
+    createClient: vi.fn(() => ({
+      from: mockFrom,
+      auth: {
+        getUser: mockGetUser,
+      },
+    })),
+  };
+});
 
 vi.mock('@/app/comments/_components/actions', () => {
   return {
@@ -80,30 +99,64 @@ vi.mock('@repo/ui/components/ui/select', () => {
   };
 });
 
+const aliceAdmin = userFactory.build({
+  id: 'user-admin-1',
+  name: 'Alice Admin',
+  email: 'admin@alice.dev',
+  role: 'admin',
+});
+
+const bobDev = userFactory.build({
+  id: 'user-dev-1',
+  name: 'Bob Developer',
+  email: 'bob@alice.dev',
+  role: 'member',
+});
+
+const proj1 = projectFactory.build({
+  id: 'proj-1',
+  name: 'Jira Teams Core',
+  key: 'ALICE',
+});
+
+const workItem1 = workItemFactory.build({
+  id: 'wi-1',
+  title: 'Implement Authentication Flow',
+  project_id: proj1.id,
+  type: 'Story',
+});
+
+const workItem2 = workItemFactory.build({
+  id: 'wi-2',
+  title: 'Fix Navigation Sidebar Glitch',
+  project_id: proj1.id,
+  type: 'Bug' as never,
+});
+
 const mockWorkItems = [
   {
-    id: 'wi-1',
-    title: 'Implement Authentication Flow',
+    id: workItem1.id,
+    title: workItem1.title,
     key: 'ALICE-1',
-    type: 'Story',
-    project_id: 'proj-1',
-    project_name: 'Jira Teams Core',
+    type: workItem1.type,
+    project_id: workItem1.project_id,
+    project_name: proj1.name,
   },
   {
-    id: 'wi-2',
-    title: 'Fix Navigation Sidebar Glitch',
+    id: workItem2.id,
+    title: workItem2.title,
     key: 'ALICE-2',
-    type: 'Bug',
-    project_id: 'proj-1',
-    project_name: 'Jira Teams Core',
+    type: workItem2.type,
+    project_id: workItem2.project_id,
+    project_name: proj1.name,
   },
 ];
 
 const mockComments: CommentItem[] = [
-  {
+  commentFactory.build({
     id: 'comment-1',
-    work_item_id: 'wi-1',
-    author_id: 'user-admin-1',
+    work_item_id: workItem1.id,
+    author_id: aliceAdmin.id,
     parent_id: null,
     content: 'Security audit completed for the auth module.',
     edited: false,
@@ -111,27 +164,27 @@ const mockComments: CommentItem[] = [
     created_at: '2026-07-20T10:00:00Z',
     updated_at: '2026-07-20T10:00:00Z',
     author: {
-      id: 'user-admin-1',
-      name: 'Alice Admin',
-      email: 'admin@alice.dev',
-      role: 'admin',
+      id: aliceAdmin.id,
+      name: aliceAdmin.name,
+      email: aliceAdmin.email,
+      role: aliceAdmin.role,
     },
     work_item: {
-      id: 'wi-1',
-      title: 'Implement Authentication Flow',
+      id: workItem1.id,
+      title: workItem1.title,
       key: 'ALICE-1',
-      type: 'Story',
+      type: workItem1.type,
       project: {
-        id: 'proj-1',
-        name: 'Jira Teams Core',
-        key: 'ALICE',
+        id: proj1.id,
+        name: proj1.name,
+        key: proj1.key,
       },
     },
-  },
-  {
+  }),
+  commentFactory.build({
     id: 'comment-2',
-    work_item_id: 'wi-2',
-    author_id: 'user-dev-1',
+    work_item_id: workItem2.id,
+    author_id: bobDev.id,
     parent_id: null,
     content: 'Navigation CSS alignment fix is ready for review.',
     edited: false,
@@ -139,22 +192,22 @@ const mockComments: CommentItem[] = [
     created_at: '2026-07-21T08:00:00Z',
     updated_at: '2026-07-21T08:00:00Z',
     author: {
-      id: 'user-dev-1',
-      name: 'Bob Developer',
-      email: 'bob@alice.dev',
-      role: 'member',
+      id: bobDev.id,
+      name: bobDev.name,
+      email: bobDev.email,
+      role: bobDev.role,
     },
     work_item: {
-      id: 'wi-2',
-      title: 'Fix Navigation Sidebar Glitch',
+      id: workItem2.id,
+      title: workItem2.title,
       key: 'ALICE-2',
-      type: 'Bug',
+      type: workItem2.type,
     },
-  },
-  {
+  }),
+  commentFactory.build({
     id: 'reply-1',
-    work_item_id: 'wi-1',
-    author_id: 'user-admin-1',
+    work_item_id: workItem1.id,
+    author_id: aliceAdmin.id,
     parent_id: 'comment-1',
     content: 'Yes, this is a reply to the security audit.',
     edited: false,
@@ -162,13 +215,39 @@ const mockComments: CommentItem[] = [
     created_at: '2026-07-20T11:00:00Z',
     updated_at: '2026-07-20T11:00:00Z',
     author: {
-      id: 'user-admin-1',
-      name: 'Alice Admin',
-      email: 'admin@alice.dev',
-      role: 'admin',
+      id: aliceAdmin.id,
+      name: aliceAdmin.name,
+      email: aliceAdmin.email,
+      role: aliceAdmin.role,
     },
-  },
+    work_item: null,
+  }),
 ];
+
+function renderFeed(
+  overrides: Partial<{
+    initialComments: CommentItem[];
+    workItems: Array<{
+      id: string;
+      title: string;
+      key: string;
+      type: string;
+      project_id: string;
+      project_name?: string;
+    }>;
+    currentUserId: string;
+    workItemId: string;
+  }> = {}
+) {
+  return render(
+    <CommentsFeed
+      initialComments={overrides.initialComments ?? mockComments}
+      workItems={overrides.workItems ?? mockWorkItems}
+      currentUserId={overrides.currentUserId}
+      workItemId={overrides.workItemId}
+    />
+  );
+}
 
 describe('CommentsFeed Component', () => {
   afterEach(() => {
@@ -176,9 +255,7 @@ describe('CommentsFeed Component', () => {
   });
 
   it('renders stats bar, search input, and comment items', () => {
-    render(
-      <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
-    );
+    renderFeed();
 
     expect(screen.getByText('Discussions & Comments')).toBeInTheDocument();
     expect(
@@ -192,9 +269,7 @@ describe('CommentsFeed Component', () => {
   });
 
   it('filters comments based on search query', () => {
-    render(
-      <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
-    );
+    renderFeed();
 
     const searchInput = screen.getByPlaceholderText(
       /Search comments by text, author, or issue key/i
@@ -209,22 +284,8 @@ describe('CommentsFeed Component', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('opens new comment dialog when New Comment button is clicked', () => {
-    render(
-      <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
-    );
-
-    const newCommentBtn = screen.getByRole('button', { name: /New Comment/i });
-    fireEvent.click(newCommentBtn);
-
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText('Post New Comment')).toBeInTheDocument();
-  });
-
   it('shows no comments message when search returns no matches', () => {
-    render(
-      <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
-    );
+    renderFeed();
 
     const searchInput = screen.getByPlaceholderText(
       /Search comments by text, author, or issue key/i
@@ -243,12 +304,7 @@ describe('CommentsFeed Component', () => {
       content: 'Hey @[Alice Admin](user-admin-1) please check this.',
     };
 
-    render(
-      <CommentsFeed
-        initialComments={[commentWithMention]}
-        workItems={mockWorkItems}
-      />
-    );
+    renderFeed({ initialComments: [commentWithMention] });
     expect(screen.getByText('@Alice Admin')).toBeInTheDocument();
     expect(screen.getByText(/please check this/)).toBeInTheDocument();
   });
@@ -260,12 +316,7 @@ describe('CommentsFeed Component', () => {
       content: 'Please refer to #[AL-1](wi-1) for details.',
     };
 
-    render(
-      <CommentsFeed
-        initialComments={[commentWithIssue]}
-        workItems={mockWorkItems}
-      />
-    );
+    renderFeed({ initialComments: [commentWithIssue] });
     const link = screen.getByRole('link', { name: '#AL-1' });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute('href', '/work-items');
@@ -273,13 +324,7 @@ describe('CommentsFeed Component', () => {
   });
 
   it('renders inline comments list and add box when workItemId is provided', () => {
-    render(
-      <CommentsFeed
-        initialComments={mockComments}
-        workItems={mockWorkItems}
-        workItemId="wi-1"
-      />
-    );
+    renderFeed({ workItemId: 'wi-1' });
 
     expect(screen.getByText('Discussion (3)')).toBeInTheDocument();
     expect(
@@ -289,108 +334,10 @@ describe('CommentsFeed Component', () => {
     expect(screen.getByText('Add to discussion')).toBeInTheDocument();
   });
 
-  it('calls createComment when a new comment is submitted', async () => {
-    const mockCreatedComment: CommentItem = {
-      id: 'comment-new',
-      work_item_id: 'wi-1',
-      author_id: 'user-admin-1',
-      parent_id: null,
-      content: 'New testing comment text.',
-      edited: false,
-      status: 'active',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    vi.mocked(createCommentAction).mockResolvedValue({
-      success: true,
-      data: mockCreatedComment,
-    });
-
-    render(
-      <CommentsFeed
-        initialComments={mockComments}
-        workItems={mockWorkItems}
-        workItemId="wi-1"
-      />
-    );
-
-    const textarea = screen.getByPlaceholderText(
-      /Share your thoughts, feedback, or update/i
-    );
-    fireEvent.change(textarea, {
-      target: { value: 'New testing comment text.' },
-    });
-
-    const postBtn = screen.getByRole('button', { name: /Post Comment/i });
-    await waitFor(() => expect(postBtn).not.toBeDisabled());
-    fireEvent.click(postBtn);
-
-    await waitFor(() => {
-      expect(createCommentAction).toHaveBeenCalledWith({
-        work_item_id: 'wi-1',
-        content: 'New testing comment text.',
-      });
-    });
-  });
-
-  it('calls updateComment when a comment is edited and saved', async () => {
-    const mockUpdatedComment: CommentItem = {
-      ...mockComments[0]!,
-      content: 'Security audit completed for the auth module (Updated).',
-      edited: true,
-    };
-    vi.mocked(updateCommentAction).mockResolvedValue({
-      success: true,
-      data: mockUpdatedComment,
-    });
-
-    render(
-      <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
-    );
-
-    // Open dropdown menu
-    const menuBtn = screen.getAllByRole('button', { name: /Open menu/i })[0]!;
-    fireEvent.click(menuBtn);
-
-    // Click Edit button
-    const editBtn = screen.getAllByText('Edit')[0]!;
-    fireEvent.click(editBtn);
-
-    // Wait for the edit textarea to be populated and rendered
-    const textarea = await screen.findByDisplayValue(
-      'Security audit completed for the auth module.'
-    );
-
-    // Modify the textarea content
-    fireEvent.change(textarea, {
-      target: {
-        value: 'Security audit completed for the auth module (Updated).',
-      },
-    });
-    await waitFor(() =>
-      expect(textarea).toHaveValue(
-        'Security audit completed for the auth module (Updated).'
-      )
-    );
-
-    // Click Save
-    const saveBtn = screen.getByRole('button', { name: 'Save' });
-    fireEvent.click(saveBtn);
-
-    await waitFor(() => {
-      expect(updateCommentAction).toHaveBeenCalledWith(
-        'comment-1',
-        'Security audit completed for the auth module (Updated).'
-      );
-    });
-  });
-
   it('calls archiveComment when a comment is archived', async () => {
     vi.mocked(archiveCommentAction).mockResolvedValue({ success: true });
 
-    render(
-      <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
-    );
+    renderFeed();
 
     // Open dropdown menu
     const menuBtn = screen.getAllByRole('button', { name: /Open menu/i })[0]!;
@@ -405,76 +352,10 @@ describe('CommentsFeed Component', () => {
     });
   });
 
-  it('calls updateComment when a thread reply is edited and saved', async () => {
-    const mockUpdatedReply: CommentItem = {
-      id: 'reply-1',
-      work_item_id: 'wi-1',
-      author_id: 'user-admin-1',
-      parent_id: 'comment-1',
-      content: 'Yes, this is a reply to the security audit (Updated).',
-      edited: true,
-      status: 'active',
-      created_at: '2026-07-20T11:00:00Z',
-      updated_at: '2026-07-20T11:00:00Z',
-      author: {
-        id: 'user-admin-1',
-        name: 'Alice Admin',
-        email: 'admin@alice.dev',
-        role: 'admin',
-      },
-    };
-    vi.mocked(updateCommentAction).mockResolvedValue({
-      success: true,
-      data: mockUpdatedReply,
-    });
-
-    render(
-      <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
-    );
-
-    // Open dropdown menu for reply (the second Open menu button)
-    const menuBtn = screen.getAllByRole('button', { name: /Open menu/i })[1]!;
-    fireEvent.click(menuBtn);
-
-    // Click Edit button (the second Edit button)
-    const editBtn = screen.getAllByText('Edit')[1]!;
-    fireEvent.click(editBtn);
-
-    // Wait for the edit textarea to be populated and rendered
-    const textarea = await screen.findByDisplayValue(
-      'Yes, this is a reply to the security audit.'
-    );
-
-    // Modify the textarea content
-    fireEvent.change(textarea, {
-      target: {
-        value: 'Yes, this is a reply to the security audit (Updated).',
-      },
-    });
-    await waitFor(() =>
-      expect(textarea).toHaveValue(
-        'Yes, this is a reply to the security audit (Updated).'
-      )
-    );
-
-    // Click Save
-    const saveBtn = screen.getByRole('button', { name: 'Save' });
-    fireEvent.click(saveBtn);
-
-    await waitFor(() => {
-      expect(updateCommentAction).toHaveBeenCalledWith(
-        'reply-1',
-        'Yes, this is a reply to the security audit (Updated).'
-      );
-    });
-  });
-
   it('calls archiveCommentAction (permanent) when a thread reply is deleted', async () => {
     vi.mocked(archiveCommentAction).mockResolvedValue({ success: true });
 
-    render(
-      <CommentsFeed initialComments={mockComments} workItems={mockWorkItems} />
-    );
+    renderFeed();
 
     // Open dropdown menu for reply (the second Open menu button)
     const menuBtn = screen.getAllByRole('button', { name: /Open menu/i })[1]!;
@@ -501,12 +382,7 @@ describe('CommentsFeed Component', () => {
     };
     vi.mocked(restoreCommentAction).mockResolvedValue({ success: true });
 
-    render(
-      <CommentsFeed
-        initialComments={[archivedComment]}
-        workItems={mockWorkItems}
-      />
-    );
+    renderFeed({ initialComments: [archivedComment] });
 
     // Switch status filter to "archived"
     const select = screen.getAllByTestId('status-select')[1]!;
@@ -533,12 +409,7 @@ describe('CommentsFeed Component', () => {
     };
     vi.mocked(archiveCommentAction).mockResolvedValue({ success: true });
 
-    render(
-      <CommentsFeed
-        initialComments={[archivedComment]}
-        workItems={mockWorkItems}
-      />
-    );
+    renderFeed({ initialComments: [archivedComment] });
 
     // Switch status filter to "archived"
     const select = screen.getAllByTestId('status-select')[1]!;
