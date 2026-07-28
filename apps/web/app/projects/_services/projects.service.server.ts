@@ -1,6 +1,8 @@
 import { USER_PROJECTION_WITH_ROLE, userRelationSelect } from '@repo/types';
 import { apiFetch } from '@/lib/api/api-client.server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { getUser } from '@/lib/auth';
 import { pageRange, paginationMeta } from '@/lib/db/pagination';
 import { applyListSearch, throwIfError } from '@/lib/db/query';
 import { getCachedProjectList } from '@/lib/cache/dropdown-cache';
@@ -9,6 +11,7 @@ import type {
   GetProjectsPaginatedResponse,
   Project,
   ProjectMemberWithUser,
+  ProjectMembersByProjectId,
 } from './projects.service.base';
 
 const service = createProjectsService(apiFetch);
@@ -110,7 +113,59 @@ export async function getProjectMembers(
     'Failed to list project members'
   );
 
-  return (data ?? []) as unknown as ProjectMemberWithUser[];
+  return filterActiveProjectMembersWithUser(data);
+}
+
+function filterActiveProjectMembersWithUser(
+  data: unknown
+): ProjectMemberWithUser[] {
+  return ((data ?? []) as ProjectMemberWithUser[]).filter(
+    (member) => member.status === 'active' && member.user
+  );
+}
+
+/** Batch read active project members for form dropdowns (e.g. team form).
+ * Auth-gated admin read so the map matches the cached projects dropdown
+ * and is not emptied by cookie-client RLS.
+ */
+export async function getProjectMembersByProjectIds(
+  projectIds: string[]
+): Promise<ProjectMembersByProjectId> {
+  if (projectIds.length === 0) {
+    return {};
+  }
+
+  const user = await getUser();
+  if (!user) {
+    return {};
+  }
+
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from('project_members')
+    .select(`*, ${PROJECT_MEMBER_USER_SELECT}`)
+    .in('project_id', projectIds)
+    .eq('status', 'active');
+
+  throwIfError(
+    error,
+    'failed to list project members by project ids',
+    'Failed to list project members'
+  );
+
+  const grouped: ProjectMembersByProjectId = Object.fromEntries(
+    projectIds.map((projectId) => [projectId, []])
+  );
+
+  for (const member of filterActiveProjectMembersWithUser(data)) {
+    const bucket = grouped[member.project_id];
+    if (bucket) {
+      bucket.push(member);
+    }
+  }
+
+  return grouped;
 }
 
 export const createProject = service.createProject;
@@ -127,4 +182,5 @@ export type {
   CreateProjectInput,
   UpdateProjectInput,
   ProjectMemberWithUser,
+  ProjectMembersByProjectId,
 } from './projects.service.base';

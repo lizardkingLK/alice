@@ -59,6 +59,7 @@ teamsRouter.post(
         name: validation.data.name,
         description: validation.data.description ?? null,
         manager_id: validation.data.manager_id,
+        project_id: validation.data.project_id,
         tech_stack: validation.data.tech_stack ?? null,
         status: validation.data.status ?? 'active',
         member_ids: validation.data.member_ids,

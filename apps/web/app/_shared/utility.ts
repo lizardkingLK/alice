@@ -85,3 +85,15 @@ export function formatFileSize(bytes: number): string {
   }
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
+
+/** Format a UTC date to ISO-8601 string. Month index is 0-indexed. */
+export function formatDateToISOString(
+  year: number,
+  monthIndex: number,
+  day: number,
+  hour: number = 0,
+  minute: number = 0,
+  second: number = 0
+): string {
+  return new Date(Date.UTC(year, monthIndex, day, hour, minute, second)).toISOString();
+}

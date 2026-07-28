@@ -37,6 +37,7 @@ function toSprintResponse(row: SprintRowWithProject): SprintResponse {
     startDate: row.start_date,
     endDate: row.end_date,
     createdBy: row.created_by ?? '',
+    updatedBy: row.updated_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     project: row.project
@@ -177,6 +178,13 @@ export class SprintsService {
     }
     if (currentSprint.status === 'archived') {
       throw new Error('Cannot edit an archived sprint');
+    }
+
+    if (input.projectId !== currentSprint.project_id) {
+      const count = await sprintsRepository.getWorkItemCount(sprintId);
+      if (count > 0) {
+        throw new Error('Cannot change the project of a sprint that has work items.');
+      }
     }
 
     const row = await sprintsRepository.update(userId, sprintId, {

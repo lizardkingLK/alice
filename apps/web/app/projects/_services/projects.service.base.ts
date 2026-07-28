@@ -38,6 +38,9 @@ export type ProjectMemberWithUser = {
     | null;
 };
 
+/** Prefetched project → active members map for form UIs (e.g. team form). */
+export type ProjectMembersByProjectId = Record<string, ProjectMemberWithUser[]>;
+
 export function createProjectsService(
   apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>
 ) {

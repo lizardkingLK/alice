@@ -5,7 +5,10 @@ import {
   type Team,
 } from '@/app/manager/_services/teams.service.server';
 import { getUserList } from '@/app/users/_services/users.service.server';
-import { getProjectList } from '@/app/projects/_services/projects.service.server';
+import {
+  getProjectList,
+  getProjectMembersByProjectIds,
+} from '@/app/projects/_services/projects.service.server';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import {
@@ -45,6 +48,19 @@ export async function ManagerData({
   ]);
 
   const activeProjects = filterActiveProjects(projectsList);
+  const projectIdsForMembers = [
+    ...new Set([
+      ...activeProjects.map((project) => project.id),
+      ...teamsResult.teams
+        .map((team) => team.project_id)
+        .filter((projectId): projectId is string => Boolean(projectId)),
+    ]),
+  ];
+  const projectMembersByProjectId = await safeServerFetch(
+    getProjectMembersByProjectIds(projectIdsForMembers),
+    {},
+    'fetch project members for team form'
+  );
   const userRole = dbUser?.role ?? 'member';
 
   return (
@@ -58,6 +74,7 @@ export async function ManagerData({
       search={search}
       users={usersList}
       activeProjects={activeProjects}
+      projectMembersByProjectId={projectMembersByProjectId}
       currentUserId={dbUser?.id}
       currentUserRole={userRole}
     />

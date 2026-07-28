@@ -6,6 +6,7 @@ export type TeamRow = {
   name: string;
   description: string | null;
   manager_id: string;
+  project_id: string | null;
   tech_stack: string | null;
   status: 'active' | 'inactive' | 'archived' | 'deleted';
   created_at: string;
@@ -25,6 +26,35 @@ export type TeamRowWithManager = TeamRow & {
 
 function unsafeCast<T>(val: unknown): T {
   return val as T;
+}
+
+async function insertTeamMembers(
+  teamId: string,
+  memberIds: string[],
+  userId: string,
+  failureMessage: string
+): Promise<void> {
+  if (memberIds.length === 0) {
+    return;
+  }
+
+  const teamMembersPayload = memberIds.map((memberId) => ({
+    team_id: teamId,
+    user_id: memberId,
+    status: 'active' as const,
+    created_by: userId,
+    updated_by: userId,
+    updated_at: new Date().toISOString(),
+  }));
+
+  const { error } = await supabase
+    .from('team_members')
+    .insert(teamMembersPayload);
+
+  if (error) {
+    console.error(failureMessage, error.message);
+    throw new Error(`${failureMessage}: ${error.message}`);
+  }
 }
 
 export class TeamsRepository {
@@ -143,28 +173,16 @@ export class TeamsRepository {
     const createdTeam = response.data;
 
     if (member_ids && member_ids.length > 0) {
-      const teamMembersPayload = member_ids.map((memberId) => ({
-        team_id: createdTeam.id,
-        user_id: memberId,
-        status: 'active' as const,
-        created_by: userId,
-        updated_by: userId,
-        updated_at: new Date().toISOString(),
-      }));
-
-      const membersResponse = await supabase
-        .from('team_members')
-        .insert(teamMembersPayload);
-
-      if (membersResponse.error) {
-        console.error(
-          'database failure adding team members:',
-          membersResponse.error.message
+      try {
+        await insertTeamMembers(
+          createdTeam.id,
+          member_ids,
+          userId,
+          'Failed to add team members'
         );
+      } catch (error) {
         await supabase.from('teams').delete().eq('id', createdTeam.id);
-        throw new Error(
-          `Failed to add team members: ${membersResponse.error.message}`
-        );
+        throw error;
       }
     }
 
@@ -214,30 +232,12 @@ export class TeamsRepository {
         );
       }
 
-      if (member_ids.length > 0) {
-        const teamMembersPayload = member_ids.map((memberId) => ({
-          team_id: teamId,
-          user_id: memberId,
-          status: 'active' as const,
-          created_by: userId,
-          updated_by: userId,
-          updated_at: new Date().toISOString(),
-        }));
-
-        const insertResponse = await supabase
-          .from('team_members')
-          .insert(teamMembersPayload);
-
-        if (insertResponse.error) {
-          console.error(
-            'database failure inserting team members:',
-            insertResponse.error.message
-          );
-          throw new Error(
-            `Failed to update team members: ${insertResponse.error.message}`
-          );
-        }
-      }
+      await insertTeamMembers(
+        teamId,
+        member_ids,
+        userId,
+        'Failed to update team members'
+      );
     }
 
     return response.data;

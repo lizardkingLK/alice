@@ -37,8 +37,10 @@ export type SprintResponse = {
   startDate: string;
   endDate: string;
   createdBy: string;
+  updatedBy: string | null;
   createdAt: string;
   updatedAt: string;
+  summaryReport?: Record<string, unknown>;
   project?: {
     id: string;
     name: string;

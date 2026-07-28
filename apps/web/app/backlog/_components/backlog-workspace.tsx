@@ -24,7 +24,6 @@ import {
 import {
   getFormDataStringValue,
   mapPriority,
-  updateWorkItemField,
   type BacklogActiveTab,
   type BacklogAssignee,
 } from '@/app/backlog/_helpers/backlog-item-utils';
@@ -402,30 +401,40 @@ export function BacklogWorkspace({
     return m ? { id: m.id, name: m.name, email: m.email } : null;
   };
 
-  // Update inline value of item from details sheet
-  const handleUpdateItemField = <K extends keyof DbWorkItem>(
+  // Update multiple inline values of item from details sheet
+  const handleUpdateItemFields = (
     itemId: string,
-    field: K,
-    value: DbWorkItem[K]
+    updates: Partial<DbWorkItem>
   ) => {
-    if (checkProjectSprintMismatch(itemId, String(field), value)) {
-      setIsMismatchOpen(true);
-      return;
+    // Check sprint project mismatch if sprint_id or project_id is updated
+    for (const [field, value] of Object.entries(updates)) {
+      if (checkProjectSprintMismatch(itemId, field, value)) {
+        setIsMismatchOpen(true);
+        return;
+      }
     }
 
-    const updatedAssignee = getUpdatedAssignee(String(field), value);
-
+    // Apply all updates to local state
     setWorkItems((prev) =>
-      prev.map((item) =>
-        updateWorkItemField(item, itemId, field, value, updatedAssignee)
-      )
+      prev.map((item) => {
+        if (item.id !== itemId) {
+          return item;
+        }
+        const updatedAssignee = 'assignee_id' in updates ? getUpdatedAssignee('assignee_id', updates.assignee_id) : null;
+        const updatedItem = { ...item, ...updates };
+        if ('assignee_id' in updates) {
+          updatedItem.assignee = updatedAssignee;
+        }
+        return updatedItem;
+      })
     );
 
     // Sync selected item state
     setSelectedItem((prev) => {
       if (prev?.id === itemId) {
-        const updated = { ...prev, [field]: value };
-        if (field === 'assignee_id') {
+        const updatedAssignee = 'assignee_id' in updates ? getUpdatedAssignee('assignee_id', updates.assignee_id) : null;
+        const updated = { ...prev, ...updates };
+        if ('assignee_id' in updates) {
           updated.assignee = updatedAssignee;
         }
         return updated;
@@ -434,10 +443,12 @@ export function BacklogWorkspace({
     });
 
     const formData = new FormData();
-    formData.append(String(field), getFormDataStringValue(value));
+    for (const [key, value] of Object.entries(updates)) {
+      formData.append(key, getFormDataStringValue(value));
+    }
 
     updateWorkItem(itemId, formData).catch((err) => {
-      console.error(`Failed to update work item field ${String(field)}:`, err);
+      console.error(`Failed to update work item ${itemId}:`, err);
     });
   };
 
@@ -564,7 +575,7 @@ export function BacklogWorkspace({
           sprints={sprintList}
           blockOutsideClose={isMismatchOpen}
           onClose={() => setSelectedItem(null)}
-          onUpdateField={handleUpdateItemField}
+          onUpdateFields={handleUpdateItemFields}
         />
 
         {/* Dialog: Create Sprint */}

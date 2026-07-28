@@ -90,13 +90,17 @@ export class SprintsRepository {
   }
 
   async updateStatus(
-    _userId: string,
+    userId: string,
     sprintId: string,
     status: SprintRow['status']
   ): Promise<SprintRowWithProject> {
     const { data, error } = await supabase
       .from('sprints')
-      .update({ status })
+      .update({
+        status,
+        updated_by: userId,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', sprintId)
       .select(SPRINT_WITH_PROJECT)
       .single();
@@ -160,7 +164,7 @@ export class SprintsRepository {
   }
 
   async update(
-    _userId: string,
+    userId: string,
     sprintId: string,
     input: {
       name: string;
@@ -178,6 +182,7 @@ export class SprintsRepository {
         start_date: input.startDate,
         end_date: input.endDate,
         project_id: input.projectId,
+        updated_by: userId,
         updated_at: new Date().toISOString(),
       })
       .eq('id', sprintId)

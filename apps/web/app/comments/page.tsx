@@ -1,21 +1,17 @@
 import { Suspense } from 'react';
 import { Skeleton } from '@repo/ui/components/ui/skeleton';
-import {
-  USER_PROJECTION_WITH_ROLE,
-  projectRelationSelect,
-  userRelationSelect,
-} from '@repo/types';
-import { createClient } from '@/lib/supabase/server';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { getDbUser } from '@/lib/auth';
+import { safeServerFetch } from '@/lib/safe-server-fetch';
 import { CommentsFeed } from './_components/comments-feed';
-import { CommentItem } from './_services/comments.service';
-
-const COMMENT_AUTHOR_SELECT = userRelationSelect(
-  'author',
-  'comments_author_id_fkey',
-  USER_PROJECTION_WITH_ROLE
-);
+import {
+  listComments,
+  listCommentWorkItemOptions,
+} from './_services/comments.service.server';
+import type {
+  CommentItem,
+  CommentWorkItemOption,
+} from './_services/comments.service';
 
 function CommentsSkeleton() {
   return (
@@ -50,6 +46,7 @@ const mockSeedComments: CommentItem[] = [
       name: 'Alana Admin',
       email: 'admin@alice.dev',
       role: 'admin',
+      profile_picture: null,
     },
     work_item: {
       id: 'wi-101',
@@ -79,6 +76,7 @@ const mockSeedComments: CommentItem[] = [
       name: 'Marcus Lead',
       email: 'marcus@alice.dev',
       role: 'manager',
+      profile_picture: null,
     },
     work_item: {
       id: 'wi-101',
@@ -103,6 +101,7 @@ const mockSeedComments: CommentItem[] = [
       name: 'Devin Smith',
       email: 'devin@alice.dev',
       role: 'member',
+      profile_picture: null,
     },
     work_item: {
       id: 'wi-102',
@@ -118,7 +117,7 @@ const mockSeedComments: CommentItem[] = [
   },
 ];
 
-const mockWorkItems = [
+const mockWorkItems: CommentWorkItemOption[] = [
   {
     id: 'wi-101',
     title: 'Auth & Session Cookie Handling',
@@ -139,70 +138,26 @@ const mockWorkItems = [
     id: 'wi-103',
     title: 'Sprint Planning Burndown Chart Bug',
     key: 'ALICE-103',
-    type: 'Bug',
+    type: 'Task',
     project_id: 'proj-1',
     project_name: 'Jira Core Platform',
   },
 ];
 
 async function CommentsData() {
-  let commentsList: CommentItem[] = [];
-  let workItemsList = mockWorkItems;
+  const [commentsResult, workItemsResult] = await Promise.all([
+    safeServerFetch(listComments(), [], 'fetch comments list'),
+    safeServerFetch(
+      listCommentWorkItemOptions(),
+      [],
+      'fetch work items for comments dropdown'
+    ),
+  ]);
 
-  try {
-    const supabase = await createClient();
-
-    // Fetch comments with author and work item
-    const { data: dbComments, error: commentsError } = await supabase
-      .from('comments')
-      .select(
-        `
-        *,
-        ${COMMENT_AUTHOR_SELECT},
-        work_item:work_items(id, title, type, ${projectRelationSelect()})
-      `
-      )
-      .order('created_at', { ascending: false });
-
-    if (!commentsError && dbComments && dbComments.length > 0) {
-      commentsList = dbComments as unknown as CommentItem[];
-    }
-
-    // Fetch work items for modal dropdown
-    const { data: dbWorkItems, error: wiError } = await supabase
-      .from('work_items')
-      .select(`id, title, type, project_id, ${projectRelationSelect()}`)
-      .limit(50);
-
-    type DbWorkItemRow = {
-      id: string;
-      title: string;
-      type: string;
-      project_id: string;
-      project?: {
-        name?: string;
-        key?: string;
-      } | null;
-    };
-
-    if (!wiError && dbWorkItems && dbWorkItems.length > 0) {
-      workItemsList = (dbWorkItems as unknown as DbWorkItemRow[]).map((wi) => ({
-        id: wi.id,
-        title: wi.title,
-        key: `${wi.project?.key || 'ITEM'}-${wi.id.slice(0, 4).toUpperCase()}`,
-        type: wi.type,
-        project_id: wi.project_id,
-        project_name: wi.project?.name || 'Project',
-      }));
-    }
-  } catch (err) {
-    console.error('Error fetching comments from Supabase:', err);
-  }
-
-  // Fallback to seed comments if database has none
-  if (commentsList.length === 0) {
-    commentsList = mockSeedComments;
-  }
+  const commentsList =
+    commentsResult.length > 0 ? commentsResult : mockSeedComments;
+  const workItemsList =
+    workItemsResult.length > 0 ? workItemsResult : mockWorkItems;
 
   const dbUser = await getDbUser();
   const currentUserId = dbUser?.id ?? 'user-admin-1';

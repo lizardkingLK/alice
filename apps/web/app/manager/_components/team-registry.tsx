@@ -35,18 +35,21 @@ import {
   RegistryRowActions,
   registryActionsHeader,
 } from '@/components/registry-row-actions';
-import { RegistryTabSwitcher } from '@/components/registry-tab-switcher';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@repo/ui/components/ui/select';
 import type { Team } from '../_services/teams.service';
 import type { User } from '@/app/users/_services/users.service';
-import type { Project } from '@/app/projects/_services/projects.service.base';
+import type {
+  Project,
+  ProjectMembersByProjectId,
+} from '@/app/projects/_services/projects.service.base';
 
 type TeamTab = 'active' | 'inactive' | 'archived';
-
-const TEAM_TABS = [
-  { id: 'active' as const, label: 'Active' },
-  { id: 'inactive' as const, label: 'Inactive' },
-  { id: 'archived' as const, label: 'Archived' },
-];
 
 interface TeamRegistryProps {
   readonly teams: Team[];
@@ -58,6 +61,7 @@ interface TeamRegistryProps {
   readonly search: string;
   readonly users: User[];
   readonly activeProjects: Project[];
+  readonly projectMembersByProjectId: ProjectMembersByProjectId;
   readonly currentUserId?: string | null;
   readonly currentUserRole?: string | null;
 }
@@ -191,6 +195,7 @@ export function TeamRegistry({
   search,
   users,
   activeProjects,
+  projectMembersByProjectId,
   currentUserId,
   currentUserRole,
 }: Readonly<TeamRegistryProps>) {
@@ -330,11 +335,23 @@ export function TeamRegistry({
         </div>
 
         <div className="flex items-center gap-2">
-          <RegistryTabSwitcher
-            tabs={TEAM_TABS}
+          <Select
             value={tab}
-            onChange={changeTabSelection}
-          />
+            onValueChange={(val) => changeTabSelection(val as TeamTab)}
+          >
+            <SelectTrigger
+              id="team-status-filter"
+              aria-label="Filter by Status"
+              className="bg-background/50 h-10 w-40"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+              <SelectItem value="archived">Archived</SelectItem>
+            </SelectContent>
+          </Select>
 
           {isManagerOrAdmin ? (
             <Button
@@ -392,6 +409,7 @@ export function TeamRegistry({
             <TeamForm
               users={users}
               activeProjects={activeProjects}
+              projectMembersByProjectId={projectMembersByProjectId}
               onClose={() => setIsAddTeamOpen(false)}
               onSuccess={() => {
                 setIsAddTeamOpen(false);
@@ -408,6 +426,7 @@ export function TeamRegistry({
             <TeamForm
               users={users}
               activeProjects={activeProjects}
+              projectMembersByProjectId={projectMembersByProjectId}
               teamToEdit={teamToEdit}
               onClose={() => setTeamToEdit(null)}
               onSuccess={() => {

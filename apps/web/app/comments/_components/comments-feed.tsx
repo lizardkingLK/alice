@@ -62,7 +62,11 @@ import {
   Trash2,
   X,
 } from '@repo/ui/lib/icons';
-import { CommentItem, CommentUser } from '../_services/comments.service';
+import {
+  CommentItem,
+  CommentUser,
+  CommentWorkItemOption,
+} from '../_services/comments.service';
 import {
   createCommentAction,
   updateCommentAction,
@@ -72,14 +76,7 @@ import {
 
 type CommentsFeedProps = {
   initialComments: CommentItem[];
-  workItems: Array<{
-    id: string;
-    title: string;
-    key: string;
-    type: string;
-    project_id: string;
-    project_name?: string;
-  }>;
+  workItems: CommentWorkItemOption[];
   currentUserId?: string;
   workItemId?: string;
 };
@@ -237,7 +234,7 @@ type AutocompleteInputProps = {
   onSubmit?: () => void;
   placeholder?: string;
   users: CommentUser[];
-  workItems: Array<{ id: string; key: string; title: string }>;
+  workItems: Pick<CommentWorkItemOption, 'id' | 'key' | 'title'>[];
   rows?: number;
   className?: string;
   position?: 'top' | 'bottom';

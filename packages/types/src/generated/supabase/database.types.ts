@@ -63,7 +63,7 @@ export type Database = {
           kind: Database['public']['Enums']['AccessAllowlistKind'];
           label?: string | null;
           status?: Database['public']['Enums']['RecordStatus'];
-          updated_at?: string;
+          updated_at: string;
           updated_by?: string | null;
           value: string;
         };
@@ -648,6 +648,7 @@ export type Database = {
           id: string;
           manager_id: string;
           name: string;
+          project_id: string | null;
           status: Database['public']['Enums']['RecordStatus'];
           tech_stack: string | null;
           updated_at: string;
@@ -660,6 +661,7 @@ export type Database = {
           id?: string;
           manager_id: string;
           name: string;
+          project_id?: string | null;
           status?: Database['public']['Enums']['RecordStatus'];
           tech_stack?: string | null;
           updated_at: string;
@@ -672,6 +674,7 @@ export type Database = {
           id?: string;
           manager_id?: string;
           name?: string;
+          project_id?: string | null;
           status?: Database['public']['Enums']['RecordStatus'];
           tech_stack?: string | null;
           updated_at?: string;
@@ -690,6 +693,13 @@ export type Database = {
             columns: ['manager_id'];
             isOneToOne: false;
             referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'teams_project_id_fkey';
+            columns: ['project_id'];
+            isOneToOne: false;
+            referencedRelation: 'projects';
             referencedColumns: ['id'];
           },
           {

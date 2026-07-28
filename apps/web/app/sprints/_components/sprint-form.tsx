@@ -35,6 +35,7 @@ import {
 } from '../_services/sprints.service';
 import type { Project } from '@/app/projects/_services/projects.service.base';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
+import { createClient } from '@/lib/supabase/client';
 
 type SprintFormProps = {
   className?: string;
@@ -107,6 +108,28 @@ export function SprintForm({
   const [goal, setGoal] = useState(sprintToEdit?.goal ?? '');
   const [startDate, setStartDate] = useState(sprintToEdit?.startDate ?? '');
   const [endDate, setEndDate] = useState(sprintToEdit?.endDate ?? '');
+  const [hasWorkItems, setHasWorkItems] = useState(false);
+
+  useEffect(() => {
+    if (sprintToEdit) {
+      try {
+        const supabase = createClient();
+        supabase
+          .from('work_items')
+          .select('*', { count: 'exact', head: true })
+          .eq('sprint_id', sprintToEdit.id)
+          .then(({ count, error }) => {
+            if (!error && count && count > 0) {
+              setHasWorkItems(true);
+            }
+          });
+      } catch (error) {
+        console.error('Failed to check sprint work items:', error);
+      }
+    } else {
+      setHasWorkItems(false);
+    }
+  }, [sprintToEdit]);
 
   const displayedProjects = useMemo(() => {
     if (!currentUserId) return activeProjects;
@@ -250,6 +273,7 @@ export function SprintForm({
             <Select
               value={selectedProjectId}
               onValueChange={setSelectedProjectId}
+              disabled={isEditMode && hasWorkItems}
             >
               <SelectTrigger
                 id="sprint-project"
@@ -261,6 +285,11 @@ export function SprintForm({
                 {renderProjectOptions(displayedProjects)}
               </SelectContent>
             </Select>
+            {isEditMode && hasWorkItems && (
+              <p className="text-xs text-muted-foreground">
+                Project cannot be changed because this sprint has work items assigned to it.
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">

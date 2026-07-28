@@ -4,6 +4,7 @@ export const createTeamSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   description: z.string().nullable().optional(),
   manager_id: z.uuid({ message: 'Please select a valid manager.' }),
+  project_id: z.uuid({ message: 'Please select a valid project.' }),
   tech_stack: z.string().nullable().optional(),
   status: z
     .enum(['active', 'inactive', 'archived', 'deleted'])
