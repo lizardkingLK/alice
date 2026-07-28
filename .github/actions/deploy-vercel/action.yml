@@ -12,6 +12,12 @@ inputs:
     description: Vercel environment for `vercel pull` (usually production).
     required: false
     default: production
+  working-directory:
+    description: >-
+      Directory that contains the app vercel.json (e.g. apps/api or apps/web).
+      Defaults to repo root.
+    required: false
+    default: '.'
 
 runs:
   using: composite
@@ -26,18 +32,21 @@ runs:
 
     - name: Pull Vercel Environment Variables
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
       run: vercel pull --yes --environment=${{ inputs.environment }} --token=$VERCEL_TOKEN
       env:
         VERCEL_PROJECT_ID: ${{ inputs.vercel-project-id }}
 
     - name: Build Local App Context via Vercel CLI
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
       run: vercel build --prod --token=$VERCEL_TOKEN
       env:
         VERCEL_PROJECT_ID: ${{ inputs.vercel-project-id }}
 
     - name: Execute Controlled Production Deployment
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
       run: vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
       env:
         VERCEL_PROJECT_ID: ${{ inputs.vercel-project-id }}
