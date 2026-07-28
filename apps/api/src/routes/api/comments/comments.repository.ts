@@ -1,4 +1,9 @@
-import { supabase } from '../../../lib/supabase';
+import {
+  USER_PROJECTION_WITH_ROLE,
+  projectRelationSelect,
+  userRelationSelect,
+} from '@repo/types';
+import { supabase } from '@/lib/supabase';
 
 export type CommentRow = {
   id: string;
@@ -14,18 +19,29 @@ export type CommentRow = {
   updated_by: string | null;
 };
 
-export class CommentsRepository {
-  async listAll(): Promise<CommentRow[]> {
-    const { data, error } = await supabase
-      .from('comments')
-      .select(
-        `
+const COMMENT_AUTHOR_SELECT = userRelationSelect(
+  'author',
+  'comments_author_id_fkey',
+  USER_PROJECTION_WITH_ROLE
+);
+
+const COMMENT_WITH_RELATIONS = `
         *,
-        author:users!comments_author_id_fkey(id, name, email, role, profile_picture),
-        work_item:work_items(id, title, type, project:projects(id, name, key))
-      `
-      )
-      .order('created_at', { ascending: false });
+        ${COMMENT_AUTHOR_SELECT},
+        work_item:work_items(id, title, type, ${projectRelationSelect()})
+      `;
+
+export class CommentsRepository {
+  async listAll(workItemId?: string): Promise<CommentRow[]> {
+    let query = supabase.from('comments').select(COMMENT_WITH_RELATIONS);
+
+    if (workItemId) {
+      query = query.eq('work_item_id', workItemId);
+    }
+
+    const { data, error } = await query.order('created_at', {
+      ascending: false,
+    });
 
     if (error) {
       console.error('database error list all comments:', error.message);
@@ -51,13 +67,7 @@ export class CommentsRepository {
         status: 'active',
         updated_at: new Date().toISOString(),
       })
-      .select(
-        `
-        *,
-        author:users!comments_author_id_fkey(id, name, email, role, profile_picture),
-        work_item:work_items(id, title, type, project:projects(id, name, key))
-      `
-      )
+      .select(COMMENT_WITH_RELATIONS)
       .single();
 
     if (error) {
@@ -77,13 +87,7 @@ export class CommentsRepository {
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .select(
-        `
-        *,
-        author:users!comments_author_id_fkey(id, name, email, role, profile_picture),
-        work_item:work_items(id, title, type, project:projects(id, name, key))
-      `
-      )
+      .select(COMMENT_WITH_RELATIONS)
       .single();
 
     if (error) {
@@ -106,6 +110,30 @@ export class CommentsRepository {
     if (error) {
       console.error('database error archive comment:', error.message);
       throw new Error(`Failed to archive comment: ${error.message}`);
+    }
+  }
+
+  async restore(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('comments')
+      .update({
+        status: 'active',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('database error restore comment:', error.message);
+      throw new Error(`Failed to restore comment: ${error.message}`);
+    }
+  }
+
+  async hardDelete(id: string): Promise<void> {
+    const { error } = await supabase.from('comments').delete().eq('id', id);
+
+    if (error) {
+      console.error('database error hard delete comment:', error.message);
+      throw new Error(`Failed to delete comment: ${error.message}`);
     }
   }
 }

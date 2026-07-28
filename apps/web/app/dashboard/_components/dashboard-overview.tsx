@@ -8,6 +8,13 @@ import ReactGridLayout, {
 } from 'react-grid-layout';
 import { Button } from '@repo/ui/components/ui/button';
 import { RotateCcw } from '@repo/ui/lib/icons';
+import { cn } from '@repo/ui/lib/utils';
+import { useSidebarLayoutSettling } from '@/hooks/use-sidebar-layout-settling';
+import {
+  getLocalStorageJson,
+  removeLocalStorageItem,
+  setLocalStorageJson,
+} from '@/lib/local-storage';
 import {
   DEFAULT_LAYOUT,
   LAYOUT_STORAGE_KEY,
@@ -23,48 +30,37 @@ function isWidgetId(value: string): value is WidgetId {
 }
 
 function readStoredLayout(): LayoutItem[] {
-  if (typeof window === 'undefined') {
+  const parsed = getLocalStorageJson<LayoutItem[]>(LAYOUT_STORAGE_KEY);
+  if (!Array.isArray(parsed) || parsed.length === 0) {
     return [...DEFAULT_LAYOUT];
   }
 
-  try {
-    const raw = window.localStorage.getItem(LAYOUT_STORAGE_KEY);
-    if (!raw) {
-      return [...DEFAULT_LAYOUT];
+  const byId = new Map(
+    parsed.filter((item) => isWidgetId(item.i)).map((item) => [item.i, item])
+  );
+
+  return DEFAULT_LAYOUT.map((fallback) => {
+    const stored = byId.get(fallback.i);
+    if (!stored) {
+      return { ...fallback };
     }
 
-    const parsed = JSON.parse(raw) as LayoutItem[];
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      return [...DEFAULT_LAYOUT];
-    }
-
-    const byId = new Map(
-      parsed.filter((item) => isWidgetId(item.i)).map((item) => [item.i, item])
-    );
-
-    return DEFAULT_LAYOUT.map((fallback) => {
-      const stored = byId.get(fallback.i);
-      if (!stored) {
-        return { ...fallback };
-      }
-
-      return {
-        ...fallback,
-        x: stored.x,
-        y: stored.y,
-        w: stored.w,
-        h: stored.h,
-      };
-    });
-  } catch {
-    return [...DEFAULT_LAYOUT];
-  }
+    return {
+      ...fallback,
+      x: stored.x,
+      y: stored.y,
+      w: stored.w,
+      h: stored.h,
+    };
+  });
 }
 
 export function DashboardOverview() {
   const { width, containerRef, mounted } = useContainerWidth({
     initialWidth: 1200,
   });
+  const isSidebarSettling = useSidebarLayoutSettling();
+  const [stableWidth, setStableWidth] = useState(width);
   const [layout, setLayout] = useState<LayoutItem[]>(() => [...DEFAULT_LAYOUT]);
   const [hydrated, setHydrated] = useState(false);
 
@@ -72,6 +68,13 @@ export function DashboardOverview() {
     setLayout(readStoredLayout());
     setHydrated(true);
   }, []);
+
+  // Freeze grid width while the sidebar CSS width transition runs, then snap once.
+  useEffect(() => {
+    if (!isSidebarSettling) {
+      setStableWidth(width);
+    }
+  }, [width, isSidebarSettling]);
 
   const handleLayoutChange = (next: Layout) => {
     const nextLayout = [...next];
@@ -81,13 +84,13 @@ export function DashboardOverview() {
       return;
     }
 
-    window.localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(nextLayout));
+    setLocalStorageJson(LAYOUT_STORAGE_KEY, nextLayout);
   };
 
   const handleResetLayout = () => {
     const nextLayout = DEFAULT_LAYOUT.map((item) => ({ ...item }));
     setLayout(nextLayout);
-    window.localStorage.removeItem(LAYOUT_STORAGE_KEY);
+    removeLocalStorageItem(LAYOUT_STORAGE_KEY);
   };
 
   return (
@@ -97,7 +100,7 @@ export function DashboardOverview() {
           <p className="text-sm font-medium">Overview</p>
           <p className="text-muted-foreground text-sm">
             Hold the ellipsis to drag widgets. Resize from the bottom-right
-            corner. Layout is saved in this browser.
+            corner. Layout is saved automatically.
           </p>
         </div>
         <Button
@@ -111,11 +114,17 @@ export function DashboardOverview() {
         </Button>
       </div>
 
-      <div ref={containerRef} className="dashboard-grid w-full">
+      <div
+        ref={containerRef}
+        className={cn(
+          'dashboard-grid w-full transition-opacity duration-150',
+          isSidebarSettling && 'pointer-events-none opacity-80'
+        )}
+      >
         {mounted ? (
           <ReactGridLayout
             className="layout"
-            width={width}
+            width={stableWidth}
             layout={layout}
             gridConfig={{
               cols: 12,
@@ -140,7 +149,7 @@ export function DashboardOverview() {
             ))}
           </ReactGridLayout>
         ) : (
-          <div className="bg-muted/20 h-[28rem] animate-pulse rounded-xl" />
+          <div className="bg-muted/20 h-112 animate-pulse rounded-xl" />
         )}
       </div>
     </div>

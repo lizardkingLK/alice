@@ -1,7 +1,9 @@
+import { Suspense } from 'react';
 import { Metadata } from 'next';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
-import { getWorkItems } from '@/app/work-items/_services/workItem.server.service';
-import { KanbanBoard } from './_components/kanban-board';
+import { BoardData } from '@/app/board/_components/board-data';
+import { BoardPageSkeleton } from '@/app/board/_components/board-page-skeleton';
+import type { RawSearchParams } from '@/lib/search-params';
 
 export const metadata: Metadata = {
   title: 'Board',
@@ -11,19 +13,24 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function BoardPage() {
-  const workItems = await getWorkItems();
-  const boardItems = workItems.filter((item) => item.status !== 'Draft');
+const BOARD_BREADCRUMBS = [
+  { label: 'Dashboard', url: '/dashboard' },
+  { label: 'Board', url: '/board' },
+] as const;
 
+export default function BoardPage({
+  searchParams,
+}: Readonly<{
+  searchParams: Promise<RawSearchParams>;
+}>) {
   return (
     <DashboardShell
       description="Track progress, update task statuses, and organize work-items in real-time."
-      breadcrumbOverrides={[
-        { label: 'Dashboard', url: '/dashboard' },
-        { label: 'Board', url: '/board' },
-      ]}
+      breadcrumbOverrides={[...BOARD_BREADCRUMBS]}
     >
-      <KanbanBoard initialWorkItems={boardItems} />
+      <Suspense fallback={<BoardPageSkeleton />}>
+        <BoardData searchParams={searchParams} />
+      </Suspense>
     </DashboardShell>
   );
 }

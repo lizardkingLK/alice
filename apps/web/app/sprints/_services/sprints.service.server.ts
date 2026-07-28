@@ -1,21 +1,70 @@
-import { apiFetch } from '@/lib/api/api-client.server';
-import { PaginatedSprints } from './sprints.service';
+import { createClient } from '@/lib/supabase/server';
+import { pageRange, paginationMeta } from '@/lib/db/pagination';
+import { applyListSearch, throwIfError } from '@/lib/db/query';
+import { projectRelationSelect } from '@repo/types';
+import {
+  mapDbSprintToSprint,
+  type DbSprintRelation,
+  type PaginatedSprints,
+  type Sprint,
+} from './sprints.service';
 
-const apiSprints = '/api/sprints';
+const SPRINT_WITH_PROJECT = `*, ${projectRelationSelect()}`;
 
+/**
+ * Reads query Supabase directly from the RSC layer to skip the `web → api`
+ * hop. Sprint mutations still go through the API.
+ */
 export async function getSprintsPaginatedServer(
   tab?: 'active' | 'archived',
-  page?: number,
-  limit?: number,
+  page: number = 1,
+  limit: number = 5,
   search?: string
 ): Promise<PaginatedSprints> {
-  const params = new URLSearchParams();
-  if (tab) params.append('status', tab);
-  if (page) params.append('page', page.toString());
-  if (limit) params.append('limit', limit.toString());
-  if (search) params.append('search', search);
+  const supabase = await createClient();
+  const { from, to } = pageRange(page, limit);
 
-  return apiFetch<PaginatedSprints>(`${apiSprints}?${params.toString()}`, {
-    next: { revalidate: 0 },
-  });
+  let query = supabase
+    .from('sprints')
+    .select(SPRINT_WITH_PROJECT, { count: 'exact' });
+
+  if (tab === 'archived') {
+    query = query.in('status', ['archived']);
+  } else {
+    query = query.in('status', ['planned', 'active', 'closed']);
+  }
+
+  query = applyListSearch(query, search, ['name', 'goal']);
+
+  const { data, error, count } = await query
+    .order('start_date', { ascending: false })
+    .range(from, to);
+
+  throwIfError(error, 'failed to list sprints', 'Failed to list sprints');
+
+  const rows = (data ?? []) as unknown as DbSprintRelation[];
+
+  return {
+    sprints: rows.map(mapDbSprintToSprint),
+    pagination: paginationMeta(count ?? 0, page, limit),
+  };
+}
+
+/** Mirrors `sprintsRepository.findById` — same select and mapping as the list reader. */
+export async function getSprint(sprintId: string): Promise<Sprint | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('sprints')
+    .select(SPRINT_WITH_PROJECT)
+    .eq('id', sprintId)
+    .maybeSingle();
+
+  throwIfError(error, 'failed to find sprint', 'Failed to find sprint');
+
+  if (!data) {
+    return null;
+  }
+
+  return mapDbSprintToSprint(data as unknown as DbSprintRelation);
 }

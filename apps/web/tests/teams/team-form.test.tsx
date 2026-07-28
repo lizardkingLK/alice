@@ -1,26 +1,19 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import type { ComponentProps } from 'react';
 import { TeamForm } from '@/app/manager/_components/team-form';
 import { createTeam, updateTeam } from '@/app/manager/_services/teams.service';
-import {
-  getProjectList,
-  getProjectMembers,
-} from '@/app/projects/_services/projects.service';
 import type { User } from '@/app/users/_services/users.service';
 import type { Team } from '@/app/manager/_services/teams.service';
 import type {
   Project,
   ProjectMemberWithUser,
-} from '@/app/projects/_services/projects.service';
+  ProjectMembersByProjectId,
+} from '@/app/projects/_services/projects.service.base';
 
 vi.mock('@/app/manager/_services/teams.service', () => ({
   createTeam: vi.fn(),
   updateTeam: vi.fn(),
-}));
-
-vi.mock('@/app/projects/_services/projects.service', () => ({
-  getProjectList: vi.fn().mockResolvedValue([]),
-  getProjectMembers: vi.fn().mockResolvedValue([]),
 }));
 
 const mockUsers: User[] = [
@@ -63,6 +56,19 @@ const mockUsers: User[] = [
     status: 'active',
     updated_by: null,
   },
+  {
+    id: 'user-dev-2',
+    name: 'Developer Two',
+    email: 'dev2@alice.dev',
+    role: 'member',
+    active: true,
+    created_at: '2026-07-09T10:00:00Z',
+    updated_at: '2026-07-09T10:00:00Z',
+    created_by: null,
+    profile_picture: null,
+    status: 'active',
+    updated_by: null,
+  },
 ];
 
 const mockTeam: Team = {
@@ -71,6 +77,7 @@ const mockTeam: Team = {
   tech_stack: 'Next.js, TypeScript',
   description: 'Handles core platform features',
   manager_id: 'user-mgr-1',
+  project_id: 'proj-1',
   status: 'active',
   created_at: '2026-07-10T10:00:00Z',
   updated_at: '2026-07-10T10:00:00Z',
@@ -113,6 +120,28 @@ const mockProjects: Project[] = [
       email: 'admin@alice.dev',
     },
   },
+  {
+    id: 'proj-2',
+    name: 'Project Beta',
+    key: 'BETA',
+    description: 'Beta description',
+    owner_id: 'user-admin-1',
+    status: 'active',
+    start_date: null,
+    end_date: null,
+    created_at: '2026-07-09T10:00:00Z',
+    updated_at: '2026-07-09T10:00:00Z',
+    created_by: null,
+    updated_by: null,
+    deleted_at: null,
+    attributes_config: null,
+    workflow_config: null,
+    owner: {
+      id: 'user-admin-1',
+      name: 'Admin User',
+      email: 'admin@alice.dev',
+    },
+  },
 ];
 
 const mockProjectMembers: ProjectMemberWithUser[] = [
@@ -128,7 +157,37 @@ const mockProjectMembers: ProjectMemberWithUser[] = [
       role: 'member',
     },
   },
+  {
+    project_id: 'proj-1',
+    user_id: 'user-dev-2',
+    status: 'active',
+    created_at: '2026-07-09T10:00:00Z',
+    user: {
+      id: 'user-dev-2',
+      name: 'Developer Two',
+      email: 'dev2@alice.dev',
+      role: 'member',
+    },
+  },
 ];
+
+const mockProjectMembersByProjectId: ProjectMembersByProjectId = {
+  'proj-1': mockProjectMembers,
+  'proj-2': [
+    {
+      project_id: 'proj-2',
+      user_id: 'user-dev-2',
+      status: 'active',
+      created_at: '2026-07-09T10:00:00Z',
+      user: {
+        id: 'user-dev-2',
+        name: 'Developer Two',
+        email: 'dev2@alice.dev',
+        role: 'member',
+      },
+    },
+  ],
+};
 
 const mockCreatedTeam: Team = {
   id: 'team-new',
@@ -136,6 +195,7 @@ const mockCreatedTeam: Team = {
   tech_stack: 'React, Vite',
   description: 'UI development team',
   manager_id: 'user-mgr-1',
+  project_id: 'proj-1',
   status: 'active',
   created_at: '2026-07-10T10:00:00Z',
   updated_at: '2026-07-10T10:00:00Z',
@@ -149,6 +209,7 @@ const mockUpdatedTeam: Team = {
   tech_stack: 'Next.js, TypeScript',
   description: 'Handles core platform features',
   manager_id: 'user-mgr-1',
+  project_id: 'proj-1',
   status: 'active',
   created_at: '2026-07-10T10:00:00Z',
   updated_at: '2026-07-10T10:00:00Z',
@@ -156,29 +217,50 @@ const mockUpdatedTeam: Team = {
   updated_by: null,
 };
 
+function renderTeamForm(props: Partial<ComponentProps<typeof TeamForm>> = {}) {
+  return render(
+    <TeamForm
+      users={mockUsers}
+      activeProjects={mockProjects}
+      projectMembersByProjectId={mockProjectMembersByProjectId}
+      {...props}
+    />
+  );
+}
+
+async function selectManagerAndProject() {
+  fireEvent.click(screen.getByLabelText(/Designated Team Manager/i));
+  fireEvent.click(await screen.findByRole('option', { name: /Manager One/i }));
+
+  fireEvent.click(screen.getByLabelText(/Associated Project/i));
+  fireEvent.click(
+    await screen.findByRole('option', { name: /Project Alpha/i })
+  );
+}
+
 describe('TeamForm Component', () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it('renders inputs and manager select options correctly', async () => {
-    vi.mocked(getProjectList).mockResolvedValue(mockProjects);
+  it('renders inputs and manager select options correctly', () => {
+    renderTeamForm();
 
-    render(<TeamForm users={mockUsers} />);
-
-    expect(screen.getByLabelText(/Team Identifier \/ Name/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Primary Technology Stack/i)).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/Team Identifier \/ Name/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/Primary Technology Stack/i)
+    ).toBeInTheDocument();
     expect(screen.getByLabelText(/Role Description/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Designated Team Manager/i)).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/Designated Team Manager/i)
+    ).toBeInTheDocument();
     expect(screen.getByLabelText(/Associated Project/i)).toBeInTheDocument();
-
-    await waitFor(() => {
-      expect(getProjectList).toHaveBeenCalled();
-    });
   });
 
   it('validates mandatory fields on submit when empty', async () => {
-    render(<TeamForm users={mockUsers} />);
+    renderTeamForm();
 
     const submitBtn = screen.getByRole('button', { name: /Create Team/i });
     const form = submitBtn.closest('form')!;
@@ -190,12 +272,31 @@ describe('TeamForm Component', () => {
     expect(createTeam).not.toHaveBeenCalled();
   });
 
-  it('submits correctly in create mode and triggers onSuccess callback', async () => {
+  it('requires associated project before create', async () => {
+    renderTeamForm();
+
+    fireEvent.change(screen.getByLabelText(/Team Identifier \/ Name/i), {
+      target: { value: 'Frontend Squad' },
+    });
+
+    fireEvent.click(screen.getByLabelText(/Designated Team Manager/i));
+    fireEvent.click(
+      await screen.findByRole('option', { name: /Manager One/i })
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Create Team/i }));
+
+    expect(
+      await screen.findByText(/Associated project is required/i)
+    ).toBeInTheDocument();
+    expect(createTeam).not.toHaveBeenCalled();
+  });
+
+  it('submits correctly in create mode with project_id and triggers onSuccess', async () => {
     const onSuccess = vi.fn();
     vi.mocked(createTeam).mockResolvedValue(mockCreatedTeam);
-    vi.mocked(getProjectList).mockResolvedValue(mockProjects);
 
-    render(<TeamForm users={mockUsers} onSuccess={onSuccess} />);
+    renderTeamForm({ onSuccess });
 
     fireEvent.change(screen.getByLabelText(/Team Identifier \/ Name/i), {
       target: { value: 'Frontend Squad' },
@@ -207,15 +308,9 @@ describe('TeamForm Component', () => {
       target: { value: 'UI development team' },
     });
 
-    // Select Manager
-    const managerSelect = screen.getByLabelText(/Designated Team Manager/i);
-    fireEvent.click(managerSelect);
+    await selectManagerAndProject();
 
-    const option = await screen.findByRole('option', { name: /Manager One/i });
-    fireEvent.click(option);
-
-    const submitBtn = screen.getByRole('button', { name: /Create Team/i });
-    fireEvent.click(submitBtn);
+    fireEvent.click(screen.getByRole('button', { name: /Create Team/i }));
 
     await waitFor(() => {
       expect(createTeam).toHaveBeenCalledWith({
@@ -223,51 +318,80 @@ describe('TeamForm Component', () => {
         tech_stack: 'React, Vite',
         description: 'UI development team',
         manager_id: 'user-mgr-1',
+        project_id: 'proj-1',
         status: 'active',
         member_ids: [],
       });
     });
 
     expect(
-      await screen.findByText(/A new team record has been successfully registered/i)
+      await screen.findByText(
+        /A new team record has been successfully registered/i
+      )
     ).toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(onSuccess).toHaveBeenCalled();
-    }, { timeout: 1600 });
+    await waitFor(
+      () => {
+        expect(onSuccess).toHaveBeenCalled();
+      },
+      { timeout: 1600 }
+    );
   });
 
-  it('populates fields and updates correctly in edit mode', async () => {
-    const onSuccess = vi.fn();
-    vi.mocked(updateTeam).mockResolvedValue(mockUpdatedTeam);
-    vi.mocked(getProjectList).mockResolvedValue(mockProjects);
-    vi.mocked(getProjectMembers).mockResolvedValue(mockProjectMembers);
+  it('submits selected project members as member_ids on create', async () => {
+    vi.mocked(createTeam).mockResolvedValue(mockCreatedTeam);
 
-    render(
-      <TeamForm
-        teamToEdit={mockTeam}
-        users={mockUsers}
-        onSuccess={onSuccess}
-      />
-    );
+    renderTeamForm();
+
+    fireEvent.change(screen.getByLabelText(/Team Identifier \/ Name/i), {
+      target: { value: 'Frontend Squad' },
+    });
+
+    await selectManagerAndProject();
+
+    const checkbox = await screen.findByRole('checkbox', {
+      name: /Developer One/i,
+    });
+    fireEvent.click(checkbox);
+    expect(checkbox).toBeChecked();
+
+    fireEvent.click(screen.getByRole('button', { name: /Create Team/i }));
 
     await waitFor(() => {
-      expect(getProjectList).toHaveBeenCalled();
-      expect(getProjectMembers).toHaveBeenCalled();
+      expect(createTeam).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Frontend Squad',
+          manager_id: 'user-mgr-1',
+          project_id: 'proj-1',
+          member_ids: ['user-dev-1'],
+        })
+      );
     });
+  });
+
+  it('populates fields from team.project_id and updates correctly in edit mode', async () => {
+    const onSuccess = vi.fn();
+    vi.mocked(updateTeam).mockResolvedValue(mockUpdatedTeam);
+
+    renderTeamForm({ teamToEdit: mockTeam, onSuccess });
 
     const nameInput = screen.getByLabelText(/Team Identifier \/ Name/i);
     expect(nameInput).toHaveValue('Platform Core');
 
-    const techInput = screen.getByLabelText(/Primary Technology Stack/i);
-    expect(techInput).toHaveValue('Next.js, TypeScript');
+    const projectTrigger = screen.getByLabelText(/Associated Project/i);
+    expect(projectTrigger).toHaveTextContent(/Project Alpha/i);
+    expect(projectTrigger).toBeDisabled();
+
+    const checkbox = await screen.findByRole('checkbox', {
+      name: /Developer One/i,
+    });
+    expect(checkbox).toBeChecked();
 
     fireEvent.change(nameInput, {
       target: { value: 'Platform Core Updated' },
     });
 
-    const submitBtn = screen.getByRole('button', { name: /Save Changes/i });
-    fireEvent.click(submitBtn);
+    fireEvent.click(screen.getByRole('button', { name: /Save Changes/i }));
 
     await waitFor(() => {
       expect(updateTeam).toHaveBeenCalledWith(
@@ -278,34 +402,144 @@ describe('TeamForm Component', () => {
           description: 'Handles core platform features',
           manager_id: 'user-mgr-1',
           status: 'active',
+          member_ids: ['user-dev-1'],
         })
       );
     });
 
     expect(
-      await screen.findByText(/The team configuration has been successfully updated/i)
+      await screen.findByText(
+        /The team configuration has been successfully updated/i
+      )
     ).toBeInTheDocument();
   });
 
+  it('locks the project dropdown on edit', () => {
+    renderTeamForm({ teamToEdit: mockTeam });
+
+    const projectTrigger = screen.getByLabelText(/Associated Project/i);
+    expect(projectTrigger).toBeDisabled();
+    expect(projectTrigger).toHaveTextContent(/Project Alpha/i);
+    expect(
+      screen.getByText(/Project is fixed for this team/i)
+    ).toBeInTheDocument();
+  });
+
+  it('shows all project members on edit with only team members checked', async () => {
+    renderTeamForm({ teamToEdit: mockTeam });
+
+    const checked = await screen.findByRole('checkbox', {
+      name: /Developer One/i,
+    });
+    const unchecked = screen.getByRole('checkbox', {
+      name: /Developer Two/i,
+    });
+    expect(checked).toBeChecked();
+    expect(unchecked).not.toBeChecked();
+  });
+
+  it('keeps unchecked members in the list after unselecting', async () => {
+    renderTeamForm({ teamToEdit: mockTeam });
+
+    const checkbox = await screen.findByRole('checkbox', {
+      name: /Developer One/i,
+    });
+    expect(checkbox).toBeChecked();
+    fireEvent.click(checkbox);
+    expect(checkbox).not.toBeChecked();
+    expect(
+      screen.getByRole('checkbox', { name: /Developer One/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('checkbox', { name: /Developer Two/i })
+    ).toBeInTheDocument();
+  });
+
+  it('shows team members as checked on edit even if prefetch map is empty', async () => {
+    renderTeamForm({
+      teamToEdit: mockTeam,
+      projectMembersByProjectId: { 'proj-1': [], 'proj-2': [] },
+    });
+
+    const checkbox = await screen.findByRole('checkbox', {
+      name: /Developer One/i,
+    });
+    expect(checkbox).toBeChecked();
+  });
+
+  it('allows selecting a project on edit when team.project_id is null', async () => {
+    const onSuccess = vi.fn();
+    renderTeamForm({
+      teamToEdit: { ...mockTeam, project_id: null },
+      onSuccess,
+    });
+
+    const projectTrigger = screen.getByLabelText(/Associated Project/i);
+    expect(projectTrigger).not.toBeDisabled();
+    expect(
+      screen.getByText(/This team has no project yet/i)
+    ).toBeInTheDocument();
+
+    fireEvent.click(projectTrigger);
+    fireEvent.click(
+      await screen.findByRole('option', { name: /Project Alpha/i })
+    );
+
+    expect(
+      await screen.findByRole('checkbox', { name: /Developer Two/i })
+    ).not.toBeChecked();
+    expect(
+      screen.getByRole('checkbox', { name: /Developer One/i })
+    ).toBeChecked();
+
+    fireEvent.click(screen.getByRole('button', { name: /Save Changes/i }));
+
+    await waitFor(() => {
+      expect(updateTeam).toHaveBeenCalledWith(
+        'team-100',
+        expect.objectContaining({
+          project_id: 'proj-1',
+          member_ids: ['user-dev-1'],
+        })
+      );
+    });
+  });
+
+  it('clears member selection when switching projects on create', async () => {
+    renderTeamForm();
+
+    fireEvent.click(screen.getByLabelText(/Associated Project/i));
+    fireEvent.click(
+      await screen.findByRole('option', { name: /Project Alpha/i })
+    );
+
+    const checkbox = await screen.findByRole('checkbox', {
+      name: /Developer One/i,
+    });
+    fireEvent.click(checkbox);
+    expect(checkbox).toBeChecked();
+
+    fireEvent.click(screen.getByLabelText(/Associated Project/i));
+    fireEvent.click(
+      await screen.findByRole('option', { name: /Project Beta/i })
+    );
+
+    const betaMember = await screen.findByRole('checkbox', {
+      name: /Developer Two/i,
+    });
+    expect(betaMember).not.toBeChecked();
+    expect(
+      screen.queryByRole('checkbox', { name: /Developer One/i })
+    ).not.toBeInTheDocument();
+  });
+
   it('loads project members when project is selected and toggles checkbox selection', async () => {
-    vi.mocked(getProjectList).mockResolvedValue(mockProjects);
-    vi.mocked(getProjectMembers).mockResolvedValue(mockProjectMembers);
+    renderTeamForm();
 
-    render(<TeamForm users={mockUsers} />);
-
-    await waitFor(() => {
-      expect(getProjectList).toHaveBeenCalled();
-    });
-
-    const projectSelect = screen.getByLabelText(/Associated Project/i);
-    fireEvent.click(projectSelect);
-
-    const option = await screen.findByRole('option', { name: /Project Alpha/i });
-    fireEvent.click(option);
-
-    await waitFor(() => {
-      expect(getProjectMembers).toHaveBeenCalledWith('proj-1');
-    });
+    fireEvent.click(screen.getByLabelText(/Associated Project/i));
+    fireEvent.click(
+      await screen.findByRole('option', { name: /Project Alpha/i })
+    );
 
     const checkbox = await screen.findByRole('checkbox', {
       name: /Developer One/i,
@@ -316,16 +550,11 @@ describe('TeamForm Component', () => {
     expect(checkbox).toBeChecked();
   });
 
-  it('triggers onClose when dismiss/cancel button is clicked', async () => {
+  it('triggers onClose when dismiss/cancel button is clicked', () => {
     const onClose = vi.fn();
-    render(<TeamForm users={mockUsers} onClose={onClose} />);
+    renderTeamForm({ onClose });
 
-    await waitFor(() => {
-      expect(getProjectList).toHaveBeenCalled();
-    });
-
-    const cancelBtn = screen.getByRole('button', { name: /Cancel/i });
-    fireEvent.click(cancelBtn);
+    fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
 
     expect(onClose).toHaveBeenCalled();
   });

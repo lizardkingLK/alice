@@ -1,57 +1,32 @@
-import { notFound } from 'next/navigation';
-import { getDbUser } from '@/lib/auth';
+import { Suspense } from 'react';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
-import {
-  getProjectDetails,
-  getProjectMembers,
-} from '../_services/projects.service.server';
-import { getUserList } from '@/app/users/_services/users.service.server';
-import { ProjectDetailsWorkspace } from './_components/project-details-workspace';
+import { ProjectDetailsData } from '@/app/projects/[id]/_components/project-details-data';
+import { ProjectDetailsSkeleton } from '@/app/projects/[id]/_components/project-details-skeleton';
+import { toShortId } from '@/app/_shared/utility';
+import type { RawSearchParams } from '@/lib/search-params';
 
 export default async function ProjectDetailsPage({
   params,
+  searchParams,
 }: Readonly<{
   params: Promise<{ id: string }>;
+  searchParams: Promise<RawSearchParams>;
 }>) {
-  const resolvedParams = await params;
-  const projectId = resolvedParams.id;
-
-  const [dbUser, projectBundle, allUsers] = await Promise.all([
-    getDbUser(),
-    Promise.all([
-      getProjectDetails(projectId),
-      getProjectMembers(projectId),
-    ]).catch((error: unknown) => {
-      console.error('Failed to load project details:', error);
-      return null;
-    }),
-    getUserList().catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      console.error('error. failed to fetch users via API:', message);
-      return [];
-    }),
-  ]);
-
-  if (!projectBundle) {
-    notFound();
-  }
-
-  const [project, members] = projectBundle;
-  const userRole = dbUser?.role ?? 'member';
+  const { id } = await params;
+  const shortId = toShortId(id);
 
   return (
     <DashboardShell
-      description={`Workspace configurations for ${project.name}`}
+      description="Workspace configurations for this project"
+      breadcrumbOverrides={[
+        { label: 'Dashboard', url: '/dashboard' },
+        { label: 'Projects', url: '/projects' },
+        { label: shortId, url: `/projects/${id}` },
+      ]}
     >
-      <div className="w-full">
-        <ProjectDetailsWorkspace
-          project={project}
-          members={members}
-          allUsers={allUsers}
-          currentUserId={dbUser?.id}
-          currentUserRole={userRole}
-        />
-      </div>
+      <Suspense fallback={<ProjectDetailsSkeleton />}>
+        <ProjectDetailsData projectId={id} searchParams={searchParams} />
+      </Suspense>
     </DashboardShell>
   );
 }

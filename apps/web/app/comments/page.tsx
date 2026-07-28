@@ -1,9 +1,17 @@
 import { Suspense } from 'react';
 import { Skeleton } from '@repo/ui/components/ui/skeleton';
-import { createClient } from '@/lib/supabase/server';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
+import { getDbUser } from '@/lib/auth';
+import { safeServerFetch } from '@/lib/safe-server-fetch';
 import { CommentsFeed } from './_components/comments-feed';
-import { CommentItem } from './_services/comments.service';
+import {
+  listComments,
+  listCommentWorkItemOptions,
+} from './_services/comments.service.server';
+import type {
+  CommentItem,
+  CommentWorkItemOption,
+} from './_services/comments.service';
 
 function CommentsSkeleton() {
   return (
@@ -27,7 +35,8 @@ const mockSeedComments: CommentItem[] = [
     work_item_id: 'wi-101',
     author_id: 'user-admin-1',
     parent_id: null,
-    content: 'Reviewed the user registration service logic. The RLS policies look solid and session refresh behavior is verified.',
+    content:
+      'Reviewed the user registration service logic. The RLS policies look solid and session refresh behavior is verified.',
     edited: false,
     status: 'active',
     created_at: '2026-07-20T14:32:00Z',
@@ -37,6 +46,7 @@ const mockSeedComments: CommentItem[] = [
       name: 'Alana Admin',
       email: 'admin@alice.dev',
       role: 'admin',
+      profile_picture: null,
     },
     work_item: {
       id: 'wi-101',
@@ -55,7 +65,8 @@ const mockSeedComments: CommentItem[] = [
     work_item_id: 'wi-101',
     author_id: 'user-mgr-1',
     parent_id: 'comment-seed-1',
-    content: 'Great update! Let us ensure we add e2e test cases covering edge-case token expiration in Cypress.',
+    content:
+      'Great update! Let us ensure we add e2e test cases covering edge-case token expiration in Cypress.',
     edited: false,
     status: 'active',
     created_at: '2026-07-20T15:10:00Z',
@@ -65,6 +76,7 @@ const mockSeedComments: CommentItem[] = [
       name: 'Marcus Lead',
       email: 'marcus@alice.dev',
       role: 'manager',
+      profile_picture: null,
     },
     work_item: {
       id: 'wi-101',
@@ -78,7 +90,8 @@ const mockSeedComments: CommentItem[] = [
     work_item_id: 'wi-102',
     author_id: 'user-dev-1',
     parent_id: null,
-    content: 'Updated the drag-and-drop column transitions on the Kanban board. Column ordering persists smoothly now.',
+    content:
+      'Updated the drag-and-drop column transitions on the Kanban board. Column ordering persists smoothly now.',
     edited: true,
     status: 'active',
     created_at: '2026-07-21T09:15:00Z',
@@ -88,6 +101,7 @@ const mockSeedComments: CommentItem[] = [
       name: 'Devin Smith',
       email: 'devin@alice.dev',
       role: 'member',
+      profile_picture: null,
     },
     work_item: {
       id: 'wi-102',
@@ -103,7 +117,7 @@ const mockSeedComments: CommentItem[] = [
   },
 ];
 
-const mockWorkItems = [
+const mockWorkItems: CommentWorkItemOption[] = [
   {
     id: 'wi-101',
     title: 'Auth & Session Cookie Handling',
@@ -124,72 +138,37 @@ const mockWorkItems = [
     id: 'wi-103',
     title: 'Sprint Planning Burndown Chart Bug',
     key: 'ALICE-103',
-    type: 'Bug',
+    type: 'Task',
     project_id: 'proj-1',
     project_name: 'Jira Core Platform',
   },
 ];
 
 async function CommentsData() {
-  let commentsList: CommentItem[] = [];
-  let workItemsList = mockWorkItems;
+  const [commentsResult, workItemsResult] = await Promise.all([
+    safeServerFetch(listComments(), [], 'fetch comments list'),
+    safeServerFetch(
+      listCommentWorkItemOptions(),
+      [],
+      'fetch work items for comments dropdown'
+    ),
+  ]);
 
-  try {
-    const supabase = await createClient();
+  const commentsList =
+    commentsResult.length > 0 ? commentsResult : mockSeedComments;
+  const workItemsList =
+    workItemsResult.length > 0 ? workItemsResult : mockWorkItems;
 
-    // Fetch comments with author and work item
-    const { data: dbComments, error: commentsError } = await supabase
-      .from('comments')
-      .select(
-        `
-        *,
-        author:users!comments_author_id_fkey(id, name, email, role, profile_picture),
-        work_item:work_items(id, title, type, project:projects(id, name, key))
-      `
-      )
-      .order('created_at', { ascending: false });
+  const dbUser = await getDbUser();
+  const currentUserId = dbUser?.id ?? 'user-admin-1';
 
-    if (!commentsError && dbComments && dbComments.length > 0) {
-      commentsList = dbComments as unknown as CommentItem[];
-    }
-
-    // Fetch work items for modal dropdown
-    const { data: dbWorkItems, error: wiError } = await supabase
-      .from('work_items')
-      .select('id, title, type, project_id, project:projects(name, key)')
-      .limit(50);
-
-    type DbWorkItemRow = {
-      id: string;
-      title: string;
-      type: string;
-      project_id: string;
-      project?: {
-        name?: string;
-        key?: string;
-      } | null;
-    };
-
-    if (!wiError && dbWorkItems && dbWorkItems.length > 0) {
-      workItemsList = (dbWorkItems as unknown as DbWorkItemRow[]).map((wi) => ({
-        id: wi.id,
-        title: wi.title,
-        key: `${wi.project?.key || 'ITEM'}-${wi.id.slice(0, 4).toUpperCase()}`,
-        type: wi.type,
-        project_id: wi.project_id,
-        project_name: wi.project?.name || 'Project',
-      }));
-    }
-  } catch (err) {
-    console.error('Error fetching comments from Supabase:', err);
-  }
-
-  // Fallback to seed comments if database has none
-  if (commentsList.length === 0) {
-    commentsList = mockSeedComments;
-  }
-
-  return <CommentsFeed initialComments={commentsList} workItems={workItemsList} />;
+  return (
+    <CommentsFeed
+      initialComments={commentsList}
+      workItems={workItemsList}
+      currentUserId={currentUserId}
+    />
+  );
 }
 
 export default async function CommentsPage() {

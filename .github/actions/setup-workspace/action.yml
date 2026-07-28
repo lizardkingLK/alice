@@ -1,0 +1,27 @@
+name: Setup Workspace
+description: >-
+  Install pnpm, set up Node with the pnpm store cache, and install workspace
+  dependencies with a frozen lockfile. Call after actions/checkout so this
+  same-repo composite action can be resolved.
+
+inputs:
+  node-version:
+    description: Node.js version for actions/setup-node.
+    required: false
+    default: '20'
+
+runs:
+  using: composite
+  steps:
+    - name: Install Pnpm Core Engine
+      uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
+
+    - name: Initialize Structured Node Environment
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: pnpm
+
+    - name: Install Workspace Dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile --ignore-scripts

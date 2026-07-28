@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ProjectRegistry } from '@/app/projects/_components/project-registry';
@@ -28,6 +29,43 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
+vi.mock('@repo/ui/components/ui/select', () => {
+  return {
+    Select: ({
+      children,
+      value,
+      onValueChange,
+    }: {
+      children: ReactNode;
+      value: string;
+      // eslint-disable-next-line no-unused-vars
+      onValueChange: (val: string) => void;
+    }) => (
+      <select
+        value={value}
+        onChange={(e) => onValueChange(e.target.value)}
+        data-testid="status-select"
+      >
+        {children}
+      </select>
+    ),
+    SelectTrigger: ({ children }: { children: ReactNode }) => <>{children}</>,
+    SelectValue: ({ placeholder }: { placeholder: string }) => (
+      <>{placeholder}</>
+    ),
+    SelectContent: ({ children }: { children: ReactNode }) => <>{children}</>,
+    SelectItem: ({
+      children,
+      value,
+    }: {
+      children: ReactNode;
+      value: string;
+    }) => <option value={value}>{children}</option>,
+  };
+});
+
+vi.mock('@repo/ui/components/ui/dropdown-menu', () => import('../mocks/dropdown-menu'));
+
 vi.mock('@/app/projects/_components/actions', () => ({
   softDeleteProject: vi.fn(),
   restoreProject: vi.fn(),
@@ -38,14 +76,16 @@ vi.mock('@/app/projects/_components/project-form', () => ({
   ProjectForm: ({
     onClose,
     onSuccess,
-    projectId,
+    projectToEdit,
   }: {
     onClose?: () => void;
     onSuccess?: () => void;
-    projectId?: string;
+    projectToEdit?: Project | null;
   }) => (
     <div data-testid="mock-project-form">
-      <span>Mock Project Form - {projectId || 'Create'}</span>
+      <span>
+        Mock Project Form - {projectToEdit ? projectToEdit.name : 'Create'}
+      </span>
       <button onClick={onClose}>Close Form</button>
       <button onClick={onSuccess}>Success Form</button>
     </div>
@@ -170,8 +210,8 @@ describe('ProjectRegistry Component', () => {
       />
     );
 
-    const archivedBtn = screen.getByRole('button', { name: 'Archived' });
-    fireEvent.click(archivedBtn);
+    const select = screen.getAllByTestId('status-select')[0]!;
+    fireEvent.change(select, { target: { value: 'archived' } });
 
     expect(mockPush).toHaveBeenCalledWith('/projects?tab=archived&page=1');
   });
@@ -246,7 +286,9 @@ describe('ProjectRegistry Component', () => {
     fireEvent.click(editBtn!);
 
     expect(screen.getByTestId('mock-project-form')).toBeInTheDocument();
-    expect(screen.getByText('Mock Project Form - proj-1')).toBeInTheDocument();
+    expect(
+      screen.getByText('Mock Project Form - Project Alpha')
+    ).toBeInTheDocument();
   });
 
   it('performs soft-delete action on confirmation', async () => {

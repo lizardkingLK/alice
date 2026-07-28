@@ -17,6 +17,7 @@ export type Sprint = Pick<DbSprint, 'id' | 'name' | 'goal'> & {
   startDate: DbSprint['start_date'];
   endDate: DbSprint['end_date'];
   createdBy: string;
+  updatedBy: DbSprint['updated_by'];
   createdAt: DbSprint['created_at'];
   updatedAt: DbSprint['updated_at'];
   project?: {
@@ -43,6 +44,7 @@ export function mapDbSprintToSprint(row: DbSprintRelation): Sprint {
     startDate: row.start_date,
     endDate: row.end_date,
     createdBy: row.created_by ?? '',
+    updatedBy: row.updated_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     project: row.project
@@ -84,21 +86,6 @@ export type PaginatedSprints = {
   };
 };
 
-export async function listSprints(
-  tab?: 'active' | 'archived',
-  page?: number,
-  limit?: number,
-  search?: string
-): Promise<PaginatedSprints> {
-  const params = new URLSearchParams();
-  if (tab) params.append('status', tab);
-  if (page) params.append('page', page.toString());
-  if (limit) params.append('limit', limit.toString());
-  if (search) params.append('search', search);
-
-  return apiFetch<PaginatedSprints>(`${apiSprints}?${params.toString()}`);
-}
-
 export async function updateSprintStatus(
   id: string,
   status: Sprint['status']
@@ -111,11 +98,6 @@ export async function updateSprintStatus(
     }
   );
 
-  return data.sprint;
-}
-
-export async function getSprint(id: string): Promise<Sprint> {
-  const data = await apiFetch<{ sprint: Sprint }>(`${apiSprints}/${id}`);
   return data.sprint;
 }
 

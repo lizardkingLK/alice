@@ -3,6 +3,12 @@ export interface RawSearchParams {
   limit?: string;
   tab?: string;
   search?: string;
+  project?: string;
+  sprint?: string;
+  type?: string;
+  assignee?: string;
+  fromProject?: string;
+  fromAssignee?: string;
 }
 
 export interface ParsedStandardParams {
@@ -10,6 +16,17 @@ export interface ParsedStandardParams {
   limit: number;
   search: string;
 }
+
+export type WorkItemTypeFilter = 'Epic' | 'Story' | 'Task';
+
+export interface ParsedWorkItemFilters {
+  projectId?: string;
+  sprintId?: string;
+  type?: WorkItemTypeFilter;
+  assigneeId?: string;
+}
+
+const WORK_ITEM_TYPES = new Set<WorkItemTypeFilter>(['Epic', 'Story', 'Task']);
 
 export function parseStandardParams(
   resolvedParams: RawSearchParams,
@@ -24,8 +41,32 @@ export function parseStandardParams(
   return { page, limit, search };
 }
 
+export function parseWorkItemFilters(
+  resolvedParams: RawSearchParams
+): ParsedWorkItemFilters {
+  const projectId = resolvedParams.project?.trim() || undefined;
+  const sprintId = resolvedParams.sprint?.trim() || undefined;
+  const assigneeId = resolvedParams.assignee?.trim() || undefined;
+  const rawType = resolvedParams.type?.trim();
+  const type =
+    rawType && WORK_ITEM_TYPES.has(rawType as WorkItemTypeFilter)
+      ? (rawType as WorkItemTypeFilter)
+      : undefined;
+
+  return { projectId, sprintId, type, assigneeId };
+}
+
 export function parseTabStatus(tab?: string): 'active' | 'archived' {
   return tab === 'archived' ? 'archived' : 'active';
+}
+
+export type ProjectDetailsTab = 'details' | 'members' | 'work-items';
+
+export function parseProjectDetailsTab(tab?: string | null): ProjectDetailsTab {
+  if (tab === 'members' || tab === 'work-items') {
+    return tab;
+  }
+  return 'details';
 }
 
 export function parseManagerTabStatus(
@@ -34,4 +75,10 @@ export function parseManagerTabStatus(
   if (tab === 'archived') return 'archived';
   if (tab === 'inactive') return 'inactive';
   return 'active';
+}
+
+export type UsersPageTab = 'users' | 'allowlist';
+
+export function parseUsersPageTab(tab?: string | null): UsersPageTab {
+  return tab === 'allowlist' ? 'allowlist' : 'users';
 }

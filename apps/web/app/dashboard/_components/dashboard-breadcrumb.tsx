@@ -11,6 +11,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@repo/ui/components/ui/breadcrumb';
+import { isUuidSegment, toShortId } from '@/app/_shared/utility';
 
 export type DashboardBreadcrumbOverride = {
   label: string;
@@ -19,6 +20,11 @@ export type DashboardBreadcrumbOverride = {
 
 type DashboardBreadcrumbProps = {
   overrides?: DashboardBreadcrumbOverride[];
+  /**
+   * When true, `overrides` is the complete crumb list (not path label overlays).
+   * Use this when the trail must differ from the URL (e.g. project-scoped work item).
+   */
+  asTrail?: boolean;
 };
 
 const DEFAULT_OVERRIDES: DashboardBreadcrumbOverride[] = [
@@ -39,6 +45,17 @@ function humanizeSegment(segment: string): string {
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
+}
+
+/**
+ * Path UUIDs use the short-id label so `loading.tsx` (no overrides) and the
+ * loaded page never flash full id → short id.
+ */
+function labelForSegment(segment: string): string {
+  if (isUuidSegment(segment)) {
+    return toShortId(segment);
+  }
+  return humanizeSegment(segment);
 }
 
 function buildBreadcrumbItems(
@@ -65,7 +82,7 @@ function buildBreadcrumbItems(
       overrideByUrl.get(accumulated) ?? overrideBySegment.get(segment);
 
     items.push({
-      label: override?.label ?? humanizeSegment(segment),
+      label: override?.label ?? labelForSegment(segment),
       url: override?.url ?? accumulated,
     });
   }
@@ -82,9 +99,10 @@ function buildBreadcrumbItems(
 
 export function DashboardBreadcrumb({
   overrides = DEFAULT_OVERRIDES,
+  asTrail = false,
 }: Readonly<DashboardBreadcrumbProps>) {
   const pathname = usePathname();
-  const items = buildBreadcrumbItems(pathname, overrides);
+  const items = asTrail ? overrides : buildBreadcrumbItems(pathname, overrides);
 
   return (
     <Breadcrumb>
@@ -96,7 +114,7 @@ export function DashboardBreadcrumb({
             <Fragment key={`${item.url}-${item.label}`}>
               {index > 0 ? <BreadcrumbSeparator /> : null}
               <BreadcrumbItem>
-                {isCurrent ? (
+                {isCurrent || item.url === '#' ? (
                   <BreadcrumbPage>{item.label}</BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink asChild>

@@ -8,7 +8,15 @@ await jiti.import('./lib/env/env');
 const nextConfig = {
   transpilePackages: ['@repo/ui', '@repo/types'],
   images: {
-    remotePatterns: [new URL('https://lh3.googleusercontent.com/**')],
+    remotePatterns: [
+      new URL('https://lh3.googleusercontent.com/**'),
+      // Public Storage objects (profile pictures, etc.)
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
   },
   output: 'standalone',
 };

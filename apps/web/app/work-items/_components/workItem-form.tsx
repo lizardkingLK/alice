@@ -12,13 +12,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@repo/ui/components/ui/select';
-import { AlertCircle, CheckCircle, Loader2 } from '@repo/ui/lib/icons';
+import { Loader2 } from '@repo/ui/lib/icons';
 import { User as DbUser } from '@/app/users/_services/users.service';
-import { DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
+import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import {
   createWorkItem,
   updateWorkItem,
-} from '@/app/work-items/_services/workItem.client.service';
+} from '@/app/work-items/_services/workItem.service.client';
+import { FormStatusAlerts } from '@/app/work-items/_components/workItem-form-alerts';
 import { Project as DbProject } from '@/app/projects/_services/projects.service';
 import { delay } from '@/app/_shared/utility';
 import { ResponseDTO } from '@repo/types/connection';
@@ -30,6 +31,10 @@ interface WorkItemFormProps {
   projects: DbProject[];
   itemToEdit?: DbWorkItem | null;
   projectMembers: DbUser[];
+  /** When true, project select is disabled (value still submitted). */
+  lockProject?: boolean;
+  /** When set, assignee select is disabled and defaults to this user on create. */
+  lockAssigneeId?: string;
 }
 
 const taskTypes = ['Epic', 'Story', 'Task'] as const;
@@ -60,16 +65,23 @@ export function WorkItemForm({
   itemToEdit = null,
   projectMembers,
   projects,
+  lockProject = false,
+  lockAssigneeId,
 }: Readonly<WorkItemFormProps>) {
   const [isPending, setPending] = useState(false);
   const [state, setState] = useState<{
     success: string | null;
     error: string | null;
   } | null>(null);
-  const [projectId, setProjectId] = useState(itemToEdit?.project_id ?? '');
-  const [assigneeId, setAssigneeId] = useState(itemToEdit?.assignee_id ?? '');
+  const [projectId, setProjectId] = useState(
+    itemToEdit?.project_id ?? (lockProject ? (projects[0]?.id ?? '') : '')
+  );
+  const [assigneeId, setAssigneeId] = useState(
+    itemToEdit?.assignee_id ?? lockAssigneeId ?? ''
+  );
   const [type, setType] = useState(itemToEdit?.type ?? '');
   const isEditMode = itemToEdit !== null;
+  const lockAssignee = Boolean(lockAssigneeId);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -123,7 +135,11 @@ export function WorkItemForm({
         {/* Project */}
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="project_id">Project</Label>
-          <Select value={projectId} onValueChange={setProjectId}>
+          <Select
+            value={projectId}
+            onValueChange={setProjectId}
+            disabled={lockProject}
+          >
             <SelectTrigger id="project_id">
               <SelectValue placeholder="Select project..." />
             </SelectTrigger>
@@ -170,7 +186,11 @@ export function WorkItemForm({
         {/* Assign To */}
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="assignee_id">Assign to</Label>
-          <Select value={assigneeId} onValueChange={setAssigneeId}>
+          <Select
+            value={assigneeId}
+            onValueChange={setAssigneeId}
+            disabled={lockAssignee}
+          >
             <SelectTrigger id="assignee_id">
               <SelectValue placeholder="Select assignee..." />
             </SelectTrigger>
@@ -184,21 +204,23 @@ export function WorkItemForm({
           </Select>
           <input type="hidden" name="assignee_id" value={assigneeId} />
         </div>
+
+        {/* Story Points */}
+        <div className="space-y-2 sm:col-span-2">
+          <Label htmlFor="story_points">Story points</Label>
+          <Input
+            id="story_points"
+            name="story_points"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="Enter Story Points"
+            defaultValue={itemToEdit?.story_points ?? ''}
+          />
+        </div>
       </div>
 
-      {state?.error ? (
-        <div className="text-destructive bg-destructive/10 border-destructive/20 flex items-center gap-2 rounded-lg border p-3 text-sm">
-          <AlertCircle className="size-4 shrink-0" />
-          <span>{state.error}</span>
-        </div>
-      ) : null}
-
-      {state?.success ? (
-        <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-600 dark:text-emerald-400">
-          <CheckCircle className="size-4 shrink-0" />
-          <span>{state.success}</span>
-        </div>
-      ) : null}
+      <FormStatusAlerts error={state?.error} success={state?.success} />
 
       <DialogFooter>
         {onClose ? (

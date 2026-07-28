@@ -53,6 +53,33 @@ Add prefixes info, warn, error with the formatting "prefix. the message is here"
 - The backend app uses Serverless Functions. Never use WebSockets (`ws://`) or local in-memory storage arrays as they will clear between requests.
 - All routing changes to the API must align with the paths specified in `apps/api/vercel.json`.
 
+## API path aliases (`apps/api`)
+
+- Prefix: `@/` maps to `apps/api/src/*` (`apps/api/tsconfig.json` `compilerOptions.paths`).
+- Internal imports under `apps/api/src` must use `@/…` — do **not** use relative `../` or deep `../../` paths.
+- Same-folder modules still use `@/` (e.g. `import { usersService } from '@/routes/api/users/users.service'`), not `./users.service`.
+- External packages stay bare (`express`, `zod`, `@repo/types`, `@supabase/supabase-js`, etc.).
+- Prefer short stable paths:
+  - `@/lib/…` — shared helpers (`file-helpers`, `audit`, `supabase`, `pagination`)
+  - `@/config/…` — env, routing, cors, server bootstrap
+  - `@/middlewares/…` — Express middleware
+  - `@/routes/…` — HTTP routers, services, repositories, schemas
+- **Dev:** `tsx` resolves `paths` from `tsconfig.json`.
+- **Build:** `tsc && tsc-alias` rewrites `@/` in `dist/` for `node dist/index.js`.
+- **Vercel:** `@vercel/node` builds from `src/index.ts` and respects tsconfig paths.
+- Do not introduce a second alias prefix (e.g. `#/` or `@api/`) unless the whole API migrates intentionally.
+- When adding files: new routes/services must import shared code via `@/`. If you copy a snippet with relative imports, rewrite them to `@/` before finishing.
+
+```ts
+// ❌ relative
+import { env } from '../../../config/env';
+import { supabase } from '../../../lib/supabase';
+
+// ✅ alias
+import { env } from '@/config/env';
+import { supabase } from '@/lib/supabase';
+```
+
 ## GitHub Actions Actions Pipeline Rule
 
 - Workspaces must resolve their testing cycles locally using `pnpm turbo test` seamlessly.

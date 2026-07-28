@@ -1,11 +1,23 @@
+'use client';
+
 import {
   formatLabelWithSpace,
   formatDate,
   getInitials,
 } from '@/app/_shared/utility';
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
-import { DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
-import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
+import {
+  WORK_ITEM_PATCH_FIELD_CONFIG,
+  WorkItemFieldPatchDialog,
+  type WorkItemPatchFieldId,
+  type WorkItemPatchMemberOption,
+} from '@/app/work-items/_components/workItem-field-patch-dialog';
+import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@repo/ui/components/ui/avatar';
 import { Button } from '@repo/ui/components/ui/button';
 import { ButtonGroup } from '@repo/ui/components/ui/button-group';
 import {
@@ -37,6 +49,7 @@ import {
   Rocket,
   CheckCircle2,
   Cloud,
+  PencilIcon,
   Settings,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
@@ -114,13 +127,19 @@ function DetailRow({
 
 function UserPill({
   name,
+  imageUrl,
   emptyLabel = 'Unassigned',
-}: Readonly<{ name?: string | null; emptyLabel?: string }>) {
+}: Readonly<{
+  name?: string | null;
+  imageUrl?: string | null;
+  emptyLabel?: string;
+}>) {
   const displayName = name?.trim() || emptyLabel;
 
   return (
     <div className="flex items-center gap-2">
       <Avatar size="sm">
+        {imageUrl ? <AvatarImage src={imageUrl} alt={displayName} /> : null}
         <AvatarFallback>{getInitials(name)}</AvatarFallback>
       </Avatar>
       <span className="text-sm font-medium">{displayName}</span>
@@ -128,19 +147,77 @@ function UserPill({
   );
 }
 
+/* eslint-disable no-unused-vars */
+type EditableUserFieldProps = {
+  readonly name?: string | null;
+  readonly imageUrl?: string | null;
+  readonly field: WorkItemPatchFieldId;
+  readonly onEdit: (field: WorkItemPatchFieldId) => void;
+};
+/* eslint-enable no-unused-vars */
+
+function EditableUserField({
+  name,
+  imageUrl,
+  field,
+  onEdit,
+}: Readonly<EditableUserFieldProps>) {
+  const config = WORK_ITEM_PATCH_FIELD_CONFIG[field];
+
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <UserPill
+        name={name}
+        imageUrl={imageUrl}
+        emptyLabel={config.unassignedLabel}
+      />
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        className="cursor-pointer"
+        aria-label={`Edit ${config.label.toLowerCase()}`}
+        onClick={() => onEdit(field)}
+      >
+        <PencilIcon className="size-3.5" />
+      </Button>
+    </div>
+  );
+}
+
 export default function WorkItemSidebar({
   workItem,
+  projectMembers = [],
   detailsOpen,
   setDetailsOpen,
   moreFieldsOpen,
   setMoreFieldsOpen,
+  onWorkItemPatched,
 }: Readonly<{
   workItem: DbWorkItem;
+  projectMembers?: readonly WorkItemPatchMemberOption[];
   detailsOpen: boolean;
   setDetailsOpen: Dispatch<SetStateAction<boolean>>;
   moreFieldsOpen: boolean;
   setMoreFieldsOpen: Dispatch<SetStateAction<boolean>>;
+  // eslint-disable-next-line no-unused-vars -- callback signature
+  onWorkItemPatched: (updated: Partial<DbWorkItem>) => void;
 }>) {
+  const [activeField, setActiveField] = useState<WorkItemPatchFieldId | null>(
+    null
+  );
+
+  const activeConfig = activeField
+    ? WORK_ITEM_PATCH_FIELD_CONFIG[activeField]
+    : null;
+
+  let currentValue: string | null = null;
+  if (activeField === 'assignee_id') {
+    currentValue = workItem.assignee_id;
+  } else if (activeField === 'reporter_id') {
+    currentValue = workItem.reporter_id;
+  }
+
   return (
     <aside className="space-y-4 lg:col-span-2">
       <StatusDropdown workItemStatus={workItem.status} />
@@ -172,10 +249,20 @@ export default function WorkItemSidebar({
           <CollapsibleContent>
             <CardContent className="border-t px-4 pt-1 pb-4">
               <DetailRow label="Assignee">
-                <UserPill name={workItem.assignee?.name} />
+                <EditableUserField
+                  name={workItem.assignee?.name}
+                  imageUrl={workItem.assignee?.profile_picture}
+                  field="assignee_id"
+                  onEdit={setActiveField}
+                />
               </DetailRow>
               <DetailRow label="Reporter">
-                <UserPill name={workItem.reporter?.name} emptyLabel="Unknown" />
+                <EditableUserField
+                  name={workItem.reporter?.name}
+                  imageUrl={workItem.reporter?.profile_picture}
+                  field="reporter_id"
+                  onEdit={setActiveField}
+                />
               </DetailRow>
               <DetailRow label="Priority">
                 <PriorityBadge priority={workItem.priority} />
@@ -315,6 +402,22 @@ export default function WorkItemSidebar({
           Configure
         </Button>
       </div>
+
+      {activeConfig ? (
+        <WorkItemFieldPatchDialog
+          open={!!activeField}
+          onOpenChange={(open) => {
+            if (!open) {
+              setActiveField(null);
+            }
+          }}
+          workItemId={workItem.id}
+          fieldConfig={activeConfig}
+          options={projectMembers}
+          currentValue={currentValue}
+          onPatched={onWorkItemPatched}
+        />
+      ) : null}
     </aside>
   );
 }

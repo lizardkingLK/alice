@@ -31,8 +31,15 @@ export type ProjectMemberWithUser = {
   user_id: string;
   status: 'active' | 'inactive' | 'archived' | 'deleted';
   created_at: string;
-  user: Pick<User, 'id' | 'name' | 'email' | 'role'> | null;
+  user:
+    | (Pick<User, 'id' | 'name' | 'email' | 'role'> & {
+        profile_picture?: string | null;
+      })
+    | null;
 };
+
+/** Prefetched project → active members map for form UIs (e.g. team form). */
+export type ProjectMembersByProjectId = Record<string, ProjectMemberWithUser[]>;
 
 export function createProjectsService(
   apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>

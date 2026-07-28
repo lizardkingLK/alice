@@ -54,7 +54,10 @@ export function Pagination({
             value={String(limit)}
             onValueChange={(val) => onLimitChange(Number(val))}
           >
-            <SelectTrigger className="bg-background/50 hover:bg-accent h-7 w-17.5 text-xs font-medium">
+            <SelectTrigger
+              aria-label="Rows per page"
+              className="bg-background/50 hover:bg-accent h-7 w-17.5 text-xs font-medium"
+            >
               <SelectValue placeholder={String(limit)} />
             </SelectTrigger>
             <SelectContent>

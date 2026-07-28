@@ -12,11 +12,11 @@ Central docs for **Alice** (branded as **Jira Teams**).
 
 ## Start here
 
-| Doc                                          | Audience                             | Status |
-| -------------------------------------------- | ------------------------------------ | ------ |
-| [product/ARD.md](./product/ARD.md)           | Product / requirements               | Living |
-| [architecture/TRD.md](./architecture/TRD.md) | Engineering / architecture           | Living |
-| [guides/DATABASE.md](./guides/DATABASE.md)   | Anyone touching schema or migrations | Living |
+| Doc                                                                        | Audience                                            | Status |
+| -------------------------------------------------------------------------- | --------------------------------------------------- | ------ |
+| [product/ARD.md](./product/ARD.md)                                         | Product / requirements                              | Living |
+| [architecture/TRD.md](./architecture/TRD.md)                               | Engineering / architecture                          | Living |
+| [guides/DATABASE.md](./guides/DATABASE.md)                                 | Anyone touching schema or migrations                | Living |
 | [guides/TESTING_DEVELOPMENT_FLOW.md](./guides/TESTING_DEVELOPMENT_FLOW.md) | Anyone developing features & running unit/e2e tests | Living |
 
 ---
@@ -34,19 +34,22 @@ Requirements and scope for Jira Teams.
 How the monorepo fits together (apps, auth, deployment).
 
 - [TRD.md](./architecture/TRD.md) — technical requirements and system design
+- [DI.md](./architecture/DI.md) — Express composition root (`config/composition.ts`) / constructor injection (**Plan**; work-items slice Living)
 
 ### Features
 
 One folder per product area. Prefer a local `README.md` as the index.
 
-| Area       | Index                                          |
-| ---------- | ---------------------------------------------- |
-| Users      | [features/users/](./features/users/)           |
-| Work items | [features/work-items/](./features/work-items/) |
-| Board      | [features/board/](./features/board/)           |
-| Projects   | [features/projects/](./features/projects/)     |
-| Sprints    | [features/sprints/](./features/sprints/)       |
-| Dashboard  | [features/dashboard/](./features/dashboard/)   |
+| Area       | Index                                                                                                 |
+| ---------- | ----------------------------------------------------------------------------------------------------- |
+| Users      | [features/users/](./features/users/)                                                                  |
+| Access     | [features/access/](./features/access/) ([ACCESS_ALLOWLIST.md](./features/access/ACCESS_ALLOWLIST.md)) |
+| Work items | [features/work-items/](./features/work-items/)                                                        |
+| Board      | [features/board/](./features/board/)                                                                  |
+| Projects   | [features/projects/](./features/projects/)                                                            |
+| Sprints    | [features/sprints/](./features/sprints/)                                                              |
+| Dashboard  | [features/dashboard/](./features/dashboard/)                                                          |
+| Profile    | [features/profile/](./features/profile/) ([EDIT_PROFILE.md](./features/profile/EDIT_PROFILE.md))      |
 
 ### Database
 
@@ -63,6 +66,7 @@ Authentication and authorization. Index: [auth/README.md](./auth/README.md).
 - [AUTHENTICATION.md](./auth/AUTHENTICATION.md) — sign up, sign in, Google, linking, admin invite, password reset + sequence diagrams (**Living**)
 - [RBAC_AUTHORIZATION_SKELETON.md](./auth/RBAC_AUTHORIZATION_SKELETON.md) — RBAC rollout (**Plan**)
 - [FORGOT_PASSWORD_AUTH_PLAN.md](./auth/FORGOT_PASSWORD_AUTH_PLAN.md) — original recovery plan (**Plan**; see AUTHENTICATION.md §7 for as-built)
+- Admission allowlist: [features/access/ACCESS_ALLOWLIST.md](./features/access/ACCESS_ALLOWLIST.md) (**Living**)
 
 ### Guides
 
@@ -70,6 +74,7 @@ How we work day to day.
 
 - [TESTING_DEVELOPMENT_FLOW.md](./guides/TESTING_DEVELOPMENT_FLOW.md) — Project development & testing flow for all features
 - [DATABASE.md](./guides/DATABASE.md) — Prisma / Supabase workflow
+- [PERFORMANCE.md](./guides/PERFORMANCE.md) — RSC data loading, caching, parallel fetches + roadmap
 - [DEBUGGING.md](./guides/DEBUGGING.md) — IDE debug configs
 - [SEO.md](./guides/SEO.md) — metadata, sitemap, robots
 - [SONAR.md](./guides/SONAR.md) — SonarQube / SonarCloud

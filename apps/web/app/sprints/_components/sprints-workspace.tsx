@@ -5,11 +5,14 @@ import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { SprintList } from '@/app/sprints/_components/sprint-list';
 import { SprintForm } from '@/app/sprints/_components/sprint-form';
-import { Sprint } from '@/app/sprints/_services/sprints.service';
+import {
+  Sprint,
+  updateSprintStatus,
+} from '@/app/sprints/_services/sprints.service';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
-import { cn } from '@repo/ui/lib/utils';
-import { Search } from '@repo/ui/lib/icons';
+import { Search, Plus } from '@repo/ui/lib/icons';
+import type { Project } from '@/app/projects/_services/projects.service.base';
 
 interface SprintsWorkspaceProps {
   readonly sprints: Sprint[];
@@ -19,6 +22,7 @@ interface SprintsWorkspaceProps {
     totalCount: number;
     totalPages: number;
   };
+  readonly projects: Project[];
   readonly filterTab: 'active' | 'archived';
   readonly search: string;
   readonly error?: string | null;
@@ -29,6 +33,7 @@ interface SprintsWorkspaceProps {
 export function SprintsWorkspace({
   sprints,
   pagination,
+  projects,
   filterTab,
   search,
   error = null,
@@ -52,7 +57,7 @@ export function SprintsWorkspace({
   const handleTabChange = (nextTab: 'active' | 'archived') => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('tab', nextTab);
-    params.set('page', '1'); // reset page when tab changes
+    params.set('page', '1');
     router.push(`${pathname}?${params.toString()}`);
   };
 
@@ -78,6 +83,24 @@ export function SprintsWorkspace({
     router.refresh();
   };
 
+  const handleArchiveSprint = async (sprint: Sprint) => {
+    try {
+      const updated = await updateSprintStatus(sprint.id, 'Archived');
+      handleSprintUpdated(updated);
+    } catch (archiveError) {
+      console.error('Failed to archive sprint:', archiveError);
+    }
+  };
+
+  const handleRestoreSprint = async (sprint: Sprint) => {
+    try {
+      const updated = await updateSprintStatus(sprint.id, 'Completed');
+      handleSprintUpdated(updated);
+    } catch (restoreError) {
+      console.error('Failed to restore sprint:', restoreError);
+    }
+  };
+
   const handleRetry = () => {
     router.refresh();
   };
@@ -85,7 +108,6 @@ export function SprintsWorkspace({
   return (
     <>
       <div className="space-y-6">
-        {/* Control Bar */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative max-w-md flex-1">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
@@ -99,33 +121,16 @@ export function SprintsWorkspace({
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Tabs */}
-            <div className="bg-muted/50 border-border text-muted-foreground inline-flex h-10 items-center justify-center rounded-md border p-1">
+            {isManagerOrAdmin ? (
               <Button
-                variant="ghost"
-                onClick={() => handleTabChange('active')}
-                className={cn(
-                  'h-8 cursor-pointer rounded-sm px-3 text-xs font-semibold transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
-                  filterTab === 'active'
-                    ? 'bg-background text-foreground hover:bg-background shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
-                )}
+                type="button"
+                onClick={() => setIsAddSprintOpen(true)}
+                className="h-10 text-xs font-semibold shadow-md duration-300 hover:shadow-lg"
               >
-                Active
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                Add Sprint
               </Button>
-              <Button
-                variant="ghost"
-                onClick={() => handleTabChange('archived')}
-                className={cn(
-                  'h-8 cursor-pointer rounded-sm px-3 text-xs font-semibold transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
-                  filterTab === 'archived'
-                    ? 'bg-background text-foreground hover:bg-background shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
-                )}
-              >
-                Archived
-              </Button>
-            </div>
+            ) : null}
           </div>
         </div>
 
@@ -134,28 +139,28 @@ export function SprintsWorkspace({
             sprints={sprints}
             pagination={pagination}
             filterTab={filterTab}
+            onTabChange={handleTabChange}
             onPageChange={handlePageChange}
             onLimitChange={handleLimitChange}
             error={error}
             onRetry={handleRetry}
             onSprintUpdated={handleSprintUpdated}
-            onAddSprint={
-              isManagerOrAdmin ? () => setIsAddSprintOpen(true) : undefined
-            }
             onEditSprint={
               isManagerOrAdmin
                 ? (sprint) => setEditingSprint(sprint)
                 : undefined
             }
-            isManagerOrAdmin={isManagerOrAdmin}
+            onArchiveSprint={isManagerOrAdmin ? handleArchiveSprint : undefined}
+            onRestoreSprint={isManagerOrAdmin ? handleRestoreSprint : undefined}
           />
         </div>
       </div>
 
-      {isAddSprintOpen && (
+      {isAddSprintOpen ? (
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
           <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
             <SprintForm
+              projects={projects}
               onSprintUpdated={handleSprintCreated}
               onClose={() => setIsAddSprintOpen(false)}
               onSuccess={() => setIsAddSprintOpen(false)}
@@ -163,13 +168,14 @@ export function SprintsWorkspace({
             />
           </div>
         </div>
-      )}
+      ) : null}
 
-      {editingSprint && (
+      {editingSprint ? (
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
           <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
             <SprintForm
-              sprintId={editingSprint.id}
+              projects={projects}
+              sprintToEdit={editingSprint}
               onSprintUpdated={handleSprintUpdated}
               onClose={() => setEditingSprint(null)}
               onSuccess={() => setEditingSprint(null)}
@@ -177,7 +183,7 @@ export function SprintsWorkspace({
             />
           </div>
         </div>
-      )}
+      ) : null}
     </>
   );
 }

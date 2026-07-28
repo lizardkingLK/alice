@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { requireApiAuth, type AuthenticatedRequest } from '@/middlewares/auth';
+import { teamsService } from '@/routes/api/teams/teams.service';
 import {
-  requireApiAuth,
-  type AuthenticatedRequest,
-} from '../../../middlewares/auth';
-import { teamsService } from './teams.service';
-import { createTeamSchema, updateTeamSchema } from './teams.schemas';
-import { parsePagination } from '../../../lib/pagination';
+  createTeamSchema,
+  updateTeamSchema,
+} from '@/routes/api/teams/teams.schemas';
+import { parsePagination } from '@/lib/pagination';
 
 const teamsRouter: Router = Router();
 
@@ -59,6 +59,7 @@ teamsRouter.post(
         name: validation.data.name,
         description: validation.data.description ?? null,
         manager_id: validation.data.manager_id,
+        project_id: validation.data.project_id,
         tech_stack: validation.data.tech_stack ?? null,
         status: validation.data.status ?? 'active',
         member_ids: validation.data.member_ids,

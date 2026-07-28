@@ -33,8 +33,28 @@ function resolveRole(user: User): AppRole {
 }
 
 /**
+ * Provider avatar URL from Auth user metadata (e.g. Google `avatar_url` / `picture`).
+ * Only used when inserting a new `public.users` row — never overwrites later.
+ */
+function resolveProfilePicture(user: User): string | null {
+  const metadata = user.user_metadata ?? {};
+  for (const key of ['avatar_url', 'picture'] as const) {
+    const value = metadata[key];
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+        return trimmed;
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * Ensures a Supabase Auth user has a matching `public.users` profile.
  * Idempotent — safe after signup, email confirmation, login, and admin invite.
+ * Profile picture is set only on insert from Auth metadata; later updates go
+ * through `/edit-profile`.
  */
 export async function ensurePublicUser(
   user: User
@@ -64,6 +84,7 @@ export async function ensurePublicUser(
     email: user.email,
     name: resolveDisplayName(user),
     role: resolveRole(user),
+    profile_picture: resolveProfilePicture(user),
     active: true,
     ...auditCreate(user.id),
   });

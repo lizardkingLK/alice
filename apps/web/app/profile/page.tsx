@@ -1,5 +1,7 @@
+import { Suspense } from 'react';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
-import { ProfileView } from '@/app/profile/_components/profile-view';
+import { ProfileData } from '@/app/profile/_components/profile-data';
+import { ProfilePageSkeleton } from '@/app/profile/_components/profile-page-skeleton';
 
 export default function ProfilePage() {
   return (
@@ -8,7 +10,9 @@ export default function ProfilePage() {
       sidebarDefaultOpen={false}
       contentClassName="p-0"
     >
-      <ProfileView />
+      <Suspense fallback={<ProfilePageSkeleton />}>
+        <ProfileData />
+      </Suspense>
     </DashboardShell>
   );
 }

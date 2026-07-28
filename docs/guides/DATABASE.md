@@ -54,6 +54,7 @@ Idempotent dev sample data in `packages/db/src/seed.ts`:
 | Entity     | Sample                                                                                                                    |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------- |
 | Users      | `admin@alice.dev`, `manager@alice.dev`, `member@alice.dev` (+ matching Supabase Auth accounts)                            |
+| Allowlist  | Domain `alice.dev` (`access_allowlist`) so seed emails pass admission                                                     |
 | Project    | `ALICE` — Alice Platform                                                                                                  |
 | Team       | Platform Team (manager + member)                                                                                          |
 | Sprints    | Sprint 1 (active), Sprint 2 (planned)                                                                                     |

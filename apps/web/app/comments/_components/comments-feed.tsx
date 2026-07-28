@@ -1,9 +1,20 @@
+/* eslint-disable no-unused-vars */
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
+import { USER_PROJECTION } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
-import { Card, CardContent } from '@repo/ui/components/ui/card';
+import { Badge } from '@repo/ui/components/ui/badge';
+import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@repo/ui/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -17,10 +28,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
+import { Input } from '@repo/ui/components/ui/input';
+import { Label } from '@repo/ui/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@repo/ui/components/ui/select';
+import { Separator } from '@repo/ui/components/ui/separator';
+import { Textarea } from '@repo/ui/components/ui/textarea';
+import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';
+import { getInitials } from '@/app/_shared/utility';
+import { SearchInput } from '@/components/search-input';
+import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import {
   MessageSquareText,
-  Search,
   Plus,
   MoreVertical,
   Reply,
@@ -33,40 +58,458 @@ import {
   Send,
   Building2,
   Tag,
+  RotateCcw,
+  Trash2,
+  X,
 } from '@repo/ui/lib/icons';
 import {
   CommentItem,
-  createComment,
-  updateComment,
-  archiveComment,
+  CommentUser,
+  CommentWorkItemOption,
 } from '../_services/comments.service';
+import {
+  createCommentAction,
+  updateCommentAction,
+  archiveCommentAction,
+  restoreCommentAction,
+} from './actions';
 
 type CommentsFeedProps = {
   initialComments: CommentItem[];
-  workItems: Array<{
-    id: string;
-    title: string;
-    key: string;
-    type: string;
-    project_id: string;
-    project_name?: string;
-  }>;
+  workItems: CommentWorkItemOption[];
   currentUserId?: string;
+  workItemId?: string;
 };
+
+const MENTION_BADGE_CLASS =
+  'border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400';
+const ISSUE_BADGE_CLASS =
+  'border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400';
+
+type StatMetricCardProps = {
+  label: string;
+  value: number;
+  icon: ReactNode;
+  iconClassName: string;
+};
+
+function StatMetricCard({
+  label,
+  value,
+  icon,
+  iconClassName,
+}: Readonly<StatMetricCardProps>) {
+  return (
+    <Card>
+      <CardContent className="flex items-center gap-4">
+        <div
+          className={cn(
+            'flex size-10 shrink-0 items-center justify-center rounded-lg',
+            iconClassName
+          )}
+        >
+          {icon}
+        </div>
+        <div>
+          <p className="text-muted-foreground text-xs font-medium">{label}</p>
+          <p className="text-foreground text-xl font-bold">{value}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CommentAvatar({ name }: Readonly<{ name?: string | null }>) {
+  return (
+    <Avatar size="default">
+      <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+        {getInitials(name ?? 'U')}
+      </AvatarFallback>
+    </Avatar>
+  );
+}
+
+type MentionDropdownListProps = {
+  show: boolean;
+  usersList: CommentUser[];
+  highlightIdx: number;
+  onSelect: (user: CommentUser) => void;
+  position?: 'top' | 'bottom';
+};
+
+function MentionDropdownList({
+  show,
+  usersList,
+  highlightIdx,
+  onSelect,
+  position = 'top',
+}: Readonly<MentionDropdownListProps>) {
+  if (!show || usersList.length === 0) return null;
+  return (
+    <div
+      className={cn(
+        'border-border bg-popover text-popover-foreground absolute right-0 left-0 z-50 max-h-40 overflow-y-auto rounded-lg border shadow-md',
+        position === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
+      )}
+    >
+      {usersList.map((user, idx) => (
+        <button
+          key={user.id}
+          type="button"
+          onClick={() => onSelect(user)}
+          className={cn(
+            'flex w-full items-center gap-2 px-3 py-2 text-left text-sm',
+            idx === highlightIdx
+              ? 'bg-accent text-accent-foreground'
+              : 'text-foreground hover:bg-muted/80'
+          )}
+        >
+          <Avatar size="sm">
+            <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-semibold">
+              {getInitials(user.name)}
+            </AvatarFallback>
+          </Avatar>
+          <span>{user.name}</span>
+          <span className="text-muted-foreground text-xs">({user.email})</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+type WIDropdownListProps = {
+  show: boolean;
+  wiList: Array<{ id: string; key: string; title: string }>;
+  highlightIdx: number;
+  onSelect: (item: { id: string; key: string; title: string }) => void;
+  position?: 'top' | 'bottom';
+};
+
+function WIDropdownList({
+  show,
+  wiList,
+  highlightIdx,
+  onSelect,
+  position = 'top',
+}: Readonly<WIDropdownListProps>) {
+  if (!show || wiList.length === 0) return null;
+  return (
+    <div
+      className={cn(
+        'border-border bg-popover text-popover-foreground absolute right-0 left-0 z-50 max-h-40 overflow-y-auto rounded-lg border shadow-md',
+        position === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
+      )}
+    >
+      {wiList.map((item, idx) => (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => onSelect(item)}
+          className={cn(
+            'flex w-full items-center gap-2 px-3 py-2 text-left text-sm',
+            idx === highlightIdx
+              ? 'bg-accent text-accent-foreground'
+              : 'text-foreground hover:bg-muted/80'
+          )}
+        >
+          <Badge
+            variant="outline"
+            className={cn('shrink-0 font-mono', ISSUE_BADGE_CLASS)}
+          >
+            {item.key}
+          </Badge>
+          <TruncatedText className="text-foreground min-w-0 flex-1 text-sm">
+            {item.title}
+          </TruncatedText>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+type AutocompleteInputProps = {
+  as?: 'input' | 'textarea';
+  value: string;
+  onChange: (val: string) => void;
+  onSubmit?: () => void;
+  placeholder?: string;
+  users: CommentUser[];
+  workItems: Pick<CommentWorkItemOption, 'id' | 'key' | 'title'>[];
+  rows?: number;
+  className?: string;
+  position?: 'top' | 'bottom';
+  id?: string;
+  textareaRef?: React.RefObject<HTMLTextAreaElement | HTMLInputElement | null>;
+};
+
+function AutocompleteInput({
+  as = 'textarea',
+  value,
+  onChange,
+  onSubmit,
+  placeholder,
+  users,
+  workItems,
+  rows = 3,
+  className,
+  position = 'bottom',
+  id,
+  textareaRef,
+}: Readonly<AutocompleteInputProps>) {
+  const [showMentionDropdown, setShowMentionDropdown] = useState(false);
+  const [mentionSearch, setMentionSearch] = useState('');
+  const [mentionTriggerIdx, setMentionTriggerIdx] = useState(-1);
+  const [mentionHighlightIdx, setMentionHighlightIdx] = useState(0);
+
+  const [showWISuggestions, setShowWISuggestions] = useState(false);
+  const [wiSearch, setWISearch] = useState('');
+  const [wiTriggerIdx, setWiTriggerIdx] = useState(-1);
+  const [wiHighlightIdx, setWiHighlightIdx] = useState(0);
+
+  const localRef = useRef<HTMLTextAreaElement | HTMLInputElement | null>(null);
+  const activeRef = textareaRef || localRef;
+
+  const filteredUsers = useMemo(() => {
+    const q = mentionSearch.toLowerCase();
+    return users.filter(
+      (u) =>
+        u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+    );
+  }, [users, mentionSearch]);
+
+  const filteredWorkItems = useMemo(() => {
+    const q = wiSearch.toLowerCase();
+    return workItems.filter(
+      (w) =>
+        w.key.toLowerCase().includes(q) || w.title.toLowerCase().includes(q)
+    );
+  }, [workItems, wiSearch]);
+
+  const handleTextChangeMentionsLocal = (text: string, cursorPos: number) => {
+    const lastAtIdx = text.lastIndexOf('@', cursorPos - 1);
+    const lastHashIdx = text.lastIndexOf('#', cursorPos - 1);
+
+    if (lastAtIdx !== -1 && (lastHashIdx === -1 || lastAtIdx > lastHashIdx)) {
+      const charBeforeAt = lastAtIdx > 0 ? text[lastAtIdx - 1] : ' ';
+      const textBetween = text.slice(lastAtIdx + 1, cursorPos);
+      const hasSpace = textBetween.includes(' ') || textBetween.includes('\n');
+
+      if ((charBeforeAt === ' ' || charBeforeAt === '\n') && !hasSpace) {
+        setMentionTriggerIdx(lastAtIdx);
+        setMentionSearch(textBetween);
+        setShowMentionDropdown(true);
+        setMentionHighlightIdx(0);
+        return;
+      }
+    }
+    setShowMentionDropdown(false);
+  };
+
+  const handleTextChangeWorkItemsLocal = (text: string, cursorPos: number) => {
+    const lastAtIdx = text.lastIndexOf('@', cursorPos - 1);
+    const lastHashIdx = text.lastIndexOf('#', cursorPos - 1);
+
+    if (lastHashIdx !== -1 && (lastAtIdx === -1 || lastHashIdx > lastAtIdx)) {
+      const charBeforeHash = lastHashIdx > 0 ? text[lastHashIdx - 1] : ' ';
+      const textBetween = text.slice(lastHashIdx + 1, cursorPos);
+      const hasSpace = textBetween.includes(' ') || textBetween.includes('\n');
+
+      if ((charBeforeHash === ' ' || charBeforeHash === '\n') && !hasSpace) {
+        setWiTriggerIdx(lastHashIdx);
+        setWISearch(textBetween);
+        setShowWISuggestions(true);
+        setWiHighlightIdx(0);
+        return;
+      }
+    }
+    setShowWISuggestions(false);
+  };
+
+  const handleInsertMentionLocal = (
+    insertText: string,
+    triggerIdx: number,
+    isWI: boolean
+  ) => {
+    const inputEl = activeRef.current;
+    const cursorPos = inputEl?.selectionStart || 0;
+    const before = value.slice(0, triggerIdx);
+    const after = value.slice(cursorPos);
+    const formatted = `${insertText} `;
+    const nextText = before + formatted + after;
+    onChange(nextText);
+
+    if (isWI) {
+      setShowWISuggestions(false);
+    } else {
+      setShowMentionDropdown(false);
+    }
+
+    if (inputEl) {
+      const nextCursorPos = triggerIdx + formatted.length;
+      setTimeout(() => {
+        inputEl.focus();
+        inputEl.setSelectionRange(nextCursorPos, nextCursorPos);
+      }, 0);
+    }
+  };
+
+  const handleMentionKeyDown = (
+    e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>
+  ) => {
+    if (!showMentionDropdown || filteredUsers.length === 0) return false;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setMentionHighlightIdx((mentionHighlightIdx + 1) % filteredUsers.length);
+      return true;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setMentionHighlightIdx(
+        (mentionHighlightIdx - 1 + filteredUsers.length) % filteredUsers.length
+      );
+      return true;
+    }
+    if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      const selected = filteredUsers[mentionHighlightIdx];
+      if (selected) {
+        handleInsertMentionLocal(`@${selected.name}`, mentionTriggerIdx, false);
+      }
+      return true;
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setShowMentionDropdown(false);
+      return true;
+    }
+    return false;
+  };
+
+  const handleWIKeyDown = (
+    e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>
+  ) => {
+    if (!showWISuggestions || filteredWorkItems.length === 0) return false;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setWiHighlightIdx((wiHighlightIdx + 1) % filteredWorkItems.length);
+      return true;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setWiHighlightIdx(
+        (wiHighlightIdx - 1 + filteredWorkItems.length) %
+          filteredWorkItems.length
+      );
+      return true;
+    }
+    if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      const selected = filteredWorkItems[wiHighlightIdx];
+      if (selected) {
+        handleInsertMentionLocal(`#${selected.key}`, wiTriggerIdx, true);
+      }
+      return true;
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setShowWISuggestions(false);
+      return true;
+    }
+    return false;
+  };
+
+  const handleKeyDownLocal = (
+    e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>
+  ) => {
+    if (handleMentionKeyDown(e)) return;
+    if (handleWIKeyDown(e)) return;
+
+    if (e.key === 'Enter' && as === 'input' && onSubmit) {
+      e.preventDefault();
+      onSubmit();
+    }
+  };
+
+  return (
+    <div className="relative flex-1">
+      {as === 'textarea' ? (
+        <Textarea
+          id={id}
+          ref={activeRef as React.RefObject<HTMLTextAreaElement>}
+          value={value}
+          placeholder={placeholder}
+          rows={rows}
+          className={className}
+          onChange={(e) => {
+            const val = e.target.value;
+            const pos = e.target.selectionStart || 0;
+            onChange(val);
+            handleTextChangeMentionsLocal(val, pos);
+            handleTextChangeWorkItemsLocal(val, pos);
+          }}
+          onKeyDown={handleKeyDownLocal}
+        />
+      ) : (
+        <Input
+          id={id}
+          ref={activeRef as React.RefObject<HTMLInputElement>}
+          type="text"
+          value={value}
+          placeholder={placeholder}
+          className={className}
+          onChange={(e) => {
+            const val = e.target.value;
+            const pos = e.target.selectionStart || 0;
+            onChange(val);
+            handleTextChangeMentionsLocal(val, pos);
+            handleTextChangeWorkItemsLocal(val, pos);
+          }}
+          onKeyDown={handleKeyDownLocal}
+        />
+      )}
+      <MentionDropdownList
+        show={showMentionDropdown}
+        usersList={filteredUsers}
+        highlightIdx={mentionHighlightIdx}
+        position={position}
+        onSelect={(user) =>
+          handleInsertMentionLocal(`@${user.name}`, mentionTriggerIdx, false)
+        }
+      />
+      <WIDropdownList
+        show={showWISuggestions}
+        wiList={filteredWorkItems}
+        highlightIdx={wiHighlightIdx}
+        position={position}
+        onSelect={(item) =>
+          handleInsertMentionLocal(`#${item.key}`, wiTriggerIdx, true)
+        }
+      />
+    </div>
+  );
+}
 
 export function CommentsFeed({
   initialComments,
   workItems,
   currentUserId = 'user-admin-1',
+  workItemId,
 }: Readonly<CommentsFeedProps>) {
+  const [activeUserId, setActiveUserId] = useState<string>(currentUserId);
   const [comments, setComments] = useState<CommentItem[]>(initialComments);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedWorkItemId, setSelectedWorkItemId] = useState<string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<'all' | 'active' | 'archived'>('active');
+  const [selectedStatus, setSelectedStatus] = useState<
+    'all' | 'active' | 'archived'
+  >('active');
   const [showNewCommentModal, setShowNewCommentModal] = useState(false);
 
   // New Comment Form State
-  const [newWorkItemId, setNewWorkItemId] = useState(workItems[0]?.id || '');
+  const [newWorkItemId, setNewWorkItemId] = useState(
+    workItemId || workItems[0]?.id || ''
+  );
   const [newContent, setNewContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -78,12 +521,103 @@ export function CommentsFeed({
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
 
+  // Delete Confirmation State
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(
+    null
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Users for mentions
+  const [users, setUsers] = useState<CommentUser[]>([]);
+
+  // Refs for focusing inputs
+  const newCommentRef = useRef<HTMLTextAreaElement>(null);
+  const replyInputRef = useRef<HTMLInputElement>(null);
+  const editCommentRef = useRef<HTMLTextAreaElement>(null);
+
+  // Sync activeUserId with currentUserId prop if it changes
+  useEffect(() => {
+    setActiveUserId(currentUserId);
+  }, [currentUserId]);
+
+  // Load active users from database and get current user on mount
+  useEffect(() => {
+    async function loadUsers() {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('users')
+          .select(USER_PROJECTION)
+          .eq('active', true)
+          .order('name');
+
+        const fallbackUsers = [
+          { id: 'user-admin-1', name: 'Alana Admin', email: 'admin@alice.dev' },
+          { id: 'user-mgr-1', name: 'Marcus Lead', email: 'marcus@alice.dev' },
+          { id: 'user-dev-1', name: 'Devin Smith', email: 'devin@alice.dev' },
+        ];
+
+        if (!error && data && data.length > 0) {
+          // Merge default users and loaded ones, filtering duplicates
+          const seen = new Set();
+          const merged = [...data, ...fallbackUsers].filter((u) => {
+            if (seen.has(u.id)) return false;
+            seen.add(u.id);
+            return true;
+          });
+          setUsers(merged);
+        } else {
+          setUsers(fallbackUsers);
+        }
+
+        // Get logged in user UUID dynamically to set activeUserId
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          setActiveUserId(user.id);
+        }
+      } catch (err) {
+        console.error('Failed to load users for mentions autocomplete:', err);
+        setUsers([
+          { id: 'user-admin-1', name: 'Alana Admin', email: 'admin@alice.dev' },
+          { id: 'user-mgr-1', name: 'Marcus Lead', email: 'marcus@alice.dev' },
+          { id: 'user-dev-1', name: 'Devin Smith', email: 'devin@alice.dev' },
+        ]);
+      }
+    }
+    loadUsers();
+  }, [currentUserId]);
+
+  // Update comments if initialComments changes
+  useEffect(() => {
+    setComments(initialComments);
+  }, [initialComments]);
+
+  // Focus the reply input field when replying parent comment ID is set
+  useEffect(() => {
+    if (replyingParentId) {
+      setTimeout(() => {
+        replyInputRef.current?.focus();
+      }, 50);
+    }
+  }, [replyingParentId]);
+
+  // Update newWorkItemId if workItemId changes
+  useEffect(() => {
+    if (workItemId) {
+      setNewWorkItemId(workItemId);
+    }
+  }, [workItemId]);
+
   // Stats calculation
   const stats = useMemo(() => {
     const total = comments.length;
     const active = comments.filter((c) => c.status === 'active').length;
-    const authors = new Set(comments.map((c) => c.author?.name || c.author_id)).size;
-    const workItemsDiscussed = new Set(comments.map((c) => c.work_item_id)).size;
+    const authors = new Set(comments.map((c) => c.author?.name || c.author_id))
+      .size;
+    const workItemsDiscussed = new Set(comments.map((c) => c.work_item_id))
+      .size;
 
     return { total, active, authors, workItemsDiscussed };
   }, [comments]);
@@ -91,6 +625,16 @@ export function CommentsFeed({
   // Filtered comments
   const filteredComments = useMemo(() => {
     return comments.filter((c) => {
+      // Work Item lock
+      if (workItemId) {
+        if (c.work_item_id !== workItemId) return false;
+      } else if (
+        selectedWorkItemId !== 'all' &&
+        c.work_item_id !== selectedWorkItemId
+      ) {
+        return false;
+      }
+
       // Search filter
       const matchesSearch =
         searchQuery === '' ||
@@ -99,17 +643,13 @@ export function CommentsFeed({
         c.work_item?.key?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.work_item?.title?.toLowerCase().includes(searchQuery.toLowerCase());
 
-      // Work Item filter
-      const matchesWorkItem =
-        selectedWorkItemId === 'all' || c.work_item_id === selectedWorkItemId;
-
       // Status filter
       const matchesStatus =
         selectedStatus === 'all' || c.status === selectedStatus;
 
-      return matchesSearch && matchesWorkItem && matchesStatus;
+      return matchesSearch && matchesStatus;
     });
-  }, [comments, searchQuery, selectedWorkItemId, selectedStatus]);
+  }, [comments, searchQuery, selectedWorkItemId, selectedStatus, workItemId]);
 
   // Separate parent comments and build threads
   const parentComments = useMemo(() => {
@@ -129,18 +669,170 @@ export function CommentsFeed({
     }));
   }, [filteredComments, comments]);
 
+  // Helper function to create database notifications for mentioned users
+  const createMentionNotifications = async (
+    mentionedUserIds: string[],
+    rawContent: string,
+    targetWorkItemId: string
+  ) => {
+    if (mentionedUserIds.length === 0) return;
+    try {
+      const supabase = createClient();
+      const actorName =
+        users.find((u) => u.id === activeUserId)?.name || 'A teammate';
+
+      const { data: wi } = await supabase
+        .from('work_items')
+        .select('title')
+        .eq('id', targetWorkItemId)
+        .maybeSingle();
+
+      const titleSnippet = wi?.title ? `"${wi.title}"` : 'work item';
+      const rawTextSnippet =
+        rawContent.length > 60 ? rawContent.slice(0, 60) + '...' : rawContent;
+
+      for (const mId of mentionedUserIds) {
+        if (mId === activeUserId) continue;
+
+        await supabase.from('notifications').insert({
+          user_id: mId,
+          type: 'mention',
+          message: `${actorName} mentioned you in a comment on ${titleSnippet}: "${rawTextSnippet}"`,
+          related_item_id: targetWorkItemId,
+          read_status: false,
+          created_by: activeUserId,
+          updated_by: activeUserId,
+          updated_at: new Date().toISOString(),
+          status: 'active',
+        });
+      }
+    } catch (err) {
+      console.error('Failed to create mention notifications:', err);
+    }
+  };
+
+  // Helper to parse mentions, notify users, and format before saving comment to DB
+  const processCommentBeforeSave = async (
+    rawContent: string,
+    targetWorkItemId: string,
+    shouldNotify = false
+  ) => {
+    let processed = rawContent;
+    const mentionedUserIds: string[] = [];
+
+    const sortedUsers = [...users].sort(
+      (a, b) => b.name.length - a.name.length
+    );
+
+    for (const u of sortedUsers) {
+      const escapedName = u.name.replace(
+        /[-\\^$*+?.()|[\]{}]/g,
+        String.raw`\$&`
+      );
+      const regex = new RegExp(String.raw`@${escapedName}\b`, 'g');
+      if (regex.test(processed)) {
+        processed = processed.replace(regex, `@[${u.name}](${u.id})`);
+        mentionedUserIds.push(u.id);
+      }
+    }
+
+    // Process work item references (#KEY -> #[KEY](id))
+    const sortedWorkItems = [...workItems].sort(
+      (a, b) => b.key.length - a.key.length
+    );
+
+    for (const w of sortedWorkItems) {
+      const escapedKey = w.key.replace(/[-\\^$*+?.()|[\]{}]/g, String.raw`\$&`);
+      const regex = new RegExp(String.raw`#${escapedKey}\b`, 'g');
+      if (regex.test(processed)) {
+        processed = processed.replace(regex, `#[${w.key}](${w.id})`);
+      }
+    }
+
+    // Insert database notifications for mentioned users
+    if (shouldNotify) {
+      await createMentionNotifications(
+        mentionedUserIds,
+        rawContent,
+        targetWorkItemId
+      );
+    }
+
+    return processed;
+  };
+
+  // Render parses comments text and decorates mentions/issues as styled badges
+  const renderCommentContent = (contentString: string) => {
+    if (!contentString) return '';
+    const combinedRegex = /([@#])\[([^\]]+)\]\(([^)]+)\)/g;
+    const parts = [];
+    let lastIdx = 0;
+    let match;
+
+    combinedRegex.lastIndex = 0;
+    while ((match = combinedRegex.exec(contentString)) !== null) {
+      const textBefore = contentString.substring(lastIdx, match.index);
+      if (textBefore) {
+        parts.push(textBefore);
+      }
+
+      const type = match[1];
+      const label = match[2];
+      const id = match[3];
+
+      if (type === '@') {
+        parts.push(
+          <Badge
+            key={`mention-${match.index}-${id}`}
+            variant="outline"
+            className={cn('animate-fade-in font-semibold', MENTION_BADGE_CLASS)}
+          >
+            @{label}
+          </Badge>
+        );
+      } else {
+        parts.push(
+          <Badge
+            key={`issue-${match.index}-${id}`}
+            variant="outline"
+            asChild
+            className={cn('animate-fade-in font-semibold', ISSUE_BADGE_CLASS)}
+          >
+            <Link href="/work-items">#{label}</Link>
+          </Badge>
+        );
+      }
+
+      lastIdx = combinedRegex.lastIndex;
+    }
+
+    const textAfter = contentString.substring(lastIdx);
+    if (textAfter) {
+      parts.push(textAfter);
+    }
+
+    return parts.length > 0 ? parts : contentString;
+  };
+
   // Handle post new comment
-  const handleCreateComment = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreateComment = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!newContent.trim() || !newWorkItemId) return;
 
     setIsSubmitting(true);
     try {
-      const created = await createComment({
+      const processedContent = await processCommentBeforeSave(
+        newContent.trim(),
+        newWorkItemId
+      );
+      const res = await createCommentAction({
         work_item_id: newWorkItemId,
-        content: newContent.trim(),
-        author_id: currentUserId,
+        content: processedContent,
       });
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to create comment');
+      }
+      const created = res.data!;
 
       setComments((prev) => [created, ...prev]);
       setNewContent('');
@@ -149,19 +841,25 @@ export function CommentsFeed({
       console.error('Failed to create comment:', err);
       // Fallback local update for mock environment
       const selectedItem = workItems.find((w) => w.id === newWorkItemId);
+      const processedContent = await processCommentBeforeSave(
+        newContent.trim(),
+        newWorkItemId,
+        true
+      );
       const mockCreated: CommentItem = {
         id: `comment-${Date.now()}`,
         work_item_id: newWorkItemId,
-        author_id: currentUserId,
+        author_id: activeUserId,
         parent_id: null,
-        content: newContent.trim(),
+        content: processedContent,
         edited: false,
         status: 'active',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         author: {
-          id: currentUserId,
-          name: 'Current User',
+          id: activeUserId,
+          name:
+            users.find((u) => u.id === activeUserId)?.name || 'Current User',
           email: 'user@alice.dev',
           role: 'admin',
         },
@@ -192,30 +890,43 @@ export function CommentsFeed({
     if (!replyContent.trim()) return;
 
     try {
-      const created = await createComment({
+      const processedContent = await processCommentBeforeSave(
+        replyContent.trim(),
+        workItemId
+      );
+      const res = await createCommentAction({
         work_item_id: workItemId,
-        content: replyContent.trim(),
-        author_id: currentUserId,
+        content: processedContent,
         parent_id: parentId,
       });
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to post reply');
+      }
+      const created = res.data!;
       setComments((prev) => [...prev, created]);
     } catch (err) {
       console.error('Failed to post reply:', err);
       // Local fallback
       const parentComment = comments.find((c) => c.id === parentId);
+      const processedContent = await processCommentBeforeSave(
+        replyContent.trim(),
+        workItemId,
+        true
+      );
       const mockReply: CommentItem = {
         id: `reply-${Date.now()}`,
         work_item_id: workItemId,
-        author_id: currentUserId,
+        author_id: activeUserId,
         parent_id: parentId,
-        content: replyContent.trim(),
+        content: processedContent,
         edited: false,
         status: 'active',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         author: {
-          id: currentUserId,
-          name: 'Current User',
+          id: activeUserId,
+          name:
+            users.find((u) => u.id === activeUserId)?.name || 'Current User',
           email: 'user@alice.dev',
         },
         work_item: parentComment?.work_item || null,
@@ -231,17 +942,33 @@ export function CommentsFeed({
   const handleSaveEdit = async (commentId: string) => {
     if (!editContent.trim()) return;
 
+    const targetComment = comments.find((c) => c.id === commentId);
+    const targetWIId = targetComment?.work_item_id || newWorkItemId;
+
     try {
-      const updated = await updateComment(commentId, editContent.trim());
+      const processedContent = await processCommentBeforeSave(
+        editContent.trim(),
+        targetWIId
+      );
+      const res = await updateCommentAction(commentId, processedContent);
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to update comment');
+      }
+      const updated = res.data!;
       setComments((prev) =>
         prev.map((c) => (c.id === commentId ? updated : c))
       );
     } catch (err) {
       console.error('Failed to update comment:', err);
+      const processedContent = await processCommentBeforeSave(
+        editContent.trim(),
+        targetWIId,
+        true
+      );
       setComments((prev) =>
         prev.map((c) =>
           c.id === commentId
-            ? { ...c, content: editContent.trim(), edited: true }
+            ? { ...c, content: processedContent, edited: true }
             : c
         )
       );
@@ -251,187 +978,206 @@ export function CommentsFeed({
     }
   };
 
+  // Helper to locally update status of a comment in state
+  const updateCommentStatusLocal = (
+    commentId: string,
+    status: 'active' | 'archived'
+  ) => {
+    setComments((prev) =>
+      prev.map((c) => (c.id === commentId ? { ...c, status } : c))
+    );
+  };
+
   // Handle Archive
   const handleArchive = async (commentId: string) => {
     try {
-      await archiveComment(commentId);
-      setComments((prev) =>
-        prev.map((c) => (c.id === commentId ? { ...c, status: 'archived' } : c))
-      );
+      const res = await archiveCommentAction(commentId);
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to archive comment');
+      }
+      updateCommentStatusLocal(commentId, 'archived');
     } catch (err) {
       console.error('Failed to archive comment:', err);
-      setComments((prev) =>
-        prev.map((c) => (c.id === commentId ? { ...c, status: 'archived' } : c))
-      );
+      updateCommentStatusLocal(commentId, 'archived');
+    }
+  };
+
+  // Handle Restore
+  const handleRestore = async (commentId: string) => {
+    try {
+      const res = await restoreCommentAction(commentId);
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to restore comment');
+      }
+      updateCommentStatusLocal(commentId, 'active');
+    } catch (err) {
+      console.error('Failed to restore comment:', err);
+      updateCommentStatusLocal(commentId, 'active');
+    }
+  };
+
+  // Handle Permanent Delete
+  const handleDeletePermanent = (commentId: string) => {
+    setDeletingCommentId(commentId);
+  };
+
+  // Confirm and execute delete from modal
+  const confirmDelete = async () => {
+    if (!deletingCommentId) return;
+    setIsDeleting(true);
+    try {
+      const res = await archiveCommentAction(deletingCommentId, true);
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to delete comment');
+      }
+      setComments((prev) => prev.filter((c) => c.id !== deletingCommentId));
+    } catch (err) {
+      console.error('Failed to delete comment permanently:', err);
+      setComments((prev) => prev.filter((c) => c.id !== deletingCommentId));
+    } finally {
+      setIsDeleting(false);
+      setDeletingCommentId(null);
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-            Discussions & Comments
-          </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Collaborate, review feedback, and track conversation threads across all project work items.
-          </p>
-        </div>
-        <Button
-          onClick={() => setShowNewCommentModal(true)}
-          className="inline-flex items-center gap-2 bg-blue-600 font-medium text-white hover:bg-blue-700 shadow-sm"
-        >
-          <Plus className="h-4 w-4" />
-          <span>New Comment</span>
-        </Button>
-      </div>
-
-      {/* Metrics Bar */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-zinc-200/80 bg-white/60 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/60">
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="rounded-xl bg-blue-500/10 p-3 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400">
-              <MessageSquareText className="h-5 w-5" />
-            </div>
+      {!workItemId && (
+        <>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                Total Comments
+              <h1 className="text-foreground text-2xl font-bold tracking-tight">
+                Discussions & Comments
+              </h1>
+              <p className="text-muted-foreground text-sm">
+                Collaborate, review feedback, and track conversation threads
+                across all project work items.
               </p>
-              <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-                {stats.total}
-              </h3>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-zinc-200/80 bg-white/60 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/60">
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="rounded-xl bg-emerald-500/10 p-3 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
-              <MessageCircle className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                Active Discussions
-              </p>
-              <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-                {stats.active}
-              </h3>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-zinc-200/80 bg-white/60 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/60">
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="rounded-xl bg-violet-500/10 p-3 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400">
-              <Users className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                Contributors
-              </p>
-              <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-                {stats.authors}
-              </h3>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-zinc-200/80 bg-white/60 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/60">
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="rounded-xl bg-amber-500/10 p-3 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
-              <Tag className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                Discussed Items
-              </p>
-              <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-                {stats.workItemsDiscussed}
-              </h3>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Search & Filters Controls */}
-      <Card className="border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <CardContent className="p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {/* Search Input */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-              <input
-                id="search-comments-input"
-                type="text"
-                aria-label="Search comments"
-                placeholder="Search comments by text, author, or issue key..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-zinc-200 bg-zinc-50/50 py-2 pl-9 pr-4 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:bg-zinc-900"
-              />
-            </div>
-
-            {/* Filters */}
-            <div className="flex items-center gap-2">
-              {/* Work Item Select */}
-              <select
-                id="select-work-item-filter"
-                aria-label="Filter by Work Item"
-                value={selectedWorkItemId}
-                onChange={(e) => setSelectedWorkItemId(e.target.value)}
-                className="rounded-lg border border-zinc-200 bg-zinc-50/50 px-3 py-2 text-xs font-medium text-zinc-700 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-300"
-              >
-                <option value="all">All Work Items</option>
-                {workItems.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.key} — {item.title.slice(0, 25)}...
-                  </option>
-                ))}
-              </select>
-
-              {/* Status Select */}
-              <select
-                id="select-status-filter"
-                aria-label="Filter by Status"
-                value={selectedStatus}
-                onChange={(e) =>
-                  setSelectedStatus(e.target.value as 'all' | 'active' | 'archived')
-                }
-                className="rounded-lg border border-zinc-200 bg-zinc-50/50 px-3 py-2 text-xs font-medium text-zinc-700 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-300"
-              >
-                <option value="active">Active Comments</option>
-                <option value="archived">Archived</option>
-                <option value="all">All Statuses</option>
-              </select>
-            </div>
+            <Button onClick={() => setShowNewCommentModal(true)}>
+              <Plus className="size-4" />
+              New Comment
+            </Button>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Comments Feed List */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatMetricCard
+              label="Total Comments"
+              value={stats.total}
+              icon={<MessageSquareText className="size-5" />}
+              iconClassName="bg-primary/10 text-primary"
+            />
+            <StatMetricCard
+              label="Active Discussions"
+              value={stats.active}
+              icon={<MessageCircle className="size-5" />}
+              iconClassName="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+            />
+            <StatMetricCard
+              label="Contributors"
+              value={stats.authors}
+              icon={<Users className="size-5" />}
+              iconClassName="bg-violet-500/10 text-violet-600 dark:text-violet-400"
+            />
+            <StatMetricCard
+              label="Discussed Items"
+              value={stats.workItemsDiscussed}
+              icon={<Tag className="size-5" />}
+              iconClassName="bg-amber-500/10 text-amber-600 dark:text-amber-400"
+            />
+          </div>
+
+          <Card>
+            <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <SearchInput
+                value={searchQuery}
+                onValueChange={setSearchQuery}
+                placeholder="Search comments by text, author, or issue key..."
+                className="w-full sm:max-w-70 md:max-w-90"
+              />
+
+              <div className="flex w-full flex-row items-center gap-2 sm:w-auto">
+                <Select
+                  value={selectedWorkItemId}
+                  onValueChange={setSelectedWorkItemId}
+                >
+                  <SelectTrigger
+                    id="select-work-item-filter"
+                    aria-label="Filter by Work Item"
+                    className="w-1/2 sm:w-44"
+                  >
+                    <SelectValue placeholder="All Work Items" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Work Items</SelectItem>
+                    {workItems.map((item) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.key} — {item.title.slice(0, 25)}
+                        {item.title.length > 25 ? '…' : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  value={selectedStatus}
+                  onValueChange={(value) =>
+                    setSelectedStatus(value as 'all' | 'active' | 'archived')
+                  }
+                >
+                  <SelectTrigger
+                    id="select-status-filter"
+                    aria-label="Filter by Status"
+                    className="w-1/2 sm:w-44"
+                  >
+                    <SelectValue placeholder="Active Comments" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active Comments</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {workItemId && (
+        <div className="border-border flex items-center justify-between border-b pb-2">
+          <h3 className="text-foreground flex items-center gap-2 text-lg font-bold">
+            <MessageSquareText className="text-primary size-5" />
+            Discussion ({stats.active})
+          </h3>
+        </div>
+      )}
+
       <div className="space-y-4">
         {parentComments.length === 0 ? (
-          <Card className="border-dashed border-zinc-200 py-12 text-center dark:border-zinc-800">
-            <CardContent className="space-y-3">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-                <MessageSquareText className="h-6 w-6 text-zinc-400" />
+          <Card className="border-dashed">
+            <CardContent className="space-y-3 py-12 text-center">
+              <div className="bg-muted mx-auto flex size-12 items-center justify-center rounded-full">
+                <MessageSquareText className="text-muted-foreground size-6" />
               </div>
-              <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+              <h3 className="text-foreground text-base font-semibold">
                 No comments found
               </h3>
-              <p className="mx-auto max-w-sm text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="text-muted-foreground mx-auto max-w-sm text-sm">
                 {searchQuery || selectedWorkItemId !== 'all'
                   ? 'Try adjusting your search query or filter settings.'
-                  : 'Be the first to start a conversation on a work item!'}
+                  : 'Be the first to start a conversation on this work item!'}
               </p>
-              <Button
-                onClick={() => setShowNewCommentModal(true)}
-                variant="outline"
-                className="mt-2"
-              >
-                <Plus className="mr-2 h-4 w-4" /> Add Comment
-              </Button>
+              {!workItemId && (
+                <Button
+                  onClick={() => setShowNewCommentModal(true)}
+                  variant="outline"
+                  className="mt-2"
+                >
+                  <Plus className="size-4" />
+                  Add Comment
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
@@ -439,110 +1185,143 @@ export function CommentsFeed({
             <Card
               key={parent.id}
               className={cn(
-                'border-zinc-200/80 transition-all dark:border-zinc-800',
-                parent.status === 'archived' && 'opacity-60 bg-zinc-50/50 dark:bg-zinc-900/30'
+                parent.status === 'archived' && 'bg-muted/40 opacity-70'
               )}
             >
-              <CardContent className="p-5 space-y-4">
-                {/* Parent Comment Header */}
+              <CardContent className="space-y-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    {/* User Avatar Badge */}
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-indigo-600 font-semibold text-white text-xs shadow-sm">
-                      {parent.author?.name
-                        ? parent.author.name
-                            .split(' ')
-                            .map((n) => n[0])
-                            .join('')
-                            .toUpperCase()
-                        : 'U'}
-                    </div>
+                    <CommentAvatar name={parent.author?.name} />
 
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                        <span className="text-foreground text-sm font-semibold">
                           {parent.author?.name || 'Anonymous User'}
                         </span>
                         {parent.status === 'archived' && (
-                          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-950/60 dark:text-amber-400">
+                          <Badge
+                            variant="outline"
+                            className="border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                          >
                             Archived
-                          </span>
+                          </Badge>
                         )}
                         {parent.edited && (
-                          <span className="text-[11px] text-zinc-400 italic">
+                          <span className="text-muted-foreground text-[11px] italic">
                             (edited)
                           </span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        <Clock className="h-3 w-3" />
+                      <div className="text-muted-foreground mt-0.5 flex items-center gap-2 text-xs">
+                        <Clock className="size-3 shrink-0" />
                         <span>
-                          {new Date(parent.created_at).toLocaleString(undefined, {
-                            dateStyle: 'medium',
-                            timeStyle: 'short',
-                          })}
+                          {new Date(parent.created_at).toLocaleString(
+                            undefined,
+                            {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            }
+                          )}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Right Header Badges & Actions */}
                   <div className="flex items-center gap-2">
-                    {parent.work_item && (
-                      <Link
-                        href="/work-items"
-                        className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-blue-900/60"
+                    {!workItemId && parent.work_item && (
+                      <Badge
+                        variant="outline"
+                        asChild
+                        className={cn(
+                          'gap-1.5 font-semibold',
+                          ISSUE_BADGE_CLASS
+                        )}
                       >
-                        <Tag className="h-3 w-3" />
-                        <span>{parent.work_item.key}</span>
-                        <ExternalLink className="h-3 w-3 opacity-60" />
-                      </Link>
+                        <Link href="/work-items">
+                          <Tag className="size-3 shrink-0" />
+                          {parent.work_item.key}
+                          <ExternalLink className="size-3 opacity-60" />
+                        </Link>
+                      </Badge>
                     )}
 
-                    {/* Menu Actions */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setEditingCommentId(parent.id);
-                            setEditContent(parent.content);
-                          }}
-                          className="gap-2"
-                        >
-                          <Pencil className="h-3.5 w-3.5" /> Edit
-                        </DropdownMenuItem>
-                        {parent.status === 'active' && (
-                          <DropdownMenuItem
-                            onClick={() => handleArchive(parent.id)}
-                            className="gap-2 text-amber-600 dark:text-amber-400"
+                    {parent.author_id === activeUserId && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="text-muted-foreground"
                           >
-                            <Archive className="h-3.5 w-3.5" /> Archive
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                            <MoreVertical className="size-4" />
+                            <span className="sr-only">Open menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {parent.status === 'active' && (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setEditingCommentId(parent.id);
+                                  // Replace @[Name](userId) with @Name, and #[KEY](id) with #KEY
+                                  const rawText = parent.content
+                                    .replace(/@\[([^\]]+)\]\(([^)]+)\)/g, '@$1')
+                                    .replace(
+                                      /#\[([^\]]+)\]\(([^)]+)\)/g,
+                                      '#$1'
+                                    );
+                                  setEditContent(rawText);
+                                }}
+                                className="gap-2"
+                              >
+                                <Pencil className="size-3.5" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleArchive(parent.id)}
+                                className="gap-2 text-amber-600 focus:text-amber-600 dark:text-amber-400"
+                              >
+                                <Archive className="size-3.5" />
+                                Archive
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          {parent.status === 'archived' && (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => handleRestore(parent.id)}
+                                className="gap-2 text-emerald-600 focus:text-emerald-600 dark:text-emerald-400"
+                              >
+                                <RotateCcw className="size-3.5" />
+                                Restore
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeletePermanent(parent.id)}
+                                className="text-destructive focus:text-destructive gap-2"
+                              >
+                                <Trash2 className="size-3.5" />
+                                Purge
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </div>
                 </div>
 
-                {/* Comment Body / Edit Mode */}
                 {editingCommentId === parent.id ? (
-                  <div className="space-y-2 pt-1">
-                    <textarea
-                      aria-label="Edit comment content"
+                  <div className="relative space-y-2 pt-1">
+                    <AutocompleteInput
+                      as="textarea"
+                      textareaRef={editCommentRef}
                       value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      className="w-full rounded-lg border border-zinc-300 p-2.5 text-sm focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                      onChange={setEditContent}
+                      users={users}
+                      workItems={workItems}
                       rows={3}
+                      position="bottom"
                     />
                     <div className="flex justify-end gap-2">
                       <Button
@@ -555,34 +1334,32 @@ export function CommentsFeed({
                       <Button
                         size="sm"
                         onClick={() => handleSaveEdit(parent.id)}
-                        className="bg-blue-600 text-white hover:bg-blue-700"
                       >
                         Save
                       </Button>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300 pl-12">
-                    {parent.content}
+                  <p className="text-foreground pl-12 text-sm leading-relaxed">
+                    {renderCommentContent(parent.content)}
                   </p>
                 )}
 
-                {/* Work Item Context Details Banner */}
-                {parent.work_item && (
-                  <div className="ml-12 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/40 p-2 rounded-md border border-zinc-100 dark:border-zinc-800">
-                    <Building2 className="h-3.5 w-3.5 text-zinc-400" />
+                {!workItemId && parent.work_item && (
+                  <div className="border-border bg-muted/50 text-muted-foreground ml-12 flex items-center gap-2 rounded-lg border p-2 text-xs">
+                    <Building2 className="size-3.5 shrink-0" />
                     <span>
                       Item:{' '}
-                      <strong className="text-zinc-700 dark:text-zinc-200">
+                      <span className="text-foreground font-medium">
                         {parent.work_item.title}
-                      </strong>
+                      </span>
                     </span>
                     {parent.work_item.project && (
                       <>
-                        <span className="text-zinc-300 dark:text-zinc-600">•</span>
+                        <Separator orientation="vertical" className="h-3" />
                         <span>
                           Project:{' '}
-                          <span className="font-medium text-zinc-600 dark:text-zinc-300">
+                          <span className="text-foreground font-medium">
                             {parent.work_item.project.name}
                           </span>
                         </span>
@@ -591,34 +1368,109 @@ export function CommentsFeed({
                   </div>
                 )}
 
-                {/* Thread Replies */}
                 {parent.threadReplies.length > 0 && (
-                  <div className="ml-12 border-l-2 border-zinc-200 dark:border-zinc-800 pl-4 space-y-3 pt-2">
+                  <div className="border-border ml-12 space-y-3 border-l-2 pt-2 pl-4">
                     {parent.threadReplies.map((reply) => (
                       <div key={reply.id} className="space-y-1">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                            <span className="text-foreground text-xs font-semibold">
                               {reply.author?.name || 'Reply User'}
                             </span>
-                            <span className="text-[11px] text-zinc-400">
-                              {new Date(reply.created_at).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
+                            <span className="text-muted-foreground text-[11px]">
+                              {new Date(reply.created_at).toLocaleTimeString(
+                                [],
+                                {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                }
+                              )}
                             </span>
                           </div>
+                          {reply.author_id === activeUserId && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-xs"
+                                  className="text-muted-foreground h-6 w-6"
+                                >
+                                  <MoreVertical className="size-3.5" />
+                                  <span className="sr-only">Open menu</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setEditingCommentId(reply.id);
+                                    const rawText = reply.content
+                                      .replace(
+                                        /@\[([^\]]+)\]\(([^)]+)\)/g,
+                                        '@$1'
+                                      )
+                                      .replace(
+                                        /#\[([^\]]+)\]\(([^)]+)\)/g,
+                                        '#$1'
+                                      );
+                                    setEditContent(rawText);
+                                  }}
+                                  className="gap-2 text-xs"
+                                >
+                                  <Pencil className="size-3" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleDeletePermanent(reply.id)
+                                  }
+                                  className="text-destructive focus:text-destructive gap-2 text-xs"
+                                >
+                                  <Trash2 className="size-3" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
                         </div>
-                        <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                          {reply.content}
-                        </p>
+                        {editingCommentId === reply.id ? (
+                          <div className="relative space-y-2 pt-1">
+                            <AutocompleteInput
+                              as="textarea"
+                              textareaRef={editCommentRef}
+                              value={editContent}
+                              onChange={setEditContent}
+                              users={users}
+                              workItems={workItems}
+                              rows={2}
+                              position="top"
+                            />
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                size="xs"
+                                variant="ghost"
+                                onClick={() => setEditingCommentId(null)}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                size="xs"
+                                onClick={() => handleSaveEdit(reply.id)}
+                              >
+                                Save
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground pl-1 text-xs">
+                            {renderCommentContent(reply.content)}
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>
                 )}
 
-                {/* Reply Bar Action */}
-                <div className="ml-12 pt-1 flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800/60">
+                <div className="border-border ml-12 flex items-center justify-between border-t pt-1">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -627,41 +1479,56 @@ export function CommentsFeed({
                         replyingParentId === parent.id ? null : parent.id
                       )
                     }
-                    className="h-8 gap-1.5 text-xs font-medium text-zinc-500 hover:text-blue-600 dark:text-zinc-400 dark:hover:text-blue-400"
+                    className="text-muted-foreground hover:text-primary h-8 gap-1.5 text-xs font-medium"
                   >
-                    <Reply className="h-3.5 w-3.5" />
-                    <span>Reply</span>
+                    <Reply className="size-3.5" />
+                    Reply
                     {parent.threadReplies.length > 0 && (
-                      <span className="ml-1 rounded-full bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.2 text-[10px]">
+                      <Badge variant="secondary" className="ml-1">
                         {parent.threadReplies.length}
-                      </span>
+                      </Badge>
                     )}
                   </Button>
                 </div>
 
-                {/* Reply Form Collapse */}
                 {replyingParentId === parent.id && (
-                  <div className="ml-12 pt-2 flex items-center gap-2">
-                    <input
-                      type="text"
-                      aria-label="Write a reply"
-                      placeholder="Write a reply..."
-                      value={replyContent}
-                      onChange={(e) => setReplyContent(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleReplySubmit(parent.id, parent.work_item_id);
+                  <div className="relative ml-12 flex flex-col gap-2 pt-2">
+                    <div className="relative flex w-full items-center gap-2">
+                      <AutocompleteInput
+                        as="input"
+                        textareaRef={replyInputRef}
+                        value={replyContent}
+                        onChange={setReplyContent}
+                        onSubmit={() =>
+                          handleReplySubmit(parent.id, parent.work_item_id)
                         }
-                      }}
-                      className="flex-1 rounded-lg border border-zinc-200 bg-zinc-50 py-1.5 px-3 text-xs text-zinc-900 focus:border-blue-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
-                    />
-                    <Button
-                      size="sm"
-                      onClick={() => handleReplySubmit(parent.id, parent.work_item_id)}
-                      className="h-8 bg-blue-600 px-3 text-white hover:bg-blue-700"
-                    >
-                      <Send className="h-3 w-3 mr-1" /> Post
-                    </Button>
+                        placeholder="Write a reply..."
+                        users={users}
+                        workItems={workItems}
+                        position="top"
+                      />
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          handleReplySubmit(parent.id, parent.work_item_id)
+                        }
+                      >
+                        <Send className="size-3" />
+                        Post
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => {
+                          setReplyingParentId(null);
+                          setReplyContent('');
+                        }}
+                        className="text-muted-foreground hover:text-foreground shrink-0"
+                        title="Cancel reply"
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -670,54 +1537,82 @@ export function CommentsFeed({
         )}
       </div>
 
-      {/* New Comment Modal */}
+      {workItemId && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Plus className="text-primary size-4" />
+              Add to discussion
+            </CardTitle>
+            <CardDescription>
+              Use @ to mention someone or # to link a work item.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <AutocompleteInput
+              as="textarea"
+              textareaRef={newCommentRef}
+              value={newContent}
+              onChange={setNewContent}
+              placeholder="Share your thoughts, feedback, or update..."
+              users={users}
+              workItems={workItems}
+              rows={3}
+              position="top"
+            />
+            <div className="flex justify-end">
+              <Button
+                onClick={() => handleCreateComment()}
+                disabled={isSubmitting || !newContent.trim()}
+              >
+                {isSubmitting ? 'Posting...' : 'Post Comment'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Dialog open={showNewCommentModal} onOpenChange={setShowNewCommentModal}>
         <DialogContent className="sm:max-w-125">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg font-bold">
-              <MessageSquareText className="h-5 w-5 text-blue-600" />
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquareText className="text-primary size-5" />
               Post New Comment
             </DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleCreateComment} className="space-y-4 pt-2">
-            <div>
-              <label
-                htmlFor="new-comment-work-item-select"
-                className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1"
-              >
+            <div className="space-y-2">
+              <Label htmlFor="new-comment-work-item-select">
                 Select Work Item
-              </label>
-              <select
-                id="new-comment-work-item-select"
-                value={newWorkItemId}
-                onChange={(e) => setNewWorkItemId(e.target.value)}
-                className="w-full rounded-lg border border-zinc-200 bg-white p-2.5 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
-                required
-              >
-                {workItems.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    [{item.key}] {item.title}
-                  </option>
-                ))}
-              </select>
+              </Label>
+              <Select value={newWorkItemId} onValueChange={setNewWorkItemId}>
+                <SelectTrigger id="new-comment-work-item-select">
+                  <SelectValue placeholder="Choose a work item" />
+                </SelectTrigger>
+                <SelectContent>
+                  {workItems.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      [{item.key}] {item.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <div>
-              <label
-                htmlFor="new-comment-content-textarea"
-                className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1"
-              >
-                Comment Text
-              </label>
-              <textarea
+            <div className="space-y-2">
+              <Label htmlFor="new-comment-content-textarea">Comment Text</Label>
+              <AutocompleteInput
                 id="new-comment-content-textarea"
-                placeholder="Share your thoughts, feedback, or update..."
+                as="textarea"
+                textareaRef={newCommentRef}
                 value={newContent}
-                onChange={(e) => setNewContent(e.target.value)}
+                onChange={setNewContent}
+                placeholder="Share your thoughts, feedback, or update..."
+                users={users}
+                workItems={workItems}
                 rows={4}
-                required
-                className="w-full rounded-lg border border-zinc-200 bg-white p-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                position="top"
               />
             </div>
 
@@ -732,7 +1627,6 @@ export function CommentsFeed({
               <Button
                 type="submit"
                 disabled={isSubmitting || !newContent.trim()}
-                className="bg-blue-600 text-white hover:bg-blue-700"
               >
                 {isSubmitting ? 'Posting...' : 'Post Comment'}
               </Button>
@@ -740,6 +1634,20 @@ export function CommentsFeed({
           </form>
         </DialogContent>
       </Dialog>
+
+      {deletingCommentId !== null ? (
+        <RegistryConfirmDialog
+          title="Confirm Purge"
+          subject="this comment"
+          detail="This action cannot be undone and will permanently remove the comment record from the database."
+          confirmLabel="Purge Comment"
+          pendingLabel="Purging..."
+          isPending={isDeleting}
+          isSoft={false}
+          onCancel={() => setDeletingCommentId(null)}
+          onConfirm={confirmDelete}
+        />
+      ) : null}
     </div>
   );
 }

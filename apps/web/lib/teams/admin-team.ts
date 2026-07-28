@@ -1,28 +1,20 @@
 import { z } from 'zod';
-import { getDbUser } from '@/lib/auth';
 import { firstValidationError, type ActionState } from '@/lib/server-actions';
-import { createTeamSchema as teamSchema, type Tables } from '@repo/types';
+import {
+  requireManagerRole,
+  type ManagePermissionResult,
+} from '@/lib/require-manager-role';
+import {
+  createTeamSchema as teamSchema,
+  type Tables,
+} from '@repo/types';
 
 export type TeamFormData = z.infer<typeof teamSchema>;
 
-type ManagePermissionResult =
-  | { allowed: true; currentUser: Tables<'users'> }
-  | { allowed: false; error: string };
-
 export async function requireTeamManager(): Promise<ManagePermissionResult> {
-  const currentUser = await getDbUser();
-  if (!currentUser) {
-    return { allowed: false, error: 'Not authenticated.' };
-  }
-
-  if (currentUser.role !== 'admin' && currentUser.role !== 'manager') {
-    return {
-      allowed: false,
-      error: 'Unauthorized. Only admins and managers can manage teams.',
-    };
-  }
-
-  return { allowed: true, currentUser };
+  return requireManagerRole(
+    'Unauthorized. Only admins and managers can manage teams.'
+  );
 }
 
 export function parseTeamForm(
@@ -32,10 +24,14 @@ export function parseTeamForm(
     name: formData.get('name') as string,
     description: (formData.get('description') as string) || null,
     manager_id: formData.get('manager_id') as string,
+    project_id: formData.get('project_id') as string,
     tech_stack: (formData.get('tech_stack') as string) || null,
     status:
       (formData.get('status') as
-        'active' | 'inactive' | 'archived' | 'deleted') || 'active',
+        | 'active'
+        | 'inactive'
+        | 'archived'
+        | 'deleted') || 'active',
   });
 
   if (!validation.success) {
@@ -43,4 +39,25 @@ export function parseTeamForm(
   }
 
   return { ok: true, data: validation.data };
+}
+
+export function toTeamWriteFields(
+  data: TeamFormData
+): Pick<
+  Tables<'teams'>,
+  | 'name'
+  | 'description'
+  | 'manager_id'
+  | 'project_id'
+  | 'tech_stack'
+  | 'status'
+> {
+  return {
+    name: data.name,
+    description: data.description ?? null,
+    manager_id: data.manager_id,
+    project_id: data.project_id,
+    tech_stack: data.tech_stack ?? null,
+    status: data.status,
+  };
 }

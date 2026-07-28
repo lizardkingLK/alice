@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { TeamRegistry } from '@/app/manager/_components/team-registry';
@@ -20,6 +21,46 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/manager',
   useSearchParams: () => new URLSearchParams(),
 }));
+
+vi.mock('@repo/ui/components/ui/select', () => {
+  return {
+    Select: ({
+      children,
+      value,
+      onValueChange,
+    }: {
+      children: ReactNode;
+      value: string;
+      // eslint-disable-next-line no-unused-vars
+      onValueChange: (val: string) => void;
+    }) => (
+      <select
+        value={value}
+        onChange={(e) => onValueChange(e.target.value)}
+        data-testid="status-select"
+      >
+        {children}
+      </select>
+    ),
+    SelectTrigger: ({ children }: { children: ReactNode }) => <>{children}</>,
+    SelectValue: ({ placeholder }: { placeholder: string }) => (
+      <>{placeholder}</>
+    ),
+    SelectContent: ({ children }: { children: ReactNode }) => <>{children}</>,
+    SelectItem: ({
+      children,
+      value,
+    }: {
+      children: ReactNode;
+      value: string;
+    }) => <option value={value}>{children}</option>,
+  };
+});
+
+vi.mock(
+  '@repo/ui/components/ui/dropdown-menu',
+  () => import('../mocks/dropdown-menu')
+);
 
 vi.mock('@/app/manager/_components/actions', () => ({
   softDeleteTeam: vi.fn(),
@@ -68,6 +109,7 @@ const mockTeams: Team[] = [
     tech_stack: 'Go, Docker, Kubernetes',
     description: 'DevOps & platform squad',
     manager_id: 'user-mgr-1',
+    project_id: 'proj-1',
     status: 'active',
     created_at: '2026-07-01T00:00:00Z',
     updated_at: '2026-07-01T00:00:00Z',
@@ -92,6 +134,7 @@ const mockTeams: Team[] = [
     tech_stack: 'PHP, MySQL',
     description: 'Legacy web app',
     manager_id: 'user-mgr-1',
+    project_id: null,
     status: 'archived',
     created_at: '2026-07-01T00:00:00Z',
     updated_at: '2026-07-01T00:00:00Z',
@@ -122,6 +165,8 @@ describe('TeamRegistry Component', () => {
         tab="active"
         search=""
         users={mockUsers}
+        activeProjects={[]}
+        projectMembersByProjectId={{}}
         currentUserId="user-mgr-1"
         currentUserRole="manager"
       />
@@ -143,17 +188,23 @@ describe('TeamRegistry Component', () => {
         tab="active"
         search=""
         users={mockUsers}
+        activeProjects={[]}
+        projectMembersByProjectId={{}}
         currentUserId="user-mgr-1"
         currentUserRole="manager"
       />
     );
 
-    const searchInput = screen.getByPlaceholderText(/Search teams by name, tech stack, or description/i);
+    const searchInput = screen.getByPlaceholderText(
+      /Search teams by name, tech stack, or description/i
+    );
     fireEvent.change(searchInput, { target: { value: 'Infrastructure' } });
 
     await waitFor(
       () => {
-        expect(mockPush).toHaveBeenCalledWith('/manager?search=Infrastructure&page=1');
+        expect(mockPush).toHaveBeenCalledWith(
+          '/manager?search=Infrastructure&page=1'
+        );
       },
       { timeout: 800 }
     );
@@ -170,13 +221,15 @@ describe('TeamRegistry Component', () => {
         tab="active"
         search=""
         users={mockUsers}
+        activeProjects={[]}
+        projectMembersByProjectId={{}}
         currentUserId="user-mgr-1"
         currentUserRole="manager"
       />
     );
 
-    const archivedTab = screen.getByRole('button', { name: /Archived/i });
-    fireEvent.click(archivedTab);
+    const select = screen.getAllByTestId('status-select')[0]!;
+    fireEvent.change(select, { target: { value: 'archived' } });
 
     expect(mockPush).toHaveBeenCalledWith('/manager?tab=archived&page=1');
   });
@@ -194,6 +247,8 @@ describe('TeamRegistry Component', () => {
         tab="active"
         search=""
         users={mockUsers}
+        activeProjects={[]}
+        projectMembersByProjectId={{}}
         currentUserId="user-mgr-1"
         currentUserRole="manager"
       />
@@ -227,6 +282,8 @@ describe('TeamRegistry Component', () => {
         tab="archived"
         search=""
         users={mockUsers}
+        activeProjects={[]}
+        projectMembersByProjectId={{}}
         currentUserId="user-admin-1"
         currentUserRole="admin"
       />
@@ -236,9 +293,13 @@ describe('TeamRegistry Component', () => {
     fireEvent.click(purgeBtn);
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText(/Warning: This action is irreversible/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Warning: This action is irreversible/i)
+    ).toBeInTheDocument();
 
-    const confirmBtn = screen.getByRole('button', { name: 'Delete Permanently' });
+    const confirmBtn = screen.getByRole('button', {
+      name: 'Delete Permanently',
+    });
     fireEvent.click(confirmBtn);
 
     await waitFor(() => {
@@ -260,6 +321,8 @@ describe('TeamRegistry Component', () => {
         tab="archived"
         search=""
         users={mockUsers}
+        activeProjects={[]}
+        projectMembersByProjectId={{}}
         currentUserId="user-mgr-1"
         currentUserRole="manager"
       />
@@ -285,6 +348,8 @@ describe('TeamRegistry Component', () => {
         tab="active"
         search=""
         users={mockUsers}
+        activeProjects={[]}
+        projectMembersByProjectId={{}}
         currentUserId="user-mgr-1"
         currentUserRole="manager"
       />
@@ -308,6 +373,8 @@ describe('TeamRegistry Component', () => {
         tab="active"
         search=""
         users={mockUsers}
+        activeProjects={[]}
+        projectMembersByProjectId={{}}
         currentUserId="user-mgr-1"
         currentUserRole="manager"
       />
@@ -317,7 +384,9 @@ describe('TeamRegistry Component', () => {
     fireEvent.click(editBtn);
 
     expect(screen.getByTestId('mock-team-form')).toBeInTheDocument();
-    expect(screen.getByText('Mock Team Form - Core Infrastructure')).toBeInTheDocument();
+    expect(
+      screen.getByText('Mock Team Form - Core Infrastructure')
+    ).toBeInTheDocument();
   });
 
   it('hides action buttons for standard member role', () => {
@@ -331,13 +400,21 @@ describe('TeamRegistry Component', () => {
         tab="active"
         search=""
         users={mockUsers}
+        activeProjects={[]}
+        projectMembersByProjectId={{}}
         currentUserId="user-dev-1"
         currentUserRole="member"
       />
     );
 
-    expect(screen.queryByRole('button', { name: /Add Team/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Add Team/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Edit' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Archive' })
+    ).not.toBeInTheDocument();
   });
 });

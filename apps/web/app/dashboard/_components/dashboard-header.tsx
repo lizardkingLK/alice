@@ -2,7 +2,7 @@ import { SidebarTrigger } from '@repo/ui/components/ui/sidebar';
 import { DashboardPageMeta } from './dashboard-page-meta';
 import { AuthControls } from '@/app/dashboard/_components/dashboard-auth';
 import { NotificationInbox } from '@/app/dashboard/_components/dashboard-notifications';
-import { getUser } from '@/lib/auth';
+import { getDbUser, getUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import type { DashboardBreadcrumbOverride } from './dashboard-breadcrumb';
 import {
@@ -15,13 +15,16 @@ import {
 type DashboardHeaderProps = {
   description?: string;
   breadcrumbOverrides?: DashboardBreadcrumbOverride[];
+  breadcrumbAsTrail?: boolean;
 };
 
 export async function DashboardHeader({
   description,
   breadcrumbOverrides,
+  breadcrumbAsTrail,
 }: Readonly<DashboardHeaderProps>) {
   const user = await getUser();
+  const dbUser = await getDbUser();
 
   if (!user) {
     redirect('/login');
@@ -43,12 +46,16 @@ export async function DashboardHeader({
       <DashboardPageMeta
         description={description}
         breadcrumbOverrides={breadcrumbOverrides}
+        breadcrumbAsTrail={breadcrumbAsTrail}
       />
       <section>
         <NotificationInbox />
       </section>
       <section>
-        <AuthControls email={user.email} meta={user.user_metadata} />
+        <AuthControls
+          email={user.email}
+          profilePicture={dbUser?.profile_picture}
+        />
       </section>
     </header>
   );

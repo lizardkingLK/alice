@@ -15,15 +15,20 @@ import { Button } from '@repo/ui/components/ui/button';
 type DashboardPageMetaProps = {
   description?: string;
   breadcrumbOverrides?: DashboardBreadcrumbOverride[];
+  breadcrumbAsTrail?: boolean;
 };
 
 export function DashboardPageMeta({
   description,
   breadcrumbOverrides = [{ label: 'Dashboard', url: '/dashboard' }],
+  breadcrumbAsTrail = false,
 }: Readonly<DashboardPageMetaProps>) {
   return (
     <div className="flex min-w-0 flex-1 items-center gap-3">
-      <DashboardBreadcrumb overrides={breadcrumbOverrides} />
+      <DashboardBreadcrumb
+        overrides={breadcrumbOverrides}
+        asTrail={breadcrumbAsTrail}
+      />
 
       {description ? (
         <Tooltip>

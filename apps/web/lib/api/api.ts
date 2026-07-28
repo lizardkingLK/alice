@@ -1,13 +1,28 @@
+import { BackendUnreachableError } from '@/lib/errors/backend-unreachable';
+
+export { BACKEND_UNREACHABLE_MESSAGE } from '@/lib/errors/backend-unreachable';
+
 type ApiErrorResponse = {
   error: unknown;
 };
+
+/** Error carrying the HTTP status so callers can branch (e.g. 410 Gone). */
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
 
 type TreeifiedError = {
   errors?: string[];
   properties?: Record<string, TreeifiedError | undefined>;
 };
 
-function getAPIUrl() {
+export function getAPIUrl() {
   return process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL;
 }
 
@@ -63,11 +78,37 @@ function getApiErrorMessage(data: unknown): string {
   return 'Request failed. Please try again.';
 }
 
+function isNetworkConnectivityError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const message = error.message.toLowerCase();
+  const name = error.name.toLowerCase();
+
+  return (
+    message === 'fetch failed' ||
+    message.includes('failed to fetch') ||
+    message.includes('networkerror') ||
+    message.includes('econnrefused') ||
+    message.includes('econnreset') ||
+    message.includes('enotfound') ||
+    message.includes('socket hang up') ||
+    name === 'aborterror' ||
+    name === 'timeouterror'
+  );
+}
+
 export async function getResponse<T>(
   path: string,
   token: string,
   init?: RequestInit
 ): Promise<T> {
+  const apiUrl = getAPIUrl();
+  if (!apiUrl) {
+    throw new BackendUnreachableError();
+  }
+
   const headers = new Headers(init?.headers);
   headers.set('Authorization', `Bearer ${token}`);
 
@@ -81,17 +122,33 @@ export async function getResponse<T>(
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(`${getAPIUrl()}${path}`, {
-    cache: 'no-store',
-    ...init,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${apiUrl}${path}`, {
+      cache: 'no-store',
+      ...init,
+      headers,
+    });
+  } catch (error) {
+    if (isNetworkConnectivityError(error)) {
+      throw new BackendUnreachableError();
+    }
+    throw error;
+  }
 
-  const data: T | ApiErrorResponse = await response.json();
+  let data: T | ApiErrorResponse;
+  try {
+    data = (await response.json()) as T | ApiErrorResponse;
+  } catch {
+    if (!response.ok) {
+      throw new BackendUnreachableError();
+    }
+    throw new Error('Request failed. Please try again.');
+  }
 
   if (!response.ok) {
     const message = getApiErrorMessage(data);
-    throw new Error(message);
+    throw new ApiError(message, response.status);
   }
 
   return data as T;

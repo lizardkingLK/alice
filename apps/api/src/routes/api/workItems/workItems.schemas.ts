@@ -23,8 +23,44 @@ function todayDateString(): string {
   return `${year}-${month}-${day}`;
 }
 
+/** Normalize DB/ISO timestamps to `YYYY-MM-DD` for comparisons. */
+export function toDateOnly(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+  return value.split('T')[0] ?? null;
+}
+
+/**
+ * PATCH may resubmit an existing past due date (edit forms). Block only when
+ * the client changes due_date to a *new* past date.
+ */
+export function isBlockedPastDueDateChange(
+  nextDueDate: string | null | undefined,
+  existingDueDate: string | null | undefined
+): boolean {
+  if (nextDueDate === undefined || nextDueDate === null) {
+    return false;
+  }
+  if (nextDueDate >= todayDateString()) {
+    return false;
+  }
+  return nextDueDate !== toDateOnly(existingDueDate);
+}
+
 function emptyStringToNull(value: unknown): unknown {
   return value === '' || value === undefined ? null : value;
+}
+
+function stringToNumberOrNull(value: unknown): unknown {
+  if (value === '' || value === undefined || value === null) {
+    return null;
+  }
+  if (typeof value === 'string') {
+    const num = Number(value);
+    return Number.isNaN(num) ? value : num;
+  }
+  return value;
 }
 
 const literalSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
@@ -55,8 +91,30 @@ export const workItemCoreObject = z.object({
     emptyStringToNull,
     z.uuid({ message: 'Please select a valid assignee' }).nullable()
   ),
+  reporter_id: z
+    .preprocess(
+      emptyStringToNull,
+      z.uuid({ message: 'Please select a valid reporter' }).nullable()
+    )
+    .optional(),
   due_date: z.preprocess(emptyStringToNull, dateStringSchema.nullable()),
   description: jsonSchema.nullable().optional(),
+  sprint_id: z
+    .preprocess(
+      emptyStringToNull,
+      z.uuid({ message: 'Please select a valid sprint' }).nullable()
+    )
+    .optional(),
+  story_points: z
+    .preprocess(
+      stringToNumberOrNull,
+      z
+        .number()
+        .int({ message: 'Story points must be a whole number' })
+        .min(0, { message: 'Story points must be at least 0' })
+        .nullable()
+    )
+    .optional(),
 });
 
 export const createUpdateWorkItemBodySchema = workItemCoreObject.refine(
@@ -70,6 +128,7 @@ export const createUpdateWorkItemBodySchema = workItemCoreObject.refine(
   }
 );
 
+/** PATCH: past due dates allowed when unchanged; see isBlockedPastDueDateChange. */
 export const patchUpdateWorkItemBodySchema = workItemCoreObject
   .extend({
     status: workItemStatusSchema,
@@ -77,19 +136,7 @@ export const patchUpdateWorkItemBodySchema = workItemCoreObject
   .partial()
   .refine((data) => Object.keys(data).length > 0, {
     message: 'At least one field must be provided for update',
-  })
-  .refine(
-    (data) => {
-      if (data.due_date) {
-        return data.due_date >= todayDateString();
-      }
-      return true;
-    },
-    {
-      message: 'Due date must be on or after today',
-      path: ['due_date'],
-    }
-  );
+  });
 
 export type WorkItemBody = z.infer<typeof createUpdateWorkItemBodySchema>;
 export type PatchWorkItemBody = z.infer<typeof patchUpdateWorkItemBodySchema>;

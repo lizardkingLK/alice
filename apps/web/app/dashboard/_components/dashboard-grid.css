@@ -14,6 +14,12 @@
   transition-duration: 100ms;
 }
 
+.dashboard-grid .react-grid-item > .react-resizable-handle {
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
 .dashboard-grid .react-grid-item > .react-resizable-handle::after {
   border-color: color-mix(in oklch, var(--muted-foreground) 55%, transparent);
 }
@@ -25,6 +31,15 @@
 .dashboard-grid .react-grid-item.react-draggable-dragging,
 .dashboard-grid .react-grid-item.resizing {
   z-index: 20;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Chart labels / widget copy select while the pointer drags across them. */
+.dashboard-grid .react-grid-item.react-draggable-dragging *,
+.dashboard-grid .react-grid-item.resizing * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
 }
 
 .dashboard-grid .react-grid-item.react-draggable-dragging > *,

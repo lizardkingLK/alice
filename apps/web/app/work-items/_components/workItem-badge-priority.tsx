@@ -1,6 +1,6 @@
 import { formatLabelFirstLetterCapitalized } from '@/app/_shared/utility';
 import { RendererProps } from '@/app/work-items/_components/workItems-table';
-import { DbWorkItem } from '@/app/work-items/_services/workItem.server.service';
+import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { Badge } from '@repo/ui/components/ui/badge';
 
 type WorkItemPriority = DbWorkItem['priority'];

@@ -53,10 +53,6 @@ export async function resetPassword(
         error: error.message,
       };
     }
-
-    await supabase.auth.signOut();
-    revalidatePath('/', 'layout');
-    redirect('/?reset=success');
   } catch (err) {
     const message =
       err instanceof Error ? err.message : 'An unexpected error occurred.';
@@ -65,4 +61,11 @@ export async function resetPassword(
       error: message,
     };
   }
+
+  // Keep the freshly-authenticated session and land in the app.
+  // `redirect()` throws NEXT_REDIRECT, so it must stay outside the try/catch
+  // above — otherwise the catch swallows it and the layout bounces the now
+  // signed-in user around.
+  revalidatePath('/', 'layout');
+  redirect('/dashboard');
 }

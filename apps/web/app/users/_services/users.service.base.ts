@@ -38,9 +38,17 @@ export function createUsersService(
 
     async getUsersListPaginated(
       page: number,
-      limit: number
+      limit: number,
+      search = ''
     ): Promise<GetUsersPaginatedResponse> {
-      const url = `${apiUsers}?page=${page}&limit=${limit}`;
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+      });
+      if (search.trim()) {
+        params.set('search', search.trim());
+      }
+      const url = `${apiUsers}?${params.toString()}`;
       return apiFetch<GetUsersPaginatedResponse>(url);
     },
 

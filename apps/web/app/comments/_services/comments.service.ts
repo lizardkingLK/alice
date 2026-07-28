@@ -7,10 +7,15 @@ export const getCommentsList = service.getCommentsList;
 export const createComment = service.createComment;
 export const updateComment = service.updateComment;
 export const archiveComment = service.archiveComment;
+export const restoreComment = service.restoreComment;
 
 export type {
   CommentUser,
   CommentWorkItem,
+  CommentWorkItemOption,
+  CommentWorkItemOptionRow,
   CommentItem,
   CreateCommentInput,
 } from './comments.service.base';
+
+export { mapCommentWorkItemOption } from './comments.service.base';

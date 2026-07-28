@@ -1,20 +1,20 @@
+// Prevent ResizeObserver errors from failing the tests
+Cypress.on('uncaught:exception', (err) => {
+  return !err.message.includes('ResizeObserver');
+});
+
 function createSprint(sprintName: string, goal: string) {
   // Click "Add Sprint" button
   cy.contains('button', 'Add Sprint').click();
 
-  // Wait for project options to load and select the first project
-  cy.get('select#sprint-project option')
-    .should('have.length.at.least', 1)
-    .and('not.have.value', '');
+  // Wait for the select trigger to be visible and click it
+  cy.get('button#sprint-project').should('be.visible').click();
 
-  cy.get('select#sprint-project')
+  // Select the first option in the dropdown list
+  cy.get('[role="option"]')
     .first()
-    .then(($select) => {
-      const options = $select.find('option');
-      cy.get('select#sprint-project')
-        .first()
-        .select(options.eq(0).val() as string);
-    });
+    .should('be.visible')
+    .click();
 
   cy.get('input#sprint-name').first().type(sprintName, { delay: 30 });
   cy.get('textarea#sprint-goal').first().type(goal, { delay: 30 });
@@ -39,12 +39,12 @@ function createSprint(sprintName: string, goal: string) {
 describe('Sprints Workspace', () => {
   before(() => {
     // Clean up old test sprints before running the test suite
-    cy.task('cleanTestSprints');
+    cy.task('cleanTestSprints', { restoreOwner: false });
   });
 
   after(() => {
     // Clean up test sprints after running the test suite
-    cy.task('cleanTestSprints');
+    cy.task('cleanTestSprints', { restoreOwner: true });
   });
 
   beforeEach(() => {
@@ -70,10 +70,11 @@ describe('Sprints Workspace', () => {
     cy.contains(goal).should('exist');
 
     // 5. Edit the newly created sprint
-    // We find the list item containing the sprint name, and click the edit button (which has aria-label="Edit Sprint")
-    cy.contains('li', sprintName).within(() => {
-      cy.get('button[aria-label="Edit Sprint"]').click();
+    // We open the actions menu and click the edit button
+    cy.contains('tr', sprintName).within(() => {
+      cy.get('button[aria-label="Open Actions Menu"]').click();
     });
+    cy.get('[aria-label="Edit Sprint"]').click();
 
     // The modal should open with the sprint details
     cy.get('input#sprint-name').first().should('have.value', sprintName);
@@ -94,22 +95,13 @@ describe('Sprints Workspace', () => {
     cy.get('textarea#sprint-goal').should('not.exist');
 
     // Verify it updated in the list
-    cy.contains('li', sprintName).should('contain', updatedGoal);
+    cy.contains('tr', sprintName).should('contain', updatedGoal);
 
-    // 6. Update Status
-    // Inside the sprint list item, click the status button/dropdown
-    cy.contains('li', sprintName).within(() => {
-      cy.get('button')
-        .contains(/Planned|Not Started|Ongoing|Completed/i)
-        .click();
-    });
-
-    // Select "Ongoing" in the dropdown list
-    cy.contains('[role="menuitem"]', 'Ongoing').click();
-
-    // Verify status button now displays "Ongoing"
-    cy.contains('li', sprintName).within(() => {
-      cy.get('button').should('contain', 'Ongoing');
+    // 6. Verify Status is Read-Only
+    // The status should display 'Not Started' and should not be editable (rendered as span, not a button)
+    cy.contains('tr', sprintName).within(() => {
+      cy.contains('span', 'Not Started').should('exist');
+      cy.get('button').contains('Not Started').should('not.exist');
     });
   });
 
@@ -134,23 +126,17 @@ describe('Sprints Workspace', () => {
     // 4. Verify we can see the admin's sprint
     cy.contains(sprintName).should('exist');
 
-    // 5. Change status as non-creator
-    cy.contains('li', sprintName).within(() => {
-      cy.get('button')
-        .contains(/Planned|Not Started|Ongoing|Completed/i)
-        .click();
-    });
-    cy.contains('[role="menuitem"]', 'Ongoing').click();
-
-    // Verify status button now displays "Ongoing"
-    cy.contains('li', sprintName).within(() => {
-      cy.get('button').should('contain', 'Ongoing');
+    // 5. Verify status is read-only as non-creator
+    cy.contains('tr', sprintName).within(() => {
+      cy.contains('span', 'Not Started').should('exist');
+      cy.get('button').contains('Not Started').should('not.exist');
     });
 
     // 6. Edit the sprint as non-creator
-    cy.contains('li', sprintName).within(() => {
-      cy.get('button[aria-label="Edit Sprint"]').click();
+    cy.contains('tr', sprintName).within(() => {
+      cy.get('button[aria-label="Open Actions Menu"]').click();
     });
+    cy.get('[aria-label="Edit Sprint"]').click();
 
     cy.get('input#sprint-name').first().should('have.value', sprintName);
     const updatedGoal = 'Goal updated by member';
@@ -164,6 +150,6 @@ describe('Sprints Workspace', () => {
     cy.get('textarea#sprint-goal').should('not.exist');
 
     // Verify update persisted
-    cy.contains('li', sprintName).should('contain', updatedGoal);
+    cy.contains('tr', sprintName).should('contain', updatedGoal);
   });
 });

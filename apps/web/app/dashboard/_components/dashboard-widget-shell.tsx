@@ -55,7 +55,7 @@ export function DashboardWidgetShell({
               variant="ghost"
               size="icon-sm"
               aria-label={`Drag ${title}`}
-              className="widget-drag-handle text-muted-foreground hover:text-foreground shrink-0 cursor-grab active:cursor-grabbing"
+              className="widget-drag-handle text-muted-foreground hover:text-foreground shrink-0 cursor-grab select-none active:cursor-grabbing"
             >
               <MoreHorizontal className="size-4" />
             </Button>

@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { resolveSafeRedirectPath } from '@/lib/auth-redirect';
 import { ensurePublicUser } from '@/lib/ensure-public-user';
+import { isEmailAllowed } from '@/lib/access-allowlist';
 import { createServerClient } from '@supabase/ssr';
+import type { EmailOtpType, SupabaseClient, User } from '@supabase/supabase-js';
 import type { Database } from '@repo/types';
 
 function buildRedirectUrl(request: Request, path: string): string {
@@ -20,19 +22,47 @@ function buildRedirectUrl(request: Request, path: string): string {
   return `${origin}${path}`;
 }
 
+/**
+ * Check allowlist then ensure a public profile.
+ * Returns an error path string on failure, or null on success.
+ */
+async function admitUser(
+  supabase: SupabaseClient<Database>,
+  user: User
+): Promise<string | null> {
+  const allowed = await isEmailAllowed(user.email ?? '');
+  if (!allowed) {
+    await supabase.auth.signOut();
+    return '/access-denied';
+  }
+
+  const { error: profileError } = await ensurePublicUser(user);
+  if (profileError) {
+    const msg = `Could not create user profile: ${profileError}`;
+    return `/login?error=${encodeURIComponent(msg)}`;
+  }
+
+  return null;
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
+  const tokenHash = searchParams.get('token_hash');
+  const otpType = searchParams.get('type') as EmailOtpType | null;
   const next = resolveSafeRedirectPath(searchParams.get('next'));
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (code && url && anonKey) {
+  const hasTokenHash = Boolean(tokenHash && otpType);
+  const canVerify = Boolean((code || hasTokenHash) && url && anonKey);
+
+  if (canVerify) {
     const redirectUrl = buildRedirectUrl(request, next);
     const response = NextResponse.redirect(redirectUrl);
 
-    const supabase = createServerClient<Database>(url, anonKey, {
+    const supabase = createServerClient<Database>(url!, anonKey!, {
       cookies: {
         getAll() {
           const cookieHeader = request.headers.get('cookie') ?? '';
@@ -49,7 +79,14 @@ export async function GET(request: Request) {
       },
     });
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    // Email links (invite, recovery, signup, magic link, email change) arrive as
+    // a server-readable `token_hash`; OAuth arrives as a PKCE `code`.
+    const { error } = hasTokenHash
+      ? await supabase.auth.verifyOtp({
+          type: otpType!,
+          token_hash: tokenHash!,
+        })
+      : await supabase.auth.exchangeCodeForSession(code!);
 
     if (!error) {
       const {
@@ -57,16 +94,16 @@ export async function GET(request: Request) {
       } = await supabase.auth.getUser();
 
       if (user) {
-        const { error: profileError } = await ensurePublicUser(user);
-        if (profileError) {
-          const errorContent = `Could not create user profile: ${profileError}`;
-          const errorPath = `/login?error=${encodeURIComponent(errorContent)}`;
+        const errorPath = await admitUser(supabase, user);
+        if (errorPath) {
           return NextResponse.redirect(buildRedirectUrl(request, errorPath));
         }
       }
 
       return response;
     }
+
+    console.error('error. auth callback verification failed:', error.message);
   }
 
   const isRecoveryFlow = next === '/reset-password';
