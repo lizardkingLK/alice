@@ -3,6 +3,7 @@ description: >-
   Build @repo/types, install the Vercel CLI, then pull / build / deploy a
   production prebuilt project. Requires checkout + setup-workspace first.
   Expects VERCEL_TOKEN (and VERCEL_ORG_ID) in the job environment.
+  Project Root Directory is configured in Vercel (e.g. apps/api, apps/web).
 
 inputs:
   vercel-project-id:
@@ -12,12 +13,6 @@ inputs:
     description: Vercel environment for `vercel pull` (usually production).
     required: false
     default: production
-  working-directory:
-    description: >-
-      Directory that contains the app vercel.json (e.g. apps/api or apps/web).
-      Defaults to repo root.
-    required: false
-    default: '.'
 
 runs:
   using: composite
@@ -32,21 +27,18 @@ runs:
 
     - name: Pull Vercel Environment Variables
       shell: bash
-      working-directory: ${{ inputs.working-directory }}
       run: vercel pull --yes --environment=${{ inputs.environment }} --token=$VERCEL_TOKEN
       env:
         VERCEL_PROJECT_ID: ${{ inputs.vercel-project-id }}
 
     - name: Build Local App Context via Vercel CLI
       shell: bash
-      working-directory: ${{ inputs.working-directory }}
       run: vercel build --prod --token=$VERCEL_TOKEN
       env:
         VERCEL_PROJECT_ID: ${{ inputs.vercel-project-id }}
 
     - name: Execute Controlled Production Deployment
       shell: bash
-      working-directory: ${{ inputs.working-directory }}
       run: vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
       env:
         VERCEL_PROJECT_ID: ${{ inputs.vercel-project-id }}
