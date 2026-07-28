@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
@@ -19,7 +20,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@repo/ui/components/ui/sheet';
-import { Textarea } from '@repo/ui/components/ui/textarea';
 import {
   getInitials,
   mapPriority,
@@ -37,10 +37,9 @@ type BacklogItemDetailsSheetProps = {
   readonly sprints: Sprint[];
   readonly blockOutsideClose: boolean;
   readonly onClose: () => void;
-  readonly onUpdateField: <K extends keyof DbWorkItem>(
+  readonly onUpdateFields: (
     itemId: string,
-    field: K,
-    value: DbWorkItem[K]
+    updates: Partial<DbWorkItem>
   ) => void;
 };
 /* eslint-enable no-unused-vars */
@@ -52,8 +51,21 @@ export function BacklogItemDetailsSheet({
   sprints,
   blockOutsideClose,
   onClose,
-  onUpdateField,
+  onUpdateFields,
 }: Readonly<BacklogItemDetailsSheetProps>) {
+  const [draft, setDraft] = useState<Partial<DbWorkItem>>({});
+
+  useEffect(() => {
+    setDraft({});
+  }, [item?.id]);
+
+  const handleSave = () => {
+    if (item && Object.keys(draft).length > 0) {
+      onUpdateFields(item.id, draft);
+    }
+    onClose();
+  };
+
   return (
     <Sheet open={!!item} onOpenChange={(open) => !open && onClose()}>
       <SheetContent
@@ -87,9 +99,9 @@ export function BacklogItemDetailsSheet({
               </div>
               <SheetTitle className="text-foreground mt-2 text-xl font-bold tracking-tight">
                 <Input
-                  value={item.title}
+                  value={draft.title ?? item.title ?? ''}
                   onChange={(e) =>
-                    onUpdateField(item.id, 'title', e.target.value)
+                    setDraft((prev) => ({ ...prev, title: e.target.value }))
                   }
                   className="hover:bg-muted/30 focus-visible:bg-background h-auto border-none px-1.5 py-1 text-lg font-bold shadow-none transition-colors"
                 />
@@ -105,9 +117,9 @@ export function BacklogItemDetailsSheet({
               <span className="text-muted-foreground self-center">Project</span>
               <div className="min-w-0">
                 <Select
-                  value={item.project_id}
+                  value={draft.project_id ?? item.project_id ?? ''}
                   onValueChange={(val) =>
-                    onUpdateField(item.id, 'project_id', val)
+                    setDraft((prev) => ({ ...prev, project_id: val }))
                   }
                 >
                   <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
@@ -126,13 +138,12 @@ export function BacklogItemDetailsSheet({
               <span className="text-muted-foreground self-center">Status</span>
               <div className="min-w-0">
                 <Select
-                  value={item.status}
+                  value={draft.status ?? item.status ?? ''}
                   onValueChange={(val) =>
-                    onUpdateField(
-                      item.id,
-                      'status',
-                      val as DbWorkItem['status']
-                    )
+                    setDraft((prev) => ({
+                      ...prev,
+                      status: val as DbWorkItem['status'],
+                    }))
                   }
                 >
                   <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
@@ -154,13 +165,16 @@ export function BacklogItemDetailsSheet({
               </span>
               <div className="min-w-0">
                 <Select
-                  value={mapPriority(item.priority)}
+                  value={
+                    draft.priority !== undefined
+                      ? mapPriority(draft.priority)
+                      : mapPriority(item.priority)
+                  }
                   onValueChange={(val) =>
-                    onUpdateField(
-                      item.id,
-                      'priority',
-                      val as DbWorkItem['priority']
-                    )
+                    setDraft((prev) => ({
+                      ...prev,
+                      priority: val as DbWorkItem['priority'],
+                    }))
                   }
                 >
                   <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
@@ -179,13 +193,16 @@ export function BacklogItemDetailsSheet({
               </span>
               <div className="min-w-0">
                 <Select
-                  value={item.assignee_id || 'unassigned'}
+                  value={
+                    draft.assignee_id !== undefined
+                      ? draft.assignee_id || 'unassigned'
+                      : item.assignee_id || 'unassigned'
+                  }
                   onValueChange={(val) =>
-                    onUpdateField(
-                      item.id,
-                      'assignee_id',
-                      val === 'unassigned' ? null : val
-                    )
+                    setDraft((prev) => ({
+                      ...prev,
+                      assignee_id: val === 'unassigned' ? null : val,
+                    }))
                   }
                 >
                   <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
@@ -212,13 +229,16 @@ export function BacklogItemDetailsSheet({
               <span className="text-muted-foreground self-center">Sprint</span>
               <div className="min-w-0">
                 <Select
-                  value={item.sprint_id || 'backlog'}
+                  value={
+                    draft.sprint_id !== undefined
+                      ? draft.sprint_id || 'backlog'
+                      : item.sprint_id || 'backlog'
+                  }
                   onValueChange={(val) =>
-                    onUpdateField(
-                      item.id,
-                      'sprint_id',
-                      val === 'backlog' ? null : val
-                    )
+                    setDraft((prev) => ({
+                      ...prev,
+                      sprint_id: val === 'backlog' ? null : val,
+                    }))
                   }
                 >
                   <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
@@ -242,12 +262,13 @@ export function BacklogItemDetailsSheet({
                 <Input
                   type="date"
                   value={
-                    item.due_date
-                      ? new Date(item.due_date).toISOString().split('T')[0]
-                      : ''
+                    (() => {
+                      const d = draft.due_date ?? item.due_date;
+                      return d ? new Date(d).toISOString().split('T')[0] : '';
+                    })()
                   }
                   onChange={(e) =>
-                    onUpdateField(item.id, 'due_date', e.target.value)
+                    setDraft((prev) => ({ ...prev, due_date: e.target.value }))
                   }
                   className="bg-background/50 border-border/80 h-9 w-full"
                 />
@@ -262,12 +283,16 @@ export function BacklogItemDetailsSheet({
                   min="0"
                   step="1"
                   placeholder="Enter Story Points"
-                  value={item.story_points ?? ''}
+                  value={
+                    draft.story_points !== undefined
+                      ? draft.story_points ?? ''
+                      : item.story_points ?? ''
+                  }
                   onChange={(e) => {
                     const val = e.target.value;
                     const num = val === '' ? null : Number.parseInt(val, 10);
                     if (num === null || (!Number.isNaN(num) && num >= 0)) {
-                      onUpdateField(item.id, 'story_points', num);
+                      setDraft((prev) => ({ ...prev, story_points: num }));
                     }
                   }}
                   className="bg-background/50 border-border/80 h-9 w-full"
@@ -277,29 +302,9 @@ export function BacklogItemDetailsSheet({
 
             <Separator className="my-4" />
 
-            <div className="space-y-3 px-2">
-              <h4 className="text-foreground text-sm font-semibold">
-                Description
-              </h4>
-              <Textarea
-                placeholder="Describe the objective, scope, and validation criteria..."
-                value={
-                  item.description && typeof item.description === 'string'
-                    ? item.description
-                    : ''
-                }
-                onChange={(e) =>
-                  onUpdateField(item.id, 'description', e.target.value)
-                }
-                className="bg-background/50 border-border/80 min-h-36 p-3 text-sm leading-relaxed transition-colors focus:border-indigo-500"
-              />
-            </div>
-
-            <Separator className="my-4" />
-
             <div className="flex justify-end px-2 pt-2 pb-4">
               <Button
-                onClick={onClose}
+                onClick={handleSave}
                 className="h-9 cursor-pointer bg-linear-to-r from-indigo-500 to-violet-600 px-6 font-semibold text-white shadow-md transition-all duration-150 hover:from-indigo-600 hover:to-violet-700"
               >
                 Save Changes

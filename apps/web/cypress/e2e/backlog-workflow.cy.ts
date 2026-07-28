@@ -179,7 +179,7 @@ describe('Backlog and Sprint E2E Workflow', () => {
       .click();
 
     // The detail panel sheet should be open. Update status to Done.
-    cy.contains('span', 'Status').next('button').click();
+    cy.contains('span', 'Status').next().find('button').click();
     cy.get('[role="option"]').contains('Done').click();
 
     // Wait for status update API request to finish

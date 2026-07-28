@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { TeamRegistry } from '@/app/manager/_components/team-registry';
@@ -20,6 +21,41 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/manager',
   useSearchParams: () => new URLSearchParams(),
 }));
+
+vi.mock('@repo/ui/components/ui/select', () => {
+  return {
+    Select: ({
+      children,
+      value,
+      onValueChange,
+    }: {
+      children: ReactNode;
+      value: string;
+      // eslint-disable-next-line no-unused-vars
+      onValueChange: (val: string) => void;
+    }) => (
+      <select
+        value={value}
+        onChange={(e) => onValueChange(e.target.value)}
+        data-testid="status-select"
+      >
+        {children}
+      </select>
+    ),
+    SelectTrigger: ({ children }: { children: ReactNode }) => <>{children}</>,
+    SelectValue: ({ placeholder }: { placeholder: string }) => (
+      <>{placeholder}</>
+    ),
+    SelectContent: ({ children }: { children: ReactNode }) => <>{children}</>,
+    SelectItem: ({
+      children,
+      value,
+    }: {
+      children: ReactNode;
+      value: string;
+    }) => <option value={value}>{children}</option>,
+  };
+});
 
 vi.mock('@repo/ui/components/ui/dropdown-menu', () => import('../mocks/dropdown-menu'));
 
@@ -184,8 +220,8 @@ describe('TeamRegistry Component', () => {
       />
     );
 
-    const archivedTab = screen.getByRole('button', { name: /Archived/i });
-    fireEvent.click(archivedTab);
+    const select = screen.getAllByTestId('status-select')[0]!;
+    fireEvent.change(select, { target: { value: 'archived' } });
 
     expect(mockPush).toHaveBeenCalledWith('/manager?tab=archived&page=1');
   });

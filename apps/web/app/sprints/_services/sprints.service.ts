@@ -17,6 +17,7 @@ export type Sprint = Pick<DbSprint, 'id' | 'name' | 'goal'> & {
   startDate: DbSprint['start_date'];
   endDate: DbSprint['end_date'];
   createdBy: string;
+  updatedBy: DbSprint['updated_by'];
   createdAt: DbSprint['created_at'];
   updatedAt: DbSprint['updated_at'];
   project?: {
@@ -43,6 +44,7 @@ export function mapDbSprintToSprint(row: DbSprintRelation): Sprint {
     startDate: row.start_date,
     endDate: row.end_date,
     createdBy: row.created_by ?? '',
+    updatedBy: row.updated_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     project: row.project

@@ -135,33 +135,65 @@ export function BacklogSprintCard({
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-3 md:flex-nowrap">
-          <div className="mr-2 flex items-center gap-1.5">
-            <span className="text-muted-foreground bg-muted/65 rounded-full px-2.5 py-0.5 text-xs font-semibold">
-              {issueCount} issue{issueCount === 1 ? '' : 's'}
-            </span>
-          </div>
+          {sprint.status === 'Completed' ? (
+            isManagerOrAdmin && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 cursor-pointer border-indigo-500/30 bg-indigo-500/10 text-xs font-semibold text-indigo-600 hover:bg-indigo-500/20 dark:text-indigo-400"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(`/sprints/${sprint.id}/report`, '_blank', 'noopener,noreferrer');
+                }}
+              >
+                Summary Report
+              </Button>
+            )
+          ) : (
+            <>
+              <div className="mr-2 flex items-center gap-1.5">
+                <span className="text-muted-foreground bg-muted/65 rounded-full px-2.5 py-0.5 text-xs font-semibold">
+                  {issueCount} issue{issueCount === 1 ? '' : 's'}
+                </span>
+              </div>
 
-          <Separator orientation="vertical" className="hidden h-6 md:block" />
+              <Separator orientation="vertical" className="hidden h-6 md:block" />
 
-          {isManagerOrAdmin && sprint.status === 'Not Started' && (
-            <Button
-              size="sm"
-              onClick={() => onStartSprint(sprint.id)}
-              className="h-8 cursor-pointer bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-700"
-            >
-              <Play className="mr-1 h-3 w-3 fill-current" />
-              Start Sprint
-            </Button>
-          )}
-          {isManagerOrAdmin && sprint.status === 'Ongoing' && (
-            <Button
-              size="sm"
-              onClick={() => onCompleteSprint(sprint.id)}
-              className="h-8 cursor-pointer bg-indigo-600 text-xs font-semibold text-white hover:bg-indigo-700"
-            >
-              <Check className="mr-1 h-3.5 w-3.5" />
-              Complete Sprint
-            </Button>
+              {isManagerOrAdmin && sprint.status === 'Ongoing' && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 cursor-pointer border-indigo-500/30 bg-indigo-500/10 text-xs font-semibold text-indigo-600 hover:bg-indigo-500/20 dark:text-indigo-400"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.open(`/sprints/${sprint.id}/report`, '_blank', 'noopener,noreferrer');
+                  }}
+                >
+                  Summary Report
+                </Button>
+              )}
+
+              {isManagerOrAdmin && sprint.status === 'Not Started' && (
+                <Button
+                  size="sm"
+                  onClick={() => onStartSprint(sprint.id)}
+                  className="h-8 cursor-pointer bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-700"
+                >
+                  <Play className="mr-1 h-3 w-3 fill-current" />
+                  Start Sprint
+                </Button>
+              )}
+              {isManagerOrAdmin && sprint.status === 'Ongoing' && (
+                <Button
+                  size="sm"
+                  onClick={() => onCompleteSprint(sprint.id)}
+                  className="h-8 cursor-pointer bg-indigo-600 text-xs font-semibold text-white hover:bg-indigo-700"
+                >
+                  <Check className="mr-1 h-3.5 w-3.5" />
+                  Complete Sprint
+                </Button>
+              )}
+            </>
           )}
         </div>
       </div>

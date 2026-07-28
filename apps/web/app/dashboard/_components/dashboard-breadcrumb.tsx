@@ -114,7 +114,7 @@ export function DashboardBreadcrumb({
             <Fragment key={`${item.url}-${item.label}`}>
               {index > 0 ? <BreadcrumbSeparator /> : null}
               <BreadcrumbItem>
-                {isCurrent ? (
+                {isCurrent || item.url === '#' ? (
                   <BreadcrumbPage>{item.label}</BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink asChild>

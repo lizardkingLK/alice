@@ -47,16 +47,17 @@ import {
   RegistryRowActions,
   registryActionsHeader,
 } from '@/components/registry-row-actions';
-import { RegistryTabSwitcher } from '@/components/registry-tab-switcher';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@repo/ui/components/ui/select';
 import type { Project } from '../_services/projects.service';
 import type { User } from '@/app/users/_services/users.service';
 
 type ProjectTab = 'active' | 'archived';
-
-const PROJECT_TABS = [
-  { id: 'active' as const, label: 'Active' },
-  { id: 'archived' as const, label: 'Archived' },
-];
 
 interface ProjectRegistryProps {
   readonly projects: Project[];
@@ -333,11 +334,22 @@ export function ProjectRegistry({
         </div>
 
         <div className="flex items-center gap-2">
-          <RegistryTabSwitcher
-            tabs={PROJECT_TABS}
+          <Select
             value={tab}
-            onChange={handleTabChange}
-          />
+            onValueChange={(val) => handleTabChange(val as ProjectTab)}
+          >
+            <SelectTrigger
+              id="project-status-filter"
+              aria-label="Filter by Status"
+              className="w-40 bg-background/50 h-10"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Active Projects</SelectItem>
+              <SelectItem value="archived">Archived</SelectItem>
+            </SelectContent>
+          </Select>
 
           {isManagerOrAdmin ? (
             <Button
