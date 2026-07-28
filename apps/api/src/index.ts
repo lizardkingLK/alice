@@ -1,4 +1,3 @@
-import './register-path-aliases';
 import './config/load-env';
 import './config/env';
 
@@ -16,4 +15,9 @@ app.use(corsConfig);
 app.use(jsonConfig);
 app.use(routesConfig);
 
-startServer(app);
+// Vercel provides the HTTP server; only listen in local / non-serverless runs.
+if (!process.env.VERCEL) {
+  void startServer(app);
+}
+
+export default app;
