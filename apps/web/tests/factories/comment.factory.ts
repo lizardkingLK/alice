@@ -1,14 +1,18 @@
-import type { CommentItem } from '@/app/comments/_services/comments.service';
+import type {
+  CommentItem,
+  CommentUser,
+  CommentWorkItem,
+} from '@/app/comments/_services/comments.service';
 import { formatDateToISOString } from '@/app/_shared/utility';
 
-const defaultAuthor = {
+const defaultAuthor: CommentUser = {
   id: 'user-admin-1',
   name: 'Alice Admin',
   email: 'admin@alice.dev',
   role: 'admin',
 };
 
-const defaultWorkItem = {
+const defaultWorkItem: CommentWorkItem = {
   id: 'wi-1',
   title: 'Implement Authentication Flow',
   key: 'ALICE-1',

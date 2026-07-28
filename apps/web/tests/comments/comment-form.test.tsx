@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { CommentsFeed } from '@/app/comments/_components/comments-feed';
-import type { CommentItem } from '@/app/comments/_services/comments.service';
+import type {
+  CommentItem,
+  CommentWorkItemOption,
+} from '@/app/comments/_services/comments.service';
 import {
   createCommentAction,
   updateCommentAction,
@@ -131,10 +134,10 @@ const workItem2 = workItemFactory.build({
   id: 'wi-2',
   title: 'Fix Navigation Sidebar Glitch',
   project_id: proj1.id,
-  type: 'Bug' as never,
+  type: 'Task',
 });
 
-const mockWorkItems = [
+const mockWorkItems: CommentWorkItemOption[] = [
   {
     id: workItem1.id,
     title: workItem1.title,
@@ -228,14 +231,7 @@ const mockComments: CommentItem[] = [
 function renderForm(
   overrides: Partial<{
     initialComments: CommentItem[];
-    workItems: Array<{
-      id: string;
-      title: string;
-      key: string;
-      type: string;
-      project_id: string;
-      project_name?: string;
-    }>;
+    workItems: CommentWorkItemOption[];
     currentUserId: string;
     workItemId: string;
   }> = {}
