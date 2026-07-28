@@ -8,7 +8,7 @@ import {
   restoreTeam as apiRestoreTeam,
   hardDeleteTeam as apiHardDeleteTeam,
 } from '../_services/teams.service.server';
-import { parseTeamForm, requireTeamManager } from '@/lib/teams/admin-team';
+import { parseTeamForm, requireTeamManager, toTeamWriteFields } from '@/lib/teams/admin-team';
 import {
   actionFailure,
   actionSuccess,
@@ -43,13 +43,7 @@ export async function createTeam(
       return parsed.state;
     }
 
-    const team = await apiCreateTeam({
-      name: parsed.data.name,
-      description: parsed.data.description ?? null,
-      manager_id: parsed.data.manager_id,
-      tech_stack: parsed.data.tech_stack ?? null,
-      status: parsed.data.status,
-    });
+    const team = await apiCreateTeam(toTeamWriteFields(parsed.data));
 
     revalidatePath('/manager');
     return { ...actionSuccess(), teamId: team.id };
@@ -67,13 +61,7 @@ export async function updateTeam(
       return parsed.state;
     }
 
-    await apiUpdateTeam(teamId, {
-      name: parsed.data.name,
-      description: parsed.data.description ?? null,
-      manager_id: parsed.data.manager_id,
-      tech_stack: parsed.data.tech_stack ?? null,
-      status: parsed.data.status,
-    });
+    await apiUpdateTeam(teamId, toTeamWriteFields(parsed.data));
 
     revalidatePath('/manager');
     return actionSuccess();
