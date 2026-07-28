@@ -91,6 +91,7 @@ const mockSprint = {
   startDate: '2026-07-10',
   endDate: '2026-07-24',
   createdBy: 'user-1',
+  updatedBy: null,
   createdAt: '2026-07-09T10:00:00Z',
   updatedAt: '2026-07-09T10:00:00Z',
   project: {
