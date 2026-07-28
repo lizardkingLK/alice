@@ -1,4 +1,5 @@
 import type { CommentItem } from '@/app/comments/_services/comments.service';
+import { formatDateToISOString } from '@/app/_shared/utility';
 
 const defaultAuthor = {
   id: 'user-admin-1',
@@ -29,8 +30,8 @@ export const commentFactory = {
       content: 'Security audit completed for the auth module.',
       edited: false,
       status: 'active',
-      created_at: '2026-07-20T10:00:00Z',
-      updated_at: '2026-07-20T10:00:00Z',
+      created_at: formatDateToISOString(2026, 6, 20, 10, 0, 0),
+      updated_at: formatDateToISOString(2026, 6, 20, 10, 0, 0),
       author: defaultAuthor,
       work_item: defaultWorkItem,
       ...overrides,

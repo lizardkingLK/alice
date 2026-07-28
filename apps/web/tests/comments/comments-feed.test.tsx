@@ -11,6 +11,7 @@ import { userFactory } from '../factories/user.factory';
 import { projectFactory } from '../factories/project.factory';
 import { workItemFactory } from '../factories/workItem.factory';
 import { commentFactory } from '../factories/comment.factory';
+import { formatDateToISOString } from '@/app/_shared/utility';
 
 vi.mock('@/lib/supabase/client', () => {
   const mockOrder = vi.fn(() => new Promise(() => {}));
@@ -161,8 +162,8 @@ const mockComments: CommentItem[] = [
     content: 'Security audit completed for the auth module.',
     edited: false,
     status: 'active',
-    created_at: '2026-07-20T10:00:00Z',
-    updated_at: '2026-07-20T10:00:00Z',
+    created_at: formatDateToISOString(2026, 6, 20, 10, 0, 0),
+    updated_at: formatDateToISOString(2026, 6, 20, 10, 0, 0),
     author: {
       id: aliceAdmin.id,
       name: aliceAdmin.name,
@@ -189,8 +190,8 @@ const mockComments: CommentItem[] = [
     content: 'Navigation CSS alignment fix is ready for review.',
     edited: false,
     status: 'active',
-    created_at: '2026-07-21T08:00:00Z',
-    updated_at: '2026-07-21T08:00:00Z',
+    created_at: formatDateToISOString(2026, 6, 21, 8, 0, 0),
+    updated_at: formatDateToISOString(2026, 6, 21, 8, 0, 0),
     author: {
       id: bobDev.id,
       name: bobDev.name,
@@ -212,8 +213,8 @@ const mockComments: CommentItem[] = [
     content: 'Yes, this is a reply to the security audit.',
     edited: false,
     status: 'active',
-    created_at: '2026-07-20T11:00:00Z',
-    updated_at: '2026-07-20T11:00:00Z',
+    created_at: formatDateToISOString(2026, 6, 20, 11, 0, 0),
+    updated_at: formatDateToISOString(2026, 6, 20, 11, 0, 0),
     author: {
       id: aliceAdmin.id,
       name: aliceAdmin.name,
