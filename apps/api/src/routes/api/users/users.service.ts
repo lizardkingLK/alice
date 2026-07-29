@@ -1,8 +1,8 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../../../lib/supabase';
 import {
   usersRepository,
   type UserRow,
-} from '@/routes/api/users/users.repository';
+} from './users.repository';
 
 async function requireAdmin(actorId: string) {
   const { data: user, error } = await supabase

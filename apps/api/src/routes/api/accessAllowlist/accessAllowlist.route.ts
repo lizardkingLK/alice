@@ -4,10 +4,10 @@ import {
   accessAllowlistCreateSchema,
   accessAllowlistUpdateSchema,
 } from '@repo/types';
-import { requireActorId } from '@/lib/audit';
-import { parsePagination } from '@/lib/pagination';
-import { requireApiAuth, type AuthenticatedRequest } from '@/middlewares/auth';
-import { accessAllowlistService } from '@/routes/api/accessAllowlist/accessAllowlist.service';
+import { requireActorId } from '../../../lib/audit';
+import { parsePagination } from '../../../lib/pagination';
+import { requireApiAuth, type AuthenticatedRequest } from '../../../middlewares/auth';
+import { accessAllowlistService } from './accessAllowlist.service';
 
 const accessAllowlistRouter: Router = Router();
 

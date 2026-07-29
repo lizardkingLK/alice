@@ -1,12 +1,12 @@
 import {
   commentsRepository,
   type CommentRow,
-} from '@/routes/api/comments/comments.repository';
-import { notificationsService } from '@/routes/api/notifications/notifications.service';
+} from './comments.repository';
+import { notificationsService } from '../notifications/notifications.service';
 import {
   extractMentionedUserIds,
   createCommentSnippet,
-} from '@/routes/api/comments/comments.utils';
+} from './comments.utils';
 
 export class CommentsService {
   async listComments(workItemId?: string): Promise<CommentRow[]> {

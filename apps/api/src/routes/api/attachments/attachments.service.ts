@@ -1,4 +1,4 @@
-import { env } from '@/config/env';
+import { env } from '../../../config/env';
 import {
   createSignedStorageUrl,
   DEFAULT_SIGNED_URL_SECONDS,
@@ -7,7 +7,7 @@ import {
   signedUrlExpiresAt,
   storageObjectExists,
   uploadToStorage,
-} from '@/lib/file-helpers';
+} from '../../../lib/file-helpers';
 
 /** Attachment row does not exist (or is archived/deleted). */
 export class AttachmentNotFoundError extends Error {
@@ -24,7 +24,7 @@ export class AttachmentGoneError extends Error {
     this.name = 'AttachmentGoneError';
   }
 }
-import { attachmentsRepository } from '@/routes/api/attachments/attachments.repository';
+import { attachmentsRepository } from './attachments.repository';
 import type { AttachmentWithUploader } from '@repo/types';
 
 export type UploadedAttachmentResult = {

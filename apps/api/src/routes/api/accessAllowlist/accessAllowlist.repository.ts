@@ -1,9 +1,9 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../../../lib/supabase';
 import {
   auditCreateWithoutStatus,
   auditUpdate,
   type RecordStatus,
-} from '@/lib/audit';
+} from '../../../lib/audit';
 import {
   isValidAccessAllowlistDomain,
   normalizeAccessAllowlistDomain,
