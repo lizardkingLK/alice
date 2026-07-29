@@ -19,6 +19,7 @@ import EditorCommandsBar from '@/app/work-items/_components/workItem-description
 import getEditorStyles from '@/app/work-items/_components/workItem-description-editor-styles';
 import { delay } from '@/app/_shared/utility';
 import { CustomLinkExtension } from '@/lib/editor/tiptap-link-configuration';
+import { removeLocalStorageItem } from '@/lib/local-storage';
 
 type WorkItemDescriptionEditorProps = {
   id: string;
@@ -39,7 +40,7 @@ export default function WorkItemDescriptionEditor({
   const [isSaving, setSaving] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
 
-  const AUTOSAVE_STORAGE_KEY = `autosave_editor_${id}`;
+  const AUTOSAVE_STORAGE_KEY = `work_item_${id}`;
 
   const editor = useEditor({
     immediatelyRender: true,
@@ -71,7 +72,13 @@ export default function WorkItemDescriptionEditor({
   const { clearAutosave } = useEditorAutosave({
     editor,
     storageKey: AUTOSAVE_STORAGE_KEY,
+    scopeId: id,
   });
+
+  // Drop the old shared draft key that was keyed by component name.
+  useEffect(() => {
+    removeLocalStorageItem('autosave_editor_WorkItemDescriptionEditor');
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
+import Link from 'next/link';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
@@ -21,13 +21,20 @@ import {
   SheetTitle,
 } from '@repo/ui/components/ui/sheet';
 import {
-  getInitials,
+  BACKLOG_TYPE_STYLES,
   mapPriority,
+  projectDisplayKey,
 } from '@/app/backlog/_helpers/backlog-item-utils';
+import { formatLabelWithSpace } from '@/app/_shared/utility';
+import { MemberSelectItems } from '@/app/work-items/_components/member-select-items';
+import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
+import { WORK_ITEM_STATUSES } from '@/app/work-items/_helpers/work-item-status';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
 import type { User as DbUser } from '@/app/users/_services/users.service';
+import { cn } from '@repo/ui/lib/utils';
+import { ExternalLink } from '@repo/ui/lib/icons';
 
 /* eslint-disable no-unused-vars */
 type BacklogItemDetailsSheetProps = {
@@ -84,18 +91,34 @@ export function BacklogItemDetailsSheet({
         {item && (
           <div className="space-y-6">
             <SheetHeader className="pb-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <Badge
                   variant="outline"
-                  className="border-indigo-500/20 bg-indigo-500/10 text-[10px] font-semibold text-indigo-600 uppercase dark:text-indigo-400"
+                  className={cn(
+                    'text-[10px] font-semibold uppercase',
+                    BACKLOG_TYPE_STYLES[item.type]
+                  )}
                 >
                   {item.type}
                 </Badge>
-                <span className="text-muted-foreground font-mono text-xs">
-                  {projects.find((p) => p.id === item.project_id)?.key ||
-                    'ALICE'}
-                  -{item.id.slice(0, 4).toUpperCase()}
-                </span>
+                <Button
+                  asChild
+                  variant="link"
+                  size="sm"
+                  className="h-auto px-0"
+                >
+                  <Link
+                    href={workItemDetailHref(item.id, {
+                      fromProjectId: item.project_id,
+                    })}
+                  >
+                    {projectDisplayKey(
+                      projects.find((p) => p.id === item.project_id)?.key,
+                      item.id
+                    )}
+                    <ExternalLink data-icon="inline-end" className="size-3.5" />
+                  </Link>
+                </Button>
               </div>
               <SheetTitle className="text-foreground mt-2 text-xl font-bold tracking-tight">
                 <Input
@@ -150,12 +173,11 @@ export function BacklogItemDetailsSheet({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Draft">Draft</SelectItem>
-                    <SelectItem value="New">New</SelectItem>
-                    <SelectItem value="ToDo">To Do</SelectItem>
-                    <SelectItem value="InProgress">In Progress</SelectItem>
-                    <SelectItem value="Testing">Testing</SelectItem>
-                    <SelectItem value="Done">Done</SelectItem>
+                    {WORK_ITEM_STATUSES.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {formatLabelWithSpace(status)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -209,19 +231,10 @@ export function BacklogItemDetailsSheet({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
-                    {projectMembers.map((member) => (
-                      <SelectItem key={member.id} value={member.id}>
-                        <div className="flex items-center gap-2 text-xs">
-                          <Avatar size="sm" className="size-5">
-                            <AvatarFallback className="text-[8px]">
-                              {getInitials(member.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span>{member.name}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
+                    <MemberSelectItems
+                      members={projectMembers}
+                      itemClassName="text-xs"
+                    />
                   </SelectContent>
                 </Select>
               </div>
@@ -300,11 +313,18 @@ export function BacklogItemDetailsSheet({
 
             <Separator className="my-4" />
 
-            <div className="flex justify-end px-2 pt-2 pb-4">
-              <Button
-                onClick={handleSave}
-                className="h-9 cursor-pointer bg-linear-to-r from-indigo-500 to-violet-600 px-6 font-semibold text-white shadow-md transition-all duration-150 hover:from-indigo-600 hover:to-violet-700"
-              >
+            <div className="flex justify-end gap-2 px-2 pt-2 pb-4">
+              <Button asChild variant="outline" className="h-9 cursor-pointer">
+                <Link
+                  href={workItemDetailHref(item.id, {
+                    fromProjectId: item.project_id,
+                  })}
+                >
+                  Open work item
+                  <ExternalLink data-icon="inline-end" className="size-3.5" />
+                </Link>
+              </Button>
+              <Button onClick={handleSave} className="h-9 cursor-pointer px-6">
                 Save Changes
               </Button>
             </div>
