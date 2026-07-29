@@ -201,7 +201,7 @@ export function BacklogStartSprintDialog({
                 This sprint contains{' '}
                 <span className="font-semibold">{itemCount}</span> work items.
                 Starting it will change its status to{' '}
-                <span className="font-semibold text-indigo-500">Ongoing</span>
+                <span className="text-primary font-semibold">Ongoing</span>
                 {'.'}
               </p>
             )}
@@ -315,7 +315,7 @@ export function BacklogCompleteSprintDialog({
               showConfirm={!isEmpty && !hasIncomplete}
               confirmLabel="Complete Sprint"
               pendingLabel="Completing..."
-              confirmClassName="bg-indigo-600 font-semibold text-white hover:bg-indigo-700"
+              confirmClassName="bg-sky-600 font-semibold text-white hover:bg-sky-700"
               onCancel={() => onOpenChange(false)}
               onConfirm={() => onConfirm(sprint.id)}
             />
@@ -365,7 +365,7 @@ export function BacklogMismatchDialog({
         <div className="flex justify-end pt-2">
           <Button
             size="sm"
-            className="cursor-pointer bg-indigo-600 font-semibold text-white hover:bg-indigo-700"
+            className="cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
               onAcknowledge();
