@@ -20,7 +20,7 @@ export function resolveRequestOrigin(requestOrigin: string): string {
 export async function getRequestPathForLoginNext(): Promise<string | null> {
   const headersList = await headers();
   const pathname = headersList.get('x-pathname');
-  if (!pathname || !pathname.startsWith('/')) {
+  if (!pathname?.startsWith('/')) {
     return null;
   }
   const search = headersList.get('x-search') ?? '';

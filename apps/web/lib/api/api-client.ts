@@ -14,7 +14,7 @@ export async function apiFetch<T>(
 
   if (!session?.access_token) {
     const nextPath =
-      typeof globalThis.location !== 'undefined'
+      globalThis.location !== undefined
         ? `${globalThis.location.pathname}${globalThis.location.search}`
         : null;
     redirect(buildLoginPath(nextPath));
