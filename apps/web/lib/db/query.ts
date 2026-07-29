@@ -42,3 +42,19 @@ export function throwIfError(
     throw new Error(errorMessage);
   }
 }
+
+/** True when PostgREST/Supabase cannot see a table or relation yet. */
+export function isMissingRelationError(error: {
+  message?: string;
+  code?: string;
+}): boolean {
+  const message = error.message?.toLowerCase() ?? '';
+  const code = error.code ?? '';
+
+  return (
+    code === 'PGRST205' ||
+    message.includes('schema cache') ||
+    message.includes('could not find the table') ||
+    (message.includes('relation') && message.includes('does not exist'))
+  );
+}

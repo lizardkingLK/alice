@@ -49,4 +49,26 @@ export class WorkItemService {
       updatedBy: userId,
     });
   }
+
+  async listWorkItemWorkLogs(actorId: string, workItemId: string) {
+    return await this.workItems.listWorkItemWorkLogs(workItemId, actorId);
+  }
+
+  async createWorkItemWorkLog(
+    actorId: string,
+    workItemId: string,
+    input: {
+      loggedHours: number;
+      loggedAtIso: string;
+      comment: string | null;
+    }
+  ) {
+    return await this.workItems.createWorkItemWorkLog({
+      workItemId,
+      actorId,
+      loggedHours: input.loggedHours,
+      loggedAtIso: input.loggedAtIso,
+      comment: input.comment,
+    });
+  }
 }

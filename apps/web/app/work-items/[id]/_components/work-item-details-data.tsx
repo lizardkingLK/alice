@@ -3,6 +3,7 @@ import { getWorkItem } from '@/app/work-items/_services/workItem.service.server'
 import { getWorkItemAttachments } from '@/app/work-items/_services/attachments.service.server';
 import { getWorkItemDiscussion } from '@/app/comments/_services/comments.service.server';
 import { getProjectMembers } from '@/app/projects/_services/projects.service.server';
+import { getWorkItemWorkLogs } from '@/app/work-items/_services/workItem-worklogs.service.server';
 import { getDbUser } from '@/lib/auth';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import type { WorkItemPatchMemberOption } from '@/app/work-items/_components/workItem-field-patch-dialog';
@@ -21,6 +22,12 @@ export async function WorkItemDetailsData({
       getWorkItemAttachments(workItemId),
       getDbUser(),
     ]);
+
+  const initialWorkLogs = await safeServerFetch(
+    getWorkItemWorkLogs(workItemId),
+    [],
+    'fetch work logs for work item details'
+  );
 
   const projectMembers = workItem.project_id
     ? await safeServerFetch(
@@ -47,6 +54,7 @@ export async function WorkItemDetailsData({
       workItemDetails={workItem}
       initialComments={initialComments}
       initialAttachments={initialAttachments}
+      initialWorkLogs={initialWorkLogs}
       currentUserId={currentUserId}
       projectMembers={memberOptions}
     />
