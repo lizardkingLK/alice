@@ -43,11 +43,11 @@ Both apps deploy to Vercel. The API runs as Vercel Serverless Functions. Protect
 - `src/routes/api/attributes/` — attributes router, service, and repository to retrieve custom fields metadata
 - `src/routes/api/attachments/` — attachments upload router (Storage via `lib/file-helpers.ts`)
 - `src/lib/file-helpers.ts` — shared Storage upload / public URL / signed URL helpers
-- Internal imports use `@/` → `src/*` (tsconfig `paths`; build runs `tsc-alias`)
+- Internal imports use relative paths under `src/` (no `@/` aliases — Vercel NFT cannot trace them)
 - `src/routes/api/notifications/notifications.route.ts` — in-app notifications router (Supabase `notifications` table)
 - `src/middlewares/auth/index.ts` — `requireApiAuth` (Supabase JWT verification)
 - `src/lib/supabase.ts` — service-role Supabase client for server tasks
-- `vercel.json` — Vercel serverless routing (all requests to `src/index.ts`)
+- `vercel.json` — Vercel serverless routing (all requests to `src/index.ts`, `includeFiles: src/**`)
 
 **apps/web**
 
