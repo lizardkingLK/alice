@@ -1,43 +1,45 @@
-import { headers } from 'next/headers';
-import { NextResponse, type NextRequest } from 'next/server';
-
 /**
  * Resolves a safe relative redirect path from the `next` query param.
  * Rejects absolute URLs and protocol-relative paths to prevent open redirects.
  */
 export function resolveSafeRedirectPath(
-  next: string | null,
+  next: string | null | undefined,
   fallback = '/dashboard'
 ): string {
   if (!next || !next.startsWith('/') || next.startsWith('//')) {
     return fallback;
   }
 
+  const pathOnly = next.split('?')[0] ?? next;
+  if (
+    pathOnly === '/login' ||
+    pathOnly === '/signup' ||
+    pathOnly === '/forgot-password' ||
+    pathOnly === '/access-denied'
+  ) {
+    return fallback;
+  }
+
   return next;
 }
 
-import { getOptionalSiteUrl } from '@/lib/env/env';
-
 /**
- * Resolves the request origin for Supabase redirectTo URLs.
- * Prefers NEXT_PUBLIC_SITE_URL when set, otherwise the request Origin header.
+ * Builds `/login?next=…` so post-auth can return the user to their destination.
  */
-export function resolveRequestOrigin(requestOrigin: string): string {
-  const siteUrl = getOptionalSiteUrl();
-  if (siteUrl) {
-    return siteUrl.replace(/\/$/, '');
+export function buildLoginPath(
+  nextPath?: string | null,
+  extras?: { readonly error?: string }
+): string {
+  const params = new URLSearchParams();
+  const safeNext = resolveSafeRedirectPath(nextPath, '');
+  if (safeNext) {
+    params.set('next', safeNext);
   }
-
-  return requestOrigin;
-}
-
-/**
- * Reads request headers and returns the origin used in Supabase email links.
- */
-export async function getAuthOrigin(): Promise<string> {
-  const headersList = await headers();
-  const requestOrigin = headersList.get('origin') ?? 'http://localhost:3000';
-  return resolveRequestOrigin(requestOrigin);
+  if (extras?.error) {
+    params.set('error', extras.error);
+  }
+  const query = params.toString();
+  return query ? `/login?${query}` : '/login';
 }
 
 /**
@@ -46,27 +48,4 @@ export async function getAuthOrigin(): Promise<string> {
 export function buildAuthCallbackUrl(origin: string, next: string): string {
   const safeNext = resolveSafeRedirectPath(next);
   return `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`;
-}
-
-/**
- * Redirects stray PKCE `code` params to the auth callback handler.
- * Supabase falls back to Site URL when redirectTo is missing or rejected,
- * which often lands users on `/` instead of `/auth/callback`.
- */
-export function redirectAuthCodeToCallback(
-  request: NextRequest
-): NextResponse | null {
-  const code = request.nextUrl.searchParams.get('code');
-  if (!code || request.nextUrl.pathname === '/auth/callback') {
-    return null;
-  }
-
-  const redirectUrl = request.nextUrl.clone();
-  redirectUrl.pathname = '/auth/callback';
-
-  if (!redirectUrl.searchParams.has('next')) {
-    redirectUrl.searchParams.set('next', '/dashboard');
-  }
-
-  return NextResponse.redirect(redirectUrl);
 }

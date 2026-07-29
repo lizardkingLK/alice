@@ -3,7 +3,12 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import { buildAuthCallbackUrl, getAuthOrigin } from '@/lib/auth-redirect';
+import {
+  buildAuthCallbackUrl,
+  buildLoginPath,
+  resolveSafeRedirectPath,
+} from '@/lib/auth-redirect';
+import { getAuthOrigin } from '@/lib/auth-redirect.server';
 import { ensurePublicUser } from '@/lib/ensure-public-user';
 import { isEmailAllowed } from '@/lib/access-allowlist';
 import { createClient } from '@/lib/supabase/server';
@@ -17,9 +22,13 @@ export async function login(formData: FormData) {
 
   const emailEntry = formData.get('email');
   const passwordEntry = formData.get('password');
+  const nextEntry = formData.get('next');
 
   const email = typeof emailEntry === 'string' ? emailEntry : '';
   const password = typeof passwordEntry === 'string' ? passwordEntry : '';
+  const next = resolveSafeRedirectPath(
+    typeof nextEntry === 'string' ? nextEntry : null
+  );
 
   const allowed = await isEmailAllowed(email);
   if (!allowed) {
@@ -28,7 +37,11 @@ export async function login(formData: FormData) {
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
-    redirect(`/login?error=${encodeURIComponent(error.message)}`);
+    redirect(
+      buildLoginPath(next, {
+        error: error.message,
+      })
+    );
   }
 
   const {
@@ -39,12 +52,16 @@ export async function login(formData: FormData) {
     const { error: profileError } = await ensurePublicUser(user);
     if (profileError) {
       const errorContent = `Could not create user profile: ${profileError}`;
-      redirect(`/login?error=${encodeURIComponent(errorContent)}`);
+      redirect(
+        buildLoginPath(next, {
+          error: errorContent,
+        })
+      );
     }
   }
 
   revalidatePath('/', 'layout');
-  redirect('/dashboard');
+  redirect(next);
 }
 
 export async function signUp(formData: FormData) {
