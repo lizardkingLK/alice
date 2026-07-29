@@ -6,6 +6,9 @@ import { TooltipProvider } from '@repo/ui/components/ui/tooltip';
 
 import { useBacklogLayout } from '@/app/backlog/_components/backlog-layout-menu';
 import { BacklogToolbar } from '@/app/backlog/_components/backlog-toolbar';
+import { useBacklogProjectDefaults } from '@/app/backlog/_hooks/use-backlog-project-defaults';
+import { BoardDefaultsDialog } from '@/app/board/_components/board-defaults-dialog';
+import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import { BacklogSprintCard } from '@/app/backlog/_components/backlog-sprint-card';
 import { BacklogPanel } from '@/app/backlog/_components/backlog-panel';
 import { BacklogItemDetailsSheet } from '@/app/backlog/_components/backlog-item-details-sheet';
@@ -35,6 +38,7 @@ import {
 import { Project as DbProject } from '@/app/projects/_services/projects.service';
 import { User as DbUser } from '@/app/users/_services/users.service';
 import { updateWorkItem } from '@/app/work-items/_services/workItem.service.client';
+import { resolveWorkItemMember } from '@/app/work-items/_helpers/work-item-member';
 
 interface BacklogWorkspaceProps {
   projects: DbProject[];
@@ -43,6 +47,7 @@ interface BacklogWorkspaceProps {
   sprints: Sprint[];
   userRole: string;
   currentUserId?: string | null;
+  suggestedDefaults: BoardDefaultsPreference | null;
   error?: string | null;
 }
 
@@ -53,6 +58,7 @@ export function BacklogWorkspace({
   sprints,
   userRole,
   currentUserId,
+  suggestedDefaults,
   error = null,
 }: Readonly<BacklogWorkspaceProps>) {
   const isManagerOrAdmin = userRole === 'admin' || userRole === 'manager';
@@ -67,9 +73,28 @@ export function BacklogWorkspace({
   const { preferredLayout, effectiveLayout, setPreferredLayout } =
     useBacklogLayout(currentUserId, showBacklogPane);
 
+  const {
+    projectFilter,
+    setProjectFilter,
+    savedDefaultsApplied,
+    baselineProjectId,
+    defaultsDialogOpen,
+    setDefaultsDialogOpen,
+    allowSkipInDialog,
+    dialogInitialPreference,
+    openDefaultsDialog,
+    handleSaveDefaults,
+    handleSkipDefaults,
+    resetProjectFilterToBaseline,
+  } = useBacklogProjectDefaults({
+    userId: currentUserId ?? null,
+    projects,
+    sprints,
+    suggestedDefaults,
+  });
+
   // Filters state
   const [searchQuery, setSearchQuery] = useState('');
-  const [projectFilter, setProjectFilter] = useState<string>('all');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
 
@@ -93,6 +118,23 @@ export function BacklogWorkspace({
   const [isActionPending, setIsActionPending] = useState(false);
   const [isMismatchOpen, setIsMismatchOpen] = useState(false);
 
+  const isSprintDropMismatch = (
+    itemId: string | null,
+    targetSprintId: string | null
+  ): boolean => {
+    if (!itemId || !targetSprintId) {
+      return false;
+    }
+    const draggedItem = workItems.find((item) => item.id === itemId);
+    const targetSprint = sprintList.find(
+      (sprint) => sprint.id === targetSprintId
+    );
+    const sprintProjId = targetSprint?.project?.id;
+    return Boolean(
+      draggedItem && sprintProjId && draggedItem.project_id !== sprintProjId
+    );
+  };
+
   // Helper: Drag-and-Drop Handlers
   const handleDragStart = (e: React.DragEvent, itemId: string) => {
     e.dataTransfer.setData('text/plain', itemId);
@@ -103,17 +145,8 @@ export function BacklogWorkspace({
     e.preventDefault();
     const id = targetId || 'backlog';
 
-    // Validate project matches if target is a sprint
-    if (targetId && draggedItemId) {
-      const draggedItem = workItems.find((item) => item.id === draggedItemId);
-      const targetSprint = sprintList.find((s) => s.id === targetId);
-      if (draggedItem && targetSprint) {
-        const sprintProjId = targetSprint.project?.id;
-        if (sprintProjId && draggedItem.project_id !== sprintProjId) {
-          // Project mismatch: do not set as drag-over target (suppress drop highlight)
-          return;
-        }
-      }
+    if (isSprintDropMismatch(draggedItemId, targetId)) {
+      return;
     }
 
     if (dragOverTargetId !== id) {
@@ -129,19 +162,11 @@ export function BacklogWorkspace({
     e.preventDefault();
     const itemId = e.dataTransfer.getData('text/plain') || draggedItemId;
     if (itemId) {
-      // Validate project matches if target is a sprint
-      if (targetId) {
-        const draggedItem = workItems.find((item) => item.id === itemId);
-        const targetSprint = sprintList.find((s) => s.id === targetId);
-        if (draggedItem && targetSprint) {
-          const sprintProjId = targetSprint.project?.id;
-          if (sprintProjId && draggedItem.project_id !== sprintProjId) {
-            setIsMismatchOpen(true);
-            setDraggedItemId(null);
-            setDragOverTargetId(null);
-            return;
-          }
-        }
+      if (isSprintDropMismatch(itemId, targetId)) {
+        setIsMismatchOpen(true);
+        setDraggedItemId(null);
+        setDragOverTargetId(null);
+        return;
       }
 
       setWorkItems((prev) =>
@@ -186,7 +211,12 @@ export function BacklogWorkspace({
     });
   }, [workItems, searchQuery, projectFilter, assigneeFilter, priorityFilter]);
 
-  // Group work items by sprint
+  // Backlog items (sprint_id is null)
+  const backlogItems = useMemo(() => {
+    return filteredItems.filter((item) => !item.sprint_id);
+  }, [filteredItems]);
+
+  // Group filtered work items by sprint
   const itemsBySprint = useMemo(() => {
     const groups: Record<string, DbWorkItem[]> = {};
     filteredItems.forEach((item) => {
@@ -199,41 +229,36 @@ export function BacklogWorkspace({
     return groups;
   }, [filteredItems]);
 
-  // Backlog items (sprint_id is null)
-  const backlogItems = useMemo(() => {
-    return filteredItems.filter((item) => !item.sprint_id);
-  }, [filteredItems]);
-
-  // Calculations for sprints (issue counts)
+  // Issue counts reflect the current filters (search, project, assignee, priority)
   const sprintStats = useMemo(() => {
     const stats: Record<string, { count: number }> = {};
 
     sprintList.forEach((sprint) => {
-      const sprintItems = workItems.filter(
-        (item) => item.sprint_id === sprint.id
-      );
       stats[sprint.id] = {
-        count: sprintItems.length,
+        count: (itemsBySprint[sprint.id] ?? []).length,
       };
     });
 
-    const backlogWIs = workItems.filter((item) => !item.sprint_id);
-    stats['backlog'] = {
-      count: backlogWIs.length,
-    };
+    stats.backlog = { count: backlogItems.length };
 
     return stats;
-  }, [sprintList, workItems]);
+  }, [sprintList, itemsBySprint, backlogItems.length]);
 
-  // Filtered list of sprints based on Active vs Completed tab
+  // Filter sprints by tab and project
   const displayedSprints = useMemo(() => {
-    if (activeTab === 'completed') {
-      return sprintList.filter((s) => s.status === 'Completed');
+    const byTab =
+      activeTab === 'completed'
+        ? sprintList.filter((s) => s.status === 'Completed')
+        : sprintList.filter(
+            (s) => s.status === 'Ongoing' || s.status === 'Not Started'
+          );
+
+    if (projectFilter === 'all') {
+      return byTab;
     }
-    return sprintList.filter(
-      (s) => s.status === 'Ongoing' || s.status === 'Not Started'
-    );
-  }, [sprintList, activeTab]);
+
+    return byTab.filter((sprint) => sprint.project?.id === projectFilter);
+  }, [sprintList, activeTab, projectFilter]);
 
   // Start Sprint Handler
   const handleStartSprint = (sprintId: string) => {
@@ -397,8 +422,24 @@ export function BacklogWorkspace({
     if (field !== 'assignee_id') {
       return null;
     }
-    const m = projectMembers.find((member) => member.id === value);
-    return m ? { id: m.id, name: m.name, email: m.email } : null;
+    return resolveWorkItemMember(
+      projectMembers,
+      typeof value === 'string' ? value : null
+    ) as BacklogAssignee | null;
+  };
+
+  const applyLocalFieldUpdates = (
+    item: DbWorkItem,
+    updates: Partial<DbWorkItem>
+  ): DbWorkItem => {
+    const updatedItem = { ...item, ...updates };
+    if ('assignee_id' in updates) {
+      updatedItem.assignee = getUpdatedAssignee(
+        'assignee_id',
+        updates.assignee_id
+      );
+    }
+    return updatedItem;
   };
 
   // Update multiple inline values of item from details sheet
@@ -416,36 +457,17 @@ export function BacklogWorkspace({
 
     // Apply all updates to local state
     setWorkItems((prev) =>
-      prev.map((item) => {
-        if (item.id !== itemId) {
-          return item;
-        }
-        const updatedAssignee =
-          'assignee_id' in updates
-            ? getUpdatedAssignee('assignee_id', updates.assignee_id)
-            : null;
-        const updatedItem = { ...item, ...updates };
-        if ('assignee_id' in updates) {
-          updatedItem.assignee = updatedAssignee;
-        }
-        return updatedItem;
-      })
+      prev.map((item) =>
+        item.id === itemId ? applyLocalFieldUpdates(item, updates) : item
+      )
     );
 
     // Sync selected item state
     setSelectedItem((prev) => {
-      if (prev?.id === itemId) {
-        const updatedAssignee =
-          'assignee_id' in updates
-            ? getUpdatedAssignee('assignee_id', updates.assignee_id)
-            : null;
-        const updated = { ...prev, ...updates };
-        if ('assignee_id' in updates) {
-          updated.assignee = updatedAssignee;
-        }
-        return updated;
+      if (prev?.id !== itemId) {
+        return prev;
       }
-      return prev;
+      return applyLocalFieldUpdates(prev, updates);
     });
 
     const formData = new FormData();
@@ -461,16 +483,16 @@ export function BacklogWorkspace({
   // Clear filters
   const handleClearFilters = () => {
     setSearchQuery('');
-    setProjectFilter('all');
+    resetProjectFilterToBaseline();
     setAssigneeFilter('all');
     setPriorityFilter('all');
   };
 
   const isFiltersActive = Boolean(
     searchQuery ||
-    projectFilter !== 'all' ||
     assigneeFilter !== 'all' ||
-    priorityFilter !== 'all'
+    priorityFilter !== 'all' ||
+    (projectFilter !== 'all' && projectFilter !== baselineProjectId)
   );
 
   // Derived counts for the sprint confirmation dialogs
@@ -483,6 +505,11 @@ export function BacklogWorkspace({
   const completeSprintIncompleteCount = completeSprintItems.filter(
     (item) => item.status !== 'Done'
   ).length;
+
+  const filteredProjectName =
+    projectFilter === 'all'
+      ? null
+      : projects.find((project) => project.id === projectFilter)?.name;
 
   return (
     <TooltipProvider>
@@ -516,6 +543,9 @@ export function BacklogWorkspace({
           onPriorityFilterChange={setPriorityFilter}
           isFiltersActive={isFiltersActive}
           onClearFilters={handleClearFilters}
+          showDefaultsControls={Boolean(currentUserId)}
+          savedDefaultsApplied={savedDefaultsApplied}
+          onOpenDefaultsDialog={openDefaultsDialog}
         />
 
         {/* Sprints & Backlog Containers */}
@@ -526,7 +556,9 @@ export function BacklogWorkspace({
                 <HelpCircle className="text-muted-foreground/30 mx-auto mb-3 h-8 w-8" />
                 <p className="font-medium">No {activeTab} sprints found</p>
                 <p className="text-muted-foreground/75 mt-1 text-xs">
-                  Create a sprint to organize upcoming deliverable workflows.
+                  {filteredProjectName
+                    ? `No ${activeTab} sprints for ${filteredProjectName}. Try another project or clear filters.`
+                    : 'Create a sprint to organize upcoming deliverable workflows.'}
                 </p>
               </div>
             ) : (
@@ -632,6 +664,19 @@ export function BacklogWorkspace({
           onOpenChange={setIsMismatchOpen}
           onAcknowledge={() => setIsMismatchOpen(false)}
         />
+
+        {currentUserId ? (
+          <BoardDefaultsDialog
+            open={defaultsDialogOpen}
+            onOpenChange={setDefaultsDialogOpen}
+            projects={projects}
+            sprints={sprints}
+            initialPreference={dialogInitialPreference}
+            onSave={handleSaveDefaults}
+            onSkip={handleSkipDefaults}
+            allowSkip={allowSkipInDialog}
+          />
+        ) : null}
       </div>
     </TooltipProvider>
   );

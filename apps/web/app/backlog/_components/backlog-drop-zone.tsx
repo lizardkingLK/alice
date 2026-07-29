@@ -50,9 +50,9 @@ export function BacklogDropZone({
       onDrop={(e) => onDrop(e, targetId)}
       className={cn(
         minHeightClass,
-        'space-y-1.5 p-3 transition-all duration-200',
+        '@container/backlog-pane space-y-1.5 p-3 transition-all duration-200',
         isDragOver
-          ? 'scale-[0.99] rounded-lg border-2 border-dashed border-indigo-500/30 bg-indigo-500/5'
+          ? 'border-primary/30 bg-primary/5 scale-[0.99] rounded-lg border-2 border-dashed'
           : 'bg-card'
       )}
     >

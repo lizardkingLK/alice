@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@repo/ui/components/ui/select';
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
+import { ALL_PROJECTS_ID } from '@/app/board/_helpers/board-defaults-storage';
 import { resolveDefaultBoardSprint } from '@/app/board/_services/board-defaults';
 import type { Project } from '@/app/projects/_services/projects.service.base';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
@@ -36,6 +37,7 @@ type BoardDefaultsDialogProps = {
   readonly onSave: (preference: BoardDefaultsPreference) => void;
   readonly onSkip: () => void;
   readonly allowSkip: boolean;
+  readonly showAllProjectsOption?: boolean;
 };
 
 export function BoardDefaultsDialog({
@@ -47,12 +49,19 @@ export function BoardDefaultsDialog({
   onSave,
   onSkip,
   allowSkip,
+  showAllProjectsOption = true,
 }: Readonly<BoardDefaultsDialogProps>) {
   const [projectId, setProjectId] = useState('');
   const [sprintId, setSprintId] = useState<string>(ALL_SPRINTS);
 
   useEffect(() => {
     if (!open) {
+      return;
+    }
+
+    if (initialPreference?.projectId === ALL_PROJECTS_ID) {
+      setProjectId(ALL_PROJECTS_ID);
+      setSprintId(ALL_SPRINTS);
       return;
     }
 
@@ -83,15 +92,21 @@ export function BoardDefaultsDialog({
     setSprintId(nextSprint);
   }, [open, initialPreference, projects, sprints]);
 
+  const isAllProjects = projectId === ALL_PROJECTS_ID;
+
   const sprintOptions = useMemo(() => {
-    if (!projectId) {
+    if (!projectId || isAllProjects) {
       return [];
     }
     return sprints.filter((sprint) => sprint.project?.id === projectId);
-  }, [projectId, sprints]);
+  }, [isAllProjects, projectId, sprints]);
 
   const handleProjectChange = (nextProject: string) => {
     setProjectId(nextProject);
+    if (nextProject === ALL_PROJECTS_ID) {
+      setSprintId(ALL_SPRINTS);
+      return;
+    }
     const suggested = resolveDefaultBoardSprint(sprints, nextProject);
     setSprintId(suggested?.id ?? ALL_SPRINTS);
   };
@@ -102,7 +117,10 @@ export function BoardDefaultsDialog({
     }
     onSave({
       projectId,
-      sprintId: sprintId === ALL_SPRINTS ? null : sprintId,
+      sprintId:
+        projectId === ALL_PROJECTS_ID || sprintId === ALL_SPRINTS
+          ? null
+          : sprintId,
     });
   };
 
@@ -110,10 +128,11 @@ export function BoardDefaultsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Board defaults</DialogTitle>
+          <DialogTitle>Workspace defaults</DialogTitle>
           <DialogDescription>
             Choose the project and sprint to open by default when you visit the
-            board. Changing filters later will not update this preference.
+            board or backlog. Changing filters later will not update this
+            preference.
           </DialogDescription>
         </DialogHeader>
 
@@ -132,6 +151,9 @@ export function BoardDefaultsDialog({
                 <SelectValue placeholder="Select a project" />
               </SelectTrigger>
               <SelectContent>
+                {showAllProjectsOption ? (
+                  <SelectItem value={ALL_PROJECTS_ID}>All Projects</SelectItem>
+                ) : null}
                 {projects.map((project) => (
                   <SelectItem key={project.id} value={project.id}>
                     {project.name}
@@ -146,7 +168,7 @@ export function BoardDefaultsDialog({
             <Select
               value={sprintId}
               onValueChange={setSprintId}
-              disabled={!projectId}
+              disabled={!projectId || isAllProjects}
             >
               <SelectTrigger
                 id="board-defaults-sprint"

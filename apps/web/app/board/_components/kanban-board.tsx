@@ -11,10 +11,8 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@repo/ui/lib/utils';
 import {
   AlertCircle,
-  BadgeCheck,
   Calendar,
   FolderDot,
-  Settings2,
   SquareArrowOutUpRight,
   Tag,
   X,
@@ -55,6 +53,7 @@ import {
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { formatLabelWithSpace } from '@/app/_shared/utility';
 import { BoardDefaultsDialog } from '@/app/board/_components/board-defaults-dialog';
+import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
 import { resolveDefaultBoardSprint } from '@/app/board/_services/board-defaults';
 import type { Project } from '@/app/projects/_services/projects.service.base';
@@ -63,6 +62,7 @@ import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-prior
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
 import { DescriptionView } from '@/app/work-items/_components/workItem-description-view';
 import { descriptionToPlainText } from '@/app/work-items/_helpers/work-item-description';
+import { BOARD_STATUS_COLUMNS } from '@/app/work-items/_helpers/work-item-status';
 import { updateWorkItemStatus } from '@/app/work-items/_services/workItem.service.client';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { ListFilterSelect } from '@/components/list-filter-select';
@@ -72,16 +72,7 @@ import { useQueryFilter } from '@/hooks/use-query-filter';
 type BoardStatus = Exclude<DbWorkItem['status'], 'Draft'>;
 type BoardPriority = DbWorkItem['priority'];
 
-const COLUMNS: {
-  id: BoardStatus;
-  accentClassName: string;
-}[] = [
-  { id: 'New', accentClassName: 'border-t-blue-500' },
-  { id: 'ToDo', accentClassName: 'border-t-violet-500' },
-  { id: 'InProgress', accentClassName: 'border-t-amber-500' },
-  { id: 'Testing', accentClassName: 'border-t-cyan-500' },
-  { id: 'Done', accentClassName: 'border-t-emerald-500' },
-];
+const COLUMNS = BOARD_STATUS_COLUMNS;
 
 const PRIORITY_BORDERS: Record<BoardPriority, string> = {
   highest: 'border-l-destructive',
@@ -169,7 +160,6 @@ export function KanbanBoard({
     resetUrlFilters,
   } = useBoardDefaultsBootstrap({
     userId,
-    allowAllFilters,
     needsClientBootstrap,
     projectFilter,
     sprintFilter,
@@ -565,35 +555,11 @@ export function KanbanBoard({
               ) : null}
             </AvatarGroup>
 
-            {!allowAllFilters && userId ? (
-              <div className="flex items-center gap-1.5">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-9"
-                  onClick={openDefaultsDialog}
-                >
-                  <Settings2 className="size-4" />
-                  Defaults
-                </Button>
-
-                {savedDefaultsApplied ? (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span
-                        className="text-primary inline-flex"
-                        aria-label="Saved board defaults applied"
-                      >
-                        <BadgeCheck className="size-4" />
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      Your saved defaults are applied
-                    </TooltipContent>
-                  </Tooltip>
-                ) : null}
-              </div>
+            {userId ? (
+              <WorkspaceDefaultsControls
+                onOpenDefaultsDialog={openDefaultsDialog}
+                savedDefaultsApplied={savedDefaultsApplied}
+              />
             ) : null}
           </div>
         </CardContent>
@@ -837,7 +803,7 @@ export function KanbanBoard({
         </DialogContent>
       </Dialog>
 
-      {!allowAllFilters && userId ? (
+      {userId ? (
         <BoardDefaultsDialog
           open={defaultsDialogOpen}
           onOpenChange={setDefaultsDialogOpen}

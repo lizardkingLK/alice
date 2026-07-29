@@ -2,6 +2,7 @@
 
 import { cn } from '@repo/ui/lib/utils';
 import { Layers, Plus, Search, X } from '@repo/ui/lib/icons';
+import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import {
@@ -38,6 +39,9 @@ type BacklogToolbarProps = {
   readonly onPriorityFilterChange: (value: string) => void;
   readonly isFiltersActive: boolean;
   readonly onClearFilters: () => void;
+  readonly showDefaultsControls: boolean;
+  readonly savedDefaultsApplied: boolean;
+  readonly onOpenDefaultsDialog: () => void;
 };
 /* eslint-enable no-unused-vars */
 
@@ -64,12 +68,15 @@ export function BacklogToolbar({
   onPriorityFilterChange,
   isFiltersActive,
   onClearFilters,
+  showDefaultsControls,
+  savedDefaultsApplied,
+  onOpenDefaultsDialog,
 }: Readonly<BacklogToolbarProps>) {
   return (
     <div className="bg-card/40 border-border/60 flex flex-col gap-4 rounded-xl border p-4 shadow-sm backdrop-blur-md">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <Layers className="h-5 w-5 text-indigo-500" />
+          <Layers className="text-primary size-5" />
           <h2 className="text-foreground text-xl font-bold tracking-tight">
             Sprint Planning
           </h2>
@@ -113,19 +120,15 @@ export function BacklogToolbar({
             <Button
               variant="outline"
               size="sm"
-              className="cursor-pointer border-indigo-500/20 bg-indigo-500/5 font-semibold text-indigo-600 hover:bg-indigo-500/10 dark:text-indigo-400"
+              className="cursor-pointer"
               onClick={onCreateSprint}
             >
-              <Plus className="mr-1.5 h-4 w-4" />
+              <Plus className="mr-1.5 size-4" />
               Create Sprint
             </Button>
           )}
-          <Button
-            size="sm"
-            className="cursor-pointer bg-linear-to-r from-indigo-500 to-violet-600 font-semibold text-white hover:from-indigo-600 hover:to-violet-700"
-            onClick={onCreateIssue}
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
+          <Button size="sm" className="cursor-pointer" onClick={onCreateIssue}>
+            <Plus className="mr-1.5 size-4" />
             Create Issue
           </Button>
         </div>
@@ -138,7 +141,7 @@ export function BacklogToolbar({
             placeholder="Search backlog issues..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="bg-background/50 border-border/80 h-9 pl-9 transition-colors focus:border-indigo-500"
+            className="bg-background/50 border-border/80 focus-visible:border-ring h-9 pl-9 transition-colors"
           />
         </div>
 
@@ -193,6 +196,15 @@ export function BacklogToolbar({
             <X className="ml-1 h-3.5 w-3.5" />
           </Button>
         )}
+
+        {showDefaultsControls ? (
+          <WorkspaceDefaultsControls
+            className="ml-auto flex items-center gap-1.5 sm:ml-0"
+            buttonClassName="h-9 cursor-pointer"
+            onOpenDefaultsDialog={onOpenDefaultsDialog}
+            savedDefaultsApplied={savedDefaultsApplied}
+          />
+        ) : null}
       </div>
     </div>
   );

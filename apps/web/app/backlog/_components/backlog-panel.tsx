@@ -70,7 +70,7 @@ export function BacklogPanel({
           <Button
             variant="outline"
             size="sm"
-            className="h-8 cursor-pointer border-indigo-500/20 bg-indigo-500/5 font-semibold text-indigo-600 hover:bg-indigo-500/10 dark:text-indigo-400"
+            className="h-8 cursor-pointer"
             onClick={onCreateIssue}
           >
             <Plus className="mr-1.5 h-3.5 w-3.5" />

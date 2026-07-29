@@ -1,6 +1,16 @@
 'use client';
 
 import type React from 'react';
+import { BacklogDropZone } from '@/app/backlog/_components/backlog-drop-zone';
+import { formatDateRange } from '@/app/backlog/_helpers/backlog-item-utils';
+import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import type { Project as DbProject } from '@/app/projects/_services/projects.service';
+import type { Sprint } from '@/app/sprints/_services/sprints.service';
+import { Badge } from '@repo/ui/components/ui/badge';
+import { Button } from '@repo/ui/components/ui/button';
+import { Card } from '@repo/ui/components/ui/card';
+import { Separator } from '@repo/ui/components/ui/separator';
+import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';
 import {
   Calendar,
@@ -9,15 +19,6 @@ import {
   ChevronRight,
   Play,
 } from '@repo/ui/lib/icons';
-import { Badge } from '@repo/ui/components/ui/badge';
-import { Button } from '@repo/ui/components/ui/button';
-import { Card } from '@repo/ui/components/ui/card';
-import { Separator } from '@repo/ui/components/ui/separator';
-import { BacklogDropZone } from '@/app/backlog/_components/backlog-drop-zone';
-import { formatDateRange } from '@/app/backlog/_helpers/backlog-item-utils';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
-import type { Project as DbProject } from '@/app/projects/_services/projects.service';
-import type { Sprint } from '@/app/sprints/_services/sprints.service';
 
 const SPRINT_STATUS_BADGE: Partial<
   Record<Sprint['status'], { label: string; className: string }>
@@ -25,7 +26,7 @@ const SPRINT_STATUS_BADGE: Partial<
   Ongoing: {
     label: 'Ongoing',
     className:
-      'border-blue-500/20 bg-blue-500/10 px-2 py-0 font-semibold text-blue-600 dark:text-blue-400',
+      'border-primary/20 bg-primary/10 px-2 py-0 font-semibold text-primary',
   },
   Completed: {
     label: 'Completed',
@@ -35,7 +36,7 @@ const SPRINT_STATUS_BADGE: Partial<
   'Not Started': {
     label: 'Planned',
     className:
-      'border-zinc-500/20 bg-zinc-500/10 px-2 py-0 font-semibold text-zinc-600 dark:text-zinc-400',
+      'border-muted-foreground/20 bg-muted px-2 py-0 font-semibold text-muted-foreground',
   },
 };
 
@@ -62,6 +63,97 @@ type BacklogSprintCardProps = {
 };
 /* eslint-enable no-unused-vars */
 
+function openSprintSummaryReport(sprintId: string) {
+  window.open(`/sprints/${sprintId}/report`, '_blank', 'noopener,noreferrer');
+}
+
+type SprintCardActionsProps = {
+  readonly sprint: Sprint;
+  readonly issueCount: number;
+  readonly isManagerOrAdmin: boolean;
+  // eslint-disable-next-line no-unused-vars -- callback signature
+  readonly onStartSprint: (sprintId: string) => void;
+  // eslint-disable-next-line no-unused-vars -- callback signature
+  readonly onCompleteSprint: (sprintId: string) => void;
+};
+
+function SprintCardActions({
+  sprint,
+  issueCount,
+  isManagerOrAdmin,
+  onStartSprint,
+  onCompleteSprint,
+}: Readonly<SprintCardActionsProps>) {
+  if (sprint.status === 'Completed') {
+    if (!isManagerOrAdmin) {
+      return null;
+    }
+
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-8 cursor-pointer"
+        onClick={(event) => {
+          event.stopPropagation();
+          openSprintSummaryReport(sprint.id);
+        }}
+      >
+        Summary Report
+      </Button>
+    );
+  }
+
+  return (
+    <>
+      <span className="text-muted-foreground bg-muted rounded-full px-2.5 py-0.5 text-xs font-semibold">
+        {issueCount} issue{issueCount === 1 ? '' : 's'}
+      </span>
+
+      <Separator
+        orientation="vertical"
+        className="hidden h-6 @xl/sprint-card:block"
+      />
+
+      {isManagerOrAdmin && sprint.status === 'Ongoing' ? (
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 cursor-pointer"
+          onClick={(event) => {
+            event.stopPropagation();
+            openSprintSummaryReport(sprint.id);
+          }}
+        >
+          Summary Report
+        </Button>
+      ) : null}
+
+      {isManagerOrAdmin && sprint.status === 'Not Started' ? (
+        <Button
+          size="sm"
+          className="h-8 cursor-pointer bg-emerald-600 text-white hover:bg-emerald-700"
+          onClick={() => onStartSprint(sprint.id)}
+        >
+          <Play className="mr-1 size-3 fill-current" />
+          Start Sprint
+        </Button>
+      ) : null}
+
+      {isManagerOrAdmin && sprint.status === 'Ongoing' ? (
+        <Button
+          size="sm"
+          className="h-8 cursor-pointer bg-sky-600 text-white hover:bg-sky-700"
+          onClick={() => onCompleteSprint(sprint.id)}
+        >
+          <Check className="mr-1 size-3.5" />
+          Complete Sprint
+        </Button>
+      ) : null}
+    </>
+  );
+}
+
 export function BacklogSprintCard({
   sprint,
   items,
@@ -84,14 +176,14 @@ export function BacklogSprintCard({
   return (
     <Card
       className={cn(
-        'border-border/70 overflow-hidden shadow-sm transition-all duration-200',
+        'border-border/70 @container/sprint-card overflow-hidden shadow-sm transition-all duration-200',
         sprint.status === 'Ongoing'
-          ? 'border-l-4 border-l-blue-500 dark:border-l-blue-600'
-          : 'border-l-4 border-l-zinc-300 dark:border-l-zinc-700'
+          ? 'border-l-primary border-l-4'
+          : 'border-l-muted-foreground/30 border-l-4'
       )}
     >
-      <div className="bg-muted/30 hover:bg-muted/50 border-border/50 flex flex-col justify-between gap-3 border-b px-4 py-3 transition-colors md:flex-row md:items-center">
-        <div className="flex items-center gap-3">
+      <div className="bg-muted/30 hover:bg-muted/50 border-border/50 flex flex-col justify-between gap-3 border-b px-4 py-3 transition-colors @xl/sprint-card:flex-row @xl/sprint-card:items-center">
+        <div className="flex min-w-0 items-center gap-3">
           <Button
             variant="ghost"
             size="icon-sm"
@@ -99,117 +191,52 @@ export function BacklogSprintCard({
             onClick={() => onToggle(sprint.id)}
           >
             {isCollapsed ? (
-              <ChevronRight className="text-muted-foreground h-4 w-4" />
+              <ChevronRight className="text-muted-foreground size-4" />
             ) : (
-              <ChevronDown className="text-muted-foreground h-4 w-4" />
+              <ChevronDown className="text-muted-foreground size-4" />
             )}
           </Button>
 
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-2">
-              <span
-                className="text-foreground max-w-45 truncate font-semibold sm:max-w-[320px] md:max-w-120"
-                title={sprint.name}
-              >
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-2">
+              <TruncatedText className="text-foreground font-semibold">
                 {sprint.name}
-              </span>
-              {statusBadge && (
+              </TruncatedText>
+              {statusBadge ? (
                 <Badge variant="outline" className={statusBadge.className}>
                   {statusBadge.label}
                 </Badge>
-              )}
+              ) : null}
             </div>
-            <div className="text-muted-foreground flex items-center gap-2 text-xs">
-              <Calendar className="h-3.5 w-3.5" />
-              <span>{formatDateRange(sprint.startDate, sprint.endDate)}</span>
-              {sprint.project && (
+            <div className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar className="size-3.5 shrink-0" />
+                {formatDateRange(sprint.startDate, sprint.endDate)}
+              </span>
+              {sprint.project ? (
                 <>
-                  <span className="text-muted-foreground/60">•</span>
-                  <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                  <span className="text-muted-foreground/60">{'•'}</span>
+                  <TruncatedText className="text-primary max-w-40 font-semibold">
                     {sprint.project.name}
-                  </span>
+                  </TruncatedText>
                 </>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-3 md:flex-nowrap">
-          {sprint.status === 'Completed' ? (
-            isManagerOrAdmin && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 cursor-pointer border-indigo-500/30 bg-indigo-500/10 text-xs font-semibold text-indigo-600 hover:bg-indigo-500/20 dark:text-indigo-400"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.open(
-                    `/sprints/${sprint.id}/report`,
-                    '_blank',
-                    'noopener,noreferrer'
-                  );
-                }}
-              >
-                Summary Report
-              </Button>
-            )
-          ) : (
-            <>
-              <div className="mr-2 flex items-center gap-1.5">
-                <span className="text-muted-foreground bg-muted/65 rounded-full px-2.5 py-0.5 text-xs font-semibold">
-                  {issueCount} issue{issueCount === 1 ? '' : 's'}
-                </span>
-              </div>
-
-              <Separator
-                orientation="vertical"
-                className="hidden h-6 md:block"
-              />
-
-              {isManagerOrAdmin && sprint.status === 'Ongoing' && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 cursor-pointer border-indigo-500/30 bg-indigo-500/10 text-xs font-semibold text-indigo-600 hover:bg-indigo-500/20 dark:text-indigo-400"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    window.open(
-                      `/sprints/${sprint.id}/report`,
-                      '_blank',
-                      'noopener,noreferrer'
-                    );
-                  }}
-                >
-                  Summary Report
-                </Button>
-              )}
-
-              {isManagerOrAdmin && sprint.status === 'Not Started' && (
-                <Button
-                  size="sm"
-                  onClick={() => onStartSprint(sprint.id)}
-                  className="h-8 cursor-pointer bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-700"
-                >
-                  <Play className="mr-1 h-3 w-3 fill-current" />
-                  Start Sprint
-                </Button>
-              )}
-              {isManagerOrAdmin && sprint.status === 'Ongoing' && (
-                <Button
-                  size="sm"
-                  onClick={() => onCompleteSprint(sprint.id)}
-                  className="h-8 cursor-pointer bg-indigo-600 text-xs font-semibold text-white hover:bg-indigo-700"
-                >
-                  <Check className="mr-1 h-3.5 w-3.5" />
-                  Complete Sprint
-                </Button>
-              )}
-            </>
-          )}
+        <div className="flex flex-wrap items-center justify-end gap-2 @xl/sprint-card:shrink-0 @xl/sprint-card:gap-3">
+          <SprintCardActions
+            sprint={sprint}
+            issueCount={issueCount}
+            isManagerOrAdmin={isManagerOrAdmin}
+            onStartSprint={onStartSprint}
+            onCompleteSprint={onCompleteSprint}
+          />
         </div>
       </div>
 
-      {!isCollapsed && (
+      {!isCollapsed ? (
         <BacklogDropZone
           items={items}
           projects={projects}
@@ -223,7 +250,7 @@ export function BacklogSprintCard({
           onDragLeave={onDragLeave}
           onDrop={onDrop}
         />
-      )}
+      ) : null}
     </Card>
   );
 }
