@@ -2,13 +2,28 @@ import type { Database } from '@repo/types';
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { isEmailAllowed, isPublicAccessPath } from '@/lib/access-allowlist';
-import { redirectAuthCodeToCallback } from '@/lib/auth-redirect';
+import { buildLoginPath } from '@/lib/auth-redirect';
 
 function copyCookies(from: NextResponse, to: NextResponse): NextResponse {
   from.cookies.getAll().forEach(({ name, value, ...options }) => {
     to.cookies.set(name, value, options);
   });
   return to;
+}
+
+function withPathHeaders(request: NextRequest): {
+  requestHeaders: Headers;
+  response: NextResponse;
+} {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-pathname', request.nextUrl.pathname);
+  requestHeaders.set('x-search', request.nextUrl.search);
+  return {
+    requestHeaders,
+    response: NextResponse.next({
+      request: { headers: requestHeaders },
+    }),
+  };
 }
 
 function redirectPreservingSession(
@@ -22,9 +37,40 @@ function redirectPreservingSession(
   return copyCookies(sessionResponse, NextResponse.redirect(url));
 }
 
+function redirectToLoginWithNext(
+  request: NextRequest,
+  sessionResponse: NextResponse
+): NextResponse {
+  const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+  const loginPath = buildLoginPath(nextPath);
+  const url = new URL(loginPath, request.nextUrl.origin);
+  return copyCookies(sessionResponse, NextResponse.redirect(url));
+}
+
+/**
+ * Redirects stray PKCE `code` params to the auth callback handler.
+ * Supabase falls back to Site URL when redirectTo is missing or rejected,
+ * which often lands users on `/` instead of `/auth/callback`.
+ */
+function redirectAuthCodeToCallback(request: NextRequest): NextResponse | null {
+  const code = request.nextUrl.searchParams.get('code');
+  if (!code || request.nextUrl.pathname === '/auth/callback') {
+    return null;
+  }
+
+  const redirectUrl = request.nextUrl.clone();
+  redirectUrl.pathname = '/auth/callback';
+
+  if (!redirectUrl.searchParams.has('next')) {
+    redirectUrl.searchParams.set('next', '/dashboard');
+  }
+
+  return NextResponse.redirect(redirectUrl);
+}
+
 /**
  * For signed-in users on non-public paths, require an allowlisted email.
- * Anonymous traffic is left to page-level auth redirects.
+ * Anonymous traffic on protected paths is redirected to login with `next`.
  */
 async function enforceAllowlistGate(
   request: NextRequest,
@@ -56,7 +102,8 @@ export async function updateSession(request: NextRequest) {
     return authCodeRedirect;
   }
 
-  let supabaseResponse = NextResponse.next({ request });
+  const { response: initialResponse } = withPathHeaders(request);
+  let supabaseResponse = initialResponse;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -74,7 +121,8 @@ export async function updateSession(request: NextRequest) {
         cookiesToSet.forEach(({ name, value }) => {
           request.cookies.set(name, value);
         });
-        supabaseResponse = NextResponse.next({ request });
+        const refreshed = withPathHeaders(request);
+        supabaseResponse = refreshed.response;
         cookiesToSet.forEach(({ name, value, options }) => {
           supabaseResponse.cookies.set(name, value, options);
         });
@@ -86,15 +134,20 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user) {
-    const denied = await enforceAllowlistGate(
-      request,
-      supabaseResponse,
-      user.email
-    );
-    if (denied) {
-      return denied;
+  if (!user) {
+    if (!isPublicAccessPath(request.nextUrl.pathname)) {
+      return redirectToLoginWithNext(request, supabaseResponse);
     }
+    return supabaseResponse;
+  }
+
+  const denied = await enforceAllowlistGate(
+    request,
+    supabaseResponse,
+    user.email
+  );
+  if (denied) {
+    return denied;
   }
 
   return supabaseResponse;

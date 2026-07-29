@@ -1,6 +1,7 @@
 import { getResponse } from '@/lib/api/api';
 import { createClient } from '@/lib/supabase/client';
 import { redirect } from 'next/navigation';
+import { buildLoginPath } from '@/lib/auth-redirect';
 
 export async function apiFetch<T>(
   path: string,
@@ -12,7 +13,11 @@ export async function apiFetch<T>(
   } = await supabase.auth.getSession();
 
   if (!session?.access_token) {
-    redirect('/login');
+    const nextPath =
+      typeof globalThis.location !== 'undefined'
+        ? `${globalThis.location.pathname}${globalThis.location.search}`
+        : null;
+    redirect(buildLoginPath(nextPath));
   }
 
   const token = session.access_token;
