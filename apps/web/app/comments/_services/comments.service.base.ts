@@ -4,7 +4,10 @@ import type { Tables } from '@repo/types';
 export type CommentUser = Pick<Tables<'users'>, 'id' | 'name' | 'email'> &
   Partial<Pick<Tables<'users'>, 'role' | 'profile_picture'>>;
 
-export type CommentWorkItem = Pick<Tables<'work_items'>, 'id' | 'title' | 'type'> & {
+export type CommentWorkItem = Pick<
+  Tables<'work_items'>,
+  'id' | 'title' | 'type'
+> & {
   key?: string;
   project?: Pick<Tables<'projects'>, 'id' | 'name' | 'key'> | null;
 };

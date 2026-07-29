@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { requireApiAuth, type AuthenticatedRequest } from '../../../middlewares/auth';
+import {
+  requireApiAuth,
+  type AuthenticatedRequest,
+} from '../../../middlewares/auth';
 import {
   createSprintBodySchema,
   updateSprintStatusSchema,

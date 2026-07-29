@@ -13,6 +13,7 @@ import {
 import { Book, User, UserIcon } from '@repo/ui/lib/icons';
 import Image from 'next/image';
 import { cn } from '@repo/ui/lib/utils';
+import { PendingSubmitButton } from '@/components/pending-submit-button';
 
 type AuthControlsProps = {
   email?: string | null;
@@ -61,9 +62,9 @@ const UserProfile = ({ image }: Readonly<UserProfileProps>) => {
         <DropdownMenuSeparator />
         <DropdownMenuItem>
           <form action={signOut}>
-            <Button type="submit" variant="ghost" className="cursor-pointer">
+            <PendingSubmitButton variant="ghost" loadingLabel="Signing out...">
               Sign Out
-            </Button>
+            </PendingSubmitButton>
           </form>
         </DropdownMenuItem>
       </DropdownMenuContent>

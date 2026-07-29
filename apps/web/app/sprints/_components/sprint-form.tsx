@@ -286,8 +286,9 @@ export function SprintForm({
               </SelectContent>
             </Select>
             {isEditMode && hasWorkItems && (
-              <p className="text-xs text-muted-foreground">
-                Project cannot be changed because this sprint has work items assigned to it.
+              <p className="text-muted-foreground text-xs">
+                Project cannot be changed because this sprint has work items
+                assigned to it.
               </p>
             )}
           </div>

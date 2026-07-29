@@ -183,7 +183,9 @@ export class SprintsService {
     if (input.projectId !== currentSprint.project_id) {
       const count = await sprintsRepository.getWorkItemCount(sprintId);
       if (count > 0) {
-        throw new Error('Cannot change the project of a sprint that has work items.');
+        throw new Error(
+          'Cannot change the project of a sprint that has work items.'
+        );
       }
     }
 

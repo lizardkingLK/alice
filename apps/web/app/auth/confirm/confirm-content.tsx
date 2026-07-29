@@ -11,13 +11,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@repo/ui/components/ui/card';
-import {
-  Loader2,
-  AlertCircle,
-  CheckCircle,
-  ShieldCheck,
-} from '@repo/ui/lib/icons';
-import { Button } from '@repo/ui/components/ui/button';
+import { AlertCircle, CheckCircle, ShieldCheck } from '@repo/ui/lib/icons';
+import { LoadingButton } from '@repo/ui/components/ui/loading-button';
 
 export default function ConfirmContent() {
   const router = useRouter();
@@ -93,20 +88,14 @@ export default function ConfirmContent() {
                   <span>Verification successful! Redirecting...</span>
                 </div>
               ) : (
-                <Button
-                  disabled={isPending}
+                <LoadingButton
+                  loading={isPending}
+                  loadingLabel="Verifying..."
                   onClick={handleVerify}
                   className="h-11 w-full"
                 >
-                  {isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Verifying...
-                    </>
-                  ) : (
-                    'Confirm & Continue'
-                  )}
-                </Button>
+                  Confirm & Continue
+                </LoadingButton>
               )}
             </>
           ) : (

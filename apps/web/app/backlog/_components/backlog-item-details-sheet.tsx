@@ -261,12 +261,10 @@ export function BacklogItemDetailsSheet({
               <div className="min-w-0">
                 <Input
                   type="date"
-                  value={
-                    (() => {
-                      const d = draft.due_date ?? item.due_date;
-                      return d ? new Date(d).toISOString().split('T')[0] : '';
-                    })()
-                  }
+                  value={(() => {
+                    const d = draft.due_date ?? item.due_date;
+                    return d ? new Date(d).toISOString().split('T')[0] : '';
+                  })()}
                   onChange={(e) =>
                     setDraft((prev) => ({ ...prev, due_date: e.target.value }))
                   }
@@ -285,8 +283,8 @@ export function BacklogItemDetailsSheet({
                   placeholder="Enter Story Points"
                   value={
                     draft.story_points !== undefined
-                      ? draft.story_points ?? ''
-                      : item.story_points ?? ''
+                      ? (draft.story_points ?? '')
+                      : (item.story_points ?? '')
                   }
                   onChange={(e) => {
                     const val = e.target.value;

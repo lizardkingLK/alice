@@ -4,10 +4,7 @@ import {
   requireManagerRole,
   type ManagePermissionResult,
 } from '@/lib/require-manager-role';
-import {
-  createTeamSchema as teamSchema,
-  type Tables,
-} from '@repo/types';
+import { createTeamSchema as teamSchema, type Tables } from '@repo/types';
 
 export type TeamFormData = z.infer<typeof teamSchema>;
 
@@ -28,10 +25,7 @@ export function parseTeamForm(
     tech_stack: (formData.get('tech_stack') as string) || null,
     status:
       (formData.get('status') as
-        | 'active'
-        | 'inactive'
-        | 'archived'
-        | 'deleted') || 'active',
+        'active' | 'inactive' | 'archived' | 'deleted') || 'active',
   });
 
   if (!validation.success) {
@@ -45,12 +39,7 @@ export function toTeamWriteFields(
   data: TeamFormData
 ): Pick<
   Tables<'teams'>,
-  | 'name'
-  | 'description'
-  | 'manager_id'
-  | 'project_id'
-  | 'tech_stack'
-  | 'status'
+  'name' | 'description' | 'manager_id' | 'project_id' | 'tech_stack' | 'status'
 > {
   return {
     name: data.name,

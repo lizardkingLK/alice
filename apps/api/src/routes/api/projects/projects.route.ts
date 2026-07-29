@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { requireApiAuth, type AuthenticatedRequest } from '../../../middlewares/auth';
-import { projectsService } from './projects.service';
 import {
-  createProjectSchema,
-  updateProjectSchema,
-} from './projects.schemas';
+  requireApiAuth,
+  type AuthenticatedRequest,
+} from '../../../middlewares/auth';
+import { projectsService } from './projects.service';
+import { createProjectSchema, updateProjectSchema } from './projects.schemas';
 import { parsePagination } from '../../../lib/pagination';
 import { ProjectRowWithOwner } from './projects.repository';
 

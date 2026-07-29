@@ -454,7 +454,9 @@ describe('Comment Form Dialog & Editor', () => {
 
     // Find the reply input by placeholder
     const replyInput = screen.getByPlaceholderText('Write a reply...');
-    fireEvent.change(replyInput, { target: { value: 'This is my threaded reply content' } });
+    fireEvent.change(replyInput, {
+      target: { value: 'This is my threaded reply content' },
+    });
 
     // Click Post button
     const postBtn = screen.getByRole('button', { name: 'Post' });
