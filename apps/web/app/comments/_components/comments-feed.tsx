@@ -1,7 +1,15 @@
 /* eslint-disable no-unused-vars */
 'use client';
 
-import { useState, useMemo, useEffect, useRef, type ReactNode } from 'react';
+import {
+  useState,
+  useMemo,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type ReactNode,
+} from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { USER_PROJECTION } from '@repo/types';
@@ -41,7 +49,7 @@ import { Separator } from '@repo/ui/components/ui/separator';
 import { Textarea } from '@repo/ui/components/ui/textarea';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';
-import { getInitials } from '@/app/_shared/utility';
+import { formatDateTime, formatTime, getInitials } from '@/app/_shared/utility';
 import { SearchInput } from '@/components/search-input';
 import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import {
@@ -79,6 +87,7 @@ type CommentsFeedProps = {
   workItems: CommentWorkItemOption[];
   currentUserId?: string;
   workItemId?: string;
+  embedded?: boolean;
 };
 
 const MENTION_BADGE_CLASS =
@@ -129,12 +138,115 @@ function CommentAvatar({ name }: Readonly<{ name?: string | null }>) {
   );
 }
 
+type AutocompleteDropdownShellProps = {
+  readonly show: boolean;
+  readonly anchorRef: React.RefObject<HTMLElement | null>;
+  readonly preferredPosition?: 'top' | 'bottom';
+  readonly children: ReactNode;
+};
+
+/**
+ * Renders the mention / work-item suggestion list in a portal so Card's
+ * `overflow-hidden` (and other clipping ancestors) cannot crop it.
+ */
+function AutocompleteDropdownShell({
+  show,
+  anchorRef,
+  preferredPosition = 'top',
+  children,
+}: Readonly<AutocompleteDropdownShellProps>) {
+  const [coords, setCoords] = useState<{
+    left: number;
+    width: number;
+    top?: number;
+    bottom?: number;
+  } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!show) {
+      setCoords(null);
+      return;
+    }
+
+    const update = () => {
+      const el = anchorRef.current;
+      if (!el) {
+        setCoords(null);
+        return;
+      }
+
+      const rect = el.getBoundingClientRect();
+      const gap = 4;
+      const estimatedHeight = 160; // matches max-h-40
+      const spaceAbove = rect.top;
+      const spaceBelow = window.innerHeight - rect.bottom;
+
+      let placeAbove = preferredPosition === 'top';
+      if (
+        placeAbove &&
+        spaceAbove < estimatedHeight &&
+        spaceBelow > spaceAbove
+      ) {
+        placeAbove = false;
+      } else if (
+        !placeAbove &&
+        spaceBelow < estimatedHeight &&
+        spaceAbove > spaceBelow
+      ) {
+        placeAbove = true;
+      }
+
+      setCoords(
+        placeAbove
+          ? {
+              left: rect.left,
+              width: rect.width,
+              bottom: window.innerHeight - rect.top + gap,
+            }
+          : {
+              left: rect.left,
+              width: rect.width,
+              top: rect.bottom + gap,
+            }
+      );
+    };
+
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+    };
+  }, [show, anchorRef, preferredPosition]);
+
+  if (!show || !coords || typeof document === 'undefined') {
+    return null;
+  }
+
+  return createPortal(
+    <div
+      className="border-border bg-popover text-popover-foreground fixed z-50 max-h-40 overflow-y-auto rounded-lg border shadow-md"
+      style={{
+        left: coords.left,
+        width: coords.width,
+        top: coords.top,
+        bottom: coords.bottom,
+      }}
+    >
+      {children}
+    </div>,
+    document.body
+  );
+}
+
 type MentionDropdownListProps = {
   show: boolean;
   usersList: CommentUser[];
   highlightIdx: number;
   onSelect: (user: CommentUser) => void;
   position?: 'top' | 'bottom';
+  anchorRef: React.RefObject<HTMLElement | null>;
 };
 
 function MentionDropdownList({
@@ -143,14 +255,14 @@ function MentionDropdownList({
   highlightIdx,
   onSelect,
   position = 'top',
+  anchorRef,
 }: Readonly<MentionDropdownListProps>) {
   if (!show || usersList.length === 0) return null;
   return (
-    <div
-      className={cn(
-        'border-border bg-popover text-popover-foreground absolute right-0 left-0 z-50 max-h-40 overflow-y-auto rounded-lg border shadow-md',
-        position === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
-      )}
+    <AutocompleteDropdownShell
+      show={show}
+      anchorRef={anchorRef}
+      preferredPosition={position}
     >
       {usersList.map((user, idx) => (
         <button
@@ -173,7 +285,7 @@ function MentionDropdownList({
           <span className="text-muted-foreground text-xs">({user.email})</span>
         </button>
       ))}
-    </div>
+    </AutocompleteDropdownShell>
   );
 }
 
@@ -183,6 +295,7 @@ type WIDropdownListProps = {
   highlightIdx: number;
   onSelect: (item: { id: string; key: string; title: string }) => void;
   position?: 'top' | 'bottom';
+  anchorRef: React.RefObject<HTMLElement | null>;
 };
 
 function WIDropdownList({
@@ -191,14 +304,14 @@ function WIDropdownList({
   highlightIdx,
   onSelect,
   position = 'top',
+  anchorRef,
 }: Readonly<WIDropdownListProps>) {
   if (!show || wiList.length === 0) return null;
   return (
-    <div
-      className={cn(
-        'border-border bg-popover text-popover-foreground absolute right-0 left-0 z-50 max-h-40 overflow-y-auto rounded-lg border shadow-md',
-        position === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
-      )}
+    <AutocompleteDropdownShell
+      show={show}
+      anchorRef={anchorRef}
+      preferredPosition={position}
     >
       {wiList.map((item, idx) => (
         <button
@@ -223,7 +336,7 @@ function WIDropdownList({
           </TruncatedText>
         </button>
       ))}
-    </div>
+    </AutocompleteDropdownShell>
   );
 }
 
@@ -474,6 +587,7 @@ function AutocompleteInput({
         usersList={filteredUsers}
         highlightIdx={mentionHighlightIdx}
         position={position}
+        anchorRef={activeRef}
         onSelect={(user) =>
           handleInsertMentionLocal(`@${user.name}`, mentionTriggerIdx, false)
         }
@@ -483,6 +597,7 @@ function AutocompleteInput({
         wiList={filteredWorkItems}
         highlightIdx={wiHighlightIdx}
         position={position}
+        anchorRef={activeRef}
         onSelect={(item) =>
           handleInsertMentionLocal(`#${item.key}`, wiTriggerIdx, true)
         }
@@ -496,6 +611,7 @@ export function CommentsFeed({
   workItems,
   currentUserId = 'user-admin-1',
   workItemId,
+  embedded = false,
 }: Readonly<CommentsFeedProps>) {
   const [activeUserId, setActiveUserId] = useState<string>(currentUserId);
   const [comments, setComments] = useState<CommentItem[]>(initialComments);
@@ -1144,7 +1260,7 @@ export function CommentsFeed({
         </>
       )}
 
-      {workItemId && (
+      {workItemId && !embedded && (
         <div className="border-border flex items-center justify-between border-b pb-2">
           <h3 className="text-foreground flex items-center gap-2 text-lg font-bold">
             <MessageSquareText className="text-primary size-5" />
@@ -1215,15 +1331,7 @@ export function CommentsFeed({
 
                       <div className="text-muted-foreground mt-0.5 flex items-center gap-2 text-xs">
                         <Clock className="size-3 shrink-0" />
-                        <span>
-                          {new Date(parent.created_at).toLocaleString(
-                            undefined,
-                            {
-                              dateStyle: 'medium',
-                              timeStyle: 'short',
-                            }
-                          )}
-                        </span>
+                        <span>{formatDateTime(parent.created_at)}</span>
                       </div>
                     </div>
                   </div>
@@ -1378,13 +1486,7 @@ export function CommentsFeed({
                               {reply.author?.name || 'Reply User'}
                             </span>
                             <span className="text-muted-foreground text-[11px]">
-                              {new Date(reply.created_at).toLocaleTimeString(
-                                [],
-                                {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                }
-                              )}
+                              {formatTime(reply.created_at)}
                             </span>
                           </div>
                           {reply.author_id === activeUserId && (
