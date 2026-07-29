@@ -42,7 +42,10 @@ export const commentFactory = {
     };
   },
 
-  buildList(count: number, overrides: Partial<CommentItem> = {}): CommentItem[] {
+  buildList(
+    count: number,
+    overrides: Partial<CommentItem> = {}
+  ): CommentItem[] {
     return Array.from({ length: count }, (_, index) =>
       commentFactory.build({
         id: `comment-${index + 1}`,

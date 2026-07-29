@@ -1,9 +1,9 @@
 import Link from 'next/link';
-import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { login } from '@/app/auth/actions';
 import GoogleLogin from '@/app/login/_components/google-login';
+import { PendingSubmitButton } from '@/components/pending-submit-button';
 
 type LoginPageProps = {
   searchParams: Promise<{ error?: string; reset?: string }>;
@@ -66,9 +66,9 @@ export default async function LoginPage({
               required
             />
           </div>
-          <Button type="submit" className="w-full cursor-pointer">
+          <PendingSubmitButton className="w-full" loadingLabel="Signing in...">
             Sign In
-          </Button>
+          </PendingSubmitButton>
         </form>
 
         <p className="text-muted-foreground text-center text-sm">

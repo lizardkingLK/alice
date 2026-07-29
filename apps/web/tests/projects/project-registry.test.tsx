@@ -64,7 +64,10 @@ vi.mock('@repo/ui/components/ui/select', () => {
   };
 });
 
-vi.mock('@repo/ui/components/ui/dropdown-menu', () => import('../mocks/dropdown-menu'));
+vi.mock(
+  '@repo/ui/components/ui/dropdown-menu',
+  () => import('../mocks/dropdown-menu')
+);
 
 vi.mock('@/app/projects/_components/actions', () => ({
   softDeleteProject: vi.fn(),

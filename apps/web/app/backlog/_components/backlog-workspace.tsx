@@ -420,7 +420,10 @@ export function BacklogWorkspace({
         if (item.id !== itemId) {
           return item;
         }
-        const updatedAssignee = 'assignee_id' in updates ? getUpdatedAssignee('assignee_id', updates.assignee_id) : null;
+        const updatedAssignee =
+          'assignee_id' in updates
+            ? getUpdatedAssignee('assignee_id', updates.assignee_id)
+            : null;
         const updatedItem = { ...item, ...updates };
         if ('assignee_id' in updates) {
           updatedItem.assignee = updatedAssignee;
@@ -432,7 +435,10 @@ export function BacklogWorkspace({
     // Sync selected item state
     setSelectedItem((prev) => {
       if (prev?.id === itemId) {
-        const updatedAssignee = 'assignee_id' in updates ? getUpdatedAssignee('assignee_id', updates.assignee_id) : null;
+        const updatedAssignee =
+          'assignee_id' in updates
+            ? getUpdatedAssignee('assignee_id', updates.assignee_id)
+            : null;
         const updated = { ...prev, ...updates };
         if ('assignee_id' in updates) {
           updated.assignee = updatedAssignee;

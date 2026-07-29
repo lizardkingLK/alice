@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { requireApiAuth, type AuthenticatedRequest } from '../../../middlewares/auth';
+import {
+  requireApiAuth,
+  type AuthenticatedRequest,
+} from '../../../middlewares/auth';
 import { parsePagination } from '../../../lib/pagination';
 import type { WorkItemService } from './workItems.service';
 import type { NotificationsService } from '../notifications/notifications.service';

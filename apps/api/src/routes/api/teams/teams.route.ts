@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { requireApiAuth, type AuthenticatedRequest } from '../../../middlewares/auth';
-import { teamsService } from './teams.service';
 import {
-  createTeamSchema,
-  updateTeamSchema,
-} from './teams.schemas';
+  requireApiAuth,
+  type AuthenticatedRequest,
+} from '../../../middlewares/auth';
+import { teamsService } from './teams.service';
+import { createTeamSchema, updateTeamSchema } from './teams.schemas';
 import { parsePagination } from '../../../lib/pagination';
 
 const teamsRouter: Router = Router();

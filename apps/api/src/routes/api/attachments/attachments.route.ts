@@ -2,7 +2,10 @@ import multer, { Multer } from 'multer';
 import express, { type Router } from 'express';
 import { z } from 'zod';
 
-import { requireApiAuth, type AuthenticatedRequest } from '../../../middlewares/auth';
+import {
+  requireApiAuth,
+  type AuthenticatedRequest,
+} from '../../../middlewares/auth';
 import {
   AttachmentGoneError,
   AttachmentNotFoundError,

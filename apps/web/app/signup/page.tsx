@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { signUp } from '@/app/auth/actions';
+import { PendingSubmitButton } from '@/components/pending-submit-button';
 
 type SignUpPageProps = {
   searchParams: Promise<{ error?: string; checkEmail?: string }>;
@@ -52,9 +52,12 @@ export default async function SignUpPage({
                 required
               />
             </div>
-            <Button type="submit" className="w-full cursor-pointer">
+            <PendingSubmitButton
+              className="w-full"
+              loadingLabel="Signing up..."
+            >
               Sign Up
-            </Button>
+            </PendingSubmitButton>
           </form>
         )}
 

@@ -1,7 +1,4 @@
-import {
-  commentsRepository,
-  type CommentRow,
-} from './comments.repository';
+import { commentsRepository, type CommentRow } from './comments.repository';
 import { notificationsService } from '../notifications/notifications.service';
 import {
   extractMentionedUserIds,

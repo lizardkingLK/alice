@@ -143,7 +143,11 @@ export function BacklogSprintCard({
                 className="h-8 cursor-pointer border-indigo-500/30 bg-indigo-500/10 text-xs font-semibold text-indigo-600 hover:bg-indigo-500/20 dark:text-indigo-400"
                 onClick={(e) => {
                   e.stopPropagation();
-                  window.open(`/sprints/${sprint.id}/report`, '_blank', 'noopener,noreferrer');
+                  window.open(
+                    `/sprints/${sprint.id}/report`,
+                    '_blank',
+                    'noopener,noreferrer'
+                  );
                 }}
               >
                 Summary Report
@@ -157,7 +161,10 @@ export function BacklogSprintCard({
                 </span>
               </div>
 
-              <Separator orientation="vertical" className="hidden h-6 md:block" />
+              <Separator
+                orientation="vertical"
+                className="hidden h-6 md:block"
+              />
 
               {isManagerOrAdmin && sprint.status === 'Ongoing' && (
                 <Button
@@ -166,7 +173,11 @@ export function BacklogSprintCard({
                   className="h-8 cursor-pointer border-indigo-500/30 bg-indigo-500/10 text-xs font-semibold text-indigo-600 hover:bg-indigo-500/20 dark:text-indigo-400"
                   onClick={(e) => {
                     e.stopPropagation();
-                    window.open(`/sprints/${sprint.id}/report`, '_blank', 'noopener,noreferrer');
+                    window.open(
+                      `/sprints/${sprint.id}/report`,
+                      '_blank',
+                      'noopener,noreferrer'
+                    );
                   }}
                 >
                   Summary Report
