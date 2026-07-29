@@ -1,11 +1,13 @@
-import {
+export {
   BOARD_WORK_ITEM_STATUSES,
   WORK_ITEM_STATUSES,
   type WorkItemStatus,
 } from '@repo/types';
 
-export { BOARD_WORK_ITEM_STATUSES, WORK_ITEM_STATUSES };
-export type { WorkItemStatus };
+import {
+  BOARD_WORK_ITEM_STATUSES,
+  type WorkItemStatus,
+} from '@repo/types';
 
 export const WORK_ITEM_STATUS_BADGE_STYLES: Record<WorkItemStatus, string> = {
   Draft: 'border-muted-foreground/20 bg-muted text-muted-foreground',
