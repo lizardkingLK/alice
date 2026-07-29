@@ -1,5 +1,6 @@
 import { projectRelationSelect, type Tables } from '@repo/types';
 import { supabase } from '../../../lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type SprintRow = Tables<'sprints'>;
 
@@ -198,4 +199,76 @@ export class SprintsRepository {
   }
 }
 
+export type BurndownWorkItem = {
+  id: string;
+  story_points: number | null;
+  done_at: string | null;
+};
+
 export const sprintsRepository = new SprintsRepository();
+
+export class SprintBurndownRepository {
+  async getSprintById(sprintId: string): Promise<SprintRow | null> {
+    const { data, error } = await supabase
+      .from('sprints')
+      .select('id, name, start_date, end_date, status, project_id')
+      .eq('id', sprintId)
+      .maybeSingle();
+
+    if (error) {
+      console.error(
+        'error. failed to fetch sprint for burndown:',
+        error.message
+      );
+      throw new Error('Failed to fetch sprint');
+    }
+
+    return data as SprintRow | null;
+  }
+
+  async getWorkItemsForBurndown(sprintId: string): Promise<BurndownWorkItem[]> {
+    const { data, error } = await supabase
+      .from('work_items')
+      .select('id, story_points, done_at')
+      .eq('sprint_id', sprintId);
+
+    if (error) {
+      console.error(
+        'error. failed to fetch work items for burndown:',
+        error.message
+      );
+      throw new Error('Failed to fetch work items for burndown');
+    }
+
+    return (data ?? []) as BurndownWorkItem[];
+  }
+
+  async getWorkLogsForWorkItems(
+    workItemIds: readonly string[]
+  ): Promise<Array<{ logged_at: string; logged_hours: number }>> {
+    if (workItemIds.length === 0) {
+      return [];
+    }
+
+    // New table isn't in generated `@repo/types` yet.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as unknown as SupabaseClient<any>;
+
+    const { data, error } = await db
+      .from('work_item_worklogs')
+      .select('logged_at, logged_hours')
+      .in('work_item_id', workItemIds);
+
+    if (error) {
+      console.error(
+        'error. failed to fetch work logs for burndown:',
+        error.message
+      );
+      throw new Error('Failed to fetch work logs for burndown');
+    }
+
+    return (data ?? []) as Array<{ logged_at: string; logged_hours: number }>;
+  }
+}
+
+export const sprintBurndownRepository = new SprintBurndownRepository();
