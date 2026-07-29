@@ -28,13 +28,13 @@ export const BACKLOG_LAYOUT_OPTIONS: readonly BacklogLayoutOption[] = [
   },
   {
     id: 'split-sprints-left',
-    label: 'Sprints | Backlog',
-    description: 'Side by side, 1∶2 widths',
+    label: 'Sprints | Backlog (2∶1)',
+    description: 'Sprints on left, Backlog on right',
   },
   {
     id: 'split-backlog-left',
-    label: 'Backlog | Sprints',
-    description: 'Side by side, 2∶1 widths',
+    label: 'Backlog | Sprints (2∶1)',
+    description: 'Backlog on left, sprints on right',
   },
 ];
 
@@ -96,8 +96,9 @@ export function getBacklogLayoutContainerClass(
     case 'stack-reverse':
       return 'flex flex-col-reverse gap-4';
     case 'split-sprints-left':
+      return 'grid grid-cols-1 gap-4 lg:grid-cols-[minmax(18rem,1fr)_minmax(0,2fr)] lg:items-start';
     case 'split-backlog-left':
-      return 'grid grid-cols-1 gap-4 lg:grid-cols-3 lg:items-start';
+      return 'grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)] lg:items-start';
     case 'stack':
     default:
       return 'flex flex-col gap-4';
@@ -107,9 +108,9 @@ export function getBacklogLayoutContainerClass(
 export function getBacklogSprintsPaneClass(layout: BacklogLayoutId): string {
   switch (layout) {
     case 'split-sprints-left':
-      return 'min-w-0 space-y-4 lg:col-span-1 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto lg:pr-1';
+      return 'min-w-0 space-y-4 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto lg:pr-1';
     case 'split-backlog-left':
-      return 'min-w-0 space-y-4 lg:col-span-1 lg:col-start-3 lg:row-start-1 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto lg:pr-1';
+      return 'min-w-0 space-y-4 lg:col-start-2 lg:row-start-1 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto lg:pr-1';
     default:
       return 'min-w-0 space-y-4';
   }
@@ -118,9 +119,9 @@ export function getBacklogSprintsPaneClass(layout: BacklogLayoutId): string {
 export function getBacklogIssuesPaneClass(layout: BacklogLayoutId): string {
   switch (layout) {
     case 'split-sprints-left':
-      return 'min-w-0 lg:col-span-2 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto lg:pr-1';
+      return 'min-w-0 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto lg:pr-1';
     case 'split-backlog-left':
-      return 'min-w-0 lg:col-span-2 lg:col-start-1 lg:row-start-1 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto lg:pr-1';
+      return 'min-w-0 lg:col-start-1 lg:row-start-1 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto lg:pr-1';
     default:
       return 'min-w-0';
   }

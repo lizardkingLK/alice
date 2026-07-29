@@ -4,6 +4,8 @@ import type { User } from '@/app/users/_services/users.service';
 
 export type Project = Tables<'projects'> & {
   owner?: Pick<User, 'id' | 'name' | 'email'> | null;
+  /** Active engineering teams scoped to this project (list views). */
+  team_count?: number;
 };
 
 export type GetProjectsPaginatedResponse = {

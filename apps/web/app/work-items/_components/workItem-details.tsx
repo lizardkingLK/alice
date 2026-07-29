@@ -1,12 +1,20 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import { getInitials } from '@/app/_shared/utility';
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
-import type { AttachmentWithUploader } from '@repo/types';
+import type {
+  AttachmentWithUploader,
+  Json,
+  WorkItemWorkLog,
+} from '@repo/types';
 import { AttachmentsSection } from '@/app/work-items/_components/work-item-attachments-section';
+import {
+  WorkItemActivityTabs,
+  type WorkItemActivityTab,
+} from '@/app/work-items/_components/work-item-activity-tabs';
 import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
@@ -32,14 +40,15 @@ import {
 import WorkItemDescriptionEditor from '@/app/work-items/_components/workItem-description-editor';
 import { DescriptionView } from '@/app/work-items/_components/workItem-description-view';
 import { toTiptapContent } from '@/app/work-items/_helpers/work-item-description';
-import { Json } from '@repo/types';
-import { updateWorkItem } from '@/app/work-items/_services/workItem.service.client';
+import {
+  createWorkItemWorkLog,
+  updateWorkItem,
+} from '@/app/work-items/_services/workItem.service.client';
 import WorkItemSidebar from '@/app/work-items/_components/workItem-details-sidebar';
 import { WorkItemTitleEditor } from '@/app/work-items/_components/workItem-title-editor';
 import { WorkItemPathBreadcrumb } from '@/app/work-items/_components/work-item-path-breadcrumb';
 import type { WorkItemPatchMemberOption } from '@/app/work-items/_components/workItem-field-patch-dialog';
 import { toast } from '@repo/ui/components/ui/sonner';
-import { CommentsFeed } from '@/app/comments/_components/comments-feed';
 import { CommentItem } from '@/app/comments/_services/comments.service';
 
 const PLACEHOLDER_CHILD_ISSUES = [
@@ -70,12 +79,14 @@ export default function WorkItemDetails({
   workItemDetails,
   initialComments = [],
   initialAttachments = [],
+  initialWorkLogs = [],
   currentUserId,
   projectMembers = [],
 }: Readonly<{
   workItemDetails: DbWorkItem;
   initialComments?: CommentItem[];
   initialAttachments?: AttachmentWithUploader[];
+  initialWorkLogs?: WorkItemWorkLog[];
   currentUserId?: string;
   projectMembers?: readonly WorkItemPatchMemberOption[];
 }>) {
@@ -84,6 +95,15 @@ export default function WorkItemDetails({
   const [detailsOpen, setDetailsOpen] = useState(true);
   const [moreFieldsOpen, setMoreFieldsOpen] = useState(false);
   const [attachmentUploadOpen, setAttachmentUploadOpen] = useState(false);
+  const [workLogs, setWorkLogs] = useState<WorkItemWorkLog[]>(initialWorkLogs);
+  const [activityTab, setActivityTab] =
+    useState<WorkItemActivityTab>('discussion');
+  const [loggedHoursInput, setLoggedHoursInput] = useState<string>('');
+  const [loggedAtInput, setLoggedAtInput] = useState<string>(() =>
+    new Date().toISOString().slice(0, 10)
+  );
+  const [workLogCommentInput, setWorkLogCommentInput] = useState<string>('');
+  const [isLoggingWork, setIsLoggingWork] = useState(false);
 
   const handleWorkItemPatched = (updated: Partial<DbWorkItem>) => {
     setWorkItem((prev) => ({ ...prev, ...updated }));
@@ -120,48 +140,76 @@ export default function WorkItemDetails({
     toast.success('Description saved');
   };
 
-  const handleTitleUpdate = async (nextTitle: string) => {
-    const formData = new FormData();
-    formData.set('title', nextTitle);
+  const handleWorkLogSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    const nextHours = Number(loggedHoursInput);
+    if (!Number.isFinite(nextHours) || nextHours <= 0) {
+      toast.error('Enter a valid amount of hours.');
+      return;
+    }
 
-    await updateWorkItem(workItem.id, formData);
-    setWorkItem((prev) => ({ ...prev, title: nextTitle }));
-    toast.success('Title saved');
+    if (!loggedAtInput) {
+      toast.error('Please provide a date for the work log.');
+      return;
+    }
+
+    setIsLoggingWork(true);
+
+    try {
+      const created = await createWorkItemWorkLog(workItem.id, {
+        loggedHours: nextHours,
+        loggedAt: loggedAtInput,
+        comment: workLogCommentInput.trim() ? workLogCommentInput : null,
+      });
+
+      setWorkLogs((prev) => [created, ...prev]);
+      setLoggedHoursInput('');
+      setWorkLogCommentInput('');
+      toast.success('Work logged');
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to log work';
+      toast.error(message);
+    } finally {
+      setIsLoggingWork(false);
+    }
   };
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6">
-      {/* Title + actions */}
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+      {/* Title + actions — same 3∶2 column ratio as the body so the
+          title pencil lines up above the description pencil. */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        <div className="space-y-3 lg:col-span-3">
           <div className="min-w-0 space-y-1">
             <WorkItemPathBreadcrumb workItem={workItem} />
             <WorkItemTitleEditor
+              workItemId={workItem.id}
               title={workItem.title}
-              onSave={handleTitleUpdate}
+              onPatched={handleWorkItemPatched}
             />
           </div>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="cursor-pointer"
-            onClick={() => setAttachmentUploadOpen(true)}
-          >
-            <Paperclip data-icon="inline-start" />
-            Attach
-          </Button>
-          <Button variant="ghost" size="sm" className="cursor-pointer">
-            <Plus data-icon="inline-start" />
-            Create subtask
-          </Button>
-          <Button variant="ghost" size="sm" className="cursor-pointer">
-            <Link2 data-icon="inline-start" />
-            Link issue
-            <ChevronDown data-icon="inline-end" />
-          </Button>
+          <div className="flex flex-wrap items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="cursor-pointer"
+              onClick={() => setAttachmentUploadOpen(true)}
+            >
+              <Paperclip data-icon="inline-start" />
+              Attach
+            </Button>
+            <Button variant="ghost" size="sm" className="cursor-pointer">
+              <Plus data-icon="inline-start" />
+              Create subtask
+            </Button>
+            <Button variant="ghost" size="sm" className="cursor-pointer">
+              <Link2 data-icon="inline-start" />
+              Link issue
+              <ChevronDown data-icon="inline-end" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -183,7 +231,7 @@ export default function WorkItemDetails({
             </div>
             {isEditing ? (
               <WorkItemDescriptionEditor
-                id={WorkItemDescriptionEditor.name}
+                id={workItem.id}
                 initialContent={descriptionContent}
                 onSave={handleDescriptionUpdate}
                 onCancel={() => setEditing(false)}
@@ -323,26 +371,36 @@ export default function WorkItemDetails({
 
           <Separator />
 
-          {/* Discussion */}
-          <section className="space-y-4 pt-2">
-            <CommentsFeed
-              initialComments={initialComments}
-              workItemId={workItem.id}
-              workItems={discussionWorkItems}
-              currentUserId={currentUserId}
-            />
-          </section>
+          <WorkItemActivityTabs
+            activeTab={activityTab}
+            onActiveTabChange={setActivityTab}
+            initialComments={initialComments}
+            workItem={workItem}
+            discussionWorkItems={discussionWorkItems}
+            currentUserId={currentUserId}
+            workLogs={workLogs}
+            loggedHoursInput={loggedHoursInput}
+            loggedAtInput={loggedAtInput}
+            workLogCommentInput={workLogCommentInput}
+            isLoggingWork={isLoggingWork}
+            onLoggedHoursChange={setLoggedHoursInput}
+            onLoggedAtChange={setLoggedAtInput}
+            onWorkLogCommentChange={setWorkLogCommentInput}
+            onWorkLogSubmit={handleWorkLogSubmit}
+          />
         </div>
 
         {/* Sidebar */}
         <WorkItemSidebar
           workItem={workItem}
           projectMembers={projectMembers}
+          workLogs={workLogs}
           detailsOpen={detailsOpen}
           setDetailsOpen={setDetailsOpen}
           moreFieldsOpen={moreFieldsOpen}
           setMoreFieldsOpen={setMoreFieldsOpen}
           onWorkItemPatched={handleWorkItemPatched}
+          onLogWorkClick={() => setActivityTab('work-log')}
         />
       </div>
     </div>

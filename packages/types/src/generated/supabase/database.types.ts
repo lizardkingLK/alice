@@ -768,12 +768,70 @@ export type Database = {
           },
         ];
       };
+      work_item_worklogs: {
+        Row: {
+          comment: string | null;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          logged_at: string;
+          logged_hours: number;
+          status: Database['public']['Enums']['RecordStatus'];
+          updated_at: string;
+          updated_by: string | null;
+          user_id: string;
+          work_item_id: string;
+        };
+        Insert: {
+          comment?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          logged_at?: string;
+          logged_hours: number;
+          status?: Database['public']['Enums']['RecordStatus'];
+          updated_at?: string;
+          updated_by?: string | null;
+          user_id: string;
+          work_item_id: string;
+        };
+        Update: {
+          comment?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          logged_at?: string;
+          logged_hours?: number;
+          status?: Database['public']['Enums']['RecordStatus'];
+          updated_at?: string;
+          updated_by?: string | null;
+          user_id?: string;
+          work_item_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'work_item_worklogs_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'work_item_worklogs_work_item_id_fkey';
+            columns: ['work_item_id'];
+            isOneToOne: false;
+            referencedRelation: 'work_items';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       work_items: {
         Row: {
           assignee_id: string | null;
           created_at: string;
           created_by: string | null;
           description: Json | null;
+          done_at: string | null;
           due_date: string | null;
           id: string;
           parent_id: string | null;
@@ -793,6 +851,7 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           description?: Json | null;
+          done_at?: string | null;
           due_date?: string | null;
           id?: string;
           parent_id?: string | null;
@@ -812,6 +871,7 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           description?: Json | null;
+          done_at?: string | null;
           due_date?: string | null;
           id?: string;
           parent_id?: string | null;

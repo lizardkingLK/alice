@@ -7,10 +7,8 @@ import {
   updateUser as apiUpdateUser,
   toggleUserActive as apiToggleUserActive,
 } from '../_services/users.service.server';
-import {
-  buildAuthCallbackUrl,
-  resolveRequestOrigin,
-} from '@/lib/auth-redirect';
+import { buildAuthCallbackUrl } from '@/lib/auth-redirect';
+import { resolveRequestOrigin } from '@/lib/auth-redirect.server';
 import { getDbUser } from '@/lib/auth';
 import {
   DROPDOWN_CACHE_TAGS,

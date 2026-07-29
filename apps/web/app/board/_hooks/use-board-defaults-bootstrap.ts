@@ -1,13 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import {
-  clearBoardDefaults,
-  readValidatedBoardDefaults,
-  writeBoardDefaults,
-  type BoardDefaultsPreference,
-} from '@/app/board/_helpers/board-defaults-storage';
+  buildProjectSprintLookups,
+  isAllProjectsPreference,
+  loadValidatedBoardDefaults,
+  preferenceMatchesBoardFilters,
+  projectFilterToPreference,
+  resolveOpenDefaultsPreference,
+} from '@/app/board/_helpers/workspace-defaults-shared';
+import { useWorkspaceDefaultsDialog } from '@/app/board/_hooks/use-workspace-defaults-dialog';
 import { buildBoardFilterRedirectPath } from '@/app/board/_services/board-defaults';
 import type { Project } from '@/app/projects/_services/projects.service.base';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
@@ -19,7 +23,6 @@ type SuggestedDefaults = {
 
 type UseBoardDefaultsBootstrapOptions = {
   readonly userId: string | null;
-  readonly allowAllFilters: boolean;
   readonly needsClientBootstrap: boolean;
   readonly projectFilter: string;
   readonly sprintFilter: string;
@@ -28,22 +31,12 @@ type UseBoardDefaultsBootstrapOptions = {
   readonly suggestedDefaults: SuggestedDefaults | null;
 };
 
-function buildSprintLookup(sprints: readonly Sprint[]) {
-  return new Map(
-    sprints.map((sprint) => [
-      sprint.id,
-      { projectId: sprint.project?.id ?? null },
-    ])
-  );
-}
-
 /**
- * Seeds `/board` URL from localStorage (or suggested defaults) for
- * managers/members when no project query is present.
+ * Seeds `/board` URL from localStorage (or suggested defaults) when no project
+ * query is present.
  */
 export function useBoardDefaultsBootstrap({
   userId,
-  allowAllFilters,
   needsClientBootstrap,
   projectFilter,
   sprintFilter,
@@ -54,21 +47,22 @@ export function useBoardDefaultsBootstrap({
   const router = useRouter();
   const pathname = usePathname();
   const didBootstrap = useRef(false);
-  const [defaultsDialogOpen, setDefaultsDialogOpen] = useState(false);
-  const [allowSkipInDialog, setAllowSkipInDialog] = useState(false);
-  const [dialogInitialPreference, setDialogInitialPreference] =
-    useState<BoardDefaultsPreference | null>(null);
-  const [savedPreference, setSavedPreference] =
-    useState<BoardDefaultsPreference | null>(null);
 
-  const projectIds = useMemo(
-    () => new Set(projects.map((project) => project.id)),
-    [projects]
+  const { projectIds, sprintById } = useMemo(
+    () => buildProjectSprintLookups(projects, sprints),
+    [projects, sprints]
   );
-  const sprintById = useMemo(() => buildSprintLookup(sprints), [sprints]);
 
   const navigateToPreference = useCallback(
     (preference: BoardDefaultsPreference) => {
+      if (isAllProjectsPreference(preference)) {
+        const path = buildBoardFilterRedirectPath({
+          sprintId: preference.sprintId ?? undefined,
+        });
+        router.replace(path ?? pathname);
+        return;
+      }
+
       const path = buildBoardFilterRedirectPath({
         projectId: preference.projectId,
         sprintId: preference.sprintId ?? undefined,
@@ -82,8 +76,24 @@ export function useBoardDefaultsBootstrap({
     [pathname, router]
   );
 
+  const {
+    defaultsDialogOpen,
+    setDefaultsDialogOpen,
+    allowSkipInDialog,
+    dialogInitialPreference,
+    savedPreference,
+    setSavedPreference,
+    handleSaveDefaults: saveDefaults,
+    handleSkipDefaults,
+    promptDefaultsDialog,
+    openDefaultsDialog: openDialog,
+  } = useWorkspaceDefaultsDialog({
+    userId,
+    onSave: navigateToPreference,
+  });
+
   useEffect(() => {
-    if (allowAllFilters || !userId) {
+    if (!userId) {
       return;
     }
     if (didBootstrap.current) {
@@ -91,15 +101,11 @@ export function useBoardDefaultsBootstrap({
     }
     didBootstrap.current = true;
 
-    const { record, preference: validated } = readValidatedBoardDefaults(
+    const { record, validated } = loadValidatedBoardDefaults(
       userId,
       projectIds,
       sprintById
     );
-
-    if (record?.preference && !validated) {
-      clearBoardDefaults(userId);
-    }
 
     setSavedPreference(validated);
 
@@ -120,16 +126,15 @@ export function useBoardDefaultsBootstrap({
       navigateToPreference(nextPreference);
     }
 
-    if (!record?.prompted && !validated) {
-      setDialogInitialPreference(nextPreference);
-      setAllowSkipInDialog(true);
-      setDefaultsDialogOpen(true);
+    if (!record?.prompted && !validated && suggestedDefaults) {
+      promptDefaultsDialog(nextPreference, true);
     }
   }, [
-    allowAllFilters,
     navigateToPreference,
     needsClientBootstrap,
     projectIds,
+    promptDefaultsDialog,
+    setSavedPreference,
     sprintById,
     suggestedDefaults,
     userId,
@@ -140,80 +145,21 @@ export function useBoardDefaultsBootstrap({
       return;
     }
 
-    const { preference: validated } = readValidatedBoardDefaults(
-      userId,
-      projectIds,
-      sprintById
+    openDialog(
+      resolveOpenDefaultsPreference(
+        userId,
+        projectIds,
+        sprintById,
+        projectFilterToPreference(projectFilter || 'all', sprintFilter)
+      )
     );
-
-    setDialogInitialPreference(
-      validated ??
-        (projectFilter
-          ? {
-              projectId: projectFilter,
-              sprintId: sprintFilter || null,
-            }
-          : suggestedDefaults)
-    );
-    setAllowSkipInDialog(false);
-    setDefaultsDialogOpen(true);
-  }, [
-    projectFilter,
-    projectIds,
-    sprintById,
-    sprintFilter,
-    suggestedDefaults,
-    userId,
-  ]);
-
-  const handleSaveDefaults = useCallback(
-    (preference: BoardDefaultsPreference) => {
-      if (!userId) {
-        return;
-      }
-      writeBoardDefaults(userId, {
-        preference,
-        prompted: true,
-      });
-      setSavedPreference(preference);
-      setDefaultsDialogOpen(false);
-      navigateToPreference(preference);
-    },
-    [navigateToPreference, userId]
-  );
-
-  const handleSkipDefaults = useCallback(() => {
-    if (!userId) {
-      return;
-    }
-    writeBoardDefaults(userId, {
-      preference: null,
-      prompted: true,
-    });
-    setSavedPreference(null);
-    setDefaultsDialogOpen(false);
-  }, [userId]);
-
-  const handleDefaultsDialogOpenChange = useCallback(
-    (open: boolean) => {
-      if (!open && allowSkipInDialog) {
-        handleSkipDefaults();
-        return;
-      }
-      setDefaultsDialogOpen(open);
-    },
-    [allowSkipInDialog, handleSkipDefaults]
-  );
+  }, [openDialog, projectFilter, projectIds, sprintById, sprintFilter, userId]);
 
   const savedDefaultsApplied =
     savedPreference !== null &&
-    savedPreference.projectId === projectFilter &&
-    (savedPreference.sprintId ?? '') === sprintFilter;
+    preferenceMatchesBoardFilters(savedPreference, projectFilter, sprintFilter);
 
   const baselinePreference = useMemo(() => {
-    if (allowAllFilters) {
-      return null;
-    }
     return (
       savedPreference ??
       (suggestedDefaults
@@ -223,43 +169,33 @@ export function useBoardDefaultsBootstrap({
           }
         : null)
     );
-  }, [allowAllFilters, savedPreference, suggestedDefaults]);
+  }, [savedPreference, suggestedDefaults]);
 
-  const urlFiltersActive = allowAllFilters
-    ? Boolean(projectFilter || sprintFilter)
-    : Boolean(
-        baselinePreference &&
-        (baselinePreference.projectId !== projectFilter ||
-          (baselinePreference.sprintId ?? '') !== sprintFilter)
-      );
+  const urlFiltersActive = baselinePreference
+    ? !preferenceMatchesBoardFilters(
+        baselinePreference,
+        projectFilter,
+        sprintFilter
+      )
+    : Boolean(projectFilter || sprintFilter);
 
   const resetUrlFilters = useCallback(() => {
-    if (allowAllFilters) {
-      router.replace(pathname);
-      return;
-    }
     if (baselinePreference) {
       navigateToPreference(baselinePreference);
       return;
     }
     router.replace(pathname);
-  }, [
-    allowAllFilters,
-    baselinePreference,
-    navigateToPreference,
-    pathname,
-    router,
-  ]);
+  }, [baselinePreference, navigateToPreference, pathname, router]);
 
   return {
     defaultsDialogOpen,
-    setDefaultsDialogOpen: handleDefaultsDialogOpenChange,
+    setDefaultsDialogOpen,
     allowSkipInDialog,
     dialogInitialPreference,
     savedDefaultsApplied,
     urlFiltersActive,
     openDefaultsDialog,
-    handleSaveDefaults,
+    handleSaveDefaults: saveDefaults,
     handleSkipDefaults,
     resetUrlFilters,
   };

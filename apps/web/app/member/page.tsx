@@ -4,6 +4,8 @@ import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { WorkItemsData } from '@/app/work-items/_components/work-items-data';
 import { RegistryPageSkeleton } from '@/components/registry-page-skeleton';
 import { getDbUser } from '@/lib/auth';
+import { buildLoginPath } from '@/lib/auth-redirect';
+import { getRequestPathForLoginNext } from '@/lib/auth-redirect.server';
 import type { RawSearchParams } from '@/lib/search-params';
 import {
   MEMBER_BREADCRUMBS,
@@ -18,7 +20,7 @@ export default async function MemberDashboard({
 }>) {
   const dbUser = await getDbUser();
   if (!dbUser) {
-    redirect('/login');
+    redirect(buildLoginPath(await getRequestPathForLoginNext()));
   }
 
   return (

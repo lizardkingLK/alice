@@ -1,9 +1,5 @@
 import { KanbanBoard } from '@/app/board/_components/kanban-board';
-import {
-  getActiveMemberProjectIds,
-  resolveDefaultBoardProject,
-  resolveDefaultBoardSprint,
-} from '@/app/board/_services/board-defaults.server';
+import { getSuggestedBoardDefaults } from '@/app/board/_services/board-defaults.server';
 import { getProjectList } from '@/app/projects/_services/projects.service.server';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.service.server';
 import { getWorkItems } from '@/app/work-items/_services/workItem.service.server';
@@ -43,36 +39,11 @@ export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
   const activeProjects = filterActiveProjects(projects);
   const sprints = sprintsResult.sprints;
 
-  let suggestedDefaults: {
-    projectId: string;
-    sprintId: string | null;
-  } | null = null;
+  const suggestedDefaults = dbUser
+    ? await getSuggestedBoardDefaults(dbUser, activeProjects, sprints)
+    : null;
 
-  if (!isAdmin && dbUser) {
-    const memberProjectIds = await safeServerFetch(
-      getActiveMemberProjectIds(dbUser.id),
-      [],
-      'fetch member project ids for board defaults'
-    );
-    const defaultProject = resolveDefaultBoardProject(projects, {
-      userId: dbUser.id,
-      role,
-      memberProjectIds,
-    });
-    if (defaultProject) {
-      const defaultSprint = resolveDefaultBoardSprint(
-        sprints,
-        defaultProject.id
-      );
-      suggestedDefaults = {
-        projectId: defaultProject.id,
-        sprintId: defaultSprint?.id ?? null,
-      };
-    }
-  }
-
-  // Non-admins without a URL project wait for client bootstrap (localStorage).
-  const needsClientBootstrap = !isAdmin && !projectId;
+  const needsClientBootstrap = !projectId;
   const workItems = needsClientBootstrap
     ? []
     : await safeServerFetch(

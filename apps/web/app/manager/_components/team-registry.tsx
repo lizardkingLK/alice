@@ -64,6 +64,9 @@ interface TeamRegistryProps {
   readonly projectMembersByProjectId: ProjectMembersByProjectId;
   readonly currentUserId?: string | null;
   readonly currentUserRole?: string | null;
+  readonly lockedProjectId?: string;
+  readonly statusQueryKey?: 'tab' | 'teamStatus';
+  readonly variant?: 'standalone' | 'embedded';
 }
 
 /* eslint-disable no-unused-vars */
@@ -175,7 +178,16 @@ const TEAM_COLUMNS: ColumnDef<Team>[] = [
   },
 ];
 
-function getTeamRegistryDescription(tab: TeamTab) {
+function getTeamRegistryDescription(tab: TeamTab, embedded: boolean) {
+  if (embedded) {
+    if (tab === 'active') {
+      return 'Engineering teams within this project and their assigned members.';
+    }
+    if (tab === 'inactive') {
+      return 'Temporarily suspended teams for this project.';
+    }
+    return 'Restore archived project teams or permanently delete them.';
+  }
   if (tab === 'active') {
     return 'View and manage active software engineering teams.';
   }
@@ -198,7 +210,11 @@ export function TeamRegistry({
   projectMembersByProjectId,
   currentUserId,
   currentUserRole,
+  lockedProjectId,
+  statusQueryKey = 'tab',
+  variant = 'standalone',
 }: Readonly<TeamRegistryProps>) {
+  const isEmbedded = variant === 'embedded';
   const {
     handlePageChange,
     handleLimitChange,
@@ -243,7 +259,12 @@ export function TeamRegistry({
 
   const changeTabSelection = (tabKey: TeamTab) => {
     const nextQueryParams = new URLSearchParams(searchParams);
-    nextQueryParams.set('tab', tabKey);
+    if (statusQueryKey === 'teamStatus') {
+      nextQueryParams.set('tab', 'teams');
+      nextQueryParams.set('teamStatus', tabKey);
+    } else {
+      nextQueryParams.set('tab', tabKey);
+    }
     nextQueryParams.set('page', '1');
     router.push(`${pathname}?${nextQueryParams.toString()}`);
   };
@@ -265,8 +286,8 @@ export function TeamRegistry({
 
     startTransition(async () => {
       const actionResult = isSoftDelete
-        ? await softDeleteTeam(teamToDelete.id)
-        : await hardDeleteTeam(teamToDelete.id);
+        ? await softDeleteTeam(teamToDelete.id, teamToDelete.project_id)
+        : await hardDeleteTeam(teamToDelete.id, teamToDelete.project_id);
 
       if (!actionResult.success) {
         setError(
@@ -285,7 +306,7 @@ export function TeamRegistry({
     (item: Team) => {
       setError(null);
       startTransition(async () => {
-        const actionResult = await restoreTeam(item.id);
+        const actionResult = await restoreTeam(item.id, item.project_id);
         if (actionResult.success) {
           router.refresh();
         } else {
@@ -368,14 +389,14 @@ export function TeamRegistry({
         </div>
       </div>
 
-      <Card className="border-border bg-card/50 backdrop-blur-md">
+      <Card className="border-border/60 bg-card/40 backdrop-blur-md">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight">
+          <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
             <Users className="text-primary h-5 w-5" />
-            Teams Registry
+            {isEmbedded ? 'Engineering Teams' : 'Teams Registry'}
           </CardTitle>
           <CardDescription className="text-muted-foreground text-sm">
-            {getTeamRegistryDescription(tab)}
+            {getTeamRegistryDescription(tab, isEmbedded)}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -403,33 +424,21 @@ export function TeamRegistry({
         </CardContent>
       </Card>
 
-      {isAddTeamOpen ? (
+      {isAddTeamOpen || teamToEdit ? (
         <div className="bg-background/80 animate-in fade-in fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm duration-300">
           <div className="w-full max-w-xl">
             <TeamForm
               users={users}
               activeProjects={activeProjects}
               projectMembersByProjectId={projectMembersByProjectId}
-              onClose={() => setIsAddTeamOpen(false)}
+              lockedProjectId={lockedProjectId}
+              teamToEdit={teamToEdit ?? undefined}
+              onClose={() => {
+                setIsAddTeamOpen(false);
+                setTeamToEdit(null);
+              }}
               onSuccess={() => {
                 setIsAddTeamOpen(false);
-                router.refresh();
-              }}
-            />
-          </div>
-        </div>
-      ) : null}
-
-      {teamToEdit ? (
-        <div className="bg-background/80 animate-in fade-in fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm duration-300">
-          <div className="w-full max-w-xl">
-            <TeamForm
-              users={users}
-              activeProjects={activeProjects}
-              projectMembersByProjectId={projectMembersByProjectId}
-              teamToEdit={teamToEdit}
-              onClose={() => setTeamToEdit(null)}
-              onSuccess={() => {
                 setTeamToEdit(null);
                 router.refresh();
               }}

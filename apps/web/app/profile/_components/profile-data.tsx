@@ -9,13 +9,15 @@ import {
   metadataString,
 } from '@/app/profile/_helpers/profile-identity';
 import { getDbUser, getUser } from '@/lib/auth';
+import { buildLoginPath } from '@/lib/auth-redirect';
+import { getRequestPathForLoginNext } from '@/lib/auth-redirect.server';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 
 export async function ProfileData() {
   const [user, dbUser] = await Promise.all([getUser(), getDbUser()]);
 
   if (!user) {
-    redirect('/login');
+    redirect(buildLoginPath(await getRequestPathForLoginNext()));
   }
 
   const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;

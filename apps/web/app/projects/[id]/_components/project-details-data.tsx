@@ -28,6 +28,7 @@ export async function ProjectDetailsData({
         currentUserId={workspace.currentUserId}
         currentUserRole={workspace.currentUserRole}
         workItems={workspace.workItems}
+        teams={workspace.teams}
       />
     </div>
   );

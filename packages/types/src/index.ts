@@ -20,4 +20,6 @@ export * from './users.js';
 export * from './teams.js';
 export * from './notification.js';
 export * from './attachments.js';
+export * from './work-item-worklogs.js';
+export * from './work-item-status.js';
 export * from './access-allowlist.js';

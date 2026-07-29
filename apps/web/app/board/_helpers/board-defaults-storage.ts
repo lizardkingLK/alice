@@ -4,6 +4,9 @@ import {
   setLocalStorageJson,
 } from '@/lib/local-storage';
 
+/** Sentinel stored in preferences when the user wants every project visible. */
+export const ALL_PROJECTS_ID = 'all';
+
 export type BoardDefaultsPreference = {
   readonly projectId: string;
   readonly sprintId: string | null;
@@ -27,6 +30,9 @@ function isPreference(value: unknown): value is BoardDefaultsPreference {
   const record = value as Record<string, unknown>;
   if (typeof record.projectId !== 'string' || record.projectId.length === 0) {
     return false;
+  }
+  if (record.projectId === ALL_PROJECTS_ID) {
+    return record.sprintId === null;
   }
   if (record.sprintId !== null && typeof record.sprintId !== 'string') {
     return false;
@@ -88,6 +94,10 @@ export function validateBoardDefaultsPreference(
   projectIds: ReadonlySet<string>,
   sprintById: ReadonlyMap<string, { readonly projectId: string | null }>
 ): BoardDefaultsPreference | null {
+  if (preference.projectId === ALL_PROJECTS_ID) {
+    return { projectId: ALL_PROJECTS_ID, sprintId: null };
+  }
+
   if (!projectIds.has(preference.projectId)) {
     return null;
   }

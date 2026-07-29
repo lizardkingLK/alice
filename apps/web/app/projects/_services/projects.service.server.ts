@@ -68,8 +68,14 @@ export async function getProjectListPaginated(
     'Failed to list projects'
   );
 
+  const projects = (data ?? []) as unknown as Project[];
+  const teamCounts = await getTeamCountsByProjectIds(projects.map((p) => p.id));
+
   return {
-    projects: (data ?? []) as unknown as Project[],
+    projects: projects.map((project) => ({
+      ...project,
+      team_count: teamCounts[project.id] ?? 0,
+    })),
     ...paginationMeta(count ?? 0, page, limit),
   };
 }
@@ -114,6 +120,38 @@ export async function getProjectMembers(
   );
 
   return filterActiveProjectMembersWithUser(data);
+}
+
+/** Count non-deleted teams per project for list badges. */
+export async function getTeamCountsByProjectIds(
+  projectIds: readonly string[]
+): Promise<Record<string, number>> {
+  if (projectIds.length === 0) {
+    return {};
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('teams')
+    .select('project_id')
+    .in('project_id', [...projectIds])
+    .neq('status', 'deleted');
+
+  throwIfError(
+    error,
+    'failed to count teams by project ids',
+    'Failed to count project teams'
+  );
+
+  const counts = Object.fromEntries(projectIds.map((id) => [id, 0]));
+  for (const row of data ?? []) {
+    if (!row.project_id) {
+      continue;
+    }
+    counts[row.project_id] = (counts[row.project_id] ?? 0) + 1;
+  }
+
+  return counts;
 }
 
 function filterActiveProjectMembersWithUser(
