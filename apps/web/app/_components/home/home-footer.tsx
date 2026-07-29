@@ -16,10 +16,9 @@ const footerColumns = [
     ],
   },
   {
-    title: 'Team',
+    title: 'People',
     links: [
       { href: '/users', label: 'Users' },
-      { href: '/manager', label: 'Team' },
       { href: '/member', label: 'My work' },
       { href: '/profile', label: 'Profile' },
     ],

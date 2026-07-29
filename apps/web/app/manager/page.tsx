@@ -1,18 +1,6 @@
-import { ManagerData } from '@/app/manager/_components/manager-data';
-import {
-  REGISTRY_PAGES,
-  RegistrySuspensePage,
-} from '@/components/registry-page-shell';
-import type { RawSearchParams } from '@/lib/search-params';
+import { redirect } from 'next/navigation';
 
-export default function ManagerDashboardPage({
-  searchParams,
-}: Readonly<{
-  searchParams: Promise<RawSearchParams>;
-}>) {
-  return (
-    <RegistrySuspensePage meta={REGISTRY_PAGES.manager}>
-      <ManagerData searchParams={searchParams} />
-    </RegistrySuspensePage>
-  );
+/** Team management moved to /projects/[id]?tab=teams */
+export default function ManagerDashboardPage() {
+  redirect('/projects');
 }
