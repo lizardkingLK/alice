@@ -40,10 +40,10 @@ const footerColumns = [
   },
 ] as const;
 
-const APP_ONLY_COLUMN_TITLES = new Set(['Workspace', 'Team']);
+const APP_ONLY_COLUMN_TITLES = new Set(['Workspace', 'People']);
 
 type HomeFooterProps = {
-  /** Show Workspace / Team links (allowlisted signed-in users). */
+  /** Show Workspace / People links (allowlisted signed-in users). */
   showAppLinks?: boolean;
 };
 
