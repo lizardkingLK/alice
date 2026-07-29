@@ -3,6 +3,8 @@ import { DashboardPageMeta } from './dashboard-page-meta';
 import { AuthControls } from '@/app/dashboard/_components/dashboard-auth';
 import { NotificationInbox } from '@/app/dashboard/_components/dashboard-notifications';
 import { getDbUser, getUser } from '@/lib/auth';
+import { buildLoginPath } from '@/lib/auth-redirect';
+import { getRequestPathForLoginNext } from '@/lib/auth-redirect.server';
 import { redirect } from 'next/navigation';
 import type { DashboardBreadcrumbOverride } from './dashboard-breadcrumb';
 import {
@@ -27,7 +29,7 @@ export async function DashboardHeader({
   const dbUser = await getDbUser();
 
   if (!user) {
-    redirect('/login');
+    redirect(buildLoginPath(await getRequestPathForLoginNext()));
   }
 
   return (
@@ -54,6 +56,8 @@ export async function DashboardHeader({
       <section>
         <AuthControls
           email={user.email}
+          name={dbUser?.name}
+          role={dbUser?.role}
           profilePicture={dbUser?.profile_picture}
         />
       </section>
