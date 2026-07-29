@@ -1,11 +1,11 @@
 'use client';
 
 import { useActionState } from 'react';
-import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
+import { LoadingButton } from '@repo/ui/components/ui/loading-button';
 import { resetPassword, ResetState } from './actions';
-import { KeyRound, Loader2, AlertCircle } from '@repo/ui/lib/icons';
+import { KeyRound, AlertCircle } from '@repo/ui/lib/icons';
 
 const initialState: ResetState = {
   success: false,
@@ -65,20 +65,14 @@ export default function ResetPasswordPage() {
             </div>
           )}
 
-          <Button
+          <LoadingButton
             type="submit"
-            disabled={isPending}
-            className="h-11 w-full cursor-pointer bg-linear-to-r font-semibold text-white shadow-md transition-all duration-300 hover:shadow-lg"
+            loading={isPending}
+            loadingLabel="Updating Password..."
+            className="h-11 w-full bg-linear-to-r font-semibold text-white shadow-md transition-all duration-300 hover:shadow-lg"
           >
-            {isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Updating Password...
-              </>
-            ) : (
-              'Set Password'
-            )}
-          </Button>
+            Set Password
+          </LoadingButton>
         </form>
       </div>
     </main>

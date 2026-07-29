@@ -1,11 +1,11 @@
 import multer, { Multer } from 'multer';
 import { Router } from 'express';
 import { z } from 'zod';
-import { requireApiAuth, type AuthenticatedRequest } from '@/middlewares/auth';
 import {
-  profileService,
-  updateOwnProfileSchema,
-} from '@/routes/api/profile/profile.service';
+  requireApiAuth,
+  type AuthenticatedRequest,
+} from '../../../middlewares/auth';
+import { profileService, updateOwnProfileSchema } from './profile.service';
 
 const profileRouter: Router = Router();
 

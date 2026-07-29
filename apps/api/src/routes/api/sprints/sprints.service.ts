@@ -2,13 +2,13 @@ import type {
   CreateSprintBody,
   SprintResponse,
   UpdateSprintBody,
-} from '@/routes/api/sprints/sprints.schemas';
+} from './sprints.schemas';
 import {
   sprintsRepository,
   type SprintRowWithProject,
   type SprintRow,
-} from '@/routes/api/sprints/sprints.repository';
-import { requireUserWithRole } from '@/lib/auth-helpers';
+} from './sprints.repository';
+import { requireUserWithRole } from '../../../lib/auth-helpers';
 
 async function requireManagerOrAdmin(actorId: string) {
   return await requireUserWithRole(
@@ -183,7 +183,9 @@ export class SprintsService {
     if (input.projectId !== currentSprint.project_id) {
       const count = await sprintsRepository.getWorkItemCount(sprintId);
       if (count > 0) {
-        throw new Error('Cannot change the project of a sprint that has work items.');
+        throw new Error(
+          'Cannot change the project of a sprint that has work items.'
+        );
       }
     }
 

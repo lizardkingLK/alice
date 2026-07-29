@@ -2,14 +2,17 @@ import multer, { Multer } from 'multer';
 import express, { type Router } from 'express';
 import { z } from 'zod';
 
-import { requireApiAuth, type AuthenticatedRequest } from '@/middlewares/auth';
+import {
+  requireApiAuth,
+  type AuthenticatedRequest,
+} from '../../../middlewares/auth';
 import {
   AttachmentGoneError,
   AttachmentNotFoundError,
   deleteAttachment,
   getAttachmentSignedUrls,
   uploadAttachmentFile,
-} from '@/routes/api/attachments/attachments.service';
+} from './attachments.service';
 
 const attachmentsRouter: Router = express.Router();
 

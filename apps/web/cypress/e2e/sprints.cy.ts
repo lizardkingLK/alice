@@ -11,10 +11,7 @@ function createSprint(sprintName: string, goal: string) {
   cy.get('button#sprint-project').should('be.visible').click();
 
   // Select the first option in the dropdown list
-  cy.get('[role="option"]')
-    .first()
-    .should('be.visible')
-    .click();
+  cy.get('[role="option"]').first().should('be.visible').click();
 
   cy.get('input#sprint-name').first().type(sprintName, { delay: 30 });
   cy.get('textarea#sprint-goal').first().type(goal, { delay: 30 });

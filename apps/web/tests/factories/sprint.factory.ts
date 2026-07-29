@@ -8,7 +8,9 @@ export function formatDateToISOString(
   minute: number = 0,
   second: number = 0
 ): string {
-  return new Date(Date.UTC(year, month, day, hour, minute, second)).toISOString();
+  return new Date(
+    Date.UTC(year, month, day, hour, minute, second)
+  ).toISOString();
 }
 
 export const sprintFactory = {

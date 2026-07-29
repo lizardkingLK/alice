@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { requestPasswordReset } from '@/app/auth/actions';
+import { PendingSubmitButton } from '@/components/pending-submit-button';
 import { RecoveryHashGuard } from './_components/recovery-hash-guard';
 
 type ForgotPasswordPageProps = {
@@ -58,9 +58,12 @@ export default async function ForgotPasswordPage({
                 required
               />
             </div>
-            <Button type="submit" className="w-full cursor-pointer">
+            <PendingSubmitButton
+              className="w-full"
+              loadingLabel="Sending link..."
+            >
               Send reset link
-            </Button>
+            </PendingSubmitButton>
           </form>
         )}
 

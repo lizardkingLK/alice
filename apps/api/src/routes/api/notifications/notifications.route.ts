@@ -1,7 +1,7 @@
 import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { contactRequestSchema } from '@repo/types';
-import { notificationsService } from '@/routes/api/notifications/notifications.service';
+import { notificationsService } from './notifications.service';
 
 const notificationsRouter: Router = Router();
 

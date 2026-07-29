@@ -27,7 +27,8 @@ export default async function SprintReportPage({ params }: ReportPageProps) {
     notFound();
   }
 
-  const isValidStatus = sprint.status === 'Completed' || sprint.status === 'Ongoing';
+  const isValidStatus =
+    sprint.status === 'Completed' || sprint.status === 'Ongoing';
 
   if (!isValidStatus) {
     return (
@@ -36,14 +37,21 @@ export default async function SprintReportPage({ params }: ReportPageProps) {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
             <AlertCircle className="h-8 w-8" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">Sprint Report Unavailable</h1>
+          <h1 className="text-foreground text-xl font-bold tracking-tight">
+            Sprint Report Unavailable
+          </h1>
           <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
-            The Summary Report for <span className="font-semibold text-foreground">&quot;{sprint.name}&quot;</span> is not available. Reports are only accessible for ongoing or completed sprints.
+            The Summary Report for{' '}
+            <span className="text-foreground font-semibold">
+              &quot;{sprint.name}&quot;
+            </span>{' '}
+            is not available. Reports are only accessible for ongoing or
+            completed sprints.
           </p>
           <div className="mt-6">
             <a
               href="/backlog"
-              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-indigo-700 transition-colors"
+              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-indigo-700"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to Backlog

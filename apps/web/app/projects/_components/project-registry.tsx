@@ -341,7 +341,7 @@ export function ProjectRegistry({
             <SelectTrigger
               id="project-status-filter"
               aria-label="Filter by Status"
-              className="w-40 bg-background/50 h-10"
+              className="bg-background/50 h-10 w-40"
             >
               <SelectValue />
             </SelectTrigger>

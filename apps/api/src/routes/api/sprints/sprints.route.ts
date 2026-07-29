@@ -1,13 +1,16 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { requireApiAuth, type AuthenticatedRequest } from '@/middlewares/auth';
+import {
+  requireApiAuth,
+  type AuthenticatedRequest,
+} from '../../../middlewares/auth';
 import {
   createSprintBodySchema,
   updateSprintStatusSchema,
   updateSprintBodySchema,
   listSprintsQuerySchema,
-} from '@/routes/api/sprints/sprints.schemas';
-import { sprintsService } from '@/routes/api/sprints/sprints.service';
+} from './sprints.schemas';
+import { sprintsService } from './sprints.service';
 
 const sprintsRouter: Router = Router();
 

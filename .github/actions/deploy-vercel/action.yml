@@ -3,6 +3,7 @@ description: >-
   Build @repo/types, install the Vercel CLI, then pull / build / deploy a
   production prebuilt project. Requires checkout + setup-workspace first.
   Expects VERCEL_TOKEN (and VERCEL_ORG_ID) in the job environment.
+  Project Root Directory is configured in Vercel (e.g. apps/api, apps/web).
 
 inputs:
   vercel-project-id:

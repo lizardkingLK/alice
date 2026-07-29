@@ -1,9 +1,6 @@
-import { WorkItemRepository } from '@/routes/api/workItems/workItems.repository';
-import type { DbWorkItem } from '@/routes/api/workItems/workItems.repository';
-import {
-  WorkItemBody,
-  WorkItemUpdateBody,
-} from '@/routes/api/workItems/workItems.schemas';
+import { WorkItemRepository } from './workItems.repository';
+import type { DbWorkItem } from './workItems.repository';
+import { WorkItemBody, WorkItemUpdateBody } from './workItems.schemas';
 
 export class WorkItemService {
   constructor(private readonly workItems: WorkItemRepository) {}

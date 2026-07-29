@@ -8,7 +8,11 @@ import {
   restoreTeam as apiRestoreTeam,
   hardDeleteTeam as apiHardDeleteTeam,
 } from '../_services/teams.service.server';
-import { parseTeamForm, requireTeamManager, toTeamWriteFields } from '@/lib/teams/admin-team';
+import {
+  parseTeamForm,
+  requireTeamManager,
+  toTeamWriteFields,
+} from '@/lib/teams/admin-team';
 import {
   actionFailure,
   actionSuccess,

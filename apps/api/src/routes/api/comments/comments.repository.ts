@@ -3,7 +3,7 @@ import {
   projectRelationSelect,
   userRelationSelect,
 } from '@repo/types';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../../../lib/supabase';
 
 export type CommentRow = {
   id: string;

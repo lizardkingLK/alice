@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Button } from '@repo/ui/components/ui/button';
 import { signOut } from '@/app/auth/actions';
 import { createClient } from '@/lib/supabase/server';
+import { PendingSubmitButton } from '@/components/pending-submit-button';
 
 export default async function AccessDeniedPage() {
   const supabase = await createClient();
@@ -29,13 +30,13 @@ export default async function AccessDeniedPage() {
           </Button>
           {user ? (
             <form action={signOut}>
-              <Button
-                type="submit"
+              <PendingSubmitButton
                 variant="ghost"
-                className="w-full cursor-pointer"
+                className="w-full"
+                loadingLabel="Signing out..."
               >
                 Sign out
-              </Button>
+              </PendingSubmitButton>
             </form>
           ) : (
             <p className="text-muted-foreground text-center text-sm">

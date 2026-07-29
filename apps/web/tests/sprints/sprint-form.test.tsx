@@ -8,7 +8,10 @@ import {
 import type { Project } from '@/app/projects/_services/projects.service.base';
 
 import { projectFactory } from '../factories/project.factory';
-import { sprintFactory, formatDateToISOString } from '../factories/sprint.factory';
+import {
+  sprintFactory,
+  formatDateToISOString,
+} from '../factories/sprint.factory';
 
 vi.mock('@/app/sprints/_services/sprints.service', () => ({
   createSprint: vi.fn(),

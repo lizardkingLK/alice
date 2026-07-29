@@ -1,5 +1,5 @@
 import { projectRelationSelect, type Tables } from '@repo/types';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../../../lib/supabase';
 
 export type SprintRow = Tables<'sprints'>;
 

@@ -1,5 +1,5 @@
-import { auditCreate, auditUpdate } from '@/lib/audit';
-import { supabase } from '@/lib/supabase';
+import { auditCreate, auditUpdate } from '../../../lib/audit';
+import { supabase } from '../../../lib/supabase';
 import { ATTACHMENT_SELECT, type AttachmentWithUploader } from '@repo/types';
 
 export type CreateAttachmentInput = {
