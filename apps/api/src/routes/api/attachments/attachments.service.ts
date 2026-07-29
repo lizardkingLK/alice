@@ -1,10 +1,12 @@
 import { env } from '../../../config/env';
 import {
   createSignedStorageUrl,
+  createSignedStorageUploadUrl,
   DEFAULT_SIGNED_URL_SECONDS,
   removeStorageObjects,
   sanitizeFileName,
   signedUrlExpiresAt,
+  storageObjectExistsStrict,
   storageObjectExists,
   uploadToStorage,
 } from '../../../lib/file-helpers';
@@ -40,6 +42,15 @@ export type AttachmentSignedUrls = {
   previewUrl: string;
   downloadUrl: string;
   expiresAt: string;
+};
+
+export type CreatedAttachmentUploadSession = {
+  upload: {
+    bucket: string;
+    signedUrl: string;
+    token: string;
+    path: string;
+  };
 };
 
 /**
@@ -102,6 +113,85 @@ export async function uploadAttachmentFile(
     await removeStorageObjects(bucket, [uploaded.path]);
     throw error;
   }
+}
+
+export async function createAttachmentUploadSession(params: {
+  workItemId?: string;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}): Promise<CreatedAttachmentUploadSession> {
+  const { workItemId, fileName } = params;
+  const bucket = env.STORAGE_BUCKET_ATTACHMENTS;
+
+  const safeName = sanitizeFileName(fileName);
+  const path = workItemId
+    ? `${workItemId}/${Date.now()}-${safeName}`
+    : `${Date.now()}-${safeName}`;
+
+  if (workItemId) {
+    const exists = await attachmentsRepository.workItemExists(workItemId);
+    if (!exists) {
+      throw new Error('Work item not found');
+    }
+  }
+
+  const { signedUrl, token } = await createSignedStorageUploadUrl(bucket, path);
+
+  return {
+    upload: {
+      bucket,
+      signedUrl,
+      token,
+      path,
+    },
+  };
+}
+
+export async function finalizeAttachmentUpload(params: {
+  actorId: string;
+  workItemId?: string;
+  storagePath: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+}): Promise<UploadedAttachmentResult> {
+  const { actorId, workItemId, storagePath, fileName, fileSize, mimeType } =
+    params;
+
+  const bucket = env.STORAGE_BUCKET_ATTACHMENTS;
+
+  if (workItemId && !storagePath.startsWith(`${workItemId}/`)) {
+    throw new Error('Invalid upload target');
+  }
+
+  // Ensure the upload actually happened before committing DB rows.
+  const exists = await storageObjectExistsStrict(bucket, storagePath);
+  if (!exists) {
+    throw new Error('Uploaded file not found in storage');
+  }
+
+  const url = await createSignedStorageUrl(bucket, storagePath);
+
+  if (!workItemId) {
+    return { success: true, path: storagePath, url };
+  }
+
+  const attachment = await attachmentsRepository.create({
+    work_item_id: workItemId,
+    uploader_id: actorId,
+    file_name: fileName,
+    storage_path: storagePath,
+    file_size: fileSize,
+    mime_type: mimeType || 'application/octet-stream',
+  });
+
+  return {
+    success: true,
+    path: storagePath,
+    url,
+    attachment,
+  };
 }
 
 /** Mint preview + download signed URLs for an active attachment. */

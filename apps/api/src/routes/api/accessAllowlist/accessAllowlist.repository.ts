@@ -50,26 +50,60 @@ export class AccessAllowlistRepository {
     status?: AccessAllowlistStatus,
     search?: string
   ): Promise<{ items: AccessAllowlistRow[]; totalCount: number }> {
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
-
-    let query = supabase
+    // Supabase/PostgREST returns 416 when `.range(from, to)` is out-of-bounds.
+    // To keep pagination stable, we compute `totalCount` up-front and only
+    // issue the ranged query when the requested page can contain rows.
+    let countQuery = supabase
       .from('access_allowlist')
-      .select('*', { count: 'exact' });
+      .select('id', { count: 'exact', head: true });
 
     if (status) {
-      query = query.eq('status', status);
+      countQuery = countQuery.eq('status', status);
     }
 
     if (search) {
       const sanitized = `%${search}%`;
-      query = query.or(`value.ilike.${sanitized},label.ilike.${sanitized}`);
+      countQuery = countQuery.or(
+        `value.ilike.${sanitized},label.ilike.${sanitized}`
+      );
     }
 
-    const { data, error, count } = await query
+    const { count, error: countError } = await countQuery;
+    if (countError) {
+      console.error(
+        'error. failed to count access_allowlist paginated:',
+        countError.message
+      );
+      throw new Error('Failed to list access allowlist');
+    }
+
+    const totalCount = count ?? 0;
+    const from = (page - 1) * limit;
+
+    if (totalCount === 0 || from >= totalCount) {
+      return { items: [], totalCount };
+    }
+
+    const to = from + limit - 1;
+
+    let itemsQuery = supabase
+      .from('access_allowlist')
+      .select('*')
       .order('created_at', { ascending: false })
       .range(from, to);
 
+    if (status) {
+      itemsQuery = itemsQuery.eq('status', status);
+    }
+
+    if (search) {
+      const sanitized = `%${search}%`;
+      itemsQuery = itemsQuery.or(
+        `value.ilike.${sanitized},label.ilike.${sanitized}`
+      );
+    }
+
+    const { data, error } = await itemsQuery;
     if (error) {
       console.error(
         'error. failed to list access_allowlist paginated:',
@@ -78,10 +112,7 @@ export class AccessAllowlistRepository {
       throw new Error('Failed to list access allowlist');
     }
 
-    return {
-      items: (data ?? []) as AccessAllowlistRow[],
-      totalCount: count ?? 0,
-    };
+    return { items: (data ?? []) as AccessAllowlistRow[], totalCount };
   }
 
   async findByKindAndValue(kind: AccessAllowlistKind, value: string) {

@@ -20,6 +20,10 @@ export type CreateSignedUrlOptions = {
   download?: boolean | string;
 };
 
+export type CreateSignedUploadUrlOptions = {
+  upsert?: boolean;
+};
+
 /** Sanitize an original filename for Storage object keys. */
 export function sanitizeFileName(
   originalName: string,
@@ -95,6 +99,32 @@ export async function createSignedStorageUrl(
 }
 
 /**
+ * Signed upload token for browser direct-to-Storage uploads.
+ *
+ * Upload tokens are created server-side (service role) so the client never
+ * needs storage admin privileges.
+ */
+export async function createSignedStorageUploadUrl(
+  bucket: string,
+  path: string,
+  options: CreateSignedUploadUrlOptions = {}
+): Promise<{ signedUrl: string; token: string; path: string }> {
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .createSignedUploadUrl(path, { upsert: options.upsert ?? false });
+
+  if (error || !data?.signedUrl || !data?.token) {
+    console.error(
+      'error. failed to create signed upload URL:',
+      error?.message ?? 'missing data'
+    );
+    throw new Error('Failed to create upload URL.');
+  }
+
+  return { signedUrl: data.signedUrl, token: data.token, path: data.path };
+}
+
+/**
  * Whether a Storage object exists. Fails open (returns `true`) on transient
  * list errors so a flaky check never wrongly flags a file as missing.
  */
@@ -117,6 +147,33 @@ export async function storageObjectExists(
       error.message
     );
     return true;
+  }
+
+  return Boolean(data?.some((object) => object.name === name));
+}
+
+/**
+ * Whether a Storage object exists. Fails closed: used when we must guarantee
+ * an uploaded object exists before committing DB rows.
+ */
+export async function storageObjectExistsStrict(
+  bucket: string,
+  path: string
+): Promise<boolean> {
+  const lastSlash = path.lastIndexOf('/');
+  const dir = lastSlash === -1 ? '' : path.slice(0, lastSlash);
+  const name = lastSlash === -1 ? path : path.slice(lastSlash + 1);
+
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .list(dir, { search: name, limit: 1 });
+
+  if (error) {
+    console.error(
+      'error. failed to check storage object exists (strict):',
+      error.message
+    );
+    throw new Error('Failed to verify uploaded file exists.');
   }
 
   return Boolean(data?.some((object) => object.name === name));
