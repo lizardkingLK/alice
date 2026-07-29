@@ -43,7 +43,8 @@ export function createTeamsService(
       page: number,
       limit: number,
       status?: 'active' | 'inactive' | 'archived',
-      search?: string
+      search?: string,
+      projectId?: string
     ): Promise<GetTeamsPaginatedResponse> {
       let url = `${apiTeams}?page=${page}&limit=${limit}`;
       if (status) {
@@ -51,6 +52,9 @@ export function createTeamsService(
       }
       if (search) {
         url += `&search=${encodeURIComponent(search)}`;
+      }
+      if (projectId) {
+        url += `&project_id=${encodeURIComponent(projectId)}`;
       }
 
       return apiFetch<GetTeamsPaginatedResponse>(url);

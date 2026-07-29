@@ -104,6 +104,7 @@ interface TeamFormProps {
   readonly users: User[];
   readonly activeProjects: Project[];
   readonly projectMembersByProjectId: ProjectMembersByProjectId;
+  readonly lockedProjectId?: string;
 }
 
 export function TeamForm({
@@ -113,10 +114,13 @@ export function TeamForm({
   users,
   activeProjects,
   projectMembersByProjectId,
+  lockedProjectId,
 }: Readonly<TeamFormProps>) {
   const editActionActive = !!teamToEdit;
   // Lock once a project is stored; allow picking one when legacy rows have null.
-  const projectLocked = editActionActive && Boolean(teamToEdit?.project_id);
+  const projectLocked =
+    Boolean(lockedProjectId) ||
+    (editActionActive && Boolean(teamToEdit?.project_id));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
@@ -133,7 +137,7 @@ export function TeamForm({
   );
 
   const [selectedProjectId, setSelectedProjectId] = useState(
-    teamToEdit?.project_id ?? ''
+    lockedProjectId ?? teamToEdit?.project_id ?? ''
   );
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>(
     () =>
@@ -455,33 +459,35 @@ export function TeamForm({
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="project_id" className="text-sm font-medium">
-                Associated Project
-              </Label>
-              <Select
-                value={selectedProjectId || undefined}
-                onValueChange={handleProjectChange}
-                disabled={projectLocked}
-              >
-                <SelectTrigger
-                  id="project_id"
-                  className="bg-background/80 h-10 w-full cursor-pointer"
+            {!lockedProjectId ? (
+              <div className="space-y-2">
+                <Label htmlFor="project_id" className="text-sm font-medium">
+                  Associated Project
+                </Label>
+                <Select
+                  value={selectedProjectId || undefined}
+                  onValueChange={handleProjectChange}
+                  disabled={projectLocked}
                 >
-                  <SelectValue placeholder="Select Project..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {projectOptions.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name} ({p.key})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-muted-foreground text-[11px]">
-                {projectSelectInfo}
-              </p>
-            </div>
+                  <SelectTrigger
+                    id="project_id"
+                    className="bg-background/80 h-10 w-full cursor-pointer"
+                  >
+                    <SelectValue placeholder="Select Project..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projectOptions.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} ({p.key})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-muted-foreground text-[11px]">
+                  {projectSelectInfo}
+                </p>
+              </div>
+            ) : null}
 
             {showMembersSection && (
               <div className="space-y-2 sm:col-span-2">

@@ -264,7 +264,7 @@ describe('TeamRegistry Component', () => {
     fireEvent.click(confirmBtn);
 
     await waitFor(() => {
-      expect(softDeleteTeam).toHaveBeenCalledWith('team-1');
+      expect(softDeleteTeam).toHaveBeenCalledWith('team-1', 'proj-1');
       expect(mockRefresh).toHaveBeenCalled();
     });
   });
@@ -303,7 +303,7 @@ describe('TeamRegistry Component', () => {
     fireEvent.click(confirmBtn);
 
     await waitFor(() => {
-      expect(hardDeleteTeam).toHaveBeenCalledWith('team-2');
+      expect(hardDeleteTeam).toHaveBeenCalledWith('team-2', null);
       expect(mockRefresh).toHaveBeenCalled();
     });
   });
@@ -332,7 +332,7 @@ describe('TeamRegistry Component', () => {
     fireEvent.click(restoreBtn);
 
     await waitFor(() => {
-      expect(restoreTeam).toHaveBeenCalledWith('team-2');
+      expect(restoreTeam).toHaveBeenCalledWith('team-2', null);
       expect(mockRefresh).toHaveBeenCalled();
     });
   });

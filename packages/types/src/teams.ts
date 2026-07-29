@@ -13,3 +13,23 @@ export const createTeamSchema = z.object({
 });
 
 export const updateTeamSchema = createTeamSchema.partial();
+
+export const updateTeamMemberSchema = z
+  .object({
+    capacity: z
+      .number()
+      .int({ message: 'Capacity must be a whole number.' })
+      .min(0, { message: 'Capacity must be at least 0.' })
+      .nullable()
+      .optional(),
+    allocation: z
+      .number()
+      .int({ message: 'Allocation must be a whole number.' })
+      .min(0, { message: 'Allocation must be at least 0.' })
+      .max(100, { message: 'Allocation must be at most 100.' })
+      .nullable()
+      .optional(),
+  })
+  .refine((d) => d.capacity !== undefined || d.allocation !== undefined, {
+    message: 'At least one of capacity or allocation must be provided.',
+  });

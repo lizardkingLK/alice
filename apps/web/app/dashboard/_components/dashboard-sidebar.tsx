@@ -33,8 +33,8 @@ import {
 
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { href: '/board', label: 'Board', icon: Kanban },
   { href: '/backlog', label: 'Backlog', icon: ListTodo },
+  { href: '/board', label: 'Board', icon: Kanban },
   { href: '/users', label: 'Users', icon: Users },
   { href: '/projects', label: 'Projects', icon: FolderKanban },
   { href: '/sprints', label: 'Sprints', icon: Timer },
@@ -42,7 +42,6 @@ const navItems = [
   { href: '/files', label: 'Files', icon: Files },
   { href: '/instruments', label: 'Instruments', icon: Music },
   { href: '/member', label: 'My Work', icon: CircleDot },
-  { href: '/manager', label: 'Team', icon: Users },
   { href: '/comments', label: 'Comments', icon: MessageSquareText },
 ] as const;
 

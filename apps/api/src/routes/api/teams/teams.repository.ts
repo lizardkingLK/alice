@@ -78,7 +78,8 @@ export class TeamsRepository {
     pageNumber: number,
     pageSize: number,
     teamStatus?: 'active' | 'inactive' | 'archived' | 'deleted',
-    searchKeyword?: string
+    searchKeyword?: string,
+    projectId?: string
   ): Promise<{ teams: TeamRowWithManager[]; totalCount: number }> {
     const rangeStart = (pageNumber - 1) * pageSize;
     const rangeEnd = rangeStart + pageSize - 1;
@@ -101,6 +102,10 @@ export class TeamsRepository {
       dbQuery = dbQuery.or(
         `name.ilike.${likeExpr},description.ilike.${likeExpr},tech_stack.ilike.${likeExpr}`
       );
+    }
+
+    if (projectId) {
+      dbQuery = dbQuery.eq('project_id', projectId);
     }
 
     const result = await dbQuery
@@ -241,6 +246,28 @@ export class TeamsRepository {
     }
 
     return response.data;
+  }
+
+  async updateMember(
+    teamId: string,
+    userId: string,
+    patch: { capacity?: number | null; allocation?: number | null },
+    actorId: string
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('team_members')
+      .update({
+        ...patch,
+        updated_by: actorId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('team_id', teamId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('database error updating team member:', error.message);
+      throw new Error('Failed to update team member');
+    }
   }
 
   async delete(teamId: string): Promise<void> {

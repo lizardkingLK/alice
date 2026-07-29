@@ -36,18 +36,26 @@ export class TeamsService {
     page: number,
     limit: number,
     status?: 'active' | 'inactive' | 'archived' | 'deleted',
-    search?: string
+    search?: string,
+    projectId?: string
   ): Promise<{ teams: TeamRowWithManager[]; totalCount: number }>;
   async listTeams(
     page?: number,
     limit?: number,
     status?: 'active' | 'inactive' | 'archived' | 'deleted',
-    search?: string
+    search?: string,
+    projectId?: string
   ): Promise<
     { teams: TeamRowWithManager[]; totalCount: number } | TeamRowWithManager[]
   > {
     if (page !== undefined && limit !== undefined) {
-      return await teamsRepository.listPaginated(page, limit, status, search);
+      return await teamsRepository.listPaginated(
+        page,
+        limit,
+        status,
+        search,
+        projectId
+      );
     }
     return await teamsRepository.listAll();
   }
@@ -104,6 +112,16 @@ export class TeamsService {
       },
       actorId
     );
+  }
+
+  async updateTeamMember(
+    teamId: string,
+    userId: string,
+    patch: { capacity?: number | null; allocation?: number | null },
+    actorId: string
+  ): Promise<void> {
+    await requireTeamManager(actorId);
+    await teamsRepository.updateMember(teamId, userId, patch, actorId);
   }
 
   async hardDeleteTeam(actorId: string, teamId: string): Promise<void> {
