@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { requireApiAuth, type AuthenticatedRequest } from '@/middlewares/auth';
-import { commentsService } from '@/routes/api/comments/comments.service';
+import { requireApiAuth, type AuthenticatedRequest } from '../../../middlewares/auth';
+import { commentsService } from './comments.service';
 import {
   createCommentSchema,
   updateCommentSchema,
-} from '@/routes/api/comments/comments.schemas';
+} from './comments.schemas';
 
 const commentsRouter: Router = Router();
 

@@ -1,10 +1,10 @@
-import { requireUserWithRole } from '@/lib/auth-helpers';
+import { requireUserWithRole } from '../../../lib/auth-helpers';
 import {
   accessAllowlistRepository,
   type AccessAllowlistKind,
   type AccessAllowlistRow,
   type AccessAllowlistStatus,
-} from '@/routes/api/accessAllowlist/accessAllowlist.repository';
+} from './accessAllowlist.repository';
 
 async function requireAdmin(actorId: string) {
   return await requireUserWithRole(

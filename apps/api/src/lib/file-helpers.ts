@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from './supabase';
 
 export type StorageUploadInput = {
   bucket: string;

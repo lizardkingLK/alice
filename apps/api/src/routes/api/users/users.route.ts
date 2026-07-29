@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { requireApiAuth, type AuthenticatedRequest } from '@/middlewares/auth';
-import { usersService } from '@/routes/api/users/users.service';
+import { requireApiAuth, type AuthenticatedRequest } from '../../../middlewares/auth';
+import { usersService } from './users.service';
 import {
   createUserSchema,
   updateUserSchema,
-} from '@/routes/api/users/users.schemas';
-import { parsePagination } from '@/lib/pagination';
+} from './users.schemas';
+import { parsePagination } from '../../../lib/pagination';
 
 const usersRouter: Router = Router();
 

@@ -1,10 +1,10 @@
 import { Tables, userRelationSelect, type Database } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { auditCreateWithoutStatus } from '@/lib/audit';
+import { auditCreateWithoutStatus } from '../../../lib/audit';
 import {
   WorkItemBody,
   WorkItemUpdateBody,
-} from '@/routes/api/workItems/workItems.schemas';
+} from './workItems.schemas';
 
 export type DbWorkItem = Tables<'work_items'>;
 
