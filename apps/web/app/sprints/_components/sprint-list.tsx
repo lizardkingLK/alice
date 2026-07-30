@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   type CellContext,
   type ColumnDef,
@@ -29,10 +29,7 @@ import {
   RefreshCw,
   MoreHorizontal,
 } from '@repo/ui/lib/icons';
-import {
-  Sprint,
-  updateSprintStatus,
-} from '@/app/sprints/_services/sprints.service';
+import { Sprint } from '@/app/sprints/_services/sprints.service';
 import { Pagination } from '@/components/pagination';
 import { DataTable } from '@/components/data-table';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
@@ -77,78 +74,22 @@ const STATUS_STYLES = {
     'border-amber-500/20 bg-amber-500/10 text-amber-500 dark:border-amber-500/30 dark:bg-amber-500/20 dark:text-amber-400',
 } as const;
 
-const STATUSES = ['Not Started', 'Ongoing', 'Completed', 'Archived'] as const;
-
 type SprintStatusDropdownProps = {
   sprint: Sprint;
-  // eslint-disable-next-line no-unused-vars
-  onSprintUpdated?: (sprint: Sprint) => void;
-  disabled?: boolean;
 };
 
 export function SprintStatusDropdown({
   sprint,
-  onSprintUpdated,
-  disabled = false,
 }: Readonly<SprintStatusDropdownProps>) {
-  const [isUpdating, setIsUpdating] = useState(false);
-
-  const handleStatusChange = async (nextStatus: Sprint['status']) => {
-    if (nextStatus === sprint.status) return;
-    setIsUpdating(true);
-    try {
-      const updated = await updateSprintStatus(sprint.id, nextStatus);
-      onSprintUpdated?.(updated);
-    } catch (error) {
-      console.error('Failed to update status:', error);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  if (disabled) {
-    return (
-      <span
-        className={cn(
-          'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold tracking-wider uppercase',
-          STATUS_STYLES[sprint.status]
-        )}
-      >
-        {sprint.status}
-      </span>
-    );
-  }
-
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          disabled={isUpdating}
-          className={cn(
-            'inline-flex h-auto cursor-pointer items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold tracking-wider uppercase transition-colors focus:outline-none disabled:opacity-50',
-            STATUS_STYLES[sprint.status]
-          )}
-        >
-          {sprint.status}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {STATUSES.map((status) => (
-          <DropdownMenuItem
-            key={status}
-            onClick={() => handleStatusChange(status)}
-            className="flex cursor-pointer items-center justify-between"
-          >
-            {status}
-            {status === sprint.status && (
-              <span className="h-1.5 w-1.5 rounded-full bg-current" />
-            )}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold tracking-wider uppercase',
+        STATUS_STYLES[sprint.status]
+      )}
+    >
+      {sprint.status}
+    </span>
   );
 }
 
@@ -220,13 +161,10 @@ function renderDurationCell({ row }: CellContext<Sprint, unknown>) {
   );
 }
 
-function renderStatusCell({ row, table }: CellContext<Sprint, unknown>) {
-  const meta = getSprintTableMeta(table);
+function renderStatusCell({ row }: CellContext<Sprint, unknown>) {
   return (
     <SprintStatusDropdown
       sprint={row.original}
-      onSprintUpdated={meta.onSprintUpdated}
-      disabled={true}
     />
   );
 }

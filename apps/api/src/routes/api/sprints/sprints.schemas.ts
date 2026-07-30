@@ -23,7 +23,6 @@ export const updateSprintStatusSchema = z.object({
   status: z.enum(['Not Started', 'Ongoing', 'Completed', 'Archived']),
 });
 
-export type UpdateSprintStatusBody = z.infer<typeof updateSprintStatusSchema>;
 
 export const updateSprintBodySchema = createSprintBodySchema;
 
@@ -48,11 +47,3 @@ export type SprintResponse = {
   } | null;
 };
 
-export const listSprintsQuerySchema = z.object({
-  status: z.enum(['active', 'archived']).optional().default('active'),
-  page: z.coerce.number().int().positive().optional().default(1),
-  limit: z.coerce.number().int().positive().optional().default(5),
-  search: z.string().optional(),
-});
-
-export type ListSprintsQuery = z.infer<typeof listSprintsQuerySchema>;

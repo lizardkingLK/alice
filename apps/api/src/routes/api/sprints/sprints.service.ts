@@ -73,39 +73,6 @@ export class SprintsService {
     return toSprintResponse(row);
   }
 
-  async listSprints(
-    userId: string,
-    tab: 'active' | 'archived' = 'active',
-    page: number = 1,
-    limit: number = 5,
-    search?: string
-  ): Promise<{
-    sprints: SprintResponse[];
-    pagination: {
-      page: number;
-      limit: number;
-      totalCount: number;
-      totalPages: number;
-    };
-  }> {
-    const { sprints, totalCount } = await sprintsRepository.listByUser(
-      userId,
-      tab,
-      page,
-      limit,
-      search
-    );
-    const totalPages = Math.ceil(totalCount / limit);
-    return {
-      sprints: sprints.map(toSprintResponse),
-      pagination: {
-        page,
-        limit,
-        totalCount,
-        totalPages: totalPages === 0 ? 1 : totalPages,
-      },
-    };
-  }
 
   async updateSprintStatus(
     userId: string,
@@ -141,7 +108,7 @@ export class SprintsService {
     }
 
     if (status === 'archived') {
-      const currentSprint = await sprintsRepository.findById(userId, sprintId);
+      const currentSprint = await sprintsRepository.findById(sprintId);
       if (!currentSprint) {
         throw new Error('Sprint not found');
       }
@@ -157,13 +124,6 @@ export class SprintsService {
     return toSprintResponse(row);
   }
 
-  async getSprint(
-    userId: string,
-    sprintId: string
-  ): Promise<SprintResponse | null> {
-    const row = await sprintsRepository.findById(userId, sprintId);
-    return row ? toSprintResponse(row) : null;
-  }
 
   async updateSprint(
     userId: string,
@@ -174,7 +134,7 @@ export class SprintsService {
     const goal =
       input.goal === undefined || input.goal === '' ? null : input.goal;
 
-    const currentSprint = await sprintsRepository.findById(userId, sprintId);
+    const currentSprint = await sprintsRepository.findById(sprintId);
     if (!currentSprint) {
       throw new Error('Sprint not found');
     }

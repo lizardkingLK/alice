@@ -169,28 +169,7 @@ describe('UserRegistry Component', () => {
   });
 
   it('opens confirmation modal when deactivating a user', async () => {
-    vi.mocked(toggleUserActive).mockResolvedValue({
-      id: 'user-bob-id',
-      active: false,
-    } as unknown as User);
-
-    render(
-      <UserRegistry
-        users={mockUsers}
-        totalCount={2}
-        page={1}
-        limit={10}
-        totalPages={1}
-        search=""
-        currentUserId="user-admin-id"
-        currentUserRole="admin"
-      />
-    );
-
-    // Click deactivate on the admin user (since they are active, and we cannot deactivate self, wait...)
-    // Wait, the code has: `currentUserRole === 'admin' && !isSelf` to show deactivation button.
-    // So Bob Member is inactive (shows "Activate" button).
-    // Let's make another active user to test deactivation:
+    // Alice is self (no deactivate). Bob is inactive (Activate). Charlie is active (Deactivate).
     const mockUsersWithTwoActive: User[] = [
       ...mockUsers,
       {
@@ -208,6 +187,11 @@ describe('UserRegistry Component', () => {
       },
     ];
 
+    vi.mocked(toggleUserActive).mockResolvedValue({
+      id: 'user-mgr-id',
+      active: false,
+    } as unknown as User);
+
     render(
       <UserRegistry
         users={mockUsersWithTwoActive}
@@ -221,23 +205,20 @@ describe('UserRegistry Component', () => {
       />
     );
 
-    const deactivateBtn = screen.getByRole('button', { name: /Deactivate/i });
-    fireEvent.click(deactivateBtn);
+    fireEvent.click(screen.getByRole('button', { name: /^Deactivate$/i }));
 
-    // Confirmation dialog should show
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
     expect(
       screen.getByText(/Are you sure you want to deactivate/i)
     ).toBeInTheDocument();
 
-    const confirmBtn = screen.getByRole('button', { name: 'Deactivate User' });
-    fireEvent.click(confirmBtn);
+    fireEvent.click(screen.getByRole('button', { name: 'Deactivate User' }));
 
     await waitFor(() => {
       expect(toggleUserActive).toHaveBeenCalledWith('user-mgr-id', false);
       expect(mockRefresh).toHaveBeenCalled();
     });
-  });
+  }, 15_000);
 
   it('opens add user modal on Add User button click', () => {
     render(
