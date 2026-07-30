@@ -2,6 +2,7 @@ export interface RawSearchParams {
   page?: string;
   limit?: string;
   tab?: string;
+  teamStatus?: string;
   search?: string;
   project?: string;
   sprint?: string;
@@ -60,13 +61,21 @@ export function parseTabStatus(tab?: string): 'active' | 'archived' {
   return tab === 'archived' ? 'archived' : 'active';
 }
 
-export type ProjectDetailsTab = 'details' | 'members' | 'work-items';
+export type ProjectDetailsTab = 'details' | 'members' | 'teams' | 'work-items';
 
 export function parseProjectDetailsTab(tab?: string | null): ProjectDetailsTab {
-  if (tab === 'members' || tab === 'work-items') {
+  if (tab === 'members' || tab === 'teams' || tab === 'work-items') {
     return tab;
   }
   return 'details';
+}
+
+export function parseTeamStatusFilter(
+  value?: string | null
+): 'active' | 'inactive' | 'archived' {
+  if (value === 'archived') return 'archived';
+  if (value === 'inactive') return 'inactive';
+  return 'active';
 }
 
 export function parseManagerTabStatus(

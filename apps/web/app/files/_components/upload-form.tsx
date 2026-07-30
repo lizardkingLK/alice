@@ -21,6 +21,7 @@ import {
 import { cn } from '@repo/ui/lib/utils';
 import { formatFileSize } from '@/app/_shared/utility';
 import { apiFetch } from '@/lib/api/api-client';
+import { createClient } from '@/lib/supabase/client';
 import { UploadStatusIcon } from '@/components/upload-status-icon';
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -29,6 +30,15 @@ type UploadResult = {
   success: boolean;
   path: string;
   url: string;
+};
+
+type UploadSessionResponse = {
+  upload: {
+    bucket: string;
+    signedUrl: string;
+    token: string;
+    path: string;
+  };
 };
 
 type UploadStatus = 'uploading' | 'success' | 'error';
@@ -43,12 +53,40 @@ type UploadItem = {
 };
 
 async function uploadFileToApi(file: File): Promise<UploadResult> {
-  const formData = new FormData();
-  formData.append('file', file);
+  const supabase = createClient();
+  const mimeType = file.type || 'application/octet-stream';
+  const baseUrl = '/api/attachments';
 
-  return apiFetch<UploadResult>('/api/attachments', {
+  const session = await apiFetch<UploadSessionResponse>(
+    `${baseUrl}/upload-session`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        file_name: file.name,
+        content_type: mimeType,
+        file_size: file.size,
+      }),
+    }
+  );
+
+  const { error } = await supabase.storage
+    .from(session.upload.bucket)
+    .uploadToSignedUrl(session.upload.path, session.upload.token, file, {
+      contentType: mimeType,
+    });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return apiFetch<UploadResult>(`${baseUrl}/finalize`, {
     method: 'POST',
-    body: formData,
+    body: JSON.stringify({
+      storage_path: session.upload.path,
+      file_name: file.name,
+      file_size: file.size,
+      mime_type: mimeType,
+    }),
   });
 }
 

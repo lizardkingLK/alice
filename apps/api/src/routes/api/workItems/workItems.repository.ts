@@ -1,10 +1,15 @@
-import { Tables, userRelationSelect, type Database } from '@repo/types';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { auditCreateWithoutStatus } from '@/lib/audit';
 import {
-  WorkItemBody,
-  WorkItemUpdateBody,
-} from '@/routes/api/workItems/workItems.schemas';
+  Tables,
+  userRelationSelect,
+  WORK_ITEM_WORKLOG_SELECT,
+  normalizeWorkLogRow,
+  type Database,
+  type WorkItemWorkLog,
+  type WorkItemWorkLogRowRaw,
+} from '@repo/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { auditCreate, auditCreateWithoutStatus } from '../../../lib/audit';
+import { WorkItemBody, WorkItemUpdateBody } from './workItems.schemas';
 
 export type DbWorkItem = Tables<'work_items'>;
 
@@ -47,6 +52,56 @@ function applySprintIdFilter<Q extends SprintFilterableQuery>(
 
 export class WorkItemRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
+
+  private async requireProjectMember(
+    workItemId: string,
+    actorId: string
+  ): Promise<{ projectId: string }> {
+    // Supabase's generated DB types don't yet include `work_item_worklogs`,
+    // so we cast to access the new table safely.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = this.db as unknown as SupabaseClient<any>;
+
+    const { data: workItem, error: workItemError } = await this.db
+      .from('work_items')
+      .select('project_id')
+      .eq('id', workItemId)
+      .maybeSingle();
+
+    if (workItemError) {
+      console.error(
+        'error. failed to load work-item for worklog auth:',
+        workItemError.message
+      );
+      throw new Error('Failed to authorize worklog');
+    }
+
+    if (!workItem) {
+      throw new Error('Work item not found');
+    }
+
+    const { data: member, error: memberError } = await db
+      .from('project_members')
+      .select('user_id')
+      .eq('project_id', workItem.project_id)
+      .eq('user_id', actorId)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (memberError) {
+      console.error(
+        'error. failed to verify project membership for worklog:',
+        memberError.message
+      );
+      throw new Error('Failed to authorize worklog');
+    }
+
+    if (!member) {
+      throw new Error('Unauthorized');
+    }
+
+    return { projectId: workItem.project_id };
+  }
 
   async get(filters?: SprintIdFilters): Promise<DbWorkItem[]> {
     const query = applySprintIdFilter(
@@ -145,6 +200,18 @@ export class WorkItemRepository {
   }
 
   async update(input: UpdateWorkItemRecord): Promise<DbWorkItem> {
+    const current = await this.getById(input.id);
+
+    const becomingDone = input.status === 'Done' && current?.status !== 'Done';
+    const leavingDone = input.status !== 'Done' && current?.status === 'Done';
+
+    let doneAtUpdate: string | null | undefined;
+    if (becomingDone) {
+      doneAtUpdate = new Date().toISOString();
+    } else if (leavingDone) {
+      doneAtUpdate = null;
+    }
+
     const { data, error } = await this.db
       .from('work_items')
       .update({
@@ -158,6 +225,7 @@ export class WorkItemRepository {
         status: input.status,
         sprint_id: input.sprint_id,
         story_points: input.story_points,
+        ...(doneAtUpdate !== undefined ? { done_at: doneAtUpdate } : {}),
         updated_by: input.updatedBy,
         updated_at: new Date().toISOString(),
       })
@@ -171,5 +239,68 @@ export class WorkItemRepository {
     }
 
     return data as unknown as DbWorkItem;
+  }
+
+  async listWorkItemWorkLogs(
+    workItemId: string,
+    actorId: string
+  ): Promise<WorkItemWorkLog[]> {
+    await this.requireProjectMember(workItemId, actorId);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = this.db as unknown as SupabaseClient<any>;
+
+    const { data, error } = await db
+      .from('work_item_worklogs')
+      .select(WORK_ITEM_WORKLOG_SELECT)
+      .eq('work_item_id', workItemId)
+      .order('logged_at', { ascending: false });
+
+    if (error) {
+      console.error(
+        'error. failed to list work item work logs:',
+        error.message
+      );
+      throw new Error('Failed to list work logs');
+    }
+
+    const rows = (data ?? []) as unknown as WorkItemWorkLogRowRaw[];
+    return rows.map((row) => normalizeWorkLogRow(row));
+  }
+
+  async createWorkItemWorkLog(input: {
+    workItemId: string;
+    actorId: string;
+    loggedHours: number;
+    loggedAtIso: string;
+    comment: string | null;
+  }): Promise<WorkItemWorkLog> {
+    await this.requireProjectMember(input.workItemId, input.actorId);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = this.db as unknown as SupabaseClient<any>;
+
+    const { data, error } = await db
+      .from('work_item_worklogs')
+      .insert({
+        work_item_id: input.workItemId,
+        user_id: input.actorId,
+        logged_hours: input.loggedHours,
+        logged_at: input.loggedAtIso,
+        comment: input.comment,
+        ...auditCreate(input.actorId),
+      })
+      .select(WORK_ITEM_WORKLOG_SELECT)
+      .single();
+
+    if (error || !data) {
+      console.error(
+        'error. failed to create work item work log:',
+        error?.message
+      );
+      throw new Error('Failed to create work log');
+    }
+
+    return normalizeWorkLogRow(data as unknown as WorkItemWorkLogRowRaw);
   }
 }

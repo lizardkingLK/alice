@@ -8,7 +8,11 @@ import {
   restoreTeam as apiRestoreTeam,
   hardDeleteTeam as apiHardDeleteTeam,
 } from '../_services/teams.service.server';
-import { parseTeamForm, requireTeamManager } from '@/lib/teams/admin-team';
+import {
+  parseTeamForm,
+  requireTeamManager,
+  toTeamWriteFields,
+} from '@/lib/teams/admin-team';
 import {
   actionFailure,
   actionSuccess,
@@ -33,6 +37,13 @@ async function runTeamMutation<T extends ActionState>(mutate: MutationAction) {
   }
 }
 
+async function revalidateTeamViews(projectId?: string | null) {
+  revalidatePath('/manager');
+  if (projectId) {
+    revalidatePath(`/projects/${projectId}`);
+  }
+}
+
 export async function createTeam(
   _prevState: ActionState | null,
   formData: FormData
@@ -43,15 +54,9 @@ export async function createTeam(
       return parsed.state;
     }
 
-    const team = await apiCreateTeam({
-      name: parsed.data.name,
-      description: parsed.data.description ?? null,
-      manager_id: parsed.data.manager_id,
-      tech_stack: parsed.data.tech_stack ?? null,
-      status: parsed.data.status,
-    });
+    const team = await apiCreateTeam(toTeamWriteFields(parsed.data));
 
-    revalidatePath('/manager');
+    revalidateTeamViews(team.project_id);
     return { ...actionSuccess(), teamId: team.id };
   });
 }
@@ -59,7 +64,8 @@ export async function createTeam(
 export async function updateTeam(
   teamId: string,
   _prevState: ActionState | null,
-  formData: FormData
+  formData: FormData,
+  projectId?: string | null
 ): Promise<ActionState> {
   return runTeamMutation(async () => {
     const parsed = parseTeamForm(formData);
@@ -67,36 +73,39 @@ export async function updateTeam(
       return parsed.state;
     }
 
-    await apiUpdateTeam(teamId, {
-      name: parsed.data.name,
-      description: parsed.data.description ?? null,
-      manager_id: parsed.data.manager_id,
-      tech_stack: parsed.data.tech_stack ?? null,
-      status: parsed.data.status,
-    });
+    await apiUpdateTeam(teamId, toTeamWriteFields(parsed.data));
 
-    revalidatePath('/manager');
+    revalidateTeamViews(projectId);
     return actionSuccess();
   });
 }
 
-export async function softDeleteTeam(teamId: string): Promise<ActionState> {
+export async function softDeleteTeam(
+  teamId: string,
+  projectId?: string | null
+): Promise<ActionState> {
   return runTeamMutation(async () => {
     await apiSoftDeleteTeam(teamId);
-    revalidatePath('/manager');
+    revalidateTeamViews(projectId);
     return actionSuccess();
   });
 }
 
-export async function restoreTeam(teamId: string): Promise<ActionState> {
+export async function restoreTeam(
+  teamId: string,
+  projectId?: string | null
+): Promise<ActionState> {
   return runTeamMutation(async () => {
     await apiRestoreTeam(teamId);
-    revalidatePath('/manager');
+    revalidateTeamViews(projectId);
     return actionSuccess();
   });
 }
 
-export async function hardDeleteTeam(teamId: string): Promise<ActionState> {
+export async function hardDeleteTeam(
+  teamId: string,
+  projectId?: string | null
+): Promise<ActionState> {
   const currentUser = await getDbUser();
   if (!currentUser) {
     return actionFailure('Not authenticated.');
@@ -110,7 +119,7 @@ export async function hardDeleteTeam(teamId: string): Promise<ActionState> {
 
   try {
     await apiHardDeleteTeam(teamId);
-    revalidatePath('/manager');
+    revalidateTeamViews(projectId);
     return actionSuccess();
   } catch (err) {
     return unexpectedActionError(err);

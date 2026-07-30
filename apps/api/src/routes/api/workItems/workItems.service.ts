@@ -1,9 +1,6 @@
-import { WorkItemRepository } from '@/routes/api/workItems/workItems.repository';
-import type { DbWorkItem } from '@/routes/api/workItems/workItems.repository';
-import {
-  WorkItemBody,
-  WorkItemUpdateBody,
-} from '@/routes/api/workItems/workItems.schemas';
+import { WorkItemRepository } from './workItems.repository';
+import type { DbWorkItem } from './workItems.repository';
+import { WorkItemBody, WorkItemUpdateBody } from './workItems.schemas';
 
 export class WorkItemService {
   constructor(private readonly workItems: WorkItemRepository) {}
@@ -50,6 +47,28 @@ export class WorkItemService {
       ...input,
       id: workItemId,
       updatedBy: userId,
+    });
+  }
+
+  async listWorkItemWorkLogs(actorId: string, workItemId: string) {
+    return await this.workItems.listWorkItemWorkLogs(workItemId, actorId);
+  }
+
+  async createWorkItemWorkLog(
+    actorId: string,
+    workItemId: string,
+    input: {
+      loggedHours: number;
+      loggedAtIso: string;
+      comment: string | null;
+    }
+  ) {
+    return await this.workItems.createWorkItemWorkLog({
+      workItemId,
+      actorId,
+      loggedHours: input.loggedHours,
+      loggedAtIso: input.loggedAtIso,
+      comment: input.comment,
     });
   }
 }

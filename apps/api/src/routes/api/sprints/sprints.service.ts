@@ -2,13 +2,15 @@ import type {
   CreateSprintBody,
   SprintResponse,
   UpdateSprintBody,
-} from '@/routes/api/sprints/sprints.schemas';
+} from './sprints.schemas';
 import {
   sprintsRepository,
+  sprintBurndownRepository,
   type SprintRowWithProject,
   type SprintRow,
-} from '@/routes/api/sprints/sprints.repository';
-import { requireUserWithRole } from '@/lib/auth-helpers';
+  type BurndownWorkItem,
+} from './sprints.repository';
+import { requireUserWithRole } from '../../../lib/auth-helpers';
 
 async function requireManagerOrAdmin(actorId: string) {
   return await requireUserWithRole(
@@ -143,7 +145,9 @@ export class SprintsService {
     if (input.projectId !== currentSprint.project_id) {
       const count = await sprintsRepository.getWorkItemCount(sprintId);
       if (count > 0) {
-        throw new Error('Cannot change the project of a sprint that has work items.');
+        throw new Error(
+          'Cannot change the project of a sprint that has work items.'
+        );
       }
     }
 
@@ -160,3 +164,110 @@ export class SprintsService {
 }
 
 export const sprintsService = new SprintsService();
+
+export type BurndownPoint = {
+  date: string;
+  remaining: number | null;
+  ideal: number;
+};
+
+export type BurndownResponse = {
+  sprint: {
+    id: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    status: string;
+  };
+  estimatedTotal: number;
+  series: BurndownPoint[];
+};
+
+function computeBurndown(
+  sprint: { start_date: string; end_date: string; status: string },
+  items: BurndownWorkItem[],
+  workLogs: Array<{ logged_at: string; logged_hours: number }>
+): { estimatedTotal: number; series: BurndownPoint[] } {
+  const start = new Date(sprint.start_date);
+  const end = new Date(sprint.end_date);
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  const estimatedTotal = items.reduce(
+    (sum, item) => sum + (item.story_points ?? 0),
+    0
+  );
+
+  const durationDays = (end.getTime() - start.getTime()) / 86_400_000;
+
+  const series: BurndownPoint[] = [];
+  const hasWorkLogs = workLogs.length > 0;
+
+  for (let cur = new Date(start); cur <= end; cur.setDate(cur.getDate() + 1)) {
+    const dayLabel = cur.toISOString().slice(0, 10);
+
+    const elapsed = (cur.getTime() - start.getTime()) / 86_400_000;
+    const ideal =
+      durationDays === 0
+        ? 0
+        : Math.max(0, estimatedTotal * (1 - elapsed / durationDays));
+
+    const isPast = sprint.status === 'closed' ? true : dayLabel <= todayStr;
+
+    let remaining: number | null = null;
+    if (isPast) {
+      if (hasWorkLogs) {
+        const spent = workLogs.reduce((sum, log) => {
+          const loggedDay = log.logged_at.slice(0, 10);
+          return loggedDay <= dayLabel ? sum + log.logged_hours : sum;
+        }, 0);
+
+        // Simple mapping: treat 1 logged hour as 1 spent point.
+        remaining = Math.max(0, estimatedTotal - spent);
+      } else {
+        remaining = items.reduce((sum, item) => {
+          const doneBefore =
+            item.done_at !== null && item.done_at.slice(0, 10) <= dayLabel;
+          return doneBefore ? sum : sum + (item.story_points ?? 0);
+        }, 0);
+      }
+    }
+
+    series.push({
+      date: dayLabel,
+      remaining,
+      ideal: Math.round(ideal * 100) / 100,
+    });
+  }
+
+  return { estimatedTotal, series };
+}
+
+export class SprintBurndownService {
+  async getBurndown(sprintId: string): Promise<BurndownResponse | null> {
+    const sprint = await sprintBurndownRepository.getSprintById(sprintId);
+    if (!sprint) {
+      return null;
+    }
+
+    const items =
+      await sprintBurndownRepository.getWorkItemsForBurndown(sprintId);
+    const workItemIds = items.map((i) => i.id);
+    const workLogs =
+      await sprintBurndownRepository.getWorkLogsForWorkItems(workItemIds);
+    const { estimatedTotal, series } = computeBurndown(sprint, items, workLogs);
+
+    return {
+      sprint: {
+        id: sprint.id,
+        name: sprint.name,
+        startDate: sprint.start_date,
+        endDate: sprint.end_date,
+        status: sprint.status,
+      },
+      estimatedTotal,
+      series,
+    };
+  }
+}
+
+export const sprintBurndownService = new SprintBurndownService();

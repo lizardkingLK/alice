@@ -1,19 +1,21 @@
 import Link from 'next/link';
-import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { login } from '@/app/auth/actions';
 import GoogleLogin from '@/app/login/_components/google-login';
+import { PendingSubmitButton } from '@/components/pending-submit-button';
+import { resolveSafeRedirectPath } from '@/lib/auth-redirect';
 
 type LoginPageProps = {
-  searchParams: Promise<{ error?: string; reset?: string }>;
+  searchParams: Promise<{ error?: string; reset?: string; next?: string }>;
 };
 
 export default async function LoginPage({
   searchParams,
 }: Readonly<LoginPageProps>) {
-  const { error, reset } = await searchParams;
+  const { error, reset, next: nextParam } = await searchParams;
   const resetSuccess = reset === 'success';
+  const next = resolveSafeRedirectPath(nextParam, '');
 
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
@@ -38,6 +40,7 @@ export default async function LoginPage({
         ) : null}
 
         <form action={login} className="space-y-4">
+          {next ? <input type="hidden" name="next" value={next} /> : null}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -66,9 +69,9 @@ export default async function LoginPage({
               required
             />
           </div>
-          <Button type="submit" className="w-full cursor-pointer">
+          <PendingSubmitButton className="w-full" loadingLabel="Signing in...">
             Sign In
-          </Button>
+          </PendingSubmitButton>
         </form>
 
         <p className="text-muted-foreground text-center text-sm">
@@ -83,7 +86,7 @@ export default async function LoginPage({
 
         <p className="text-muted-foreground text-center">or</p>
 
-        <GoogleLogin />
+        <GoogleLogin next={next || undefined} />
       </div>
     </main>
   );

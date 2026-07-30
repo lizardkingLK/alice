@@ -4,6 +4,8 @@ import type { User } from '@/app/users/_services/users.service';
 
 export type Project = Tables<'projects'> & {
   owner?: Pick<User, 'id' | 'name' | 'email'> | null;
+  /** Active engineering teams scoped to this project (list views). */
+  team_count?: number;
 };
 
 export type GetProjectsPaginatedResponse = {
@@ -37,6 +39,9 @@ export type ProjectMemberWithUser = {
       })
     | null;
 };
+
+/** Prefetched project → active members map for form UIs (e.g. team form). */
+export type ProjectMembersByProjectId = Record<string, ProjectMemberWithUser[]>;
 
 export function createProjectsService(
   apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>

@@ -1,7 +1,13 @@
 'use client';
 
 import { FormCancelSubmitActions } from '@/components/form-cancel-submit-actions';
-import { FormEvent, useEffect, useState, type ChangeEvent } from 'react';
+import {
+  FormEvent,
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+} from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
@@ -21,36 +27,25 @@ import {
 } from '@repo/ui/components/ui/card';
 import { Users, Loader2, X } from '@repo/ui/lib/icons';
 import type { User } from '@/app/users/_services/users.service';
-import { fetchProjectMembersForForm } from '@/lib/form-read-actions';
 import { createTeam, updateTeam } from '../_services/teams.service';
 import type {
   Project,
   ProjectMemberWithUser,
+  ProjectMembersByProjectId,
 } from '@/app/projects/_services/projects.service.base';
 import type { Team } from '../_services/teams.service';
 
 interface ProjectMembersListProps {
-  isLoadingMembers: boolean;
   projectMembers: ProjectMemberWithUser[];
   selectedMemberIds: string[];
   setSelectedMemberIds: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 function ProjectMembersList({
-  isLoadingMembers,
   projectMembers,
   selectedMemberIds,
   setSelectedMemberIds,
 }: Readonly<ProjectMembersListProps>) {
-  if (isLoadingMembers) {
-    return (
-      <div className="text-muted-foreground flex items-center gap-2 py-1 text-xs">
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        Loading project members...
-      </div>
-    );
-  }
-
   if (projectMembers.length === 0) {
     return (
       <div className="text-muted-foreground bg-muted/30 border-border/50 rounded-lg border p-3 text-xs">
@@ -62,7 +57,7 @@ function ProjectMembersList({
   return (
     <div className="bg-background/50 border-input custom-scrollbar max-h-48 space-y-1 overflow-y-auto rounded-md border p-2">
       {projectMembers.map((m) => {
-        const isChecked = selectedMemberIds.includes(m.user_id);
+        const isMember = selectedMemberIds.includes(m.user_id);
         const checkboxId = `member-checkbox-${m.user_id}`;
         return (
           <div
@@ -72,7 +67,7 @@ function ProjectMembersList({
             <input
               id={checkboxId}
               type="checkbox"
-              checked={isChecked}
+              checked={isMember}
               onChange={(e) => {
                 if (e.target.checked) {
                   setSelectedMemberIds([...selectedMemberIds, m.user_id]);
@@ -102,40 +97,14 @@ function ProjectMembersList({
   );
 }
 
-async function findBestProjectForTeamMembers(
-  currentMemberIds: string[],
-  activeProjects: Project[]
-): Promise<string> {
-  if (currentMemberIds.length === 0) return '';
-
-  let bestProjectId = '';
-  let maxOverlap = 0;
-
-  for (const proj of activeProjects) {
-    try {
-      const projMembers = await fetchProjectMembersForForm(proj.id);
-      const projMemberIds = new Set(projMembers.map((pm) => pm.user_id));
-      const overlap = currentMemberIds.filter((id: string) =>
-        projMemberIds.has(id)
-      ).length;
-      if (overlap > maxOverlap) {
-        maxOverlap = overlap;
-        bestProjectId = proj.id;
-      }
-    } catch (err) {
-      console.error(`Failed to fetch members for project ${proj.id}:`, err);
-    }
-  }
-
-  return bestProjectId;
-}
-
 interface TeamFormProps {
   readonly onClose?: () => void;
   readonly onSuccess?: () => void;
   readonly teamToEdit?: Team | null;
   readonly users: User[];
   readonly activeProjects: Project[];
+  readonly projectMembersByProjectId: ProjectMembersByProjectId;
+  readonly lockedProjectId?: string;
 }
 
 export function TeamForm({
@@ -144,8 +113,14 @@ export function TeamForm({
   teamToEdit = null,
   users,
   activeProjects,
+  projectMembersByProjectId,
+  lockedProjectId,
 }: Readonly<TeamFormProps>) {
   const editActionActive = !!teamToEdit;
+  // Lock once a project is stored; allow picking one when legacy rows have null.
+  const projectLocked =
+    Boolean(lockedProjectId) ||
+    (editActionActive && Boolean(teamToEdit?.project_id));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
@@ -161,56 +136,84 @@ export function TeamForm({
       : 'active'
   );
 
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
-  const [projectMembers, setProjectMembers] = useState<ProjectMemberWithUser[]>(
-    []
+  const [selectedProjectId, setSelectedProjectId] = useState(
+    lockedProjectId ?? teamToEdit?.project_id ?? ''
   );
-  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
-  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>(
+    () =>
+      teamToEdit?.members
+        ?.filter((member) => member.status === 'active')
+        .map((member) => member.user_id) ?? []
+  );
 
-  useEffect(() => {
-    if (!editActionActive || !teamToEdit?.members) {
+  const projectOptions = useMemo(() => {
+    if (
+      !projectLocked ||
+      !selectedProjectId ||
+      activeProjects.some((project) => project.id === selectedProjectId)
+    ) {
+      return activeProjects;
+    }
+
+    // Keep locked project visible even if it is no longer in the active list.
+    return [
+      {
+        id: selectedProjectId,
+        name: 'Associated project',
+        key: '—',
+      } as Project,
+      ...activeProjects,
+    ];
+  }, [activeProjects, projectLocked, selectedProjectId]);
+
+  // Prefetched project members are the checkbox options. Selected team members
+  // missing from that list (orphans) are appended so checks remain visible.
+  const projectMembers = useMemo(() => {
+    const fromProject = selectedProjectId
+      ? (projectMembersByProjectId[selectedProjectId] ?? [])
+      : [];
+    const byUserId = new Map(
+      fromProject.map((member) => [member.user_id, member])
+    );
+
+    for (const userId of selectedMemberIds) {
+      if (byUserId.has(userId)) {
+        continue;
+      }
+      const user = users.find((entry) => entry.id === userId);
+      byUserId.set(userId, {
+        project_id: selectedProjectId || 'unknown',
+        user_id: userId,
+        status: 'active',
+        created_at: '',
+        user: {
+          id: userId,
+          name: user?.name ?? 'Unknown user',
+          email: user?.email ?? '',
+          role: user?.role ?? 'member',
+          profile_picture: user?.profile_picture ?? null,
+        },
+      });
+    }
+
+    return [...byUserId.values()];
+  }, [selectedProjectId, projectMembersByProjectId, selectedMemberIds, users]);
+
+  const showMembersSection =
+    Boolean(selectedProjectId) ||
+    (editActionActive && selectedMemberIds.length > 0);
+
+  const handleProjectChange = (projectId: string) => {
+    if (projectLocked) {
       return;
     }
-
-    const initEditData = async () => {
-      const members = teamToEdit?.members;
-      if (!members) return;
-
-      const currentMemberIds = members.map((member) => member.user_id);
-      setSelectedMemberIds(currentMemberIds);
-
-      const bestProjectId = await findBestProjectForTeamMembers(
-        currentMemberIds,
-        activeProjects
-      );
-      if (bestProjectId) {
-        setSelectedProjectId(bestProjectId);
-      }
-    };
-
-    void initEditData();
-  }, [editActionActive, teamToEdit, activeProjects]);
-
-  useEffect(() => {
-    if (selectedProjectId) {
-      const fetchMembers = async () => {
-        setIsLoadingMembers(true);
-        try {
-          const membersList =
-            await fetchProjectMembersForForm(selectedProjectId);
-          setProjectMembers(membersList);
-        } catch (err) {
-          console.error('Failed to fetch project members:', err);
-        } finally {
-          setIsLoadingMembers(false);
-        }
-      };
-      fetchMembers();
-    } else {
-      setProjectMembers([]);
+    setSelectedProjectId(projectId);
+    // Create: reset members for the new project. Edit (null project_id recovery):
+    // keep existing team members checked while loading the project's roster.
+    if (!editActionActive) {
+      setSelectedMemberIds([]);
     }
-  }, [selectedProjectId]);
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -226,18 +229,35 @@ export function TeamForm({
       return;
     }
 
+    if (!selectedProjectId) {
+      setMessage('Associated project is required.');
+      setIsError(true);
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const teamData = {
         name: name.trim(),
         tech_stack: techStack.trim() || null,
         description: description.trim() || null,
         manager_id: managerId,
+        project_id: selectedProjectId,
         status: status,
         member_ids: selectedMemberIds,
       };
 
       if (editActionActive && teamToEdit) {
-        await updateTeam(teamToEdit.id, teamData);
+        await updateTeam(teamToEdit.id, {
+          name: teamData.name,
+          tech_stack: teamData.tech_stack,
+          description: teamData.description,
+          manager_id: teamData.manager_id,
+          status: teamData.status,
+          member_ids: teamData.member_ids,
+          // Persist project when repairing legacy rows that were saved without one.
+          ...(teamToEdit.project_id ? {} : { project_id: teamData.project_id }),
+        });
         setMessage('The team configuration has been successfully updated.');
       } else {
         await createTeam(teamData);
@@ -276,6 +296,16 @@ export function TeamForm({
   } else {
     buttonLabelContent = editActionActive ? 'Save Changes' : 'Create Team';
   }
+
+  const projectSelectInfo = useMemo(() => {
+    if (projectLocked) {
+      return 'Project is fixed for this team. Toggle members within this project only.';
+    } else if (editActionActive) {
+      return 'This team has no project yet. Select one to load and manage members.';
+    }
+
+    return 'Required. Members are chosen from this project and saved with the team.';
+  }, [projectLocked, editActionActive]);
 
   return (
     <Card className="border-border bg-card text-card-foreground custom-scrollbar relative max-h-[90vh] overflow-y-auto border shadow-2xl transition-all duration-300">
@@ -330,7 +360,6 @@ export function TeamForm({
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
-            {/* Team Identifier / Name */}
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="name" className="text-sm font-medium">
                 Team Identifier / Name
@@ -348,7 +377,6 @@ export function TeamForm({
               />
             </div>
 
-            {/* Primary Technology Stack */}
             <div className="space-y-2">
               <Label htmlFor="tech_stack" className="text-sm font-medium">
                 Primary Technology Stack
@@ -365,7 +393,6 @@ export function TeamForm({
               />
             </div>
 
-            {/* Team Status */}
             <div className="space-y-2">
               <Label htmlFor="status" className="text-sm font-medium">
                 Team Status
@@ -390,7 +417,6 @@ export function TeamForm({
               </Select>
             </div>
 
-            {/* Role Description */}
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="description" className="text-sm font-medium">
                 Role Description
@@ -407,12 +433,14 @@ export function TeamForm({
               />
             </div>
 
-            {/* Designated Team Manager */}
             <div className="space-y-2">
               <Label htmlFor="manager_id" className="text-sm font-medium">
                 Designated Team Manager
               </Label>
-              <Select value={managerId} onValueChange={setManagerId}>
+              <Select
+                value={managerId || undefined}
+                onValueChange={setManagerId}
+              >
                 <SelectTrigger
                   id="manager_id"
                   className="bg-background/80 h-10 w-full cursor-pointer"
@@ -431,43 +459,42 @@ export function TeamForm({
               </Select>
             </div>
 
-            {/* Associated Project */}
-            <div className="space-y-2">
-              <Label htmlFor="project_id" className="text-sm font-medium">
-                Associated Project
-              </Label>
-              <Select
-                value={selectedProjectId || 'none'}
-                onValueChange={(val) => {
-                  setSelectedProjectId(val === 'none' ? '' : val);
-                  setSelectedMemberIds([]);
-                }}
-              >
-                <SelectTrigger
-                  id="project_id"
-                  className="bg-background/80 h-10 w-full cursor-pointer"
+            {!lockedProjectId ? (
+              <div className="space-y-2">
+                <Label htmlFor="project_id" className="text-sm font-medium">
+                  Associated Project
+                </Label>
+                <Select
+                  value={selectedProjectId || undefined}
+                  onValueChange={handleProjectChange}
+                  disabled={projectLocked}
                 >
-                  <SelectValue placeholder="Select Project..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Select Project...</SelectItem>
-                  {activeProjects.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name} ({p.key})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                  <SelectTrigger
+                    id="project_id"
+                    className="bg-background/80 h-10 w-full cursor-pointer"
+                  >
+                    <SelectValue placeholder="Select Project..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projectOptions.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} ({p.key})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-muted-foreground text-[11px]">
+                  {projectSelectInfo}
+                </p>
+              </div>
+            ) : null}
 
-            {/* Project Members to Add to Team */}
-            {selectedProjectId && (
+            {showMembersSection && (
               <div className="space-y-2 sm:col-span-2">
                 <Label className="text-sm font-medium">
                   Project Members to Add to Team
                 </Label>
                 <ProjectMembersList
-                  isLoadingMembers={isLoadingMembers}
                   projectMembers={projectMembers}
                   selectedMemberIds={selectedMemberIds}
                   setSelectedMemberIds={setSelectedMemberIds}

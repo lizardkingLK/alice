@@ -1,16 +1,20 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { requireApiAuth, type AuthenticatedRequest } from '@/middlewares/auth';
-import { parsePagination } from '@/lib/pagination';
-import type { WorkItemService } from '@/routes/api/workItems/workItems.service';
-import type { NotificationsService } from '@/routes/api/notifications/notifications.service';
+import {
+  requireApiAuth,
+  type AuthenticatedRequest,
+} from '../../../middlewares/auth';
+import { parsePagination } from '../../../lib/pagination';
+import type { WorkItemService } from './workItems.service';
+import type { NotificationsService } from '../notifications/notifications.service';
 import {
   createUpdateWorkItemBodySchema,
+  createWorkLogSchema,
   isBlockedPastDueDateChange,
   patchUpdateWorkItemBodySchema,
   SupabaseJson,
-} from '@/routes/api/workItems/workItems.schemas';
-import type { DbWorkItem } from '@/routes/api/workItems/workItems.repository';
+} from './workItems.schemas';
+import type { DbWorkItem } from './workItems.repository';
 
 type PatchUpdateWorkItemPayload = z.infer<typeof patchUpdateWorkItemBodySchema>;
 
@@ -162,6 +166,58 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
         const message =
           error instanceof Error ? error.message : 'Failed to get work-item';
         res.status(500).json({ data: null, error: message });
+      }
+    }
+  );
+
+  workItemsRouter.get(
+    '/:id/worklogs',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const worklogs = await workItemService.listWorkItemWorkLogs(
+          req.userId!,
+          req.params.id!
+        );
+        res.json({ worklogs });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to get work logs';
+        res.status(500).json({ error: message });
+      }
+    }
+  );
+
+  workItemsRouter.post(
+    '/:id/worklogs',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsed = createWorkLogSchema.safeParse(req.body);
+
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+
+      const dateOnly =
+        parsed.data.logged_at ?? new Date().toISOString().slice(0, 10);
+      const loggedAtIso = new Date(`${dateOnly}T00:00:00.000Z`).toISOString();
+
+      try {
+        const worklog = await workItemService.createWorkItemWorkLog(
+          req.userId!,
+          req.params.id!,
+          {
+            loggedHours: parsed.data.logged_hours,
+            loggedAtIso,
+            comment: parsed.data.comment ?? null,
+          }
+        );
+
+        res.status(201).json({ worklog });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to create work log';
+        res.status(500).json({ error: message });
       }
     }
   );

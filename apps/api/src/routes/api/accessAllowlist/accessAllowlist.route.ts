@@ -1,37 +1,26 @@
 import { Router, type Response } from 'express';
 import { z } from 'zod';
-import { requireActorId } from '@/lib/audit';
-import { requireApiAuth, type AuthenticatedRequest } from '@/middlewares/auth';
-import { accessAllowlistService } from '@/routes/api/accessAllowlist/accessAllowlist.service';
+import {
+  accessAllowlistCreateSchema,
+  accessAllowlistUpdateSchema,
+} from '@repo/types';
+import { requireActorId } from '../../../lib/audit';
+import { parsePagination } from '../../../lib/pagination';
+import {
+  requireApiAuth,
+  type AuthenticatedRequest,
+} from '../../../middlewares/auth';
+import { accessAllowlistService } from './accessAllowlist.service';
 
 const accessAllowlistRouter: Router = Router();
 
-const statusSchema = z.enum(['active', 'inactive', 'archived', 'deleted']);
-
-const allowlistMetaFields = {
-  label: z.string().max(200).optional().nullable(),
-  expires_at: z.string().optional().nullable(),
-  status: statusSchema.optional(),
-};
-
-const createDomainSchema = z.object({
-  kind: z.literal('domain'),
-  value: z.string().min(1),
-  ...allowlistMetaFields,
-});
-
-const createEmailSchema = z.object({
-  kind: z.literal('email'),
-  value: z.email(),
-  ...allowlistMetaFields,
-});
-
-const createSchema = z.discriminatedUnion('kind', [
-  createDomainSchema,
-  createEmailSchema,
+const statusFilterSchema = z.enum([
+  'active',
+  'inactive',
+  'archived',
+  'deleted',
+  'all',
 ]);
-
-const updateSchema = z.object(allowlistMetaFields);
 
 function routeError(
   res: Response,
@@ -55,6 +44,21 @@ function readRouteId(req: AuthenticatedRequest): string | null {
   return id && typeof id === 'string' ? id : null;
 }
 
+function parseStatusFilter(
+  statusParam: string | undefined
+): 'active' | 'inactive' | 'archived' | 'deleted' | undefined | 'invalid' {
+  if (!statusParam) {
+    return undefined;
+  }
+
+  const parsed = statusFilterSchema.safeParse(statusParam);
+  if (!parsed.success) {
+    return 'invalid';
+  }
+
+  return parsed.data === 'all' ? undefined : parsed.data;
+}
+
 accessAllowlistRouter.get(
   '/',
   requireApiAuth,
@@ -64,25 +68,34 @@ accessAllowlistRouter.get(
 
       const statusParam =
         typeof req.query.status === 'string' ? req.query.status : undefined;
-
-      const allowed = [
-        'active',
-        'inactive',
-        'archived',
-        'deleted',
-        'all',
-      ] as const;
-      if (
-        statusParam &&
-        !allowed.includes(statusParam as (typeof allowed)[number])
-      ) {
+      const status = parseStatusFilter(statusParam);
+      if (status === 'invalid') {
         return res.status(400).json({ error: 'Invalid status filter' });
       }
 
-      const status =
-        statusParam && statusParam !== 'all'
-          ? (statusParam as z.infer<typeof statusSchema>)
-          : undefined;
+      const searchQuery =
+        typeof req.query.search === 'string' ? req.query.search : undefined;
+
+      const pagination = parsePagination(req);
+      if (pagination) {
+        const { page, limit } = pagination;
+        const result =
+          await accessAllowlistService.listAccessAllowlistPaginated(
+            actorId,
+            page,
+            limit,
+            status,
+            searchQuery
+          );
+        const totalPages = Math.max(1, Math.ceil(result.totalCount / limit));
+        return res.json({
+          items: result.items,
+          totalCount: result.totalCount,
+          page,
+          limit,
+          totalPages,
+        });
+      }
 
       const items = await accessAllowlistService.listAccessAllowlist(
         actorId,
@@ -103,7 +116,7 @@ accessAllowlistRouter.post(
     try {
       const actorId = requireActorId(req);
 
-      const parsed = createSchema.safeParse(req.body);
+      const parsed = accessAllowlistCreateSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ error: z.treeifyError(parsed.error) });
       }
@@ -131,7 +144,7 @@ accessAllowlistRouter.put(
         return res.status(400).json({ error: 'Invalid id' });
       }
 
-      const bodyParsed = updateSchema.safeParse(req.body);
+      const bodyParsed = accessAllowlistUpdateSchema.safeParse(req.body);
       if (!bodyParsed.success) {
         return res
           .status(400)

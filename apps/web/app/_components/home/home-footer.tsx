@@ -16,10 +16,9 @@ const footerColumns = [
     ],
   },
   {
-    title: 'Team',
+    title: 'People',
     links: [
       { href: '/users', label: 'Users' },
-      { href: '/manager', label: 'Team' },
       { href: '/member', label: 'My work' },
       { href: '/profile', label: 'Profile' },
     ],
@@ -41,17 +40,21 @@ const footerColumns = [
   },
 ] as const;
 
-const APP_ONLY_COLUMN_TITLES = new Set(['Workspace', 'Team']);
+const APP_ONLY_COLUMN_TITLES = new Set(['Workspace', 'People']);
 
 type HomeFooterProps = {
-  /** Show Workspace / Team links (allowlisted signed-in users). */
+  /** Show Workspace / People links (allowlisted signed-in users). */
   showAppLinks?: boolean;
 };
 
-export function HomeFooter({ showAppLinks = false }: Readonly<HomeFooterProps>) {
+export function HomeFooter({
+  showAppLinks = false,
+}: Readonly<HomeFooterProps>) {
   const columns = showAppLinks
     ? footerColumns
-    : footerColumns.filter((column) => !APP_ONLY_COLUMN_TITLES.has(column.title));
+    : footerColumns.filter(
+        (column) => !APP_ONLY_COLUMN_TITLES.has(column.title)
+      );
 
   return (
     <footer className="border-border/60 bg-muted/20 flex min-h-dvh snap-start snap-always flex-col border-t px-6 pt-12 pb-8">

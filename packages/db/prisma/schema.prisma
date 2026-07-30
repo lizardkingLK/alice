@@ -106,6 +106,7 @@ model users {
   reported_work_items work_items[]      @relation("WorkItemReporter")
   comments            comments[]        @relation("CommentAuthor")
   attachments         attachments[]     @relation("AttachmentUploader")
+  work_item_worklogs  work_item_worklogs[] @relation("WorkLogAuthor")
 
   created_instruments     instruments[]     @relation("InstrumentCreatedBy")
   updated_instruments     instruments[]     @relation("InstrumentUpdatedBy")
@@ -153,6 +154,7 @@ model projects {
   created_by_user users?            @relation("ProjectCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
   updated_by_user users?            @relation("ProjectUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
   members         project_members[]
+  teams           teams[]
   sprints         sprints[]
   work_items      work_items[]
 }
@@ -179,6 +181,7 @@ model teams {
   name        String
   description String?
   manager_id  String       @db.Uuid
+  project_id  String?      @db.Uuid
   tech_stack  String?
   status      RecordStatus @default(active)
   created_by  String?      @db.Uuid
@@ -187,9 +190,12 @@ model teams {
   updated_at  DateTime     @updatedAt @db.Timestamptz(6)
 
   manager         users          @relation("TeamManager", fields: [manager_id], references: [id])
+  project         projects?      @relation(fields: [project_id], references: [id], onDelete: SetNull)
   created_by_user users?         @relation("TeamCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
   updated_by_user users?         @relation("TeamUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
   members         team_members[]
+
+  @@index([project_id])
 }
 
 model team_members {
@@ -250,6 +256,7 @@ model work_items {
   due_date     DateTime?        @db.Date
   story_points Int?
   status       WorkItemStatus   @default(New)
+  done_at      DateTime?        @db.Timestamptz(6)
   created_by   String?          @db.Uuid
   created_at   DateTime         @default(now()) @db.Timestamptz(6)
   updated_by   String?          @db.Uuid
@@ -265,6 +272,24 @@ model work_items {
   updated_by_user users?        @relation("WorkItemUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
   comments        comments[]
   attachments     attachments[]
+  worklogs        work_item_worklogs[]
+}
+
+model work_item_worklogs {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  work_item_id String       @db.Uuid
+  user_id      String       @db.Uuid
+  logged_hours Float
+  logged_at    DateTime     @default(now()) @db.Timestamptz(6)
+  comment      String?
+  status       RecordStatus @default(active)
+  created_by   String?      @db.Uuid
+  created_at   DateTime     @default(now()) @db.Timestamptz(6)
+  updated_by   String?      @db.Uuid
+  updated_at   DateTime     @updatedAt @db.Timestamptz(6)
+
+  work_item    work_items @relation(fields: [work_item_id], references: [id], onDelete: Cascade)
+  user         users      @relation("WorkLogAuthor", fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 model comments {

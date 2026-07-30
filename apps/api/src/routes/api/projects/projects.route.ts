@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { requireApiAuth, type AuthenticatedRequest } from '@/middlewares/auth';
-import { projectsService } from '@/routes/api/projects/projects.service';
 import {
-  createProjectSchema,
-  updateProjectSchema,
-} from '@/routes/api/projects/projects.schemas';
-import { parsePagination } from '@/lib/pagination';
-import { ProjectRowWithOwner } from '@/routes/api/projects/projects.repository';
+  requireApiAuth,
+  type AuthenticatedRequest,
+} from '../../../middlewares/auth';
+import { projectsService } from './projects.service';
+import { createProjectSchema, updateProjectSchema } from './projects.schemas';
+import { parsePagination } from '../../../lib/pagination';
+import { ProjectRowWithOwner } from './projects.repository';
 
 const projectsRouter: Router = Router();
 

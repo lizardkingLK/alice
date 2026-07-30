@@ -2,14 +2,24 @@ import multer, { Multer } from 'multer';
 import express, { type Router } from 'express';
 import { z } from 'zod';
 
-import { requireApiAuth, type AuthenticatedRequest } from '@/middlewares/auth';
+import {
+  requireApiAuth,
+  type AuthenticatedRequest,
+} from '../../../middlewares/auth';
 import {
   AttachmentGoneError,
   AttachmentNotFoundError,
   deleteAttachment,
   getAttachmentSignedUrls,
+  createAttachmentUploadSession,
+  finalizeAttachmentUpload,
   uploadAttachmentFile,
-} from '@/routes/api/attachments/attachments.service';
+} from './attachments.service';
+import {
+  createUploadSessionSchema,
+  finalizeUploadSchema,
+  workItemIdSchema,
+} from './attachments.schemas';
 
 const attachmentsRouter: Router = express.Router();
 
@@ -20,8 +30,6 @@ const upload: Multer = multer({
     fileSize: 10 * 1024 * 1024,
   },
 });
-
-const workItemIdSchema = z.uuid({ message: 'Invalid work item id.' });
 
 function isNotFoundError(error: unknown): boolean {
   return (
@@ -72,6 +80,88 @@ attachmentsRouter.delete(
         error instanceof Error ? error.message : 'Failed to delete attachment';
       console.error('error. attachment delete failed:', message);
       res.status(isNotFoundError(error) ? 404 : 500).json({ error: message });
+    }
+  }
+);
+
+/**
+ * Create a browser direct-to-Supabase upload session.
+ *
+ * This prevents Vercel from receiving the file bytes (which can trigger
+ * FUNCTION_PAYLOAD_TOO_LARGE) by sending only small JSON metadata.
+ */
+attachmentsRouter.post(
+  '/upload-session',
+  requireApiAuth,
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = createUploadSessionSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: z.treeifyError(parsed.error) });
+    }
+
+    try {
+      const session = await createAttachmentUploadSession({
+        workItemId: parsed.data.work_item_id,
+        fileName: parsed.data.file_name,
+        contentType: parsed.data.content_type,
+        fileSize: parsed.data.file_size,
+      });
+
+      return res.json(session);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Failed to create upload session';
+      console.error('error. attachment upload session failed:', message);
+
+      if (/Work item not found/i.test(message)) {
+        return res.status(404).json({ error: message });
+      }
+
+      return res.status(500).json({ error: message });
+    }
+  }
+);
+
+/**
+ * Finalize upload by committing the attachment DB row (when `work_item_id`
+ * is provided) and returning a signed access URL.
+ */
+attachmentsRouter.post(
+  '/finalize',
+  requireApiAuth,
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = finalizeUploadSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: z.treeifyError(parsed.error) });
+    }
+
+    try {
+      const result = await finalizeAttachmentUpload({
+        actorId: req.userId!,
+        workItemId: parsed.data.work_item_id,
+        storagePath: parsed.data.storage_path,
+        fileName: parsed.data.file_name,
+        fileSize: parsed.data.file_size,
+        mimeType: parsed.data.mime_type,
+      });
+
+      return res.json(result);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to finalize upload';
+      console.error('error. attachment upload finalize failed:', message);
+
+      if (/Invalid upload target/i.test(message)) {
+        return res.status(400).json({ error: message });
+      }
+
+      if (/Uploaded file not found in storage/i.test(message)) {
+        return res.status(404).json({ error: message });
+      }
+
+      return res.status(500).json({ error: message });
     }
   }
 );

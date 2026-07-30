@@ -48,6 +48,10 @@ import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { formatDate } from '@/app/_shared/utility';
 import { DataTable } from '@/components/data-table';
 import { DismissibleError } from '@/components/dismissible-error';
+import { Pagination } from '@/components/pagination';
+import { SearchInput } from '@/components/search-input';
+import { useDebouncedSearch } from '@/hooks/use-debounced-search';
+import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useRouter } from 'next/navigation';
 import {
   deleteAccessAllowlistEntry,
@@ -57,13 +61,17 @@ import { AccessAllowlistForm } from '@/app/access-allowlist/_components/access-a
 
 interface AccessAllowlistRegistryProps {
   readonly entries: AccessAllowlistEntry[];
+  readonly totalCount: number;
+  readonly page: number;
+  readonly limit: number;
+  readonly totalPages: number;
+  readonly search: string;
 }
 
 type AllowlistRow = Row<AccessAllowlistEntry>;
 
 const KIND_BADGE_STYLES: Record<string, string> = {
-  domain:
-    'border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-400',
+  domain: 'border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-400',
   email:
     'border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400',
 };
@@ -75,8 +83,7 @@ const STATUS_BADGE_STYLES: Record<string, string> = {
     'border-slate-500/20 bg-slate-500/10 text-slate-600 dark:text-slate-400',
   archived:
     'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  deleted:
-    'border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-400',
+  deleted: 'border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-400',
 };
 
 function KindBadge({ kind }: Readonly<{ kind: string }>) {
@@ -243,11 +250,22 @@ const COLUMNS: ColumnDef<AccessAllowlistEntry>[] = [
 
 export function AccessAllowlistRegistry({
   entries,
+  totalCount,
+  page,
+  limit,
+  totalPages,
+  search,
 }: Readonly<AccessAllowlistRegistryProps>) {
   const router = useRouter();
+  const { handlePageChange, handleLimitChange } = usePaginationNavigation(
+    totalPages,
+    limit
+  );
+  const { searchQuery, setSearchQuery } = useDebouncedSearch(search);
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [editingEntry, setEditingEntry] =
-    useState<AccessAllowlistEntry | null>(null);
+  const [editingEntry, setEditingEntry] = useState<AccessAllowlistEntry | null>(
+    null
+  );
   const [deletingEntry, setDeletingEntry] =
     useState<AccessAllowlistEntry | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -300,7 +318,12 @@ export function AccessAllowlistRegistry({
     <div className="space-y-6">
       <DismissibleError message={error} onDismiss={() => setError(null)} />
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <SearchInput
+          value={searchQuery}
+          onValueChange={setSearchQuery}
+          placeholder="Search domains, emails, or labels…"
+        />
         <Button onClick={() => setIsAddOpen(true)} className="cursor-pointer">
           <Plus />
           Add entry
@@ -325,12 +348,22 @@ export function AccessAllowlistRegistry({
             emptyState={
               <div className="flex flex-col items-center justify-center gap-2">
                 <Shield className="text-muted-foreground/50 size-8 stroke-1" />
-                <p>No allowlist entries yet.</p>
+                <p>No allowlist entries found matching the criteria.</p>
                 <p className="text-muted-foreground/75 text-xs">
                   Add a company domain or a specific email to get started.
                 </p>
               </div>
             }
+          />
+
+          <Pagination
+            totalCount={totalCount}
+            page={page}
+            limit={limit}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            onLimitChange={handleLimitChange}
+            label="entries"
           />
         </CardContent>
       </Card>

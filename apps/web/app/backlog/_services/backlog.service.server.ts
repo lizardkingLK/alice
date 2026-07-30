@@ -1,5 +1,7 @@
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
+import { getSuggestedBoardDefaults } from '@/app/board/_services/board-defaults.server';
 import { getProjectList } from '@/app/projects/_services/projects.service.server';
+import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.service.server';
 import type { User as DbUser } from '@/app/users/_services/users.service';
@@ -9,6 +11,7 @@ import {
   type DbWorkItem,
 } from '@/app/work-items/_services/workItem.service.server';
 import { getDbUser } from '@/lib/auth';
+import { filterActiveProjects } from '@/lib/projects/active-projects';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 
 export type BacklogWorkspaceData = {
@@ -18,6 +21,7 @@ export type BacklogWorkspaceData = {
   sprints: Sprint[];
   userRole: string;
   currentUserId?: string | null;
+  suggestedDefaults: BoardDefaultsPreference | null;
   error: string | null;
 };
 
@@ -48,13 +52,23 @@ export async function getBacklogWorkspace(): Promise<BacklogWorkspaceData> {
       }),
     ]);
 
+  const activeProjects = filterActiveProjects(projects);
+  const suggestedDefaults = dbUser
+    ? await getSuggestedBoardDefaults(
+        dbUser,
+        activeProjects,
+        sprintsResult.sprints
+      )
+    : null;
+
   return {
-    projects,
+    projects: activeProjects,
     projectMembers,
     initialWorkItems,
     sprints: sprintsResult.sprints,
     userRole,
     currentUserId: dbUser?.id,
+    suggestedDefaults,
     error: fetchError,
   };
 }

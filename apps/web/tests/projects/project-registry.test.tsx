@@ -64,7 +64,10 @@ vi.mock('@repo/ui/components/ui/select', () => {
   };
 });
 
-vi.mock('@repo/ui/components/ui/dropdown-menu', () => import('../mocks/dropdown-menu'));
+vi.mock(
+  '@repo/ui/components/ui/dropdown-menu',
+  () => import('../mocks/dropdown-menu')
+);
 
 vi.mock('@/app/projects/_components/actions', () => ({
   softDeleteProject: vi.fn(),
@@ -130,6 +133,7 @@ const mockProjects: Project[] = [
       name: 'Bob Manager',
       email: 'manager@alice.dev',
     },
+    team_count: 2,
   },
   {
     id: 'proj-2',
@@ -152,6 +156,7 @@ const mockProjects: Project[] = [
       name: 'Bob Manager',
       email: 'manager@alice.dev',
     },
+    team_count: 0,
   },
 ];
 
@@ -176,9 +181,14 @@ describe('ProjectRegistry Component', () => {
       />
     );
 
-    // Verify Project names
-    expect(screen.getByText('Project Alpha')).toBeInTheDocument();
-    expect(screen.getByText('Project Beta')).toBeInTheDocument();
+    // Verify Project names link to the project detail page
+    expect(
+      screen.getByRole('link', { name: /Project Alpha/i })
+    ).toHaveAttribute('href', '/projects/proj-1');
+    expect(screen.getByRole('link', { name: /Project Beta/i })).toHaveAttribute(
+      'href',
+      '/projects/proj-2'
+    );
 
     // Verify key slices (first 2 characters)
     // Project Alpha has key "PAL", sliced to "PA"
@@ -188,6 +198,10 @@ describe('ProjectRegistry Component', () => {
 
     // Verify descriptions
     expect(screen.getByText('Description Alpha')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '2 teams' })).toHaveAttribute(
+      'href',
+      '/projects/proj-1?tab=teams'
+    );
     expect(screen.getByText('Description Beta')).toBeInTheDocument();
 
     // Verify owner details

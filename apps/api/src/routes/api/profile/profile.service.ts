@@ -1,14 +1,14 @@
 import { z } from 'zod';
-import { auditUpdate } from '@/lib/audit';
-import { env } from '@/config/env';
+import { auditUpdate } from '../../../lib/audit';
+import { env } from '../../../config/env';
 import {
   getPublicStorageUrl,
   removeStorageObjects,
   sanitizeFileName,
   storagePathFromPublicUrl,
   uploadToStorage,
-} from '@/lib/file-helpers';
-import { supabase } from '@/lib/supabase';
+} from '../../../lib/file-helpers';
+import { supabase } from '../../../lib/supabase';
 
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',

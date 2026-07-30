@@ -44,34 +44,42 @@ function formatDate(dateStr: string | null | Date): string {
   return date.toLocaleDateString('en-US', options);
 }
 
-export function SprintReportView({ sprint, workItems }: Readonly<SprintReportViewProps>) {
+export function SprintReportView({
+  sprint,
+  workItems,
+}: Readonly<SprintReportViewProps>) {
   const totalIssues = workItems.length;
-  const completedIssues = workItems.filter((item) => item.status === 'Done').length;
+  const completedIssues = workItems.filter(
+    (item) => item.status === 'Done'
+  ).length;
   const completedStoryPoints = workItems
     .filter((item) => item.status === 'Done')
     .reduce((sum, item) => sum + (item.story_points ?? 0), 0);
-  const totalPlannedStoryPoints = workItems
-    .reduce((sum, item) => sum + (item.story_points ?? 0), 0);
+  const totalPlannedStoryPoints = workItems.reduce(
+    (sum, item) => sum + (item.story_points ?? 0),
+    0
+  );
 
-  const completionRate = totalIssues > 0 ? ((completedIssues / totalIssues) * 100).toFixed(0) : '0';
+  const completionRate =
+    totalIssues > 0 ? ((completedIssues / totalIssues) * 100).toFixed(0) : '0';
 
   // Action: Download Markdown Report
   const handleDownloadMarkdown = () => {
     const formattedDateRange = `${formatDate(sprint.startDate)} – ${formatDate(sprint.endDate)}`;
-    
+
     let md = `# Sprint Summary Report: ${sprint.name}\n\n`;
     md += `* **Status**: ${sprint.status}\n`;
     md += `* **Project**: ${sprint.project?.name || 'N/A'}\n`;
     md += `* **Dates**: ${formattedDateRange}\n\n`;
-    
+
     md += `## Key Metrics\n\n`;
     md += `* **Completion Scope**: ${completionRate}%\n`;
     md += `* **Work Items Done**: ${completedIssues} / ${totalIssues}\n`;
     md += `* **Velocity Delivered**: ${completedStoryPoints} of ${totalPlannedStoryPoints} planned story points\n\n`;
-    
+
     md += `## Sprint Goal\n\n`;
     md += `${sprint.goal || 'No goal was defined for this sprint.'}\n\n`;
-    
+
     md += `## Deliverables List\n\n`;
     if (workItems.length === 0) {
       md += `No work items were assigned to this sprint.\n`;
@@ -92,7 +100,10 @@ export function SprintReportView({ sprint, workItems }: Readonly<SprintReportVie
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `${sprint.name.toLowerCase().replace(/\s+/g, '_')}_summary_report.md`);
+    link.setAttribute(
+      'download',
+      `${sprint.name.toLowerCase().replace(/\s+/g, '_')}_summary_report.md`
+    );
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -231,38 +242,45 @@ export function SprintReportView({ sprint, workItems }: Readonly<SprintReportVie
           display: table-header-group;
         }
       }
-    `
+    `,
   });
 
   return (
-    <div ref={printRef} className="space-y-6 print-container">
+    <div ref={printRef} className="print-container space-y-6">
       {/* CSS print overrides wrapper */}
-      
 
       {/* Banner header */}
       <div className="relative overflow-hidden rounded-2xl border border-indigo-500/15 bg-linear-to-r from-indigo-500/5 via-transparent to-transparent p-6 md:p-8">
-        
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="flex items-center gap-2">
               {sprint.status === 'Completed' ? (
-                <Badge variant="outline" className="border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 font-semibold text-emerald-600 dark:text-emerald-400">
+                <Badge
+                  variant="outline"
+                  className="border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 font-semibold text-emerald-600 dark:text-emerald-400"
+                >
                   <CheckCircle className="mr-1 h-3.5 w-3.5 fill-current" />
                   Completed
                 </Badge>
               ) : (
-                <Badge variant="outline" className="border-blue-500/20 bg-blue-500/10 px-2.5 py-0.5 font-semibold text-blue-600 dark:text-blue-400">
+                <Badge
+                  variant="outline"
+                  className="border-blue-500/20 bg-blue-500/10 px-2.5 py-0.5 font-semibold text-blue-600 dark:text-blue-400"
+                >
                   <AlertCircle className="mr-1 h-3.5 w-3.5 fill-current" />
                   Ongoing
                 </Badge>
               )}
               {sprint.project && (
                 <span className="text-muted-foreground text-xs font-medium">
-                  Project: <span className="font-semibold text-foreground">{sprint.project.name}</span>
+                  Project:{' '}
+                  <span className="text-foreground font-semibold">
+                    {sprint.project.name}
+                  </span>
                 </span>
               )}
             </div>
-            <h1 className="mt-2 text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+            <h1 className="text-foreground mt-2 text-2xl font-bold tracking-tight md:text-3xl">
               {sprint.name} Summary Report
             </h1>
             <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
@@ -276,12 +294,12 @@ export function SprintReportView({ sprint, workItems }: Readonly<SprintReportVie
           </div>
 
           {/* Action buttons (hidden on print) */}
-          <div className="flex flex-wrap items-center gap-2 no-print">
+          <div className="no-print flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={handleDownloadMarkdown}
-              className="h-9 gap-1.5 cursor-pointer text-xs font-semibold"
+              className="h-9 cursor-pointer gap-1.5 text-xs font-semibold"
             >
               <Download className="h-4 w-4" />
               Markdown
@@ -290,23 +308,26 @@ export function SprintReportView({ sprint, workItems }: Readonly<SprintReportVie
               variant="outline"
               size="sm"
               onClick={handleDownloadPDF}
-              className="h-9 gap-1.5 cursor-pointer text-xs font-semibold"
+              className="h-9 cursor-pointer gap-1.5 text-xs font-semibold"
             >
               <FileDown className="h-4 w-4" />
               PDF
             </Button>
-            
           </div>
         </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card className="border-border/60 bg-card/50 backdrop-blur-sm card">
+        <Card className="border-border/60 bg-card/50 card backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="space-y-1">
-              <span className="text-muted-foreground text-xs font-medium">Completed Scope</span>
-              <CardTitle className="text-3xl font-bold tracking-tight">{completionRate}%</CardTitle>
+              <span className="text-muted-foreground text-xs font-medium">
+                Completed Scope
+              </span>
+              <CardTitle className="text-3xl font-bold tracking-tight">
+                {completionRate}%
+              </CardTitle>
             </div>
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
               <Trophy className="h-5 w-5" />
@@ -321,10 +342,12 @@ export function SprintReportView({ sprint, workItems }: Readonly<SprintReportVie
           </CardContent>
         </Card>
 
-        <Card className="border-border/60 bg-card/50 backdrop-blur-sm card">
+        <Card className="border-border/60 bg-card/50 card backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="space-y-1">
-              <span className="text-muted-foreground text-xs font-medium">Work Items Done</span>
+              <span className="text-muted-foreground text-xs font-medium">
+                Work Items Done
+              </span>
               <CardTitle className="text-3xl font-bold tracking-tight">
                 {completedIssues} / {totalIssues}
               </CardTitle>
@@ -340,12 +363,17 @@ export function SprintReportView({ sprint, workItems }: Readonly<SprintReportVie
           </CardContent>
         </Card>
 
-        <Card className="border-border/60 bg-card/50 backdrop-blur-sm card">
+        <Card className="border-border/60 bg-card/50 card backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="space-y-1">
-              <span className="text-muted-foreground text-xs font-medium">Velocity Delivered</span>
+              <span className="text-muted-foreground text-xs font-medium">
+                Velocity Delivered
+              </span>
               <CardTitle className="text-3xl font-bold tracking-tight">
-                {completedStoryPoints} <span className="text-muted-foreground text-sm font-medium">/ {totalPlannedStoryPoints} pts</span>
+                {completedStoryPoints}{' '}
+                <span className="text-muted-foreground text-sm font-medium">
+                  / {totalPlannedStoryPoints} pts
+                </span>
               </CardTitle>
             </div>
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
@@ -362,11 +390,13 @@ export function SprintReportView({ sprint, workItems }: Readonly<SprintReportVie
 
       {/* Goal & Detailed overview */}
       <div className="grid gap-6 md:grid-cols-3">
-        <Card className="border-border/60 bg-card/50 md:col-span-1 card">
+        <Card className="border-border/60 bg-card/50 card md:col-span-1">
           <CardHeader>
             <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
               <Goal className="h-5 w-5" />
-              <CardTitle className="text-base font-semibold">Sprint Goal</CardTitle>
+              <CardTitle className="text-base font-semibold">
+                Sprint Goal
+              </CardTitle>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -376,20 +406,28 @@ export function SprintReportView({ sprint, workItems }: Readonly<SprintReportVie
           </CardContent>
         </Card>
 
-        <Card className="border-border/60 bg-card/50 md:col-span-2 card">
+        <Card className="border-border/60 bg-card/50 card md:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base font-semibold">Sprint Achievements</CardTitle>
+            <CardTitle className="text-base font-semibold">
+              Sprint Achievements
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <CardContent className="text-muted-foreground space-y-3 text-sm">
             <p>
-              {sprint.status === 'Completed' ? (
-                `During this iteration, the team focused on aligning dependencies and meeting sprint goals. All ${totalIssues} work items committed to the sprint were brought to completion.`
-              ) : (
-                `This sprint is currently active. The team is collaborating to deliver ${totalIssues} work items. Currently, ${completedIssues} items have been completed.`
-              )}
+              {sprint.status === 'Completed'
+                ? `During this iteration, the team focused on aligning dependencies and meeting sprint goals. All ${totalIssues} work items committed to the sprint were brought to completion.`
+                : `This sprint is currently active. The team is collaborating to deliver ${totalIssues} work items. Currently, ${completedIssues} items have been completed.`}
             </p>
             <p>
-              A total of <span className="font-semibold text-foreground">{completedStoryPoints} story points</span> have been delivered so far out of the <span className="font-semibold text-foreground">{totalPlannedStoryPoints} story points</span> planned.
+              A total of{' '}
+              <span className="text-foreground font-semibold">
+                {completedStoryPoints} story points
+              </span>{' '}
+              have been delivered so far out of the{' '}
+              <span className="text-foreground font-semibold">
+                {totalPlannedStoryPoints} story points
+              </span>{' '}
+              planned.
             </p>
           </CardContent>
         </Card>
@@ -401,7 +439,9 @@ export function SprintReportView({ sprint, workItems }: Readonly<SprintReportVie
           <div className="flex items-center gap-2">
             <FileText className="text-muted-foreground h-5 w-5" />
             <div>
-              <CardTitle className="text-base font-semibold">Deliverables List</CardTitle>
+              <CardTitle className="text-base font-semibold">
+                Deliverables List
+              </CardTitle>
               <CardDescription>
                 Detailed list of deliverables in this sprint.
               </CardDescription>
@@ -410,48 +450,58 @@ export function SprintReportView({ sprint, workItems }: Readonly<SprintReportVie
         </CardHeader>
         <CardContent className="p-0">
           {workItems.length === 0 ? (
-            <div className="p-6 text-center text-sm text-muted-foreground">
+            <div className="text-muted-foreground p-6 text-center text-sm">
               No work items were assigned to this sprint.
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm border-collapse">
+              <table className="w-full border-collapse text-left text-sm">
                 <thead>
-                  <tr className="border-border/40 text-muted-foreground border-b bg-muted/20 px-4 text-xs font-semibold uppercase tracking-wider">
-                    <th className="p-4 w-28">Type</th>
-                    <th className="p-4 w-32">Key</th>
+                  <tr className="border-border/40 text-muted-foreground bg-muted/20 border-b px-4 text-xs font-semibold tracking-wider uppercase">
+                    <th className="w-28 p-4">Type</th>
+                    <th className="w-32 p-4">Key</th>
                     <th className="p-4">Title</th>
-                    <th className="p-4 w-32">Priority</th>
-                    <th className="p-4 w-28">Status</th>
-                    <th className="p-4 w-48">Assignee</th>
-                    <th className="p-4 w-24 text-right">Points</th>
+                    <th className="w-32 p-4">Priority</th>
+                    <th className="w-28 p-4">Status</th>
+                    <th className="w-48 p-4">Assignee</th>
+                    <th className="w-24 p-4 text-right">Points</th>
                   </tr>
                 </thead>
                 <tbody className="divide-border/30 divide-y">
                   {workItems.map((item) => (
-                    <tr key={item.id} className="hover:bg-muted/30 transition-colors">
+                    <tr
+                      key={item.id}
+                      className="hover:bg-muted/30 transition-colors"
+                    >
                       <td className="p-4 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1 rounded-md bg-zinc-500/10 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:text-zinc-400">
                           {item.type}
                         </span>
                       </td>
                       <td className="p-4 font-mono text-xs font-semibold whitespace-nowrap">
-                        {item.project ? `${item.project.key}-${item.id.slice(0, 4).toUpperCase()}` : item.id.slice(0, 8).toUpperCase()}
+                        {item.project
+                          ? `${item.project.key}-${item.id.slice(0, 4).toUpperCase()}`
+                          : item.id.slice(0, 8).toUpperCase()}
                       </td>
-                      <td className="p-4 font-medium text-foreground max-w-xs truncate">
+                      <td className="text-foreground max-w-xs truncate p-4 font-medium">
                         {item.title}
                       </td>
                       <td className="p-4 whitespace-nowrap">
-                        <Badge variant="outline" className="border-zinc-500/20 bg-zinc-500/5 text-zinc-600 dark:text-zinc-400 capitalize text-xs">
+                        <Badge
+                          variant="outline"
+                          className="border-zinc-500/20 bg-zinc-500/5 text-xs text-zinc-600 capitalize dark:text-zinc-400"
+                        >
                           {item.priority}
                         </Badge>
                       </td>
                       <td className="p-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
-                          item.status === 'Done'
-                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                            : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                        }`}>
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            item.status === 'Done'
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                              : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                          }`}
+                        >
                           {item.status}
                         </span>
                       </td>
@@ -467,13 +517,17 @@ export function SprintReportView({ sprint, workItems }: Readonly<SprintReportVie
                             />
                           ) : (
                             <div className="bg-primary/10 text-primary flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold">
-                              {(item.assignee?.name || 'Unassigned').slice(0, 2).toUpperCase()}
+                              {(item.assignee?.name || 'Unassigned')
+                                .slice(0, 2)
+                                .toUpperCase()}
                             </div>
                           )}
-                          <span className="text-xs">{item.assignee?.name || 'Unassigned'}</span>
+                          <span className="text-xs">
+                            {item.assignee?.name || 'Unassigned'}
+                          </span>
                         </div>
                       </td>
-                      <td className="p-4 text-right font-semibold text-foreground whitespace-nowrap">
+                      <td className="text-foreground p-4 text-right font-semibold whitespace-nowrap">
                         {item.story_points ?? '–'}
                       </td>
                     </tr>

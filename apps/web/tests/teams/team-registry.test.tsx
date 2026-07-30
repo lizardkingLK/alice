@@ -57,7 +57,10 @@ vi.mock('@repo/ui/components/ui/select', () => {
   };
 });
 
-vi.mock('@repo/ui/components/ui/dropdown-menu', () => import('../mocks/dropdown-menu'));
+vi.mock(
+  '@repo/ui/components/ui/dropdown-menu',
+  () => import('../mocks/dropdown-menu')
+);
 
 vi.mock('@/app/manager/_components/actions', () => ({
   softDeleteTeam: vi.fn(),
@@ -106,6 +109,7 @@ const mockTeams: Team[] = [
     tech_stack: 'Go, Docker, Kubernetes',
     description: 'DevOps & platform squad',
     manager_id: 'user-mgr-1',
+    project_id: 'proj-1',
     status: 'active',
     created_at: '2026-07-01T00:00:00Z',
     updated_at: '2026-07-01T00:00:00Z',
@@ -130,6 +134,7 @@ const mockTeams: Team[] = [
     tech_stack: 'PHP, MySQL',
     description: 'Legacy web app',
     manager_id: 'user-mgr-1',
+    project_id: null,
     status: 'archived',
     created_at: '2026-07-01T00:00:00Z',
     updated_at: '2026-07-01T00:00:00Z',
@@ -161,6 +166,7 @@ describe('TeamRegistry Component', () => {
         search=""
         users={mockUsers}
         activeProjects={[]}
+        projectMembersByProjectId={{}}
         currentUserId="user-mgr-1"
         currentUserRole="manager"
       />
@@ -183,6 +189,7 @@ describe('TeamRegistry Component', () => {
         search=""
         users={mockUsers}
         activeProjects={[]}
+        projectMembersByProjectId={{}}
         currentUserId="user-mgr-1"
         currentUserRole="manager"
       />
@@ -215,6 +222,7 @@ describe('TeamRegistry Component', () => {
         search=""
         users={mockUsers}
         activeProjects={[]}
+        projectMembersByProjectId={{}}
         currentUserId="user-mgr-1"
         currentUserRole="manager"
       />
@@ -240,6 +248,7 @@ describe('TeamRegistry Component', () => {
         search=""
         users={mockUsers}
         activeProjects={[]}
+        projectMembersByProjectId={{}}
         currentUserId="user-mgr-1"
         currentUserRole="manager"
       />
@@ -255,7 +264,7 @@ describe('TeamRegistry Component', () => {
     fireEvent.click(confirmBtn);
 
     await waitFor(() => {
-      expect(softDeleteTeam).toHaveBeenCalledWith('team-1');
+      expect(softDeleteTeam).toHaveBeenCalledWith('team-1', 'proj-1');
       expect(mockRefresh).toHaveBeenCalled();
     });
   });
@@ -274,6 +283,7 @@ describe('TeamRegistry Component', () => {
         search=""
         users={mockUsers}
         activeProjects={[]}
+        projectMembersByProjectId={{}}
         currentUserId="user-admin-1"
         currentUserRole="admin"
       />
@@ -293,7 +303,7 @@ describe('TeamRegistry Component', () => {
     fireEvent.click(confirmBtn);
 
     await waitFor(() => {
-      expect(hardDeleteTeam).toHaveBeenCalledWith('team-2');
+      expect(hardDeleteTeam).toHaveBeenCalledWith('team-2', null);
       expect(mockRefresh).toHaveBeenCalled();
     });
   });
@@ -312,6 +322,7 @@ describe('TeamRegistry Component', () => {
         search=""
         users={mockUsers}
         activeProjects={[]}
+        projectMembersByProjectId={{}}
         currentUserId="user-mgr-1"
         currentUserRole="manager"
       />
@@ -321,7 +332,7 @@ describe('TeamRegistry Component', () => {
     fireEvent.click(restoreBtn);
 
     await waitFor(() => {
-      expect(restoreTeam).toHaveBeenCalledWith('team-2');
+      expect(restoreTeam).toHaveBeenCalledWith('team-2', null);
       expect(mockRefresh).toHaveBeenCalled();
     });
   });
@@ -338,6 +349,7 @@ describe('TeamRegistry Component', () => {
         search=""
         users={mockUsers}
         activeProjects={[]}
+        projectMembersByProjectId={{}}
         currentUserId="user-mgr-1"
         currentUserRole="manager"
       />
@@ -362,6 +374,7 @@ describe('TeamRegistry Component', () => {
         search=""
         users={mockUsers}
         activeProjects={[]}
+        projectMembersByProjectId={{}}
         currentUserId="user-mgr-1"
         currentUserRole="manager"
       />
@@ -388,6 +401,7 @@ describe('TeamRegistry Component', () => {
         search=""
         users={mockUsers}
         activeProjects={[]}
+        projectMembersByProjectId={{}}
         currentUserId="user-dev-1"
         currentUserRole="member"
       />

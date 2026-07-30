@@ -41,13 +41,13 @@ Related:
 
 ## Notifications vs activity
 
-| | **Notifications** | **Activity** |
-| --- | --- | --- |
-| Audience | One user (`user_id`) | Anyone viewing the work item |
-| Purpose | “Something needs your attention” | “What happened on this item” |
-| Examples | Assigned to you; mentioned in a comment | Status → Done; assignee changed; attachment added |
-| Table (today / planned) | `notifications` (exists) | `activities` (planned) |
-| UI | Header inbox | Work-item details (with Discussion) |
+|                         | **Notifications**                       | **Activity**                                      |
+| ----------------------- | --------------------------------------- | ------------------------------------------------- |
+| Audience                | One user (`user_id`)                    | Anyone viewing the work item                      |
+| Purpose                 | “Something needs your attention”        | “What happened on this item”                      |
+| Examples                | Assigned to you; mentioned in a comment | Status → Done; assignee changed; attachment added |
+| Table (today / planned) | `notifications` (exists)                | `activities` (planned)                            |
+| UI                      | Header inbox                            | Work-item details (with Discussion)               |
 
 Creating an activity row does **not** automatically create a notification.
 Notification writers stay explicit (e.g. assign / mention) and may reference
@@ -59,17 +59,17 @@ the same `related_item_id`.
 
 Table name: `activities`.
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| `id` | UUID PK | `gen_random_uuid()` |
-| `work_item_id` | UUID FK → `work_items` | `ON DELETE CASCADE` |
-| `actor_id` | UUID FK → `users` | Who caused the change; nullable if system/trigger without actor |
-| `action` | enum / text | e.g. `created`, `updated`, `attached`, `detached`, `commented` |
-| `field` | text nullable | e.g. `status`, `assignee_id`, `sprint_id`, `title` |
-| `old_value` | text / jsonb nullable | Serialized prior value (ids resolved to labels at read time or stored as display strings) |
-| `new_value` | text / jsonb nullable | Serialized new value |
-| `meta` | jsonb nullable | Extra context (attachment name, comment id, etc.) |
-| `created_at` | timestamptz | Event time (immutable; no `updated_at` required) |
+| Column         | Type                   | Notes                                                                                     |
+| -------------- | ---------------------- | ----------------------------------------------------------------------------------------- |
+| `id`           | UUID PK                | `gen_random_uuid()`                                                                       |
+| `work_item_id` | UUID FK → `work_items` | `ON DELETE CASCADE`                                                                       |
+| `actor_id`     | UUID FK → `users`      | Who caused the change; nullable if system/trigger without actor                           |
+| `action`       | enum / text            | e.g. `created`, `updated`, `attached`, `detached`, `commented`                            |
+| `field`        | text nullable          | e.g. `status`, `assignee_id`, `sprint_id`, `title`                                        |
+| `old_value`    | text / jsonb nullable  | Serialized prior value (ids resolved to labels at read time or stored as display strings) |
+| `new_value`    | text / jsonb nullable  | Serialized new value                                                                      |
+| `meta`         | jsonb nullable         | Extra context (attachment name, comment id, etc.)                                         |
+| `created_at`   | timestamptz            | Event time (immutable; no `updated_at` required)                                          |
 
 Optional: standard `created_by` if we want consistency with [AUDIT_COLUMNS.md](../../database/AUDIT_COLUMNS.md); for an append-only log, `actor_id` + `created_at` may be enough.
 
@@ -101,20 +101,20 @@ Two complementary approaches; lock one primary for v1.
 On successful mutations in Express (work-item PATCH, attachment create/delete,
 comment create), insert one or more activity rows in the same request path.
 
-| Pros | Cons |
-| --- | --- |
-| Easy to attach `actor_id` from JWT | Easy to forget a code path |
-| Fits existing DI / service layer | Direct Supabase RSC writes bypass API |
+| Pros                               | Cons                                  |
+| ---------------------------------- | ------------------------------------- |
+| Easy to attach `actor_id` from JWT | Easy to forget a code path            |
+| Fits existing DI / service layer   | Direct Supabase RSC writes bypass API |
 
 ### B. Postgres triggers
 
 `AFTER UPDATE` on `work_items` (and optionally `attachments` / `comments`)
 compares `OLD`/`NEW` and inserts activity rows.
 
-| Pros | Cons |
-| --- | --- |
+| Pros                            | Cons                                                                |
+| ------------------------------- | ------------------------------------------------------------------- |
 | Hard to skip if the row changes | Actor attribution needs `updated_by` (or session GUC) set correctly |
-| Covers non-API writers | Harder to test; migration ownership in `packages/db` |
+| Covers non-API writers          | Harder to test; migration ownership in `packages/db`                |
 
 **Recommended direction (to lock in implementation):**
 
@@ -167,11 +167,11 @@ not in the sidebar.
 **Locked UI direction:** Tabs — replace the current `Discussion ({n})` heading
 inside `CommentsFeed` with a shared tab bar.
 
-| Option | Shape |
-| --- | --- |
-| **A. Tabs** (chosen) | Tab bar is the section chrome: `Discussion` \| `Activity` (counts optional on labels) |
-| **B. Stacked sections** | Discussion then Activity (or reverse) — rejected for v1 |
-| **C. Combined stream** | Single feed mixing comments + activity — defer |
+| Option                  | Shape                                                                                 |
+| ----------------------- | ------------------------------------------------------------------------------------- |
+| **A. Tabs** (chosen)    | Tab bar is the section chrome: `Discussion` \| `Activity` (counts optional on labels) |
+| **B. Stacked sections** | Discussion then Activity (or reverse) — rejected for v1                               |
+| **C. Combined stream**  | Single feed mixing comments + activity — defer                                        |
 
 ### Tab bar replaces Discussion heading
 
@@ -259,14 +259,14 @@ Realtime (optional v1):
 
 ## Open decisions
 
-| Topic | Candidates | Notes |
-| --- | --- | --- |
-| UI layout | Tabs (locked) | Heading `Discussion (n)` → tab bar |
-| Fullscreen | Match description maximize | Icon button (`Maximize2` / `Minimize2`) on **right** of tab bar row |
-| Tab counts | Show counts vs labels only | Optional; can mirror old `(n)` on Discussion tab |
-| Comment events | Activity row vs Discussion-only | Prefer Discussion-only in v1 to avoid duplicate noise |
-| Value storage | Raw ids vs display strings | Prefer store ids + resolve labels on read; fallback string for deleted users |
-| Writers | API-only vs API + trigger | Prefer API-first |
-| Description | Log opaque “updated” vs omit | Prefer opaque “description updated” |
+| Topic          | Candidates                      | Notes                                                                        |
+| -------------- | ------------------------------- | ---------------------------------------------------------------------------- |
+| UI layout      | Tabs (locked)                   | Heading `Discussion (n)` → tab bar                                           |
+| Fullscreen     | Match description maximize      | Icon button (`Maximize2` / `Minimize2`) on **right** of tab bar row          |
+| Tab counts     | Show counts vs labels only      | Optional; can mirror old `(n)` on Discussion tab                             |
+| Comment events | Activity row vs Discussion-only | Prefer Discussion-only in v1 to avoid duplicate noise                        |
+| Value storage  | Raw ids vs display strings      | Prefer store ids + resolve labels on read; fallback string for deleted users |
+| Writers        | API-only vs API + trigger       | Prefer API-first                                                             |
+| Description    | Log opaque “updated” vs omit    | Prefer opaque “description updated”                                          |
 
 Lock remaining items in this doc’s **Locked decisions** section when implementation starts.

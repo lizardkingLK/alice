@@ -11,6 +11,8 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import { Button } from '@repo/ui/components/ui/button';
+import { Badge } from '@repo/ui/components/ui/badge';
+import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import {
   Select,
   SelectContent,
@@ -25,10 +27,12 @@ import {
   TabsContent,
 } from '@repo/ui/components/ui/tabs';
 import { addMemberAction, removeMemberAction } from './actions';
+import { ProjectTeamsPanel } from '@/app/projects/[id]/_components/project-teams-panel';
 import type {
   Project,
   ProjectMemberWithUser,
 } from '../../_services/projects.service';
+import type { Team } from '@/app/manager/_services/teams.service';
 import type { User } from '@/app/users/_services/users.service';
 import WorkItemsWorkspace from '@/app/work-items/_components/workItems-workspace';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
@@ -48,6 +52,7 @@ import {
   Loader2,
   AlertTriangle,
   Folder,
+  Network,
   ClipboardPenLine,
 } from '@repo/ui/lib/icons';
 
@@ -62,6 +67,16 @@ interface ProjectWorkItemsProps {
   readonly assigneeFilter: string;
 }
 
+interface ProjectTeamsProps {
+  readonly items: Team[];
+  readonly totalCount: number;
+  readonly page: number;
+  readonly limit: number;
+  readonly totalPages: number;
+  readonly search: string;
+  readonly status: 'active' | 'inactive' | 'archived';
+}
+
 interface ProjectDetailsWorkspaceProps {
   readonly project: Project;
   readonly members: ProjectMemberWithUser[];
@@ -69,6 +84,7 @@ interface ProjectDetailsWorkspaceProps {
   readonly currentUserId?: string | null;
   readonly currentUserRole?: string | null;
   readonly workItems: ProjectWorkItemsProps;
+  readonly teams: ProjectTeamsProps;
 }
 
 export function ProjectDetailsWorkspace({
@@ -78,6 +94,7 @@ export function ProjectDetailsWorkspace({
   currentUserId,
   currentUserRole,
   workItems,
+  teams,
 }: Readonly<ProjectDetailsWorkspaceProps>) {
   const router = useRouter();
   const pathname = usePathname();
@@ -104,10 +121,8 @@ export function ProjectDetailsWorkspace({
 
   const handleTabChange = (value: string) => {
     const nextTab = value as ProjectDetailsTab;
-    const params = new URLSearchParams(searchParams.toString());
-    if (nextTab === 'details') {
-      params.delete('tab');
-    } else {
+    const params = new URLSearchParams();
+    if (nextTab !== 'details') {
       params.set('tab', nextTab);
     }
     const query = params.toString();
@@ -140,7 +155,7 @@ export function ProjectDetailsWorkspace({
       </div>
 
       {/* Hero Header */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="bg-card/40 border-border/60 flex flex-col gap-2 rounded-xl border p-4 shadow-sm backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
             <div className="bg-primary/10 text-primary border-primary/20 flex h-10 w-10 items-center justify-center rounded-lg border text-sm font-bold shadow-sm">
@@ -149,6 +164,16 @@ export function ProjectDetailsWorkspace({
             <h1 className="text-foreground text-3xl font-extrabold tracking-tight">
               {project.name}
             </h1>
+            <Badge
+              variant="outline"
+              className={
+                project.status === 'active'
+                  ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600'
+                  : 'border-amber-500/20 bg-amber-500/10 text-amber-600'
+              }
+            >
+              {project.status}
+            </Badge>
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm">
             {project.description || 'No description provided for this project.'}
@@ -163,19 +188,17 @@ export function ProjectDetailsWorkspace({
         className="w-full space-y-6"
       >
         <TabsList className="border-border flex h-auto justify-start gap-4 rounded-none border-b bg-transparent p-0">
-          <TabsTrigger
-            value="details"
-            className={UNDERLINE_TAB_TRIGGER_CLASS}
-          >
+          <TabsTrigger value="details" className={UNDERLINE_TAB_TRIGGER_CLASS}>
             <Info className="h-4 w-4" />
             Project Details
           </TabsTrigger>
-          <TabsTrigger
-            value="members"
-            className={UNDERLINE_TAB_TRIGGER_CLASS}
-          >
+          <TabsTrigger value="members" className={UNDERLINE_TAB_TRIGGER_CLASS}>
             <Users className="h-4 w-4" />
-            Project Members ({members.length})
+            Members ({members.length})
+          </TabsTrigger>
+          <TabsTrigger value="teams" className={UNDERLINE_TAB_TRIGGER_CLASS}>
+            <Network className="h-4 w-4" />
+            Teams ({teams.totalCount})
           </TabsTrigger>
           <TabsTrigger
             value="work-items"
@@ -192,7 +215,7 @@ export function ProjectDetailsWorkspace({
         >
           <div className="grid gap-6 md:grid-cols-3">
             {/* Main Info Card */}
-            <Card className="border-border bg-card/50 backdrop-blur-md md:col-span-2">
+            <Card className="border-border/60 bg-card/40 backdrop-blur-md md:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
                   <Folder className="text-primary h-5 w-5" />
@@ -272,24 +295,23 @@ export function ProjectDetailsWorkspace({
                     <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                       Record Status
                     </span>
-                    <div>
-                      <span
-                        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase transition-colors ${
-                          project.status === 'active'
-                            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600'
-                            : 'border-amber-500/20 bg-amber-500/10 text-amber-600'
-                        }`}
-                      >
-                        {project.status}
-                      </span>
-                    </div>
+                    <Badge
+                      variant="outline"
+                      className={
+                        project.status === 'active'
+                          ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600'
+                          : 'border-amber-500/20 bg-amber-500/10 text-amber-600'
+                      }
+                    >
+                      {project.status}
+                    </Badge>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Sidebar Ownership Card */}
-            <Card className="border-border bg-card/50 h-fit backdrop-blur-md">
+            <Card className="border-border/60 bg-card/40 h-fit backdrop-blur-md">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
                   <Shield className="text-primary h-5 w-5" />
@@ -305,12 +327,12 @@ export function ProjectDetailsWorkspace({
                     {(project.owner?.name ?? 'U').slice(0, 1).toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-foreground truncate text-sm font-semibold">
+                    <TruncatedText className="text-foreground text-sm font-semibold">
                       {project.owner?.name ?? 'Unknown Owner'}
-                    </p>
-                    <p className="text-muted-foreground truncate text-xs">
+                    </TruncatedText>
+                    <TruncatedText className="text-muted-foreground text-xs">
                       {project.owner?.email ?? 'No email configured'}
-                    </p>
+                    </TruncatedText>
                   </div>
                 </div>
               </CardContent>
@@ -324,7 +346,7 @@ export function ProjectDetailsWorkspace({
         >
           <div className="grid gap-6 md:grid-cols-3">
             {/* Members Table Card */}
-            <Card className="border-border bg-card/50 backdrop-blur-md md:col-span-2">
+            <Card className="border-border/60 bg-card/40 backdrop-blur-md md:col-span-2">
               <CardHeader>
                 <CardTitle className="text-xl font-bold tracking-tight">
                   Allocated Members
@@ -372,8 +394,10 @@ export function ProjectDetailsWorkspace({
                               {userName.slice(0, 1).toUpperCase()}
                             </div>
                             <div className="min-w-0">
-                              <p className="text-foreground flex items-center gap-1.5 text-sm font-semibold">
-                                <span className="truncate">{userName}</span>
+                              <div className="flex min-w-0 items-center gap-1.5 text-sm font-semibold">
+                                <TruncatedText className="text-foreground min-w-0">
+                                  {userName}
+                                </TruncatedText>
                                 <span className="bg-muted border-border text-muted-foreground py-0.2 shrink-0 rounded-full border px-1.5 text-[10px] font-semibold tracking-wider uppercase">
                                   {userRole}
                                 </span>
@@ -382,12 +406,12 @@ export function ProjectDetailsWorkspace({
                                     You
                                   </span>
                                 )}
-                              </p>
-                              {userEmail && (
-                                <p className="text-muted-foreground truncate text-xs">
+                              </div>
+                              {userEmail ? (
+                                <TruncatedText className="text-muted-foreground text-xs">
                                   {userEmail}
-                                </p>
-                              )}
+                                </TruncatedText>
+                              ) : null}
                             </div>
                           </div>
 
@@ -419,7 +443,7 @@ export function ProjectDetailsWorkspace({
 
             {/* Add Members Allocation Panel */}
             {isManagerOrAdmin && (
-              <Card className="border-border bg-card/50 h-fit backdrop-blur-md">
+              <Card className="border-border/60 bg-card/40 h-fit backdrop-blur-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
                     <UserPlus className="text-primary h-5 w-5" />
@@ -481,6 +505,26 @@ export function ProjectDetailsWorkspace({
               </Card>
             )}
           </div>
+        </TabsContent>
+
+        <TabsContent
+          value="teams"
+          className="m-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+        >
+          <ProjectTeamsPanel
+            project={project}
+            members={members}
+            teams={teams.items}
+            totalCount={teams.totalCount}
+            page={teams.page}
+            limit={teams.limit}
+            totalPages={teams.totalPages}
+            tab={teams.status}
+            search={teams.search}
+            users={allUsers}
+            currentUserId={currentUserId}
+            currentUserRole={currentUserRole}
+          />
         </TabsContent>
 
         <TabsContent

@@ -13,6 +13,19 @@ const DATE_FORMAT: Intl.DateTimeFormatOptions = {
   timeZone: 'UTC',
 };
 
+const DATE_TIME_FORMAT: Intl.DateTimeFormatOptions = {
+  ...DATE_FORMAT,
+  hour: 'numeric',
+  minute: '2-digit',
+};
+
+const TIME_FORMAT: Intl.DateTimeFormatOptions = {
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: true,
+  timeZone: 'UTC',
+};
+
 /**
  * Formats a date string for display. Always uses `en-US` + UTC so server
  * and client render the same text (hydration-safe).
@@ -32,6 +45,28 @@ export const formatDate = (value: string | null): string => {
   }
 
   return new Date(value).toLocaleDateString('en-US', DATE_FORMAT);
+};
+
+/**
+ * Formats a timestamp for display (date + time). Hydration-safe via `en-US` + UTC.
+ */
+export const formatDateTime = (value: string | null): string => {
+  if (!value) {
+    return '—';
+  }
+
+  return new Date(value).toLocaleString('en-US', DATE_TIME_FORMAT);
+};
+
+/**
+ * Formats a time-of-day for display. Hydration-safe via `en-US` + UTC.
+ */
+export const formatTime = (value: string | null): string => {
+  if (!value) {
+    return '—';
+  }
+
+  return new Date(value).toLocaleTimeString('en-US', TIME_FORMAT);
 };
 
 export const formatLabelWithSpace = (value: string): string => {
@@ -95,5 +130,7 @@ export function formatDateToISOString(
   minute: number = 0,
   second: number = 0
 ): string {
-  return new Date(Date.UTC(year, monthIndex, day, hour, minute, second)).toISOString();
+  return new Date(
+    Date.UTC(year, monthIndex, day, hour, minute, second)
+  ).toISOString();
 }

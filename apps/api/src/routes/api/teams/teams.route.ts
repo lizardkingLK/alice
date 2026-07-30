@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { requireApiAuth, type AuthenticatedRequest } from '@/middlewares/auth';
-import { teamsService } from '@/routes/api/teams/teams.service';
 import {
-  createTeamSchema,
-  updateTeamSchema,
-} from '@/routes/api/teams/teams.schemas';
-import { parsePagination } from '@/lib/pagination';
+  requireApiAuth,
+  type AuthenticatedRequest,
+} from '../../../middlewares/auth';
+import { teamsService } from './teams.service';
+import { createTeamSchema, updateTeamSchema } from './teams.schemas';
+import { updateTeamMemberSchema } from '@repo/types';
+import { parsePagination } from '../../../lib/pagination';
 
 const teamsRouter: Router = Router();
 
@@ -15,6 +16,7 @@ teamsRouter.get('/', requireApiAuth, async (req: AuthenticatedRequest, res) => {
     const statusValue = req.query.status as
       'active' | 'inactive' | 'archived' | 'deleted' | undefined;
     const searchStr = req.query.search as string | undefined;
+    const projectId = req.query.project_id as string | undefined;
 
     const paginationInfo = parsePagination(req);
     if (paginationInfo) {
@@ -23,7 +25,8 @@ teamsRouter.get('/', requireApiAuth, async (req: AuthenticatedRequest, res) => {
         targetPage,
         targetLimit,
         statusValue,
-        searchStr
+        searchStr,
+        projectId
       );
       const pagesCount = Math.ceil(listResult.totalCount / targetLimit);
       return res.json({
@@ -59,6 +62,7 @@ teamsRouter.post(
         name: validation.data.name,
         description: validation.data.description ?? null,
         manager_id: validation.data.manager_id,
+        project_id: validation.data.project_id,
         tech_stack: validation.data.tech_stack ?? null,
         status: validation.data.status ?? 'active',
         member_ids: validation.data.member_ids,
@@ -142,6 +146,38 @@ teamsRouter.patch(
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to restore team';
+      res.status(500).json({ error: message });
+    }
+  }
+);
+
+teamsRouter.patch(
+  '/:teamId/members/:userId',
+  requireApiAuth,
+  async (req: AuthenticatedRequest, res) => {
+    const { teamId, userId } = req.params;
+    if (!teamId || !userId) {
+      return res
+        .status(400)
+        .json({ error: 'Team and user identifiers are required' });
+    }
+
+    const validation = updateTeamMemberSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({ error: z.treeifyError(validation.error) });
+    }
+
+    try {
+      await teamsService.updateTeamMember(
+        teamId,
+        userId,
+        validation.data,
+        req.userId!
+      );
+      res.json({ success: true });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to update team member';
       res.status(500).json({ error: message });
     }
   }

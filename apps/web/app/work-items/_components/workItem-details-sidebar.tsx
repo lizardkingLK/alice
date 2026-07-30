@@ -8,8 +8,8 @@ import {
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
 import {
   WORK_ITEM_PATCH_FIELD_CONFIG,
+  WORK_ITEM_STATUSES,
   WorkItemFieldPatchDialog,
-  type WorkItemPatchFieldId,
   type WorkItemPatchMemberOption,
 } from '@/app/work-items/_components/workItem-field-patch-dialog';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
@@ -52,17 +52,10 @@ import {
   PencilIcon,
   Settings,
 } from '@repo/ui/lib/icons';
+import { WorkItemTimeTracking } from '@/app/work-items/_components/work-item-time-tracking';
+import type { WorkItemWorkLog } from '@repo/types';
 import { cn } from '@repo/ui/lib/utils';
 import { Dispatch, ReactNode, SetStateAction, useState } from 'react';
-
-const statuses = [
-  'Draft',
-  'New',
-  'ToDo',
-  'InProgress',
-  'Testing',
-  'Done',
-] as const satisfies ReadonlyArray<DbWorkItem['status']>;
 
 const PLACEHOLDER_LABELS = [
   'Solar-powered',
@@ -72,44 +65,71 @@ const PLACEHOLDER_LABELS = [
 ] as const;
 
 function StatusDropdown({
+  workItemId,
   workItemStatus,
-}: Readonly<{ workItemStatus: DbWorkItem['status'] }>) {
-  const [status, setStatus] = useState(workItemStatus);
+  onPatched,
+}: Readonly<{
+  workItemId: string;
+  workItemStatus: DbWorkItem['status'];
+  // eslint-disable-next-line no-unused-vars -- callback signature
+  onPatched: (updated: Partial<DbWorkItem>) => void;
+}>) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [pendingStatus, setPendingStatus] =
+    useState<DbWorkItem['status']>(workItemStatus);
+
+  const handleStatusSelect = (value: string) => {
+    const nextStatus = value as DbWorkItem['status'];
+    if (nextStatus === workItemStatus) {
+      return;
+    }
+    setPendingStatus(nextStatus);
+    setDialogOpen(true);
+  };
 
   return (
-    <ButtonGroup className="w-full">
-      <Button
-        variant="default"
-        className="bg-primary text-primary-foreground hover:bg-primary/90 flex-1 justify-start"
-      >
-        {formatLabelWithSpace(status)}
-      </Button>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="default" className="cursor-pointer px-2">
-            <ChevronDown />
-            <span className="sr-only">Change status</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuGroup>
-            <DropdownMenuLabel>Change Status</DropdownMenuLabel>
-            <DropdownMenuRadioGroup
-              value={status}
-              onValueChange={(value) =>
-                setStatus(value as DbWorkItem['status'])
-              }
-            >
-              {statuses.map((item) => (
-                <DropdownMenuRadioItem key={item} value={item}>
-                  {formatLabelWithSpace(item)}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </ButtonGroup>
+    <>
+      <ButtonGroup className="w-full">
+        <Button
+          variant="default"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 flex-1 justify-start"
+        >
+          {formatLabelWithSpace(workItemStatus)}
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="default" className="cursor-pointer px-2">
+              <ChevronDown />
+              <span className="sr-only">Change status</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+              <DropdownMenuRadioGroup
+                value={workItemStatus}
+                onValueChange={handleStatusSelect}
+              >
+                {WORK_ITEM_STATUSES.map((item) => (
+                  <DropdownMenuRadioItem key={item} value={item}>
+                    {formatLabelWithSpace(item)}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </ButtonGroup>
+
+      <WorkItemFieldPatchDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        workItemId={workItemId}
+        fieldConfig={WORK_ITEM_PATCH_FIELD_CONFIG.status}
+        currentValue={pendingStatus}
+        onPatched={onPatched}
+      />
+    </>
   );
 }
 
@@ -122,6 +142,45 @@ function DetailRow({
       <span className="text-muted-foreground pt-0.5 text-sm">{label}</span>
       <div className="min-w-0">{children}</div>
     </div>
+  );
+}
+
+function SidebarCollapsibleHeader({
+  title,
+  open,
+  collapsedHint,
+}: Readonly<{
+  title: string;
+  open: boolean;
+  collapsedHint?: string;
+}>) {
+  return (
+    <CardHeader className="px-4 py-3">
+      <CollapsibleTrigger
+        className="bg-transparent hover:bg-transparent"
+        asChild
+      >
+        <button
+          type="button"
+          className="hover:bg-muted/50 flex w-full cursor-pointer items-center justify-between gap-3 rounded-md text-left transition-colors"
+        >
+          <div className="min-w-0">
+            <CardTitle className="text-sm font-semibold">{title}</CardTitle>
+            {!open && collapsedHint ? (
+              <p className="text-muted-foreground mt-0.5 truncate text-xs">
+                {collapsedHint}
+              </p>
+            ) : null}
+          </div>
+          <ChevronDown
+            className={cn(
+              'text-muted-foreground size-4 shrink-0 transition-transform',
+              open && 'rotate-180'
+            )}
+          />
+        </button>
+      </CollapsibleTrigger>
+    </CardHeader>
   );
 }
 
@@ -151,8 +210,8 @@ function UserPill({
 type EditableUserFieldProps = {
   readonly name?: string | null;
   readonly imageUrl?: string | null;
-  readonly field: WorkItemPatchFieldId;
-  readonly onEdit: (field: WorkItemPatchFieldId) => void;
+  readonly field: 'assignee_id' | 'reporter_id';
+  readonly onEdit: (field: 'assignee_id' | 'reporter_id') => void;
 };
 /* eslint-enable no-unused-vars */
 
@@ -169,7 +228,7 @@ function EditableUserField({
       <UserPill
         name={name}
         imageUrl={imageUrl}
-        emptyLabel={config.unassignedLabel}
+        emptyLabel={config.unassignedLabel ?? 'Unassigned'}
       />
       <Button
         type="button"
@@ -188,24 +247,28 @@ function EditableUserField({
 export default function WorkItemSidebar({
   workItem,
   projectMembers = [],
+  workLogs = [],
   detailsOpen,
   setDetailsOpen,
   moreFieldsOpen,
   setMoreFieldsOpen,
   onWorkItemPatched,
+  onLogWorkClick,
 }: Readonly<{
   workItem: DbWorkItem;
   projectMembers?: readonly WorkItemPatchMemberOption[];
+  workLogs?: WorkItemWorkLog[];
   detailsOpen: boolean;
   setDetailsOpen: Dispatch<SetStateAction<boolean>>;
   moreFieldsOpen: boolean;
   setMoreFieldsOpen: Dispatch<SetStateAction<boolean>>;
   // eslint-disable-next-line no-unused-vars -- callback signature
   onWorkItemPatched: (updated: Partial<DbWorkItem>) => void;
+  onLogWorkClick?: () => void;
 }>) {
-  const [activeField, setActiveField] = useState<WorkItemPatchFieldId | null>(
-    null
-  );
+  const [activeField, setActiveField] = useState<
+    'assignee_id' | 'reporter_id' | null
+  >(null);
 
   const activeConfig = activeField
     ? WORK_ITEM_PATCH_FIELD_CONFIG[activeField]
@@ -220,31 +283,15 @@ export default function WorkItemSidebar({
 
   return (
     <aside className="space-y-4 lg:col-span-2">
-      <StatusDropdown workItemStatus={workItem.status} />
+      <StatusDropdown
+        workItemId={workItem.id}
+        workItemStatus={workItem.status}
+        onPatched={onWorkItemPatched}
+      />
 
       <Card className="border-border gap-0 py-0 shadow-none">
         <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen}>
-          <CardHeader className="px-4 py-3">
-            <CollapsibleTrigger
-              className="bg-transparent hover:bg-transparent"
-              asChild
-            >
-              <button
-                type="button"
-                className={cn(
-                  'hover:bg-muted/50 flex w-full cursor-pointer items-center justify-between rounded-md text-left transition-colors'
-                )}
-              >
-                <CardTitle className="text-sm font-semibold">Details</CardTitle>
-                <ChevronDown
-                  className={cn(
-                    'text-muted-foreground size-4 transition-transform',
-                    detailsOpen && 'rotate-180'
-                  )}
-                />
-              </button>
-            </CollapsibleTrigger>
-          </CardHeader>
+          <SidebarCollapsibleHeader title="Details" open={detailsOpen} />
 
           <CollapsibleContent>
             <CardContent className="border-t px-4 pt-1 pb-4">
@@ -341,39 +388,20 @@ export default function WorkItemSidebar({
 
       <Card className="border-border gap-0 py-0 shadow-none">
         <Collapsible open={moreFieldsOpen} onOpenChange={setMoreFieldsOpen}>
-          <CardHeader className="px-4 py-3">
-            <CollapsibleTrigger
-              className="bg-transparent hover:bg-transparent"
-              asChild
-            >
-              <button
-                type="button"
-                className={cn(
-                  'hover:bg-muted/50 flex w-full cursor-pointer items-center justify-between gap-3 rounded-md text-left transition-colors'
-                )}
-              >
-                <div className="min-w-0">
-                  <CardTitle className="text-sm font-semibold">
-                    More fields
-                  </CardTitle>
-                  {!moreFieldsOpen ? (
-                    <p className="text-muted-foreground mt-0.5 truncate text-xs">
-                      Time tracking, automation, reminders…
-                    </p>
-                  ) : null}
-                </div>
-                <ChevronDown
-                  className={cn(
-                    'text-muted-foreground size-4 shrink-0 transition-transform',
-                    moreFieldsOpen && 'rotate-180'
-                  )}
-                />
-              </button>
-            </CollapsibleTrigger>
-          </CardHeader>
+          <SidebarCollapsibleHeader
+            title="More fields"
+            open={moreFieldsOpen}
+            collapsedHint="Time tracking, automation, reminders…"
+          />
 
           <CollapsibleContent>
             <CardContent className="text-muted-foreground space-y-3 border-t px-4 pt-3 pb-4 text-sm">
+              <WorkItemTimeTracking
+                storyPoints={workItem.story_points}
+                workLogs={workLogs}
+                onLogWorkClick={onLogWorkClick}
+              />
+
               <DetailRow label="Due date">
                 <span>{formatDate(workItem.due_date)}</span>
               </DetailRow>

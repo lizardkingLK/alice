@@ -1,12 +1,16 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { requireApiAuth, type AuthenticatedRequest } from '@/middlewares/auth';
+import {
+  requireApiAuth,
+  type AuthenticatedRequest,
+} from '../../../middlewares/auth';
 import {
   createSprintBodySchema,
   updateSprintStatusSchema,
   updateSprintBodySchema,
-} from '@/routes/api/sprints/sprints.schemas';
-import { sprintsService } from '@/routes/api/sprints/sprints.service';
+  listSprintsQuerySchema,
+} from './sprints.schemas';
+import { sprintsService, sprintBurndownService } from './sprints.service';
 
 const sprintsRouter: Router = Router();
 
@@ -95,6 +99,26 @@ sprintsRouter.patch(
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to update sprint';
+      res.status(500).json({ error: message });
+    }
+  }
+);
+
+sprintsRouter.get(
+  '/:id/burndown',
+  requireApiAuth,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const burndown = await sprintBurndownService.getBurndown(req.params.id!);
+      if (!burndown) {
+        return res.status(404).json({ error: 'Sprint not found' });
+      }
+      res.json(burndown);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch burndown data';
       res.status(500).json({ error: message });
     }
   }

@@ -1,41 +1,29 @@
 import { z } from 'zod';
 
 import { auditCreateWithoutStatus, auditUpdate } from '@/lib/audit';
-import { getDbUser } from '@/lib/auth';
 import {
   actionFailure,
   firstValidationError,
   type ActionState,
 } from '@/lib/server-actions';
 import { createAdminClient } from '@/lib/supabase/admin';
+import {
+  requireManagerRole,
+  type ManagePermissionResult,
+} from '@/lib/require-manager-role';
 
 import {
   createProjectSchema as projectSchema,
-  type Tables,
   type TablesInsert,
   type TablesUpdate,
 } from '@repo/types';
 
 export type ProjectFormData = z.infer<typeof projectSchema>;
 
-type ManagePermissionResult =
-  | { allowed: true; currentUser: Tables<'users'> }
-  | { allowed: false; error: string };
-
 export async function requireProjectManager(): Promise<ManagePermissionResult> {
-  const currentUser = await getDbUser();
-  if (!currentUser) {
-    return { allowed: false, error: 'Not authenticated.' };
-  }
-
-  if (currentUser.role !== 'admin' && currentUser.role !== 'manager') {
-    return {
-      allowed: false,
-      error: 'Unauthorized. Only admins and managers can manage projects.',
-    };
-  }
-
-  return { allowed: true, currentUser };
+  return requireManagerRole(
+    'Unauthorized. Only admins and managers can manage projects.'
+  );
 }
 
 export function parseProjectForm(

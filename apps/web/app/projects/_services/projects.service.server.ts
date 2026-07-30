@@ -1,6 +1,8 @@
 import { USER_PROJECTION_WITH_ROLE, userRelationSelect } from '@repo/types';
 import { apiFetch } from '@/lib/api/api-client.server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { getUser } from '@/lib/auth';
 import { pageRange, paginationMeta } from '@/lib/db/pagination';
 import { applyListSearch, throwIfError } from '@/lib/db/query';
 import { getCachedProjectList } from '@/lib/cache/dropdown-cache';
@@ -9,6 +11,7 @@ import type {
   GetProjectsPaginatedResponse,
   Project,
   ProjectMemberWithUser,
+  ProjectMembersByProjectId,
 } from './projects.service.base';
 
 const service = createProjectsService(apiFetch);
@@ -65,8 +68,14 @@ export async function getProjectListPaginated(
     'Failed to list projects'
   );
 
+  const projects = (data ?? []) as unknown as Project[];
+  const teamCounts = await getTeamCountsByProjectIds(projects.map((p) => p.id));
+
   return {
-    projects: (data ?? []) as unknown as Project[],
+    projects: projects.map((project) => ({
+      ...project,
+      team_count: teamCounts[project.id] ?? 0,
+    })),
     ...paginationMeta(count ?? 0, page, limit),
   };
 }
@@ -110,7 +119,91 @@ export async function getProjectMembers(
     'Failed to list project members'
   );
 
-  return (data ?? []) as unknown as ProjectMemberWithUser[];
+  return filterActiveProjectMembersWithUser(data);
+}
+
+/** Count non-deleted teams per project for list badges. */
+export async function getTeamCountsByProjectIds(
+  projectIds: readonly string[]
+): Promise<Record<string, number>> {
+  if (projectIds.length === 0) {
+    return {};
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('teams')
+    .select('project_id')
+    .in('project_id', [...projectIds])
+    .neq('status', 'deleted');
+
+  throwIfError(
+    error,
+    'failed to count teams by project ids',
+    'Failed to count project teams'
+  );
+
+  const counts = Object.fromEntries(projectIds.map((id) => [id, 0]));
+  for (const row of data ?? []) {
+    if (!row.project_id) {
+      continue;
+    }
+    counts[row.project_id] = (counts[row.project_id] ?? 0) + 1;
+  }
+
+  return counts;
+}
+
+function filterActiveProjectMembersWithUser(
+  data: unknown
+): ProjectMemberWithUser[] {
+  return ((data ?? []) as ProjectMemberWithUser[]).filter(
+    (member) => member.status === 'active' && member.user
+  );
+}
+
+/** Batch read active project members for form dropdowns (e.g. team form).
+ * Auth-gated admin read so the map matches the cached projects dropdown
+ * and is not emptied by cookie-client RLS.
+ */
+export async function getProjectMembersByProjectIds(
+  projectIds: string[]
+): Promise<ProjectMembersByProjectId> {
+  if (projectIds.length === 0) {
+    return {};
+  }
+
+  const user = await getUser();
+  if (!user) {
+    return {};
+  }
+
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from('project_members')
+    .select(`*, ${PROJECT_MEMBER_USER_SELECT}`)
+    .in('project_id', projectIds)
+    .eq('status', 'active');
+
+  throwIfError(
+    error,
+    'failed to list project members by project ids',
+    'Failed to list project members'
+  );
+
+  const grouped: ProjectMembersByProjectId = Object.fromEntries(
+    projectIds.map((projectId) => [projectId, []])
+  );
+
+  for (const member of filterActiveProjectMembersWithUser(data)) {
+    const bucket = grouped[member.project_id];
+    if (bucket) {
+      bucket.push(member);
+    }
+  }
+
+  return grouped;
 }
 
 export const createProject = service.createProject;
@@ -127,4 +220,5 @@ export type {
   CreateProjectInput,
   UpdateProjectInput,
   ProjectMemberWithUser,
+  ProjectMembersByProjectId,
 } from './projects.service.base';

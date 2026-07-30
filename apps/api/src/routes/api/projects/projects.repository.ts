@@ -1,10 +1,10 @@
 import { USER_PROJECTION_WITH_ROLE, userRelationSelect } from '@repo/types';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../../../lib/supabase';
 import {
   auditCreate,
   auditCreateWithoutStatus,
   auditUpdate,
-} from '@/lib/audit';
+} from '../../../lib/audit';
 
 export type ProjectRow = {
   id: string;
@@ -175,6 +175,51 @@ export class ProjectsRepository {
   }
 
   async removeMember(projectId: string, userId: string): Promise<void> {
+    const { data: projectTeams, error: teamsError } = await supabase
+      .from('teams')
+      .select('id')
+      .eq('project_id', projectId);
+
+    if (teamsError) {
+      console.error(
+        'error. failed to list project teams for member removal:',
+        teamsError.message
+      );
+      throw new Error('Failed to remove project member team assignments');
+    }
+
+    const teamIds = (projectTeams ?? []).map((team) => team.id);
+
+    if (teamIds.length > 0) {
+      const { error: reportingError } = await supabase
+        .from('team_members')
+        .update({ reporting_line: null })
+        .in('team_id', teamIds)
+        .eq('reporting_line', userId);
+
+      if (reportingError) {
+        console.error(
+          'error. failed to clear team reporting lines:',
+          reportingError.message
+        );
+        throw new Error('Failed to remove project member team assignments');
+      }
+
+      const { error: membersError } = await supabase
+        .from('team_members')
+        .delete()
+        .in('team_id', teamIds)
+        .eq('user_id', userId);
+
+      if (membersError) {
+        console.error(
+          'error. failed to remove team memberships:',
+          membersError.message
+        );
+        throw new Error('Failed to remove project member team assignments');
+      }
+    }
+
     const { error } = await supabase
       .from('project_members')
       .delete()

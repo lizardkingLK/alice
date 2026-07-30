@@ -1,133 +1,62 @@
 'use client';
 
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { Input } from '@repo/ui/components/ui/input';
+import { useState } from 'react';
+import { Button } from '@repo/ui/components/ui/button';
+import { PencilIcon } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
+import {
+  WORK_ITEM_PATCH_FIELD_CONFIG,
+  WorkItemFieldPatchDialog,
+} from '@/app/work-items/_components/workItem-field-patch-dialog';
+import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 
 type WorkItemTitleEditorProps = {
-  title: string;
-  // eslint-disable-next-line no-unused-vars
-  onSave: (nextTitle: string) => Promise<void>;
-  className?: string;
+  readonly workItemId: string;
+  readonly title: string;
+  // eslint-disable-next-line no-unused-vars -- callback signature
+  readonly onPatched: (updated: Partial<DbWorkItem>) => void;
+  readonly className?: string;
 };
 
 export function WorkItemTitleEditor({
+  workItemId,
   title,
-  onSave,
+  onPatched,
   className,
 }: Readonly<WorkItemTitleEditorProps>) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [draft, setDraft] = useState(title);
-  const [isSaving, setIsSaving] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const skipBlurSaveRef = useRef(false);
-
-  useEffect(() => {
-    setDraft(title);
-  }, [title]);
-
-  useEffect(() => {
-    if (!isEditing) {
-      return;
-    }
-
-    // Keep caret ready for typing without a loud focus ring (outline is styled away).
-    inputRef.current?.focus({ preventScroll: true });
-  }, [isEditing]);
-
-  const beginEditing = () => {
-    if (isSaving) {
-      return;
-    }
-
-    setDraft(title);
-    setIsEditing(true);
-  };
-
-  const cancelEditing = () => {
-    skipBlurSaveRef.current = true;
-    setDraft(title);
-    setIsEditing(false);
-  };
-
-  const commitEditing = async () => {
-    if (skipBlurSaveRef.current) {
-      skipBlurSaveRef.current = false;
-      return;
-    }
-
-    const nextTitle = draft.trim();
-
-    // Empty draft keeps the existing title.
-    if (!nextTitle || nextTitle === title) {
-      setDraft(title);
-      setIsEditing(false);
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      await onSave(nextTitle);
-      setIsEditing(false);
-    } catch {
-      setDraft(title);
-      setIsEditing(false);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleBlur = () => {
-    commitEditing().catch(() => {});
-  };
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      event.currentTarget.blur();
-      return;
-    }
-
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      cancelEditing();
-    }
-  };
-
-  if (!isEditing) {
-    return (
-      <h1 className={cn('mt-4 min-w-xl', className)}>
-        <button
-          type="button"
-          onClick={beginEditing}
-          className={cn(
-            'hover:bg-muted/50 w-full cursor-text rounded-md border border-transparent px-1.5 py-0.5 text-left text-2xl font-semibold tracking-tight text-balance transition-colors sm:text-3xl',
-            'outline-none focus:outline-none focus-visible:ring-0 focus-visible:outline-none'
-          )}
-          title="Click to edit title"
-        >
-          {title}
-        </button>
-      </h1>
-    );
-  }
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   return (
-    <Input
-      ref={inputRef}
-      value={draft}
-      disabled={isSaving}
-      maxLength={200}
-      aria-label="Work item title"
-      onChange={(event) => setDraft(event.target.value)}
-      onBlur={handleBlur}
-      onKeyDown={handleKeyDown}
-      className={cn(
-        'mt-4 h-auto min-h-10 min-w-xl px-1.5 py-1 text-2xl font-semibold tracking-tight sm:text-3xl md:text-3xl',
-        'border-border/50 rounded-md shadow-none',
-        'focus-visible:border-border focus-visible:ring-0 focus-visible:ring-offset-0',
-        className
-      )}
-    />
+    <>
+      <div
+        className={cn(
+          'mt-4 flex w-full items-start justify-between gap-2',
+          className
+        )}
+      >
+        <h1 className="min-w-0 flex-1 px-1.5 py-0.5 text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
+          {title}
+        </h1>
+        <Button
+          type="button"
+          variant="secondary"
+          size="icon"
+          className="mt-1 shrink-0 cursor-pointer"
+          aria-label="Edit title"
+          onClick={() => setDialogOpen(true)}
+        >
+          <PencilIcon />
+        </Button>
+      </div>
+
+      <WorkItemFieldPatchDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        workItemId={workItemId}
+        fieldConfig={WORK_ITEM_PATCH_FIELD_CONFIG.title}
+        currentValue={title}
+        onPatched={onPatched}
+      />
+    </>
   );
 }

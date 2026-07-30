@@ -1,10 +1,10 @@
-import { requireUserWithRole } from '@/lib/auth-helpers';
+import { requireUserWithRole } from '../../../lib/auth-helpers';
 import {
   projectsRepository,
   type ProjectRow,
   type ProjectRowWithOwner,
   type ProjectMemberWithUser,
-} from '@/routes/api/projects/projects.repository';
+} from './projects.repository';
 
 async function requireProjectManager(actorId: string) {
   return await requireUserWithRole(

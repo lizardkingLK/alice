@@ -1,10 +1,10 @@
-import { requireUserWithRole } from '@/lib/auth-helpers';
+import { requireUserWithRole } from '../../../lib/auth-helpers';
 import {
   accessAllowlistRepository,
   type AccessAllowlistKind,
   type AccessAllowlistRow,
   type AccessAllowlistStatus,
-} from '@/routes/api/accessAllowlist/accessAllowlist.repository';
+} from './accessAllowlist.repository';
 
 async function requireAdmin(actorId: string) {
   return await requireUserWithRole(
@@ -32,6 +32,22 @@ export class AccessAllowlistService {
   async listAccessAllowlist(actorId: string, status?: AccessAllowlistStatus) {
     await requireAdmin(actorId);
     return await accessAllowlistRepository.listAll(status);
+  }
+
+  async listAccessAllowlistPaginated(
+    actorId: string,
+    page: number,
+    limit: number,
+    status?: AccessAllowlistStatus,
+    search?: string
+  ): Promise<{ items: AccessAllowlistRow[]; totalCount: number }> {
+    await requireAdmin(actorId);
+    return await accessAllowlistRepository.listPaginated(
+      page,
+      limit,
+      status,
+      search
+    );
   }
 
   async createAccessAllowlist(
@@ -66,14 +82,10 @@ export class AccessAllowlistService {
     });
   }
 
-  async deleteAccessAllowlist(
-    actorId: string,
-    id: string
-  ): Promise<void> {
+  async deleteAccessAllowlist(actorId: string, id: string): Promise<void> {
     await requireAdmin(actorId);
     return await accessAllowlistRepository.softDelete({ actorId, id });
   }
 }
 
 export const accessAllowlistService = new AccessAllowlistService();
-

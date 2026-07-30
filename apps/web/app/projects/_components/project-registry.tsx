@@ -24,7 +24,9 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import { Button } from '@repo/ui/components/ui/button';
+import { Badge } from '@repo/ui/components/ui/badge';
 import { Input } from '@repo/ui/components/ui/input';
+import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { ProjectForm } from './project-form';
 import {
   softDeleteProject,
@@ -37,6 +39,7 @@ import {
   Shield,
   Plus,
   Search,
+  Network,
   FolderOpen,
 } from '@repo/ui/lib/icons';
 import { Pagination } from '@/components/pagination';
@@ -112,30 +115,51 @@ function getProjectTableMeta(table: CellContext<Project, unknown>['table']) {
 }
 
 function ProjectNameCell({ proj }: Readonly<{ proj: Project }>) {
+  const teamCount = proj.team_count ?? 0;
+
   return (
-    <Link
-      href={`/projects/${proj.id}`}
-      className="group/row flex items-center gap-3 transition-opacity hover:opacity-85"
-    >
-      <div className="bg-primary/10 text-primary border-primary/20 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-bold shadow-sm transition-all duration-300 group-hover/row:scale-105">
-        {proj.key.slice(0, 2)}
-      </div>
-      <div className="min-w-0">
-        <div className="text-foreground group-hover/row:text-primary flex items-center gap-2 text-sm font-semibold transition-colors">
-          <span className="truncate">{proj.name}</span>
-          {proj.status === 'archived' ? (
-            <span className="py-0.2 shrink-0 rounded-full border border-amber-500/20 bg-amber-500/10 px-1.5 text-[9px] font-semibold tracking-normal text-amber-600 uppercase">
-              Archived
-            </span>
+    <div className="flex items-center gap-3">
+      <Link
+        href={`/projects/${proj.id}`}
+        className="group/row flex min-w-0 flex-1 items-center gap-3 transition-opacity hover:opacity-85"
+      >
+        <div className="bg-primary/10 text-primary border-primary/20 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-bold shadow-sm transition-all duration-300 group-hover/row:scale-105">
+          {proj.key.slice(0, 2)}
+        </div>
+        <div className="min-w-0">
+          <div className="text-foreground group-hover/row:text-primary flex min-w-0 items-center gap-2 text-sm font-semibold transition-colors">
+            <TruncatedText className="min-w-0">{proj.name}</TruncatedText>
+            {proj.status === 'archived' ? (
+              <Badge
+                variant="outline"
+                className="shrink-0 border-amber-500/20 bg-amber-500/10 text-[9px] text-amber-600 uppercase"
+              >
+                Archived
+              </Badge>
+            ) : null}
+          </div>
+          {proj.description ? (
+            <TruncatedText className="text-muted-foreground mt-0.5 block text-[11px]">
+              {proj.description}
+            </TruncatedText>
           ) : null}
         </div>
-        {proj.description ? (
-          <p className="text-muted-foreground mt-0.5 truncate text-[11px]">
-            {proj.description}
-          </p>
-        ) : null}
-      </div>
-    </Link>
+      </Link>
+
+      <Badge
+        variant="secondary"
+        className="shrink-0 px-2 text-[10px] font-medium"
+        asChild
+      >
+        <Link
+          href={`/projects/${proj.id}?tab=teams`}
+          className="inline-flex items-center gap-1"
+        >
+          <Network className="size-3" />
+          {teamCount} {teamCount === 1 ? 'team' : 'teams'}
+        </Link>
+      </Badge>
+    </div>
   );
 }
 
@@ -341,7 +365,7 @@ export function ProjectRegistry({
             <SelectTrigger
               id="project-status-filter"
               aria-label="Filter by Status"
-              className="w-40 bg-background/50 h-10"
+              className="bg-background/50 h-10 w-40"
             >
               <SelectValue />
             </SelectTrigger>

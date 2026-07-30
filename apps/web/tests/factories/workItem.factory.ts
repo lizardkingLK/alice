@@ -20,6 +20,7 @@ export const workItemFactory = {
       parent_id: null,
       sprint_id: null,
       story_points: null,
+      done_at: null,
       description: null,
       due_date: '2026-07-31',
       created_at: '2026-07-09T10:00:00Z',

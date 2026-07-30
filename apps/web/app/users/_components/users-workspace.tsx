@@ -12,10 +12,7 @@ import { UserRegistry } from '@/app/users/_components/user-registry';
 import { AccessAllowlistRegistry } from '@/app/access-allowlist/_components/access-allowlist-registry';
 import type { User } from '@/app/users/_services/users.service';
 import type { AccessAllowlistEntry } from '@/app/access-allowlist/_services/accessAllowlist.service';
-import {
-  parseUsersPageTab,
-  type UsersPageTab,
-} from '@/lib/search-params';
+import { parseUsersPageTab, type UsersPageTab } from '@/lib/search-params';
 import { UNDERLINE_TAB_TRIGGER_CLASS } from '@/components/underline-tab-trigger';
 
 interface UsersWorkspaceProps {
@@ -28,6 +25,10 @@ interface UsersWorkspaceProps {
   readonly currentUserId?: string | null;
   readonly currentUserRole?: string | null;
   readonly allowlistEntries: AccessAllowlistEntry[];
+  readonly allowlistTotalCount: number;
+  readonly allowlistPage: number;
+  readonly allowlistLimit: number;
+  readonly allowlistTotalPages: number;
 }
 
 export function UsersWorkspace({
@@ -40,6 +41,10 @@ export function UsersWorkspace({
   currentUserId,
   currentUserRole,
   allowlistEntries,
+  allowlistTotalCount,
+  allowlistPage,
+  allowlistLimit,
+  allowlistTotalPages,
 }: Readonly<UsersWorkspaceProps>) {
   const router = useRouter();
   const pathname = usePathname();
@@ -57,8 +62,9 @@ export function UsersWorkspace({
     } else {
       params.set('tab', nextTab);
     }
-    // Reset pagination when switching panels.
+    // Reset list filters when switching panels.
     params.delete('page');
+    params.delete('search');
     const query = params.toString();
     router.push(query ? `${pathname}?${query}` : pathname);
   };
@@ -115,7 +121,14 @@ export function UsersWorkspace({
         value="allowlist"
         className="m-0 focus-visible:ring-0 focus-visible:ring-offset-0"
       >
-        <AccessAllowlistRegistry entries={allowlistEntries} />
+        <AccessAllowlistRegistry
+          entries={allowlistEntries}
+          totalCount={allowlistTotalCount}
+          page={allowlistPage}
+          limit={allowlistLimit}
+          totalPages={allowlistTotalPages}
+          search={search}
+        />
       </TabsContent>
     </Tabs>
   );

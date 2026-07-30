@@ -1,20 +1,24 @@
 'use client';
 
 import type React from 'react';
-import { cn } from '@repo/ui/lib/utils';
-import { GripVertical } from '@repo/ui/lib/icons';
-import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
-import { Badge } from '@repo/ui/components/ui/badge';
+import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
+import {
+  BACKLOG_TYPE_STYLES,
+  getInitials,
+  projectDisplayKey,
+} from '@/app/backlog/_helpers/backlog-item-utils';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
 import {
-  BACKLOG_PRIORITY_STYLES,
-  BACKLOG_TYPE_STYLES,
-  getInitials,
-  mapPriority,
-  projectDisplayKey,
-} from '@/app/backlog/_helpers/backlog-item-utils';
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@repo/ui/components/ui/avatar';
+import { Badge } from '@repo/ui/components/ui/badge';
+import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
+import { cn } from '@repo/ui/lib/utils';
+import { GripVertical } from '@repo/ui/lib/icons';
 
 /* eslint-disable no-unused-vars */
 type BacklogIssueRowProps = {
@@ -33,7 +37,6 @@ export function BacklogIssueRow({
 }: Readonly<BacklogIssueRowProps>) {
   const projectKey = projects.find((p) => p.id === item.project_id)?.key;
   const displayKey = projectDisplayKey(projectKey, item.id);
-  const normalizedPriority = mapPriority(item.priority);
 
   return (
     <button
@@ -42,58 +45,52 @@ export function BacklogIssueRow({
       onDragStart={(e) => onDragStart(e, item.id)}
       onClick={() => onSelect(item)}
       className={cn(
-        'group border-border/60 relative flex w-full items-center justify-between gap-4 rounded-lg border px-3 py-2 text-left font-normal',
-        'bg-card/45 hover:bg-muted/30 cursor-grab hover:border-indigo-500/30 active:cursor-grabbing',
+        'group border-border/60 relative flex w-full min-w-0 flex-col gap-2 rounded-lg border px-3 py-2 text-left font-normal',
+        'bg-card hover:bg-muted/30 hover:border-primary/30 cursor-grab active:cursor-grabbing',
         'shadow-sm transition-all duration-150',
-        'focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-hidden'
+        'focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-hidden',
+        '@md/backlog-pane:flex-row @md/backlog-pane:items-center @md/backlog-pane:justify-between @md/backlog-pane:gap-3'
       )}
     >
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        {/* Grab Handle */}
-        <div className="text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors">
-          <GripVertical className="h-4 w-4" />
+      <div className="flex min-w-0 items-center gap-2">
+        <div className="text-muted-foreground/40 group-hover:text-muted-foreground/70 shrink-0 transition-colors">
+          <GripVertical className="size-4" />
         </div>
 
-        {/* Issue Type Indicator */}
         <Badge
           variant="outline"
           className={cn(
-            'h-4 border px-1.5 py-0 text-[9px] uppercase',
+            'h-4 shrink-0 border px-1.5 py-0 text-[9px] uppercase',
             BACKLOG_TYPE_STYLES[item.type]
           )}
         >
           {item.type}
         </Badge>
 
-        {/* Key */}
-        <span className="text-muted-foreground min-w-17.5 font-mono text-xs font-semibold tracking-tight whitespace-nowrap">
+        <span className="text-muted-foreground shrink-0 font-mono text-xs font-semibold tracking-tight">
           {displayKey}
         </span>
 
-        {/* Title */}
-        <span className="text-foreground max-w-md truncate text-sm font-medium transition-colors group-hover:text-indigo-600 sm:max-w-xl dark:group-hover:text-indigo-400">
+        <TruncatedText className="text-foreground group-hover:text-primary min-w-0 text-sm font-medium transition-colors">
           {item.title}
-        </span>
+        </TruncatedText>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-        {/* Status */}
+      <div className="flex shrink-0 items-center gap-2 self-end @md/backlog-pane:self-auto">
         <WorkItemStatusBadge status={item.status} />
-
-        {/* Priority Badge */}
-        <Badge
-          variant="outline"
-          className={cn(
-            'h-4 border px-1.5 py-0 text-[9px] font-medium whitespace-nowrap capitalize',
-            BACKLOG_PRIORITY_STYLES[normalizedPriority]
-          )}
+        <PriorityBadge priority={item.priority} />
+        <Avatar
+          size="sm"
+          className="border-border/80 size-6 border"
+          title={item.assignee?.name ?? 'Unassigned'}
         >
-          {item.priority}
-        </Badge>
-
-        {/* Assignee Avatar */}
-        <Avatar size="sm" className="border-border/80 size-6 border">
-          <AvatarFallback className="bg-muted-foreground/15 text-muted-foreground text-[9px] font-semibold">
+          {item.assignee?.profile_picture ? (
+            <AvatarImage
+              src={item.assignee.profile_picture}
+              alt={item.assignee.name ?? 'Assignee'}
+            />
+          ) : null}
+          <AvatarFallback className="bg-muted text-muted-foreground text-[9px] font-semibold">
             {getInitials(item.assignee?.name)}
           </AvatarFallback>
         </Avatar>

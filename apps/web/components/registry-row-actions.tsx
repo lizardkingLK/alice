@@ -1,6 +1,12 @@
 'use client';
 
-import { MoreHorizontal, Archive, Pencil, RefreshCw, Trash2 } from '@repo/ui/lib/icons';
+import {
+  MoreHorizontal,
+  Archive,
+  Pencil,
+  RefreshCw,
+  Trash2,
+} from '@repo/ui/lib/icons';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   DropdownMenu,
@@ -82,7 +88,7 @@ export function RegistryRowActions({
           {showPurge && (
             <DropdownMenuItem
               onClick={onPurge}
-              className="gap-2 text-destructive focus:text-destructive"
+              className="text-destructive focus:text-destructive gap-2"
             >
               <Trash2 className="h-3.5 w-3.5" />
               Purge

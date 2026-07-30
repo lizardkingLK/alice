@@ -1,5 +1,5 @@
-import { supabase } from '@/lib/supabase';
-import { auditCreate, auditUpdate } from '@/lib/audit';
+import { supabase } from '../../../lib/supabase';
+import { auditCreate, auditUpdate } from '../../../lib/audit';
 
 export type UserRow = {
   id: string;

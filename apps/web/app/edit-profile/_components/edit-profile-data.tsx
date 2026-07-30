@@ -5,12 +5,14 @@ import {
   metadataString,
 } from '@/app/profile/_helpers/profile-identity';
 import { getDbUser, getUser } from '@/lib/auth';
+import { buildLoginPath } from '@/lib/auth-redirect';
+import { getRequestPathForLoginNext } from '@/lib/auth-redirect.server';
 
 export async function EditProfileData() {
   const [user, dbUser] = await Promise.all([getUser(), getDbUser()]);
 
   if (!user || !dbUser) {
-    redirect('/login');
+    redirect(buildLoginPath(await getRequestPathForLoginNext()));
   }
 
   const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;
