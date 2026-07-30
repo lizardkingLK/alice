@@ -46,49 +46,6 @@ export class SprintsRepository {
     return data as unknown as SprintRowWithProject;
   }
 
-  async listByUser(
-    userId: string,
-    tab: 'active' | 'archived' = 'active',
-    page: number = 1,
-    limit: number = 5,
-    search?: string
-  ): Promise<{
-    sprints: SprintRowWithProject[];
-    totalCount: number;
-  }> {
-    const from = (page - 1) * limit;
-    const to = page * limit - 1;
-
-    let query = supabase
-      .from('sprints')
-      .select(SPRINT_WITH_PROJECT, { count: 'exact' });
-
-    if (tab === 'archived') {
-      query = query.in('status', ['archived']);
-    } else {
-      query = query.in('status', ['planned', 'active', 'closed']);
-    }
-
-    if (search) {
-      const sanitized = `%${search}%`;
-      query = query.or(`name.ilike.${sanitized},goal.ilike.${sanitized}`);
-    }
-
-    const { data, error, count } = await query
-      .order('start_date', { ascending: false })
-      .range(from, to);
-
-    if (error) {
-      console.error('error. failed to list sprints:', error.message);
-      throw new Error('Failed to list sprints');
-    }
-
-    return {
-      sprints: (data as unknown as SprintRowWithProject[]) ?? [],
-      totalCount: count ?? 0,
-    };
-  }
-
   async updateStatus(
     userId: string,
     sprintId: string,
@@ -145,10 +102,7 @@ export class SprintsRepository {
     return count ?? 0;
   }
 
-  async findById(
-    _userId: string,
-    sprintId: string
-  ): Promise<SprintRowWithProject | null> {
+  async findById(sprintId: string): Promise<SprintRowWithProject | null> {
     const { data, error } = await supabase
       .from('sprints')
       .select(SPRINT_WITH_PROJECT)
