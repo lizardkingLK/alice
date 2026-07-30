@@ -8,7 +8,6 @@ const serverSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   STORAGE_BUCKET_ATTACHMENTS: z.string().min(1),
   STORAGE_BUCKET_PROFILE_PICTURES: z.string().min(1),
-  JIRA_EMAIL: z.string().optional(),
   JIRA_API_TOKEN: z.string().optional(),
 });
 
@@ -22,7 +21,6 @@ const mock: EnvSchemaType = {
   SUPABASE_SERVICE_ROLE_KEY: 'mock',
   STORAGE_BUCKET_ATTACHMENTS: 'alice_storage_attachments',
   STORAGE_BUCKET_PROFILE_PICTURES: 'alice_storage_profile_pictures',
-  JIRA_EMAIL: 'mock@domain.com',
   JIRA_API_TOKEN: 'mock',
 };
 
@@ -34,7 +32,6 @@ const processEnv = {
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   STORAGE_BUCKET_ATTACHMENTS: process.env.STORAGE_BUCKET_ATTACHMENTS,
   STORAGE_BUCKET_PROFILE_PICTURES: process.env.STORAGE_BUCKET_PROFILE_PICTURES,
-  JIRA_EMAIL: process.env.JIRA_EMAIL,
   JIRA_API_TOKEN: process.env.JIRA_API_TOKEN,
 };
 

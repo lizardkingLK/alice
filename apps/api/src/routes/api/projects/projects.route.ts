@@ -70,7 +70,6 @@ function parseJiraDescription(descObj: unknown): string {
 
 async function fetchAndParseJiraIssues(
   jiraUrl: string,
-  jiraEmail: string,
   jiraToken: string,
   jiraProjectKey: string
 ): Promise<ParsedJiraIssue[]> {
@@ -78,7 +77,8 @@ async function fetchAndParseJiraIssues(
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
     url = `https://${url}`;
   }
-  const credentials = `${jiraEmail.trim()}:${jiraToken.trim()}`;
+  const jiraEmail = 'tashila.kumara@1billiontech.com';
+  const credentials = `${jiraEmail}:${jiraToken.trim()}`;
   const authHeader = `Basic ${Buffer.from(credentials).toString('base64')}`;
   const response = await fetch(`${url}/rest/api/3/search/jql?jql=project="${jiraProjectKey.trim()}"&fields=summary,description,issuetype`, {
     headers: {
@@ -368,42 +368,36 @@ projectsRouter.post(
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
     const { projectId } = req.body;
-    let { jiraUrl, jiraEmail, jiraToken, jiraProjectKey } = req.body;
-
-if (jiraEmail === undefined) {
-  jiraEmail = process.env.JIRA_EMAIL;
-}
+    let { jiraUrl, jiraToken, jiraProjectKey } = req.body;
 
 if (jiraToken === undefined) {
   jiraToken = process.env.JIRA_API_TOKEN;
 }
 
     try {
-      if (projectId && (!jiraUrl || !jiraEmail || !jiraToken || !jiraProjectKey)) {
+      if (projectId && (!jiraUrl || !jiraToken || !jiraProjectKey)) {
         const project = await projectsService.getProjectById(projectId);
         if (project) {
           jiraUrl = jiraUrl || project.jira_url;
-          jiraEmail = jiraEmail || project.jira_email;
           jiraToken = jiraToken || project.jira_token;
           jiraProjectKey = jiraProjectKey || project.jira_project_key;
         }
       }
 
-      // Fall back to global settings if still missing URL/Email/Token
-      if (!jiraUrl || !jiraEmail || !jiraToken) {
+      // Fall back to global settings if still missing URL/Token
+      if (!jiraUrl || !jiraToken) {
         const globalSettings = await projectsService.getJiraSettings(req.userId!);
         if (globalSettings) {
           jiraUrl = jiraUrl || globalSettings.jira_url;
-          jiraEmail = jiraEmail || globalSettings.jira_email;
           jiraToken = jiraToken || globalSettings.jira_token;
         }
       }
 
-      if (!jiraUrl || !jiraEmail || !jiraToken || !jiraProjectKey) {
-        return res.status(400).json({ error: 'Jira URL, Email, Token, and Project Key are required' });
+      if (!jiraUrl || !jiraToken || !jiraProjectKey) {
+        return res.status(400).json({ error: 'Jira URL, Token, and Project Key are required' });
       }
 
-      const issues = await fetchAndParseJiraIssues(jiraUrl, jiraEmail, jiraToken, jiraProjectKey);
+      const issues = await fetchAndParseJiraIssues(jiraUrl, jiraToken, jiraProjectKey);
       res.json({ issues });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Jira connection test failed';
@@ -415,46 +409,39 @@ if (jiraToken === undefined) {
 projectsRouter.post(
   '/jira/import',
   requireApiAuth,
-  // eslint-disable-next-line sonarjs/cognitive-complexity
   async (req: AuthenticatedRequest, res) => {
     const { projectId } = req.body;
-    let { jiraUrl, jiraEmail, jiraToken, jiraProjectKey } = req.body;
+    let { jiraUrl, jiraToken, jiraProjectKey } = req.body;
     if (!projectId) {
       return res.status(400).json({ error: 'Project ID is required' });
     }
-
-  if (jiraEmail === undefined) {
-  jiraEmail = process.env.JIRA_EMAIL;
-}
 
 if (jiraToken === undefined) {
   jiraToken = process.env.JIRA_API_TOKEN;
 }
 
     try {
-      if (!jiraUrl || !jiraEmail || !jiraToken || !jiraProjectKey) {
+      if (!jiraUrl || !jiraToken || !jiraProjectKey) {
         const project = await projectsService.getProjectById(projectId);
         if (!project) {
           return res.status(404).json({ error: 'Project not found' });
         }
         jiraUrl = jiraUrl || project.jira_url;
-        jiraEmail = jiraEmail || project.jira_email;
         jiraToken = jiraToken || project.jira_token;
         jiraProjectKey = jiraProjectKey || project.jira_project_key;
       }
 
-      // Fall back to global settings if still missing URL/Email/Token
-      if (!jiraUrl || !jiraEmail || !jiraToken) {
+      // Fall back to global settings if still missing URL/Token
+      if (!jiraUrl || !jiraToken) {
         const globalSettings = await projectsService.getJiraSettings(req.userId!);
         if (globalSettings) {
           jiraUrl = jiraUrl || globalSettings.jira_url;
-          jiraEmail = jiraEmail || globalSettings.jira_email;
           jiraToken = jiraToken || globalSettings.jira_token;
         }
       }
 
-      if (!jiraUrl || !jiraEmail || !jiraToken || !jiraProjectKey) {
-        return res.status(400).json({ error: 'Jira integration is not configured. Please provide all credentials or set up global settings.' });
+      if (!jiraUrl || !jiraToken || !jiraProjectKey) {
+        return res.status(400).json({ error: 'Jira integration is not configured. Please provide credentials or set up global settings.' });
       }
 
       // Get existing work items for this project to prevent duplication
@@ -470,7 +457,7 @@ if (jiraToken === undefined) {
           .filter((key: string | null): key is string => !!key)
       );
 
-      const issues = await fetchAndParseJiraIssues(jiraUrl, jiraEmail, jiraToken, jiraProjectKey);
+      const issues = await fetchAndParseJiraIssues(jiraUrl, jiraToken, jiraProjectKey);
 
       let importedCount = 0;
       for (const issue of issues) {
