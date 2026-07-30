@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
-import { Book, User } from '@repo/ui/lib/icons';
+import { Book, CircleHelp, Settings, User } from '@repo/ui/lib/icons';
 import Image from 'next/image';
 import { cn } from '@repo/ui/lib/utils';
 import { PendingSubmitButton } from '@/components/pending-submit-button';
@@ -72,8 +72,11 @@ const UserProfile = ({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">
-        <DropdownMenuItem asChild className="h-auto cursor-pointer p-2">
-          <Link href="/profile" className="items-start gap-3">
+        <DropdownMenuItem
+          asChild
+          className="bg-muted/30 hover:bg-muted h-auto cursor-pointer p-2"
+        >
+          <Link href="/profile" className="items-start gap-3 rounded-lg">
             <Avatar className="size-9 shrink-0">
               {image ? <AvatarImage src={image} alt={displayName} /> : null}
               <AvatarFallback className="text-xs font-semibold">
@@ -96,14 +99,41 @@ const UserProfile = ({
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <Book />
-          Docs
+        <DropdownMenuItem asChild className="cursor-pointer justify-center">
+          <Link
+            href="/docs"
+            className="flex w-full items-center justify-center gap-2"
+          >
+            <Book className="size-4" />
+            Docs
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className="cursor-pointer justify-center">
+          <Link
+            href="/settings"
+            className="flex w-full items-center justify-center gap-2"
+          >
+            <Settings className="size-4" />
+            Settings
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className="cursor-pointer justify-center">
+          <Link
+            href="/help"
+            className="flex w-full items-center justify-center gap-2"
+          >
+            <CircleHelp className="size-4" />
+            Help
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <form action={signOut}>
-            <PendingSubmitButton variant="ghost" loadingLabel="Signing out...">
+        <DropdownMenuItem asChild className="justify-center">
+          <form action={signOut} className="w-full">
+            <PendingSubmitButton
+              variant="ghost"
+              loadingLabel="Signing out..."
+              className="w-full justify-center"
+            >
               Sign Out
             </PendingSubmitButton>
           </form>
