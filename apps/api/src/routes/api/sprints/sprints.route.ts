@@ -8,7 +8,6 @@ import {
   createSprintBodySchema,
   updateSprintStatusSchema,
   updateSprintBodySchema,
-  listSprintsQuerySchema,
 } from './sprints.schemas';
 import { sprintsService, sprintBurndownService } from './sprints.service';
 
