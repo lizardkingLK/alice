@@ -8,38 +8,11 @@ import {
   createSprintBodySchema,
   updateSprintStatusSchema,
   updateSprintBodySchema,
-  listSprintsQuerySchema,
 } from './sprints.schemas';
 import { sprintsService, sprintBurndownService } from './sprints.service';
 
 const sprintsRouter: Router = Router();
 
-sprintsRouter.get(
-  '/',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    const parsed = listSprintsQuerySchema.safeParse(req.query);
-
-    if (!parsed.success) {
-      return res.status(400).json({ error: z.treeifyError(parsed.error) });
-    }
-
-    try {
-      const result = await sprintsService.listSprints(
-        req.userId!,
-        parsed.data.status,
-        parsed.data.page,
-        parsed.data.limit,
-        parsed.data.search
-      );
-      res.json(result);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to list sprints';
-      res.status(500).json({ error: message });
-    }
-  }
-);
 
 sprintsRouter.post(
   '/',
@@ -104,26 +77,6 @@ sprintsRouter.patch(
   }
 );
 
-sprintsRouter.get(
-  '/:id',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    try {
-      const sprint = await sprintsService.getSprint(
-        req.userId!,
-        req.params.id!
-      );
-      if (!sprint) {
-        return res.status(404).json({ error: 'Sprint not found' });
-      }
-      res.json({ sprint });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to get sprint';
-      res.status(500).json({ error: message });
-    }
-  }
-);
 
 sprintsRouter.patch(
   '/:id',
