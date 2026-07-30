@@ -7,7 +7,9 @@
     "NODE_ENV",
     "VERCEL",
     "CYPRESS_TEST_USER_EMAIL",
-    "CYPRESS_TEST_USER_PASSWORD"
+    "CYPRESS_TEST_USER_PASSWORD",
+    "JIRA_EMAIL",
+    "JIRA_API_TOKEN"
   ],
   "tasks": {
     "build": {

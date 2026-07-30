@@ -186,6 +186,7 @@ export class WorkItemRepository {
         reporter_id: input.createdBy,
         status: 'New',
         story_points: input.story_points,
+        jira_issue_key: input.jira_issue_key,
         ...auditCreateWithoutStatus(input.createdBy),
       })
       .select(WORK_ITEM_WITH_ASSIGNEE)

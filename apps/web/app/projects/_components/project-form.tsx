@@ -26,6 +26,7 @@ import {
   updateProject,
   type Project,
 } from '../_services/projects.service';
+import { apiFetch } from '@/lib/api/api-client';
 
 interface ProjectFormProps {
   readonly onClose?: () => void;
@@ -80,6 +81,50 @@ export function ProjectForm({
     formatDateForInput(projectToEdit?.end_date)
   );
 
+  // Jira Integration States
+  const [importFromJira, setImportFromJira] = useState(false);
+  const [jiraUrl, setJiraUrl] = useState('');
+  const [jiraProjectKey, setJiraProjectKey] = useState('');
+  const [isTestingJira, setIsTestingJira] = useState(false);
+  const [jiraTestMessage, setJiraTestMessage] = useState<string | null>(null);
+  const [jiraTestError, setJiraTestError] = useState(false);
+  const [previewIssues, setPreviewIssues] = useState<Array<{ key: string; title: string; type: string }>>([]);
+
+  const handleTestConnection = async () => {
+    if (!jiraUrl.trim() || !jiraProjectKey.trim()) {
+      setJiraTestMessage('Please enter both Jira Domain and Project Key.');
+      setJiraTestError(true);
+      return;
+    }
+
+    setIsTestingJira(true);
+    setJiraTestMessage(null);
+    setJiraTestError(false);
+    setPreviewIssues([]);
+
+    try {
+      const response = await apiFetch<{ issues: Array<{ key: string; title: string; type: string }> }>(
+        '/api/projects/jira/preview',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            jiraUrl: jiraUrl.trim(),
+            jiraProjectKey: jiraProjectKey.toUpperCase().trim(),
+          }),
+        }
+      );
+      setPreviewIssues(response.issues);
+      setJiraTestMessage(`Successfully connected! Found ${response.issues.length} tasks ready to import.`);
+      setJiraTestError(false);
+    } catch (err) {
+      console.error('Jira preview error:', err);
+      setJiraTestMessage(err instanceof Error ? err.message : 'Jira connection test failed.');
+      setJiraTestError(true);
+    } finally {
+      setIsTestingJira(false);
+    }
+  };
+
   useEffect(() => {
     if (!projectToEdit) {
       setStartDate(getTodayDateString());
@@ -101,6 +146,33 @@ export function ProjectForm({
       setStartDate(getTodayDateString());
     }
   }, [isEditMode]);
+
+  const handleJiraImport = async (projectId: string, projectName: string) => {
+    try {
+      const importRes = await apiFetch<{ importedCount: number }>(
+        '/api/projects/jira/import',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            projectId,
+            jiraUrl: jiraUrl.trim(),
+            jiraProjectKey: jiraProjectKey.toUpperCase().trim(),
+          }),
+        }
+      );
+      setMessage(
+        `Project "${projectName}" created and ${importRes.importedCount} tasks successfully imported from Jira!`
+      );
+    } catch (err) {
+      console.error('Jira import failed:', err);
+      setMessage(
+        `Project created, but task import failed: ${
+          err instanceof Error ? err.message : 'Unknown error'
+        }`
+      );
+      setIsError(true);
+    }
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -127,6 +199,8 @@ export function ProjectForm({
         status: status,
         attributes_config: null,
         workflow_config: null,
+        jira_url: jiraUrl.trim() || null,
+        jira_project_key: jiraProjectKey.toUpperCase().trim() || null,
       };
 
       let result;
@@ -136,6 +210,12 @@ export function ProjectForm({
       } else {
         result = await createProject(projectData);
         setMessage(`Project "${result.name}" created.`);
+
+        const hasJiraConfig = jiraUrl && jiraProjectKey;
+        if (importFromJira && hasJiraConfig) {
+          setMessage(`Project created. Importing tasks from Jira...`);
+          await handleJiraImport(result.id, result.name);
+        }
       }
 
       setIsSuccess(true);
@@ -340,6 +420,95 @@ export function ProjectForm({
               />
             </div>
           </div>
+
+          {!isEditMode && (
+            <div className="border-border/60 bg-muted/30 rounded-lg border p-4 space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  id="importFromJira"
+                  type="checkbox"
+                  checked={importFromJira}
+                  onChange={(e) => setImportFromJira(e.target.checked)}
+                  className="accent-primary h-4 w-4 rounded border-gray-300 focus:ring-primary"
+                />
+                <Label htmlFor="importFromJira" className="text-sm font-semibold cursor-pointer">
+                  Import tasks from Jira Cloud
+                </Label>
+              </div>
+
+              {importFromJira && (
+                <div className="space-y-4 pt-2 border-t border-border/40 animate-fade-in">
+                  <div className="space-y-2">
+                    <Label htmlFor="jiraUrl" className="text-xs font-medium">Jira Cloud URL / Domain</Label>
+                    <Input
+                      id="jiraUrl"
+                      value={jiraUrl}
+                      onChange={(e) => setJiraUrl(e.target.value)}
+                      placeholder="e.g. company.atlassian.net"
+                      className="h-9 text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="jiraProjectKey" className="text-xs font-medium">Jira Project Key</Label>
+                    <Input
+                      id="jiraProjectKey"
+                      value={jiraProjectKey}
+                      onChange={(e) => setJiraProjectKey(e.target.value)}
+                      placeholder="e.g. PROJ"
+                      className="h-9 text-sm uppercase"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleTestConnection}
+                      disabled={isTestingJira}
+                      className="w-full sm:w-auto self-start"
+                    >
+                      {isTestingJira ? (
+                        <>
+                          <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                          Testing Connection...
+                        </>
+                      ) : (
+                        'Test Connection & Preview'
+                      )}
+                    </Button>
+
+                    {jiraTestMessage && (
+                      <p className={`text-xs ${jiraTestError ? 'text-red-500' : 'text-green-600'} font-medium`}>
+                        {jiraTestMessage}
+                      </p>
+                    )}
+                  </div>
+
+                  {previewIssues.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      <Label className="text-xs font-semibold text-muted-foreground">Tasks Preview (to be imported):</Label>
+                      <div className="max-h-32 overflow-y-auto border border-border/40 rounded bg-background/50 p-2 text-xs divide-y divide-border/20">
+                        {previewIssues.slice(0, 10).map((issue) => (
+                          <div key={issue.key} className="py-1.5 flex justify-between gap-4">
+                            <span className="font-mono text-muted-foreground shrink-0">{issue.key}</span>
+                            <span className="font-medium truncate flex-1">{issue.title}</span>
+                            <span className="text-muted-foreground shrink-0 bg-secondary/80 px-1 rounded">{issue.type}</span>
+                          </div>
+                        ))}
+                        {previewIssues.length > 10 && (
+                          <div className="py-1 text-center text-muted-foreground">
+                            ... and {previewIssues.length - 10} more tasks.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <FormCancelSubmitActions
             message={message}
