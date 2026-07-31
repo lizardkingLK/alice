@@ -35,6 +35,8 @@ interface ProjectFormProps {
   readonly users: User[];
   // eslint-disable-next-line no-unused-vars
   readonly onProjectUpdated?: (project: Project) => void;
+  // eslint-disable-next-line no-unused-vars
+  readonly onJiraImportToggle?: (isWide: boolean) => void;
 }
 
 function formatDateForInput(dateString?: string | null) {
@@ -56,6 +58,7 @@ export function ProjectForm({
   projectToEdit = null,
   users,
   onProjectUpdated,
+  onJiraImportToggle,
 }: Readonly<ProjectFormProps>) {
   const isEditMode = !!projectToEdit;
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -83,6 +86,11 @@ export function ProjectForm({
 
   // Jira Integration States
   const [importFromJira, setImportFromJira] = useState(false);
+
+  const handleJiraCheckboxChange = (checked: boolean) => {
+    setImportFromJira(checked);
+    onJiraImportToggle?.(checked);
+  };
   const [jiraUrl, setJiraUrl] = useState('');
   const [jiraProjectKey, setJiraProjectKey] = useState('');
   const [isTestingJira, setIsTestingJira] = useState(false);
@@ -288,227 +296,231 @@ export function ProjectForm({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-medium">
-                Project Name
-              </Label>
-              <Input
-                id="name"
-                name="name"
-                value={name}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setName(e.target.value)
-                }
-                placeholder="e.g. Alice Platform"
-                required
-                className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
-              />
-            </div>
+          <div className={`grid gap-6 ${importFromJira ? 'md:grid-cols-[1.2fr_1fr]' : 'grid-cols-1'}`}>
+            {/* Left Column: Project Details */}
+            <div className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-sm font-medium">
+                    Project Name
+                  </Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={name}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      setName(e.target.value)
+                    }
+                    placeholder="e.g. Alice Platform"
+                    required
+                    className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="key" className="text-sm font-medium">
-                Project Key
-              </Label>
-              <Input
-                id="key"
-                name="key"
-                value={key}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setKey(e.target.value)
-                }
-                placeholder="e.g. ALICE"
-                required
-                maxLength={10}
-                className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 uppercase transition-colors"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description" className="text-sm font-medium">
-              Description
-            </Label>
-            <Input
-              id="description"
-              name="description"
-              value={description}
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setDescription(e.target.value)
-              }
-              placeholder="e.g. Core platform squad for JIRA clone"
-              className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
-            />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="owner_id" className="text-sm font-medium">
-                Project Owner
-              </Label>
-              <Select
-                value={selectedOwnerId}
-                onValueChange={setSelectedOwnerId}
-                name="owner_id"
-              >
-                <SelectTrigger id="owner_id" className="bg-background/80 h-10">
-                  <SelectValue placeholder="Select Owner..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {users
-                    .filter((u) => u.role === 'manager')
-                    .map((u) => (
-                      <SelectItem key={u.id} value={u.id}>
-                        {u.name} ({u.email})
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="status" className="text-sm font-medium">
-                Status
-              </Label>
-              <Select
-                value={status}
-                onValueChange={(val) => setStatus(val as 'active' | 'archived')}
-                name="status"
-              >
-                <SelectTrigger id="status" className="bg-background/80 h-10">
-                  <SelectValue placeholder="Select status..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="archived">Archived</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="start_date" className="text-sm font-medium">
-                Start Date
-              </Label>
-              <Input
-                id="start_date"
-                name="start_date"
-                type="date"
-                value={startDate}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setStartDate(e.target.value)
-                }
-                min={isEditMode ? undefined : getTodayDateString()}
-                className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="end_date" className="text-sm font-medium">
-                End Date
-              </Label>
-              <Input
-                id="end_date"
-                name="end_date"
-                type="date"
-                value={endDate}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setEndDate(e.target.value)
-                }
-                className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
-              />
-            </div>
-          </div>
-
-          {!isEditMode && (
-            <div className="border-border/60 bg-muted/30 rounded-lg border p-4 space-y-4">
-              <div className="flex items-center space-x-2">
-                <input
-                  id="importFromJira"
-                  type="checkbox"
-                  checked={importFromJira}
-                  onChange={(e) => setImportFromJira(e.target.checked)}
-                  className="accent-primary h-4 w-4 rounded border-gray-300 focus:ring-primary"
-                />
-                <Label htmlFor="importFromJira" className="text-sm font-semibold cursor-pointer">
-                  Import tasks from Jira Cloud
-                </Label>
+                <div className="space-y-2">
+                  <Label htmlFor="key" className="text-sm font-medium">
+                    Project Key
+                  </Label>
+                  <Input
+                    id="key"
+                    name="key"
+                    value={key}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      setKey(e.target.value)
+                    }
+                    placeholder="e.g. ALICE"
+                    required
+                    maxLength={10}
+                    className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 uppercase transition-colors"
+                  />
+                </div>
               </div>
 
-              {importFromJira && (
-                <div className="space-y-4 pt-2 border-t border-border/40 animate-fade-in">
-                  <div className="space-y-2">
-                    <Label htmlFor="jiraUrl" className="text-xs font-medium">Jira Cloud URL / Domain</Label>
-                    <Input
-                      id="jiraUrl"
-                      value={jiraUrl}
-                      onChange={(e) => setJiraUrl(e.target.value)}
-                      placeholder="e.g. company.atlassian.net"
-                      className="h-9 text-sm"
-                    />
-                  </div>
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-sm font-medium">
+                  Description
+                </Label>
+                <Input
+                  id="description"
+                  name="description"
+                  value={description}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setDescription(e.target.value)
+                  }
+                  placeholder="e.g. Core platform squad for JIRA clone"
+                  className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
+                />
+              </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="jiraProjectKey" className="text-xs font-medium">Jira Project Key</Label>
-                    <Input
-                      id="jiraProjectKey"
-                      value={jiraProjectKey}
-                      onChange={(e) => setJiraProjectKey(e.target.value)}
-                      placeholder="e.g. PROJ"
-                      className="h-9 text-sm uppercase"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleTestConnection}
-                      disabled={isTestingJira}
-                      className="w-full sm:w-auto self-start"
-                    >
-                      {isTestingJira ? (
-                        <>
-                          <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                          Testing Connection...
-                        </>
-                      ) : (
-                        'Test Connection & Preview'
-                      )}
-                    </Button>
-
-                    {jiraTestMessage && (
-                      <p className={`text-xs ${jiraTestError ? 'text-red-500' : 'text-green-600'} font-medium`}>
-                        {jiraTestMessage}
-                      </p>
-                    )}
-                  </div>
-
-                  {previewIssues.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                      <Label className="text-xs font-semibold text-muted-foreground">Tasks Preview (to be imported):</Label>
-                      <div className="max-h-32 overflow-y-auto border border-border/40 rounded bg-background/50 p-2 text-xs divide-y divide-border/20">
-                        {previewIssues.slice(0, 10).map((issue) => (
-                          <div key={issue.key} className="py-1.5 flex justify-between gap-4">
-                            <span className="font-mono text-muted-foreground shrink-0">{issue.key}</span>
-                            <span className="font-medium truncate flex-1">{issue.title}</span>
-                            <span className="text-muted-foreground shrink-0 bg-secondary/80 px-1 rounded">{issue.type}</span>
-                          </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="owner_id" className="text-sm font-medium">
+                    Project Owner
+                  </Label>
+                  <Select
+                    value={selectedOwnerId}
+                    onValueChange={setSelectedOwnerId}
+                    name="owner_id"
+                  >
+                    <SelectTrigger id="owner_id" className="bg-background/80 h-10">
+                      <SelectValue placeholder="Select Owner..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {users
+                        .filter((u) => u.role === 'manager')
+                        .map((u) => (
+                          <SelectItem key={u.id} value={u.id}>
+                            {u.name} ({u.email})
+                          </SelectItem>
                         ))}
-                        {previewIssues.length > 10 && (
-                          <div className="py-1 text-center text-muted-foreground">
-                            ... and {previewIssues.length - 10} more tasks.
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="status" className="text-sm font-medium">
+                    Status
+                  </Label>
+                  <Select
+                    value={status}
+                    onValueChange={(val) => setStatus(val as 'active' | 'archived')}
+                    name="status"
+                  >
+                    <SelectTrigger id="status" className="bg-background/80 h-10">
+                      <SelectValue placeholder="Select status..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="start_date" className="text-sm font-medium">
+                    Start Date
+                  </Label>
+                  <Input
+                    id="start_date"
+                    name="start_date"
+                    type="date"
+                    value={startDate}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      setStartDate(e.target.value)
+                    }
+                    min={isEditMode ? undefined : getTodayDateString()}
+                    className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="end_date" className="text-sm font-medium">
+                    End Date
+                  </Label>
+                  <Input
+                    id="end_date"
+                    name="end_date"
+                    type="date"
+                    value={endDate}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      setEndDate(e.target.value)
+                    }
+                    className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
+                  />
+                </div>
+              </div>
+
+              {!isEditMode && (
+                <div className="flex items-center space-x-2 pt-2">
+                  <input
+                    id="importFromJira"
+                    type="checkbox"
+                    checked={importFromJira}
+                    onChange={(e) => handleJiraCheckboxChange(e.target.checked)}
+                    className="accent-primary h-4 w-4 rounded border-gray-300 focus:ring-primary cursor-pointer"
+                  />
+                  <Label htmlFor="importFromJira" className="text-sm font-semibold cursor-pointer select-none">
+                    Import tasks from Jira Cloud
+                  </Label>
                 </div>
               )}
             </div>
-          )}
+
+            {/* Right Column: Jira Integration Details */}
+            {!isEditMode && importFromJira && (
+              <div className="border-border/60 bg-muted/30 rounded-lg border p-4 space-y-4 flex flex-col justify-start h-full max-h-[400px] overflow-y-auto animate-fade-in">
+                <div className="space-y-2">
+                  <Label htmlFor="jiraUrl" className="text-xs font-medium">Jira Cloud URL / Domain</Label>
+                  <Input
+                    id="jiraUrl"
+                    value={jiraUrl}
+                    onChange={(e) => setJiraUrl(e.target.value)}
+                    placeholder="e.g. company.atlassian.net"
+                    className="h-9 text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="jiraProjectKey" className="text-xs font-medium">Jira Project Key</Label>
+                  <Input
+                    id="jiraProjectKey"
+                    value={jiraProjectKey}
+                    onChange={(e) => setJiraProjectKey(e.target.value)}
+                    placeholder="e.g. PROJ"
+                    className="h-9 text-sm uppercase"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleTestConnection}
+                    disabled={isTestingJira}
+                    className="w-full sm:w-auto self-start"
+                  >
+                    {isTestingJira ? (
+                      <>
+                        <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                        Testing Connection...
+                      </>
+                    ) : (
+                      'Test Connection & Preview'
+                    )}
+                  </Button>
+
+                  {jiraTestMessage && (
+                    <p className={`text-xs ${jiraTestError ? 'text-red-500' : 'text-green-600'} font-medium`}>
+                      {jiraTestMessage}
+                    </p>
+                  )}
+                </div>
+
+                {previewIssues.length > 0 && (
+                  <div className="mt-2 space-y-1 flex-1 flex flex-col min-h-0">
+                    <Label className="text-xs font-semibold text-muted-foreground">Tasks Preview (to be imported):</Label>
+                    <div className="max-h-48 overflow-y-auto border border-border/40 rounded bg-background/50 p-2 text-xs divide-y divide-border/20 flex-1">
+                      {previewIssues.slice(0, 10).map((issue) => (
+                        <div key={issue.key} className="py-1.5 flex justify-between gap-4">
+                          <span className="font-mono text-muted-foreground shrink-0">{issue.key}</span>
+                          <span className="font-medium truncate flex-1">{issue.title}</span>
+                          <span className="text-muted-foreground shrink-0 bg-secondary/80 px-1 rounded">{issue.type}</span>
+                        </div>
+                      ))}
+                      {previewIssues.length > 10 && (
+                        <div className="py-1 text-center text-muted-foreground">
+                          ... and {previewIssues.length - 10} more tasks.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           <FormCancelSubmitActions
             message={message}
