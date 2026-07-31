@@ -8,7 +8,8 @@
     "VERCEL",
     "CYPRESS_TEST_USER_EMAIL",
     "CYPRESS_TEST_USER_PASSWORD",
-    "JIRA_API_TOKEN"
+    "JIRA_API_TOKEN",
+    "JIRA_EMAIL"
   ],
   "tasks": {
     "build": {

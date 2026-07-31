@@ -9,6 +9,7 @@ const serverSchema = z.object({
   STORAGE_BUCKET_ATTACHMENTS: z.string().min(1),
   STORAGE_BUCKET_PROFILE_PICTURES: z.string().min(1),
   JIRA_API_TOKEN: z.string().optional(),
+  JIRA_EMAIL: z.string().optional(),
 });
 
 type EnvSchemaType = z.infer<typeof serverSchema>;
@@ -22,6 +23,7 @@ const mock: EnvSchemaType = {
   STORAGE_BUCKET_ATTACHMENTS: 'alice_storage_attachments',
   STORAGE_BUCKET_PROFILE_PICTURES: 'alice_storage_profile_pictures',
   JIRA_API_TOKEN: 'mock',
+  JIRA_EMAIL: 'mock@atlassian.net',
 };
 
 const processEnv = {
@@ -33,6 +35,7 @@ const processEnv = {
   STORAGE_BUCKET_ATTACHMENTS: process.env.STORAGE_BUCKET_ATTACHMENTS,
   STORAGE_BUCKET_PROFILE_PICTURES: process.env.STORAGE_BUCKET_PROFILE_PICTURES,
   JIRA_API_TOKEN: process.env.JIRA_API_TOKEN,
+  JIRA_EMAIL: process.env.JIRA_EMAIL,
 };
 
 let data: EnvSchemaType;
