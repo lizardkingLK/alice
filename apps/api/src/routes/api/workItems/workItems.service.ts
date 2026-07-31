@@ -135,7 +135,7 @@ export class WorkItemService {
     input: WorkItemUpdateBody
   ): Promise<void> {
     const current = await this.workItems.getById(workItemId);
-    if (!current || current.status !== 'Done') {
+    if (current?.status !== 'Done') {
       return;
     }
 
