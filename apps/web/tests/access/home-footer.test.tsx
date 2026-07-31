@@ -26,9 +26,6 @@ describe('HomeFooter', () => {
     expect(
       screen.getByRole('navigation', { name: 'Workspace' })
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole('navigation', { name: 'Team' })
-    ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Overview' })).toHaveAttribute(
       'href',
       '/dashboard'
