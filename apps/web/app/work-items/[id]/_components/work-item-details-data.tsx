@@ -6,13 +6,17 @@ import {
   getWorkItems,
 } from '@/app/work-items/_services/workItem.service.server';
 import { getWorkItemAttachments } from '@/app/work-items/_services/attachments.service.server';
-import { getWorkItemDiscussion } from '@/app/comments/_services/comments.service.server';
+import {
+  getCommentCountsByWorkItemIds,
+  getWorkItemDiscussion,
+} from '@/app/comments/_services/comments.service.server';
 import {
   getProject,
   getProjectMembers,
 } from '@/app/projects/_services/projects.service.server';
 import { getWorkItemWorkLogs } from '@/app/work-items/_services/workItem-worklogs.service.server';
 import { getDbUser } from '@/lib/auth';
+import { zeroCountsById } from '@/lib/db/query';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import type { WorkItemPatchMemberOption } from '@/app/work-items/_components/workItem-field-patch-dialog';
 
@@ -75,13 +79,20 @@ export async function WorkItemDetailsData({
     (item) => item.id !== workItemId && !childIds.has(item.id)
   );
 
-  const projectMembers = workItem.project_id
-    ? await safeServerFetch(
-        getProjectMembers(workItem.project_id),
-        [],
-        'fetch project members for work item details'
-      )
-    : [];
+  const [projectMembers, childCommentCounts] = await Promise.all([
+    workItem.project_id
+      ? safeServerFetch(
+          getProjectMembers(workItem.project_id),
+          [],
+          'fetch project members for work item details'
+        )
+      : Promise.resolve([]),
+    safeServerFetch(
+      getCommentCountsByWorkItemIds(childWorkItems.map((child) => child.id)),
+      zeroCountsById(childWorkItems.map((child) => child.id)),
+      'fetch subtask comment counts for work item details'
+    ),
+  ]);
 
   const memberOptions: WorkItemPatchMemberOption[] = projectMembers
     .map((member) => member.user)
@@ -99,6 +110,7 @@ export async function WorkItemDetailsData({
     <WorkItemDetails
       workItemDetails={workItem}
       childWorkItems={childWorkItems}
+      childCommentCounts={childCommentCounts}
       linkableWorkItems={linkableWorkItems}
       ancestors={ancestors}
       project={project}

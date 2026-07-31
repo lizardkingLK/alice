@@ -43,6 +43,28 @@ export function throwIfError(
   }
 }
 
+/** Seed a count map with `0` for every id (batch badge / group-by helpers). */
+export function zeroCountsById(ids: readonly string[]): Record<string, number> {
+  return Object.fromEntries(ids.map((id) => [id, 0]));
+}
+
+/**
+ * Increment counts for each non-null key. Keys missing from `counts` start at 0.
+ * Mutates and returns `counts` for convenient chaining after a batch select.
+ */
+export function aggregateCountsByKey(
+  counts: Record<string, number>,
+  keys: readonly (string | null | undefined)[]
+): Record<string, number> {
+  for (const key of keys) {
+    if (!key) {
+      continue;
+    }
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  return counts;
+}
+
 /** True when PostgREST/Supabase cannot see a table or relation yet. */
 export function isMissingRelationError(error: {
   message?: string;

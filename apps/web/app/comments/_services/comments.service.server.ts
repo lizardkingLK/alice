@@ -7,7 +7,11 @@ import { apiFetch } from '@/lib/api/api-client.server';
 import { createClient } from '@/lib/supabase/server';
 import { getUser } from '@/lib/auth';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
-import { throwIfError } from '@/lib/db/query';
+import {
+  aggregateCountsByKey,
+  throwIfError,
+  zeroCountsById,
+} from '@/lib/db/query';
 import {
   createCommentsService,
   mapCommentWorkItemOption,
@@ -95,6 +99,37 @@ export async function getWorkItemDiscussion(
     listComments(workItemId),
     [],
     `fetch discussion for work item ${workItemId}`
+  );
+}
+
+/**
+ * Active comment counts (including replies) keyed by work item id.
+ * Used by the parent details subtasks list — one batched read, no N+1.
+ */
+export async function getCommentCountsByWorkItemIds(
+  workItemIds: readonly string[]
+): Promise<Record<string, number>> {
+  const counts = zeroCountsById(workItemIds);
+  if (workItemIds.length === 0) {
+    return counts;
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('comments')
+    .select('work_item_id')
+    .in('work_item_id', [...workItemIds])
+    .eq('status', 'active');
+
+  throwIfError(
+    error,
+    'failed to count comments by work item',
+    'Failed to retrieve comment counts'
+  );
+
+  return aggregateCountsByKey(
+    counts,
+    (data ?? []).map((row) => row.work_item_id)
   );
 }
 
