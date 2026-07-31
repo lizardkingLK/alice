@@ -15,6 +15,8 @@ export const BACKLOG_TYPE_STYLES: Record<string, string> = {
   Epic: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
   Story: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
   Task: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
+  Issue:
+    'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20',
 };
 
 export const BACKLOG_PRIORITY_STYLES: Record<string, string> = {

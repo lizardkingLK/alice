@@ -1,5 +1,6 @@
 'use client';
 
+import { WORK_ITEM_TYPES } from '@repo/types';
 import { useState, type FormEvent } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
@@ -37,7 +38,7 @@ interface WorkItemFormProps {
   lockAssigneeId?: string;
 }
 
-const taskTypes = ['Epic', 'Story', 'Task'] as const;
+const taskTypes = WORK_ITEM_TYPES;
 
 const SubmitButtonText = ({
   isPending,

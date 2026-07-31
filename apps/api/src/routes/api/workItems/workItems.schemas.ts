@@ -1,11 +1,11 @@
-import { WORK_ITEM_STATUSES } from '@repo/types';
+import { WORK_ITEM_STATUSES, WORK_ITEM_TYPES } from '@repo/types';
 import { z } from 'zod';
 
 const dateStringSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format');
 
-const workItemTypeSchema = z.enum(['Epic', 'Story', 'Task'], {
+const workItemTypeSchema = z.enum(WORK_ITEM_TYPES, {
   message: 'Please select a work item type',
 });
 
