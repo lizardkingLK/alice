@@ -3,18 +3,19 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, type FormEvent } from 'react';
-import { getAllowedChildType, type WorkItemType } from '@repo/types';
+import { 
+  getAllowedChildType,
+  type WorkItemType,
+  type AttachmentWithUploader,
+  type Json,
+  type WorkItemWorkLog,
+} from '@repo/types';
 import { getInitials } from '@/app/_shared/utility';
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
 import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form-dialog';
 import { WorkItemLinkSubtaskDialog } from '@/app/work-items/_components/work-item-link-subtask-dialog';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
-import type {
-  AttachmentWithUploader,
-  Json,
-  WorkItemWorkLog,
-} from '@repo/types';
 import { AttachmentsSection } from '@/app/work-items/_components/work-item-attachments-section';
 import {
   WorkItemActivityTabs,
