@@ -12,6 +12,7 @@ import { workItems } from '../../../config/composition';
 import { type WorkItemBody } from '../workItems/workItems.schemas';
 import { supabase } from '../../../lib/supabase';
 
+
 const projectsRouter: Router = Router();
 
 interface JiraIssueField {
@@ -77,34 +78,43 @@ async function fetchAndParseJiraIssues(
     url = `https://${url}`;
   }
 
+  let parsedUrl: URL;
   try {
-    const parsedUrl = new URL(url);
-    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-      throw new Error('Invalid URL protocol');
-    }
+    parsedUrl = new URL(url); // NOSONAR
   } catch {
     throw new Error('Invalid Jira URL format');
   }
 
+  const hostname = parsedUrl.hostname.toLowerCase();
+
+  // Whitelist check: Must end with .atlassian.net to prevent SSRF
+  if (!hostname.endsWith('.atlassian.net')) {
+    throw new Error('Only Jira Cloud domains (*.atlassian.net) are allowed');
+  }
+
+  // Extract the subdomain and validate it is alphanumeric + hyphens only
+  const subdomain = hostname.slice(0, -'.atlassian.net'.length);
+  if (!/^[a-zA-Z0-9-]+$/.test(subdomain)) {
+    throw new Error('Invalid Jira Cloud subdomain format');
+  }
+
+  // Reconstruct the URL from the safe, validated components
+  // This breaks the taint chain and guarantees that only public Jira Cloud domains are requested.
+  const cleanUrl = `https://${subdomain}.atlassian.net`;
+
   const jiraEmail = 'tashila.kumara@1billiontech.com';
   const credentials = `${jiraEmail}:${jiraToken.trim()}`;
   const authHeader = `Basic ${Buffer.from(credentials).toString('base64')}`;
-  const response = await fetch(
-    `${url}/rest/api/3/search/jql?jql=project="${jiraProjectKey.trim()}"&fields=summary,description,issuetype`,
-    {
-      // NOSONAR
-      headers: {
-        Authorization: authHeader,
-        Accept: 'application/json',
-      },
-    }
-  );
+  const response = await fetch(`${cleanUrl}/rest/api/3/search/jql?jql=project="${jiraProjectKey.trim()}"&fields=summary,description,issuetype`, { // NOSONAR
+    headers: {
+      'Authorization': authHeader,
+      'Accept': 'application/json',
+    },
+  });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(
-      `Jira API request failed with status ${response.status}: ${errorText}`
-    );
+    throw new Error(`Jira API request failed with status ${response.status}: ${errorText}`);
   }
 
   const data = (await response.json()) as JiraSearchResponse;
@@ -385,9 +395,9 @@ projectsRouter.post(
     const { projectId } = req.body;
     let { jiraUrl, jiraToken, jiraProjectKey } = req.body;
 
-    if (jiraToken === undefined) {
-      jiraToken = process.env.JIRA_API_TOKEN;
-    }
+if (jiraToken === undefined) {
+  jiraToken = process.env.JIRA_API_TOKEN;
+}
 
     try {
       if (projectId && (!jiraUrl || !jiraToken || !jiraProjectKey)) {
@@ -401,9 +411,7 @@ projectsRouter.post(
 
       // Fall back to global settings if still missing URL/Token
       if (!jiraUrl || !jiraToken) {
-        const globalSettings = await projectsService.getJiraSettings(
-          req.userId!
-        );
+        const globalSettings = await projectsService.getJiraSettings(req.userId!);
         if (globalSettings) {
           jiraUrl = jiraUrl || globalSettings.jira_url;
           jiraToken = jiraToken || globalSettings.jira_token;
@@ -411,20 +419,13 @@ projectsRouter.post(
       }
 
       if (!jiraUrl || !jiraToken || !jiraProjectKey) {
-        return res
-          .status(400)
-          .json({ error: 'Jira URL, Token, and Project Key are required' });
+        return res.status(400).json({ error: 'Jira URL, Token, and Project Key are required' });
       }
 
-      const issues = await fetchAndParseJiraIssues(
-        jiraUrl,
-        jiraToken,
-        jiraProjectKey
-      );
+      const issues = await fetchAndParseJiraIssues(jiraUrl, jiraToken, jiraProjectKey);
       res.json({ issues });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Jira connection test failed';
+      const message = error instanceof Error ? error.message : 'Jira connection test failed';
       res.status(500).json({ error: message });
     }
   }
@@ -440,9 +441,9 @@ projectsRouter.post(
       return res.status(400).json({ error: 'Project ID is required' });
     }
 
-    if (jiraToken === undefined) {
-      jiraToken = process.env.JIRA_API_TOKEN;
-    }
+if (jiraToken === undefined) {
+  jiraToken = process.env.JIRA_API_TOKEN;
+}
 
     try {
       if (!jiraUrl || !jiraToken || !jiraProjectKey) {
@@ -457,9 +458,7 @@ projectsRouter.post(
 
       // Fall back to global settings if still missing URL/Token
       if (!jiraUrl || !jiraToken) {
-        const globalSettings = await projectsService.getJiraSettings(
-          req.userId!
-        );
+        const globalSettings = await projectsService.getJiraSettings(req.userId!);
         if (globalSettings) {
           jiraUrl = jiraUrl || globalSettings.jira_url;
           jiraToken = jiraToken || globalSettings.jira_token;
@@ -467,12 +466,7 @@ projectsRouter.post(
       }
 
       if (!jiraUrl || !jiraToken || !jiraProjectKey) {
-        return res
-          .status(400)
-          .json({
-            error:
-              'Jira integration is not configured. Please provide credentials or set up global settings.',
-          });
+        return res.status(400).json({ error: 'Jira integration is not configured. Please provide credentials or set up global settings.' });
       }
 
       // Get existing work items for this project to prevent duplication
@@ -488,11 +482,7 @@ projectsRouter.post(
           .filter((key: string | null): key is string => !!key)
       );
 
-      const issues = await fetchAndParseJiraIssues(
-        jiraUrl,
-        jiraToken,
-        jiraProjectKey
-      );
+      const issues = await fetchAndParseJiraIssues(jiraUrl, jiraToken, jiraProjectKey);
 
       let importedCount = 0;
       for (const issue of issues) {
@@ -510,17 +500,13 @@ projectsRouter.post(
           jira_issue_key: issue.key,
         };
 
-        await workItems.workItemService.createWorkItem(
-          req.userId!,
-          workItemInput
-        );
+        await workItems.workItemService.createWorkItem(req.userId!, workItemInput);
         importedCount++;
       }
 
       res.json({ success: true, importedCount });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Jira import failed';
+      const message = error instanceof Error ? error.message : 'Jira import failed';
       res.status(500).json({ error: message });
     }
   }
@@ -541,8 +527,7 @@ projectsRouter.get(
         jiraEmail: settings.jira_email,
       });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to fetch settings';
+      const message = error instanceof Error ? error.message : 'Failed to fetch settings';
       res.status(500).json({ error: message });
     }
   }
@@ -554,22 +539,14 @@ projectsRouter.put(
   async (req: AuthenticatedRequest, res) => {
     const { jiraUrl, jiraEmail, jiraToken } = req.body;
     if (!jiraUrl || !jiraEmail || !jiraToken) {
-      return res
-        .status(400)
-        .json({ error: 'Jira URL, Email, and Token are required' });
+      return res.status(400).json({ error: 'Jira URL, Email, and Token are required' });
     }
 
     try {
-      await projectsService.saveJiraSettings(
-        req.userId!,
-        jiraUrl,
-        jiraEmail,
-        jiraToken
-      );
+      await projectsService.saveJiraSettings(req.userId!, jiraUrl, jiraEmail, jiraToken);
       res.json({ success: true, jiraUrl, jiraEmail });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to save settings';
+      const message = error instanceof Error ? error.message : 'Failed to save settings';
       res.status(500).json({ error: message });
     }
   }
