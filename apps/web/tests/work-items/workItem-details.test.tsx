@@ -223,29 +223,43 @@ describe('WorkItemDetails subtasks', () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/No subtasks yet/i)).toBeInTheDocument();
 
-    // Arrange — with children
-    const child = workItemFactory.build({
-      id: 'wi-child',
+    // Arrange — with children (mixed completion)
+    const doneChild = workItemFactory.build({
+      id: 'wi-child-done',
       title: 'Child task title',
       type: 'Task',
       parent_id: story.id,
       status: 'Done',
     });
+    const inProgressChild = workItemFactory.build({
+      id: 'wi-child-wip',
+      title: 'In progress child',
+      type: 'Task',
+      parent_id: story.id,
+      status: 'InProgress',
+    });
+    const todoChild = workItemFactory.build({
+      id: 'wi-child-todo',
+      title: 'Todo child',
+      type: 'Task',
+      parent_id: story.id,
+      status: 'ToDo',
+    });
     rerender(
       <WorkItemDetails
         workItemDetails={story}
         project={project}
-        childWorkItems={[child]}
+        childWorkItems={[doneChild, inProgressChild, todoChild]}
         projectMembers={members}
       />
     );
 
-    // Assert
+    // Assert — (100 + 25 + 0) / 3 ≈ 42
     expect(screen.getByText('Child task title')).toBeInTheDocument();
-    expect(screen.getByText('100% Done')).toBeInTheDocument();
+    expect(screen.getByText('42% Done')).toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: /Child task title/i })
-    ).toHaveAttribute('href', '/work-items/wi-child');
+    ).toHaveAttribute('href', '/work-items/wi-child-done');
   });
 
   it('refreshes the page after a successful subtask create', async () => {

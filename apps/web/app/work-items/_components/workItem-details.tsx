@@ -53,6 +53,7 @@ import WorkItemSidebar from '@/app/work-items/_components/workItem-details-sideb
 import { WorkItemTitleEditor } from '@/app/work-items/_components/workItem-title-editor';
 import { WorkItemPathBreadcrumb } from '@/app/work-items/_components/work-item-path-breadcrumb';
 import type { WorkItemPatchMemberOption } from '@/app/work-items/_components/workItem-field-patch-dialog';
+import { averageStatusCompletionPercent } from '@/app/work-items/_helpers/work-item-status';
 import { toast } from '@repo/ui/components/ui/sonner';
 import { CommentItem } from '@/app/comments/_services/comments.service';
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
@@ -60,10 +61,6 @@ import type { WorkItemAncestor } from '@/app/work-items/_services/workItem.servi
 
 function childWorkItemKey(child: DbWorkItem): string {
   return child.jira_issue_key?.trim() || child.id.slice(0, 8).toUpperCase();
-}
-
-function isDoneStatus(status: DbWorkItem['status']): boolean {
-  return status === 'Done';
 }
 
 export default function WorkItemDetails({
@@ -119,15 +116,13 @@ export default function WorkItemDetails({
     [workItem.description]
   );
 
-  const childDonePercent = useMemo(() => {
-    if (childWorkItems.length === 0) {
-      return 0;
-    }
-    const doneCount = childWorkItems.filter((child) =>
-      isDoneStatus(child.status)
-    ).length;
-    return Math.round((doneCount / childWorkItems.length) * 100);
-  }, [childWorkItems]);
+  const childDonePercent = useMemo(
+    () =>
+      averageStatusCompletionPercent(
+        childWorkItems.map((child) => child.status)
+      ),
+    [childWorkItems]
+  );
 
   const discussionWorkItems = useMemo(
     () => [
@@ -356,10 +351,10 @@ export default function WorkItemDetails({
                             {childWorkItemKey(child)}
                           </Badge>
                         </TableCell>
-                        <TableCell className="max-w-0 px-2 py-2.5 whitespace-normal">
+                        <TableCell className="max-w-0 p-0 whitespace-normal">
                           <Link
                             href={`/work-items/${child.id}`}
-                            className="hover:text-primary block min-w-0"
+                            className="hover:text-primary block min-w-0 px-2 py-2.5"
                           >
                             <TruncatedText className="text-sm">
                               {child.title}

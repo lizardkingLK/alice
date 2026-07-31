@@ -16,6 +16,40 @@ export const WORK_ITEM_STATUS_BADGE_STYLES: Record<WorkItemStatus, string> = {
   Done: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
 };
 
+/** Fixed completion weight per status for rollup progress (e.g. subtasks bar). */
+export const WORK_ITEM_STATUS_COMPLETION_PERCENT: Record<
+  WorkItemStatus,
+  number
+> = {
+  Draft: 0,
+  New: 0,
+  ToDo: 0,
+  InProgress: 25,
+  Testing: 75,
+  Done: 100,
+};
+
+export function statusCompletionPercent(status: WorkItemStatus): number {
+  return WORK_ITEM_STATUS_COMPLETION_PERCENT[status] ?? 0;
+}
+
+/**
+ * Average of each item's status completion weight, rounded to a whole percent.
+ * Empty list → 0.
+ */
+export function averageStatusCompletionPercent(
+  statuses: readonly WorkItemStatus[]
+): number {
+  if (statuses.length === 0) {
+    return 0;
+  }
+  const total = statuses.reduce(
+    (sum, status) => sum + statusCompletionPercent(status),
+    0
+  );
+  return Math.round(total / statuses.length);
+}
+
 export const BOARD_STATUS_COLUMN_ACCENTS: Record<
   Exclude<WorkItemStatus, 'Draft'>,
   string

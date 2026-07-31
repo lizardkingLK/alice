@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { User as DbUser } from '@/app/users/_services/users.service';
 import { createClient } from '@/lib/supabase/server';
 import { pageRange, paginationMeta } from '@/lib/db/pagination';
@@ -155,21 +156,23 @@ export async function getWorkItemsPaginated(
   };
 }
 
-export async function getWorkItem(workItemId: string): Promise<DbWorkItem> {
-  const supabase = await createClient();
+export const getWorkItem = cache(
+  async (workItemId: string): Promise<DbWorkItem> => {
+    const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from('work_items')
-    .select(
-      `*, ${ASSIGNEE_SELECT}, ${REPORTER_SELECT}, ${PROJECT_SELECT}, sprint:sprints(id, name)`
-    )
-    .eq('id', workItemId)
-    .maybeSingle();
+    const { data, error } = await supabase
+      .from('work_items')
+      .select(
+        `*, ${ASSIGNEE_SELECT}, ${REPORTER_SELECT}, ${PROJECT_SELECT}, sprint:sprints(id, name)`
+      )
+      .eq('id', workItemId)
+      .maybeSingle();
 
-  throwIfError(error, 'failed to get work-item', 'Failed to get work-item');
+    throwIfError(error, 'failed to get work-item', 'Failed to get work-item');
 
-  return data as unknown as DbWorkItem;
-}
+    return data as unknown as DbWorkItem;
+  }
+);
 
 /** Minimal ancestor fields for the in-page hierarchy path. */
 export type WorkItemAncestor = Pick<

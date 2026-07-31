@@ -2,8 +2,8 @@ import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { WorkItemDetailsSkeleton } from '@/app/work-items/[id]/_components/work-item-details-skeleton';
 
 /**
- * `loading.tsx` cannot read `params`. UUID path segments are auto-shortened in
- * `DashboardBreadcrumb`, so the last crumb matches the loaded page (no …→short flash).
+ * `loading.tsx` cannot read `params` / project id. Match the project-scoped
+ * trail shape; UUID segments resolve once the page loads.
  */
 export default function WorkItemLoading() {
   return (
@@ -11,6 +11,7 @@ export default function WorkItemLoading() {
       description="Work-Item Details"
       breadcrumbOverrides={[
         { label: 'Dashboard', url: '/dashboard' },
+        { label: 'Projects', url: '/projects' },
         { label: 'Work Items', url: '/work-items' },
       ]}
     >

@@ -42,9 +42,11 @@ On the work-item details page:
 - **Create subtask** (header) opens the shared create form with project and type locked, submits `parent_id`, then refreshes.
 - **+** in the **Subtasks** section opens **Link Subtask**: pick an existing unparented work item of the allowed child type in the same project, then PATCH its `parent_id`. Only orphans (`parent_id IS NULL`) appear in v1 (no reparenting).
 
-The **Subtasks** section lists children (`parent_id = current item`). Linked issues remain a separate non-hierarchy feature.
+The **Subtasks** section lists children (`parent_id = current item`). The progress bar is the **average** of each child's status completion weight (`Draft`/`New`/`ToDo` 0%, `InProgress` 25%, `Testing` 75%, `Done` 100%), rounded. Linked issues remain a separate non-hierarchy feature.
 
 The in-page path above the title (`WorkItemPathBreadcrumb`) shows hierarchy ancestors when present: `PROJECT > Sprint > [Epic] … > [Type] SHORT_ID`. Ancestor segments link to the parent work-item details pages; the current item is not a link.
+
+The dashboard shell breadcrumb on work-item detail is always project-scoped when the item has a `project_id`: `Dashboard → Projects → {project} → Work Items → {item}`. Entry query flags (`fromProject` / `fromAssignee`) are not used for that trail — use the browser back button for navigation history.
 
 ## Unit tests (Vitest)
 
