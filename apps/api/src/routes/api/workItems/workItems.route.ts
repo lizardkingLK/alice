@@ -5,7 +5,10 @@ import {
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
 import { parsePagination } from '../../../lib/pagination';
-import type { WorkItemService } from './workItems.service';
+import {
+  WorkItemValidationError,
+  type WorkItemService,
+} from './workItems.service';
 import type { NotificationsService } from '../notifications/notifications.service';
 import {
   createUpdateWorkItemBodySchema,
@@ -50,6 +53,10 @@ function buildWorkItemPayload(
     status: parsedData.status ?? existingWorkItem.status,
     sprint_id: parsedData.sprint_id ?? existingWorkItem.sprint_id,
     story_points: parsedData.story_points ?? existingWorkItem.story_points,
+    parent_id:
+      parsedData.parent_id !== undefined
+        ? parsedData.parent_id
+        : existingWorkItem.parent_id,
   };
 }
 
@@ -63,6 +70,22 @@ export function shouldNotifyAssigneeChange(
     workItem.assignee_id !== existingWorkItem.assignee_id &&
     workItem.assignee_id !== actorId
   );
+}
+
+function sendWorkItemMutationError(
+  res: {
+    status: (code: number) => {
+      json: (body: { data: null; error: string }) => void;
+    };
+  },
+  error: unknown,
+  fallbackMessage: string
+) {
+  const message = error instanceof Error ? error.message : fallbackMessage;
+  if (error instanceof WorkItemValidationError) {
+    return res.status(400).json({ data: null, error: message });
+  }
+  return res.status(500).json({ data: null, error: message });
 }
 
 export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
@@ -195,9 +218,11 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
 
         res.status(201).json({ worklog });
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to create work log';
-        res.status(500).json({ error: message });
+        return sendWorkItemMutationError(
+          res,
+          error,
+          'Failed to create work log'
+        );
       }
     }
   );
@@ -226,9 +251,7 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
 
         res.status(201).json({ data: workItem, error: null });
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to create work-item';
-        res.status(500).json({ data: null, error: message });
+        sendWorkItemMutationError(res, error, 'Failed to create work-item');
       }
     }
   );
@@ -292,9 +315,7 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
 
         res.status(200).json({ data: workItem, error: null });
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to update work-item';
-        res.status(500).json({ data: null, error: message });
+        sendWorkItemMutationError(res, error, 'Failed to update work-item');
       }
     }
   );

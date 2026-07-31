@@ -17,13 +17,6 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@repo/ui/components/ui/dialog';
-import {
   ClipboardPenLine,
   MoreHorizontal,
   Pencil,
@@ -37,7 +30,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
-import { WorkItemForm } from '@/app/work-items/_components/workItem-form';
+import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form-dialog';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { WorkItemWorkspaceProps } from '@/app/work-items/_components/workItems-workspace';
 import { formatDate } from '@/app/_shared/utility';
@@ -447,34 +440,23 @@ export default function WorkItemsTable({
       </Card>
 
       {/* Work-Item Create/Edit */}
-      <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
-        <DialogContent
-          className="sm:max-w-xl"
-          onPointerDownOutside={(event) => event.preventDefault()}
-          onInteractOutside={(event) => event.preventDefault()}
-        >
-          <DialogHeader>
-            <DialogTitle>
-              {isEditMode ? 'Edit Work Item' : 'Create Work Item'}
-            </DialogTitle>
-            <DialogDescription>
-              {isEditMode
-                ? 'Update the details for this work item.'
-                : 'Add a new work item and assign it to a team member.'}
-            </DialogDescription>
-          </DialogHeader>
-
-          <WorkItemForm
-            projects={projects}
-            itemToEdit={itemToEdit}
-            projectMembers={projectMembers}
-            lockProject={isProjectLocked}
-            lockAssigneeId={lockedAssigneeId}
-            onClose={() => handleDialogChange(false)}
-            onSuccess={() => handleUpdated()}
-          />
-        </DialogContent>
-      </Dialog>
+      <WorkItemFormDialog
+        open={dialogOpen}
+        onOpenChange={handleDialogChange}
+        title={isEditMode ? 'Edit Work Item' : 'Create Work Item'}
+        description={
+          isEditMode
+            ? 'Update the details for this work item.'
+            : 'Add a new work item and assign it to a team member.'
+        }
+        projects={projects}
+        itemToEdit={itemToEdit}
+        projectMembers={projectMembers}
+        lockProject={isProjectLocked}
+        lockAssigneeId={lockedAssigneeId}
+        onClose={() => handleDialogChange(false)}
+        onSuccess={() => handleUpdated()}
+      />
     </div>
   );
 }

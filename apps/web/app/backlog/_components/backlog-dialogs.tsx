@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
 import { SprintForm } from '@/app/sprints/_components/sprint-form';
-import { WorkItemForm } from '@/app/work-items/_components/workItem-form';
+import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form-dialog';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
@@ -129,28 +129,19 @@ export function BacklogCreateIssueDialog({
   onCreated,
 }: Readonly<CreateIssueDialogProps>) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="bg-card border-border/80 backdrop-blur-md sm:max-w-2xl"
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onInteractOutside={(e) => e.preventDefault()}
-      >
-        <DialogHeader>
-          <DialogTitle className="text-lg font-bold">
-            Create Work Item
-          </DialogTitle>
-          <DialogDescription className="text-muted-foreground text-xs">
-            Add a new work item and assign it to a team member.
-          </DialogDescription>
-        </DialogHeader>
-        <WorkItemForm
-          projects={projects}
-          projectMembers={projectMembers}
-          onClose={onClose}
-          onSuccess={onCreated}
-        />
-      </DialogContent>
-    </Dialog>
+    <WorkItemFormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Create Work Item"
+      description="Add a new work item and assign it to a team member."
+      contentClassName="bg-card border-border/80 backdrop-blur-md sm:max-w-2xl"
+      titleClassName="text-lg font-bold"
+      descriptionClassName="text-muted-foreground text-xs"
+      projects={projects}
+      projectMembers={projectMembers}
+      onClose={onClose}
+      onSuccess={onCreated}
+    />
   );
 }
 

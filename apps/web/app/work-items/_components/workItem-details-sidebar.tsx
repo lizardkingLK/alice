@@ -12,6 +12,8 @@ import {
   WorkItemFieldPatchDialog,
   type WorkItemPatchMemberOption,
 } from '@/app/work-items/_components/workItem-field-patch-dialog';
+import { IncompleteSubtasksDoneBlockedDialog } from '@/app/work-items/_components/incomplete-subtasks-done-blocked-dialog';
+import { hasIncompleteStatuses } from '@/app/work-items/_helpers/work-item-status';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import {
   Avatar,
@@ -53,9 +55,14 @@ import {
   Settings,
 } from '@repo/ui/lib/icons';
 import { WorkItemTimeTracking } from '@/app/work-items/_components/work-item-time-tracking';
-import type { WorkItemWorkLog } from '@repo/types';
+import type { WorkItemStatus, WorkItemWorkLog } from '@repo/types';
 import { cn } from '@repo/ui/lib/utils';
-import { Dispatch, ReactNode, SetStateAction, useState } from 'react';
+import {
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from 'react';
 
 const PLACEHOLDER_LABELS = [
   'Solar-powered',
@@ -67,20 +74,31 @@ const PLACEHOLDER_LABELS = [
 function StatusDropdown({
   workItemId,
   workItemStatus,
+  childStatuses,
   onPatched,
 }: Readonly<{
   workItemId: string;
   workItemStatus: DbWorkItem['status'];
+  childStatuses: readonly WorkItemStatus[];
   // eslint-disable-next-line no-unused-vars -- callback signature
   onPatched: (updated: Partial<DbWorkItem>) => void;
 }>) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [blockedOpen, setBlockedOpen] = useState(false);
   const [pendingStatus, setPendingStatus] =
     useState<DbWorkItem['status']>(workItemStatus);
+
+  const incompleteSubtaskCount = childStatuses.filter(
+    (status) => status !== 'Done'
+  ).length;
 
   const handleStatusSelect = (value: string) => {
     const nextStatus = value as DbWorkItem['status'];
     if (nextStatus === workItemStatus) {
+      return;
+    }
+    if (nextStatus === 'Done' && hasIncompleteStatuses(childStatuses)) {
+      setBlockedOpen(true);
       return;
     }
     setPendingStatus(nextStatus);
@@ -128,6 +146,12 @@ function StatusDropdown({
         fieldConfig={WORK_ITEM_PATCH_FIELD_CONFIG.status}
         currentValue={pendingStatus}
         onPatched={onPatched}
+      />
+
+      <IncompleteSubtasksDoneBlockedDialog
+        open={blockedOpen}
+        onOpenChange={setBlockedOpen}
+        incompleteCount={incompleteSubtaskCount}
       />
     </>
   );
@@ -212,6 +236,7 @@ type EditableUserFieldProps = {
   readonly imageUrl?: string | null;
   readonly field: 'assignee_id' | 'reporter_id';
   readonly onEdit: (field: 'assignee_id' | 'reporter_id') => void;
+  readonly readOnly?: boolean;
 };
 /* eslint-enable no-unused-vars */
 
@@ -220,6 +245,7 @@ function EditableUserField({
   imageUrl,
   field,
   onEdit,
+  readOnly = false,
 }: Readonly<EditableUserFieldProps>) {
   const config = WORK_ITEM_PATCH_FIELD_CONFIG[field];
 
@@ -230,22 +256,25 @@ function EditableUserField({
         imageUrl={imageUrl}
         emptyLabel={config.unassignedLabel ?? 'Unassigned'}
       />
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        className="cursor-pointer"
-        aria-label={`Edit ${config.label.toLowerCase()}`}
-        onClick={() => onEdit(field)}
-      >
-        <PencilIcon className="size-3.5" />
-      </Button>
+      {readOnly ? null : (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="cursor-pointer"
+          aria-label={`Edit ${config.label.toLowerCase()}`}
+          onClick={() => onEdit(field)}
+        >
+          <PencilIcon className="size-3.5" />
+        </Button>
+      )}
     </div>
   );
 }
 
 export default function WorkItemSidebar({
   workItem,
+  childStatuses = [],
   projectMembers = [],
   workLogs = [],
   detailsOpen,
@@ -254,8 +283,10 @@ export default function WorkItemSidebar({
   setMoreFieldsOpen,
   onWorkItemPatched,
   onLogWorkClick,
+  readOnly = false,
 }: Readonly<{
   workItem: DbWorkItem;
+  childStatuses?: readonly WorkItemStatus[];
   projectMembers?: readonly WorkItemPatchMemberOption[];
   workLogs?: WorkItemWorkLog[];
   detailsOpen: boolean;
@@ -265,6 +296,7 @@ export default function WorkItemSidebar({
   // eslint-disable-next-line no-unused-vars -- callback signature
   onWorkItemPatched: (updated: Partial<DbWorkItem>) => void;
   onLogWorkClick?: () => void;
+  readOnly?: boolean;
 }>) {
   const [activeField, setActiveField] = useState<
     'assignee_id' | 'reporter_id' | null
@@ -286,6 +318,7 @@ export default function WorkItemSidebar({
       <StatusDropdown
         workItemId={workItem.id}
         workItemStatus={workItem.status}
+        childStatuses={childStatuses}
         onPatched={onWorkItemPatched}
       />
 
@@ -301,6 +334,7 @@ export default function WorkItemSidebar({
                   imageUrl={workItem.assignee?.profile_picture}
                   field="assignee_id"
                   onEdit={setActiveField}
+                  readOnly={readOnly}
                 />
               </DetailRow>
               <DetailRow label="Reporter">
@@ -309,6 +343,7 @@ export default function WorkItemSidebar({
                   imageUrl={workItem.reporter?.profile_picture}
                   field="reporter_id"
                   onEdit={setActiveField}
+                  readOnly={readOnly}
                 />
               </DetailRow>
               <DetailRow label="Priority">
@@ -399,7 +434,7 @@ export default function WorkItemSidebar({
               <WorkItemTimeTracking
                 storyPoints={workItem.story_points}
                 workLogs={workLogs}
-                onLogWorkClick={onLogWorkClick}
+                onLogWorkClick={readOnly ? undefined : onLogWorkClick}
               />
 
               <DetailRow label="Due date">

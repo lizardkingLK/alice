@@ -265,4 +265,87 @@ describe('WorkItemForm', () => {
       screen.getByRole('button', { name: /Save Changes/i })
     ).toBeInTheDocument();
   });
+
+  it('locks type and submits parent_id for subtask create', async () => {
+    // Arrange
+    const onSuccess = vi.fn();
+    const parentId = 'parent-story-1';
+    const created = workItemFactory.build({
+      title: 'Child task',
+      type: 'Task',
+      parent_id: parentId,
+      project_id: projects[0]!.id,
+    });
+    vi.mocked(createWorkItem).mockResolvedValue({
+      data: created,
+      error: null,
+    });
+
+    render(
+      <WorkItemForm
+        projects={[projects[0]!]}
+        projectMembers={projectMembers}
+        parentId={parentId}
+        allowedTypes={['Task']}
+        lockProject
+        lockType
+        onSuccess={onSuccess}
+        onClose={vi.fn()}
+      />
+    );
+
+    // Assert — type locked to Task
+    expect(screen.getByLabelText(/^Type$/i)).toBeDisabled();
+    expect(screen.getByLabelText(/^Project$/i)).toBeDisabled();
+
+    // Act
+    fireEvent.change(screen.getByLabelText(/^Title$/i), {
+      target: { value: 'Child task' },
+    });
+    fireEvent.click(screen.getByLabelText(/Assign to/i));
+    fireEvent.click(
+      screen.getByRole('option', {
+        name: `${projectMembers[0]!.name} (${projectMembers[0]!.email})`,
+      })
+    );
+    fireEvent.submit(screen.getByLabelText(/^Title$/i).closest('form')!);
+
+    // Assert
+    await waitFor(() => {
+      expect(createWorkItem).toHaveBeenCalledTimes(1);
+    });
+
+    const formData = vi.mocked(createWorkItem).mock.calls[0]![0] as FormData;
+    expect(formData.get('parent_id')).toBe(parentId);
+    expect(formData.get('type')).toBe('Task');
+    expect(formData.get('project_id')).toBe(projects[0]!.id);
+    await waitFor(() => {
+      expect(onSuccess).toHaveBeenCalledWith(created);
+    });
+  });
+
+  it('restricts type options to allowedTypes', () => {
+    // Arrange — two allowed types so the select stays interactive
+    render(
+      <WorkItemForm
+        projects={projects}
+        projectMembers={projectMembers}
+        allowedTypes={['Story', 'Task']}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    // Act
+    fireEvent.click(screen.getByLabelText(/^Type$/i));
+
+    // Assert
+    expect(screen.getByRole('option', { name: 'Story' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Task' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('option', { name: 'Epic' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('option', { name: 'Issue' })
+    ).not.toBeInTheDocument();
+  });
 });
