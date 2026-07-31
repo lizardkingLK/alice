@@ -186,6 +186,8 @@ describe('ProjectForm Component', () => {
         status: 'active',
         attributes_config: null,
         workflow_config: null,
+        jira_url: null,
+        jira_project_key: null,
       });
     });
 
@@ -242,6 +244,8 @@ describe('ProjectForm Component', () => {
         status: 'active',
         attributes_config: null,
         workflow_config: null,
+        jira_url: null,
+        jira_project_key: null,
       });
     });
 
@@ -281,12 +285,10 @@ describe('ProjectForm Component', () => {
     // Verify Jira input fields are rendered
     expect(screen.getByLabelText(/Jira Cloud URL \/ Domain/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Jira Project Key/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Atlassian API Token/i)).toBeInTheDocument();
 
     // Fill in integration credentials
     fireEvent.change(screen.getByLabelText(/Jira Cloud URL \/ Domain/i), { target: { value: 'test.atlassian.net' } });
     fireEvent.change(screen.getByLabelText(/Jira Project Key/i), { target: { value: 'TEST' } });
-    fireEvent.change(screen.getByLabelText(/Atlassian API Token/i), { target: { value: 'my-token' } });
 
     // Click Connection Test
     const testBtn = screen.getByRole('button', { name: /Test Connection & Preview/i });
@@ -301,8 +303,6 @@ describe('ProjectForm Component', () => {
       method: 'POST',
       body: JSON.stringify({
         jiraUrl: 'test.atlassian.net',
-        jiraEmail: 'test@user.com',
-        jiraToken: 'my-token',
         jiraProjectKey: 'TEST',
       }),
     });
@@ -328,7 +328,6 @@ describe('ProjectForm Component', () => {
     // Fill integration details
     fireEvent.change(screen.getByLabelText(/Jira Cloud URL \/ Domain/i), { target: { value: 'test.atlassian.net' } });
     fireEvent.change(screen.getByLabelText(/Jira Project Key/i), { target: { value: 'TEST' } });
-    fireEvent.change(screen.getByLabelText(/Atlassian API Token/i), { target: { value: 'my-token' } });
 
     // Submit form
     const form = screen.getByLabelText(/Project Name/i).closest('form')!;
@@ -342,8 +341,6 @@ describe('ProjectForm Component', () => {
         body: JSON.stringify({
           projectId: 'proj-123',
           jiraUrl: 'test.atlassian.net',
-          jiraEmail: 'test@user.com',
-          jiraToken: 'my-token',
           jiraProjectKey: 'TEST',
         }),
       });
