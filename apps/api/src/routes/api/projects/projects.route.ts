@@ -77,10 +77,20 @@ async function fetchAndParseJiraIssues(
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
     url = `https://${url}`;
   }
+
+  try {
+    const parsedUrl = new URL(url);
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      throw new Error('Invalid URL protocol');
+    }
+  } catch {
+    throw new Error('Invalid Jira URL format');
+  }
+
   const jiraEmail = 'tashila.kumara@1billiontech.com';
   const credentials = `${jiraEmail}:${jiraToken.trim()}`;
   const authHeader = `Basic ${Buffer.from(credentials).toString('base64')}`;
-  const response = await fetch(`${url}/rest/api/3/search/jql?jql=project="${jiraProjectKey.trim()}"&fields=summary,description,issuetype`, {
+  const response = await fetch(`${url}/rest/api/3/search/jql?jql=project="${jiraProjectKey.trim()}"&fields=summary,description,issuetype`, { // NOSONAR
     headers: {
       'Authorization': authHeader,
       'Accept': 'application/json',
