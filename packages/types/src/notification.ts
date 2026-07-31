@@ -37,6 +37,13 @@ export class MentionNotification extends NotificationType {
   }
 }
 
+export class DueDateNotification extends NotificationType {
+  constructor() {
+    super();
+    this.type = 'due_date';
+  }
+}
+
 export class NotificationBuilder<T extends NotificationType> {
   private readonly instance: T;
 

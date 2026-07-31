@@ -14,5 +14,11 @@
       "src": "/(.*)",
       "dest": "src/index.ts"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/notifications/check-due-dates",
+      "schedule": "30 3 * * *"
+    }
   ]
 }

@@ -12,7 +12,6 @@ import {
   createWorkLogSchema,
   isBlockedPastDueDateChange,
   patchUpdateWorkItemBodySchema,
-  SupabaseJson,
 } from './workItems.schemas';
 import type { DbWorkItem } from './workItems.repository';
 
@@ -45,34 +44,16 @@ function buildWorkItemPayload(
     title: parsedData.title ?? existingWorkItem.title,
     project_id: parsedData.project_id ?? existingWorkItem.project_id,
     type: parsedData.type ?? existingWorkItem.type,
-    assignee_id:
-      parsedData.assignee_id !== undefined
-        ? parsedData.assignee_id
-        : existingWorkItem.assignee_id,
-    reporter_id:
-      parsedData.reporter_id !== undefined
-        ? parsedData.reporter_id
-        : existingWorkItem.reporter_id,
-    due_date:
-      parsedData.due_date !== undefined
-        ? parsedData.due_date
-        : existingWorkItem.due_date,
-    description: (parsedData.description !== undefined
-      ? parsedData.description
-      : existingWorkItem.description) as SupabaseJson,
+    assignee_id: parsedData.assignee_id ?? existingWorkItem.assignee_id,
+    reporter_id: parsedData.reporter_id ?? existingWorkItem.reporter_id,
+    due_date: parsedData.due_date ?? existingWorkItem.due_date,
     status: parsedData.status ?? existingWorkItem.status,
-    sprint_id:
-      parsedData.sprint_id !== undefined
-        ? parsedData.sprint_id
-        : existingWorkItem.sprint_id,
-    story_points:
-      parsedData.story_points !== undefined
-        ? parsedData.story_points
-        : existingWorkItem.story_points,
+    sprint_id: parsedData.sprint_id ?? existingWorkItem.sprint_id,
+    story_points: parsedData.story_points ?? existingWorkItem.story_points,
   };
 }
 
-function shouldNotifyAssigneeChange(
+export function shouldNotifyAssigneeChange(
   existingWorkItem: DbWorkItem,
   workItem: DbWorkItem | null,
   actorId?: string
@@ -107,8 +88,7 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const searchQuery =
-          typeof req.query.search === 'string' ? req.query.search : undefined;
+        const searchQuery = (req.query.search as string) ?? undefined;
         const pagination = parsePagination(req);
 
         // Parse filters
