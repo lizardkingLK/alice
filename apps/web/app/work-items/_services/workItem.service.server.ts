@@ -30,7 +30,8 @@ export type DbWorkItem = Tables<'work_items'> & {
 export type WorkItemListFilters = {
   sprintId?: string | null;
   projectId?: string;
-  parentId?: string;
+  /** Exact parent, or `null` for unparented (orphan) items. */
+  parentId?: string | null;
   type?: Enums<'WorkItemType'>;
   assigneeId?: string;
 };
@@ -76,7 +77,9 @@ export function applyWorkItemFilters<Q extends WorkItemFilterable<Q>>(
     next = next.eq('project_id', filters.projectId);
   }
 
-  if (filters.parentId) {
+  if (filters.parentId === null) {
+    next = next.is('parent_id', null);
+  } else if (filters.parentId) {
     next = next.eq('parent_id', filters.parentId);
   }
 
@@ -166,4 +169,53 @@ export async function getWorkItem(workItemId: string): Promise<DbWorkItem> {
   throwIfError(error, 'failed to get work-item', 'Failed to get work-item');
 
   return data as unknown as DbWorkItem;
+}
+
+/** Minimal ancestor fields for the in-page hierarchy path. */
+export type WorkItemAncestor = Pick<
+  DbWorkItem,
+  'id' | 'type' | 'title' | 'parent_id'
+>;
+
+/** Max hops above a leaf Issue (Task → Story → Epic). */
+const MAX_ANCESTOR_DEPTH = 3;
+
+/**
+ * Walk `parent_id` upward and return ancestors root-first
+ * (Epic → … → immediate parent). Caps at hierarchy depth.
+ */
+export async function getWorkItemAncestors(
+  parentId: string | null | undefined
+): Promise<WorkItemAncestor[]> {
+  if (!parentId) {
+    return [];
+  }
+
+  const supabase = await createClient();
+  const chain: WorkItemAncestor[] = [];
+  let currentParentId: string | null = parentId;
+
+  for (let depth = 0; depth < MAX_ANCESTOR_DEPTH && currentParentId; depth++) {
+    const { data, error } = await supabase
+      .from('work_items')
+      .select('id, type, title, parent_id')
+      .eq('id', currentParentId)
+      .maybeSingle();
+
+    throwIfError(
+      error,
+      'failed to get work-item ancestors',
+      'Failed to get work-item ancestors'
+    );
+
+    if (!data) {
+      break;
+    }
+
+    const ancestor = data as WorkItemAncestor;
+    chain.push(ancestor);
+    currentParentId = ancestor.parent_id;
+  }
+
+  return chain.reverse();
 }

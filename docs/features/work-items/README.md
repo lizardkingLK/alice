@@ -37,17 +37,26 @@ Rules enforced on API create/update when `parent_id` is set:
 - Child `type` must match the table above
 - A work item cannot be its own parent
 
-On the work-item details page, **Create subtask** opens the shared create form with project and type locked, submits `parent_id`, then refreshes. The **Subtasks** section lists children (`parent_id = current item`). Linked issues remain a separate non-hierarchy feature.
+On the work-item details page:
+
+- **Create subtask** (header) opens the shared create form with project and type locked, submits `parent_id`, then refreshes.
+- **+** in the **Subtasks** section opens **Link Subtask**: pick an existing unparented work item of the allowed child type in the same project, then PATCH its `parent_id`. Only orphans (`parent_id IS NULL`) appear in v1 (no reparenting).
+
+The **Subtasks** section lists children (`parent_id = current item`). Linked issues remain a separate non-hierarchy feature.
+
+The in-page path above the title (`WorkItemPathBreadcrumb`) shows hierarchy ancestors when present: `PROJECT > Sprint > [Epic] … > [Type] SHORT_ID`. Ancestor segments link to the parent work-item details pages; the current item is not a link.
 
 ## Unit tests (Vitest)
 
 P0 component coverage lives under `apps/web/tests/work-items/`:
 
-| Spec                        | SUT               | Focus                                                                       |
-| --------------------------- | ----------------- | --------------------------------------------------------------------------- |
-| `workItem-form.test.tsx`    | `WorkItemForm`    | Create/edit submit, subtask `parent_id` / locked type, errors, cancel       |
-| `workItem-details.test.tsx` | `WorkItemDetails` | Create subtask dialog, leaf Issue hide, Subtasks list, refresh after create |
-| `workItems-table.test.tsx`  | `WorkItemsTable`  | Row render, “You” badge, empty state, search, pagination, dialogs           |
+| Spec                                     | SUT                         | Focus                                                                 |
+| ---------------------------------------- | --------------------------- | --------------------------------------------------------------------- |
+| `workItem-form.test.tsx`                 | `WorkItemForm`              | Create/edit submit, subtask `parent_id` / locked type, errors, cancel |
+| `workItem-details.test.tsx`              | `WorkItemDetails`           | Create vs link dialogs, leaf Issue hide, Subtasks list, refresh       |
+| `work-item-link-subtask-dialog.test.tsx` | `WorkItemLinkSubtaskDialog` | PATCH `parent_id`, empty candidates                                   |
+| `work-item-path-breadcrumb.test.tsx`     | `WorkItemPathBreadcrumb`    | Root path, parent link, full Epic→Story→Task→Issue ancestor chain     |
+| `workItems-table.test.tsx`               | `WorkItemsTable`            | Row render, “You” badge, empty state, search, pagination, dialogs     |
 
 Shared fixtures/mocks used by these suites:
 

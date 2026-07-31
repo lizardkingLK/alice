@@ -1,6 +1,8 @@
+import { getAllowedChildType, type WorkItemType } from '@repo/types';
 import WorkItemDetails from '@/app/work-items/_components/workItem-details';
 import {
   getWorkItem,
+  getWorkItemAncestors,
   getWorkItems,
 } from '@/app/work-items/_services/workItem.service.server';
 import { getWorkItemAttachments } from '@/app/work-items/_services/attachments.service.server';
@@ -29,25 +31,49 @@ export async function WorkItemDetailsData({
       getDbUser(),
     ]);
 
-  const [initialWorkLogs, childWorkItems, project] = await Promise.all([
-    safeServerFetch(
-      getWorkItemWorkLogs(workItemId),
-      [],
-      'fetch work logs for work item details'
-    ),
-    safeServerFetch(
-      getWorkItems({ parentId: workItemId }),
-      [],
-      'fetch subtasks for work item details'
-    ),
-    workItem.project_id
-      ? safeServerFetch(
-          getProject(workItem.project_id),
-          null,
-          'fetch project for work item details'
-        )
-      : Promise.resolve(null),
-  ]);
+  const allowedChildType = getAllowedChildType(workItem.type as WorkItemType);
+
+  const [initialWorkLogs, childWorkItems, project, ancestors, linkableRaw] =
+    await Promise.all([
+      safeServerFetch(
+        getWorkItemWorkLogs(workItemId),
+        [],
+        'fetch work logs for work item details'
+      ),
+      safeServerFetch(
+        getWorkItems({ parentId: workItemId }),
+        [],
+        'fetch subtasks for work item details'
+      ),
+      workItem.project_id
+        ? safeServerFetch(
+            getProject(workItem.project_id),
+            null,
+            'fetch project for work item details'
+          )
+        : Promise.resolve(null),
+      safeServerFetch(
+        getWorkItemAncestors(workItem.parent_id),
+        [],
+        'fetch ancestors for work item details'
+      ),
+      allowedChildType && workItem.project_id
+        ? safeServerFetch(
+            getWorkItems({
+              projectId: workItem.project_id,
+              type: allowedChildType,
+              parentId: null,
+            }),
+            [],
+            'fetch linkable subtask candidates'
+          )
+        : Promise.resolve([]),
+    ]);
+
+  const childIds = new Set(childWorkItems.map((child) => child.id));
+  const linkableWorkItems = linkableRaw.filter(
+    (item) => item.id !== workItemId && !childIds.has(item.id)
+  );
 
   const projectMembers = workItem.project_id
     ? await safeServerFetch(
@@ -73,6 +99,8 @@ export async function WorkItemDetailsData({
     <WorkItemDetails
       workItemDetails={workItem}
       childWorkItems={childWorkItems}
+      linkableWorkItems={linkableWorkItems}
+      ancestors={ancestors}
       project={project}
       initialComments={initialComments}
       initialAttachments={initialAttachments}

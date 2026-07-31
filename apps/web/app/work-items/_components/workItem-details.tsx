@@ -8,6 +8,7 @@ import { getInitials } from '@/app/_shared/utility';
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
 import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form-dialog';
+import { WorkItemLinkSubtaskDialog } from '@/app/work-items/_components/work-item-link-subtask-dialog';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import type {
   AttachmentWithUploader,
@@ -55,6 +56,7 @@ import type { WorkItemPatchMemberOption } from '@/app/work-items/_components/wor
 import { toast } from '@repo/ui/components/ui/sonner';
 import { CommentItem } from '@/app/comments/_services/comments.service';
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
+import type { WorkItemAncestor } from '@/app/work-items/_services/workItem.service.server';
 
 function childWorkItemKey(child: DbWorkItem): string {
   return child.jira_issue_key?.trim() || child.id.slice(0, 8).toUpperCase();
@@ -67,6 +69,8 @@ function isDoneStatus(status: DbWorkItem['status']): boolean {
 export default function WorkItemDetails({
   workItemDetails,
   childWorkItems = [],
+  linkableWorkItems = [],
+  ancestors = [],
   project = null,
   initialComments = [],
   initialAttachments = [],
@@ -76,6 +80,8 @@ export default function WorkItemDetails({
 }: Readonly<{
   workItemDetails: DbWorkItem;
   childWorkItems?: DbWorkItem[];
+  linkableWorkItems?: readonly Pick<DbWorkItem, 'id' | 'title' | 'type'>[];
+  ancestors?: readonly WorkItemAncestor[];
   project?: DbProject | null;
   initialComments?: CommentItem[];
   initialAttachments?: AttachmentWithUploader[];
@@ -90,6 +96,7 @@ export default function WorkItemDetails({
   const [moreFieldsOpen, setMoreFieldsOpen] = useState(false);
   const [attachmentUploadOpen, setAttachmentUploadOpen] = useState(false);
   const [subtaskDialogOpen, setSubtaskDialogOpen] = useState(false);
+  const [linkSubtaskDialogOpen, setLinkSubtaskDialogOpen] = useState(false);
   const [workLogs, setWorkLogs] = useState<WorkItemWorkLog[]>(initialWorkLogs);
   const [activityTab, setActivityTab] =
     useState<WorkItemActivityTab>('discussion');
@@ -187,6 +194,11 @@ export default function WorkItemDetails({
     router.refresh();
   };
 
+  const handleSubtaskLinked = () => {
+    setLinkSubtaskDialogOpen(false);
+    router.refresh();
+  };
+
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6">
       {/* Title + actions — same 3∶2 column ratio as the body so the
@@ -194,7 +206,7 @@ export default function WorkItemDetails({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <div className="space-y-3 lg:col-span-3">
           <div className="min-w-0 space-y-1">
-            <WorkItemPathBreadcrumb workItem={workItem} />
+            <WorkItemPathBreadcrumb workItem={workItem} ancestors={ancestors} />
             <WorkItemTitleEditor
               workItemId={workItem.id}
               title={workItem.title}
@@ -295,8 +307,8 @@ export default function WorkItemDetails({
                     variant="ghost"
                     size="icon-sm"
                     className="cursor-pointer"
-                    aria-label="Add subtask"
-                    onClick={() => setSubtaskDialogOpen(true)}
+                    aria-label="Link existing subtask"
+                    onClick={() => setLinkSubtaskDialogOpen(true)}
                   >
                     <Plus />
                   </Button>
@@ -441,20 +453,31 @@ export default function WorkItemDetails({
       </div>
 
       {canCreateSubtask && allowedChildType && project ? (
-        <WorkItemFormDialog
-          open={subtaskDialogOpen}
-          onOpenChange={setSubtaskDialogOpen}
-          title="Create Subtask"
-          description={`Create a ${allowedChildType} under this ${workItem.type}.`}
-          projects={[project]}
-          projectMembers={projectMembers}
-          parentId={workItem.id}
-          allowedTypes={[allowedChildType]}
-          lockProject
-          lockType
-          onClose={() => setSubtaskDialogOpen(false)}
-          onSuccess={handleSubtaskCreated}
-        />
+        <>
+          <WorkItemFormDialog
+            open={subtaskDialogOpen}
+            onOpenChange={setSubtaskDialogOpen}
+            title="Create Subtask"
+            description={`Create a ${allowedChildType} under this ${workItem.type}.`}
+            projects={[project]}
+            projectMembers={projectMembers}
+            parentId={workItem.id}
+            allowedTypes={[allowedChildType]}
+            lockProject
+            lockType
+            onClose={() => setSubtaskDialogOpen(false)}
+            onSuccess={handleSubtaskCreated}
+          />
+          <WorkItemLinkSubtaskDialog
+            open={linkSubtaskDialogOpen}
+            onOpenChange={setLinkSubtaskDialogOpen}
+            parentWorkItemId={workItem.id}
+            parentType={workItem.type as WorkItemType}
+            childType={allowedChildType}
+            candidates={linkableWorkItems}
+            onLinked={handleSubtaskLinked}
+          />
+        </>
       ) : null}
     </div>
   );

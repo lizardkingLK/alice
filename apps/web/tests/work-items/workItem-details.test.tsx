@@ -99,6 +99,36 @@ vi.mock('@/app/work-items/_components/work-item-form-dialog', () => ({
     ) : null,
 }));
 
+vi.mock('@/app/work-items/_components/work-item-link-subtask-dialog', () => ({
+  WorkItemLinkSubtaskDialog: ({
+    open,
+    parentWorkItemId,
+    childType,
+    onLinked,
+    onOpenChange,
+  }: {
+    open: boolean;
+    parentWorkItemId: string;
+    childType: string;
+    onLinked?: () => void;
+    // eslint-disable-next-line no-unused-vars
+    onOpenChange?: (open: boolean) => void;
+  }) =>
+    open ? (
+      <div data-testid="link-subtask-dialog">
+        <span>Link Subtask</span>
+        <span data-testid="link-parent-id">{parentWorkItemId}</span>
+        <span data-testid="link-child-type">{childType}</span>
+        <button type="button" onClick={() => onLinked?.()}>
+          Succeed link
+        </button>
+        <button type="button" onClick={() => onOpenChange?.(false)}>
+          Close link dialog
+        </button>
+      </div>
+    ) : null,
+}));
+
 describe('WorkItemDetails subtasks', () => {
   const project = projectFactory.build();
   const members = userFactory.buildList(1).map((user) => ({
@@ -167,7 +197,7 @@ describe('WorkItemDetails subtasks', () => {
       screen.queryByRole('button', { name: /Create subtask/i })
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: /Add subtask/i })
+      screen.queryByRole('button', { name: /Link existing subtask/i })
     ).not.toBeInTheDocument();
   });
 
@@ -237,6 +267,78 @@ describe('WorkItemDetails subtasks', () => {
     // Act
     fireEvent.click(screen.getByRole('button', { name: /Create subtask/i }));
     fireEvent.click(screen.getByRole('button', { name: /Succeed create/i }));
+
+    // Assert
+    await waitFor(() => {
+      expect(mockRefresh).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('opens Link Subtask from Subtasks + and keeps Create separate', async () => {
+    // Arrange
+    const story = workItemFactory.build({
+      id: 'wi-story',
+      type: 'Story',
+      project_id: project.id,
+    });
+    const linkable = workItemFactory.build({
+      id: 'wi-orphan-task',
+      type: 'Task',
+      title: 'Orphan task',
+      parent_id: null,
+      project_id: project.id,
+    });
+
+    render(
+      <WorkItemDetails
+        workItemDetails={story}
+        project={project}
+        projectMembers={members}
+        linkableWorkItems={[linkable]}
+      />
+    );
+
+    // Act — link via section plus
+    fireEvent.click(
+      screen.getByRole('button', { name: /Link existing subtask/i })
+    );
+
+    // Assert
+    expect(screen.getByTestId('link-subtask-dialog')).toBeInTheDocument();
+    expect(screen.getByTestId('link-parent-id')).toHaveTextContent('wi-story');
+    expect(screen.getByTestId('link-child-type')).toHaveTextContent('Task');
+    expect(screen.queryByTestId('subtask-dialog')).not.toBeInTheDocument();
+
+    // Act — create still works independently
+    fireEvent.click(screen.getByRole('button', { name: /Close link dialog/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Create subtask/i }));
+
+    // Assert
+    expect(screen.getByTestId('subtask-dialog')).toBeInTheDocument();
+    expect(screen.queryByTestId('link-subtask-dialog')).not.toBeInTheDocument();
+  });
+
+  it('refreshes after linking an existing subtask', async () => {
+    // Arrange
+    const story = workItemFactory.build({
+      id: 'wi-story',
+      type: 'Story',
+      project_id: project.id,
+    });
+
+    render(
+      <WorkItemDetails
+        workItemDetails={story}
+        project={project}
+        projectMembers={members}
+      />
+    );
+
+    // Act
+    fireEvent.click(
+      screen.getByRole('button', { name: /Link existing subtask/i })
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Succeed link/i }));
 
     // Assert
     await waitFor(() => {
