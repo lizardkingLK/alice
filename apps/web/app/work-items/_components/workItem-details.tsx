@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import {
   getAllowedChildType,
   type WorkItemType,
@@ -64,6 +64,10 @@ import {
   type SubtaskSortDirection,
   type SubtaskSortField,
 } from '@/app/work-items/_helpers/sort-subtasks';
+import {
+  readMoreFieldsOpen,
+  writeMoreFieldsOpen,
+} from '@/app/work-items/_helpers/work-item-sidebar-storage';
 import { toast } from '@repo/ui/components/ui/sonner';
 import { CommentItem } from '@/app/comments/_services/comments.service';
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
@@ -121,6 +125,15 @@ export default function WorkItemDetails({
   );
   const [workLogCommentInput, setWorkLogCommentInput] = useState<string>('');
   const [isLoggingWork, setIsLoggingWork] = useState(false);
+
+  useEffect(() => {
+    setMoreFieldsOpen(readMoreFieldsOpen(currentUserId));
+  }, [currentUserId]);
+
+  const handleMoreFieldsOpenChange = (open: boolean) => {
+    setMoreFieldsOpen(open);
+    writeMoreFieldsOpen(currentUserId, open);
+  };
 
   const allowedChildType = getAllowedChildType(workItem.type as WorkItemType);
   const isRecordReadOnly = workItem.status === 'Done';
@@ -496,7 +509,7 @@ export default function WorkItemDetails({
           detailsOpen={detailsOpen}
           setDetailsOpen={setDetailsOpen}
           moreFieldsOpen={moreFieldsOpen}
-          setMoreFieldsOpen={setMoreFieldsOpen}
+          setMoreFieldsOpen={handleMoreFieldsOpenChange}
           onWorkItemPatched={handleWorkItemPatched}
           onLogWorkClick={() => setActivityTab('work-log')}
           readOnly={isRecordReadOnly}

@@ -126,13 +126,13 @@ export function WorkItemTimeTracking({
           label="Remaining"
           valueLabel={remainingLabel}
           percent={remainingPercent}
-          fillClassName="bg-orange-400 dark:bg-orange-500"
+          fillClassName="bg-amber-500"
         />
         <TimeTrackingBar
           label="Logged"
           valueLabel={loggedLabel}
           percent={loggedPercent}
-          fillClassName="bg-emerald-500 dark:bg-emerald-400"
+          fillClassName="bg-primary"
         />
       </CollapsibleContent>
     </Collapsible>
