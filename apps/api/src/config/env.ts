@@ -10,6 +10,8 @@ const serverSchema = z.object({
   STORAGE_BUCKET_PROFILE_PICTURES: z.string().min(1),
   JIRA_API_TOKEN: z.string().optional(),
   JIRA_EMAIL: z.string().optional(),
+  /** Optional; when set, `/notifications/check-due-dates` requires `Authorization: Bearer <CRON_SECRET>`. */
+  CRON_SECRET: z.string().min(1).optional(),
 });
 
 type EnvSchemaType = z.infer<typeof serverSchema>;
@@ -24,6 +26,7 @@ const mock: EnvSchemaType = {
   STORAGE_BUCKET_PROFILE_PICTURES: 'alice_storage_profile_pictures',
   JIRA_API_TOKEN: 'mock',
   JIRA_EMAIL: 'mock@atlassian.net',
+  CRON_SECRET: 'mock-cron-secret',
 };
 
 const processEnv = {
@@ -36,6 +39,7 @@ const processEnv = {
   STORAGE_BUCKET_PROFILE_PICTURES: process.env.STORAGE_BUCKET_PROFILE_PICTURES,
   JIRA_API_TOKEN: process.env.JIRA_API_TOKEN,
   JIRA_EMAIL: process.env.JIRA_EMAIL,
+  CRON_SECRET: process.env.CRON_SECRET,
 };
 
 let data: EnvSchemaType;

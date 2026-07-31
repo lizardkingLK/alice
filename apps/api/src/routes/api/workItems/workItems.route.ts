@@ -15,6 +15,7 @@ import {
   createWorkLogSchema,
   isBlockedPastDueDateChange,
   patchUpdateWorkItemBodySchema,
+  type WorkItemUpdateBody,
 } from './workItems.schemas';
 import type { DbWorkItem } from './workItems.repository';
 
@@ -57,6 +58,14 @@ function buildWorkItemPayload(
       parsedData.parent_id !== undefined
         ? parsedData.parent_id
         : existingWorkItem.parent_id,
+    description:
+      parsedData.description !== undefined
+        ? (parsedData.description as WorkItemUpdateBody['description'])
+        : (existingWorkItem.description as WorkItemUpdateBody['description']),
+    jira_issue_key:
+      parsedData.jira_issue_key !== undefined
+        ? parsedData.jira_issue_key
+        : existingWorkItem.jira_issue_key,
   };
 }
 

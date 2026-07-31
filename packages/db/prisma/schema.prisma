@@ -279,6 +279,8 @@ model work_items {
   comments        comments[]
   attachments     attachments[]
   worklogs        work_item_worklogs[]
+
+  @@unique([project_id, jira_issue_key])
 }
 
 model work_item_worklogs {
@@ -382,6 +384,8 @@ model jira_settings {
   jira_url   String
   jira_email String
   jira_token String
+  /** Always true; unique so at most one settings row exists. */
+  singleton  Boolean  @default(true) @unique
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @updatedAt @db.Timestamptz(6)
 }

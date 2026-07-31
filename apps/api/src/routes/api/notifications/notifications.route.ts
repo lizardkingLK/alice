@@ -1,6 +1,7 @@
 import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { contactRequestSchema } from '@repo/types';
+import { env } from '../../../config/env';
 import { notificationsService } from './notifications.service';
 
 const notificationsRouter: Router = Router();
@@ -15,6 +16,18 @@ function routeError(res: Response, error: unknown): void {
   const messageStr =
     error instanceof Error ? error.message : 'Failed to send notification';
   res.status(500).json({ error: messageStr });
+}
+
+function assertCronAuthorized(req: {
+  headers: { authorization?: string };
+}): boolean {
+  const secret = env.CRON_SECRET;
+  if (!secret) {
+    // Local/dev without CRON_SECRET: allow (matches optional env). Prod should set it.
+    return true;
+  }
+  const header = req.headers.authorization;
+  return header === `Bearer ${secret}`;
 }
 
 notificationsRouter.post('/send', async (req, res) => {
@@ -60,7 +73,11 @@ notificationsRouter.post('/contact', async (req, res) => {
   }
 });
 
-notificationsRouter.get('/check-due-dates', async (_req, res) => {
+notificationsRouter.get('/check-due-dates', async (req, res) => {
+  if (!assertCronAuthorized(req)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   try {
     const result =
       await notificationsService.checkAndSendDueDateNotifications();

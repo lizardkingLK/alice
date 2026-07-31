@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, type FormEvent } from 'react';
-import { 
+import {
   getAllowedChildType,
   type WorkItemType,
   type AttachmentWithUploader,

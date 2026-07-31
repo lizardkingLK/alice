@@ -32,6 +32,15 @@ export type ProjectRowWithOwner = ProjectRow & {
   } | null;
 };
 
+/** Strip Jira API token before serializing project DTOs to clients. */
+export function withoutJiraToken<T extends { jira_token?: string | null }>(
+  project: T
+): Omit<T, 'jira_token'> {
+  const safe = { ...project };
+  delete safe.jira_token;
+  return safe;
+}
+
 export type ProjectMemberWithUser = {
   project_id: string;
   user_id: string;
@@ -301,13 +310,13 @@ export class ProjectsRepository {
   } | null> {
     const { data, error } = await supabase
       .from('jira_settings')
-      .select('*')
+      .select('jira_url, jira_email, jira_token')
       .limit(1)
       .maybeSingle();
 
     if (error) {
       console.error('error. failed to fetch Jira settings:', error.message);
-      return null;
+      throw new Error('Failed to fetch Jira settings');
     }
     return data;
   }
@@ -317,37 +326,19 @@ export class ProjectsRepository {
     email: string,
     token: string
   ): Promise<void> {
-    const { data: existing, error: findError } = await supabase
+    const row = {
+      singleton: true,
+      jira_url: url,
+      jira_email: email,
+      jira_token: token,
+    };
+    const { error } = await supabase
       .from('jira_settings')
-      .select('id')
-      .limit(1)
-      .maybeSingle();
+      .upsert(row as never, { onConflict: 'singleton' });
 
-    if (findError) {
-      console.error(
-        'error. failed to check existing Jira settings:',
-        findError.message
-      );
-      throw new Error('Database check failed');
-    }
-
-    if (existing?.id) {
-      const { error } = await supabase
-        .from('jira_settings')
-        .update({ jira_url: url, jira_email: email, jira_token: token })
-        .eq('id', existing.id);
-      if (error) {
-        console.error('error. failed to update Jira settings:', error.message);
-        throw new Error(`Database update failed: ${error.message}`);
-      }
-    } else {
-      const { error } = await supabase
-        .from('jira_settings')
-        .insert({ jira_url: url, jira_email: email, jira_token: token });
-      if (error) {
-        console.error('error. failed to insert Jira settings:', error.message);
-        throw new Error(`Database insertion failed: ${error.message}`);
-      }
+    if (error) {
+      console.error('error. failed to upsert Jira settings:', error.message);
+      throw new Error(`Database upsert failed: ${error.message}`);
     }
   }
 }

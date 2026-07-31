@@ -9,7 +9,8 @@
     "CYPRESS_TEST_USER_EMAIL",
     "CYPRESS_TEST_USER_PASSWORD",
     "JIRA_API_TOKEN",
-    "JIRA_EMAIL"
+    "JIRA_EMAIL",
+    "CRON_SECRET"
   ],
   "tasks": {
     "build": {

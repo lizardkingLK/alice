@@ -1,6 +1,11 @@
 -- AlterTable
 ALTER TABLE "work_items" ADD COLUMN     "jira_issue_key" VARCHAR(255);
 
+-- Project-scoped uniqueness for imported Jira keys (NULLs remain distinct).
+CREATE UNIQUE INDEX IF NOT EXISTS "work_items_project_id_jira_issue_key_key"
+  ON "work_items" ("project_id", "jira_issue_key")
+  WHERE "jira_issue_key" IS NOT NULL;
+
 -- Restore Supabase Data API access after Prisma DDL.
 -- Prisma runs as postgres; PostgREST uses anon, authenticated, and service_role.
 -- Without these grants, seed (service_role) and client queries fail with
