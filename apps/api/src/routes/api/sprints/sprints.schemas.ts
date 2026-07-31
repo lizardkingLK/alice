@@ -23,7 +23,6 @@ export const updateSprintStatusSchema = z.object({
   status: z.enum(['Not Started', 'Ongoing', 'Completed', 'Archived']),
 });
 
-
 export const updateSprintBodySchema = createSprintBodySchema;
 
 export type UpdateSprintBody = z.infer<typeof updateSprintBodySchema>;
@@ -46,4 +45,3 @@ export type SprintResponse = {
     key: string;
   } | null;
 };
-

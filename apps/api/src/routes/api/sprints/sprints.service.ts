@@ -73,7 +73,6 @@ export class SprintsService {
     return toSprintResponse(row);
   }
 
-
   async updateSprintStatus(
     userId: string,
     sprintId: string,
@@ -123,7 +122,6 @@ export class SprintsService {
     const row = await sprintsRepository.updateStatus(userId, sprintId, status);
     return toSprintResponse(row);
   }
-
 
   async updateSprint(
     userId: string,

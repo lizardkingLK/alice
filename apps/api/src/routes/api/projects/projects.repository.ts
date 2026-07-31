@@ -294,7 +294,11 @@ export class ProjectsRepository {
     }
   }
 
-  async getJiraSettings(): Promise<{ jira_url: string; jira_email: string; jira_token: string } | null> {
+  async getJiraSettings(): Promise<{
+    jira_url: string;
+    jira_email: string;
+    jira_token: string;
+  } | null> {
     const { data, error } = await supabase
       .from('jira_settings')
       .select('*')
@@ -308,7 +312,11 @@ export class ProjectsRepository {
     return data;
   }
 
-  async saveJiraSettings(url: string, email: string, token: string): Promise<void> {
+  async saveJiraSettings(
+    url: string,
+    email: string,
+    token: string
+  ): Promise<void> {
     const { data: existing, error: findError } = await supabase
       .from('jira_settings')
       .select('id')
@@ -316,7 +324,10 @@ export class ProjectsRepository {
       .maybeSingle();
 
     if (findError) {
-      console.error('error. failed to check existing Jira settings:', findError.message);
+      console.error(
+        'error. failed to check existing Jira settings:',
+        findError.message
+      );
       throw new Error('Database check failed');
     }
 

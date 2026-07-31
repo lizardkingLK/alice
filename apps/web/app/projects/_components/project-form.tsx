@@ -96,7 +96,9 @@ export function ProjectForm({
   const [isTestingJira, setIsTestingJira] = useState(false);
   const [jiraTestMessage, setJiraTestMessage] = useState<string | null>(null);
   const [jiraTestError, setJiraTestError] = useState(false);
-  const [previewIssues, setPreviewIssues] = useState<Array<{ key: string; title: string; type: string }>>([]);
+  const [previewIssues, setPreviewIssues] = useState<
+    Array<{ key: string; title: string; type: string }>
+  >([]);
 
   const handleTestConnection = async () => {
     if (!jiraUrl.trim() || !jiraProjectKey.trim()) {
@@ -111,22 +113,25 @@ export function ProjectForm({
     setPreviewIssues([]);
 
     try {
-      const response = await apiFetch<{ issues: Array<{ key: string; title: string; type: string }> }>(
-        '/api/projects/jira/preview',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            jiraUrl: jiraUrl.trim(),
-            jiraProjectKey: jiraProjectKey.toUpperCase().trim(),
-          }),
-        }
-      );
+      const response = await apiFetch<{
+        issues: Array<{ key: string; title: string; type: string }>;
+      }>('/api/projects/jira/preview', {
+        method: 'POST',
+        body: JSON.stringify({
+          jiraUrl: jiraUrl.trim(),
+          jiraProjectKey: jiraProjectKey.toUpperCase().trim(),
+        }),
+      });
       setPreviewIssues(response.issues);
-      setJiraTestMessage(`Successfully connected! Found ${response.issues.length} tasks ready to import.`);
+      setJiraTestMessage(
+        `Successfully connected! Found ${response.issues.length} tasks ready to import.`
+      );
       setJiraTestError(false);
     } catch (err) {
       console.error('Jira preview error:', err);
-      setJiraTestMessage(err instanceof Error ? err.message : 'Jira connection test failed.');
+      setJiraTestMessage(
+        err instanceof Error ? err.message : 'Jira connection test failed.'
+      );
       setJiraTestError(true);
     } finally {
       setIsTestingJira(false);
@@ -296,7 +301,9 @@ export function ProjectForm({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className={`grid gap-6 ${importFromJira ? 'md:grid-cols-[1.2fr_1fr]' : 'grid-cols-1'}`}>
+          <div
+            className={`grid gap-6 ${importFromJira ? 'md:grid-cols-[1.2fr_1fr]' : 'grid-cols-1'}`}
+          >
             {/* Left Column: Project Details */}
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -362,7 +369,10 @@ export function ProjectForm({
                     onValueChange={setSelectedOwnerId}
                     name="owner_id"
                   >
-                    <SelectTrigger id="owner_id" className="bg-background/80 h-10">
+                    <SelectTrigger
+                      id="owner_id"
+                      className="bg-background/80 h-10"
+                    >
                       <SelectValue placeholder="Select Owner..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -383,10 +393,15 @@ export function ProjectForm({
                   </Label>
                   <Select
                     value={status}
-                    onValueChange={(val) => setStatus(val as 'active' | 'archived')}
+                    onValueChange={(val) =>
+                      setStatus(val as 'active' | 'archived')
+                    }
                     name="status"
                   >
-                    <SelectTrigger id="status" className="bg-background/80 h-10">
+                    <SelectTrigger
+                      id="status"
+                      className="bg-background/80 h-10"
+                    >
                       <SelectValue placeholder="Select status..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -439,9 +454,12 @@ export function ProjectForm({
                     type="checkbox"
                     checked={importFromJira}
                     onChange={(e) => handleJiraCheckboxChange(e.target.checked)}
-                    className="accent-primary h-4 w-4 rounded border-gray-300 focus:ring-primary cursor-pointer"
+                    className="accent-primary focus:ring-primary h-4 w-4 cursor-pointer rounded border-gray-300"
                   />
-                  <Label htmlFor="importFromJira" className="text-sm font-semibold cursor-pointer select-none">
+                  <Label
+                    htmlFor="importFromJira"
+                    className="cursor-pointer text-sm font-semibold select-none"
+                  >
                     Import tasks from Jira Cloud
                   </Label>
                 </div>
@@ -450,9 +468,11 @@ export function ProjectForm({
 
             {/* Right Column: Jira Integration Details */}
             {!isEditMode && importFromJira && (
-              <div className="border-border/60 bg-muted/30 rounded-lg border p-4 space-y-4 flex flex-col justify-start h-full max-h-[400px] overflow-y-auto animate-fade-in">
+              <div className="border-border/60 bg-muted/30 animate-fade-in flex h-full max-h-[400px] flex-col justify-start space-y-4 overflow-y-auto rounded-lg border p-4">
                 <div className="space-y-2">
-                  <Label htmlFor="jiraUrl" className="text-xs font-medium">Jira Cloud URL / Domain</Label>
+                  <Label htmlFor="jiraUrl" className="text-xs font-medium">
+                    Jira Cloud URL / Domain
+                  </Label>
                   <Input
                     id="jiraUrl"
                     value={jiraUrl}
@@ -463,7 +483,12 @@ export function ProjectForm({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="jiraProjectKey" className="text-xs font-medium">Jira Project Key</Label>
+                  <Label
+                    htmlFor="jiraProjectKey"
+                    className="text-xs font-medium"
+                  >
+                    Jira Project Key
+                  </Label>
                   <Input
                     id="jiraProjectKey"
                     value={jiraProjectKey}
@@ -480,7 +505,7 @@ export function ProjectForm({
                     size="sm"
                     onClick={handleTestConnection}
                     disabled={isTestingJira}
-                    className="w-full sm:w-auto self-start"
+                    className="w-full self-start sm:w-auto"
                   >
                     {isTestingJira ? (
                       <>
@@ -493,25 +518,38 @@ export function ProjectForm({
                   </Button>
 
                   {jiraTestMessage && (
-                    <p className={`text-xs ${jiraTestError ? 'text-red-500' : 'text-green-600'} font-medium`}>
+                    <p
+                      className={`text-xs ${jiraTestError ? 'text-red-500' : 'text-green-600'} font-medium`}
+                    >
                       {jiraTestMessage}
                     </p>
                   )}
                 </div>
 
                 {previewIssues.length > 0 && (
-                  <div className="mt-2 space-y-1 flex-1 flex flex-col min-h-0">
-                    <Label className="text-xs font-semibold text-muted-foreground">Tasks Preview (to be imported):</Label>
-                    <div className="max-h-48 overflow-y-auto border border-border/40 rounded bg-background/50 p-2 text-xs divide-y divide-border/20 flex-1">
+                  <div className="mt-2 flex min-h-0 flex-1 flex-col space-y-1">
+                    <Label className="text-muted-foreground text-xs font-semibold">
+                      Tasks Preview (to be imported):
+                    </Label>
+                    <div className="border-border/40 bg-background/50 divide-border/20 max-h-48 flex-1 divide-y overflow-y-auto rounded border p-2 text-xs">
                       {previewIssues.slice(0, 10).map((issue) => (
-                        <div key={issue.key} className="py-1.5 flex justify-between gap-4">
-                          <span className="font-mono text-muted-foreground shrink-0">{issue.key}</span>
-                          <span className="font-medium truncate flex-1">{issue.title}</span>
-                          <span className="text-muted-foreground shrink-0 bg-secondary/80 px-1 rounded">{issue.type}</span>
+                        <div
+                          key={issue.key}
+                          className="flex justify-between gap-4 py-1.5"
+                        >
+                          <span className="text-muted-foreground shrink-0 font-mono">
+                            {issue.key}
+                          </span>
+                          <span className="flex-1 truncate font-medium">
+                            {issue.title}
+                          </span>
+                          <span className="text-muted-foreground bg-secondary/80 shrink-0 rounded px-1">
+                            {issue.type}
+                          </span>
                         </div>
                       ))}
                       {previewIssues.length > 10 && (
-                        <div className="py-1 text-center text-muted-foreground">
+                        <div className="text-muted-foreground py-1 text-center">
                           ... and {previewIssues.length - 10} more tasks.
                         </div>
                       )}

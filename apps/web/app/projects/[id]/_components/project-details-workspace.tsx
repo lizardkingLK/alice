@@ -109,7 +109,9 @@ export function ProjectDetailsWorkspace({
 
   const [isEditingJira, setIsEditingJira] = useState(!project.jira_project_key);
   const [jiraUrl, setJiraUrl] = useState(project.jira_url || '');
-  const [jiraProjectKey, setJiraProjectKey] = useState(project.jira_project_key || '');
+  const [jiraProjectKey, setJiraProjectKey] = useState(
+    project.jira_project_key || ''
+  );
   const [isSavingJira, setIsSavingJira] = useState(false);
   const [isSyncingJira, setIsSyncingJira] = useState(false);
   const [jiraMessage, setJiraMessage] = useState<string | null>(null);
@@ -134,7 +136,9 @@ export function ProjectDetailsWorkspace({
       router.refresh();
     } catch (err) {
       console.error('Failed to save Jira integration:', err);
-      setJiraMessage(err instanceof Error ? err.message : 'Failed to save configuration');
+      setJiraMessage(
+        err instanceof Error ? err.message : 'Failed to save configuration'
+      );
       setIsJiraError(true);
     } finally {
       setIsSavingJira(false);
@@ -148,13 +152,18 @@ export function ProjectDetailsWorkspace({
 
     try {
       setJiraMessage('Syncing tasks from Jira Cloud...');
-      const res = await apiFetch<{ importedCount: number }>('/api/projects/jira/import', {
-        method: 'POST',
-        body: JSON.stringify({
-          projectId: project.id,
-        }),
-      });
-      setJiraMessage(`Successfully imported/synced ${res.importedCount} tasks from Jira!`);
+      const res = await apiFetch<{ importedCount: number }>(
+        '/api/projects/jira/import',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            projectId: project.id,
+          }),
+        }
+      );
+      setJiraMessage(
+        `Successfully imported/synced ${res.importedCount} tasks from Jira!`
+      );
       router.refresh();
     } catch (err) {
       console.error('Jira sync failed:', err);
@@ -382,14 +391,17 @@ export function ProjectDetailsWorkspace({
                   Jira Cloud Integration
                 </CardTitle>
                 <CardDescription className="text-muted-foreground text-sm">
-                  Configure your Jira Cloud connection to import issues and keep tasks synced.
+                  Configure your Jira Cloud connection to import issues and keep
+                  tasks synced.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {jiraMessage && (
                   <div
-                    className={`p-3 rounded text-sm ${
-                      isJiraError ? 'bg-destructive/10 text-destructive' : 'bg-emerald-500/10 text-emerald-600'
+                    className={`rounded p-3 text-sm ${
+                      isJiraError
+                        ? 'bg-destructive/10 text-destructive'
+                        : 'bg-emerald-500/10 text-emerald-600'
                     }`}
                   >
                     {jiraMessage}
@@ -400,30 +412,40 @@ export function ProjectDetailsWorkspace({
                   <form onSubmit={handleSaveJira} className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
-                        <Label htmlFor="jiraUrl" className="text-xs font-semibold">Jira Cloud URL / Domain</Label>
+                        <Label
+                          htmlFor="jiraUrl"
+                          className="text-xs font-semibold"
+                        >
+                          Jira Cloud URL / Domain
+                        </Label>
                         <Input
                           id="jiraUrl"
                           value={jiraUrl}
                           onChange={(e) => setJiraUrl(e.target.value)}
                           placeholder="e.g. company.atlassian.net"
-                          className="h-9 text-sm bg-background/50"
+                          className="bg-background/50 h-9 text-sm"
                           required
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="jiraProjectKey" className="text-xs font-semibold">Jira Project Key</Label>
+                        <Label
+                          htmlFor="jiraProjectKey"
+                          className="text-xs font-semibold"
+                        >
+                          Jira Project Key
+                        </Label>
                         <Input
                           id="jiraProjectKey"
                           value={jiraProjectKey}
                           onChange={(e) => setJiraProjectKey(e.target.value)}
                           placeholder="e.g. PROJ"
-                          className="h-9 text-sm uppercase bg-background/50"
+                          className="bg-background/50 h-9 text-sm uppercase"
                           required
                         />
                       </div>
                     </div>
 
-                    <div className="flex gap-2 justify-end pt-2">
+                    <div className="flex justify-end gap-2 pt-2">
                       {project.jira_project_key && (
                         <Button
                           type="button"
@@ -441,25 +463,35 @@ export function ProjectDetailsWorkspace({
                         </Button>
                       )}
                       <Button type="submit" size="sm" disabled={isSavingJira}>
-                        {isSavingJira && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isSavingJira && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
                         Save Connection
                       </Button>
                     </div>
                   </form>
                 ) : (
                   <div className="space-y-4">
-                    <div className="grid gap-4 sm:grid-cols-2 bg-muted/20 p-4 rounded-lg border border-border/40 text-sm">
+                    <div className="bg-muted/20 border-border/40 grid gap-4 rounded-lg border p-4 text-sm sm:grid-cols-2">
                       <div>
-                        <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase block">Jira URL</span>
-                        <span className="font-medium text-foreground">{project.jira_url || 'Not configured'}</span>
+                        <span className="text-muted-foreground block text-xs font-semibold tracking-wider uppercase">
+                          Jira URL
+                        </span>
+                        <span className="text-foreground font-medium">
+                          {project.jira_url || 'Not configured'}
+                        </span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase block">Project Key</span>
-                        <span className="font-mono font-medium text-foreground">{project.jira_project_key || 'Not configured'}</span>
+                        <span className="text-muted-foreground block text-xs font-semibold tracking-wider uppercase">
+                          Project Key
+                        </span>
+                        <span className="text-foreground font-mono font-medium">
+                          {project.jira_project_key || 'Not configured'}
+                        </span>
                       </div>
                     </div>
 
-                    <div className="flex gap-2 justify-between items-center pt-2">
+                    <div className="flex items-center justify-between gap-2 pt-2">
                       <Button
                         variant="outline"
                         size="sm"
@@ -474,7 +506,7 @@ export function ProjectDetailsWorkspace({
                         size="sm"
                         onClick={handleSyncJira}
                         disabled={isSyncingJira || !project.jira_project_key}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white animate-fade-in"
+                        className="animate-fade-in bg-emerald-600 text-white hover:bg-emerald-700"
                       >
                         {isSyncingJira ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />

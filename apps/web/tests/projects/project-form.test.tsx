@@ -283,19 +283,31 @@ describe('ProjectForm Component', () => {
     fireEvent.click(checkbox);
 
     // Verify Jira input fields are rendered
-    expect(screen.getByLabelText(/Jira Cloud URL \/ Domain/i)).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/Jira Cloud URL \/ Domain/i)
+    ).toBeInTheDocument();
     expect(screen.getByLabelText(/Jira Project Key/i)).toBeInTheDocument();
 
     // Fill in integration credentials
-    fireEvent.change(screen.getByLabelText(/Jira Cloud URL \/ Domain/i), { target: { value: 'test.atlassian.net' } });
-    fireEvent.change(screen.getByLabelText(/Jira Project Key/i), { target: { value: 'TEST' } });
+    fireEvent.change(screen.getByLabelText(/Jira Cloud URL \/ Domain/i), {
+      target: { value: 'test.atlassian.net' },
+    });
+    fireEvent.change(screen.getByLabelText(/Jira Project Key/i), {
+      target: { value: 'TEST' },
+    });
 
     // Click Connection Test
-    const testBtn = screen.getByRole('button', { name: /Test Connection & Preview/i });
+    const testBtn = screen.getByRole('button', {
+      name: /Test Connection & Preview/i,
+    });
     fireEvent.click(testBtn);
 
     // Verify loading and preview items render
-    expect(await screen.findByText(/Successfully connected! Found 2 tasks ready to import/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        /Successfully connected! Found 2 tasks ready to import/i
+      )
+    ).toBeInTheDocument();
     expect(screen.getByText('Issue 1 from Jira')).toBeInTheDocument();
     expect(screen.getByText('Issue 2 from Jira')).toBeInTheDocument();
 
@@ -316,18 +328,28 @@ describe('ProjectForm Component', () => {
     render(<ProjectForm users={mockUsers} onSuccess={onSuccess} />);
 
     // Fill project details
-    fireEvent.change(screen.getByLabelText(/Project Name/i), { target: { value: 'Project Alice' } });
-    fireEvent.change(screen.getByLabelText(/Project Key/i), { target: { value: 'alice' } });
+    fireEvent.change(screen.getByLabelText(/Project Name/i), {
+      target: { value: 'Project Alice' },
+    });
+    fireEvent.change(screen.getByLabelText(/Project Key/i), {
+      target: { value: 'alice' },
+    });
     const ownerSelect = screen.getByLabelText(/Project Owner/i);
     fireEvent.click(ownerSelect);
-    fireEvent.click(screen.getByRole('option', { name: 'Manager One (mgr1@alice.dev)' }));
+    fireEvent.click(
+      screen.getByRole('option', { name: 'Manager One (mgr1@alice.dev)' })
+    );
 
     // Toggle Jira checkbox
     fireEvent.click(screen.getByLabelText(/Import tasks from Jira Cloud/i));
 
     // Fill integration details
-    fireEvent.change(screen.getByLabelText(/Jira Cloud URL \/ Domain/i), { target: { value: 'test.atlassian.net' } });
-    fireEvent.change(screen.getByLabelText(/Jira Project Key/i), { target: { value: 'TEST' } });
+    fireEvent.change(screen.getByLabelText(/Jira Cloud URL \/ Domain/i), {
+      target: { value: 'test.atlassian.net' },
+    });
+    fireEvent.change(screen.getByLabelText(/Jira Project Key/i), {
+      target: { value: 'TEST' },
+    });
 
     // Submit form
     const form = screen.getByLabelText(/Project Name/i).closest('form')!;
@@ -346,6 +368,8 @@ describe('ProjectForm Component', () => {
       });
     });
 
-    expect(await screen.findByText(/tasks successfully imported from Jira/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/tasks successfully imported from Jira/i)
+    ).toBeInTheDocument();
   });
 });
