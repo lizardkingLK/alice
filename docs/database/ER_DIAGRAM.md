@@ -7,7 +7,7 @@
 | Project      | Alice (1BT Project Management System / Jira Teams)                        |
 | Source       | `1BT-JIRA Task Breakdown with Team Assignments.xlsx` (MVP 1–4)            |
 | Status       | Implemented — `init_jira_domain` + audit migrations + project JSON config |
-| Last updated | 2026-07-16                                                                |
+| Last updated | 2026-07-31                                                                |
 
 Related:
 
@@ -27,7 +27,7 @@ Related:
 | Roles               | `admin`, `manager`, `member` on `users.role` (S-09 seeds roles)                                          |
 | Backlog             | Not a separate table — `work_items` where `sprint_id IS NULL` (BL-01)                                    |
 | Sprint assignment   | `work_items.sprint_id`; assign/unassign via backlog and sprint APIs (BL-04, BL-05, SPR-03)               |
-| Work item hierarchy | Self-referential `parent_id` for Epic → Story → Task (WI-07)                                             |
+| Work item hierarchy | Self-referential `parent_id` for Epic → Story → Task → Issue (WI-07); Issue is a leaf                    |
 | Rich text           | `work_items.description` stored as TipTap/ProseMirror JSON (see `WORK_ITEM_DESCRIPTION.md`)              |
 | Project config      | `projects.attributes_config` and `projects.workflow_config` JSON — per-project task fields and swimlanes |
 | Soft delete         | `projects.deleted_at` for soft delete; hard delete is Admin-only (PROJ-04)                               |
@@ -154,9 +154,9 @@ erDiagram
         uuid id PK
         uuid project_id FK
         uuid sprint_id FK "nullable = backlog"
-        uuid parent_id FK "nullable, Epic hierarchy"
+        uuid parent_id FK "nullable, hierarchy"
         string title
-        string type "Epic|Story|Task"
+        string type "Epic|Story|Task|Issue"
         string priority
         json description "TipTap ProseMirror JSON"
         uuid assignee_id FK "nullable"
@@ -243,7 +243,7 @@ users ──M:N──► teams           (via team_members)
 projects ──1:N──► sprints
 projects ──1:N──► work_items
 sprints ──0:N──► work_items    (null sprint_id = backlog)
-work_items ──self──► work_items (Epic → Story → Task)
+work_items ──self──► work_items (Epic → Story → Task → Issue)
 work_items ──1:N──► comments, attachments
 users ──1:N──► notifications
 ```

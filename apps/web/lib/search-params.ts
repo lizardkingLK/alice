@@ -1,3 +1,6 @@
+import type { WorkItemType } from '@repo/types';
+import { WORK_ITEM_TYPES } from '@repo/types';
+
 export interface RawSearchParams {
   page?: string;
   limit?: string;
@@ -18,7 +21,7 @@ export interface ParsedStandardParams {
   search: string;
 }
 
-export type WorkItemTypeFilter = 'Epic' | 'Story' | 'Task';
+export type WorkItemTypeFilter = WorkItemType;
 
 export interface ParsedWorkItemFilters {
   projectId?: string;
@@ -27,7 +30,7 @@ export interface ParsedWorkItemFilters {
   assigneeId?: string;
 }
 
-const WORK_ITEM_TYPES = new Set<WorkItemTypeFilter>(['Epic', 'Story', 'Task']);
+const WORK_ITEM_TYPE_FILTERS = new Set<WorkItemTypeFilter>(WORK_ITEM_TYPES);
 
 export function parseStandardParams(
   resolvedParams: RawSearchParams,
@@ -50,7 +53,7 @@ export function parseWorkItemFilters(
   const assigneeId = resolvedParams.assignee?.trim() || undefined;
   const rawType = resolvedParams.type?.trim();
   const type =
-    rawType && WORK_ITEM_TYPES.has(rawType as WorkItemTypeFilter)
+    rawType && WORK_ITEM_TYPE_FILTERS.has(rawType as WorkItemTypeFilter)
       ? (rawType as WorkItemTypeFilter)
       : undefined;
 

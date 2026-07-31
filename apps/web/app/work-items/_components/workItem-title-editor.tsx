@@ -16,6 +16,8 @@ type WorkItemTitleEditorProps = {
   // eslint-disable-next-line no-unused-vars -- callback signature
   readonly onPatched: (updated: Partial<DbWorkItem>) => void;
   readonly className?: string;
+  /** When true, title is display-only (Done work items). */
+  readonly readOnly?: boolean;
 };
 
 export function WorkItemTitleEditor({
@@ -23,6 +25,7 @@ export function WorkItemTitleEditor({
   title,
   onPatched,
   className,
+  readOnly = false,
 }: Readonly<WorkItemTitleEditorProps>) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -37,26 +40,30 @@ export function WorkItemTitleEditor({
         <h1 className="min-w-0 flex-1 px-1.5 py-0.5 text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
           {title}
         </h1>
-        <Button
-          type="button"
-          variant="secondary"
-          size="icon"
-          className="mt-1 shrink-0 cursor-pointer"
-          aria-label="Edit title"
-          onClick={() => setDialogOpen(true)}
-        >
-          <PencilIcon />
-        </Button>
+        {readOnly ? null : (
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            className="mt-1 shrink-0 cursor-pointer"
+            aria-label="Edit title"
+            onClick={() => setDialogOpen(true)}
+          >
+            <PencilIcon />
+          </Button>
+        )}
       </div>
 
-      <WorkItemFieldPatchDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        workItemId={workItemId}
-        fieldConfig={WORK_ITEM_PATCH_FIELD_CONFIG.title}
-        currentValue={title}
-        onPatched={onPatched}
-      />
+      {readOnly ? null : (
+        <WorkItemFieldPatchDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          workItemId={workItemId}
+          fieldConfig={WORK_ITEM_PATCH_FIELD_CONFIG.title}
+          currentValue={title}
+          onPatched={onPatched}
+        />
+      )}
     </>
   );
 }

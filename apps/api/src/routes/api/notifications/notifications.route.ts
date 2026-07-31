@@ -60,7 +60,7 @@ notificationsRouter.post('/contact', async (req, res) => {
   }
 });
 
-notificationsRouter.get('/check-due-dates', async (req, res) => {
+notificationsRouter.get('/check-due-dates', async (_req, res) => {
   try {
     const result =
       await notificationsService.checkAndSendDueDateNotifications();

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 
 type ChildrenProps = {
   children?: ReactNode;
@@ -6,6 +6,16 @@ type ChildrenProps = {
 
 type ItemProps = ChildrenProps & {
   onClick?: () => void;
+};
+
+type RadioGroupProps = ChildrenProps & {
+  value?: string;
+  // eslint-disable-next-line no-unused-vars -- callback signature
+  onValueChange?: (value: string) => void;
+};
+
+type RadioItemProps = ChildrenProps & {
+  value: string;
 };
 
 /**
@@ -50,4 +60,32 @@ export function DropdownMenuSeparator() {
 
 export function DropdownMenuShortcut({ children }: Readonly<ChildrenProps>) {
   return <span>{children}</span>;
+}
+
+// eslint-disable-next-line no-unused-vars
+const RadioGroupContext = createContext<((value: string) => void) | null>(null);
+
+export function DropdownMenuRadioGroup({
+  children,
+  onValueChange,
+}: Readonly<RadioGroupProps>) {
+  return (
+    <div data-testid="dropdown-menu-radio-group">
+      <RadioGroupContext.Provider value={onValueChange ?? null}>
+        {children}
+      </RadioGroupContext.Provider>
+    </div>
+  );
+}
+
+export function DropdownMenuRadioItem({
+  children,
+  value,
+}: Readonly<RadioItemProps>) {
+  const onValueChange = useContext(RadioGroupContext);
+  return (
+    <button type="button" onClick={() => onValueChange?.(value)}>
+      {children}
+    </button>
+  );
 }

@@ -173,6 +173,25 @@ export class WorkItemRepository {
     return data as unknown as DbWorkItem;
   }
 
+  /** Count direct children that are not yet Done (for Done-gate validation). */
+  async countIncompleteChildren(parentId: string): Promise<number> {
+    const { count, error } = await this.db
+      .from('work_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('parent_id', parentId)
+      .neq('status', 'Done');
+
+    if (error) {
+      console.error(
+        'error. failed to count incomplete children:',
+        error.message
+      );
+      throw new Error('Failed to count incomplete children');
+    }
+
+    return count ?? 0;
+  }
+
   async create(input: CreateWorkItemRecord): Promise<DbWorkItem> {
     const { data, error } = await this.db
       .from('work_items')
@@ -187,6 +206,7 @@ export class WorkItemRepository {
         status: 'New',
         story_points: input.story_points,
         jira_issue_key: input.jira_issue_key,
+        parent_id: input.parent_id ?? null,
         ...auditCreateWithoutStatus(input.createdBy),
       })
       .select(WORK_ITEM_WITH_ASSIGNEE)
@@ -226,6 +246,7 @@ export class WorkItemRepository {
         status: input.status,
         sprint_id: input.sprint_id,
         story_points: input.story_points,
+        parent_id: input.parent_id ?? null,
         ...(doneAtUpdate !== undefined ? { done_at: doneAtUpdate } : {}),
         updated_by: input.updatedBy,
         updated_at: new Date().toISOString(),

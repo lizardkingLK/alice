@@ -1,16 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2 } from '@repo/ui/lib/icons';
-import { Button } from '@repo/ui/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@repo/ui/components/ui/dialog';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import {
@@ -22,6 +12,7 @@ import {
 } from '@repo/ui/components/ui/select';
 import { toast } from '@repo/ui/components/ui/sonner';
 import { delay, formatLabelWithSpace } from '@/app/_shared/utility';
+import { WorkItemActionDialog } from '@/app/work-items/_components/work-item-action-dialog';
 import { MemberSelectItems } from '@/app/work-items/_components/member-select-items';
 import { FormStatusAlerts } from '@/app/work-items/_components/workItem-form-alerts';
 import { resolveWorkItemMember } from '@/app/work-items/_helpers/work-item-member';
@@ -246,91 +237,70 @@ export function WorkItemFieldPatchDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border/80 sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{fieldConfig.title}</DialogTitle>
-          <DialogDescription>{fieldConfig.description}</DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4 py-1">
-          <div className="space-y-2">
-            <Label htmlFor={`patch-${fieldConfig.field}`}>
-              {fieldConfig.label}
-            </Label>
-            {isTextField ? (
-              <Input
-                id={`patch-${fieldConfig.field}`}
-                value={selectedValue}
-                maxLength={200}
-                disabled={isPending}
-                autoFocus
-                onChange={(event) => setSelectedValue(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    handleSave().catch(() => {});
-                  }
-                }}
-              />
-            ) : (
-              <Select
-                value={selectedValue}
-                onValueChange={setSelectedValue}
-                disabled={isPending}
-              >
-                <SelectTrigger id={`patch-${fieldConfig.field}`}>
-                  <SelectValue
-                    placeholder={
-                      isStatusField
-                        ? 'Select status'
-                        : (fieldConfig.unassignedLabel ?? 'Select…')
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {isStatusField ? (
-                    WORK_ITEM_STATUSES.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {formatLabelWithSpace(status)}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <MemberSelectItems
-                      members={options}
-                      unassignedLabel={fieldConfig.unassignedLabel}
-                      unassignedValue={UNASSIGNED_VALUE}
-                    />
-                  )}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-
-          <FormStatusAlerts error={alert?.error} success={alert?.success} />
-        </div>
-
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
+    <WorkItemActionDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={fieldConfig.title}
+      description={fieldConfig.description}
+      isPending={isPending}
+      onSubmit={() => {
+        handleSave().catch(() => {});
+      }}
+    >
+      <div className="space-y-2">
+        <Label htmlFor={`patch-${fieldConfig.field}`}>
+          {fieldConfig.label}
+        </Label>
+        {isTextField ? (
+          <Input
+            id={`patch-${fieldConfig.field}`}
+            value={selectedValue}
+            maxLength={200}
             disabled={isPending}
-            onClick={() => onOpenChange(false)}
+            autoFocus
+            onChange={(event) => setSelectedValue(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                handleSave().catch(() => {});
+              }
+            }}
+          />
+        ) : (
+          <Select
+            value={selectedValue}
+            onValueChange={setSelectedValue}
+            disabled={isPending}
           >
-            Cancel
-          </Button>
-          <Button type="button" disabled={isPending} onClick={handleSave}>
-            {isPending ? (
-              <>
-                <Loader2 className="animate-spin" />
-                Saving...
-              </>
-            ) : (
-              'Save'
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            <SelectTrigger id={`patch-${fieldConfig.field}`}>
+              <SelectValue
+                placeholder={
+                  isStatusField
+                    ? 'Select status'
+                    : (fieldConfig.unassignedLabel ?? 'Select…')
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {isStatusField ? (
+                WORK_ITEM_STATUSES.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {formatLabelWithSpace(status)}
+                  </SelectItem>
+                ))
+              ) : (
+                <MemberSelectItems
+                  members={options}
+                  unassignedLabel={fieldConfig.unassignedLabel}
+                  unassignedValue={UNASSIGNED_VALUE}
+                />
+              )}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
+
+      <FormStatusAlerts error={alert?.error} success={alert?.success} />
+    </WorkItemActionDialog>
   );
 }
