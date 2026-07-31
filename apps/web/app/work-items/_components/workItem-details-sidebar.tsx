@@ -208,6 +208,42 @@ function SidebarCollapsibleHeader({
   );
 }
 
+function SidebarCollapsibleSection({
+  title,
+  open,
+  onOpenChange,
+  collapsedHint,
+  contentClassName,
+  children,
+}: Readonly<{
+  title: string;
+  open: boolean;
+  // eslint-disable-next-line no-unused-vars -- open-change callback
+  onOpenChange: (open: boolean) => void;
+  collapsedHint?: string;
+  contentClassName?: string;
+  children: ReactNode;
+}>) {
+  return (
+    <Card className="border-border gap-0 py-0 shadow-none">
+      <Collapsible open={open} onOpenChange={onOpenChange}>
+        <SidebarCollapsibleHeader
+          title={title}
+          open={open}
+          collapsedHint={collapsedHint}
+        />
+        <CollapsibleContent>
+          <CardContent
+            className={cn('border-t px-4 pt-1 pb-4', contentClassName)}
+          >
+            {children}
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
+  );
+}
+
 function UserPill({
   name,
   imageUrl,
@@ -292,7 +328,8 @@ export default function WorkItemSidebar({
   detailsOpen: boolean;
   setDetailsOpen: Dispatch<SetStateAction<boolean>>;
   moreFieldsOpen: boolean;
-  setMoreFieldsOpen: Dispatch<SetStateAction<boolean>>;
+  // eslint-disable-next-line no-unused-vars -- open-change callback
+  setMoreFieldsOpen: (open: boolean) => void;
   // eslint-disable-next-line no-unused-vars -- callback signature
   onWorkItemPatched: (updated: Partial<DbWorkItem>) => void;
   onLogWorkClick?: () => void;
@@ -301,6 +338,7 @@ export default function WorkItemSidebar({
   const [activeField, setActiveField] = useState<
     'assignee_id' | 'reporter_id' | null
   >(null);
+  const [developmentOpen, setDevelopmentOpen] = useState(true);
 
   const activeConfig = activeField
     ? WORK_ITEM_PATCH_FIELD_CONFIG[activeField]
@@ -322,134 +360,130 @@ export default function WorkItemSidebar({
         onPatched={onWorkItemPatched}
       />
 
-      <Card className="border-border gap-0 py-0 shadow-none">
-        <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen}>
-          <SidebarCollapsibleHeader title="Details" open={detailsOpen} />
-
-          <CollapsibleContent>
-            <CardContent className="border-t px-4 pt-1 pb-4">
-              <DetailRow label="Assignee">
-                <EditableUserField
-                  name={workItem.assignee?.name}
-                  imageUrl={workItem.assignee?.profile_picture}
-                  field="assignee_id"
-                  onEdit={setActiveField}
-                  readOnly={readOnly}
-                />
-              </DetailRow>
-              <DetailRow label="Reporter">
-                <EditableUserField
-                  name={workItem.reporter?.name}
-                  imageUrl={workItem.reporter?.profile_picture}
-                  field="reporter_id"
-                  onEdit={setActiveField}
-                  readOnly={readOnly}
-                />
-              </DetailRow>
-              <DetailRow label="Priority">
-                <PriorityBadge priority={workItem.priority} />
-              </DetailRow>
-              <DetailRow label="Labels">
-                <div className="flex flex-wrap gap-1.5">
-                  {PLACEHOLDER_LABELS.map((label) => (
-                    <Badge key={label} variant="outline">
-                      {label}
-                    </Badge>
-                  ))}
-                </div>
-              </DetailRow>
-
-              <DetailRow label="Development">
-                <ul className="space-y-2 text-sm">
-                  <li className="flex items-center gap-2">
-                    <GitBranch className="text-muted-foreground size-3.5" />
-                    <span>1 branch</span>
-                  </li>
-                  <li className="flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-2">
-                      <GitCommit className="text-muted-foreground size-3.5" />1
-                      commit
-                    </span>
-                    <span className="text-muted-foreground text-xs">
-                      yesterday
-                    </span>
-                  </li>
-                  <li className="flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-2">
-                      <GitPullRequest className="text-muted-foreground size-3.5" />
-                      1 pull request
-                    </span>
-                    <Badge variant="secondary">OPEN</Badge>
-                  </li>
-                  <li className="flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-2">
-                      <Rocket className="text-muted-foreground size-3.5" />1
-                      build
-                    </span>
-                    <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
-                  </li>
-                </ul>
-              </DetailRow>
-
-              <DetailRow label="Releases">
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-2">
-                      <Cloud className="text-muted-foreground size-3.5" />
-                      Production
-                    </span>
-                    <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="h-auto cursor-pointer px-0"
-                  >
-                    + Add feature flag
-                  </Button>
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="text-muted-foreground h-auto cursor-pointer px-0"
-                  >
-                    See all deployments
-                  </Button>
-                </div>
-              </DetailRow>
-            </CardContent>
-          </CollapsibleContent>
-        </Collapsible>
-      </Card>
-
-      <Card className="border-border gap-0 py-0 shadow-none">
-        <Collapsible open={moreFieldsOpen} onOpenChange={setMoreFieldsOpen}>
-          <SidebarCollapsibleHeader
-            title="More fields"
-            open={moreFieldsOpen}
-            collapsedHint="Time tracking, automation, reminders…"
+      <SidebarCollapsibleSection
+        title="Details"
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+      >
+        <DetailRow label="Assignee">
+          <EditableUserField
+            name={workItem.assignee?.name}
+            imageUrl={workItem.assignee?.profile_picture}
+            field="assignee_id"
+            onEdit={setActiveField}
+            readOnly={readOnly}
           />
+        </DetailRow>
+        <DetailRow label="Reporter">
+          <EditableUserField
+            name={workItem.reporter?.name}
+            imageUrl={workItem.reporter?.profile_picture}
+            field="reporter_id"
+            onEdit={setActiveField}
+            readOnly={readOnly}
+          />
+        </DetailRow>
+        <DetailRow label="Priority">
+          <PriorityBadge priority={workItem.priority} />
+        </DetailRow>
+        <DetailRow label="Labels">
+          <div className="flex flex-wrap gap-1.5">
+            {PLACEHOLDER_LABELS.map((label) => (
+              <Badge key={label} variant="outline">
+                {label}
+              </Badge>
+            ))}
+          </div>
+        </DetailRow>
+      </SidebarCollapsibleSection>
 
-          <CollapsibleContent>
-            <CardContent className="text-muted-foreground space-y-3 border-t px-4 pt-3 pb-4 text-sm">
-              <WorkItemTimeTracking
-                storyPoints={workItem.story_points}
-                workLogs={workLogs}
-                onLogWorkClick={readOnly ? undefined : onLogWorkClick}
-              />
+      <SidebarCollapsibleSection
+        title="Development"
+        open={developmentOpen}
+        onOpenChange={setDevelopmentOpen}
+        collapsedHint="Branches, PRs, builds, releases…"
+      >
+        {/* Mock until GitHub / GitLab / Bitbucket integration */}
+        <div className="py-2.5">
+          <ul className="space-y-2 text-sm">
+            <li className="flex items-center gap-2">
+              <GitBranch className="text-muted-foreground size-3.5" />
+              <span>1 branch</span>
+            </li>
+            <li className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-2">
+                <GitCommit className="text-muted-foreground size-3.5" />
+                <span>1 commit</span>
+              </span>
+              <span className="text-muted-foreground text-xs">yesterday</span>
+            </li>
+            <li className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-2">
+                <GitPullRequest className="text-muted-foreground size-3.5" />
+                <span>1 pull request</span>
+              </span>
+              <Badge variant="secondary">OPEN</Badge>
+            </li>
+            <li className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-2">
+                <Rocket className="text-muted-foreground size-3.5" />
+                <span>1 build</span>
+              </span>
+              <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
+            </li>
+          </ul>
+        </div>
 
-              <DetailRow label="Due date">
-                <span>{formatDate(workItem.due_date)}</span>
-              </DetailRow>
-              <DetailRow label="Story points">
-                <span>{workItem.story_points ?? '—'}</span>
-              </DetailRow>
-              <DetailRow label="Sprint">
-                <span>{workItem.sprint_id ? 'Assigned' : 'Backlog'}</span>
-              </DetailRow>
-            </CardContent>
-          </CollapsibleContent>
-        </Collapsible>
-      </Card>
+        <DetailRow label="Releases">
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-2">
+                <Cloud className="text-muted-foreground size-3.5" />
+                Production
+              </span>
+              <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <Button
+              variant="link"
+              size="sm"
+              className="h-auto cursor-pointer px-0"
+            >
+              + Add feature flag
+            </Button>
+            <Button
+              variant="link"
+              size="sm"
+              className="text-muted-foreground h-auto cursor-pointer px-0"
+            >
+              See all deployments
+            </Button>
+          </div>
+        </DetailRow>
+      </SidebarCollapsibleSection>
+
+      <SidebarCollapsibleSection
+        title="More fields"
+        open={moreFieldsOpen}
+        onOpenChange={setMoreFieldsOpen}
+        collapsedHint="Time tracking, automation, reminders…"
+        contentClassName="text-muted-foreground space-y-3 pt-3 text-sm"
+      >
+        <WorkItemTimeTracking
+          storyPoints={workItem.story_points}
+          workLogs={workLogs}
+          onLogWorkClick={readOnly ? undefined : onLogWorkClick}
+        />
+
+        <DetailRow label="Due date">
+          <span>{formatDate(workItem.due_date)}</span>
+        </DetailRow>
+        <DetailRow label="Story points">
+          <span>{workItem.story_points ?? '—'}</span>
+        </DetailRow>
+        <DetailRow label="Sprint">
+          <span>{workItem.sprint_id ? 'Assigned' : 'Backlog'}</span>
+        </DetailRow>
+      </SidebarCollapsibleSection>
 
       <div className="text-muted-foreground space-y-1 px-1 text-xs">
         <p>Created {formatDate(workItem.created_at)}</p>
