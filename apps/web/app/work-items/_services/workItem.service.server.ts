@@ -30,6 +30,7 @@ export type DbWorkItem = Tables<'work_items'> & {
 export type WorkItemListFilters = {
   sprintId?: string | null;
   projectId?: string;
+  parentId?: string;
   type?: Enums<'WorkItemType'>;
   assigneeId?: string;
 };
@@ -73,6 +74,10 @@ export function applyWorkItemFilters<Q extends WorkItemFilterable<Q>>(
 
   if (filters.projectId) {
     next = next.eq('project_id', filters.projectId);
+  }
+
+  if (filters.parentId) {
+    next = next.eq('parent_id', filters.parentId);
   }
 
   if (filters.type) {

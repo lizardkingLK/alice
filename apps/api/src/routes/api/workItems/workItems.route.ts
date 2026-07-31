@@ -53,10 +53,7 @@ function buildWorkItemPayload(
     status: parsedData.status ?? existingWorkItem.status,
     sprint_id: parsedData.sprint_id ?? existingWorkItem.sprint_id,
     story_points: parsedData.story_points ?? existingWorkItem.story_points,
-    parent_id:
-      parsedData.parent_id !== undefined
-        ? parsedData.parent_id
-        : existingWorkItem.parent_id,
+    parent_id: parsedData.parent_id ?? existingWorkItem.parent_id,
   };
 }
 

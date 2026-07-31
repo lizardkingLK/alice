@@ -1,6 +1,6 @@
 'use client';
 
-import { WORK_ITEM_TYPES } from '@repo/types';
+import { WORK_ITEM_TYPES, type WorkItemType } from '@repo/types';
 import { useState, type FormEvent } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
@@ -25,17 +25,25 @@ import { Project as DbProject } from '@/app/projects/_services/projects.service'
 import { delay } from '@/app/_shared/utility';
 import { ResponseDTO } from '@repo/types/connection';
 
+type WorkItemFormMember = Pick<DbUser, 'id' | 'name' | 'email'>;
+
 interface WorkItemFormProps {
   onClose?: () => void;
   // eslint-disable-next-line no-unused-vars
   onSuccess: (workItem: DbWorkItem) => void;
   projects: DbProject[];
   itemToEdit?: DbWorkItem | null;
-  projectMembers: DbUser[];
+  projectMembers: readonly WorkItemFormMember[];
   /** When true, project select is disabled (value still submitted). */
   lockProject?: boolean;
   /** When set, assignee select is disabled and defaults to this user on create. */
   lockAssigneeId?: string;
+  /** Parent work item for subtask create (submitted as parent_id). */
+  parentId?: string | null;
+  /** Restrict selectable types (defaults to all work-item types). */
+  allowedTypes?: readonly WorkItemType[];
+  /** When true, type select is disabled (value still submitted). */
+  lockType?: boolean;
 }
 
 const taskTypes = WORK_ITEM_TYPES;
@@ -68,7 +76,14 @@ export function WorkItemForm({
   projects,
   lockProject = false,
   lockAssigneeId,
+  parentId = null,
+  allowedTypes,
+  lockType = false,
 }: Readonly<WorkItemFormProps>) {
+  const availableTypes =
+    allowedTypes && allowedTypes.length > 0 ? allowedTypes : taskTypes;
+  const typeLocked = lockType || availableTypes.length === 1;
+
   const [isPending, setPending] = useState(false);
   const [state, setState] = useState<{
     success: string | null;
@@ -80,7 +95,9 @@ export function WorkItemForm({
   const [assigneeId, setAssigneeId] = useState(
     itemToEdit?.assignee_id ?? lockAssigneeId ?? ''
   );
-  const [type, setType] = useState(itemToEdit?.type ?? '');
+  const [type, setType] = useState(
+    itemToEdit?.type ?? (typeLocked ? (availableTypes[0] ?? '') : '')
+  );
   const isEditMode = itemToEdit !== null;
   const lockAssignee = Boolean(lockAssigneeId);
 
@@ -158,12 +175,12 @@ export function WorkItemForm({
         {/* Type */}
         <div className="space-y-2">
           <Label htmlFor="type">Type</Label>
-          <Select value={type} onValueChange={setType}>
+          <Select value={type} onValueChange={setType} disabled={typeLocked}>
             <SelectTrigger id="type">
               <SelectValue placeholder="Select type..." />
             </SelectTrigger>
             <SelectContent>
-              {taskTypes.map((taskType) => (
+              {availableTypes.map((taskType) => (
                 <SelectItem key={taskType} value={taskType}>
                   {taskType}
                 </SelectItem>
@@ -172,6 +189,10 @@ export function WorkItemForm({
           </Select>
           <input type="hidden" name="type" value={type} />
         </div>
+
+        {parentId ? (
+          <input type="hidden" name="parent_id" value={parentId} />
+        ) : null}
 
         {/* Due date */}
         <div className="space-y-2">

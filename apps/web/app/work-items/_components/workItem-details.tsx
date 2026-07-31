@@ -1,9 +1,13 @@
 'use client';
 
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState, type FormEvent } from 'react';
+import { getAllowedChildType, type WorkItemType } from '@repo/types';
 import { getInitials } from '@/app/_shared/utility';
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
+import { WorkItemForm } from '@/app/work-items/_components/workItem-form';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import type {
   AttachmentWithUploader,
@@ -18,6 +22,13 @@ import {
 import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@repo/ui/components/ui/dialog';
 import { Progress } from '@repo/ui/components/ui/progress';
 import { Separator } from '@repo/ui/components/ui/separator';
 import {
@@ -50,33 +61,20 @@ import { WorkItemPathBreadcrumb } from '@/app/work-items/_components/work-item-p
 import type { WorkItemPatchMemberOption } from '@/app/work-items/_components/workItem-field-patch-dialog';
 import { toast } from '@repo/ui/components/ui/sonner';
 import { CommentItem } from '@/app/comments/_services/comments.service';
+import type { Project as DbProject } from '@/app/projects/_services/projects.service';
 
-const PLACEHOLDER_CHILD_ISSUES = [
-  {
-    id: 'c1',
-    key: 'ISSUE-101',
-    title: 'Define API contract for helper microservice',
-    comments: 4,
-    status: 'ToDo' as const,
-  },
-  {
-    id: 'c2',
-    key: 'ISSUE-102',
-    title: 'Add authentication middleware',
-    comments: 2,
-    status: 'InProgress' as const,
-  },
-  {
-    id: 'c3',
-    key: 'ISSUE-103',
-    title: 'Write integration tests',
-    comments: 1,
-    status: 'New' as const,
-  },
-] as const;
+function childWorkItemKey(child: DbWorkItem): string {
+  return child.jira_issue_key?.trim() || child.id.slice(0, 8).toUpperCase();
+}
+
+function isDoneStatus(status: DbWorkItem['status']): boolean {
+  return status === 'Done';
+}
 
 export default function WorkItemDetails({
   workItemDetails,
+  childWorkItems = [],
+  project = null,
   initialComments = [],
   initialAttachments = [],
   initialWorkLogs = [],
@@ -84,17 +82,21 @@ export default function WorkItemDetails({
   projectMembers = [],
 }: Readonly<{
   workItemDetails: DbWorkItem;
+  childWorkItems?: DbWorkItem[];
+  project?: DbProject | null;
   initialComments?: CommentItem[];
   initialAttachments?: AttachmentWithUploader[];
   initialWorkLogs?: WorkItemWorkLog[];
   currentUserId?: string;
   projectMembers?: readonly WorkItemPatchMemberOption[];
 }>) {
+  const router = useRouter();
   const [workItem, setWorkItem] = useState<DbWorkItem>(workItemDetails);
   const [isEditing, setEditing] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(true);
   const [moreFieldsOpen, setMoreFieldsOpen] = useState(false);
   const [attachmentUploadOpen, setAttachmentUploadOpen] = useState(false);
+  const [subtaskDialogOpen, setSubtaskDialogOpen] = useState(false);
   const [workLogs, setWorkLogs] = useState<WorkItemWorkLog[]>(initialWorkLogs);
   const [activityTab, setActivityTab] =
     useState<WorkItemActivityTab>('discussion');
@@ -105,6 +107,9 @@ export default function WorkItemDetails({
   const [workLogCommentInput, setWorkLogCommentInput] = useState<string>('');
   const [isLoggingWork, setIsLoggingWork] = useState(false);
 
+  const allowedChildType = getAllowedChildType(workItem.type as WorkItemType);
+  const canCreateSubtask = Boolean(allowedChildType && project);
+
   const handleWorkItemPatched = (updated: Partial<DbWorkItem>) => {
     setWorkItem((prev) => ({ ...prev, ...updated }));
   };
@@ -114,7 +119,15 @@ export default function WorkItemDetails({
     [workItem.description]
   );
 
-  const childDonePercent = 0;
+  const childDonePercent = useMemo(() => {
+    if (childWorkItems.length === 0) {
+      return 0;
+    }
+    const doneCount = childWorkItems.filter((child) =>
+      isDoneStatus(child.status)
+    ).length;
+    return Math.round((doneCount / childWorkItems.length) * 100);
+  }, [childWorkItems]);
 
   const discussionWorkItems = useMemo(
     () => [
@@ -175,6 +188,12 @@ export default function WorkItemDetails({
     }
   };
 
+  const handleSubtaskCreated = () => {
+    setSubtaskDialogOpen(false);
+    toast.success('Subtask created');
+    router.refresh();
+  };
+
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6">
       {/* Title + actions — same 3∶2 column ratio as the body so the
@@ -200,10 +219,17 @@ export default function WorkItemDetails({
               <Paperclip data-icon="inline-start" />
               Attach
             </Button>
-            <Button variant="ghost" size="sm" className="cursor-pointer">
-              <Plus data-icon="inline-start" />
-              Create subtask
-            </Button>
+            {canCreateSubtask ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="cursor-pointer"
+                onClick={() => setSubtaskDialogOpen(true)}
+              >
+                <Plus data-icon="inline-start" />
+                Create subtask
+              </Button>
+            ) : null}
             <Button variant="ghost" size="sm" className="cursor-pointer">
               <Link2 data-icon="inline-start" />
               Link issue
@@ -254,10 +280,10 @@ export default function WorkItemDetails({
 
           <Separator />
 
-          {/* Child issues */}
+          {/* Subtasks */}
           <section className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-sm font-semibold">Child issues</h2>
+              <h2 className="text-sm font-semibold">Subtasks</h2>
               <div className="flex items-center gap-1">
                 <Button variant="ghost" size="sm" className="cursor-pointer">
                   Order by
@@ -267,18 +293,21 @@ export default function WorkItemDetails({
                   variant="ghost"
                   size="icon-sm"
                   className="cursor-pointer"
-                  aria-label="More child issue actions"
+                  aria-label="More subtask actions"
                 >
                   <MoreHorizontal />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="cursor-pointer"
-                  aria-label="Add child issue"
-                >
-                  <Plus />
-                </Button>
+                {canCreateSubtask ? (
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="cursor-pointer"
+                    aria-label="Add subtask"
+                    onClick={() => setSubtaskDialogOpen(true)}
+                  >
+                    <Plus />
+                  </Button>
+                ) : null}
               </div>
             </div>
 
@@ -289,59 +318,73 @@ export default function WorkItemDetails({
               </span>
             </div>
 
-            <div className="rounded-lg border">
-              <Table className="min-w-xl table-fixed">
-                <colgroup>
-                  <col className="w-28" />
-                  <col />
-                  <col className="w-12" />
-                  <col className="w-24" />
-                  <col className="w-10" />
-                  <col className="w-28" />
-                </colgroup>
-                <TableBody>
-                  {PLACEHOLDER_CHILD_ISSUES.map((child) => (
-                    <TableRow
-                      key={child.id}
-                      className="hover:bg-muted/40 border-border"
-                    >
-                      <TableCell className="px-3 py-2.5">
-                        <Badge
-                          variant="outline"
-                          className="font-mono text-[10px]"
-                        >
-                          {child.key}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="max-w-0 px-2 py-2.5 whitespace-normal">
-                        <TruncatedText className="text-sm">
-                          {child.title}
-                        </TruncatedText>
-                      </TableCell>
-                      <TableCell className="px-2 py-2.5">
-                        <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
-                          <MessageSquare className="size-3.5 shrink-0" />
-                          {child.comments}
-                        </span>
-                      </TableCell>
-                      <TableCell className="px-2 py-2.5">
-                        <PriorityBadge priority={workItem.priority} />
-                      </TableCell>
-                      <TableCell className="px-2 py-2.5">
-                        <Avatar size="sm">
-                          <AvatarFallback>
-                            {getInitials(workItem.assignee?.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                      </TableCell>
-                      <TableCell className="px-3 py-2.5">
-                        <WorkItemStatusBadge status={child.status} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            {childWorkItems.length === 0 ? (
+              <div
+                className={cn(
+                  'text-muted-foreground flex h-16 items-center justify-center rounded-lg border border-dashed text-sm'
+                )}
+              >
+                No subtasks yet
+              </div>
+            ) : (
+              <div className="rounded-lg border">
+                <Table className="min-w-xl table-fixed">
+                  <colgroup>
+                    <col className="w-28" />
+                    <col />
+                    <col className="w-12" />
+                    <col className="w-24" />
+                    <col className="w-10" />
+                    <col className="w-28" />
+                  </colgroup>
+                  <TableBody>
+                    {childWorkItems.map((child) => (
+                      <TableRow
+                        key={child.id}
+                        className="hover:bg-muted/40 border-border"
+                      >
+                        <TableCell className="px-3 py-2.5">
+                          <Badge
+                            variant="outline"
+                            className="font-mono text-[10px]"
+                          >
+                            {childWorkItemKey(child)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="max-w-0 px-2 py-2.5 whitespace-normal">
+                          <Link
+                            href={`/work-items/${child.id}`}
+                            className="hover:text-primary block min-w-0"
+                          >
+                            <TruncatedText className="text-sm">
+                              {child.title}
+                            </TruncatedText>
+                          </Link>
+                        </TableCell>
+                        <TableCell className="px-2 py-2.5">
+                          <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+                            <MessageSquare className="size-3.5 shrink-0" />0
+                          </span>
+                        </TableCell>
+                        <TableCell className="px-2 py-2.5">
+                          <PriorityBadge priority={child.priority} />
+                        </TableCell>
+                        <TableCell className="px-2 py-2.5">
+                          <Avatar size="sm">
+                            <AvatarFallback>
+                              {getInitials(child.assignee?.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                        </TableCell>
+                        <TableCell className="px-3 py-2.5">
+                          <WorkItemStatusBadge status={child.status} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </section>
 
           <Separator />
@@ -403,6 +446,33 @@ export default function WorkItemDetails({
           onLogWorkClick={() => setActivityTab('work-log')}
         />
       </div>
+
+      {canCreateSubtask && allowedChildType && project ? (
+        <Dialog open={subtaskDialogOpen} onOpenChange={setSubtaskDialogOpen}>
+          <DialogContent
+            className="sm:max-w-xl"
+            onPointerDownOutside={(event) => event.preventDefault()}
+            onInteractOutside={(event) => event.preventDefault()}
+          >
+            <DialogHeader>
+              <DialogTitle>Create Subtask</DialogTitle>
+              <DialogDescription>
+                Create a {allowedChildType} under this {workItem.type}.
+              </DialogDescription>
+            </DialogHeader>
+            <WorkItemForm
+              projects={[project]}
+              projectMembers={projectMembers}
+              parentId={workItem.id}
+              allowedTypes={[allowedChildType]}
+              lockProject
+              lockType
+              onClose={() => setSubtaskDialogOpen(false)}
+              onSuccess={handleSubtaskCreated}
+            />
+          </DialogContent>
+        </Dialog>
+      ) : null}
     </div>
   );
 }
