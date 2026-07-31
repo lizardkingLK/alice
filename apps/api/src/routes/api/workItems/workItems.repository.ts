@@ -206,6 +206,7 @@ export class WorkItemRepository {
         status: 'New',
         story_points: input.story_points,
         jira_issue_key: input.jira_issue_key,
+        description: input.description ?? null,
         parent_id: input.parent_id ?? null,
         ...auditCreateWithoutStatus(input.createdBy),
       })
@@ -247,6 +248,9 @@ export class WorkItemRepository {
         sprint_id: input.sprint_id,
         story_points: input.story_points,
         parent_id: input.parent_id ?? null,
+        ...(input.jira_issue_key !== undefined
+          ? { jira_issue_key: input.jira_issue_key }
+          : {}),
         ...(doneAtUpdate !== undefined ? { done_at: doneAtUpdate } : {}),
         updated_by: input.updatedBy,
         updated_at: new Date().toISOString(),

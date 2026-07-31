@@ -113,7 +113,12 @@ export const workItemCoreObject = z.object({
         .nullable()
     )
     .optional(),
-  jira_issue_key: z.string().trim().nullable().optional(),
+  jira_issue_key: z
+    .string()
+    .trim()
+    .max(255, { message: 'Jira issue key must be at most 255 characters' })
+    .nullable()
+    .optional(),
   parent_id: z
     .preprocess(
       emptyStringToNull,

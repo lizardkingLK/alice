@@ -11,7 +11,6 @@ export type Project = Omit<
   team_count?: number;
   jira_url?: string | null;
   jira_email?: string | null;
-  jira_token?: string | null;
   jira_project_key?: string | null;
 };
 
