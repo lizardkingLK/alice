@@ -132,7 +132,7 @@ function MediaPreview({
         key={previewUrl}
         src={previewUrl}
         alt={fileName}
-        className="max-h-[60vh] w-full object-contain"
+        className="max-h-[60vh] max-w-full object-contain"
         onError={onError}
       />
     );
@@ -144,7 +144,7 @@ function MediaPreview({
         key={previewUrl}
         title={fileName}
         src={previewUrl}
-        className="h-[60vh] w-full border-0"
+        className="h-[60vh] w-full max-w-full border-0"
         onError={onError}
       />
     );
@@ -411,19 +411,26 @@ function AttachmentViewerDialog({
 }>) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>
-            <TruncatedText className="pr-8">
+      <DialogContent className="bg-card w-full max-w-[calc(100%-2rem)] min-w-0 overflow-hidden sm:max-w-3xl">
+        <DialogHeader className="min-w-0 gap-1 overflow-hidden pr-8">
+          <DialogTitle className="min-w-0 overflow-hidden">
+            <TruncatedText className="text-base font-semibold">
               {active?.file_name ?? 'Attachment'}
             </TruncatedText>
           </DialogTitle>
           {active ? (
-            <DialogDescription>{attachmentMeta(active)}</DialogDescription>
+            <DialogDescription className="truncate">
+              {attachmentMeta(active)}
+            </DialogDescription>
           ) : null}
         </DialogHeader>
 
-        <div className="bg-muted/40 flex min-h-64 items-center justify-center overflow-hidden rounded-lg border">
+        <div
+          className={cn(
+            'bg-muted/40 flex min-h-64 w-full max-w-full min-w-0 items-center justify-center overflow-hidden rounded-lg border',
+            '*:max-w-full *:min-w-0'
+          )}
+        >
           <AttachmentPreviewPane
             loading={loadingUrls}
             unavailable={unavailable}
