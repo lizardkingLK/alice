@@ -456,7 +456,11 @@ export function ProjectRegistry({
 
       {projectToEdit ? (
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
-          <div className="animate-in fade-in zoom-in-95 w-full max-w-lg max-h-[calc(100vh-2rem)] overflow-y-auto no-scrollbar duration-200">
+          <div
+            className={cn(
+              'animate-in fade-in zoom-in-95 w-full max-w-lg max-h-[calc(100vh-2rem)] overflow-y-auto no-scrollbar duration-200'
+            )}
+          >
             <ProjectForm
               users={users}
               projectToEdit={projectToEdit}
