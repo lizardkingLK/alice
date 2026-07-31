@@ -430,7 +430,7 @@ export function ProjectRegistry({
 
       {isAddProjectOpen ? (
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
-          <div className={`animate-in fade-in zoom-in-95 w-full ${isAddWide ? 'max-w-4xl' : 'max-w-lg'} overflow-hidden duration-300 transition-all`}>
+          <div className={`animate-in fade-in zoom-in-95 w-full ${isAddWide ? 'max-w-4xl' : 'max-w-lg'} max-h-[calc(100vh-2rem)] overflow-y-auto no-scrollbar duration-300 transition-all`}>
             <ProjectForm
               users={users}
               onClose={() => {
@@ -450,7 +450,7 @@ export function ProjectRegistry({
 
       {projectToEdit ? (
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
-          <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
+          <div className="animate-in fade-in zoom-in-95 w-full max-w-lg max-h-[calc(100vh-2rem)] overflow-y-auto no-scrollbar duration-200">
             <ProjectForm
               users={users}
               projectToEdit={projectToEdit}
