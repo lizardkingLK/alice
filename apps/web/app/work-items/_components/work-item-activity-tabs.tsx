@@ -48,6 +48,8 @@ type WorkItemActivityTabsProps = {
   onWorkLogCommentChange: (value: string) => void;
   // eslint-disable-next-line no-unused-vars -- callback signature
   onWorkLogSubmit: (event: FormEvent) => void;
+  /** When true, hide work-log form (Done work items). Discussion stays available. */
+  readOnly?: boolean;
 };
 
 /**
@@ -96,6 +98,7 @@ export function WorkItemActivityTabs({
   onLoggedAtChange,
   onWorkLogCommentChange,
   onWorkLogSubmit,
+  readOnly = false,
 }: Readonly<WorkItemActivityTabsProps>) {
   const captureScrollBeforeTabChange = usePreserveScrollOnTabChange(activeTab);
 
@@ -165,6 +168,7 @@ export function WorkItemActivityTabs({
             onLoggedAtChange={onLoggedAtChange}
             onWorkLogCommentChange={onWorkLogCommentChange}
             onSubmit={onWorkLogSubmit}
+            readOnly={readOnly}
           />
         </TabsContent>
       </Tabs>

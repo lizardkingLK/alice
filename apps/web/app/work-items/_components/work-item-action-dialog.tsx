@@ -12,69 +12,109 @@ import {
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
 
-/* eslint-disable no-unused-vars */
-type WorkItemActionDialogProps = {
-  readonly open: boolean;
-  readonly onOpenChange: (open: boolean) => void;
-  readonly title: string;
-  readonly description: string;
-  readonly children: ReactNode;
+type ConfirmModeProps = {
+  readonly mode?: 'confirm';
+  readonly children?: ReactNode;
   readonly isPending: boolean;
   readonly onSubmit: () => void;
   readonly submitLabel?: string;
   readonly pendingLabel?: string;
   readonly submitDisabled?: boolean;
+  readonly submitVariant?: 'default' | 'destructive' | 'outline' | 'secondary';
+};
+
+type AcknowledgeModeProps = {
+  readonly mode: 'acknowledge';
+  readonly children?: ReactNode;
+  readonly isPending?: never;
+  readonly onSubmit?: never;
+  readonly submitLabel?: string;
+  readonly pendingLabel?: never;
+  readonly submitDisabled?: never;
+  readonly submitVariant?: never;
+};
+
+/* eslint-disable no-unused-vars */
+type WorkItemActionDialogBaseProps = {
+  readonly open: boolean;
+  readonly onOpenChange: (open: boolean) => void;
+  readonly title: string;
+  readonly description: string;
+  readonly titleIcon?: ReactNode;
 };
 /* eslint-enable no-unused-vars */
 
+type WorkItemActionDialogProps = WorkItemActionDialogBaseProps &
+  (ConfirmModeProps | AcknowledgeModeProps);
+
 /**
- * Shared chrome for small work-item action dialogs (field patch, link subtask).
+ * Shared chrome for small work-item action dialogs (field patch, link/unlink,
+ * acknowledgment warnings).
  */
 export function WorkItemActionDialog({
   open,
   onOpenChange,
   title,
   description,
+  titleIcon,
   children,
-  isPending,
+  mode = 'confirm',
+  isPending = false,
   onSubmit,
-  submitLabel = 'Save',
+  submitLabel,
   pendingLabel = 'Saving...',
   submitDisabled = false,
+  submitVariant = 'default',
 }: Readonly<WorkItemActionDialogProps>) {
+  const isAcknowledge = mode === 'acknowledge';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-card border-border/80 sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle
+            className={titleIcon ? 'flex items-center gap-2' : undefined}
+          >
+            {titleIcon}
+            {title}
+          </DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-1">{children}</div>
+        {children ? <div className="space-y-4 py-1">{children}</div> : null}
 
         <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={isPending}
-            onClick={() => onOpenChange(false)}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            disabled={isPending || submitDisabled}
-            onClick={onSubmit}
-          >
-            {isPending ? (
-              <>
-                <Loader2 className="animate-spin" />
-                {pendingLabel}
-              </>
-            ) : (
-              submitLabel
-            )}
-          </Button>
+          {isAcknowledge ? (
+            <Button type="button" onClick={() => onOpenChange(false)}>
+              {submitLabel ?? 'OK'}
+            </Button>
+          ) : (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isPending}
+                onClick={() => onOpenChange(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant={submitVariant}
+                disabled={isPending || submitDisabled}
+                onClick={onSubmit}
+              >
+                {isPending ? (
+                  <>
+                    <Loader2 className="animate-spin" />
+                    {pendingLabel}
+                  </>
+                ) : (
+                  (submitLabel ?? 'Save')
+                )}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

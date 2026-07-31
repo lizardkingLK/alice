@@ -5,7 +5,7 @@ import { toast } from '@repo/ui/components/ui/sonner';
 import { delay, toShortId } from '@/app/_shared/utility';
 import { WorkItemActionDialog } from '@/app/work-items/_components/work-item-action-dialog';
 import { FormStatusAlerts } from '@/app/work-items/_components/workItem-form-alerts';
-import { updateWorkItem } from '@/app/work-items/_services/workItem.service.client';
+import { patchWorkItemParentId } from '@/app/work-items/_helpers/patch-work-item-parent';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import type { WorkItemType } from '@repo/types';
 import { Label } from '@repo/ui/components/ui/label';
@@ -70,9 +70,7 @@ export function WorkItemLinkSubtaskDialog({
     setAlert(null);
 
     try {
-      const formData = new FormData();
-      formData.set('parent_id', parentWorkItemId);
-      await updateWorkItem(selectedId, formData);
+      await patchWorkItemParentId(selectedId, parentWorkItemId);
 
       setAlert({ success: 'Subtask linked successfully.', error: null });
       await delay();

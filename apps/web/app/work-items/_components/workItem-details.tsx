@@ -52,6 +52,10 @@ import WorkItemSidebar from '@/app/work-items/_components/workItem-details-sideb
 import { WorkItemTitleEditor } from '@/app/work-items/_components/workItem-title-editor';
 import { WorkItemPathBreadcrumb } from '@/app/work-items/_components/work-item-path-breadcrumb';
 import { SubtaskOrderByMenu } from '@/app/work-items/_components/subtask-order-by-menu';
+import {
+  UnlinkSubtaskButton,
+  WorkItemUnlinkSubtaskDialog,
+} from '@/app/work-items/_components/work-item-unlink-subtask-dialog';
 import type { WorkItemPatchMemberOption } from '@/app/work-items/_components/workItem-field-patch-dialog';
 import { averageStatusCompletionPercent } from '@/app/work-items/_helpers/work-item-status';
 import {
@@ -103,6 +107,10 @@ export default function WorkItemDetails({
     useState<SubtaskSortField>('none');
   const [subtaskSortDirection, setSubtaskSortDirection] =
     useState<SubtaskSortDirection>('asc');
+  const [unlinkTarget, setUnlinkTarget] = useState<Pick<
+    DbWorkItem,
+    'id' | 'title' | 'type'
+  > | null>(null);
   const [workLogs, setWorkLogs] = useState<WorkItemWorkLog[]>(initialWorkLogs);
   const [activityTab, setActivityTab] =
     useState<WorkItemActivityTab>('discussion');
@@ -114,7 +122,10 @@ export default function WorkItemDetails({
   const [isLoggingWork, setIsLoggingWork] = useState(false);
 
   const allowedChildType = getAllowedChildType(workItem.type as WorkItemType);
-  const canCreateSubtask = Boolean(allowedChildType && project);
+  const isRecordReadOnly = workItem.status === 'Done';
+  const canCreateSubtask = Boolean(
+    allowedChildType && project && !isRecordReadOnly
+  );
 
   const handleWorkItemPatched = (updated: Partial<DbWorkItem>) => {
     setWorkItem((prev) => ({ ...prev, ...updated }));
@@ -208,6 +219,11 @@ export default function WorkItemDetails({
     router.refresh();
   };
 
+  const handleSubtaskUnlinked = () => {
+    setUnlinkTarget(null);
+    router.refresh();
+  };
+
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6">
       {/* Title + actions — same 3∶2 column ratio as the body so the
@@ -220,19 +236,22 @@ export default function WorkItemDetails({
               workItemId={workItem.id}
               title={workItem.title}
               onPatched={handleWorkItemPatched}
+              readOnly={isRecordReadOnly}
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="cursor-pointer"
-              onClick={() => setAttachmentUploadOpen(true)}
-            >
-              <Paperclip data-icon="inline-start" />
-              Attach
-            </Button>
+            {isRecordReadOnly ? null : (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="cursor-pointer"
+                onClick={() => setAttachmentUploadOpen(true)}
+              >
+                <Paperclip data-icon="inline-start" />
+                Attach
+              </Button>
+            )}
             {canCreateSubtask ? (
               <Button
                 variant="ghost"
@@ -244,11 +263,13 @@ export default function WorkItemDetails({
                 Create subtask
               </Button>
             ) : null}
-            <Button variant="ghost" size="sm" className="cursor-pointer">
-              <Link2 data-icon="inline-start" />
-              Link issue
-              <ChevronDown data-icon="inline-end" />
-            </Button>
+            {isRecordReadOnly ? null : (
+              <Button variant="ghost" size="sm" className="cursor-pointer">
+                <Link2 data-icon="inline-start" />
+                Link issue
+                <ChevronDown data-icon="inline-end" />
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -260,16 +281,19 @@ export default function WorkItemDetails({
           <section className="space-y-2">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold">Description</h2>
-              <Button
-                variant="secondary"
-                size="icon"
-                className="cursor-pointer"
-                onClick={() => setEditing((prev) => !prev)}
-              >
-                <PencilIcon />
-              </Button>
+              {isRecordReadOnly ? null : (
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="cursor-pointer"
+                  aria-label="Edit description"
+                  onClick={() => setEditing((prev) => !prev)}
+                >
+                  <PencilIcon />
+                </Button>
+              )}
             </div>
-            {isEditing ? (
+            {isEditing && !isRecordReadOnly ? (
               <WorkItemDescriptionEditor
                 id={workItem.id}
                 initialContent={descriptionContent}
@@ -290,6 +314,7 @@ export default function WorkItemDetails({
             initialAttachments={initialAttachments}
             uploadOpen={attachmentUploadOpen}
             onUploadOpenChange={setAttachmentUploadOpen}
+            readOnly={isRecordReadOnly}
           />
 
           <Separator />
@@ -344,6 +369,7 @@ export default function WorkItemDetails({
                     <col className="w-24" />
                     <col className="w-10" />
                     <col className="w-28" />
+                    <col className="w-10" />
                   </colgroup>
                   <TableBody>
                     {sortedChildWorkItems.map((child) => (
@@ -390,6 +416,19 @@ export default function WorkItemDetails({
                         <TableCell className="px-3 py-2.5">
                           <WorkItemStatusBadge status={child.status} />
                         </TableCell>
+                        <TableCell className="px-1 py-2.5">
+                          {isRecordReadOnly ? null : (
+                            <UnlinkSubtaskButton
+                              onClick={() =>
+                                setUnlinkTarget({
+                                  id: child.id,
+                                  title: child.title,
+                                  type: child.type,
+                                })
+                              }
+                            />
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -404,14 +443,16 @@ export default function WorkItemDetails({
           <section className="space-y-3">
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-sm font-semibold">Linked issues</h2>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="cursor-pointer"
-                aria-label="Link issue"
-              >
-                <Plus />
-              </Button>
+              {isRecordReadOnly ? null : (
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="cursor-pointer"
+                  aria-label="Link issue"
+                >
+                  <Plus />
+                </Button>
+              )}
             </div>
             <p className="text-muted-foreground text-sm">is blocked by</p>
             <div
@@ -441,12 +482,14 @@ export default function WorkItemDetails({
             onLoggedAtChange={setLoggedAtInput}
             onWorkLogCommentChange={setWorkLogCommentInput}
             onWorkLogSubmit={handleWorkLogSubmit}
+            readOnly={isRecordReadOnly}
           />
         </div>
 
         {/* Sidebar */}
         <WorkItemSidebar
           workItem={workItem}
+          childStatuses={childWorkItems.map((child) => child.status)}
           projectMembers={projectMembers}
           workLogs={workLogs}
           detailsOpen={detailsOpen}
@@ -455,6 +498,7 @@ export default function WorkItemDetails({
           setMoreFieldsOpen={setMoreFieldsOpen}
           onWorkItemPatched={handleWorkItemPatched}
           onLogWorkClick={() => setActivityTab('work-log')}
+          readOnly={isRecordReadOnly}
         />
       </div>
 
@@ -484,6 +528,22 @@ export default function WorkItemDetails({
             onLinked={handleSubtaskLinked}
           />
         </>
+      ) : null}
+
+      {unlinkTarget ? (
+        <WorkItemUnlinkSubtaskDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setUnlinkTarget(null);
+            }
+          }}
+          childId={unlinkTarget.id}
+          childTitle={unlinkTarget.title}
+          childType={unlinkTarget.type as WorkItemType}
+          parentType={workItem.type as WorkItemType}
+          onUnlinked={handleSubtaskUnlinked}
+        />
       ) : null}
     </div>
   );

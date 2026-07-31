@@ -39,7 +39,22 @@ vi.mock('@/app/work-items/_components/work-item-path-breadcrumb', () => ({
 }));
 
 vi.mock('@/app/work-items/_components/workItem-title-editor', () => ({
-  WorkItemTitleEditor: ({ title }: { title: string }) => <h1>{title}</h1>,
+  WorkItemTitleEditor: ({
+    title,
+    readOnly,
+  }: {
+    title: string;
+    readOnly?: boolean;
+  }) => (
+    <div>
+      <h1>{title}</h1>
+      {readOnly ? null : (
+        <button type="button" aria-label="Edit title">
+          Edit title
+        </button>
+      )}
+    </div>
+  ),
 }));
 
 vi.mock('@/app/work-items/_components/workItem-description-view', () => ({
@@ -124,6 +139,37 @@ vi.mock('@/app/work-items/_components/work-item-link-subtask-dialog', () => ({
         </button>
         <button type="button" onClick={() => onOpenChange?.(false)}>
           Close link dialog
+        </button>
+      </div>
+    ) : null,
+}));
+
+vi.mock('@/app/work-items/_components/work-item-unlink-subtask-dialog', () => ({
+  UnlinkSubtaskButton: ({ onClick }: { onClick: () => void }) => (
+    <button type="button" aria-label="Unlink subtask" onClick={onClick}>
+      Unlink
+    </button>
+  ),
+  WorkItemUnlinkSubtaskDialog: ({
+    open,
+    childId,
+    onUnlinked,
+    onOpenChange,
+  }: {
+    open: boolean;
+    childId: string;
+    onUnlinked?: () => void;
+    // eslint-disable-next-line no-unused-vars
+    onOpenChange?: (open: boolean) => void;
+  }) =>
+    open ? (
+      <div data-testid="unlink-subtask-dialog">
+        <span data-testid="unlink-child-id">{childId}</span>
+        <button type="button" onClick={() => onUnlinked?.()}>
+          Succeed unlink
+        </button>
+        <button type="button" onClick={() => onOpenChange?.(false)}>
+          Close unlink dialog
         </button>
       </div>
     ) : null,
@@ -358,5 +404,94 @@ describe('WorkItemDetails subtasks', () => {
     await waitFor(() => {
       expect(mockRefresh).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('opens unlink confirm from a subtask row and refreshes after unlink', async () => {
+    // Arrange
+    const story = workItemFactory.build({
+      id: 'wi-story',
+      type: 'Story',
+      project_id: project.id,
+    });
+    const child = workItemFactory.build({
+      id: 'wi-child',
+      title: 'Child to unlink',
+      type: 'Task',
+      parent_id: story.id,
+    });
+
+    render(
+      <WorkItemDetails
+        workItemDetails={story}
+        project={project}
+        projectMembers={members}
+        childWorkItems={[child]}
+      />
+    );
+
+    // Act
+    fireEvent.click(screen.getByRole('button', { name: /Unlink subtask/i }));
+
+    // Assert
+    expect(screen.getByTestId('unlink-subtask-dialog')).toBeInTheDocument();
+    expect(screen.getByTestId('unlink-child-id')).toHaveTextContent('wi-child');
+
+    // Act
+    fireEvent.click(screen.getByRole('button', { name: /Succeed unlink/i }));
+
+    // Assert
+    await waitFor(() => {
+      expect(mockRefresh).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('makes Done work items read-only except status-related chrome stays usable via sidebar', () => {
+    // Arrange
+    const doneStory = workItemFactory.build({
+      id: 'wi-done',
+      type: 'Story',
+      title: 'Finished story',
+      project_id: project.id,
+      status: 'Done',
+    });
+    const child = workItemFactory.build({
+      id: 'wi-child',
+      title: 'Child task',
+      type: 'Task',
+      parent_id: doneStory.id,
+      status: 'Done',
+    });
+
+    render(
+      <WorkItemDetails
+        workItemDetails={doneStory}
+        project={project}
+        projectMembers={members}
+        childWorkItems={[child]}
+      />
+    );
+
+    // Assert — mutations hidden
+    expect(
+      screen.queryByRole('button', { name: /Edit title/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Edit description/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /^Attach$/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Create subtask/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Link existing subtask/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Unlink subtask/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Link issue/i })
+    ).not.toBeInTheDocument();
   });
 });

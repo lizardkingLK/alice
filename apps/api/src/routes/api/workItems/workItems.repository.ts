@@ -173,6 +173,25 @@ export class WorkItemRepository {
     return data as unknown as DbWorkItem;
   }
 
+  /** Count direct children that are not yet Done (for Done-gate validation). */
+  async countIncompleteChildren(parentId: string): Promise<number> {
+    const { count, error } = await this.db
+      .from('work_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('parent_id', parentId)
+      .neq('status', 'Done');
+
+    if (error) {
+      console.error(
+        'error. failed to count incomplete children:',
+        error.message
+      );
+      throw new Error('Failed to count incomplete children');
+    }
+
+    return count ?? 0;
+  }
+
   async create(input: CreateWorkItemRecord): Promise<DbWorkItem> {
     const { data, error } = await this.db
       .from('work_items')

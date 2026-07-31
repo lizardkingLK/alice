@@ -1,7 +1,11 @@
 import { getAllowedChildType, type WorkItemType } from '@repo/types';
 import { WorkItemRepository } from './workItems.repository';
 import type { DbWorkItem } from './workItems.repository';
-import { WorkItemBody, WorkItemUpdateBody } from './workItems.schemas';
+import {
+  toDateOnly,
+  WorkItemBody,
+  WorkItemUpdateBody,
+} from './workItems.schemas';
 
 export class WorkItemValidationError extends Error {
   constructor(message: string) {
@@ -64,6 +68,9 @@ export class WorkItemService {
       childId: workItemId,
     });
 
+    await this.assertCanBecomeDone(workItemId, input.status);
+    await this.assertDoneIsReadOnlyExceptStatus(workItemId, input);
+
     return await this.workItems.update({
       ...input,
       id: workItemId,
@@ -84,6 +91,13 @@ export class WorkItemService {
       comment: string | null;
     }
   ) {
+    const current = await this.workItems.getById(workItemId);
+    if (current?.status === 'Done') {
+      throw new WorkItemValidationError(
+        'Done work items are read-only except Status. Change status to log work.'
+      );
+    }
+
     return await this.workItems.createWorkItemWorkLog({
       workItemId,
       actorId,
@@ -91,6 +105,61 @@ export class WorkItemService {
       loggedAtIso: input.loggedAtIso,
       comment: input.comment,
     });
+  }
+
+  private async assertCanBecomeDone(
+    workItemId: string,
+    nextStatus: WorkItemUpdateBody['status']
+  ): Promise<void> {
+    if (nextStatus !== 'Done') {
+      return;
+    }
+
+    const current = await this.workItems.getById(workItemId);
+    if (!current || current.status === 'Done') {
+      return;
+    }
+
+    const incompleteCount =
+      await this.workItems.countIncompleteChildren(workItemId);
+    if (incompleteCount > 0) {
+      throw new WorkItemValidationError(
+        `Cannot mark as Done while ${incompleteCount} subtask${incompleteCount === 1 ? ' is' : 's are'} incomplete. Complete or unlink them first.`
+      );
+    }
+  }
+
+  /** Done records accept Status changes only (reopen or keep Done). */
+  private async assertDoneIsReadOnlyExceptStatus(
+    workItemId: string,
+    input: WorkItemUpdateBody
+  ): Promise<void> {
+    const current = await this.workItems.getById(workItemId);
+    if (!current || current.status !== 'Done') {
+      return;
+    }
+
+    const dueUnchanged =
+      toDateOnly(input.due_date) === toDateOnly(current.due_date);
+    const parentUnchanged =
+      (input.parent_id ?? null) === (current.parent_id ?? null);
+
+    const nonStatusChanged =
+      input.title !== current.title ||
+      input.project_id !== current.project_id ||
+      input.type !== current.type ||
+      (input.assignee_id ?? null) !== (current.assignee_id ?? null) ||
+      (input.reporter_id ?? null) !== (current.reporter_id ?? null) ||
+      !dueUnchanged ||
+      (input.sprint_id ?? null) !== (current.sprint_id ?? null) ||
+      (input.story_points ?? null) !== (current.story_points ?? null) ||
+      !parentUnchanged;
+
+    if (nonStatusChanged) {
+      throw new WorkItemValidationError(
+        'Done work items are read-only except Status. Change status to edit other fields.'
+      );
+    }
   }
 
   private async assertValidParentLink(params: {

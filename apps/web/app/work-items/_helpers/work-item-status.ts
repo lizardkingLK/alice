@@ -33,6 +33,13 @@ export function statusCompletionPercent(status: WorkItemStatus): number {
   return WORK_ITEM_STATUS_COMPLETION_PERCENT[status] ?? 0;
 }
 
+/** True when any listed status is not Done (used before marking a parent Done). */
+export function hasIncompleteStatuses(
+  statuses: readonly WorkItemStatus[]
+): boolean {
+  return statuses.some((status) => status !== 'Done');
+}
+
 /**
  * Average of each item's status completion weight, rounded to a whole percent.
  * Empty list → 0.
