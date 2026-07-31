@@ -37,7 +37,6 @@ import {
   ChevronDown,
   Link2,
   MessageSquare,
-  MoreHorizontal,
   Paperclip,
   PencilIcon,
   Plus,
@@ -52,8 +51,14 @@ import {
 import WorkItemSidebar from '@/app/work-items/_components/workItem-details-sidebar';
 import { WorkItemTitleEditor } from '@/app/work-items/_components/workItem-title-editor';
 import { WorkItemPathBreadcrumb } from '@/app/work-items/_components/work-item-path-breadcrumb';
+import { SubtaskOrderByMenu } from '@/app/work-items/_components/subtask-order-by-menu';
 import type { WorkItemPatchMemberOption } from '@/app/work-items/_components/workItem-field-patch-dialog';
 import { averageStatusCompletionPercent } from '@/app/work-items/_helpers/work-item-status';
+import {
+  sortSubtasks,
+  type SubtaskSortDirection,
+  type SubtaskSortField,
+} from '@/app/work-items/_helpers/sort-subtasks';
 import { toast } from '@repo/ui/components/ui/sonner';
 import { CommentItem } from '@/app/comments/_services/comments.service';
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
@@ -94,6 +99,10 @@ export default function WorkItemDetails({
   const [attachmentUploadOpen, setAttachmentUploadOpen] = useState(false);
   const [subtaskDialogOpen, setSubtaskDialogOpen] = useState(false);
   const [linkSubtaskDialogOpen, setLinkSubtaskDialogOpen] = useState(false);
+  const [subtaskSortField, setSubtaskSortField] =
+    useState<SubtaskSortField>('none');
+  const [subtaskSortDirection, setSubtaskSortDirection] =
+    useState<SubtaskSortDirection>('asc');
   const [workLogs, setWorkLogs] = useState<WorkItemWorkLog[]>(initialWorkLogs);
   const [activityTab, setActivityTab] =
     useState<WorkItemActivityTab>('discussion');
@@ -122,6 +131,11 @@ export default function WorkItemDetails({
         childWorkItems.map((child) => child.status)
       ),
     [childWorkItems]
+  );
+
+  const sortedChildWorkItems = useMemo(
+    () => sortSubtasks(childWorkItems, subtaskSortField, subtaskSortDirection),
+    [childWorkItems, subtaskSortField, subtaskSortDirection]
   );
 
   const discussionWorkItems = useMemo(
@@ -285,18 +299,12 @@ export default function WorkItemDetails({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-sm font-semibold">Subtasks</h2>
               <div className="flex items-center gap-1">
-                <Button variant="ghost" size="sm" className="cursor-pointer">
-                  Order by
-                  <ChevronDown data-icon="inline-end" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="cursor-pointer"
-                  aria-label="More subtask actions"
-                >
-                  <MoreHorizontal />
-                </Button>
+                <SubtaskOrderByMenu
+                  sortField={subtaskSortField}
+                  sortDirection={subtaskSortDirection}
+                  onSortFieldChange={setSubtaskSortField}
+                  onSortDirectionChange={setSubtaskSortDirection}
+                />
                 {canCreateSubtask ? (
                   <Button
                     variant="ghost"
@@ -318,7 +326,7 @@ export default function WorkItemDetails({
               </span>
             </div>
 
-            {childWorkItems.length === 0 ? (
+            {sortedChildWorkItems.length === 0 ? (
               <div
                 className={cn(
                   'text-muted-foreground flex h-16 items-center justify-center rounded-lg border border-dashed text-sm'
@@ -338,7 +346,7 @@ export default function WorkItemDetails({
                     <col className="w-28" />
                   </colgroup>
                   <TableBody>
-                    {childWorkItems.map((child) => (
+                    {sortedChildWorkItems.map((child) => (
                       <TableRow
                         key={child.id}
                         className="hover:bg-muted/40 border-border"
@@ -370,7 +378,10 @@ export default function WorkItemDetails({
                           <PriorityBadge priority={child.priority} />
                         </TableCell>
                         <TableCell className="px-2 py-2.5">
-                          <Avatar size="sm">
+                          <Avatar
+                            size="sm"
+                            title={child.assignee?.name ?? 'Unassigned'}
+                          >
                             <AvatarFallback>
                               {getInitials(child.assignee?.name)}
                             </AvatarFallback>
