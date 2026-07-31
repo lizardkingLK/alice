@@ -59,6 +59,7 @@ import {
 } from '@repo/ui/components/ui/select';
 import type { Project } from '../_services/projects.service';
 import type { User } from '@/app/users/_services/users.service';
+import { cn } from '@repo/ui/lib/utils';
 
 type ProjectTab = 'active' | 'archived';
 
@@ -430,7 +431,12 @@ export function ProjectRegistry({
 
       {isAddProjectOpen ? (
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
-          <div className={`animate-in fade-in zoom-in-95 w-full ${isAddWide ? 'max-w-4xl' : 'max-w-lg'} max-h-[calc(100vh-2rem)] overflow-y-auto no-scrollbar duration-300 transition-all`}>
+          <div
+            className={cn(
+              'animate-in fade-in zoom-in-95 w-full max-h-[calc(100vh-2rem)] overflow-y-auto no-scrollbar duration-300 transition-all',
+              isAddWide ? 'max-w-4xl' : 'max-w-lg'
+            )}
+          >
             <ProjectForm
               users={users}
               onClose={() => {
