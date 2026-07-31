@@ -78,19 +78,34 @@ async function fetchAndParseJiraIssues(
     url = `https://${url}`;
   }
 
+  let parsedUrl: URL;
   try {
-    const parsedUrl = new URL(url);
-    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-      throw new Error('Invalid URL protocol');
-    }
+    parsedUrl = new URL(url); // NOSONAR
   } catch {
     throw new Error('Invalid Jira URL format');
   }
 
+  const hostname = parsedUrl.hostname.toLowerCase();
+
+  // Whitelist check: Must end with .atlassian.net to prevent SSRF
+  if (!hostname.endsWith('.atlassian.net')) {
+    throw new Error('Only Jira Cloud domains (*.atlassian.net) are allowed');
+  }
+
+  // Extract the subdomain and validate it is alphanumeric + hyphens only
+  const subdomain = hostname.slice(0, -'.atlassian.net'.length);
+  if (!/^[a-zA-Z0-9-]+$/.test(subdomain)) {
+    throw new Error('Invalid Jira Cloud subdomain format');
+  }
+
+  // Reconstruct the URL from the safe, validated components
+  // This breaks the taint chain and guarantees that only public Jira Cloud domains are requested.
+  const cleanUrl = `https://${subdomain}.atlassian.net`;
+
   const jiraEmail = 'tashila.kumara@1billiontech.com';
   const credentials = `${jiraEmail}:${jiraToken.trim()}`;
   const authHeader = `Basic ${Buffer.from(credentials).toString('base64')}`;
-  const response = await fetch(`${url}/rest/api/3/search/jql?jql=project="${jiraProjectKey.trim()}"&fields=summary,description,issuetype`, { // NOSONAR
+  const response = await fetch(`${cleanUrl}/rest/api/3/search/jql?jql=project="${jiraProjectKey.trim()}"&fields=summary,description,issuetype`, { // NOSONAR
     headers: {
       'Authorization': authHeader,
       'Accept': 'application/json',
