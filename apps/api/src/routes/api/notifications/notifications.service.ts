@@ -3,7 +3,7 @@ import {
   NotificationBuilder,
   AssignNotification,
   MentionNotification,
-  DueDateNotification
+  DueDateNotification,
 } from '@repo/types';
 
 export class NotificationsService {
@@ -198,7 +198,7 @@ export class NotificationsService {
     const tomorrowDate = new Date();
     tomorrowDate.setDate(tomorrowDate.getDate() + 1);
     const tomorrowStr = getFormattedDate(tomorrowDate);
-    
+
     // Fetch active work items (not Done status) with assignee and due date matching today or tomorrow
     const { data: workItems, error: fetchError } = await supabase
       .from('work_items')
@@ -207,7 +207,7 @@ export class NotificationsService {
       .neq('status', 'Done')
       .or(`due_date.eq.${todayStr},due_date.eq.${tomorrowStr}`);
 
-      if (fetchError) {
+    if (fetchError) {
       console.error('Failed to fetch due work items:', fetchError);
       throw new Error(`Failed to fetch due work items: ${fetchError.message}`);
     }
@@ -217,31 +217,42 @@ export class NotificationsService {
     // Get list of assignee IDs and work item IDs to fetch existing notifications
     const assigneeIds = workItems.map((item) => item.assignee_id as string);
     const workItemIds = workItems.map((item) => item.id);
-    
+
     // Fetch existing due_date notifications for these assignees and work items
-    const { data: existingNotifications, error: fetchNotifError } = await supabase
-      .from('notifications')
-      .select('user_id, related_item_id, message')
-      .eq('type', 'due_date')
-      .in('user_id', assigneeIds)
-      .in('related_item_id', workItemIds);
-    
-      if (fetchNotifError) {
-      console.error('Failed to fetch existing due_date notifications:', fetchNotifError);
-      throw new Error(`Failed to fetch existing notifications: ${fetchNotifError.message}`);
+    const { data: existingNotifications, error: fetchNotifError } =
+      await supabase
+        .from('notifications')
+        .select('user_id, related_item_id, message')
+        .eq('type', 'due_date')
+        .in('user_id', assigneeIds)
+        .in('related_item_id', workItemIds);
+
+    if (fetchNotifError) {
+      console.error(
+        'Failed to fetch existing due_date notifications:',
+        fetchNotifError
+      );
+      throw new Error(
+        `Failed to fetch existing notifications: ${fetchNotifError.message}`
+      );
     }
-    
+
     const existingMessagesSet = new Set(
       (existingNotifications || []).map(
         (n) => `${n.user_id}:${n.related_item_id}:${n.message}`
       )
     );
-    
+
     const notificationsToInsert: DueDateNotification[] = [];
-    
+
     for (const item of workItems) {
       const assigneeId = item.assignee_id as string;
-      const msg = this.getDueDateMessage(item.title, item.due_date, todayStr, tomorrowStr);
+      const msg = this.getDueDateMessage(
+        item.title,
+        item.due_date,
+        todayStr,
+        tomorrowStr
+      );
       if (!msg) continue;
       const key = `${assigneeId}:${item.id}:${msg}`;
       if (existingMessagesSet.has(key)) {
@@ -261,7 +272,9 @@ export class NotificationsService {
         .insert(notificationsToInsert);
       if (insertError) {
         console.error('Failed to insert due_date notifications:', insertError);
-        throw new Error(`Failed to insert notifications: ${insertError.message}`);
+        throw new Error(
+          `Failed to insert notifications: ${insertError.message}`
+        );
       }
     }
     return {
@@ -269,7 +282,6 @@ export class NotificationsService {
       createdCount: notificationsToInsert.length,
     };
   }
-
 }
 
 export const notificationsService = new NotificationsService();

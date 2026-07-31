@@ -1,6 +1,14 @@
+import { getAllowedChildType, type WorkItemType } from '@repo/types';
 import { WorkItemRepository } from './workItems.repository';
 import type { DbWorkItem } from './workItems.repository';
 import { WorkItemBody, WorkItemUpdateBody } from './workItems.schemas';
+
+export class WorkItemValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'WorkItemValidationError';
+  }
+}
 
 export class WorkItemService {
   constructor(private readonly workItems: WorkItemRepository) {}
@@ -32,6 +40,12 @@ export class WorkItemService {
     userId: string,
     input: WorkItemBody
   ): Promise<DbWorkItem> {
+    await this.assertValidParentLink({
+      parentId: input.parent_id,
+      projectId: input.project_id,
+      childType: input.type,
+    });
+
     return await this.workItems.create({
       ...input,
       createdBy: userId,
@@ -43,6 +57,13 @@ export class WorkItemService {
     workItemId: string,
     input: WorkItemUpdateBody
   ): Promise<DbWorkItem> {
+    await this.assertValidParentLink({
+      parentId: input.parent_id,
+      projectId: input.project_id,
+      childType: input.type,
+      childId: workItemId,
+    });
+
     return await this.workItems.update({
       ...input,
       id: workItemId,
@@ -70,5 +91,46 @@ export class WorkItemService {
       loggedAtIso: input.loggedAtIso,
       comment: input.comment,
     });
+  }
+
+  private async assertValidParentLink(params: {
+    parentId?: string | null;
+    projectId: string;
+    childType: WorkItemType;
+    childId?: string;
+  }): Promise<void> {
+    const { parentId, projectId, childType, childId } = params;
+
+    if (parentId == null) {
+      return;
+    }
+
+    if (childId && parentId === childId) {
+      throw new WorkItemValidationError('A work item cannot be its own parent');
+    }
+
+    const parent = await this.workItems.getById(parentId);
+    if (!parent) {
+      throw new WorkItemValidationError('Parent work item not found');
+    }
+
+    if (parent.project_id !== projectId) {
+      throw new WorkItemValidationError(
+        'Subtask must belong to the same project as its parent'
+      );
+    }
+
+    const allowedChildType = getAllowedChildType(parent.type as WorkItemType);
+    if (!allowedChildType) {
+      throw new WorkItemValidationError(
+        `Parent of type ${parent.type} cannot have subtasks`
+      );
+    }
+
+    if (childType !== allowedChildType) {
+      throw new WorkItemValidationError(
+        `Parent of type ${parent.type} only allows child type ${allowedChildType}`
+      );
+    }
   }
 }

@@ -187,6 +187,7 @@ export class WorkItemRepository {
         status: 'New',
         story_points: input.story_points,
         jira_issue_key: input.jira_issue_key,
+        parent_id: input.parent_id ?? null,
         ...auditCreateWithoutStatus(input.createdBy),
       })
       .select(WORK_ITEM_WITH_ASSIGNEE)
@@ -226,6 +227,7 @@ export class WorkItemRepository {
         status: input.status,
         sprint_id: input.sprint_id,
         story_points: input.story_points,
+        parent_id: input.parent_id ?? null,
         ...(doneAtUpdate !== undefined ? { done_at: doneAtUpdate } : {}),
         updated_by: input.updatedBy,
         updated_at: new Date().toISOString(),

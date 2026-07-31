@@ -114,6 +114,12 @@ export const workItemCoreObject = z.object({
     )
     .optional(),
   jira_issue_key: z.string().trim().nullable().optional(),
+  parent_id: z
+    .preprocess(
+      emptyStringToNull,
+      z.uuid({ message: 'Please select a valid parent work item' }).nullable()
+    )
+    .optional(),
 });
 
 export const createUpdateWorkItemBodySchema = workItemCoreObject.refine(
