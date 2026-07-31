@@ -138,7 +138,7 @@ export function WorkItemAttachmentUploadDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border/80 sm:max-w-lg">
+      <DialogContent className="bg-card border-border/80 w-full min-w-0 overflow-hidden sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Add attachments</DialogTitle>
           <DialogDescription>
@@ -146,40 +146,46 @@ export function WorkItemAttachmentUploadDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 py-1">
+        <div className="w-full min-w-0 space-y-3 overflow-hidden py-1">
           <Dropzone
             multiple
             onDrop={handleDrop}
             disabled={isUploading}
-            className="min-h-32 sm:min-h-36"
+            className="min-h-32 max-w-full sm:min-h-36"
           />
 
           {items.length > 0 ? (
-            <ul className="max-h-56 space-y-2 overflow-y-auto">
+            <ul className="max-h-56 w-full min-w-0 space-y-2 overflow-x-hidden overflow-y-auto">
               {items.map((item) => (
                 <li
                   key={item.id}
                   className={cn(
-                    'border-border flex items-center gap-3 rounded-lg border px-3 py-2'
+                    'border-border flex w-full max-w-full min-w-0 items-center gap-3 overflow-hidden rounded-lg border px-3 py-2'
                   )}
                 >
-                  <UploadStatusIcon status={item.status} />
-                  <div className="min-w-0 flex-1">
+                  <div className="shrink-0">
+                    <UploadStatusIcon status={item.status} />
+                  </div>
+                  <div className="min-w-0 flex-1 overflow-hidden">
                     <TruncatedText className="text-sm font-medium">
                       {item.file.name}
                     </TruncatedText>
-                    <p className="text-muted-foreground text-xs">
-                      {item.status === 'error'
-                        ? item.error
-                        : formatFileSize(item.file.size)}
-                    </p>
+                    {item.status === 'error' ? (
+                      <TruncatedText className="text-muted-foreground text-xs">
+                        {item.error ?? 'Upload failed'}
+                      </TruncatedText>
+                    ) : (
+                      <p className="text-muted-foreground text-xs">
+                        {formatFileSize(item.file.size)}
+                      </p>
+                    )}
                   </div>
                   {item.status !== 'uploading' ? (
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon-sm"
-                      className="cursor-pointer"
+                      className="shrink-0 cursor-pointer"
                       aria-label={`Remove ${item.file.name}`}
                       onClick={() => removeItem(item.id)}
                     >
