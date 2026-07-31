@@ -76,6 +76,7 @@ function childWorkItemKey(child: DbWorkItem): string {
 export default function WorkItemDetails({
   workItemDetails,
   childWorkItems = [],
+  childCommentCounts = {},
   linkableWorkItems = [],
   ancestors = [],
   project = null,
@@ -87,6 +88,8 @@ export default function WorkItemDetails({
 }: Readonly<{
   workItemDetails: DbWorkItem;
   childWorkItems?: DbWorkItem[];
+  /** Active comment counts (incl. replies) keyed by child work item id. */
+  childCommentCounts?: Readonly<Record<string, number>>;
   linkableWorkItems?: readonly Pick<DbWorkItem, 'id' | 'title' | 'type'>[];
   ancestors?: readonly WorkItemAncestor[];
   project?: DbProject | null;
@@ -398,7 +401,8 @@ export default function WorkItemDetails({
                         </TableCell>
                         <TableCell className="px-2 py-2.5">
                           <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
-                            <MessageSquare className="size-3.5 shrink-0" />0
+                            <MessageSquare className="size-3.5 shrink-0" />
+                            {childCommentCounts[child.id] ?? 0}
                           </span>
                         </TableCell>
                         <TableCell className="px-2 py-2.5">

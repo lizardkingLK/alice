@@ -308,6 +308,46 @@ describe('WorkItemDetails subtasks', () => {
     ).toHaveAttribute('href', '/work-items/wi-child-done');
   });
 
+  it('shows active comment counts on each subtask row', () => {
+    // Arrange
+    const story = workItemFactory.build({
+      id: 'wi-story',
+      type: 'Story',
+      project_id: project.id,
+    });
+    const withComments = workItemFactory.build({
+      id: 'wi-child-comments',
+      title: 'Discussed child',
+      type: 'Task',
+      parent_id: story.id,
+    });
+    const withoutComments = workItemFactory.build({
+      id: 'wi-child-quiet',
+      title: 'Quiet child',
+      type: 'Task',
+      parent_id: story.id,
+    });
+
+    render(
+      <WorkItemDetails
+        workItemDetails={story}
+        project={project}
+        childWorkItems={[withComments, withoutComments]}
+        childCommentCounts={{
+          'wi-child-comments': 3,
+          'wi-child-quiet': 0,
+        }}
+        projectMembers={members}
+      />
+    );
+
+    // Assert — both rows render; counts appear as text next to the icon
+    expect(screen.getByText('Discussed child')).toBeInTheDocument();
+    expect(screen.getByText('Quiet child')).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getAllByText('0')).toHaveLength(1);
+  });
+
   it('refreshes the page after a successful subtask create', async () => {
     // Arrange
     const story = workItemFactory.build({
