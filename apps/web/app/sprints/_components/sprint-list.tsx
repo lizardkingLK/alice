@@ -162,11 +162,7 @@ function renderDurationCell({ row }: CellContext<Sprint, unknown>) {
 }
 
 function renderStatusCell({ row }: CellContext<Sprint, unknown>) {
-  return (
-    <SprintStatusDropdown
-      sprint={row.original}
-    />
-  );
+  return <SprintStatusDropdown sprint={row.original} />;
 }
 
 function renderGoalCell({ row }: CellContext<Sprint, unknown>) {

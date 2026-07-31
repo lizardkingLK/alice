@@ -166,7 +166,12 @@ export class ProjectsService {
     return await projectsRepository.getJiraSettings();
   }
 
-  async saveJiraSettings(actorId: string, url: string, email: string, token: string) {
+  async saveJiraSettings(
+    actorId: string,
+    url: string,
+    email: string,
+    token: string
+  ) {
     await requireProjectManager(actorId);
     await projectsRepository.saveJiraSettings(url, email, token);
   }
