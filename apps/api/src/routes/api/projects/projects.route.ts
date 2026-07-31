@@ -102,7 +102,7 @@ async function fetchAndParseJiraIssues(
   // This breaks the taint chain and guarantees that only public Jira Cloud domains are requested.
   const cleanUrl = `https://${subdomain}.atlassian.net`;
 
-  const jiraEmail = 'tashila.kumara@1billiontech.com';
+  const jiraEmail = process.env.JIRA_EMAIL || 'integration@example.com';
   const credentials = `${jiraEmail}:${jiraToken.trim()}`;
   const authHeader = `Basic ${Buffer.from(credentials).toString('base64')}`;
   const response = await fetch(`${cleanUrl}/rest/api/3/search/jql?jql=project="${jiraProjectKey.trim()}"&fields=summary,description,issuetype`, { // NOSONAR
