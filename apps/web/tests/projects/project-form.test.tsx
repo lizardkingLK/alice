@@ -281,13 +281,11 @@ describe('ProjectForm Component', () => {
     // Verify Jira input fields are rendered
     expect(screen.getByLabelText(/Jira Cloud URL \/ Domain/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Jira Project Key/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Atlassian Email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Atlassian API Token/i)).toBeInTheDocument();
 
     // Fill in integration credentials
     fireEvent.change(screen.getByLabelText(/Jira Cloud URL \/ Domain/i), { target: { value: 'test.atlassian.net' } });
     fireEvent.change(screen.getByLabelText(/Jira Project Key/i), { target: { value: 'TEST' } });
-    fireEvent.change(screen.getByLabelText(/Atlassian Email/i), { target: { value: 'test@user.com' } });
     fireEvent.change(screen.getByLabelText(/Atlassian API Token/i), { target: { value: 'my-token' } });
 
     // Click Connection Test
@@ -330,7 +328,6 @@ describe('ProjectForm Component', () => {
     // Fill integration details
     fireEvent.change(screen.getByLabelText(/Jira Cloud URL \/ Domain/i), { target: { value: 'test.atlassian.net' } });
     fireEvent.change(screen.getByLabelText(/Jira Project Key/i), { target: { value: 'TEST' } });
-    fireEvent.change(screen.getByLabelText(/Atlassian Email/i), { target: { value: 'test@user.com' } });
     fireEvent.change(screen.getByLabelText(/Atlassian API Token/i), { target: { value: 'my-token' } });
 
     // Submit form
