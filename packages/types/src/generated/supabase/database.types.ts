@@ -42,6 +42,33 @@ export type Database = {
         };
         Relationships: [];
       };
+      jira_settings: {
+        Row: {
+          id: string;
+          jira_url: string;
+          jira_email: string;
+          jira_token: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          jira_url: string;
+          jira_email: string;
+          jira_token: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          jira_url?: string;
+          jira_email?: string;
+          jira_token?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       access_allowlist: {
         Row: {
           created_at: string;
@@ -433,6 +460,10 @@ export type Database = {
           updated_at: string;
           updated_by: string | null;
           workflow_config: Json | null;
+          jira_url: string | null;
+          jira_email: string | null;
+          jira_token: string | null;
+          jira_project_key: string | null;
         };
         Insert: {
           attributes_config?: Json | null;
@@ -450,6 +481,10 @@ export type Database = {
           updated_at: string;
           updated_by?: string | null;
           workflow_config?: Json | null;
+          jira_url?: string | null;
+          jira_email?: string | null;
+          jira_token?: string | null;
+          jira_project_key?: string | null;
         };
         Update: {
           attributes_config?: Json | null;
@@ -467,6 +502,10 @@ export type Database = {
           updated_at?: string;
           updated_by?: string | null;
           workflow_config?: Json | null;
+          jira_url?: string | null;
+          jira_email?: string | null;
+          jira_token?: string | null;
+          jira_project_key?: string | null;
         };
         Relationships: [
           {
@@ -845,6 +884,7 @@ export type Database = {
           type: Database['public']['Enums']['WorkItemType'];
           updated_at: string;
           updated_by: string | null;
+          jira_issue_key: string | null;
         };
         Insert: {
           assignee_id?: string | null;
@@ -865,6 +905,7 @@ export type Database = {
           type: Database['public']['Enums']['WorkItemType'];
           updated_at: string;
           updated_by?: string | null;
+          jira_issue_key?: string | null;
         };
         Update: {
           assignee_id?: string | null;
@@ -885,6 +926,7 @@ export type Database = {
           type?: Database['public']['Enums']['WorkItemType'];
           updated_at?: string;
           updated_by?: string | null;
+          jira_issue_key?: string | null;
         };
         Relationships: [
           {

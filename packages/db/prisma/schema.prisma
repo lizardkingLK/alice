@@ -149,6 +149,10 @@ model projects {
   created_at        DateTime      @default(now()) @db.Timestamptz(6)
   updated_by        String?       @db.Uuid
   updated_at        DateTime      @updatedAt @db.Timestamptz(6)
+  jira_url          String?
+  jira_email        String?
+  jira_token        String?
+  jira_project_key  String?
 
   owner           users             @relation("ProjectOwner", fields: [owner_id], references: [id])
   created_by_user users?            @relation("ProjectCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
@@ -261,6 +265,7 @@ model work_items {
   created_at   DateTime         @default(now()) @db.Timestamptz(6)
   updated_by   String?          @db.Uuid
   updated_at   DateTime         @updatedAt @db.Timestamptz(6)
+  jira_issue_key String?        @db.VarChar(255)
 
   project         projects      @relation(fields: [project_id], references: [id], onDelete: Cascade)
   sprint          sprints?      @relation(fields: [sprint_id], references: [id], onDelete: SetNull)
@@ -369,4 +374,13 @@ model access_allowlist {
 
   @@unique([kind, value])
   @@index([kind, status])
+}
+
+model jira_settings {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jira_url   String
+  jira_email String
+  jira_token String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @updatedAt @db.Timestamptz(6)
 }

@@ -8,6 +8,7 @@ const serverSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   STORAGE_BUCKET_ATTACHMENTS: z.string().min(1),
   STORAGE_BUCKET_PROFILE_PICTURES: z.string().min(1),
+  JIRA_API_TOKEN: z.string().optional(),
 });
 
 type EnvSchemaType = z.infer<typeof serverSchema>;
@@ -20,6 +21,7 @@ const mock: EnvSchemaType = {
   SUPABASE_SERVICE_ROLE_KEY: 'mock',
   STORAGE_BUCKET_ATTACHMENTS: 'alice_storage_attachments',
   STORAGE_BUCKET_PROFILE_PICTURES: 'alice_storage_profile_pictures',
+  JIRA_API_TOKEN: 'mock',
 };
 
 const processEnv = {
@@ -30,6 +32,7 @@ const processEnv = {
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   STORAGE_BUCKET_ATTACHMENTS: process.env.STORAGE_BUCKET_ATTACHMENTS,
   STORAGE_BUCKET_PROFILE_PICTURES: process.env.STORAGE_BUCKET_PROFILE_PICTURES,
+  JIRA_API_TOKEN: process.env.JIRA_API_TOKEN,
 };
 
 let data: EnvSchemaType;

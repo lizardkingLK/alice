@@ -113,6 +113,7 @@ export const workItemCoreObject = z.object({
         .nullable()
     )
     .optional(),
+  jira_issue_key: z.string().trim().nullable().optional(),
 });
 
 export const createUpdateWorkItemBodySchema = workItemCoreObject.refine(

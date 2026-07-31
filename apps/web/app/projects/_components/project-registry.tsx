@@ -254,6 +254,7 @@ export function ProjectRegistry({
 
   const { searchQuery, setSearchQuery } = useDebouncedSearch(search);
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
+  const [isAddWide, setIsAddWide] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [deleteMode, setDeleteMode] = useState<'soft' | 'hard'>('soft');
@@ -429,14 +430,19 @@ export function ProjectRegistry({
 
       {isAddProjectOpen ? (
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
-          <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden duration-200">
+          <div className={`animate-in fade-in zoom-in-95 w-full ${isAddWide ? 'max-w-4xl' : 'max-w-lg'} overflow-hidden duration-300 transition-all`}>
             <ProjectForm
               users={users}
-              onClose={() => setIsAddProjectOpen(false)}
+              onClose={() => {
+                setIsAddProjectOpen(false);
+                setIsAddWide(false);
+              }}
               onSuccess={() => {
                 setIsAddProjectOpen(false);
+                setIsAddWide(false);
                 router.refresh();
               }}
+              onJiraImportToggle={setIsAddWide}
             />
           </div>
         </div>

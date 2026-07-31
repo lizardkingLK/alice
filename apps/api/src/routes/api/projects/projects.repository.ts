@@ -18,6 +18,10 @@ export type ProjectRow = {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  jira_url: string | null;
+  jira_email: string | null;
+  jira_token: string | null;
+  jira_project_key: string | null;
 };
 
 export type ProjectRowWithOwner = ProjectRow & {
@@ -287,6 +291,52 @@ export class ProjectsRepository {
     if (error) {
       console.error('error. failed to delete project:', error.message);
       throw new Error(`Database delete failed: ${error.message}`);
+    }
+  }
+
+  async getJiraSettings(): Promise<{ jira_url: string; jira_email: string; jira_token: string } | null> {
+    const { data, error } = await supabase
+      .from('jira_settings')
+      .select('*')
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('error. failed to fetch Jira settings:', error.message);
+      return null;
+    }
+    return data;
+  }
+
+  async saveJiraSettings(url: string, email: string, token: string): Promise<void> {
+    const { data: existing, error: findError } = await supabase
+      .from('jira_settings')
+      .select('id')
+      .limit(1)
+      .maybeSingle();
+
+    if (findError) {
+      console.error('error. failed to check existing Jira settings:', findError.message);
+      throw new Error('Database check failed');
+    }
+
+    if (existing?.id) {
+      const { error } = await supabase
+        .from('jira_settings')
+        .update({ jira_url: url, jira_email: email, jira_token: token })
+        .eq('id', existing.id);
+      if (error) {
+        console.error('error. failed to update Jira settings:', error.message);
+        throw new Error(`Database update failed: ${error.message}`);
+      }
+    } else {
+      const { error } = await supabase
+        .from('jira_settings')
+        .insert({ jira_url: url, jira_email: email, jira_token: token });
+      if (error) {
+        console.error('error. failed to insert Jira settings:', error.message);
+        throw new Error(`Database insertion failed: ${error.message}`);
+      }
     }
   }
 }

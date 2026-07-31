@@ -12,6 +12,11 @@ import {
   updateProject,
 } from '@/app/projects/_services/projects.service';
 import type { User } from '@/app/users/_services/users.service';
+import { apiFetch } from '@/lib/api/api-client';
+
+vi.mock('@/lib/api/api-client', () => ({
+  apiFetch: vi.fn(),
+}));
 
 vi.mock('@/app/projects/_services/projects.service', () => ({
   createProject: vi.fn(),
@@ -89,6 +94,10 @@ const mockProject = {
   updated_by: null,
   attributes_config: null,
   workflow_config: null,
+  jira_url: null,
+  jira_email: null,
+  jira_token: null,
+  jira_project_key: null,
   owner: {
     id: 'user-mgr-1',
     name: 'Manager One',
@@ -177,6 +186,8 @@ describe('ProjectForm Component', () => {
         status: 'active',
         attributes_config: null,
         workflow_config: null,
+        jira_url: null,
+        jira_project_key: null,
       });
     });
 
@@ -233,6 +244,8 @@ describe('ProjectForm Component', () => {
         status: 'active',
         attributes_config: null,
         workflow_config: null,
+        jira_url: null,
+        jira_project_key: null,
       });
     });
 
@@ -253,5 +266,86 @@ describe('ProjectForm Component', () => {
     fireEvent.click(closeBtn);
 
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('shows Jira fields when checkbox is toggled and tests connection successfully', async () => {
+    vi.mocked(apiFetch).mockResolvedValue({
+      issues: [
+        { key: 'JIRA-1', title: 'Issue 1 from Jira', type: 'Story' },
+        { key: 'JIRA-2', title: 'Issue 2 from Jira', type: 'Bug' },
+      ],
+    });
+
+    render(<ProjectForm users={mockUsers} />);
+
+    // Toggle Checkbox
+    const checkbox = screen.getByLabelText(/Import tasks from Jira Cloud/i);
+    fireEvent.click(checkbox);
+
+    // Verify Jira input fields are rendered
+    expect(screen.getByLabelText(/Jira Cloud URL \/ Domain/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Jira Project Key/i)).toBeInTheDocument();
+
+    // Fill in integration credentials
+    fireEvent.change(screen.getByLabelText(/Jira Cloud URL \/ Domain/i), { target: { value: 'test.atlassian.net' } });
+    fireEvent.change(screen.getByLabelText(/Jira Project Key/i), { target: { value: 'TEST' } });
+
+    // Click Connection Test
+    const testBtn = screen.getByRole('button', { name: /Test Connection & Preview/i });
+    fireEvent.click(testBtn);
+
+    // Verify loading and preview items render
+    expect(await screen.findByText(/Successfully connected! Found 2 tasks ready to import/i)).toBeInTheDocument();
+    expect(screen.getByText('Issue 1 from Jira')).toBeInTheDocument();
+    expect(screen.getByText('Issue 2 from Jira')).toBeInTheDocument();
+
+    expect(apiFetch).toHaveBeenCalledWith('/api/projects/jira/preview', {
+      method: 'POST',
+      body: JSON.stringify({
+        jiraUrl: 'test.atlassian.net',
+        jiraProjectKey: 'TEST',
+      }),
+    });
+  });
+
+  it('submits project creation and calls Jira import endpoint when checkbox is checked', async () => {
+    vi.mocked(createProject).mockResolvedValue(mockProject);
+    vi.mocked(apiFetch).mockResolvedValue({ success: true, importedCount: 2 });
+
+    const onSuccess = vi.fn();
+    render(<ProjectForm users={mockUsers} onSuccess={onSuccess} />);
+
+    // Fill project details
+    fireEvent.change(screen.getByLabelText(/Project Name/i), { target: { value: 'Project Alice' } });
+    fireEvent.change(screen.getByLabelText(/Project Key/i), { target: { value: 'alice' } });
+    const ownerSelect = screen.getByLabelText(/Project Owner/i);
+    fireEvent.click(ownerSelect);
+    fireEvent.click(screen.getByRole('option', { name: 'Manager One (mgr1@alice.dev)' }));
+
+    // Toggle Jira checkbox
+    fireEvent.click(screen.getByLabelText(/Import tasks from Jira Cloud/i));
+
+    // Fill integration details
+    fireEvent.change(screen.getByLabelText(/Jira Cloud URL \/ Domain/i), { target: { value: 'test.atlassian.net' } });
+    fireEvent.change(screen.getByLabelText(/Jira Project Key/i), { target: { value: 'TEST' } });
+
+    // Submit form
+    const form = screen.getByLabelText(/Project Name/i).closest('form')!;
+    fireEvent.submit(form);
+
+    // Verify project is created first, then apiFetch is called to import tasks
+    await waitFor(() => {
+      expect(createProject).toHaveBeenCalled();
+      expect(apiFetch).toHaveBeenCalledWith('/api/projects/jira/import', {
+        method: 'POST',
+        body: JSON.stringify({
+          projectId: 'proj-123',
+          jiraUrl: 'test.atlassian.net',
+          jiraProjectKey: 'TEST',
+        }),
+      });
+    });
+
+    expect(await screen.findByText(/tasks successfully imported from Jira/i)).toBeInTheDocument();
   });
 });

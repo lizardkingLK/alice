@@ -41,6 +41,9 @@ import {
   type ProjectDetailsTab,
 } from '@/lib/search-params';
 import { UNDERLINE_TAB_TRIGGER_CLASS } from '@/components/underline-tab-trigger';
+import { Input } from '@repo/ui/components/ui/input';
+import { Label } from '@repo/ui/components/ui/label';
+import { apiFetch } from '@/lib/api/api-client';
 import {
   Info,
   Users,
@@ -54,6 +57,9 @@ import {
   Folder,
   Network,
   ClipboardPenLine,
+  Database,
+  RefreshCw,
+  Edit,
 } from '@repo/ui/lib/icons';
 
 interface ProjectWorkItemsProps {
@@ -100,6 +106,64 @@ export function ProjectDetailsWorkspace({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const activeTab = parseProjectDetailsTab(searchParams.get('tab'));
+
+  const [isEditingJira, setIsEditingJira] = useState(!project.jira_project_key);
+  const [jiraUrl, setJiraUrl] = useState(project.jira_url || '');
+  const [jiraProjectKey, setJiraProjectKey] = useState(project.jira_project_key || '');
+  const [isSavingJira, setIsSavingJira] = useState(false);
+  const [isSyncingJira, setIsSyncingJira] = useState(false);
+  const [jiraMessage, setJiraMessage] = useState<string | null>(null);
+  const [isJiraError, setIsJiraError] = useState(false);
+
+  const handleSaveJira = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingJira(true);
+    setJiraMessage(null);
+    setIsJiraError(false);
+
+    try {
+      await apiFetch(`/api/projects/${project.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          jira_url: jiraUrl.trim() || null,
+          jira_project_key: jiraProjectKey.toUpperCase().trim() || null,
+        }),
+      });
+      setJiraMessage('Jira integration settings saved successfully!');
+      setIsEditingJira(false);
+      router.refresh();
+    } catch (err) {
+      console.error('Failed to save Jira integration:', err);
+      setJiraMessage(err instanceof Error ? err.message : 'Failed to save configuration');
+      setIsJiraError(true);
+    } finally {
+      setIsSavingJira(false);
+    }
+  };
+
+  const handleSyncJira = async () => {
+    setIsSyncingJira(true);
+    setJiraMessage(null);
+    setIsJiraError(false);
+
+    try {
+      setJiraMessage('Syncing tasks from Jira Cloud...');
+      const res = await apiFetch<{ importedCount: number }>('/api/projects/jira/import', {
+        method: 'POST',
+        body: JSON.stringify({
+          projectId: project.id,
+        }),
+      });
+      setJiraMessage(`Successfully imported/synced ${res.importedCount} tasks from Jira!`);
+      router.refresh();
+    } catch (err) {
+      console.error('Jira sync failed:', err);
+      setJiraMessage(err instanceof Error ? err.message : 'Sync failed');
+      setIsJiraError(true);
+    } finally {
+      setIsSyncingJira(false);
+    }
+  };
 
   const [error, setError] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
@@ -307,6 +371,121 @@ export function ProjectDetailsWorkspace({
                     </Badge>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Jira Cloud Integration Card */}
+            <Card className="border-border/60 bg-card/40 backdrop-blur-md md:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
+                  <Database className="text-primary h-5 w-5" />
+                  Jira Cloud Integration
+                </CardTitle>
+                <CardDescription className="text-muted-foreground text-sm">
+                  Configure your Jira Cloud connection to import issues and keep tasks synced.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {jiraMessage && (
+                  <div
+                    className={`p-3 rounded text-sm ${
+                      isJiraError ? 'bg-destructive/10 text-destructive' : 'bg-emerald-500/10 text-emerald-600'
+                    }`}
+                  >
+                    {jiraMessage}
+                  </div>
+                )}
+
+                {isEditingJira ? (
+                  <form onSubmit={handleSaveJira} className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="jiraUrl" className="text-xs font-semibold">Jira Cloud URL / Domain</Label>
+                        <Input
+                          id="jiraUrl"
+                          value={jiraUrl}
+                          onChange={(e) => setJiraUrl(e.target.value)}
+                          placeholder="e.g. company.atlassian.net"
+                          className="h-9 text-sm bg-background/50"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="jiraProjectKey" className="text-xs font-semibold">Jira Project Key</Label>
+                        <Input
+                          id="jiraProjectKey"
+                          value={jiraProjectKey}
+                          onChange={(e) => setJiraProjectKey(e.target.value)}
+                          placeholder="e.g. PROJ"
+                          className="h-9 text-sm uppercase bg-background/50"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 justify-end pt-2">
+                      {project.jira_project_key && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setJiraUrl(project.jira_url || '');
+                            setJiraProjectKey(project.jira_project_key || '');
+                            setIsEditingJira(false);
+                            setJiraMessage(null);
+                          }}
+                          disabled={isSavingJira}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                      <Button type="submit" size="sm" disabled={isSavingJira}>
+                        {isSavingJira && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Connection
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2 bg-muted/20 p-4 rounded-lg border border-border/40 text-sm">
+                      <div>
+                        <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase block">Jira URL</span>
+                        <span className="font-medium text-foreground">{project.jira_url || 'Not configured'}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase block">Project Key</span>
+                        <span className="font-mono font-medium text-foreground">{project.jira_project_key || 'Not configured'}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 justify-between items-center pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsEditingJira(true)}
+                        disabled={isSyncingJira}
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        Modify Connection
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        onClick={handleSyncJira}
+                        disabled={isSyncingJira || !project.jira_project_key}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white animate-fade-in"
+                      >
+                        {isSyncingJira ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                        )}
+                        Sync / Import Tasks
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

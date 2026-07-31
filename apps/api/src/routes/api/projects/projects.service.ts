@@ -160,6 +160,16 @@ export class ProjectsService {
 
     await projectsRepository.delete(projectId);
   }
+
+  async getJiraSettings(actorId: string) {
+    await requireProjectManager(actorId);
+    return await projectsRepository.getJiraSettings();
+  }
+
+  async saveJiraSettings(actorId: string, url: string, email: string, token: string) {
+    await requireProjectManager(actorId);
+    await projectsRepository.saveJiraSettings(url, email, token);
+  }
 }
 
 export const projectsService = new ProjectsService();
