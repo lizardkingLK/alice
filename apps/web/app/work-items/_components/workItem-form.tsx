@@ -27,7 +27,7 @@ import { ResponseDTO } from '@repo/types/connection';
 
 type WorkItemFormMember = Pick<DbUser, 'id' | 'name' | 'email'>;
 
-interface WorkItemFormProps {
+export interface WorkItemFormProps {
   onClose?: () => void;
   // eslint-disable-next-line no-unused-vars
   onSuccess: (workItem: DbWorkItem) => void;

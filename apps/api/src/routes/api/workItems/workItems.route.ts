@@ -69,6 +69,22 @@ export function shouldNotifyAssigneeChange(
   );
 }
 
+function sendWorkItemMutationError(
+  res: {
+    status: (code: number) => {
+      json: (body: { data: null; error: string }) => void;
+    };
+  },
+  error: unknown,
+  fallbackMessage: string
+) {
+  const message = error instanceof Error ? error.message : fallbackMessage;
+  if (error instanceof WorkItemValidationError) {
+    return res.status(400).json({ data: null, error: message });
+  }
+  return res.status(500).json({ data: null, error: message });
+}
+
 export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
   const { workItemService, notificationsService } = deps;
 
@@ -230,12 +246,7 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
 
         res.status(201).json({ data: workItem, error: null });
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to create work-item';
-        if (error instanceof WorkItemValidationError) {
-          return res.status(400).json({ data: null, error: message });
-        }
-        res.status(500).json({ data: null, error: message });
+        sendWorkItemMutationError(res, error, 'Failed to create work-item');
       }
     }
   );
@@ -299,12 +310,7 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
 
         res.status(200).json({ data: workItem, error: null });
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to update work-item';
-        if (error instanceof WorkItemValidationError) {
-          return res.status(400).json({ data: null, error: message });
-        }
-        res.status(500).json({ data: null, error: message });
+        sendWorkItemMutationError(res, error, 'Failed to update work-item');
       }
     }
   );

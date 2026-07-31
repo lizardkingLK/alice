@@ -7,7 +7,7 @@ import { getAllowedChildType, type WorkItemType } from '@repo/types';
 import { getInitials } from '@/app/_shared/utility';
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
-import { WorkItemForm } from '@/app/work-items/_components/workItem-form';
+import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form-dialog';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import type {
   AttachmentWithUploader,
@@ -22,13 +22,6 @@ import {
 import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@repo/ui/components/ui/dialog';
 import { Progress } from '@repo/ui/components/ui/progress';
 import { Separator } from '@repo/ui/components/ui/separator';
 import {
@@ -448,30 +441,20 @@ export default function WorkItemDetails({
       </div>
 
       {canCreateSubtask && allowedChildType && project ? (
-        <Dialog open={subtaskDialogOpen} onOpenChange={setSubtaskDialogOpen}>
-          <DialogContent
-            className="sm:max-w-xl"
-            onPointerDownOutside={(event) => event.preventDefault()}
-            onInteractOutside={(event) => event.preventDefault()}
-          >
-            <DialogHeader>
-              <DialogTitle>Create Subtask</DialogTitle>
-              <DialogDescription>
-                Create a {allowedChildType} under this {workItem.type}.
-              </DialogDescription>
-            </DialogHeader>
-            <WorkItemForm
-              projects={[project]}
-              projectMembers={projectMembers}
-              parentId={workItem.id}
-              allowedTypes={[allowedChildType]}
-              lockProject
-              lockType
-              onClose={() => setSubtaskDialogOpen(false)}
-              onSuccess={handleSubtaskCreated}
-            />
-          </DialogContent>
-        </Dialog>
+        <WorkItemFormDialog
+          open={subtaskDialogOpen}
+          onOpenChange={setSubtaskDialogOpen}
+          title="Create Subtask"
+          description={`Create a ${allowedChildType} under this ${workItem.type}.`}
+          projects={[project]}
+          projectMembers={projectMembers}
+          parentId={workItem.id}
+          allowedTypes={[allowedChildType]}
+          lockProject
+          lockType
+          onClose={() => setSubtaskDialogOpen(false)}
+          onSuccess={handleSubtaskCreated}
+        />
       ) : null}
     </div>
   );
