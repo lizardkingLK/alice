@@ -13,7 +13,6 @@ import { sprintsService, sprintBurndownService } from './sprints.service';
 
 const sprintsRouter: Router = Router();
 
-
 sprintsRouter.post(
   '/',
   requireApiAuth,
@@ -76,7 +75,6 @@ sprintsRouter.patch(
     }
   }
 );
-
 
 sprintsRouter.patch(
   '/:id',
