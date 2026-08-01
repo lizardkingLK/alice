@@ -76,6 +76,7 @@ function renderTable(
     <WorkItemsTable
       projects={projects}
       projectMembers={projectMembers}
+      sprints={[]}
       initialWorkItems={
         overrides.initialWorkItems ?? workItemFactory.buildList(2)
       }
@@ -85,6 +86,7 @@ function renderTable(
       totalPages={pagination.totalPages}
       search={overrides.search ?? ''}
       projectFilter={overrides.projectFilter ?? ''}
+      sprintFilter=""
       typeFilter={overrides.typeFilter ?? ''}
       assigneeFilter={overrides.assigneeFilter ?? ''}
       currentUserId={overrides.currentUserId}
@@ -229,6 +231,7 @@ describe('WorkItemsTable', () => {
       <WorkItemsTable
         projects={projects}
         projectMembers={projectMembers}
+        sprints={[]}
         initialWorkItems={workItemFactory.buildList(1)}
         totalCount={1}
         page={1}
@@ -236,6 +239,7 @@ describe('WorkItemsTable', () => {
         totalPages={1}
         search=""
         projectFilter=""
+        sprintFilter=""
         typeFilter=""
         assigneeFilter=""
       />

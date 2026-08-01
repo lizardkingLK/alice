@@ -745,6 +745,7 @@ export function ProjectDetailsWorkspace({
           <WorkItemsWorkspace
             projects={[project]}
             projectMembers={allUsers}
+            sprints={[]}
             initialWorkItems={workItems.initialWorkItems}
             totalCount={workItems.totalCount}
             page={workItems.page}
@@ -752,6 +753,7 @@ export function ProjectDetailsWorkspace({
             totalPages={workItems.totalPages}
             search={workItems.search}
             projectFilter={project.id}
+            sprintFilter=""
             typeFilter={workItems.typeFilter}
             assigneeFilter={workItems.assigneeFilter}
             lockedProjectId={project.id}

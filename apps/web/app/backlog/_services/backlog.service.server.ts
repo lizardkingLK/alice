@@ -1,5 +1,8 @@
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
-import { getSuggestedBoardDefaults } from '@/app/board/_services/board-defaults.server';
+import {
+  EMPTY_ACTIVE_SPRINTS_PAGE,
+  getSuggestedBoardDefaults,
+} from '@/app/board/_services/board-defaults.server';
 import { getProjectList } from '@/app/projects/_services/projects.service.server';
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
@@ -25,11 +28,6 @@ export type BacklogWorkspaceData = {
   error: string | null;
 };
 
-const EMPTY_SPRINTS = {
-  sprints: [] as Sprint[],
-  pagination: { page: 1, limit: 100, totalCount: 0, totalPages: 1 },
-};
-
 /** M4.1 — single RSC loader for the backlog planning surface (4 parallel reads). */
 export async function getBacklogWorkspace(): Promise<BacklogWorkspaceData> {
   let fetchError: string | null = null;
@@ -48,7 +46,7 @@ export async function getBacklogWorkspace(): Promise<BacklogWorkspaceData> {
             ? error.message
             : 'Failed to fetch backlog sprints.';
         console.error('error. failed to fetch backlog sprints:', fetchError);
-        return EMPTY_SPRINTS;
+        return EMPTY_ACTIVE_SPRINTS_PAGE;
       }),
     ]);
 
