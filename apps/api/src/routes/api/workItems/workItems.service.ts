@@ -1,6 +1,7 @@
 import { getAllowedChildType, type WorkItemType } from '@repo/types';
 import { WorkItemRepository } from './workItems.repository';
 import type { DbWorkItem } from './workItems.repository';
+import { sameNullable } from './workItems.patch-utils';
 import {
   toDateOnly,
   WorkItemBody,
@@ -61,15 +62,19 @@ export class WorkItemService {
     workItemId: string,
     input: WorkItemUpdateBody
   ): Promise<DbWorkItem> {
-    await this.assertValidParentLink({
-      parentId: input.parent_id,
-      projectId: input.project_id,
-      childType: input.type,
-      childId: workItemId,
-    });
+    const current = await this.workItems.getById(workItemId);
 
-    await this.assertCanBecomeDone(workItemId, input.status);
-    await this.assertDoneIsReadOnlyExceptStatus(workItemId, input);
+    if (!sameNullable(input.parent_id, current?.parent_id)) {
+      await this.assertValidParentLink({
+        parentId: input.parent_id,
+        projectId: input.project_id,
+        childType: input.type,
+        childId: workItemId,
+      });
+    }
+
+    await this.assertCanBecomeDone(current, workItemId, input.status);
+    this.assertDoneIsReadOnlyExceptStatus(current, input);
 
     return await this.workItems.update({
       ...input,
@@ -108,6 +113,7 @@ export class WorkItemService {
   }
 
   private async assertCanBecomeDone(
+    current: DbWorkItem | null | undefined,
     workItemId: string,
     nextStatus: WorkItemUpdateBody['status']
   ): Promise<void> {
@@ -115,7 +121,6 @@ export class WorkItemService {
       return;
     }
 
-    const current = await this.workItems.getById(workItemId);
     if (!current || current.status === 'Done') {
       return;
     }
@@ -130,30 +135,32 @@ export class WorkItemService {
   }
 
   /** Done records accept Status changes only (reopen or keep Done). */
-  private async assertDoneIsReadOnlyExceptStatus(
-    workItemId: string,
+  private assertDoneIsReadOnlyExceptStatus(
+    current: DbWorkItem | null | undefined,
     input: WorkItemUpdateBody
-  ): Promise<void> {
-    const current = await this.workItems.getById(workItemId);
+  ): void {
     if (current?.status !== 'Done') {
       return;
     }
 
     const dueUnchanged =
       toDateOnly(input.due_date) === toDateOnly(current.due_date);
-    const parentUnchanged =
-      (input.parent_id ?? null) === (current.parent_id ?? null);
+    const descriptionUnchanged =
+      JSON.stringify(input.description ?? null) ===
+      JSON.stringify(current.description ?? null);
 
     const nonStatusChanged =
       input.title !== current.title ||
       input.project_id !== current.project_id ||
       input.type !== current.type ||
-      (input.assignee_id ?? null) !== (current.assignee_id ?? null) ||
-      (input.reporter_id ?? null) !== (current.reporter_id ?? null) ||
+      !sameNullable(input.assignee_id, current.assignee_id) ||
+      !sameNullable(input.reporter_id, current.reporter_id) ||
       !dueUnchanged ||
-      (input.sprint_id ?? null) !== (current.sprint_id ?? null) ||
-      (input.story_points ?? null) !== (current.story_points ?? null) ||
-      !parentUnchanged;
+      !sameNullable(input.sprint_id, current.sprint_id) ||
+      !sameNullable(input.story_points, current.story_points) ||
+      !sameNullable(input.parent_id, current.parent_id) ||
+      !descriptionUnchanged ||
+      !sameNullable(input.jira_issue_key, current.jira_issue_key);
 
     if (nonStatusChanged) {
       throw new WorkItemValidationError(

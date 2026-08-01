@@ -18,6 +18,7 @@ import {
   type WorkItemUpdateBody,
 } from './workItems.schemas';
 import type { DbWorkItem } from './workItems.repository';
+import { coalescePatchField } from './workItems.patch-utils';
 
 type PatchUpdateWorkItemPayload = z.infer<typeof patchUpdateWorkItemBodySchema>;
 
@@ -45,27 +46,45 @@ function buildWorkItemPayload(
   existingWorkItem: DbWorkItem
 ) {
   return {
-    title: parsedData.title ?? existingWorkItem.title,
-    project_id: parsedData.project_id ?? existingWorkItem.project_id,
-    type: parsedData.type ?? existingWorkItem.type,
-    assignee_id: parsedData.assignee_id ?? existingWorkItem.assignee_id,
-    reporter_id: parsedData.reporter_id ?? existingWorkItem.reporter_id,
-    due_date: parsedData.due_date ?? existingWorkItem.due_date,
-    status: parsedData.status ?? existingWorkItem.status,
-    sprint_id: parsedData.sprint_id ?? existingWorkItem.sprint_id,
-    story_points: parsedData.story_points ?? existingWorkItem.story_points,
-    parent_id:
-      parsedData.parent_id !== undefined
-        ? parsedData.parent_id
-        : existingWorkItem.parent_id,
-    description:
-      parsedData.description !== undefined
-        ? (parsedData.description as WorkItemUpdateBody['description'])
-        : (existingWorkItem.description as WorkItemUpdateBody['description']),
-    jira_issue_key:
-      parsedData.jira_issue_key !== undefined
-        ? parsedData.jira_issue_key
-        : existingWorkItem.jira_issue_key,
+    title: coalescePatchField(parsedData.title, existingWorkItem.title),
+    project_id: coalescePatchField(
+      parsedData.project_id,
+      existingWorkItem.project_id
+    ),
+    type: coalescePatchField(parsedData.type, existingWorkItem.type),
+    assignee_id: coalescePatchField(
+      parsedData.assignee_id,
+      existingWorkItem.assignee_id
+    ),
+    reporter_id: coalescePatchField(
+      parsedData.reporter_id,
+      existingWorkItem.reporter_id
+    ),
+    due_date: coalescePatchField(
+      parsedData.due_date,
+      existingWorkItem.due_date
+    ),
+    status: coalescePatchField(parsedData.status, existingWorkItem.status),
+    sprint_id: coalescePatchField(
+      parsedData.sprint_id,
+      existingWorkItem.sprint_id
+    ),
+    story_points: coalescePatchField(
+      parsedData.story_points,
+      existingWorkItem.story_points
+    ),
+    parent_id: coalescePatchField(
+      parsedData.parent_id,
+      existingWorkItem.parent_id
+    ),
+    description: coalescePatchField(
+      parsedData.description as WorkItemUpdateBody['description'] | undefined,
+      existingWorkItem.description as WorkItemUpdateBody['description']
+    ),
+    jira_issue_key: coalescePatchField(
+      parsedData.jira_issue_key,
+      existingWorkItem.jira_issue_key
+    ),
   };
 }
 
@@ -120,7 +139,8 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const searchQuery = (req.query.search as string) ?? undefined;
+        const searchQuery =
+          typeof req.query.search === 'string' ? req.query.search : undefined;
         const pagination = parsePagination(req);
 
         // Parse filters
