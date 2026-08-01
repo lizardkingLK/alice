@@ -4,6 +4,7 @@ import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-default
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
 import WorkItemsTable from '@/app/work-items/_components/workItems-table';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import type { WorkItemListView } from '@/lib/search-params';
 
 export interface WorkItemWorkspaceProps {
   projects: DbProject[];
@@ -19,6 +20,8 @@ export interface WorkItemWorkspaceProps {
   sprintFilter: string;
   typeFilter: string;
   assigneeFilter: string;
+  /** Flat (default) or hierarchy (roots + expand). */
+  listView?: WorkItemListView;
   /** When set, list is scoped to this project and create/edit locks project. */
   lockedProjectId?: string;
   /** When set, list is scoped to this assignee and create locks assignee. */
