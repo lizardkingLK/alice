@@ -89,7 +89,9 @@ export function applyProjectFilterToSearchParams(
 ): void {
   const allValue = options.allValue ?? 'all';
   if (!options.nextProject || options.nextProject === allValue) {
-    params.delete('project');
+    // Keep an explicit sentinel so SSR can tell "All projects" from
+    // "no project yet — needs client bootstrap".
+    params.set('project', allValue);
     params.delete('sprint');
   } else {
     params.set('project', options.nextProject);

@@ -17,6 +17,7 @@ import { ALL_PROJECTS_ID } from '@/app/board/_helpers/board-defaults-storage';
 import { resolveDefaultBoardSprint } from '@/app/board/_services/board-defaults';
 import type { Project } from '@/app/projects/_services/projects.service.base';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
+import { preventDismissForComboboxPortal } from '@/lib/dialog-outside-events';
 
 const ALL_SPRINTS = 'all';
 
@@ -120,7 +121,11 @@ export function BoardDefaultsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md"
+        onPointerDownOutside={preventDismissForComboboxPortal}
+        onInteractOutside={preventDismissForComboboxPortal}
+      >
         <DialogHeader>
           <DialogTitle>Workspace defaults</DialogTitle>
           <DialogDescription>

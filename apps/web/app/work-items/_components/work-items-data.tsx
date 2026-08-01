@@ -3,6 +3,7 @@ import {
   getWorkItemsPaginated,
   type DbWorkItem,
 } from '@/app/work-items/_services/workItem.service.server';
+import { needsWorkspaceProjectBootstrap } from '@/app/board/_helpers/workspace-defaults-shared';
 import {
   EMPTY_ACTIVE_SPRINTS_PAGE,
   getSuggestedBoardDefaults,
@@ -51,7 +52,11 @@ export async function WorkItemsData({
   const dbUser = await getDbUser();
   const resolvedUserId = currentUserId ?? dbUser?.id ?? null;
   const isProjectLocked = Boolean(lockedProjectId);
-  const needsClientBootstrap = !isProjectLocked && !projectId;
+  const isAssigneeLocked = Boolean(lockedAssigneeId);
+  const needsClientBootstrap =
+    !isProjectLocked &&
+    !isAssigneeLocked &&
+    needsWorkspaceProjectBootstrap(resolvedSearchParams.project);
 
   const [projects, projectMembers, sprintsResult] = await Promise.all([
     safeServerFetch(getProjectList(), [], 'fetch projects for work items'),
@@ -66,22 +71,22 @@ export async function WorkItemsData({
   const activeProjects = filterActiveProjects(projects);
   const sprints = sprintsResult.sprints;
   const suggestedDefaults =
-    !isProjectLocked && dbUser
+    !isProjectLocked && !isAssigneeLocked && dbUser
       ? await getSuggestedBoardDefaults(dbUser, activeProjects, sprints)
       : null;
 
-  const workItemsResult = needsClientBootstrap
-    ? EMPTY_WORK_ITEMS
-    : await safeServerFetch(
-        getWorkItemsPaginated(page, limit, search, {
-          projectId,
-          type,
-          assigneeId,
-          sprintId,
-        }),
-        EMPTY_WORK_ITEMS,
-        'fetch work items list'
-      );
+  // Always fetch: missing projectId means "All projects", not an empty list.
+  // needsClientBootstrap only drives client-side URL seeding from localStorage.
+  const workItemsResult = await safeServerFetch(
+    getWorkItemsPaginated(page, limit, search, {
+      projectId,
+      type,
+      assigneeId,
+      sprintId,
+    }),
+    EMPTY_WORK_ITEMS,
+    'fetch work items list'
+  );
 
   return (
     <WorkItemsWorkspace

@@ -107,7 +107,9 @@ function ComboboxContent({
         align={align}
         alignOffset={alignOffset}
         anchor={anchor}
-        className="isolate z-50"
+        // Above modal dialogs (z-50) and pointer-events-auto so options remain
+        // clickable when Radix Dialog sets body { pointer-events: none }.
+        className="pointer-events-auto isolate z-100"
       >
         <ComboboxPrimitive.Popup
           data-slot="combobox-content"
