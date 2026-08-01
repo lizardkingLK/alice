@@ -38,6 +38,7 @@ type WorkItemWorkLogPanelProps = {
   onWorkLogCommentChange: (value: string) => void;
   // eslint-disable-next-line no-unused-vars -- callback signature
   onSubmit: (event: FormEvent) => void;
+  readOnly?: boolean;
 };
 
 export function WorkItemWorkLogPanel({
@@ -51,60 +52,63 @@ export function WorkItemWorkLogPanel({
   onLoggedAtChange,
   onWorkLogCommentChange,
   onSubmit,
+  readOnly = false,
 }: Readonly<WorkItemWorkLogPanelProps>) {
   return (
     <div className="space-y-6">
-      <form
-        onSubmit={onSubmit}
-        className="space-y-3 rounded-lg border p-4"
-        aria-label="Work log form"
-      >
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1">
-            <Label htmlFor="worklog-hours">Log time</Label>
-            <Input
-              id="worklog-hours"
-              type="number"
-              step="0.25"
-              min={0}
-              value={loggedHoursInput}
-              onChange={(event) => onLoggedHoursChange(event.target.value)}
-              placeholder="e.g. 2.5"
-              className="bg-background/80"
-              required
-            />
+      {readOnly ? null : (
+        <form
+          onSubmit={onSubmit}
+          className="space-y-3 rounded-lg border p-4"
+          aria-label="Work log form"
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label htmlFor="worklog-hours">Log time</Label>
+              <Input
+                id="worklog-hours"
+                type="number"
+                step="0.25"
+                min={0}
+                value={loggedHoursInput}
+                onChange={(event) => onLoggedHoursChange(event.target.value)}
+                placeholder="e.g. 2.5"
+                className="bg-background/80"
+                required
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="worklog-date">Date started</Label>
+              <Input
+                id="worklog-date"
+                type="date"
+                value={loggedAtInput}
+                onChange={(event) => onLoggedAtChange(event.target.value)}
+                className="bg-background/80"
+                required
+              />
+            </div>
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="worklog-date">Date started</Label>
-            <Input
-              id="worklog-date"
-              type="date"
-              value={loggedAtInput}
-              onChange={(event) => onLoggedAtChange(event.target.value)}
-              className="bg-background/80"
-              required
+            <Label htmlFor="worklog-comment">Work description</Label>
+            <Textarea
+              id="worklog-comment"
+              value={workLogCommentInput}
+              onChange={(event) => onWorkLogCommentChange(event.target.value)}
+              placeholder="What did you work on?"
+              className="bg-background/80 min-h-24 resize-none"
             />
           </div>
-        </div>
 
-        <div className="space-y-1">
-          <Label htmlFor="worklog-comment">Work description</Label>
-          <Textarea
-            id="worklog-comment"
-            value={workLogCommentInput}
-            onChange={(event) => onWorkLogCommentChange(event.target.value)}
-            placeholder="What did you work on?"
-            className="bg-background/80 min-h-24 resize-none"
-          />
-        </div>
-
-        <div className="flex items-center justify-end">
-          <Button type="submit" disabled={isLoggingWork}>
-            {isLoggingWork ? 'Saving…' : 'Save'}
-          </Button>
-        </div>
-      </form>
+          <div className="flex items-center justify-end">
+            <Button type="submit" disabled={isLoggingWork}>
+              {isLoggingWork ? 'Saving…' : 'Save'}
+            </Button>
+          </div>
+        </form>
+      )}
 
       {workLogs.length === 0 ? (
         <p className="text-muted-foreground text-sm">No work logged yet.</p>

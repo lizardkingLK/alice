@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Badge } from '@repo/ui/components/ui/badge';
+import { Fragment } from 'react';
 import {
   Breadcrumb,
   BreadcrumbEllipsis,
@@ -11,22 +11,45 @@ import {
 } from '@repo/ui/components/ui/breadcrumb';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { toShortId } from '@/app/_shared/utility';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import { WorkItemTypeBadge } from '@/app/work-items/_components/workItem-badge-type';
+import type {
+  DbWorkItem,
+  WorkItemAncestor,
+} from '@/app/work-items/_services/workItem.service.server';
+import type { WorkItemType } from '@repo/types';
 
 type WorkItemPathBreadcrumbProps = {
   readonly workItem: Pick<
     DbWorkItem,
     'id' | 'type' | 'sprint_id' | 'project' | 'sprint'
   >;
+  /** Hierarchy ancestors root-first (Epic → … → immediate parent). */
+  readonly ancestors?: readonly WorkItemAncestor[];
 };
+
+function PathTypeChip({
+  type,
+  id,
+}: Readonly<{ type: WorkItemType; id: string }>) {
+  return (
+    <span className="flex items-center gap-2">
+      <WorkItemTypeBadge type={type} className="font-normal" />
+      <span className="text-muted-foreground font-mono text-xs">
+        {toShortId(id)}
+      </span>
+    </span>
+  );
+}
 
 /**
  * In-page path above the title:
- * `PROJECT_KEY > Sprint name > [Type] SHORT_ID`
+ * `PROJECT_KEY > Sprint name > [Epic] … > [Type] SHORT_ID`
  * Unassigned sprint renders an ellipsis segment.
+ * Ancestors (when present) link to parent work-item details.
  */
 export function WorkItemPathBreadcrumb({
   workItem,
+  ancestors = [],
 }: Readonly<WorkItemPathBreadcrumbProps>) {
   const projectKey = workItem.project?.key?.trim() || '—';
   const projectId = workItem.project?.id;
@@ -63,16 +86,27 @@ export function WorkItemPathBreadcrumb({
           )}
         </BreadcrumbItem>
 
+        {ancestors.map((ancestor) => (
+          <Fragment key={ancestor.id}>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild className="hover:text-primary">
+                <Link
+                  href={`/work-items/${ancestor.id}`}
+                  title={ancestor.title}
+                >
+                  <PathTypeChip type={ancestor.type} id={ancestor.id} />
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+          </Fragment>
+        ))}
+
         <BreadcrumbSeparator />
 
         <BreadcrumbItem>
-          <BreadcrumbPage className="flex items-center gap-2">
-            <Badge variant="outline" className="font-normal">
-              {workItem.type}
-            </Badge>
-            <span className="text-muted-foreground font-mono text-xs">
-              {toShortId(workItem.id)}
-            </span>
+          <BreadcrumbPage>
+            <PathTypeChip type={workItem.type} id={workItem.id} />
           </BreadcrumbPage>
         </BreadcrumbItem>
       </BreadcrumbList>

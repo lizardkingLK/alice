@@ -11,12 +11,6 @@ export type BacklogAssignee = {
   profile_picture?: string | null;
 };
 
-export const BACKLOG_TYPE_STYLES: Record<string, string> = {
-  Epic: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
-  Story: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-  Task: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
-};
-
 export const BACKLOG_PRIORITY_STYLES: Record<string, string> = {
   high: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
   medium:
@@ -28,16 +22,6 @@ export function mapPriority(priority: string): BacklogPriority {
   if (priority === 'highest') return 'high';
   if (priority === 'lowest') return 'low';
   return priority as BacklogPriority;
-}
-
-export function getInitials(name?: string | null): string {
-  if (!name) return '?';
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join('');
 }
 
 export function formatDateRange(

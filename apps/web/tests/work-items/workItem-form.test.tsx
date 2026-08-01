@@ -8,6 +8,7 @@ import {
 import { userFactory } from '../factories/user.factory';
 import { projectFactory } from '../factories/project.factory';
 import { workItemFactory } from '../factories/workItem.factory';
+import { pickComboboxOption } from '../helpers/pick-combobox-option';
 
 vi.mock('@/app/work-items/_services/workItem.service.client', () => ({
   createWorkItem: vi.fn(),
@@ -30,7 +31,7 @@ describe('WorkItemForm', () => {
     vi.clearAllMocks();
   });
 
-  it('renders fields and lists projects and members in selects', () => {
+  it('renders fields and lists projects and members in selects', async () => {
     // Arrange
     render(
       <WorkItemForm
@@ -48,20 +49,18 @@ describe('WorkItemForm', () => {
     expect(screen.getByLabelText(/Assign to/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Story points/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByLabelText(/^Project$/i));
-    expect(
-      screen.getByRole('option', { name: projects[0]!.name })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('option', { name: projects[1]!.name })
-    ).toBeInTheDocument();
+    await pickComboboxOption(/^Project$/i, projects[0]!.name);
+    expect(screen.getByRole('combobox', { name: /^Project$/i })).toHaveValue(
+      projects[0]!.name
+    );
 
-    fireEvent.click(screen.getByLabelText(/Assign to/i));
-    expect(
-      screen.getByRole('option', {
-        name: `${projectMembers[0]!.name} (${projectMembers[0]!.email})`,
-      })
-    ).toBeInTheDocument();
+    await pickComboboxOption(
+      /Assign to/i,
+      `${projectMembers[0]!.name} (${projectMembers[0]!.email})`
+    );
+    expect(screen.getByRole('combobox', { name: /Assign to/i })).toHaveValue(
+      `${projectMembers[0]!.name} (${projectMembers[0]!.email})`
+    );
   });
 
   it('submits in create mode and calls onSuccess', async () => {
@@ -86,18 +85,15 @@ describe('WorkItemForm', () => {
     fireEvent.change(screen.getByLabelText(/^Title$/i), {
       target: { value: 'New backlog item' },
     });
-    fireEvent.click(screen.getByLabelText(/^Project$/i));
-    fireEvent.click(screen.getByRole('option', { name: projects[0]!.name }));
+    await pickComboboxOption(/^Project$/i, projects[0]!.name);
     fireEvent.click(screen.getByLabelText(/^Type$/i));
     fireEvent.click(screen.getByRole('option', { name: 'Task' }));
     fireEvent.change(screen.getByLabelText(/Due date/i), {
       target: { value: '2026-08-01' },
     });
-    fireEvent.click(screen.getByLabelText(/Assign to/i));
-    fireEvent.click(
-      screen.getByRole('option', {
-        name: `${projectMembers[0]!.name} (${projectMembers[0]!.email})`,
-      })
+    await pickComboboxOption(
+      /Assign to/i,
+      `${projectMembers[0]!.name} (${projectMembers[0]!.email})`
     );
     fireEvent.change(screen.getByLabelText(/Story points/i), {
       target: { value: '8' },
@@ -264,5 +260,86 @@ describe('WorkItemForm', () => {
     expect(
       screen.getByRole('button', { name: /Save Changes/i })
     ).toBeInTheDocument();
+  });
+
+  it('locks type and submits parent_id for subtask create', async () => {
+    // Arrange
+    const onSuccess = vi.fn();
+    const parentId = 'parent-story-1';
+    const created = workItemFactory.build({
+      title: 'Child task',
+      type: 'Task',
+      parent_id: parentId,
+      project_id: projects[0]!.id,
+    });
+    vi.mocked(createWorkItem).mockResolvedValue({
+      data: created,
+      error: null,
+    });
+
+    render(
+      <WorkItemForm
+        projects={[projects[0]!]}
+        projectMembers={projectMembers}
+        parentId={parentId}
+        allowedTypes={['Task']}
+        lockProject
+        lockType
+        onSuccess={onSuccess}
+        onClose={vi.fn()}
+      />
+    );
+
+    // Assert — type locked to Task
+    expect(screen.getByLabelText(/^Type$/i)).toBeDisabled();
+    expect(screen.getByLabelText(/^Project$/i)).toBeDisabled();
+
+    // Act
+    fireEvent.change(screen.getByLabelText(/^Title$/i), {
+      target: { value: 'Child task' },
+    });
+    await pickComboboxOption(
+      /Assign to/i,
+      `${projectMembers[0]!.name} (${projectMembers[0]!.email})`
+    );
+    fireEvent.submit(screen.getByLabelText(/^Title$/i).closest('form')!);
+
+    // Assert
+    await waitFor(() => {
+      expect(createWorkItem).toHaveBeenCalledTimes(1);
+    });
+
+    const formData = vi.mocked(createWorkItem).mock.calls[0]![0] as FormData;
+    expect(formData.get('parent_id')).toBe(parentId);
+    expect(formData.get('type')).toBe('Task');
+    expect(formData.get('project_id')).toBe(projects[0]!.id);
+    await waitFor(() => {
+      expect(onSuccess).toHaveBeenCalledWith(created);
+    });
+  });
+
+  it('restricts type options to allowedTypes', () => {
+    // Arrange — two allowed types so the select stays interactive
+    render(
+      <WorkItemForm
+        projects={projects}
+        projectMembers={projectMembers}
+        allowedTypes={['Story', 'Task']}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    // Act
+    fireEvent.click(screen.getByLabelText(/^Type$/i));
+
+    // Assert
+    expect(screen.getByRole('option', { name: 'Story' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Task' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('option', { name: 'Epic' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('option', { name: 'Issue' })
+    ).not.toBeInTheDocument();
   });
 });

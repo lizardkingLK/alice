@@ -2,11 +2,11 @@
 
 How Alice keeps dashboard pages fast, what has already been optimized, and the roadmap for further wins.
 
-| Field        | Value                                        |
-| ------------ | -------------------------------------------- |
-| Status       | **Living**                                   |
-| Last updated | 2026-07-24 (route-group Suspense isolation)  |
-| Scope        | `apps/web` RSC data loading, `apps/api` auth |
+| Field        | Value                                          |
+| ------------ | ---------------------------------------------- |
+| Status       | **Living**                                     |
+| Last updated | 2026-08-01 (dashboard burndown SSR + Suspense) |
+| Scope        | `apps/web` RSC data loading, `apps/api` auth   |
 
 Related:
 
@@ -97,7 +97,7 @@ Paginated readers also share `pageRange` / `paginationMeta` (`apps/web/lib/db/pa
 
 GET/list pages now read **straight from Supabase in the server component** instead of hopping through the Express API. This removes one full network round trip (`web → api → Supabase`) per read, plus the `requireApiAuth` JWT verify + `public.users` touch that came with it.
 
-- **Reads (direct):** work items, users, projects (list/detail/members), sprints (list + `getSprint`), teams — implemented in each feature's `_services/*.server.ts` using the SSR Supabase client (`@/lib/supabase/server`).
+- **Reads (direct):** work items, users, projects (list/detail/members), sprints (list + `getSprint` + burndown series), teams — implemented in each feature's `_services/*.server.ts` using the SSR Supabase client (`@/lib/supabase/server`).
 - **Mutations (unchanged):** create / update / delete / toggle still go through the API, which keeps Zod validation, audit columns, and the service-role client.
 
 Each server reader mirrors the query in the matching API repository (same `select`, filters, ordering, and pagination) so results are identical.
@@ -249,11 +249,14 @@ Serverless functions no longer execute in US-East while the database runs in Syd
 
 Same shell-first Suspense pattern applied to remaining authenticated surfaces (2026-07-24):
 
-| Route              | Data component               | Skeleton                         |
-| ------------------ | ---------------------------- | -------------------------------- |
-| `/work-items/[id]` | `work-item-details-data.tsx` | `work-item-details-skeleton.tsx` |
-| `/board`           | `board-data.tsx`             | `board-page-skeleton.tsx`        |
-| `/profile`         | `profile-data.tsx`           | `profile-page-skeleton.tsx`      |
+| Route              | Data component                | Skeleton                          |
+| ------------------ | ----------------------------- | --------------------------------- |
+| `/work-items/[id]` | `work-item-details-data.tsx`  | `work-item-details-skeleton.tsx`  |
+| `/board`           | `board-data.tsx`              | `board-page-skeleton.tsx`         |
+| `/profile`         | `profile-data.tsx`            | `profile-page-skeleton.tsx`       |
+| `/dashboard`       | `dashboard-overview-data.tsx` | `dashboard-overview-skeleton.tsx` |
+
+**Dashboard burndown (2026-08-01):** Overview streams the shell first, then `getDashboardBurndownBootstrap()` (direct Supabase: active sprints + default sprint burndown series). The client widget reuses SSR data and only calls `loadSprintBurndownAction` when board-defaults localStorage selects a different sprint — no `apiFetch` for list or burndown on the hot path.
 
 With these, the original medium-wins roadmap is **complete for existing product surfaces**. New features (e.g. richer board filters, discussion boards) should follow the same patterns in §3.
 
@@ -277,6 +280,7 @@ Symptom we hit: click a row on `/work-items` → briefly see the **registry/tabl
 | `backlog/loading.tsx`           | No                            | No                                             | OK                      |
 | `board/loading.tsx`             | No                            | No                                             | OK                      |
 | `profile/loading.tsx`           | No                            | No                                             | OK                      |
+| `dashboard/loading.tsx`         | No (leaf overview)            | No                                             | OK                      |
 | `work-items/[id]/loading.tsx`   | No (leaf)                     | No                                             | OK                      |
 | `projects/[id]/loading.tsx`     | No (leaf)                     | No                                             | OK                      |
 
@@ -357,15 +361,16 @@ Classic M4 (“one Express workspace GET”) was superseded by named RSC loaders
 
 ### Audit
 
-| Route                                  | Parallel reads                           | Status      | Notes                                              |
-| -------------------------------------- | ---------------------------------------- | ----------- | -------------------------------------------------- |
-| `/backlog`                             | 4 — projects, users, work items, sprints | ✅ Shipped  | `getBacklogWorkspace()` + Suspense                 |
-| `/projects/[id]`                       | 4 — details, members, users, work items  | ✅ Shipped  | `getProjectWorkspace(id)` + Suspense (§2.11)       |
-| `/work-items/[id]`                     | 2 — item + discussion                    | ✅ Shipped  | `getWorkItemDiscussion` + Suspense (§2.9 / §2.12)  |
-| `/manager`                             | 4                                        | N/A         | Dropdown caching (M5) + list Suspense sufficient   |
-| `/work-items`, `/projects`, `/sprints` | 3                                        | N/A         | M1 + Promise.all + M3                              |
-| `/board`                               | 1                                        | ✅ Streamed | Suspense + skeleton (§2.12); no multi-read fan-out |
-| `/profile`                             | auth + teams + worked-on                 | ✅ Streamed | Suspense + skeleton (§2.12)                        |
+| Route                                  | Parallel reads                           | Status      | Notes                                                |
+| -------------------------------------- | ---------------------------------------- | ----------- | ---------------------------------------------------- |
+| `/backlog`                             | 4 — projects, users, work items, sprints | ✅ Shipped  | `getBacklogWorkspace()` + Suspense                   |
+| `/projects/[id]`                       | 4 — details, members, users, work items  | ✅ Shipped  | `getProjectWorkspace(id)` + Suspense (§2.11)         |
+| `/work-items/[id]`                     | 2 — item + discussion                    | ✅ Shipped  | `getWorkItemDiscussion` + Suspense (§2.9 / §2.12)    |
+| `/manager`                             | 4                                        | N/A         | Dropdown caching (M5) + list Suspense sufficient     |
+| `/work-items`, `/projects`, `/sprints` | 3                                        | N/A         | M1 + Promise.all + M3                                |
+| `/board`                               | 1                                        | ✅ Streamed | Suspense + skeleton (§2.12); no multi-read fan-out   |
+| `/profile`                             | auth + teams + worked-on                 | ✅ Streamed | Suspense + skeleton (§2.12)                          |
+| `/dashboard`                           | 2 — sprints list + default burndown      | ✅ Streamed | `getDashboardBurndownBootstrap()` + Suspense (§2.12) |
 
 ### Delivered
 
@@ -384,28 +389,30 @@ Legend:
 
 | Status                 | Meaning                                                                                     |
 | ---------------------- | ------------------------------------------------------------------------------------------- |
-| **Unused (web)**       | No current `apps/web` caller; safe to treat as legacy read surface                          |
+| **Unused (web)**       | Handler exists; no current `apps/web` caller; safe to treat as legacy read surface          |
+| **Not implemented**    | No Express GET; web reads via RSC Supabase mirrors                                          |
 | **Client-only**        | Still hit from client components (`*.service.ts` / `apiFetch`) — migrate in next M1 cleanup |
 | **Active (mutations)** | POST/PUT/PATCH/DELETE still used — keep                                                     |
 
 ### Read routes — web usage audit
 
-| API route                       | Status           | Web caller today   | Notes                                                                                                         |
-| ------------------------------- | ---------------- | ------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `GET /api/users`                | **Unused (web)** | —                  | `/users` uses `users.service.server.ts`                                                                       |
-| `GET /api/users/secure`         | **Unused (web)** | —                  | Auth smoke test only                                                                                          |
-| `GET /api/projects`             | **Unused (web)** | —                  | SSR + forms pass `getProjectList()` from `projects.service.server.ts` (since 2026-07-22)                      |
-| `GET /api/projects/:id`         | **Unused (web)** | —                  | Edit form uses row data via `projectToEdit`; detail page uses server `getProjectDetails`                      |
-| `GET /api/projects/:id/members` | **Unused (web)** | —                  | `team-form` uses server action `fetchProjectMembersForForm`; `/projects/[id]` uses server `getProjectMembers` |
-| `GET /api/teams`                | **Unused (web)** | —                  | `/manager` uses `teams.service.server.ts` (since 2026-07-22)                                                  |
-| `GET /api/sprints`              | **Unused (web)** | —                  | `/sprints`, `/backlog` use `sprints.service.server.ts`                                                        |
-| `GET /api/sprints/:id`          | **Unused (web)** | —                  | Server mirror `getSprint()` in `sprints.service.server.ts`; forms use `sprintToEdit` from list state          |
-| `GET /api/workItems`            | **Unused (web)** | —                  | List/detail use `workItem.service.server.ts`                                                                  |
-| `GET /api/workItems/:id`        | **Unused (web)** | —                  | `[id]/page` uses server `getWorkItem`                                                                         |
-| `GET /api/comments`             | **Client-only**  | Mutations + legacy | RSC reads use `listComments` / `getWorkItemDiscussion` in `comments.service.server.ts` (direct Supabase)      |
-| `GET /` (health)                | Active           | Deploy / probes    | Not a data read                                                                                               |
-| `POST /api/notifications/send`  | Active           | Server-side notify | No GET on this router                                                                                         |
-| `POST /api/attachments`         | Active           | `upload-form.tsx`  | Upload only (private bucket; signed URL)                                                                      |
+| API route                       | Status              | Web caller today   | Notes                                                                                                         |
+| ------------------------------- | ------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `GET /api/users`                | **Unused (web)**    | —                  | `/users` uses `users.service.server.ts`                                                                       |
+| `GET /api/users/secure`         | **Unused (web)**    | —                  | Auth smoke test only                                                                                          |
+| `GET /api/projects`             | **Unused (web)**    | —                  | SSR + forms pass `getProjectList()` from `projects.service.server.ts` (since 2026-07-22)                      |
+| `GET /api/projects/:id`         | **Unused (web)**    | —                  | Edit form uses row data via `projectToEdit`; detail page uses server `getProjectDetails`                      |
+| `GET /api/projects/:id/members` | **Unused (web)**    | —                  | `team-form` uses server action `fetchProjectMembersForForm`; `/projects/[id]` uses server `getProjectMembers` |
+| `GET /api/teams`                | **Unused (web)**    | —                  | `/manager` uses `teams.service.server.ts` (since 2026-07-22)                                                  |
+| `GET /api/sprints`              | **Not implemented** | —                  | List reads are RSC-only (`sprints.service.server.ts`); `/dashboard` uses `getDashboardBurndownBootstrap()`    |
+| `GET /api/sprints/:id`          | **Not implemented** | —                  | Server mirror `getSprint()` in `sprints.service.server.ts`; forms use `sprintToEdit` from list state          |
+| `GET /api/sprints/:id/burndown` | **Unused (web)**    | —                  | Dashboard uses `sprint-burndown.server.ts` + server action; Express handler kept for non-web consumers        |
+| `GET /api/workItems`            | **Unused (web)**    | —                  | List/detail use `workItem.service.server.ts`                                                                  |
+| `GET /api/workItems/:id`        | **Unused (web)**    | —                  | `[id]/page` uses server `getWorkItem`                                                                         |
+| `GET /api/comments`             | **Client-only**     | Mutations + legacy | RSC reads use `listComments` / `getWorkItemDiscussion` in `comments.service.server.ts` (direct Supabase)      |
+| `GET /` (health)                | Active              | Deploy / probes    | Not a data read                                                                                               |
+| `POST /api/notifications/send`  | Active              | Server-side notify | No GET on this router                                                                                         |
+| `POST /api/attachments`         | Active              | `upload-form.tsx`  | Upload only (private bucket; signed URL)                                                                      |
 
 There is **no** `/api/team-members` or `/api/project-members` router. Membership is nested:
 

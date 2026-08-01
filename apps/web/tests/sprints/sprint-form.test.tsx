@@ -12,6 +12,10 @@ import {
   sprintFactory,
   formatDateToISOString,
 } from '../factories/sprint.factory';
+import {
+  getComboboxOptions,
+  pickComboboxOption,
+} from '../helpers/pick-combobox-option';
 
 vi.mock('@/app/sprints/_services/sprints.service', () => ({
   createSprint: vi.fn(),
@@ -65,15 +69,13 @@ describe('SprintForm Component', () => {
     vi.clearAllMocks();
   });
 
-  it('renders projects in dropdown sorted and filtered', () => {
+  it('renders projects in dropdown sorted and filtered', async () => {
     render(<SprintForm projects={mockProjects} />);
 
     const projectSelect = screen.getByLabelText(/Project/i);
     expect(projectSelect).toBeInTheDocument();
 
-    const options = screen
-      .getAllByRole('option', { hidden: true })
-      .filter((opt) => (opt as HTMLOptionElement).value !== '');
+    const options = await getComboboxOptions(/Project/i);
     expect(options).toHaveLength(2);
     expect(options[0]).toHaveTextContent('Project Alpha (PAL)');
     expect(options[1]).toHaveTextContent('Project Beta (PBE)');
@@ -130,10 +132,7 @@ describe('SprintForm Component', () => {
       target: { value: 'Achieve project milestone' },
     });
 
-    fireEvent.click(screen.getByLabelText(/Project/i));
-    fireEvent.click(
-      await screen.findByRole('option', { name: 'Project Alpha (PAL)' })
-    );
+    await pickComboboxOption(/Project/i, 'Project Alpha (PAL)');
 
     fireEvent.change(screen.getByLabelText(/Start date/i), {
       target: { value: '2026-07-10' },

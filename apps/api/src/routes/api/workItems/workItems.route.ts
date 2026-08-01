@@ -5,16 +5,20 @@ import {
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
 import { parsePagination } from '../../../lib/pagination';
-import type { WorkItemService } from './workItems.service';
+import {
+  WorkItemValidationError,
+  type WorkItemService,
+} from './workItems.service';
 import type { NotificationsService } from '../notifications/notifications.service';
 import {
   createUpdateWorkItemBodySchema,
   createWorkLogSchema,
   isBlockedPastDueDateChange,
   patchUpdateWorkItemBodySchema,
-  SupabaseJson,
+  type WorkItemUpdateBody,
 } from './workItems.schemas';
 import type { DbWorkItem } from './workItems.repository';
+import { coalescePatchField } from './workItems.patch-utils';
 
 type PatchUpdateWorkItemPayload = z.infer<typeof patchUpdateWorkItemBodySchema>;
 
@@ -42,37 +46,49 @@ function buildWorkItemPayload(
   existingWorkItem: DbWorkItem
 ) {
   return {
-    title: parsedData.title ?? existingWorkItem.title,
-    project_id: parsedData.project_id ?? existingWorkItem.project_id,
-    type: parsedData.type ?? existingWorkItem.type,
-    assignee_id:
-      parsedData.assignee_id !== undefined
-        ? parsedData.assignee_id
-        : existingWorkItem.assignee_id,
-    reporter_id:
-      parsedData.reporter_id !== undefined
-        ? parsedData.reporter_id
-        : existingWorkItem.reporter_id,
-    due_date:
-      parsedData.due_date !== undefined
-        ? parsedData.due_date
-        : existingWorkItem.due_date,
-    description: (parsedData.description !== undefined
-      ? parsedData.description
-      : existingWorkItem.description) as SupabaseJson,
-    status: parsedData.status ?? existingWorkItem.status,
-    sprint_id:
-      parsedData.sprint_id !== undefined
-        ? parsedData.sprint_id
-        : existingWorkItem.sprint_id,
-    story_points:
-      parsedData.story_points !== undefined
-        ? parsedData.story_points
-        : existingWorkItem.story_points,
+    title: coalescePatchField(parsedData.title, existingWorkItem.title),
+    project_id: coalescePatchField(
+      parsedData.project_id,
+      existingWorkItem.project_id
+    ),
+    type: coalescePatchField(parsedData.type, existingWorkItem.type),
+    assignee_id: coalescePatchField(
+      parsedData.assignee_id,
+      existingWorkItem.assignee_id
+    ),
+    reporter_id: coalescePatchField(
+      parsedData.reporter_id,
+      existingWorkItem.reporter_id
+    ),
+    due_date: coalescePatchField(
+      parsedData.due_date,
+      existingWorkItem.due_date
+    ),
+    status: coalescePatchField(parsedData.status, existingWorkItem.status),
+    sprint_id: coalescePatchField(
+      parsedData.sprint_id,
+      existingWorkItem.sprint_id
+    ),
+    story_points: coalescePatchField(
+      parsedData.story_points,
+      existingWorkItem.story_points
+    ),
+    parent_id: coalescePatchField(
+      parsedData.parent_id,
+      existingWorkItem.parent_id
+    ),
+    description: coalescePatchField(
+      parsedData.description as WorkItemUpdateBody['description'] | undefined,
+      existingWorkItem.description as WorkItemUpdateBody['description']
+    ),
+    jira_issue_key: coalescePatchField(
+      parsedData.jira_issue_key,
+      existingWorkItem.jira_issue_key
+    ),
   };
 }
 
-function shouldNotifyAssigneeChange(
+export function shouldNotifyAssigneeChange(
   existingWorkItem: DbWorkItem,
   workItem: DbWorkItem | null,
   actorId?: string
@@ -82,6 +98,22 @@ function shouldNotifyAssigneeChange(
     workItem.assignee_id !== existingWorkItem.assignee_id &&
     workItem.assignee_id !== actorId
   );
+}
+
+function sendWorkItemMutationError(
+  res: {
+    status: (code: number) => {
+      json: (body: { data: null; error: string }) => void;
+    };
+  },
+  error: unknown,
+  fallbackMessage: string
+) {
+  const message = error instanceof Error ? error.message : fallbackMessage;
+  if (error instanceof WorkItemValidationError) {
+    return res.status(400).json({ data: null, error: message });
+  }
+  return res.status(500).json({ data: null, error: message });
 }
 
 export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
@@ -215,9 +247,11 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
 
         res.status(201).json({ worklog });
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to create work log';
-        res.status(500).json({ error: message });
+        return sendWorkItemMutationError(
+          res,
+          error,
+          'Failed to create work log'
+        );
       }
     }
   );
@@ -246,9 +280,7 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
 
         res.status(201).json({ data: workItem, error: null });
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to create work-item';
-        res.status(500).json({ data: null, error: message });
+        sendWorkItemMutationError(res, error, 'Failed to create work-item');
       }
     }
   );
@@ -312,9 +344,7 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
 
         res.status(200).json({ data: workItem, error: null });
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to update work-item';
-        res.status(500).json({ data: null, error: message });
+        sendWorkItemMutationError(res, error, 'Failed to update work-item');
       }
     }
   );

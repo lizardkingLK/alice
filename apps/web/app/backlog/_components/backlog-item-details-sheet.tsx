@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import {
@@ -21,19 +20,19 @@ import {
   SheetTitle,
 } from '@repo/ui/components/ui/sheet';
 import {
-  BACKLOG_TYPE_STYLES,
   mapPriority,
   projectDisplayKey,
 } from '@/app/backlog/_helpers/backlog-item-utils';
 import { formatLabelWithSpace } from '@/app/_shared/utility';
-import { MemberSelectItems } from '@/app/work-items/_components/member-select-items';
+import { buildMemberSelectOptions } from '@/app/work-items/_components/member-select-items';
+import { WorkItemTypeBadge } from '@/app/work-items/_components/workItem-badge-type';
+import { SearchableSelect } from '@/components/searchable-select';
 import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
 import { WORK_ITEM_STATUSES } from '@/app/work-items/_helpers/work-item-status';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
 import type { User as DbUser } from '@/app/users/_services/users.service';
-import { cn } from '@repo/ui/lib/utils';
 import { ExternalLink } from '@repo/ui/lib/icons';
 
 /* eslint-disable no-unused-vars */
@@ -92,15 +91,11 @@ export function BacklogItemDetailsSheet({
           <div className="space-y-6">
             <SheetHeader className="pb-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    'text-[10px] font-semibold uppercase',
-                    BACKLOG_TYPE_STYLES[item.type]
-                  )}
-                >
-                  {item.type}
-                </Badge>
+                <WorkItemTypeBadge
+                  type={item.type}
+                  compact
+                  className="text-[10px] font-semibold"
+                />
                 <Button
                   asChild
                   variant="link"
@@ -139,23 +134,18 @@ export function BacklogItemDetailsSheet({
             <div className="grid grid-cols-[120px_1fr] gap-x-6 gap-y-5 px-2 text-sm">
               <span className="text-muted-foreground self-center">Project</span>
               <div className="min-w-0">
-                <Select
+                <SearchableSelect
                   value={draft.project_id ?? item.project_id ?? ''}
                   onValueChange={(val) =>
                     setDraft((prev) => ({ ...prev, project_id: val }))
                   }
-                >
-                  <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projects.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Search projects…"
+                  className="bg-background/50 border-border/80 h-9 w-full"
+                  options={projects.map((project) => ({
+                    value: project.id,
+                    label: project.name,
+                  }))}
+                />
               </div>
 
               <span className="text-muted-foreground self-center">Status</span>
@@ -214,7 +204,7 @@ export function BacklogItemDetailsSheet({
                 Assignee
               </span>
               <div className="min-w-0">
-                <Select
+                <SearchableSelect
                   value={
                     draft.assignee_id !== undefined
                       ? draft.assignee_id || 'unassigned'
@@ -226,22 +216,17 @@ export function BacklogItemDetailsSheet({
                       assignee_id: val === 'unassigned' ? null : val,
                     }))
                   }
-                >
-                  <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <MemberSelectItems
-                      members={projectMembers}
-                      itemClassName="text-xs"
-                    />
-                  </SelectContent>
-                </Select>
+                  placeholder="Search assignees…"
+                  className="bg-background/50 border-border/80 h-9 w-full"
+                  options={buildMemberSelectOptions({
+                    members: projectMembers,
+                  })}
+                />
               </div>
 
               <span className="text-muted-foreground self-center">Sprint</span>
               <div className="min-w-0">
-                <Select
+                <SearchableSelect
                   value={
                     draft.sprint_id !== undefined
                       ? draft.sprint_id || 'backlog'
@@ -253,19 +238,16 @@ export function BacklogItemDetailsSheet({
                       sprint_id: val === 'backlog' ? null : val,
                     }))
                   }
-                >
-                  <SelectTrigger className="bg-background/50 border-border/80 h-9 w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="backlog">Backlog</SelectItem>
-                    {sprints.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name} ({s.status})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Search sprints…"
+                  className="bg-background/50 border-border/80 h-9 w-full"
+                  options={[
+                    { value: 'backlog', label: 'Backlog' },
+                    ...sprints.map((s) => ({
+                      value: s.id,
+                      label: `${s.name} (${s.status})`,
+                    })),
+                  ]}
+                />
               </div>
 
               <span className="text-muted-foreground self-center">

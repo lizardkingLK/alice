@@ -17,13 +17,6 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@repo/ui/components/ui/dialog';
-import {
   ClipboardPenLine,
   MoreHorizontal,
   Pencil,
@@ -37,12 +30,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
-import { WorkItemForm } from '@/app/work-items/_components/workItem-form';
+import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form-dialog';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { WorkItemWorkspaceProps } from '@/app/work-items/_components/workItems-workspace';
+import {
+  applyProjectFilterToSearchParams,
+  buildSprintFilterOptions,
+} from '@/app/board/_services/board-defaults';
+import { BoardDefaultsDialog } from '@/app/board/_components/board-defaults-dialog';
+import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
+import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
 import { formatDate } from '@/app/_shared/utility';
 import statusRenderer from '@/app/work-items/_components/workItem-badge-status';
 import priorityRenderer from '@/app/work-items/_components/workItem-badge-priority';
+import typeRenderer from '@/app/work-items/_components/workItem-badge-type';
 import Link from 'next/link';
 import { cn } from '@repo/ui/lib/utils';
 import { Pagination } from '@/components/pagination';
@@ -50,6 +51,7 @@ import { DataTable } from '@/components/data-table';
 import { SearchInput } from '@/components/search-input';
 import { DismissibleError } from '@/components/dismissible-error';
 import { ListFilterSelect } from '@/components/list-filter-select';
+import { UserAvatar } from '@/components/user-avatar';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { useQueryFilter } from '@/hooks/use-query-filter';
@@ -63,6 +65,7 @@ const DIALOG_CLOSE_MS = 200;
 const WORK_ITEM_FILTER_PARAMS = [
   'search',
   'project',
+  'sprint',
   'type',
   'assignee',
 ] as const;
@@ -104,25 +107,33 @@ const titleRenderer = ({
   </Link>
 );
 
-const typeRenderer = ({ row }: RendererProps) => (
-  <Badge variant="outline">{row.original.type}</Badge>
-);
-
 const assigneeRenderer = ({
   row,
   currentUserId,
 }: RendererProps & { currentUserId?: string | null }) => {
-  const assigneeName = row.original.assignee?.name ?? '—';
+  const assignee = row.original.assignee;
+  const assigneeName = assignee?.name ?? '—';
   const isAssignedToSelf = row.original.assignee_id === currentUserId;
 
+  if (!assignee) {
+    return <p className="text-muted-foreground font-medium">{assigneeName}</p>;
+  }
+
   return (
-    <div className="space-y-1">
-      <p className="font-medium">{assigneeName}</p>
-      {isAssignedToSelf ? (
-        <Badge variant="secondary" className="text-[10px]">
-          You
-        </Badge>
-      ) : null}
+    <div className="flex items-center gap-2">
+      <UserAvatar
+        name={assignee.name}
+        imageUrl={assignee.profile_picture}
+        title={assigneeName}
+      />
+      <div className="space-y-1">
+        <p className="font-medium">{assigneeName}</p>
+        {isAssignedToSelf ? (
+          <Badge variant="secondary" className="text-[10px]">
+            You
+          </Badge>
+        ) : null}
+      </div>
     </div>
   );
 };
@@ -165,6 +176,7 @@ const WORK_ITEM_TYPES = Constants.public.Enums.WorkItemType;
 export default function WorkItemsTable({
   projects,
   projectMembers,
+  sprints = [],
   initialWorkItems,
   totalCount,
   page,
@@ -172,11 +184,14 @@ export default function WorkItemsTable({
   totalPages,
   search,
   projectFilter,
+  sprintFilter = '',
   typeFilter,
   assigneeFilter,
   lockedProjectId,
   lockedAssigneeId,
   currentUserId,
+  suggestedDefaults = null,
+  needsClientBootstrap = false,
 }: Readonly<WorkItemsTableProps>) {
   const { handlePageChange, handleLimitChange, router } =
     usePaginationNavigation(totalPages, limit);
@@ -184,10 +199,34 @@ export default function WorkItemsTable({
   const searchParams = useSearchParams();
   const { searchQuery, setSearchQuery } = useDebouncedSearch(search);
   const projectQuery = useQueryFilter('project', projectFilter);
+  const sprintQuery = useQueryFilter('sprint', sprintFilter);
   const typeQuery = useQueryFilter('type', typeFilter);
   const assigneeQuery = useQueryFilter('assignee', assigneeFilter);
   const isProjectLocked = Boolean(lockedProjectId);
   const isAssigneeLocked = Boolean(lockedAssigneeId);
+  const showWorkspaceDefaults = Boolean(currentUserId) && !isProjectLocked;
+
+  const {
+    defaultsDialogOpen,
+    setDefaultsDialogOpen,
+    allowSkipInDialog,
+    dialogInitialPreference,
+    savedDefaultsApplied,
+    urlFiltersActive,
+    openDefaultsDialog,
+    handleSaveDefaults,
+    handleSkipDefaults,
+    resetUrlFilters,
+  } = useBoardDefaultsBootstrap({
+    userId: showWorkspaceDefaults ? (currentUserId ?? null) : null,
+    basePath: '/work-items',
+    needsClientBootstrap: showWorkspaceDefaults && needsClientBootstrap,
+    projectFilter,
+    sprintFilter,
+    projects,
+    sprints,
+    suggestedDefaults,
+  });
 
   let listDescription =
     'View, filter, and manage work items across your workspace.';
@@ -197,11 +236,43 @@ export default function WorkItemsTable({
     listDescription = 'View, filter, and manage work items for this project.';
   }
 
+  const sprintOptions = useMemo(
+    () => buildSprintFilterOptions(sprints, projectFilter),
+    [projectFilter, sprints]
+  );
+
+  const handleProjectChange = useCallback(
+    (nextProject: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      applyProjectFilterToSearchParams(params, {
+        nextProject,
+        sprints,
+        allValue: projectQuery.allValue,
+        pageMode: 'one',
+      });
+      const query = params.toString();
+      router.push(query ? `${pathname}?${query}` : pathname);
+    },
+    [pathname, projectQuery.allValue, router, searchParams, sprints]
+  );
+
   const hasActiveFilters = WORK_ITEM_FILTER_PARAMS.some((key) => {
     if (key === 'project' && isProjectLocked) {
       return false;
     }
+    if (key === 'sprint' && isProjectLocked) {
+      return false;
+    }
     if (key === 'assignee' && isAssigneeLocked) {
+      return false;
+    }
+    // Project/sprint matching saved defaults are not "active" extras — the
+    // BadgeCheck already signals applied defaults (same as board).
+    if (
+      showWorkspaceDefaults &&
+      (key === 'project' || key === 'sprint') &&
+      !urlFiltersActive
+    ) {
       return false;
     }
     return Boolean(searchParams.get(key)?.trim());
@@ -209,6 +280,10 @@ export default function WorkItemsTable({
 
   const handleClearFilters = () => {
     setSearchQuery('');
+    if (showWorkspaceDefaults) {
+      resetUrlFilters();
+      return;
+    }
     const next = new URLSearchParams();
     const limitParam = searchParams.get('limit');
     const tabParam = searchParams.get('tab');
@@ -217,6 +292,12 @@ export default function WorkItemsTable({
     }
     if (tabParam) {
       next.set('tab', tabParam);
+    }
+    if (isProjectLocked && lockedProjectId) {
+      next.set('project', lockedProjectId);
+    }
+    if (isAssigneeLocked && lockedAssigneeId) {
+      next.set('assignee', lockedAssigneeId);
     }
     const query = next.toString();
     router.push(query ? `${pathname}?${query}` : pathname);
@@ -350,7 +431,7 @@ export default function WorkItemsTable({
           {isProjectLocked ? null : (
             <ListFilterSelect
               value={projectQuery.value}
-              onValueChange={projectQuery.setFilter}
+              onValueChange={handleProjectChange}
               allValue={projectQuery.allValue}
               allLabel="All Projects"
               ariaLabel="Filter by project"
@@ -360,6 +441,19 @@ export default function WorkItemsTable({
                 value: project.id,
                 label: project.name,
               }))}
+            />
+          )}
+
+          {isProjectLocked ? null : (
+            <ListFilterSelect
+              value={sprintQuery.value}
+              onValueChange={sprintQuery.setFilter}
+              allValue={sprintQuery.allValue}
+              allLabel="All Sprints"
+              ariaLabel="Filter by sprint"
+              placeholder="All Sprints"
+              triggerClassName="sm:w-44"
+              options={sprintOptions}
             />
           )}
 
@@ -392,6 +486,13 @@ export default function WorkItemsTable({
               }))}
             />
           )}
+
+          {showWorkspaceDefaults ? (
+            <WorkspaceDefaultsControls
+              onOpenDefaultsDialog={openDefaultsDialog}
+              savedDefaultsApplied={savedDefaultsApplied}
+            />
+          ) : null}
 
           {hasActiveFilters ? (
             <Button
@@ -447,34 +548,36 @@ export default function WorkItemsTable({
       </Card>
 
       {/* Work-Item Create/Edit */}
-      <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
-        <DialogContent
-          className="sm:max-w-xl"
-          onPointerDownOutside={(event) => event.preventDefault()}
-          onInteractOutside={(event) => event.preventDefault()}
-        >
-          <DialogHeader>
-            <DialogTitle>
-              {isEditMode ? 'Edit Work Item' : 'Create Work Item'}
-            </DialogTitle>
-            <DialogDescription>
-              {isEditMode
-                ? 'Update the details for this work item.'
-                : 'Add a new work item and assign it to a team member.'}
-            </DialogDescription>
-          </DialogHeader>
+      <WorkItemFormDialog
+        open={dialogOpen}
+        onOpenChange={handleDialogChange}
+        title={isEditMode ? 'Edit Work Item' : 'Create Work Item'}
+        description={
+          isEditMode
+            ? 'Update the details for this work item.'
+            : 'Add a new work item and assign it to a team member.'
+        }
+        projects={projects}
+        itemToEdit={itemToEdit}
+        projectMembers={projectMembers}
+        lockProject={isProjectLocked}
+        lockAssigneeId={lockedAssigneeId}
+        onClose={() => handleDialogChange(false)}
+        onSuccess={() => handleUpdated()}
+      />
 
-          <WorkItemForm
-            projects={projects}
-            itemToEdit={itemToEdit}
-            projectMembers={projectMembers}
-            lockProject={isProjectLocked}
-            lockAssigneeId={lockedAssigneeId}
-            onClose={() => handleDialogChange(false)}
-            onSuccess={() => handleUpdated()}
-          />
-        </DialogContent>
-      </Dialog>
+      {showWorkspaceDefaults ? (
+        <BoardDefaultsDialog
+          open={defaultsDialogOpen}
+          onOpenChange={setDefaultsDialogOpen}
+          projects={projects}
+          sprints={sprints}
+          initialPreference={dialogInitialPreference}
+          onSave={handleSaveDefaults}
+          onSkip={handleSkipDefaults}
+          allowSkip={allowSkipInDialog}
+        />
+      ) : null}
     </div>
   );
 }

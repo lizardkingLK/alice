@@ -103,16 +103,11 @@ function ExpiredOrMissingPreview({
           ? 'This link no longer works. Generate a new link to continue.'
           : 'Unable to load preview.'}
       </p>
-      <Button
-        variant="outline"
-        size="sm"
-        className="cursor-pointer"
+      <AttachmentRefreshButton
+        label="Generate new link"
+        loading={loading}
         onClick={onRegenerate}
-        disabled={loading}
-      >
-        <RefreshCw data-icon="inline-start" />
-        Generate new link
-      </Button>
+      />
     </div>
   );
 }
@@ -137,7 +132,7 @@ function MediaPreview({
         key={previewUrl}
         src={previewUrl}
         alt={fileName}
-        className="max-h-[60vh] w-full object-contain"
+        className="max-h-[60vh] max-w-full object-contain"
         onError={onError}
       />
     );
@@ -149,7 +144,7 @@ function MediaPreview({
         key={previewUrl}
         title={fileName}
         src={previewUrl}
-        className="h-[60vh] w-full border-0"
+        className="h-[60vh] w-full max-w-full border-0"
         onError={onError}
       />
     );
@@ -165,11 +160,65 @@ function MediaPreview({
   );
 }
 
+function AttachmentRefreshButton({
+  label,
+  loading,
+  onClick,
+}: Readonly<{
+  label: string;
+  loading: boolean;
+  onClick: () => void;
+}>) {
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="cursor-pointer"
+      onClick={onClick}
+      disabled={loading}
+    >
+      <RefreshCw data-icon="inline-start" />
+      {label}
+    </Button>
+  );
+}
+
+function AttachmentRemoveButton({
+  label,
+  variant,
+  pending,
+  disabled,
+  onClick,
+}: Readonly<{
+  label: string;
+  variant: 'outline' | 'ghost';
+  pending: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}>) {
+  return (
+    <Button
+      variant={variant}
+      size="sm"
+      className="text-destructive hover:text-destructive cursor-pointer"
+      onClick={onClick}
+      disabled={disabled ?? pending}
+    >
+      {pending ? (
+        <Loader2 className="animate-spin" data-icon="inline-start" />
+      ) : (
+        <Trash2 data-icon="inline-start" />
+      )}
+      {label}
+    </Button>
+  );
+}
+
 function UnavailablePreview({
   onRemove,
   removing,
 }: Readonly<{
-  onRemove: () => void;
+  onRemove?: () => void;
   removing: boolean;
 }>) {
   return (
@@ -179,20 +228,14 @@ function UnavailablePreview({
         This file is no longer available in storage. You can remove the
         attachment record.
       </p>
-      <Button
-        variant="outline"
-        size="sm"
-        className="text-destructive hover:text-destructive cursor-pointer"
-        onClick={onRemove}
-        disabled={removing}
-      >
-        {removing ? (
-          <Loader2 className="animate-spin" data-icon="inline-start" />
-        ) : (
-          <Trash2 data-icon="inline-start" />
-        )}
-        Remove attachment
-      </Button>
+      {onRemove ? (
+        <AttachmentRemoveButton
+          label="Remove attachment"
+          variant="outline"
+          pending={removing}
+          onClick={onRemove}
+        />
+      ) : null}
     </div>
   );
 }
@@ -219,7 +262,7 @@ function AttachmentPreviewPane({
   fileName: string;
   onRegenerate: () => void;
   onPreviewError: () => void;
-  onRemove: () => void;
+  onRemove?: () => void;
   removing: boolean;
 }>) {
   if (loading) {
@@ -251,12 +294,181 @@ function AttachmentPreviewPane({
   );
 }
 
+function canShowRefreshLink(
+  urls: CachedUrls | null,
+  previewFailed: boolean,
+  unavailable: boolean
+): boolean {
+  return Boolean(urls && !previewFailed && !unavailable);
+}
+
+function canDownload(
+  urls: CachedUrls | null,
+  active: AttachmentWithUploader | null,
+  loadingUrls: boolean
+): boolean {
+  return Boolean(urls && active && !loadingUrls);
+}
+
+function AttachmentViewerFooter({
+  readOnly,
+  deleting,
+  loadingUrls,
+  urls,
+  active,
+  previewFailed,
+  unavailable,
+  onDelete,
+  onRegenerate,
+}: Readonly<{
+  readOnly: boolean;
+  deleting: boolean;
+  loadingUrls: boolean;
+  urls: CachedUrls | null;
+  active: AttachmentWithUploader | null;
+  previewFailed: boolean;
+  unavailable: boolean;
+  onDelete: () => void;
+  onRegenerate: () => void;
+}>) {
+  const showRefresh = canShowRefreshLink(urls, previewFailed, unavailable);
+  const showDownload = canDownload(urls, active, loadingUrls);
+
+  return (
+    <DialogFooter className="sm:justify-between">
+      {readOnly ? (
+        <span />
+      ) : (
+        <AttachmentRemoveButton
+          label="Delete"
+          variant="ghost"
+          pending={deleting}
+          disabled={deleting || loadingUrls}
+          onClick={onDelete}
+        />
+      )}
+      <div className="flex flex-col-reverse gap-2 sm:flex-row">
+        {showRefresh ? (
+          <AttachmentRefreshButton
+            label="Refresh link"
+            loading={loadingUrls}
+            onClick={onRegenerate}
+          />
+        ) : null}
+        {showDownload && urls && active ? (
+          <Button asChild size="sm">
+            <a
+              href={urls.downloadUrl}
+              download={active.file_name}
+              rel="noopener noreferrer"
+            >
+              <Download data-icon="inline-start" />
+              Download
+            </a>
+          </Button>
+        ) : (
+          <Button size="sm" disabled>
+            <Download data-icon="inline-start" />
+            Download
+          </Button>
+        )}
+      </div>
+    </DialogFooter>
+  );
+}
+
+function AttachmentViewerDialog({
+  open,
+  onOpenChange,
+  active,
+  loadingUrls,
+  unavailable,
+  previewFailed,
+  urls,
+  canPreview,
+  iconKind,
+  readOnly,
+  deleting,
+  onRegenerate,
+  onPreviewError,
+  onDelete,
+}: Readonly<{
+  open: boolean;
+  // eslint-disable-next-line no-unused-vars -- callback signature
+  onOpenChange: (open: boolean) => void;
+  active: AttachmentWithUploader | null;
+  loadingUrls: boolean;
+  unavailable: boolean;
+  previewFailed: boolean;
+  urls: CachedUrls | null;
+  canPreview: boolean;
+  iconKind: AttachmentIconKind;
+  readOnly: boolean;
+  deleting: boolean;
+  onRegenerate: () => void;
+  onPreviewError: () => void;
+  onDelete: () => void;
+}>) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-card w-full max-w-[calc(100%-2rem)] min-w-0 overflow-hidden sm:max-w-3xl">
+        <DialogHeader className="min-w-0 gap-1 overflow-hidden pr-8">
+          <DialogTitle className="min-w-0 overflow-hidden">
+            <TruncatedText className="text-base font-semibold">
+              {active?.file_name ?? 'Attachment'}
+            </TruncatedText>
+          </DialogTitle>
+          {active ? (
+            <DialogDescription className="truncate">
+              {attachmentMeta(active)}
+            </DialogDescription>
+          ) : null}
+        </DialogHeader>
+
+        <div
+          className={cn(
+            'bg-muted/40 flex min-h-64 w-full max-w-full min-w-0 items-center justify-center overflow-hidden rounded-lg border',
+            '*:max-w-full *:min-w-0'
+          )}
+        >
+          <AttachmentPreviewPane
+            loading={loadingUrls}
+            unavailable={unavailable}
+            previewFailed={previewFailed}
+            urls={urls}
+            canPreview={canPreview}
+            iconKind={iconKind}
+            fileName={active?.file_name ?? 'Attachment'}
+            onRegenerate={onRegenerate}
+            onPreviewError={onPreviewError}
+            onRemove={readOnly ? undefined : onDelete}
+            removing={deleting}
+          />
+        </div>
+
+        <AttachmentViewerFooter
+          readOnly={readOnly}
+          deleting={deleting}
+          loadingUrls={loadingUrls}
+          urls={urls}
+          active={active}
+          previewFailed={previewFailed}
+          unavailable={unavailable}
+          onDelete={onDelete}
+          onRegenerate={onRegenerate}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 /* eslint-disable no-unused-vars */
 type AttachmentsSectionProps = {
   workItemId: string;
   initialAttachments: AttachmentWithUploader[];
   uploadOpen: boolean;
   onUploadOpenChange: (open: boolean) => void;
+  readOnly?: boolean;
 };
 /* eslint-enable no-unused-vars */
 
@@ -265,6 +477,7 @@ export function AttachmentsSection({
   initialAttachments,
   uploadOpen,
   onUploadOpenChange,
+  readOnly = false,
 }: Readonly<AttachmentsSectionProps>) {
   const router = useRouter();
   const urlCacheRef = useRef<Map<string, CachedUrls>>(new Map());
@@ -286,9 +499,11 @@ export function AttachmentsSection({
 
   useEffect(() => {
     return () => {
-      if (closeTimerRef.current !== null) {
-        clearTimeout(closeTimerRef.current);
+      if (closeTimerRef.current === null) {
+        return;
       }
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
     };
   }, []);
 
@@ -306,9 +521,7 @@ export function AttachmentsSection({
    */
   function closeViewer() {
     setViewerOpen(false);
-    if (closeTimerRef.current !== null) {
-      clearTimeout(closeTimerRef.current);
-    }
+    cancelPendingClose();
     closeTimerRef.current = setTimeout(() => {
       clearViewerContent();
       closeTimerRef.current = null;
@@ -316,10 +529,11 @@ export function AttachmentsSection({
   }
 
   function cancelPendingClose() {
-    if (closeTimerRef.current !== null) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
+    if (closeTimerRef.current === null) {
+      return;
     }
+    clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = null;
   }
 
   async function resolveUrls(
@@ -423,6 +637,14 @@ export function AttachmentsSection({
     router.refresh();
   }
 
+  function handleViewerOpenChange(open: boolean) {
+    if (open) {
+      setViewerOpen(true);
+      return;
+    }
+    closeViewer();
+  }
+
   const iconKind = active
     ? resolveAttachmentIconKind(active.file_name, active.mime_type)
     : 'generic';
@@ -437,15 +659,17 @@ export function AttachmentsSection({
             ({attachments.length})
           </span>
         </h2>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="cursor-pointer"
-          aria-label="Add attachment"
-          onClick={() => onUploadOpenChange(true)}
-        >
-          <Plus />
-        </Button>
+        {readOnly ? null : (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="cursor-pointer"
+            aria-label="Add attachment"
+            onClick={() => onUploadOpenChange(true)}
+          >
+            <Plus />
+          </Button>
+        )}
       </div>
 
       {attachments.length === 0 ? (
@@ -470,107 +694,32 @@ export function AttachmentsSection({
       )}
 
       <WorkItemAttachmentUploadDialog
-        open={uploadOpen}
+        open={readOnly ? false : uploadOpen}
         onOpenChange={onUploadOpenChange}
         workItemId={workItemId}
         onUploaded={handleUploaded}
       />
 
-      <Dialog
+      <AttachmentViewerDialog
         open={viewerOpen}
-        onOpenChange={(open) => {
-          if (open) {
-            setViewerOpen(true);
-            return;
-          }
-          closeViewer();
+        onOpenChange={handleViewerOpenChange}
+        active={active}
+        loadingUrls={loadingUrls}
+        unavailable={unavailable}
+        previewFailed={previewFailed}
+        urls={urls}
+        canPreview={canPreview}
+        iconKind={iconKind}
+        readOnly={readOnly}
+        deleting={deleting}
+        onRegenerate={() => {
+          void regenerateLink();
         }}
-      >
-        <DialogContent className="sm:max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>
-              <TruncatedText className="pr-8">
-                {active?.file_name ?? 'Attachment'}
-              </TruncatedText>
-            </DialogTitle>
-            {active ? (
-              <DialogDescription>{attachmentMeta(active)}</DialogDescription>
-            ) : null}
-          </DialogHeader>
-
-          <div className="bg-muted/40 flex min-h-64 items-center justify-center overflow-hidden rounded-lg border">
-            <AttachmentPreviewPane
-              loading={loadingUrls}
-              unavailable={unavailable}
-              previewFailed={previewFailed}
-              urls={urls}
-              canPreview={canPreview}
-              iconKind={iconKind}
-              fileName={active?.file_name ?? 'Attachment'}
-              onRegenerate={() => {
-                void regenerateLink();
-              }}
-              onPreviewError={() => setPreviewFailed(true)}
-              onRemove={() => {
-                void handleDelete();
-              }}
-              removing={deleting}
-            />
-          </div>
-
-          <DialogFooter className="sm:justify-between">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-destructive hover:text-destructive cursor-pointer"
-              onClick={() => {
-                void handleDelete();
-              }}
-              disabled={deleting || loadingUrls}
-            >
-              {deleting ? (
-                <Loader2 className="animate-spin" data-icon="inline-start" />
-              ) : (
-                <Trash2 data-icon="inline-start" />
-              )}
-              Delete
-            </Button>
-            <div className="flex flex-col-reverse gap-2 sm:flex-row">
-              {urls && !previewFailed && !unavailable ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="cursor-pointer"
-                  onClick={() => {
-                    void regenerateLink();
-                  }}
-                  disabled={loadingUrls}
-                >
-                  <RefreshCw data-icon="inline-start" />
-                  Refresh link
-                </Button>
-              ) : null}
-              {urls && active && !loadingUrls ? (
-                <Button asChild size="sm">
-                  <a
-                    href={urls.downloadUrl}
-                    download={active.file_name}
-                    rel="noopener noreferrer"
-                  >
-                    <Download data-icon="inline-start" />
-                    Download
-                  </a>
-                </Button>
-              ) : (
-                <Button size="sm" disabled>
-                  <Download data-icon="inline-start" />
-                  Download
-                </Button>
-              )}
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        onPreviewError={() => setPreviewFailed(true)}
+        onDelete={() => {
+          void handleDelete();
+        }}
+      />
     </section>
   );
 }

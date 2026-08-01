@@ -4,6 +4,10 @@ import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-default
 import type { Project } from '@/app/projects/_services/projects.service.base';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
+import {
+  resolveDefaultBoardProject,
+  resolveDefaultBoardSprint,
+} from './board-defaults';
 
 /**
  * Active project ids where the user is an active project member.
@@ -29,14 +33,16 @@ export async function getActiveMemberProjectIds(
 
 export {
   buildBoardFilterRedirectPath,
+  buildWorkspaceFilterRedirectPath,
   resolveDefaultBoardProject,
   resolveDefaultBoardSprint,
 } from './board-defaults';
 
-import {
-  resolveDefaultBoardProject,
-  resolveDefaultBoardSprint,
-} from './board-defaults';
+/** Fallback when active-sprint list fetch fails (board / backlog / work-items). */
+export const EMPTY_ACTIVE_SPRINTS_PAGE = {
+  sprints: [] as Sprint[],
+  pagination: { page: 1, limit: 100, totalCount: 0, totalPages: 1 },
+};
 
 /** Suggested project/sprint when the user has no saved workspace defaults yet. */
 export async function getSuggestedBoardDefaults(

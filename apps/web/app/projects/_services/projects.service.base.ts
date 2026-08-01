@@ -2,10 +2,16 @@
 import { Tables } from '@repo/types';
 import type { User } from '@/app/users/_services/users.service';
 
-export type Project = Tables<'projects'> & {
+export type Project = Omit<
+  Tables<'projects'>,
+  'jira_url' | 'jira_email' | 'jira_token' | 'jira_project_key'
+> & {
   owner?: Pick<User, 'id' | 'name' | 'email'> | null;
   /** Active engineering teams scoped to this project (list views). */
   team_count?: number;
+  jira_url?: string | null;
+  jira_email?: string | null;
+  jira_project_key?: string | null;
 };
 
 export type GetProjectsPaginatedResponse = {
@@ -24,7 +30,16 @@ export type CreateProjectInput = Omit<
   | 'deleted_at'
   | 'created_by'
   | 'updated_by'
->;
+  | 'jira_url'
+  | 'jira_email'
+  | 'jira_token'
+  | 'jira_project_key'
+> & {
+  jira_url?: string | null;
+  jira_email?: string | null;
+  jira_token?: string | null;
+  jira_project_key?: string | null;
+};
 
 export type UpdateProjectInput = Partial<CreateProjectInput>;
 

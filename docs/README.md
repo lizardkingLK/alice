@@ -15,6 +15,7 @@ Central docs for **Alice** (branded as **Jira Teams**).
 | Doc                                                                        | Audience                                            | Status |
 | -------------------------------------------------------------------------- | --------------------------------------------------- | ------ |
 | [product/ARD.md](./product/ARD.md)                                         | Product / requirements                              | Living |
+| [product/ROADMAP.md](./product/ROADMAP.md)                                 | Product roadmap (AI, integrations)                  | Plan   |
 | [architecture/TRD.md](./architecture/TRD.md)                               | Engineering / architecture                          | Living |
 | [guides/DATABASE.md](./guides/DATABASE.md)                                 | Anyone touching schema or migrations                | Living |
 | [guides/TESTING_DEVELOPMENT_FLOW.md](./guides/TESTING_DEVELOPMENT_FLOW.md) | Anyone developing features & running unit/e2e tests | Living |
@@ -28,6 +29,7 @@ Central docs for **Alice** (branded as **Jira Teams**).
 Requirements and scope for Jira Teams.
 
 - [ARD.md](./product/ARD.md) — Agile requirements, roles, stories, NFRs
+- [ROADMAP.md](./product/ROADMAP.md) — planned AI, integrations, and differentiation (**Plan**)
 
 ### Architecture
 

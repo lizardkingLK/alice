@@ -27,6 +27,7 @@ export const workItemFactory = {
       updated_at: '2026-07-09T10:00:00Z',
       created_by: null,
       updated_by: null,
+      jira_issue_key: null,
       assignee: defaultAssignee,
       reporter: null,
       ...overrides,

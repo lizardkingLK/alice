@@ -4,7 +4,12 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getUser } from '@/lib/auth';
 import { pageRange, paginationMeta } from '@/lib/db/pagination';
-import { applyListSearch, throwIfError } from '@/lib/db/query';
+import {
+  applyListSearch,
+  aggregateCountsByKey,
+  throwIfError,
+  zeroCountsById,
+} from '@/lib/db/query';
 import { getCachedProjectList } from '@/lib/cache/dropdown-cache';
 import { createProjectsService } from './projects.service.base';
 import type {
@@ -126,8 +131,9 @@ export async function getProjectMembers(
 export async function getTeamCountsByProjectIds(
   projectIds: readonly string[]
 ): Promise<Record<string, number>> {
+  const counts = zeroCountsById(projectIds);
   if (projectIds.length === 0) {
-    return {};
+    return counts;
   }
 
   const supabase = await createClient();
@@ -143,15 +149,10 @@ export async function getTeamCountsByProjectIds(
     'Failed to count project teams'
   );
 
-  const counts = Object.fromEntries(projectIds.map((id) => [id, 0]));
-  for (const row of data ?? []) {
-    if (!row.project_id) {
-      continue;
-    }
-    counts[row.project_id] = (counts[row.project_id] ?? 0) + 1;
-  }
-
-  return counts;
+  return aggregateCountsByKey(
+    counts,
+    (data ?? []).map((row) => row.project_id)
+  );
 }
 
 function filterActiveProjectMembersWithUser(

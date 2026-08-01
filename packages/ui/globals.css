@@ -28,6 +28,10 @@
   --chart-3: oklch(0.68 0.12 95);
   --chart-4: oklch(0.62 0.14 45);
   --chart-5: oklch(0.52 0.08 280);
+  --work-item-type-epic: oklch(0.52 0.08 280);
+  --work-item-type-story: oklch(0.58 0.1 220);
+  --work-item-type-task: oklch(0.508 0.118 165.612);
+  --work-item-type-issue: oklch(0.62 0.14 45);
 }
 
 .dark {
@@ -54,6 +58,10 @@
   --chart-3: oklch(0.75 0.11 95);
   --chart-4: oklch(0.7 0.12 45);
   --chart-5: oklch(0.62 0.08 280);
+  --work-item-type-epic: oklch(0.62 0.08 280);
+  --work-item-type-story: oklch(0.68 0.1 220);
+  --work-item-type-task: oklch(0.65 0.12 165);
+  --work-item-type-issue: oklch(0.7 0.12 45);
 }
 
 @theme {
@@ -75,6 +83,10 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-work-item-epic: var(--work-item-type-epic);
+  --color-work-item-story: var(--work-item-type-story);
+  --color-work-item-task: var(--work-item-type-task);
+  --color-work-item-issue: var(--work-item-type-issue);
   --radius-lg: var(--radius);
 }
 
@@ -135,4 +147,14 @@
   border-radius: 0.375rem !important;
   background: transparent !important;
   box-shadow: none !important;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }

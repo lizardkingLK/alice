@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@repo/ui/components/ui/select';
+import { ListFilterSelect } from '@/components/list-filter-select';
 import { BacklogLayoutMenu } from '@/app/backlog/_components/backlog-layout-menu';
 import type { BacklogLayoutId } from '@/app/backlog/_helpers/backlog-layout-storage';
 import type { BacklogActiveTab } from '@/app/backlog/_helpers/backlog-item-utils';
@@ -145,33 +146,33 @@ export function BacklogToolbar({
           />
         </div>
 
-        <Select value={projectFilter} onValueChange={onProjectFilterChange}>
-          <SelectTrigger className="bg-background/50 border-border/80 h-9 w-37.5 text-xs">
-            <SelectValue placeholder="All Projects" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Projects</SelectItem>
-            {projects.map((proj) => (
-              <SelectItem key={proj.id} value={proj.id}>
-                {proj.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <ListFilterSelect
+          value={projectFilter}
+          onValueChange={onProjectFilterChange}
+          allValue="all"
+          allLabel="All Projects"
+          ariaLabel="Filter by project"
+          placeholder="All Projects"
+          triggerClassName="w-37.5 text-xs"
+          options={projects.map((proj) => ({
+            value: proj.id,
+            label: proj.name,
+          }))}
+        />
 
-        <Select value={assigneeFilter} onValueChange={onAssigneeFilterChange}>
-          <SelectTrigger className="bg-background/50 border-border/80 h-9 w-40 text-xs">
-            <SelectValue placeholder="All Assignees" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Assignees</SelectItem>
-            {projectMembers.map((member) => (
-              <SelectItem key={member.id} value={member.id}>
-                {member.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <ListFilterSelect
+          value={assigneeFilter}
+          onValueChange={onAssigneeFilterChange}
+          allValue="all"
+          allLabel="All Assignees"
+          ariaLabel="Filter by assignee"
+          placeholder="All Assignees"
+          triggerClassName="w-40 text-xs"
+          options={projectMembers.map((member) => ({
+            value: member.id,
+            label: member.name,
+          }))}
+        />
 
         <Select value={priorityFilter} onValueChange={onPriorityFilterChange}>
           <SelectTrigger className="bg-background/50 border-border/80 h-9 w-35 text-xs">

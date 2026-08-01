@@ -31,6 +31,10 @@ export const createProjectSchema = z.object({
   start_date: z.string().or(z.null()).optional(),
   end_date: z.string().or(z.null()).optional(),
   status: z.enum(['active', 'archived']).default('active'),
+  jira_url: z.string().nullable().optional(),
+  jira_email: z.string().nullable().optional(),
+  jira_token: z.string().nullable().optional(),
+  jira_project_key: z.string().nullable().optional(),
 });
 
 export const updateProjectSchema = createProjectSchema.partial();

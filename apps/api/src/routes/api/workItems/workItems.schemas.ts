@@ -1,11 +1,11 @@
-import { WORK_ITEM_STATUSES } from '@repo/types';
+import { WORK_ITEM_STATUSES, WORK_ITEM_TYPES } from '@repo/types';
 import { z } from 'zod';
 
 const dateStringSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format');
 
-const workItemTypeSchema = z.enum(['Epic', 'Story', 'Task'], {
+const workItemTypeSchema = z.enum(WORK_ITEM_TYPES, {
   message: 'Please select a work item type',
 });
 
@@ -111,6 +111,18 @@ export const workItemCoreObject = z.object({
         .int({ message: 'Story points must be a whole number' })
         .min(0, { message: 'Story points must be at least 0' })
         .nullable()
+    )
+    .optional(),
+  jira_issue_key: z
+    .string()
+    .trim()
+    .max(255, { message: 'Jira issue key must be at most 255 characters' })
+    .nullable()
+    .optional(),
+  parent_id: z
+    .preprocess(
+      emptyStringToNull,
+      z.uuid({ message: 'Please select a valid parent work item' }).nullable()
     )
     .optional(),
 });

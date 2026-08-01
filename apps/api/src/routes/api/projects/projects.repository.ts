@@ -18,6 +18,10 @@ export type ProjectRow = {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  jira_url: string | null;
+  jira_email: string | null;
+  jira_token: string | null;
+  jira_project_key: string | null;
 };
 
 export type ProjectRowWithOwner = ProjectRow & {
@@ -27,6 +31,15 @@ export type ProjectRowWithOwner = ProjectRow & {
     email: string;
   } | null;
 };
+
+/** Strip Jira API token before serializing project DTOs to clients. */
+export function withoutJiraToken<T extends { jira_token?: string | null }>(
+  project: T
+): Omit<T, 'jira_token'> {
+  const safe = { ...project };
+  delete safe.jira_token;
+  return safe;
+}
 
 export type ProjectMemberWithUser = {
   project_id: string;
@@ -287,6 +300,45 @@ export class ProjectsRepository {
     if (error) {
       console.error('error. failed to delete project:', error.message);
       throw new Error(`Database delete failed: ${error.message}`);
+    }
+  }
+
+  async getJiraSettings(): Promise<{
+    jira_url: string;
+    jira_email: string;
+    jira_token: string;
+  } | null> {
+    const { data, error } = await supabase
+      .from('jira_settings')
+      .select('jira_url, jira_email, jira_token')
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('error. failed to fetch Jira settings:', error.message);
+      throw new Error('Failed to fetch Jira settings');
+    }
+    return data;
+  }
+
+  async saveJiraSettings(
+    url: string,
+    email: string,
+    token: string
+  ): Promise<void> {
+    const row = {
+      singleton: true,
+      jira_url: url,
+      jira_email: email,
+      jira_token: token,
+    };
+    const { error } = await supabase
+      .from('jira_settings')
+      .upsert(row as never, { onConflict: 'singleton' });
+
+    if (error) {
+      console.error('error. failed to upsert Jira settings:', error.message);
+      throw new Error(`Database upsert failed: ${error.message}`);
     }
   }
 }

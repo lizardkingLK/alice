@@ -13,8 +13,8 @@ export type WorkItemDetailLinkContext = {
 };
 
 /**
- * Detail href for a work item. Pass project or assignee context so the detail
- * page can build a history-preserving breadcrumb trail.
+ * Detail href for a work item. Optional query context is kept for callers that
+ * still pass it; the shell breadcrumb always uses the work item's project_id.
  */
 export function workItemDetailHref(
   workItemId: string,
@@ -34,44 +34,32 @@ export function workItemDetailHref(
 }
 
 /**
- * Breadcrumb trail for work-item detail.
- * - `fromProjectId` → Dashboard → Projects → project → Work Items → item
- * - `fromAssigneeId` → Dashboard → My Work → item
- * - otherwise → Dashboard → Work Items → item
+ * Shell breadcrumb for work-item detail — always project-scoped when possible:
+ * Dashboard → Projects → {project} → Work Items → {item}
+ *
+ * Navigation history (query flags) is ignored; use the browser back button.
  */
 export function buildWorkItemBreadcrumbOverrides(
   workItemId: string,
-  context: WorkItemDetailLinkContext = {}
+  projectId?: string | null
 ): DashboardBreadcrumbOverride[] {
-  const { fromProjectId, fromAssigneeId } = context;
   const shortWorkItemId = toShortId(workItemId);
 
-  if (fromProjectId && isUuidSegment(fromProjectId)) {
+  if (projectId && isUuidSegment(projectId)) {
     return [
       { label: 'Dashboard', url: '/dashboard' },
       { label: 'Projects', url: '/projects' },
       {
-        label: toShortId(fromProjectId),
-        url: `/projects/${fromProjectId}`,
+        label: toShortId(projectId),
+        url: `/projects/${projectId}`,
       },
       {
         label: 'Work Items',
-        url: `/projects/${fromProjectId}?tab=work-items`,
+        url: `/projects/${projectId}?tab=work-items`,
       },
       {
         label: shortWorkItemId,
-        url: workItemDetailHref(workItemId, { fromProjectId }),
-      },
-    ];
-  }
-
-  if (fromAssigneeId && isUuidSegment(fromAssigneeId)) {
-    return [
-      { label: 'Dashboard', url: '/dashboard' },
-      { label: 'My Work', url: '/member' },
-      {
-        label: shortWorkItemId,
-        url: workItemDetailHref(workItemId, { fromAssigneeId }),
+        url: `/work-items/${workItemId}`,
       },
     ];
   }

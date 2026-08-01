@@ -248,50 +248,35 @@ export type Database = {
           },
         ];
       };
-      instruments: {
+      jira_settings: {
         Row: {
           created_at: string;
-          created_by: string | null;
-          id: number;
-          name: string;
-          status: Database['public']['Enums']['RecordStatus'];
+          id: string;
+          jira_email: string;
+          jira_token: string;
+          jira_url: string;
+          singleton: boolean;
           updated_at: string;
-          updated_by: string | null;
         };
         Insert: {
           created_at?: string;
-          created_by?: string | null;
-          id?: number;
-          name: string;
-          status?: Database['public']['Enums']['RecordStatus'];
+          id?: string;
+          jira_email: string;
+          jira_token: string;
+          jira_url: string;
+          singleton?: boolean;
           updated_at: string;
-          updated_by?: string | null;
         };
         Update: {
           created_at?: string;
-          created_by?: string | null;
-          id?: number;
-          name?: string;
-          status?: Database['public']['Enums']['RecordStatus'];
+          id?: string;
+          jira_email?: string;
+          jira_token?: string;
+          jira_url?: string;
+          singleton?: boolean;
           updated_at?: string;
-          updated_by?: string | null;
         };
-        Relationships: [
-          {
-            foreignKeyName: 'instruments_created_by_fkey';
-            columns: ['created_by'];
-            isOneToOne: false;
-            referencedRelation: 'users';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'instruments_updated_by_fkey';
-            columns: ['updated_by'];
-            isOneToOne: false;
-            referencedRelation: 'users';
-            referencedColumns: ['id'];
-          },
-        ];
+        Relationships: [];
       };
       notifications: {
         Row: {
@@ -425,6 +410,10 @@ export type Database = {
           description: string | null;
           end_date: string | null;
           id: string;
+          jira_email: string | null;
+          jira_project_key: string | null;
+          jira_token: string | null;
+          jira_url: string | null;
           key: string;
           name: string;
           owner_id: string;
@@ -442,6 +431,10 @@ export type Database = {
           description?: string | null;
           end_date?: string | null;
           id?: string;
+          jira_email?: string | null;
+          jira_project_key?: string | null;
+          jira_token?: string | null;
+          jira_url?: string | null;
           key: string;
           name: string;
           owner_id: string;
@@ -459,6 +452,10 @@ export type Database = {
           description?: string | null;
           end_date?: string | null;
           id?: string;
+          jira_email?: string | null;
+          jira_project_key?: string | null;
+          jira_token?: string | null;
+          jira_url?: string | null;
           key?: string;
           name?: string;
           owner_id?: string;
@@ -790,7 +787,7 @@ export type Database = {
           logged_at?: string;
           logged_hours: number;
           status?: Database['public']['Enums']['RecordStatus'];
-          updated_at?: string;
+          updated_at: string;
           updated_by?: string | null;
           user_id: string;
           work_item_id: string;
@@ -834,6 +831,7 @@ export type Database = {
           done_at: string | null;
           due_date: string | null;
           id: string;
+          jira_issue_key: string | null;
           parent_id: string | null;
           priority: Database['public']['Enums']['WorkItemPriority'];
           project_id: string;
@@ -854,6 +852,7 @@ export type Database = {
           done_at?: string | null;
           due_date?: string | null;
           id?: string;
+          jira_issue_key?: string | null;
           parent_id?: string | null;
           priority?: Database['public']['Enums']['WorkItemPriority'];
           project_id: string;
@@ -874,6 +873,7 @@ export type Database = {
           done_at?: string | null;
           due_date?: string | null;
           id?: string;
+          jira_issue_key?: string | null;
           parent_id?: string | null;
           priority?: Database['public']['Enums']['WorkItemPriority'];
           project_id?: string;
@@ -961,7 +961,7 @@ export type Database = {
       WorkItemPriority: 'lowest' | 'low' | 'medium' | 'high' | 'highest';
       WorkItemStatus:
         'Draft' | 'New' | 'ToDo' | 'InProgress' | 'Testing' | 'Done';
-      WorkItemType: 'Epic' | 'Story' | 'Task';
+      WorkItemType: 'Epic' | 'Story' | 'Task' | 'Issue';
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -1104,7 +1104,7 @@ export const Constants = {
       UserRole: ['admin', 'manager', 'member'],
       WorkItemPriority: ['lowest', 'low', 'medium', 'high', 'highest'],
       WorkItemStatus: ['Draft', 'New', 'ToDo', 'InProgress', 'Testing', 'Done'],
-      WorkItemType: ['Epic', 'Story', 'Task'],
+      WorkItemType: ['Epic', 'Story', 'Task', 'Issue'],
     },
   },
 } as const;

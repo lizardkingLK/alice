@@ -301,11 +301,11 @@ One Supabase project serves both development and production. Migrations must be 
   - `DELETE /api/projects/:id` — protected. Hard deletes a project from database.
 
 - **Sprints**
-  - `GET /api/sprints` — protected. Returns list of sprints (supports pagination `page` and `limit`, filter `status` via `listSprintsQuerySchema`).
   - `POST /api/sprints` — protected. Creates a sprint (validates request body via `createSprintBodySchema`).
-  - `GET /api/sprints/:id` — protected. Returns details of a specific sprint.
   - `PATCH /api/sprints/:id` — protected. Updates sprint details (validates request body via `updateSprintBodySchema`).
   - `PATCH /api/sprints/:id/status` — protected. Updates sprint status (validates body via `updateSprintStatusSchema`).
+  - `GET /api/sprints/:id/burndown` — protected. Returns burndown series for a sprint (web dashboard prefers the RSC reader in `sprint-burndown.server.ts`).
+  - Sprint **list/detail reads** are not Express GETs — dashboard pages use direct Supabase RSC readers (`sprints.service.server.ts`).
 
 - **Attributes**
   - `GET /api/attributes` — protected. Returns all custom attributes schemas configured in the database.

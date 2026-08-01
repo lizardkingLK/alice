@@ -382,7 +382,7 @@ describe('CommentsFeed Component', () => {
     renderFeed({ initialComments: [archivedComment] });
 
     // Switch status filter to "archived"
-    const select = screen.getAllByTestId('status-select')[1]!;
+    const select = screen.getByTestId('status-select');
     fireEvent.change(select, { target: { value: 'archived' } });
 
     // Open dropdown menu
@@ -409,7 +409,7 @@ describe('CommentsFeed Component', () => {
     renderFeed({ initialComments: [archivedComment] });
 
     // Switch status filter to "archived"
-    const select = screen.getAllByTestId('status-select')[1]!;
+    const select = screen.getByTestId('status-select');
     fireEvent.change(select, { target: { value: 'archived' } });
 
     // Open dropdown menu

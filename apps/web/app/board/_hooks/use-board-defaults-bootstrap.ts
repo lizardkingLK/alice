@@ -12,7 +12,7 @@ import {
   resolveOpenDefaultsPreference,
 } from '@/app/board/_helpers/workspace-defaults-shared';
 import { useWorkspaceDefaultsDialog } from '@/app/board/_hooks/use-workspace-defaults-dialog';
-import { buildBoardFilterRedirectPath } from '@/app/board/_services/board-defaults';
+import { buildWorkspaceFilterRedirectPath } from '@/app/board/_services/board-defaults';
 import type { Project } from '@/app/projects/_services/projects.service.base';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
 
@@ -23,6 +23,8 @@ type SuggestedDefaults = {
 
 type UseBoardDefaultsBootstrapOptions = {
   readonly userId: string | null;
+  /** Path used when writing default project/sprint into the URL (e.g. `/board`). */
+  readonly basePath?: string;
   readonly needsClientBootstrap: boolean;
   readonly projectFilter: string;
   readonly sprintFilter: string;
@@ -32,11 +34,12 @@ type UseBoardDefaultsBootstrapOptions = {
 };
 
 /**
- * Seeds `/board` URL from localStorage (or suggested defaults) when no project
- * query is present.
+ * Seeds a workspace list/board URL from localStorage (or suggested defaults)
+ * when no project query is present.
  */
 export function useBoardDefaultsBootstrap({
   userId,
+  basePath = '/board',
   needsClientBootstrap,
   projectFilter,
   sprintFilter,
@@ -56,14 +59,14 @@ export function useBoardDefaultsBootstrap({
   const navigateToPreference = useCallback(
     (preference: BoardDefaultsPreference) => {
       if (isAllProjectsPreference(preference)) {
-        const path = buildBoardFilterRedirectPath({
+        const path = buildWorkspaceFilterRedirectPath(basePath, {
           sprintId: preference.sprintId ?? undefined,
         });
         router.replace(path ?? pathname);
         return;
       }
 
-      const path = buildBoardFilterRedirectPath({
+      const path = buildWorkspaceFilterRedirectPath(basePath, {
         projectId: preference.projectId,
         sprintId: preference.sprintId ?? undefined,
       });
@@ -73,7 +76,7 @@ export function useBoardDefaultsBootstrap({
       }
       router.replace(pathname);
     },
-    [pathname, router]
+    [basePath, pathname, router]
   );
 
   const {

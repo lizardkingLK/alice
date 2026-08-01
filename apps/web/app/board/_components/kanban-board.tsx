@@ -14,7 +14,6 @@ import {
   Calendar,
   FolderDot,
   SquareArrowOutUpRight,
-  Tag,
   X,
 } from '@repo/ui/lib/icons';
 import {
@@ -51,15 +50,19 @@ import {
   TooltipTrigger,
 } from '@repo/ui/components/ui/tooltip';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
-import { formatLabelWithSpace } from '@/app/_shared/utility';
+import { formatLabelWithSpace, getInitials } from '@/app/_shared/utility';
 import { BoardDefaultsDialog } from '@/app/board/_components/board-defaults-dialog';
 import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
-import { resolveDefaultBoardSprint } from '@/app/board/_services/board-defaults';
+import {
+  applyProjectFilterToSearchParams,
+  buildSprintFilterOptions,
+} from '@/app/board/_services/board-defaults';
 import type { Project } from '@/app/projects/_services/projects.service.base';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
+import { WorkItemTypeBadge } from '@/app/work-items/_components/workItem-badge-type';
 import { DescriptionView } from '@/app/work-items/_components/workItem-description-view';
 import { descriptionToPlainText } from '@/app/work-items/_helpers/work-item-description';
 import { BOARD_STATUS_COLUMNS } from '@/app/work-items/_helpers/work-item-status';
@@ -91,15 +94,6 @@ const PRIORITIES: BoardPriority[] = [
   'low',
   'lowest',
 ];
-
-function getInitials(name: string) {
-  return name
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-}
 
 function shortId(id: string) {
   return id.slice(0, 8).toUpperCase();
@@ -173,19 +167,11 @@ export function KanbanBoard({
   const handleProjectChange = useCallback(
     (nextProject: string) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (!nextProject || nextProject === 'all') {
-        params.delete('project');
-        params.delete('sprint');
-      } else {
-        params.set('project', nextProject);
-        const defaultSprint = resolveDefaultBoardSprint(sprints, nextProject);
-        if (defaultSprint) {
-          params.set('sprint', defaultSprint.id);
-        } else {
-          params.delete('sprint');
-        }
-      }
-      params.delete('page');
+      applyProjectFilterToSearchParams(params, {
+        nextProject,
+        sprints,
+        pageMode: 'delete',
+      });
       const query = params.toString();
       router.push(query ? `${pathname}?${query}` : pathname);
     },
@@ -193,15 +179,10 @@ export function KanbanBoard({
   );
 
   const projectSelectValue = projectFilter || 'all';
-  const sprintOptions = useMemo(() => {
-    const scoped = projectFilter
-      ? sprints.filter((sprint) => sprint.project?.id === projectFilter)
-      : sprints;
-    return scoped.map((sprint) => ({
-      value: sprint.id,
-      label: sprint.name,
-    }));
-  }, [projectFilter, sprints]);
+  const sprintOptions = useMemo(
+    () => buildSprintFilterOptions(sprints, projectFilter),
+    [projectFilter, sprints]
+  );
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [activeDropCol, setActiveDropCol] = useState<BoardStatus | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -645,13 +626,10 @@ export function KanbanBoard({
                             <Separator className="my-1" />
 
                             <div className="flex items-center justify-between gap-2">
-                              <Badge
-                                variant="outline"
+                              <WorkItemTypeBadge
+                                type={item.type}
                                 className="max-w-[60%] truncate"
-                              >
-                                <Tag data-icon="inline-start" />
-                                <span className="truncate">{item.type}</span>
-                              </Badge>
+                              />
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Avatar size="sm">
@@ -730,10 +708,7 @@ export function KanbanBoard({
                     <p className="text-muted-foreground mb-2 text-[10px] font-medium tracking-wide uppercase">
                       Type
                     </p>
-                    <span className="text-foreground inline-flex items-center gap-1.5 text-xs font-medium">
-                      <Tag className="text-primary size-3.5" />
-                      {selectedTask.type}
-                    </span>
+                    <WorkItemTypeBadge type={selectedTask.type} />
                   </div>
 
                   <div className="bg-muted/20 rounded-lg border p-3">

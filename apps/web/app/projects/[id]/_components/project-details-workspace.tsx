@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useTransition, useActionState } from 'react';
-import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   Card,
@@ -14,13 +13,6 @@ import { Button } from '@repo/ui/components/ui/button';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@repo/ui/components/ui/select';
-import {
   Tabs,
   TabsList,
   TabsTrigger,
@@ -28,6 +20,9 @@ import {
 } from '@repo/ui/components/ui/tabs';
 import { addMemberAction, removeMemberAction } from './actions';
 import { ProjectTeamsPanel } from '@/app/projects/[id]/_components/project-teams-panel';
+import { ProjectSummaryBanner } from '@/app/projects/[id]/_components/project-summary-banner';
+import { ProjectSummaryMetrics } from '@/app/projects/[id]/_components/project-summary-metrics';
+import { SearchableSelect } from '@/components/searchable-select';
 import type {
   Project,
   ProjectMemberWithUser,
@@ -41,6 +36,9 @@ import {
   type ProjectDetailsTab,
 } from '@/lib/search-params';
 import { UNDERLINE_TAB_TRIGGER_CLASS } from '@/components/underline-tab-trigger';
+import { Input } from '@repo/ui/components/ui/input';
+import { Label } from '@repo/ui/components/ui/label';
+import { apiFetch } from '@/lib/api/api-client';
 import {
   Info,
   Users,
@@ -48,13 +46,17 @@ import {
   Trash2,
   Calendar,
   Shield,
-  ArrowLeft,
   Loader2,
   AlertTriangle,
   Folder,
   Network,
   ClipboardPenLine,
+  Database,
+  RefreshCw,
+  Edit,
 } from '@repo/ui/lib/icons';
+
+const REPORT_CARD_CLASS = 'border-border/60 bg-card/50 backdrop-blur-sm';
 
 interface ProjectWorkItemsProps {
   readonly initialWorkItems: DbWorkItem[];
@@ -101,6 +103,73 @@ export function ProjectDetailsWorkspace({
   const searchParams = useSearchParams();
   const activeTab = parseProjectDetailsTab(searchParams.get('tab'));
 
+  const [isEditingJira, setIsEditingJira] = useState(!project.jira_project_key);
+  const [jiraUrl, setJiraUrl] = useState(project.jira_url || '');
+  const [jiraProjectKey, setJiraProjectKey] = useState(
+    project.jira_project_key || ''
+  );
+  const [isSavingJira, setIsSavingJira] = useState(false);
+  const [isSyncingJira, setIsSyncingJira] = useState(false);
+  const [jiraMessage, setJiraMessage] = useState<string | null>(null);
+  const [isJiraError, setIsJiraError] = useState(false);
+
+  const handleSaveJira = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingJira(true);
+    setJiraMessage(null);
+    setIsJiraError(false);
+
+    try {
+      await apiFetch(`/api/projects/${project.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          jira_url: jiraUrl.trim() || null,
+          jira_project_key: jiraProjectKey.toUpperCase().trim() || null,
+        }),
+      });
+      setJiraMessage('Jira integration settings saved successfully!');
+      setIsEditingJira(false);
+      router.refresh();
+    } catch (err) {
+      console.error('Failed to save Jira integration:', err);
+      setJiraMessage(
+        err instanceof Error ? err.message : 'Failed to save configuration'
+      );
+      setIsJiraError(true);
+    } finally {
+      setIsSavingJira(false);
+    }
+  };
+
+  const handleSyncJira = async () => {
+    setIsSyncingJira(true);
+    setJiraMessage(null);
+    setIsJiraError(false);
+
+    try {
+      setJiraMessage('Syncing tasks from Jira Cloud...');
+      const res = await apiFetch<{ importedCount: number }>(
+        '/api/projects/jira/import',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            projectId: project.id,
+          }),
+        }
+      );
+      setJiraMessage(
+        `Successfully imported/synced ${res.importedCount} tasks from Jira!`
+      );
+      router.refresh();
+    } catch (err) {
+      console.error('Jira sync failed:', err);
+      setJiraMessage(err instanceof Error ? err.message : 'Sync failed');
+      setIsJiraError(true);
+    } finally {
+      setIsSyncingJira(false);
+    }
+  };
+
   const [error, setError] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -143,43 +212,7 @@ export function ProjectDetailsWorkspace({
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb / Back button */}
-      <div className="flex items-center gap-2">
-        <Link
-          href="/projects"
-          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Projects
-        </Link>
-      </div>
-
-      {/* Hero Header */}
-      <div className="bg-card/40 border-border/60 flex flex-col gap-2 rounded-xl border p-4 shadow-sm backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2.5">
-            <div className="bg-primary/10 text-primary border-primary/20 flex h-10 w-10 items-center justify-center rounded-lg border text-sm font-bold shadow-sm">
-              {project.key.slice(0, 2)}
-            </div>
-            <h1 className="text-foreground text-3xl font-extrabold tracking-tight">
-              {project.name}
-            </h1>
-            <Badge
-              variant="outline"
-              className={
-                project.status === 'active'
-                  ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600'
-                  : 'border-amber-500/20 bg-amber-500/10 text-amber-600'
-              }
-            >
-              {project.status}
-            </Badge>
-          </div>
-          <p className="text-muted-foreground max-w-2xl text-sm">
-            {project.description || 'No description provided for this project.'}
-          </p>
-        </div>
-      </div>
+      <ProjectSummaryBanner project={project} />
 
       {/* Tabs Selector */}
       <Tabs
@@ -194,31 +227,36 @@ export function ProjectDetailsWorkspace({
           </TabsTrigger>
           <TabsTrigger value="members" className={UNDERLINE_TAB_TRIGGER_CLASS}>
             <Users className="h-4 w-4" />
-            Members ({members.length})
+            Members
           </TabsTrigger>
           <TabsTrigger value="teams" className={UNDERLINE_TAB_TRIGGER_CLASS}>
             <Network className="h-4 w-4" />
-            Teams ({teams.totalCount})
+            Teams
           </TabsTrigger>
           <TabsTrigger
             value="work-items"
             className={UNDERLINE_TAB_TRIGGER_CLASS}
           >
             <ClipboardPenLine className="h-4 w-4" />
-            Work Items ({workItems.totalCount})
+            Work Items
           </TabsTrigger>
         </TabsList>
 
         <TabsContent
           value="details"
-          className="m-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="m-0 space-y-6 focus-visible:ring-0 focus-visible:ring-offset-0"
         >
+          <ProjectSummaryMetrics
+            memberCount={members.length}
+            teamCount={teams.totalCount}
+            workItemCount={workItems.totalCount}
+          />
+
           <div className="grid gap-6 md:grid-cols-3">
-            {/* Main Info Card */}
-            <Card className="border-border/60 bg-card/40 backdrop-blur-md md:col-span-2">
+            <Card className={`${REPORT_CARD_CLASS} md:col-span-2`}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
-                  <Folder className="text-primary h-5 w-5" />
+                <CardTitle className="text-primary flex items-center gap-2 text-base font-semibold">
+                  <Folder className="h-5 w-5" />
                   Project Information
                 </CardTitle>
                 <CardDescription className="text-muted-foreground text-sm">
@@ -249,9 +287,9 @@ export function ProjectDetailsWorkspace({
                   <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                     Description
                   </span>
-                  <p className="text-foreground text-sm leading-relaxed">
+                  <p className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">
                     {project.description ||
-                      'No description configures for this project.'}
+                      'No description configured for this project.'}
                   </p>
                 </div>
 
@@ -292,15 +330,15 @@ export function ProjectDetailsWorkspace({
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                    <span className="text-muted-foreground mr-4 text-xs font-semibold tracking-wider uppercase">
                       Record Status
                     </span>
                     <Badge
                       variant="outline"
                       className={
                         project.status === 'active'
-                          ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600'
-                          : 'border-amber-500/20 bg-amber-500/10 text-amber-600'
+                          ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                          : 'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400'
                       }
                     >
                       {project.status}
@@ -310,11 +348,10 @@ export function ProjectDetailsWorkspace({
               </CardContent>
             </Card>
 
-            {/* Sidebar Ownership Card */}
-            <Card className="border-border/60 bg-card/40 h-fit backdrop-blur-md">
+            <Card className={`${REPORT_CARD_CLASS} h-fit`}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
-                  <Shield className="text-primary h-5 w-5" />
+                <CardTitle className="text-primary flex items-center gap-2 text-base font-semibold">
+                  <Shield className="h-5 w-5" />
                   Ownership
                 </CardTitle>
                 <CardDescription className="text-muted-foreground text-sm">
@@ -337,6 +374,143 @@ export function ProjectDetailsWorkspace({
                 </div>
               </CardContent>
             </Card>
+
+            <Card className={`${REPORT_CARD_CLASS} md:col-span-3`}>
+              <CardHeader>
+                <CardTitle className="text-primary flex items-center gap-2 text-base font-semibold">
+                  <Database className="h-5 w-5" />
+                  Jira Cloud Integration
+                </CardTitle>
+                <CardDescription className="text-muted-foreground text-sm">
+                  Configure your Jira Cloud connection to import issues and keep
+                  tasks synced.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {jiraMessage && (
+                  <div
+                    className={`rounded p-3 text-sm ${
+                      isJiraError
+                        ? 'bg-destructive/10 text-destructive'
+                        : 'bg-emerald-500/10 text-emerald-600'
+                    }`}
+                  >
+                    {jiraMessage}
+                  </div>
+                )}
+
+                {isEditingJira ? (
+                  <form onSubmit={handleSaveJira} className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="jiraUrl"
+                          className="text-xs font-semibold"
+                        >
+                          Jira Cloud URL / Domain
+                        </Label>
+                        <Input
+                          id="jiraUrl"
+                          value={jiraUrl}
+                          onChange={(e) => setJiraUrl(e.target.value)}
+                          placeholder="e.g. company.atlassian.net"
+                          className="bg-background/50 h-9 text-sm"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="jiraProjectKey"
+                          className="text-xs font-semibold"
+                        >
+                          Jira Project Key
+                        </Label>
+                        <Input
+                          id="jiraProjectKey"
+                          value={jiraProjectKey}
+                          onChange={(e) => setJiraProjectKey(e.target.value)}
+                          placeholder="e.g. PROJ"
+                          className="bg-background/50 h-9 text-sm uppercase"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2">
+                      {project.jira_project_key && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setJiraUrl(project.jira_url || '');
+                            setJiraProjectKey(project.jira_project_key || '');
+                            setIsEditingJira(false);
+                            setJiraMessage(null);
+                          }}
+                          disabled={isSavingJira}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                      <Button type="submit" size="sm" disabled={isSavingJira}>
+                        {isSavingJira && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        Save Connection
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="bg-muted/20 border-border/40 grid gap-4 rounded-lg border p-4 text-sm sm:grid-cols-2">
+                      <div>
+                        <span className="text-muted-foreground block text-xs font-semibold tracking-wider uppercase">
+                          Jira URL
+                        </span>
+                        <span className="text-foreground font-medium">
+                          {project.jira_url || 'Not configured'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-xs font-semibold tracking-wider uppercase">
+                          Project Key
+                        </span>
+                        <span className="text-foreground font-mono font-medium">
+                          {project.jira_project_key || 'Not configured'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsEditingJira(true)}
+                        disabled={isSyncingJira}
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        Modify Connection
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        onClick={handleSyncJira}
+                        disabled={isSyncingJira || !project.jira_project_key}
+                        className="animate-fade-in bg-emerald-600 text-white hover:bg-emerald-700"
+                      >
+                        {isSyncingJira ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                        )}
+                        Sync / Import Tasks
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
 
@@ -346,7 +520,7 @@ export function ProjectDetailsWorkspace({
         >
           <div className="grid gap-6 md:grid-cols-3">
             {/* Members Table Card */}
-            <Card className="border-border/60 bg-card/40 backdrop-blur-md md:col-span-2">
+            <Card className={`${REPORT_CARD_CLASS} md:col-span-2`}>
               <CardHeader>
                 <CardTitle className="text-xl font-bold tracking-tight">
                   Allocated Members
@@ -443,7 +617,7 @@ export function ProjectDetailsWorkspace({
 
             {/* Add Members Allocation Panel */}
             {isManagerOrAdmin && (
-              <Card className="border-border/60 bg-card/40 h-fit backdrop-blur-md">
+              <Card className={`${REPORT_CARD_CLASS} h-fit`}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
                     <UserPlus className="text-primary h-5 w-5" />
@@ -461,21 +635,19 @@ export function ProjectDetailsWorkspace({
                   ) : (
                     <form action={executeAddAction} className="space-y-4">
                       <div className="space-y-1.5">
-                        <Select name="userId" required>
-                          <SelectTrigger
-                            id="userId"
-                            className="bg-background border-input h-10 w-full"
-                          >
-                            <SelectValue placeholder="Select User..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {candidateUsers.map((u) => (
-                              <SelectItem key={u.id} value={u.id}>
-                                {u.name} ({u.email})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <SearchableSelect
+                          id="userId"
+                          name="userId"
+                          required
+                          placeholder="Search users…"
+                          ariaLabel="Select user to allocate"
+                          className="bg-background border-input h-10 w-full"
+                          options={candidateUsers.map((u) => ({
+                            value: u.id,
+                            label: `${u.name} (${u.email})`,
+                          }))}
+                          emptyText="No matching users."
+                        />
                       </div>
 
                       {addFormState.error && (
@@ -534,6 +706,7 @@ export function ProjectDetailsWorkspace({
           <WorkItemsWorkspace
             projects={[project]}
             projectMembers={allUsers}
+            sprints={[]}
             initialWorkItems={workItems.initialWorkItems}
             totalCount={workItems.totalCount}
             page={workItems.page}
@@ -541,6 +714,7 @@ export function ProjectDetailsWorkspace({
             totalPages={workItems.totalPages}
             search={workItems.search}
             projectFilter={project.id}
+            sprintFilter=""
             typeFilter={workItems.typeFilter}
             assigneeFilter={workItems.assigneeFilter}
             lockedProjectId={project.id}

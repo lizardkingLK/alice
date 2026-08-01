@@ -13,6 +13,7 @@ import { userFactory } from '../factories/user.factory';
 import { projectFactory } from '../factories/project.factory';
 import { workItemFactory } from '../factories/workItem.factory';
 import { paginationFactory } from '../factories/pagination.factory';
+import { pickComboboxOption } from '../helpers/pick-combobox-option';
 
 vi.mock('next/navigation', () => import('../mocks/next-navigation'));
 
@@ -76,6 +77,7 @@ function renderTable(
     <WorkItemsTable
       projects={projects}
       projectMembers={projectMembers}
+      sprints={[]}
       initialWorkItems={
         overrides.initialWorkItems ?? workItemFactory.buildList(2)
       }
@@ -85,6 +87,7 @@ function renderTable(
       totalPages={pagination.totalPages}
       search={overrides.search ?? ''}
       projectFilter={overrides.projectFilter ?? ''}
+      sprintFilter=""
       typeFilter={overrides.typeFilter ?? ''}
       assigneeFilter={overrides.assigneeFilter ?? ''}
       currentUserId={overrides.currentUserId}
@@ -134,6 +137,7 @@ describe('WorkItemsTable', () => {
     expect(screen.getByText('In Progress')).toBeInTheDocument();
     expect(screen.getByText('High')).toBeInTheDocument();
     expect(screen.getByText('Gavin Belson')).toBeInTheDocument();
+    expect(screen.getByText('GB')).toBeInTheDocument();
     expect(screen.getByText(formatDate('2026-07-31'))).toBeInTheDocument();
   });
 
@@ -159,6 +163,26 @@ describe('WorkItemsTable', () => {
 
     // Assert
     expect(screen.getByText('You')).toBeInTheDocument();
+    expect(screen.getByText(currentUser.name)).toBeInTheDocument();
+  });
+
+  it('omits avatar when work item is unassigned', () => {
+    // Arrange
+    const item = workItemFactory.build({
+      assignee_id: null,
+      assignee: null,
+    });
+
+    // Act
+    renderTable({
+      initialWorkItems: [item],
+      totalCount: 1,
+      totalPages: 1,
+    });
+
+    // Assert
+    expect(screen.getByText('—')).toBeInTheDocument();
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });
 
   it('shows empty state when there are no work items', () => {
@@ -221,7 +245,7 @@ describe('WorkItemsTable', () => {
     expect(mockPush).toHaveBeenCalledWith('/work-items?page=1&limit=5');
   });
 
-  it('navigates when project type or assignee filters change', () => {
+  it('navigates when project type or assignee filters change', async () => {
     // Arrange
     const projects = projectFactory.buildList(1);
     const projectMembers = userFactory.buildList(1);
@@ -229,6 +253,7 @@ describe('WorkItemsTable', () => {
       <WorkItemsTable
         projects={projects}
         projectMembers={projectMembers}
+        sprints={[]}
         initialWorkItems={workItemFactory.buildList(1)}
         totalCount={1}
         page={1}
@@ -236,16 +261,17 @@ describe('WorkItemsTable', () => {
         totalPages={1}
         search=""
         projectFilter=""
+        sprintFilter=""
         typeFilter=""
         assigneeFilter=""
       />
     );
 
     // Act — project
-    fireEvent.click(
-      screen.getByRole('combobox', { name: /Filter by project/i })
+    await pickComboboxOption(
+      { name: /Filter by project/i },
+      projects[0]!.name
     );
-    fireEvent.click(screen.getByRole('option', { name: projects[0]!.name }));
 
     // Assert
     expect(mockPush).toHaveBeenCalledWith(
@@ -253,18 +279,15 @@ describe('WorkItemsTable', () => {
     );
 
     // Act — type
-    fireEvent.click(screen.getByRole('combobox', { name: /Filter by type/i }));
-    fireEvent.click(screen.getByRole('option', { name: 'Task' }));
+    await pickComboboxOption({ name: /Filter by type/i }, 'Task');
 
     // Assert
     expect(mockPush).toHaveBeenCalledWith('/work-items?type=Task&page=1');
 
     // Act — assignee
-    fireEvent.click(
-      screen.getByRole('combobox', { name: /Filter by assignee/i })
-    );
-    fireEvent.click(
-      screen.getByRole('option', { name: projectMembers[0]!.name })
+    await pickComboboxOption(
+      { name: /Filter by assignee/i },
+      projectMembers[0]!.name
     );
 
     // Assert

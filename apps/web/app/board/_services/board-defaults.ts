@@ -59,10 +59,65 @@ export function resolveDefaultBoardSprint(
   return notStarted ?? forProject[0] ?? null;
 }
 
-export function buildBoardFilterRedirectPath(options: {
-  readonly projectId?: string;
-  readonly sprintId?: string;
-}): string | null {
+/** Sprint select options scoped to the active project filter (or all). */
+export function buildSprintFilterOptions(
+  sprints: readonly Sprint[],
+  projectFilter: string
+): { readonly value: string; readonly label: string }[] {
+  const scoped = projectFilter
+    ? sprints.filter((sprint) => sprint.project?.id === projectFilter)
+    : sprints;
+  return scoped.map((sprint) => ({
+    value: sprint.id,
+    label: sprint.name,
+  }));
+}
+
+/**
+ * Mutates search params when the project filter changes: clears sprint on
+ * "all", otherwise pairs the project with a suggested default sprint.
+ */
+export function applyProjectFilterToSearchParams(
+  params: URLSearchParams,
+  options: {
+    readonly nextProject: string;
+    readonly sprints: readonly Sprint[];
+    readonly allValue?: string;
+    /** Board drops `page`; list pages reset to `1`. */
+    readonly pageMode?: 'delete' | 'one';
+  }
+): void {
+  const allValue = options.allValue ?? 'all';
+  if (!options.nextProject || options.nextProject === allValue) {
+    params.delete('project');
+    params.delete('sprint');
+  } else {
+    params.set('project', options.nextProject);
+    const defaultSprint = resolveDefaultBoardSprint(
+      options.sprints,
+      options.nextProject
+    );
+    if (defaultSprint) {
+      params.set('sprint', defaultSprint.id);
+    } else {
+      params.delete('sprint');
+    }
+  }
+
+  if (options.pageMode === 'one') {
+    params.set('page', '1');
+  } else if (options.pageMode === 'delete') {
+    params.delete('page');
+  }
+}
+
+export function buildWorkspaceFilterRedirectPath(
+  pathname: string,
+  options: {
+    readonly projectId?: string;
+    readonly sprintId?: string;
+  }
+): string | null {
   const params = new URLSearchParams();
   if (options.projectId) {
     params.set('project', options.projectId);
@@ -72,5 +127,12 @@ export function buildBoardFilterRedirectPath(options: {
   }
 
   const query = params.toString();
-  return query ? `/board?${query}` : null;
+  return query ? `${pathname}?${query}` : null;
+}
+
+export function buildBoardFilterRedirectPath(options: {
+  readonly projectId?: string;
+  readonly sprintId?: string;
+}): string | null {
+  return buildWorkspaceFilterRedirectPath('/board', options);
 }
