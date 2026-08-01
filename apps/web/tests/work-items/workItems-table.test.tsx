@@ -136,6 +136,7 @@ describe('WorkItemsTable', () => {
     expect(screen.getByText('In Progress')).toBeInTheDocument();
     expect(screen.getByText('High')).toBeInTheDocument();
     expect(screen.getByText('Gavin Belson')).toBeInTheDocument();
+    expect(screen.getByText('GB')).toBeInTheDocument();
     expect(screen.getByText(formatDate('2026-07-31'))).toBeInTheDocument();
   });
 
@@ -161,6 +162,26 @@ describe('WorkItemsTable', () => {
 
     // Assert
     expect(screen.getByText('You')).toBeInTheDocument();
+    expect(screen.getByText(currentUser.name)).toBeInTheDocument();
+  });
+
+  it('omits avatar when work item is unassigned', () => {
+    // Arrange
+    const item = workItemFactory.build({
+      assignee_id: null,
+      assignee: null,
+    });
+
+    // Act
+    renderTable({
+      initialWorkItems: [item],
+      totalCount: 1,
+      totalPages: 1,
+    });
+
+    // Assert
+    expect(screen.getByText('—')).toBeInTheDocument();
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });
 
   it('shows empty state when there are no work items', () => {
