@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useTransition, useActionState } from 'react';
-import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   Card,
@@ -28,6 +27,8 @@ import {
 } from '@repo/ui/components/ui/tabs';
 import { addMemberAction, removeMemberAction } from './actions';
 import { ProjectTeamsPanel } from '@/app/projects/[id]/_components/project-teams-panel';
+import { ProjectSummaryBanner } from '@/app/projects/[id]/_components/project-summary-banner';
+import { ProjectSummaryMetrics } from '@/app/projects/[id]/_components/project-summary-metrics';
 import type {
   Project,
   ProjectMemberWithUser,
@@ -51,7 +52,6 @@ import {
   Trash2,
   Calendar,
   Shield,
-  ArrowLeft,
   Loader2,
   AlertTriangle,
   Folder,
@@ -61,6 +61,8 @@ import {
   RefreshCw,
   Edit,
 } from '@repo/ui/lib/icons';
+
+const REPORT_CARD_CLASS = 'border-border/60 bg-card/50 backdrop-blur-sm';
 
 interface ProjectWorkItemsProps {
   readonly initialWorkItems: DbWorkItem[];
@@ -216,43 +218,7 @@ export function ProjectDetailsWorkspace({
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb / Back button */}
-      <div className="flex items-center gap-2">
-        <Link
-          href="/projects"
-          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Projects
-        </Link>
-      </div>
-
-      {/* Hero Header */}
-      <div className="bg-card/40 border-border/60 flex flex-col gap-2 rounded-xl border p-4 shadow-sm backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2.5">
-            <div className="bg-primary/10 text-primary border-primary/20 flex h-10 w-10 items-center justify-center rounded-lg border text-sm font-bold shadow-sm">
-              {project.key.slice(0, 2)}
-            </div>
-            <h1 className="text-foreground text-3xl font-extrabold tracking-tight">
-              {project.name}
-            </h1>
-            <Badge
-              variant="outline"
-              className={
-                project.status === 'active'
-                  ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600'
-                  : 'border-amber-500/20 bg-amber-500/10 text-amber-600'
-              }
-            >
-              {project.status}
-            </Badge>
-          </div>
-          <p className="text-muted-foreground max-w-2xl text-sm">
-            {project.description || 'No description provided for this project.'}
-          </p>
-        </div>
-      </div>
+      <ProjectSummaryBanner project={project} />
 
       {/* Tabs Selector */}
       <Tabs
@@ -267,31 +233,36 @@ export function ProjectDetailsWorkspace({
           </TabsTrigger>
           <TabsTrigger value="members" className={UNDERLINE_TAB_TRIGGER_CLASS}>
             <Users className="h-4 w-4" />
-            Members ({members.length})
+            Members
           </TabsTrigger>
           <TabsTrigger value="teams" className={UNDERLINE_TAB_TRIGGER_CLASS}>
             <Network className="h-4 w-4" />
-            Teams ({teams.totalCount})
+            Teams
           </TabsTrigger>
           <TabsTrigger
             value="work-items"
             className={UNDERLINE_TAB_TRIGGER_CLASS}
           >
             <ClipboardPenLine className="h-4 w-4" />
-            Work Items ({workItems.totalCount})
+            Work Items
           </TabsTrigger>
         </TabsList>
 
         <TabsContent
           value="details"
-          className="m-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="m-0 space-y-6 focus-visible:ring-0 focus-visible:ring-offset-0"
         >
+          <ProjectSummaryMetrics
+            memberCount={members.length}
+            teamCount={teams.totalCount}
+            workItemCount={workItems.totalCount}
+          />
+
           <div className="grid gap-6 md:grid-cols-3">
-            {/* Main Info Card */}
-            <Card className="border-border/60 bg-card/40 backdrop-blur-md md:col-span-2">
+            <Card className={`${REPORT_CARD_CLASS} md:col-span-2`}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
-                  <Folder className="text-primary h-5 w-5" />
+                <CardTitle className="text-primary flex items-center gap-2 text-base font-semibold">
+                  <Folder className="h-5 w-5" />
                   Project Information
                 </CardTitle>
                 <CardDescription className="text-muted-foreground text-sm">
@@ -322,9 +293,9 @@ export function ProjectDetailsWorkspace({
                   <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
                     Description
                   </span>
-                  <p className="text-foreground text-sm leading-relaxed">
+                  <p className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">
                     {project.description ||
-                      'No description configures for this project.'}
+                      'No description configured for this project.'}
                   </p>
                 </div>
 
@@ -365,15 +336,15 @@ export function ProjectDetailsWorkspace({
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                    <span className="text-muted-foreground mr-4 text-xs font-semibold tracking-wider uppercase">
                       Record Status
                     </span>
                     <Badge
                       variant="outline"
                       className={
                         project.status === 'active'
-                          ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600'
-                          : 'border-amber-500/20 bg-amber-500/10 text-amber-600'
+                          ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                          : 'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400'
                       }
                     >
                       {project.status}
@@ -383,11 +354,37 @@ export function ProjectDetailsWorkspace({
               </CardContent>
             </Card>
 
-            {/* Jira Cloud Integration Card */}
-            <Card className="border-border/60 bg-card/40 backdrop-blur-md md:col-span-2">
+            <Card className={`${REPORT_CARD_CLASS} h-fit`}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
-                  <Database className="text-primary h-5 w-5" />
+                <CardTitle className="text-primary flex items-center gap-2 text-base font-semibold">
+                  <Shield className="h-5 w-5" />
+                  Ownership
+                </CardTitle>
+                <CardDescription className="text-muted-foreground text-sm">
+                  Project owner and administrator configurations.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="bg-primary/5 border-primary/10 flex items-start gap-3 rounded-lg border p-3">
+                  <div className="bg-primary/20 text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold">
+                    {(project.owner?.name ?? 'U').slice(0, 1).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <TruncatedText className="text-foreground text-sm font-semibold">
+                      {project.owner?.name ?? 'Unknown Owner'}
+                    </TruncatedText>
+                    <TruncatedText className="text-muted-foreground text-xs">
+                      {project.owner?.email ?? 'No email configured'}
+                    </TruncatedText>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className={`${REPORT_CARD_CLASS} md:col-span-3`}>
+              <CardHeader>
+                <CardTitle className="text-primary flex items-center gap-2 text-base font-semibold">
+                  <Database className="h-5 w-5" />
                   Jira Cloud Integration
                 </CardTitle>
                 <CardDescription className="text-muted-foreground text-sm">
@@ -520,34 +517,6 @@ export function ProjectDetailsWorkspace({
                 )}
               </CardContent>
             </Card>
-
-            {/* Sidebar Ownership Card */}
-            <Card className="border-border/60 bg-card/40 h-fit backdrop-blur-md">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
-                  <Shield className="text-primary h-5 w-5" />
-                  Ownership
-                </CardTitle>
-                <CardDescription className="text-muted-foreground text-sm">
-                  Project owner and administrator configurations.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="bg-primary/5 border-primary/10 flex items-start gap-3 rounded-lg border p-3">
-                  <div className="bg-primary/20 text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold">
-                    {(project.owner?.name ?? 'U').slice(0, 1).toUpperCase()}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <TruncatedText className="text-foreground text-sm font-semibold">
-                      {project.owner?.name ?? 'Unknown Owner'}
-                    </TruncatedText>
-                    <TruncatedText className="text-muted-foreground text-xs">
-                      {project.owner?.email ?? 'No email configured'}
-                    </TruncatedText>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </TabsContent>
 
@@ -557,7 +526,7 @@ export function ProjectDetailsWorkspace({
         >
           <div className="grid gap-6 md:grid-cols-3">
             {/* Members Table Card */}
-            <Card className="border-border/60 bg-card/40 backdrop-blur-md md:col-span-2">
+            <Card className={`${REPORT_CARD_CLASS} md:col-span-2`}>
               <CardHeader>
                 <CardTitle className="text-xl font-bold tracking-tight">
                   Allocated Members
@@ -654,7 +623,7 @@ export function ProjectDetailsWorkspace({
 
             {/* Add Members Allocation Panel */}
             {isManagerOrAdmin && (
-              <Card className="border-border/60 bg-card/40 h-fit backdrop-blur-md">
+              <Card className={`${REPORT_CARD_CLASS} h-fit`}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
                     <UserPlus className="text-primary h-5 w-5" />

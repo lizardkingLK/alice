@@ -10,6 +10,7 @@ Project administration registry: list, create, edit, soft delete, restore, and h
 Quick links:
 
 - Implementation: `apps/web/app/projects/`
+- Detail overview (`/projects/[id]`): summary-report layout (primary banner + metric cards) with Members / Teams / Work Items tabs
 - API: `apps/api/src/routes/api/projects/`
 - Schema: projects-related models in `packages/db/prisma/schema.prisma`
 
