@@ -248,51 +248,6 @@ export type Database = {
           },
         ];
       };
-      instruments: {
-        Row: {
-          created_at: string;
-          created_by: string | null;
-          id: number;
-          name: string;
-          status: Database['public']['Enums']['RecordStatus'];
-          updated_at: string;
-          updated_by: string | null;
-        };
-        Insert: {
-          created_at?: string;
-          created_by?: string | null;
-          id?: number;
-          name: string;
-          status?: Database['public']['Enums']['RecordStatus'];
-          updated_at: string;
-          updated_by?: string | null;
-        };
-        Update: {
-          created_at?: string;
-          created_by?: string | null;
-          id?: number;
-          name?: string;
-          status?: Database['public']['Enums']['RecordStatus'];
-          updated_at?: string;
-          updated_by?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'instruments_created_by_fkey';
-            columns: ['created_by'];
-            isOneToOne: false;
-            referencedRelation: 'users';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'instruments_updated_by_fkey';
-            columns: ['updated_by'];
-            isOneToOne: false;
-            referencedRelation: 'users';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
       jira_settings: {
         Row: {
           created_at: string;

@@ -8,14 +8,11 @@ import {
   CircleDot,
   Settings,
   Users,
-  Music,
   Timer,
-  Files,
   ClipboardPenIcon,
   Kanban,
   ListTodo,
   User,
-  MessageSquareText,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import {
@@ -39,10 +36,7 @@ const navItems = [
   { href: '/projects', label: 'Projects', icon: FolderKanban },
   { href: '/sprints', label: 'Sprints', icon: Timer },
   { href: '/work-items', label: 'Work Items', icon: ClipboardPenIcon },
-  { href: '/files', label: 'Files', icon: Files },
-  { href: '/instruments', label: 'Instruments', icon: Music },
   { href: '/member', label: 'My Work', icon: CircleDot },
-  { href: '/comments', label: 'Comments', icon: MessageSquareText },
 ] as const;
 
 export function DashboardSidebar() {

@@ -11,7 +11,6 @@ export default function robots(): MetadataRoute.Robots {
         '/projects',
         '/manager',
         '/member',
-        '/instruments',
         '/files',
         '/profile',
         '/edit-profile',

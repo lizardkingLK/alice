@@ -12,7 +12,6 @@ const footerColumns = [
       { href: '/projects', label: 'Projects' },
       { href: '/work-items', label: 'Work items' },
       { href: '/sprints', label: 'Sprints' },
-      { href: '/files', label: 'Files' },
     ],
   },
   {
