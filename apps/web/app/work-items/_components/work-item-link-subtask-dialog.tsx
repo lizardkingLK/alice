@@ -9,14 +9,7 @@ import { patchWorkItemParentId } from '@/app/work-items/_helpers/patch-work-item
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import type { WorkItemType } from '@repo/types';
 import { Label } from '@repo/ui/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@repo/ui/components/ui/select';
-import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
+import { SearchableSelect } from '@/components/searchable-select';
 
 type LinkableWorkItemOption = Pick<DbWorkItem, 'id' | 'title' | 'type'>;
 
@@ -107,29 +100,18 @@ export function WorkItemLinkSubtaskDialog({
             No unparented {childType} items in this project to link.
           </p>
         ) : (
-          <Select
+          <SearchableSelect
+            id="link-subtask-work-item"
             value={selectedId}
             onValueChange={setSelectedId}
             disabled={isPending}
-          >
-            <SelectTrigger id="link-subtask-work-item">
-              <SelectValue placeholder={`Select ${childType}…`} />
-            </SelectTrigger>
-            <SelectContent>
-              {candidates.map((item) => (
-                <SelectItem key={item.id} value={item.id}>
-                  <span className="flex min-w-0 items-center gap-2">
-                    <span className="text-muted-foreground shrink-0 font-mono text-xs">
-                      {toShortId(item.id)}
-                    </span>
-                    <TruncatedText className="text-sm">
-                      {item.title}
-                    </TruncatedText>
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder={`Search ${childType}…`}
+            options={candidates.map((item) => ({
+              value: item.id,
+              label: `${toShortId(item.id)} — ${item.title}`,
+            }))}
+            emptyText={`No matching ${childType} items.`}
+          />
         )}
       </div>
 

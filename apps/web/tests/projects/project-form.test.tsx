@@ -1,11 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-  within,
-} from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ProjectForm } from '@/app/projects/_components/project-form';
 import {
   createProject,
@@ -13,6 +7,10 @@ import {
 } from '@/app/projects/_services/projects.service';
 import type { User } from '@/app/users/_services/users.service';
 import { apiFetch } from '@/lib/api/api-client';
+import {
+  getComboboxOptions,
+  pickComboboxOption,
+} from '../helpers/pick-combobox-option';
 
 vi.mock('@/lib/api/api-client', () => ({
   apiFetch: vi.fn(),
@@ -110,20 +108,16 @@ describe('ProjectForm Component', () => {
     vi.clearAllMocks();
   });
 
-  it('renders owner dropdown filtered only to managers', () => {
+  it('renders owner dropdown filtered only to managers', async () => {
     render(<ProjectForm users={mockUsers} />);
 
     const ownerSelect = screen.getByLabelText(/Project Owner/i);
     expect(ownerSelect).toBeInTheDocument();
 
-    const hiddenSelect = document.querySelector('select[name="owner_id"]');
-    const options = within(hiddenSelect as HTMLElement).getAllByRole('option', {
-      hidden: true,
-    });
-    expect(options).toHaveLength(3);
-    expect(options[0]).toHaveValue('');
-    expect(options[1]).toHaveTextContent('Manager One (mgr1@alice.dev)');
-    expect(options[2]).toHaveTextContent('Manager Two (mgr2@alice.dev)');
+    const options = await getComboboxOptions(/Project Owner/i);
+    expect(options).toHaveLength(2);
+    expect(options[0]).toHaveTextContent('Manager One (mgr1@alice.dev)');
+    expect(options[1]).toHaveTextContent('Manager Two (mgr2@alice.dev)');
   });
 
   it('performs required field validation on submit', async () => {
@@ -159,12 +153,10 @@ describe('ProjectForm Component', () => {
     fireEvent.change(screen.getByLabelText(/Description/i), {
       target: { value: 'Project description details' },
     });
-    const ownerSelect = screen.getByLabelText(/Project Owner/i);
-    fireEvent.click(ownerSelect);
-    const option = screen.getByRole('option', {
-      name: 'Manager One (mgr1@alice.dev)',
-    });
-    fireEvent.click(option);
+    await pickComboboxOption(
+      /Project Owner/i,
+      'Manager One (mgr1@alice.dev)'
+    );
     fireEvent.change(screen.getByLabelText(/Start Date/i), {
       target: { value: '2026-07-10' },
     });
@@ -220,7 +212,7 @@ describe('ProjectForm Component', () => {
     expect(screen.getByLabelText(/Description/i)).toHaveValue(
       'Project description details'
     );
-    expect(screen.getByLabelText(/Project Owner/i)).toHaveTextContent(
+    expect(screen.getByLabelText(/Project Owner/i)).toHaveValue(
       'Manager One (mgr1@alice.dev)'
     );
     expect(screen.getByLabelText(/Start Date/i)).toHaveValue('2026-07-10');
@@ -334,10 +326,9 @@ describe('ProjectForm Component', () => {
     fireEvent.change(screen.getByLabelText(/Project Key/i), {
       target: { value: 'alice' },
     });
-    const ownerSelect = screen.getByLabelText(/Project Owner/i);
-    fireEvent.click(ownerSelect);
-    fireEvent.click(
-      screen.getByRole('option', { name: 'Manager One (mgr1@alice.dev)' })
+    await pickComboboxOption(
+      /Project Owner/i,
+      'Manager One (mgr1@alice.dev)'
     );
 
     // Toggle Jira checkbox

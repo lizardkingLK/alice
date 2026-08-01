@@ -1,7 +1,7 @@
 ---
 description: >-
-  QA Dev Member — always-on quality offer after source edits (Sonar duplication
-  prescan); never auto-run the skill.
+  QA Dev Member — always-on quality: offer Sonar duplication prescan after
+  source edits; auto-run unit tests when changes look ready.
 alwaysApply: true
 ---
 
@@ -32,6 +32,34 @@ When you finish a turn that **edited source code** under `apps/` or `packages/`:
 - Trivial one-line edits with no duplication risk
 
 Keep the offer brief — one sentence, no bullet list.
+
+## Unit tests (run when ready)
+
+When source under `apps/` or `packages/` was edited, **run the affected unit
+tests** without waiting for a separate ask if either signal applies:
+
+1. **No follow-ups** — the user’s latest message closes the task (no “also…”,
+   “next…”, or new scope). Treat that as sign-off that the changes are ready.
+2. **Deduplication requested** — the user confirms / asks to run
+   `/sonar-duplication-prescan` (or equivalent “dedupe these changes”). That
+   means they accept the implementation direction; after the prescan (and any
+   extractions they approve), run tests for the touched packages.
+
+### How to run
+
+- Prefer Turbo from the repo root: `pnpm turbo run test --filter=<pkg>`
+  (e.g. `--filter=web`, `--filter=api`). Use `pnpm turbo run test` when multiple
+  packages changed or the filter is unclear.
+- Fix failures you introduced before treating the task as done.
+- If tests were already run green in the same turn for the same change set,
+  do not re-run unless new edits landed.
+
+### When to skip auto-running tests
+
+- Question-only / review-only / docs-only turns
+- User explicitly says not to run tests, or is mid-iteration (“keep going”,
+  “next phase”, “don’t run yet”)
+- Only rule/skill/cursor-config files changed (no app/package runtime code)
 
 ## Related
 

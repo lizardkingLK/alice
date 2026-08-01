@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@repo/ui/components/ui/select';
+import { SearchableSelect } from '@/components/searchable-select';
 import {
   Card,
   CardContent,
@@ -437,26 +438,20 @@ export function TeamForm({
               <Label htmlFor="manager_id" className="text-sm font-medium">
                 Designated Team Manager
               </Label>
-              <Select
-                value={managerId || undefined}
+              <SearchableSelect
+                id="manager_id"
+                value={managerId}
                 onValueChange={setManagerId}
-              >
-                <SelectTrigger
-                  id="manager_id"
-                  className="bg-background/80 h-10 w-full cursor-pointer"
-                >
-                  <SelectValue placeholder="Select Manager..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {users
-                    .filter((u) => u.role === 'manager' || u.role === 'admin')
-                    .map((u) => (
-                      <SelectItem key={u.id} value={u.id}>
-                        {u.name} ({u.email})
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
+                placeholder="Search managers…"
+                className="bg-background/80 h-10 w-full"
+                options={users
+                  .filter((u) => u.role === 'manager' || u.role === 'admin')
+                  .map((u) => ({
+                    value: u.id,
+                    label: `${u.name} (${u.email})`,
+                  }))}
+                emptyText="No matching managers."
+              />
             </div>
 
             {!lockedProjectId ? (
@@ -464,25 +459,19 @@ export function TeamForm({
                 <Label htmlFor="project_id" className="text-sm font-medium">
                   Associated Project
                 </Label>
-                <Select
-                  value={selectedProjectId || undefined}
+                <SearchableSelect
+                  id="project_id"
+                  value={selectedProjectId}
                   onValueChange={handleProjectChange}
                   disabled={projectLocked}
-                >
-                  <SelectTrigger
-                    id="project_id"
-                    className="bg-background/80 h-10 w-full cursor-pointer"
-                  >
-                    <SelectValue placeholder="Select Project..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projectOptions.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name} ({p.key})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Search projects…"
+                  className="bg-background/80 h-10 w-full"
+                  options={projectOptions.map((p) => ({
+                    value: p.id,
+                    label: `${p.name} (${p.key})`,
+                  }))}
+                  emptyText="No matching projects."
+                />
                 <p className="text-muted-foreground text-[11px]">
                   {projectSelectInfo}
                 </p>

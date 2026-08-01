@@ -10,6 +10,7 @@ import type {
   ProjectMemberWithUser,
   ProjectMembersByProjectId,
 } from '@/app/projects/_services/projects.service.base';
+import { pickComboboxOption } from '../helpers/pick-combobox-option';
 
 vi.mock('@/app/manager/_services/teams.service', () => ({
   createTeam: vi.fn(),
@@ -229,13 +230,8 @@ function renderTeamForm(props: Partial<ComponentProps<typeof TeamForm>> = {}) {
 }
 
 async function selectManagerAndProject() {
-  fireEvent.click(screen.getByLabelText(/Designated Team Manager/i));
-  fireEvent.click(await screen.findByRole('option', { name: /Manager One/i }));
-
-  fireEvent.click(screen.getByLabelText(/Associated Project/i));
-  fireEvent.click(
-    await screen.findByRole('option', { name: /Project Alpha/i })
-  );
+  await pickComboboxOption(/Designated Team Manager/i, /Manager One/i);
+  await pickComboboxOption(/Associated Project/i, /Project Alpha/i);
 }
 
 describe('TeamForm Component', () => {
@@ -279,10 +275,7 @@ describe('TeamForm Component', () => {
       target: { value: 'Frontend Squad' },
     });
 
-    fireEvent.click(screen.getByLabelText(/Designated Team Manager/i));
-    fireEvent.click(
-      await screen.findByRole('option', { name: /Manager One/i })
-    );
+    await pickComboboxOption(/Designated Team Manager/i, /Manager One/i);
 
     fireEvent.click(screen.getByRole('button', { name: /Create Team/i }));
 
@@ -379,8 +372,8 @@ describe('TeamForm Component', () => {
     expect(nameInput).toHaveValue('Platform Core');
 
     const projectTrigger = screen.getByLabelText(/Associated Project/i);
-    expect(projectTrigger).toHaveTextContent(/Project Alpha/i);
     expect(projectTrigger).toBeDisabled();
+    expect((projectTrigger as HTMLInputElement).value).toMatch(/Project Alpha/i);
 
     const checkbox = await screen.findByRole('checkbox', {
       name: /Developer One/i,
@@ -419,7 +412,7 @@ describe('TeamForm Component', () => {
 
     const projectTrigger = screen.getByLabelText(/Associated Project/i);
     expect(projectTrigger).toBeDisabled();
-    expect(projectTrigger).toHaveTextContent(/Project Alpha/i);
+    expect((projectTrigger as HTMLInputElement).value).toMatch(/Project Alpha/i);
     expect(
       screen.getByText(/Project is fixed for this team/i)
     ).toBeInTheDocument();
@@ -480,10 +473,7 @@ describe('TeamForm Component', () => {
       screen.getByText(/This team has no project yet/i)
     ).toBeInTheDocument();
 
-    fireEvent.click(projectTrigger);
-    fireEvent.click(
-      await screen.findByRole('option', { name: /Project Alpha/i })
-    );
+    await pickComboboxOption(/Associated Project/i, /Project Alpha/i);
 
     expect(
       await screen.findByRole('checkbox', { name: /Developer Two/i })
@@ -508,10 +498,7 @@ describe('TeamForm Component', () => {
   it('clears member selection when switching projects on create', async () => {
     renderTeamForm();
 
-    fireEvent.click(screen.getByLabelText(/Associated Project/i));
-    fireEvent.click(
-      await screen.findByRole('option', { name: /Project Alpha/i })
-    );
+    await pickComboboxOption(/Associated Project/i, /Project Alpha/i);
 
     const checkbox = await screen.findByRole('checkbox', {
       name: /Developer One/i,
@@ -519,10 +506,7 @@ describe('TeamForm Component', () => {
     fireEvent.click(checkbox);
     expect(checkbox).toBeChecked();
 
-    fireEvent.click(screen.getByLabelText(/Associated Project/i));
-    fireEvent.click(
-      await screen.findByRole('option', { name: /Project Beta/i })
-    );
+    await pickComboboxOption(/Associated Project/i, /Project Beta/i);
 
     const betaMember = await screen.findByRole('checkbox', {
       name: /Developer Two/i,
@@ -536,10 +520,7 @@ describe('TeamForm Component', () => {
   it('loads project members when project is selected and toggles checkbox selection', async () => {
     renderTeamForm();
 
-    fireEvent.click(screen.getByLabelText(/Associated Project/i));
-    fireEvent.click(
-      await screen.findByRole('option', { name: /Project Alpha/i })
-    );
+    await pickComboboxOption(/Associated Project/i, /Project Alpha/i);
 
     const checkbox = await screen.findByRole('checkbox', {
       name: /Developer One/i,
