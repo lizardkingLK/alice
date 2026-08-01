@@ -31,50 +31,59 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@repo/ui/components/ui/sidebar';
+import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
+import { useWorkspaceDefaultsNavPreference } from '@/app/board/_hooks/use-workspace-defaults-nav-preference';
+import { buildWorkspaceNavHref } from '@/app/board/_services/board-defaults';
 
 type NavItem = {
-  readonly href: string;
+  /** Pathname used for active matching (no query). */
+  readonly path: string;
   readonly label: string;
   readonly icon: LucideIcon;
 };
 
 const PLATFORM_NAV: readonly NavItem[] = [
-  { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { href: '/backlog', label: 'Backlog', icon: ListTodo },
-  { href: '/board', label: 'Board', icon: Kanban },
-  { href: '/work-items', label: 'Work Items', icon: ClipboardPenIcon },
-  { href: '/member', label: 'My Work', icon: CircleDot },
+  { path: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { path: '/backlog', label: 'Backlog', icon: ListTodo },
+  { path: '/board', label: 'Board', icon: Kanban },
+  { path: '/work-items', label: 'Work Items', icon: ClipboardPenIcon },
+  { path: '/member', label: 'My Work', icon: CircleDot },
 ];
 
 const SYSTEM_NAV: readonly NavItem[] = [
-  { href: '/users', label: 'Users', icon: Users },
+  { path: '/users', label: 'Users', icon: Users },
 ];
 
 const PROJECTS_NAV: readonly NavItem[] = [
-  { href: '/projects', label: 'Projects', icon: FolderKanban },
-  { href: '/sprints', label: 'Sprints', icon: Timer },
+  { path: '/projects', label: 'Projects', icon: FolderKanban },
+  { path: '/sprints', label: 'Sprints', icon: Timer },
 ];
 
 const HELP_NAV: readonly NavItem[] = [
-  { href: '/help', label: 'Help', icon: CircleHelp },
-  { href: '/docs', label: 'Docs', icon: BookOpen },
-  { href: '/roadmap', label: 'Roadmap', icon: Map },
+  { path: '/help', label: 'Help', icon: CircleHelp },
+  { path: '/docs', label: 'Docs', icon: BookOpen },
+  { path: '/roadmap', label: 'Roadmap', icon: Map },
 ];
 
-function isNavActive(pathname: string, href: string): boolean {
-  return pathname === href || pathname.startsWith(`${href}/`);
+function isNavActive(pathname: string, path: string): boolean {
+  return pathname === path || pathname.startsWith(`${path}/`);
 }
 
 function SidebarNavItems({
   items,
   pathname,
-}: Readonly<{ items: readonly NavItem[]; pathname: string }>) {
+  preference,
+}: Readonly<{
+  items: readonly NavItem[];
+  pathname: string;
+  preference: BoardDefaultsPreference | null;
+}>) {
   return (
     <SidebarMenu>
-      {items.map(({ href, label, icon: Icon }) => (
-        <SidebarMenuItem key={href}>
-          <SidebarMenuButton asChild isActive={isNavActive(pathname, href)}>
-            <Link href={href}>
+      {items.map(({ path, label, icon: Icon }) => (
+        <SidebarMenuItem key={path}>
+          <SidebarMenuButton asChild isActive={isNavActive(pathname, path)}>
+            <Link href={buildWorkspaceNavHref(path, preference)}>
               <Icon />
               <span>{label}</span>
             </Link>
@@ -85,10 +94,42 @@ function SidebarNavItems({
   );
 }
 
-export function DashboardSidebar() {
+function SidebarNavGroup({
+  label,
+  items,
+  pathname,
+  preference,
+}: Readonly<{
+  label: string;
+  items: readonly NavItem[];
+  pathname: string;
+  preference: BoardDefaultsPreference | null;
+}>) {
+  return (
+    <SidebarGroup>
+      <SidebarGroupLabel>{label}</SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarNavItems
+          items={items}
+          pathname={pathname}
+          preference={preference}
+        />
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
+
+type DashboardSidebarProps = {
+  readonly userId?: string | null;
+};
+
+export function DashboardSidebar({
+  userId = null,
+}: Readonly<DashboardSidebarProps>) {
   const pathname = usePathname();
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
+  const preference = useWorkspaceDefaultsNavPreference(userId);
 
   return (
     <Sidebar collapsible="icon">
@@ -106,26 +147,24 @@ export function DashboardSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Platform</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarNavItems items={PLATFORM_NAV} pathname={pathname} />
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>System</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarNavItems items={SYSTEM_NAV} pathname={pathname} />
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Projects</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarNavItems items={PROJECTS_NAV} pathname={pathname} />
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <SidebarNavGroup
+          label="Platform"
+          items={PLATFORM_NAV}
+          pathname={pathname}
+          preference={preference}
+        />
+        <SidebarNavGroup
+          label="System"
+          items={SYSTEM_NAV}
+          pathname={pathname}
+          preference={preference}
+        />
+        <SidebarNavGroup
+          label="Projects"
+          items={PROJECTS_NAV}
+          pathname={pathname}
+          preference={preference}
+        />
 
         <SidebarGroup>
           <SidebarGroupLabel>Account</SidebarGroupLabel>
@@ -152,12 +191,12 @@ export function DashboardSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Help</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarNavItems items={HELP_NAV} pathname={pathname} />
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <SidebarNavGroup
+          label="Help"
+          items={HELP_NAV}
+          pathname={pathname}
+          preference={preference}
+        />
       </SidebarContent>
     </Sidebar>
   );
