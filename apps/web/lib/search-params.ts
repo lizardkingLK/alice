@@ -1,5 +1,6 @@
 import type { WorkItemType } from '@repo/types';
 import { WORK_ITEM_TYPES } from '@repo/types';
+import { ALL_PROJECTS_ID } from '@/app/board/_helpers/board-defaults-storage';
 
 export interface RawSearchParams {
   page?: string;
@@ -45,15 +46,26 @@ export function parseStandardParams(
   return { page, limit, search };
 }
 
+/** Query sentinels that mean "no filter" (e.g. All Projects / All Sprints). */
+function parseOptionalFilterId(value?: string): string | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed || trimmed === ALL_PROJECTS_ID) {
+    return undefined;
+  }
+  return trimmed;
+}
+
 export function parseWorkItemFilters(
   resolvedParams: RawSearchParams
 ): ParsedWorkItemFilters {
-  const projectId = resolvedParams.project?.trim() || undefined;
-  const sprintId = resolvedParams.sprint?.trim() || undefined;
-  const assigneeId = resolvedParams.assignee?.trim() || undefined;
+  const projectId = parseOptionalFilterId(resolvedParams.project);
+  const sprintId = parseOptionalFilterId(resolvedParams.sprint);
+  const assigneeId = parseOptionalFilterId(resolvedParams.assignee);
   const rawType = resolvedParams.type?.trim();
   const type =
-    rawType && WORK_ITEM_TYPE_FILTERS.has(rawType as WorkItemTypeFilter)
+    rawType &&
+    rawType !== ALL_PROJECTS_ID &&
+    WORK_ITEM_TYPE_FILTERS.has(rawType as WorkItemTypeFilter)
       ? (rawType as WorkItemTypeFilter)
       : undefined;
 

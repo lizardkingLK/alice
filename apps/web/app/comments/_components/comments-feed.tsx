@@ -53,6 +53,7 @@ import { formatDateTime, formatTime, getInitials } from '@/app/_shared/utility';
 import { SearchInput } from '@/components/search-input';
 import { SearchableSelect } from '@/components/searchable-select';
 import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
+import { preventDismissForComboboxPortal } from '@/lib/dialog-outside-events';
 import {
   MessageSquareText,
   Plus,
@@ -1670,7 +1671,11 @@ export function CommentsFeed({
       )}
 
       <Dialog open={showNewCommentModal} onOpenChange={setShowNewCommentModal}>
-        <DialogContent className="sm:max-w-125">
+        <DialogContent
+          className="sm:max-w-125"
+          onPointerDownOutside={preventDismissForComboboxPortal}
+          onInteractOutside={preventDismissForComboboxPortal}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MessageSquareText className="text-primary size-5" />

@@ -268,10 +268,7 @@ describe('WorkItemsTable', () => {
     );
 
     // Act — project
-    await pickComboboxOption(
-      { name: /Filter by project/i },
-      projects[0]!.name
-    );
+    await pickComboboxOption({ name: /Filter by project/i }, projects[0]!.name);
 
     // Assert
     expect(mockPush).toHaveBeenCalledWith(
