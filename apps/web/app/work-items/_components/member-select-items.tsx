@@ -1,46 +1,30 @@
 'use client';
 
-import { getInitials } from '@/app/_shared/utility';
 import type { WorkItemMemberLike } from '@/app/work-items/_helpers/work-item-member';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@repo/ui/components/ui/avatar';
-import { SelectItem } from '@repo/ui/components/ui/select';
-import { cn } from '@repo/ui/lib/utils';
+import type { SearchableSelectOption } from '@/components/searchable-select';
 
-type MemberSelectItemsProps = {
+type BuildMemberSelectOptionsArgs = {
   readonly members: readonly WorkItemMemberLike[];
   readonly unassignedLabel?: string;
   readonly unassignedValue?: string;
-  readonly itemClassName?: string;
+  readonly includeUnassigned?: boolean;
 };
 
-export function MemberSelectItems({
+/** Options for assignee searchable selects (optional Unassigned row). */
+export function buildMemberSelectOptions({
   members,
   unassignedLabel = 'Unassigned',
   unassignedValue = 'unassigned',
-  itemClassName,
-}: Readonly<MemberSelectItemsProps>) {
-  return (
-    <>
-      <SelectItem value={unassignedValue}>{unassignedLabel}</SelectItem>
-      {members.map((member) => (
-        <SelectItem key={member.id} value={member.id}>
-          <div className={cn('flex items-center gap-2', itemClassName)}>
-            <Avatar size="sm" className="size-5">
-              {member.profile_picture ? (
-                <AvatarImage src={member.profile_picture} alt={member.name} />
-              ) : null}
-              <AvatarFallback className="text-[8px]">
-                {getInitials(member.name)}
-              </AvatarFallback>
-            </Avatar>
-            <span>{member.name}</span>
-          </div>
-        </SelectItem>
-      ))}
-    </>
-  );
+  includeUnassigned = true,
+}: BuildMemberSelectOptionsArgs): SearchableSelectOption[] {
+  const memberOptions = members.map((member) => ({
+    value: member.id,
+    label: member.name,
+  }));
+
+  if (!includeUnassigned) {
+    return memberOptions;
+  }
+
+  return [{ value: unassignedValue, label: unassignedLabel }, ...memberOptions];
 }

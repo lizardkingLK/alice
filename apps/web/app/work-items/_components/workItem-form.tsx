@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@repo/ui/components/ui/select';
+import { SearchableSelect } from '@/components/searchable-select';
 import { Loader2 } from '@repo/ui/lib/icons';
 import { User as DbUser } from '@/app/users/_services/users.service';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
@@ -153,22 +154,18 @@ export function WorkItemForm({
         {/* Project */}
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="project_id">Project</Label>
-          <Select
+          <SearchableSelect
+            id="project_id"
             value={projectId}
             onValueChange={setProjectId}
             disabled={lockProject}
-          >
-            <SelectTrigger id="project_id">
-              <SelectValue placeholder="Select project..." />
-            </SelectTrigger>
-            <SelectContent>
-              {projects.map((project) => (
-                <SelectItem key={project.id} value={project.id}>
-                  {project.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Search projects…"
+            options={projects.map((project) => ({
+              value: project.id,
+              label: project.name,
+            }))}
+            emptyText="No matching projects."
+          />
           <input type="hidden" name="project_id" value={projectId} />
         </div>
 
@@ -208,22 +205,18 @@ export function WorkItemForm({
         {/* Assign To */}
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="assignee_id">Assign to</Label>
-          <Select
+          <SearchableSelect
+            id="assignee_id"
             value={assigneeId}
             onValueChange={setAssigneeId}
             disabled={lockAssignee}
-          >
-            <SelectTrigger id="assignee_id">
-              <SelectValue placeholder="Select assignee..." />
-            </SelectTrigger>
-            <SelectContent>
-              {projectMembers.map((member) => (
-                <SelectItem key={member.id} value={member.id}>
-                  {member.name} ({member.email})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Search assignees…"
+            options={projectMembers.map((member) => ({
+              value: member.id,
+              label: `${member.name} (${member.email})`,
+            }))}
+            emptyText="No matching assignees."
+          />
           <input type="hidden" name="assignee_id" value={assigneeId} />
         </div>
 

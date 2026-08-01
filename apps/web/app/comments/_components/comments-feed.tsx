@@ -51,6 +51,7 @@ import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';
 import { formatDateTime, formatTime, getInitials } from '@/app/_shared/utility';
 import { SearchInput } from '@/components/search-input';
+import { SearchableSelect } from '@/components/searchable-select';
 import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import {
   MessageSquareText,
@@ -1213,27 +1214,21 @@ export function CommentsFeed({
               />
 
               <div className="flex w-full flex-row items-center gap-2 sm:w-auto">
-                <Select
+                <SearchableSelect
+                  id="select-work-item-filter"
                   value={selectedWorkItemId}
                   onValueChange={setSelectedWorkItemId}
-                >
-                  <SelectTrigger
-                    id="select-work-item-filter"
-                    aria-label="Filter by Work Item"
-                    className="w-1/2 sm:w-44"
-                  >
-                    <SelectValue placeholder="All Work Items" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Work Items</SelectItem>
-                    {workItems.map((item) => (
-                      <SelectItem key={item.id} value={item.id}>
-                        {item.key} — {item.title.slice(0, 25)}
-                        {item.title.length > 25 ? '…' : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  ariaLabel="Filter by Work Item"
+                  placeholder="All Work Items"
+                  className="w-1/2 sm:w-44"
+                  options={[
+                    { value: 'all', label: 'All Work Items' },
+                    ...workItems.map((item) => ({
+                      value: item.id,
+                      label: `${item.key} — ${item.title.slice(0, 25)}${item.title.length > 25 ? '…' : ''}`,
+                    })),
+                  ]}
+                />
 
                 <Select
                   value={selectedStatus}
@@ -1688,18 +1683,17 @@ export function CommentsFeed({
               <Label htmlFor="new-comment-work-item-select">
                 Select Work Item
               </Label>
-              <Select value={newWorkItemId} onValueChange={setNewWorkItemId}>
-                <SelectTrigger id="new-comment-work-item-select">
-                  <SelectValue placeholder="Choose a work item" />
-                </SelectTrigger>
-                <SelectContent>
-                  {workItems.map((item) => (
-                    <SelectItem key={item.id} value={item.id}>
-                      [{item.key}] {item.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                id="new-comment-work-item-select"
+                value={newWorkItemId}
+                onValueChange={setNewWorkItemId}
+                placeholder="Search work items…"
+                options={workItems.map((item) => ({
+                  value: item.id,
+                  label: `[${item.key}] ${item.title}`,
+                }))}
+                emptyText="No matching work items."
+              />
             </div>
 
             <div className="space-y-2">

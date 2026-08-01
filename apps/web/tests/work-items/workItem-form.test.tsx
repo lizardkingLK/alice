@@ -22,6 +22,18 @@ vi.mock('@/app/_shared/utility', async (importOriginal) => {
   };
 });
 
+/** Open a searchable combobox and choose an option (Base UI popup). */
+async function pickComboboxOption(
+  fieldLabel: RegExp,
+  optionName: string | RegExp
+) {
+  const input = screen.getByLabelText(fieldLabel);
+  fireEvent.focus(input);
+  fireEvent.keyDown(input, { key: 'ArrowDown' });
+  const option = await screen.findByRole('option', { name: optionName });
+  fireEvent.click(option);
+}
+
 describe('WorkItemForm', () => {
   const projects = projectFactory.buildList(2);
   const projectMembers = userFactory.buildList(2);
@@ -30,7 +42,7 @@ describe('WorkItemForm', () => {
     vi.clearAllMocks();
   });
 
-  it('renders fields and lists projects and members in selects', () => {
+  it('renders fields and lists projects and members in selects', async () => {
     // Arrange
     render(
       <WorkItemForm
@@ -48,20 +60,18 @@ describe('WorkItemForm', () => {
     expect(screen.getByLabelText(/Assign to/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Story points/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByLabelText(/^Project$/i));
-    expect(
-      screen.getByRole('option', { name: projects[0]!.name })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('option', { name: projects[1]!.name })
-    ).toBeInTheDocument();
+    await pickComboboxOption(/^Project$/i, projects[0]!.name);
+    expect(screen.getByRole('combobox', { name: /^Project$/i })).toHaveValue(
+      projects[0]!.name
+    );
 
-    fireEvent.click(screen.getByLabelText(/Assign to/i));
-    expect(
-      screen.getByRole('option', {
-        name: `${projectMembers[0]!.name} (${projectMembers[0]!.email})`,
-      })
-    ).toBeInTheDocument();
+    await pickComboboxOption(
+      /Assign to/i,
+      `${projectMembers[0]!.name} (${projectMembers[0]!.email})`
+    );
+    expect(screen.getByRole('combobox', { name: /Assign to/i })).toHaveValue(
+      `${projectMembers[0]!.name} (${projectMembers[0]!.email})`
+    );
   });
 
   it('submits in create mode and calls onSuccess', async () => {
@@ -86,18 +96,15 @@ describe('WorkItemForm', () => {
     fireEvent.change(screen.getByLabelText(/^Title$/i), {
       target: { value: 'New backlog item' },
     });
-    fireEvent.click(screen.getByLabelText(/^Project$/i));
-    fireEvent.click(screen.getByRole('option', { name: projects[0]!.name }));
+    await pickComboboxOption(/^Project$/i, projects[0]!.name);
     fireEvent.click(screen.getByLabelText(/^Type$/i));
     fireEvent.click(screen.getByRole('option', { name: 'Task' }));
     fireEvent.change(screen.getByLabelText(/Due date/i), {
       target: { value: '2026-08-01' },
     });
-    fireEvent.click(screen.getByLabelText(/Assign to/i));
-    fireEvent.click(
-      screen.getByRole('option', {
-        name: `${projectMembers[0]!.name} (${projectMembers[0]!.email})`,
-      })
+    await pickComboboxOption(
+      /Assign to/i,
+      `${projectMembers[0]!.name} (${projectMembers[0]!.email})`
     );
     fireEvent.change(screen.getByLabelText(/Story points/i), {
       target: { value: '8' },
@@ -302,11 +309,9 @@ describe('WorkItemForm', () => {
     fireEvent.change(screen.getByLabelText(/^Title$/i), {
       target: { value: 'Child task' },
     });
-    fireEvent.click(screen.getByLabelText(/Assign to/i));
-    fireEvent.click(
-      screen.getByRole('option', {
-        name: `${projectMembers[0]!.name} (${projectMembers[0]!.email})`,
-      })
+    await pickComboboxOption(
+      /Assign to/i,
+      `${projectMembers[0]!.name} (${projectMembers[0]!.email})`
     );
     fireEvent.submit(screen.getByLabelText(/^Title$/i).closest('form')!);
 

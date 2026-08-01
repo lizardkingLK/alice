@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@repo/ui/components/ui/select';
+import { SearchableSelect } from '@/components/searchable-select';
 import {
   Card,
   CardContent,
@@ -364,27 +365,21 @@ export function ProjectForm({
                   <Label htmlFor="owner_id" className="text-sm font-medium">
                     Project Owner
                   </Label>
-                  <Select
+                  <SearchableSelect
+                    id="owner_id"
+                    name="owner_id"
                     value={selectedOwnerId}
                     onValueChange={setSelectedOwnerId}
-                    name="owner_id"
-                  >
-                    <SelectTrigger
-                      id="owner_id"
-                      className="bg-background/80 h-10"
-                    >
-                      <SelectValue placeholder="Select Owner..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {users
-                        .filter((u) => u.role === 'manager')
-                        .map((u) => (
-                          <SelectItem key={u.id} value={u.id}>
-                            {u.name} ({u.email})
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Search owners…"
+                    className="bg-background/80 h-10"
+                    options={users
+                      .filter((u) => u.role === 'manager')
+                      .map((u) => ({
+                        value: u.id,
+                        label: `${u.name} (${u.email})`,
+                      }))}
+                    emptyText="No matching managers."
+                  />
                 </div>
 
                 <div className="space-y-2">

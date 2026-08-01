@@ -18,14 +18,8 @@ import {
 } from '@repo/ui/components/ui/card';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@repo/ui/components/ui/select';
 import { Textarea } from '@repo/ui/components/ui/textarea';
+import { SearchableSelect } from '@/components/searchable-select';
 import { cn } from '@repo/ui/lib/utils';
 import { Loader2, X, CalendarPlus, CalendarCog } from '@repo/ui/lib/icons';
 import {
@@ -66,19 +60,11 @@ function validateSprintForm(
   return null;
 }
 
-function renderProjectOptions(projects: Project[]) {
-  if (projects.length === 0) {
-    return (
-      <SelectItem value="none" disabled>
-        No active projects found.
-      </SelectItem>
-    );
-  }
-  return projects.map((proj) => (
-    <SelectItem key={proj.id} value={proj.id}>
-      {proj.name} ({proj.key})
-    </SelectItem>
-  ));
+function projectSelectOptions(projects: Project[]) {
+  return projects.map((proj) => ({
+    value: proj.id,
+    label: `${proj.name} (${proj.key})`,
+  }));
 }
 
 export function SprintForm({
@@ -270,21 +256,15 @@ export function SprintForm({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="sprint-project">Project</Label>
-            <Select
+            <SearchableSelect
+              id="sprint-project"
               value={selectedProjectId}
               onValueChange={setSelectedProjectId}
               disabled={isEditMode && hasWorkItems}
-            >
-              <SelectTrigger
-                id="sprint-project"
-                className="bg-background/80 h-10 w-full"
-              >
-                <SelectValue placeholder="Select project..." />
-              </SelectTrigger>
-              <SelectContent>
-                {renderProjectOptions(displayedProjects)}
-              </SelectContent>
-            </Select>
+              placeholder="Search projects…"
+              options={projectSelectOptions(displayedProjects)}
+              emptyText="No matching projects."
+            />
             {isEditMode && hasWorkItems && (
               <p className="text-muted-foreground text-xs">
                 Project cannot be changed because this sprint has work items

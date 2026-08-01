@@ -11,13 +11,7 @@ import {
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
 import { Label } from '@repo/ui/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@repo/ui/components/ui/select';
+import { SearchableSelect } from '@/components/searchable-select';
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import { ALL_PROJECTS_ID } from '@/app/board/_helpers/board-defaults-storage';
 import { resolveDefaultBoardSprint } from '@/app/board/_services/board-defaults';
@@ -139,53 +133,43 @@ export function BoardDefaultsDialog({
         <div className="flex flex-col gap-4 py-2">
           <div className="space-y-2">
             <Label htmlFor="board-defaults-project">Project</Label>
-            <Select
-              value={projectId || undefined}
+            <SearchableSelect
+              id="board-defaults-project"
+              value={projectId}
               onValueChange={handleProjectChange}
-            >
-              <SelectTrigger
-                id="board-defaults-project"
-                aria-label="Default project"
-                className="w-full"
-              >
-                <SelectValue placeholder="Select a project" />
-              </SelectTrigger>
-              <SelectContent>
-                {showAllProjectsOption ? (
-                  <SelectItem value={ALL_PROJECTS_ID}>All Projects</SelectItem>
-                ) : null}
-                {projects.map((project) => (
-                  <SelectItem key={project.id} value={project.id}>
-                    {project.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              ariaLabel="Default project"
+              placeholder="Search projects…"
+              options={[
+                ...(showAllProjectsOption
+                  ? [{ value: ALL_PROJECTS_ID, label: 'All Projects' }]
+                  : []),
+                ...projects.map((project) => ({
+                  value: project.id,
+                  label: project.name,
+                })),
+              ]}
+              emptyText="No matching projects."
+            />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="board-defaults-sprint">Sprint</Label>
-            <Select
+            <SearchableSelect
+              id="board-defaults-sprint"
               value={sprintId}
               onValueChange={setSprintId}
               disabled={!projectId || isAllProjects}
-            >
-              <SelectTrigger
-                id="board-defaults-sprint"
-                aria-label="Default sprint"
-                className="w-full"
-              >
-                <SelectValue placeholder="Select a sprint" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_SPRINTS}>All Sprints</SelectItem>
-                {sprintOptions.map((sprint) => (
-                  <SelectItem key={sprint.id} value={sprint.id}>
-                    {sprint.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              ariaLabel="Default sprint"
+              placeholder="Search sprints…"
+              options={[
+                { value: ALL_SPRINTS, label: 'All Sprints' },
+                ...sprintOptions.map((sprint) => ({
+                  value: sprint.id,
+                  label: sprint.name,
+                })),
+              ]}
+              emptyText="No matching sprints."
+            />
           </div>
         </div>
 

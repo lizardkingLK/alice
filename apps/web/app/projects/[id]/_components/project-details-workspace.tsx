@@ -13,13 +13,6 @@ import { Button } from '@repo/ui/components/ui/button';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@repo/ui/components/ui/select';
-import {
   Tabs,
   TabsList,
   TabsTrigger,
@@ -29,6 +22,7 @@ import { addMemberAction, removeMemberAction } from './actions';
 import { ProjectTeamsPanel } from '@/app/projects/[id]/_components/project-teams-panel';
 import { ProjectSummaryBanner } from '@/app/projects/[id]/_components/project-summary-banner';
 import { ProjectSummaryMetrics } from '@/app/projects/[id]/_components/project-summary-metrics';
+import { SearchableSelect } from '@/components/searchable-select';
 import type {
   Project,
   ProjectMemberWithUser,
@@ -641,21 +635,19 @@ export function ProjectDetailsWorkspace({
                   ) : (
                     <form action={executeAddAction} className="space-y-4">
                       <div className="space-y-1.5">
-                        <Select name="userId" required>
-                          <SelectTrigger
-                            id="userId"
-                            className="bg-background border-input h-10 w-full"
-                          >
-                            <SelectValue placeholder="Select User..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {candidateUsers.map((u) => (
-                              <SelectItem key={u.id} value={u.id}>
-                                {u.name} ({u.email})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <SearchableSelect
+                          id="userId"
+                          name="userId"
+                          required
+                          placeholder="Search users…"
+                          ariaLabel="Select user to allocate"
+                          className="bg-background border-input h-10 w-full"
+                          options={candidateUsers.map((u) => ({
+                            value: u.id,
+                            label: `${u.name} (${u.email})`,
+                          }))}
+                          emptyText="No matching users."
+                        />
                       </div>
 
                       {addFormState.error && (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import {
@@ -13,10 +13,11 @@ import {
 import { toast } from '@repo/ui/components/ui/sonner';
 import { delay, formatLabelWithSpace } from '@/app/_shared/utility';
 import { WorkItemActionDialog } from '@/app/work-items/_components/work-item-action-dialog';
-import { MemberSelectItems } from '@/app/work-items/_components/member-select-items';
+import { buildMemberSelectOptions } from '@/app/work-items/_components/member-select-items';
 import { FormStatusAlerts } from '@/app/work-items/_components/workItem-form-alerts';
 import { resolveWorkItemMember } from '@/app/work-items/_helpers/work-item-member';
 import { WORK_ITEM_STATUSES } from '@/app/work-items/_helpers/work-item-status';
+import { SearchableSelect } from '@/components/searchable-select';
 import {
   updateWorkItem,
   updateWorkItemStatus,
@@ -236,6 +237,61 @@ export function WorkItemFieldPatchDialog({
     }
   };
 
+  let fieldControl: ReactNode;
+  if (isTextField) {
+    fieldControl = (
+      <Input
+        id={`patch-${fieldConfig.field}`}
+        value={selectedValue}
+        maxLength={200}
+        disabled={isPending}
+        autoFocus
+        onChange={(event) => setSelectedValue(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            handleSave().catch(() => {});
+          }
+        }}
+      />
+    );
+  } else if (isStatusField) {
+    fieldControl = (
+      <Select
+        value={selectedValue}
+        onValueChange={setSelectedValue}
+        disabled={isPending}
+      >
+        <SelectTrigger id={`patch-${fieldConfig.field}`}>
+          <SelectValue placeholder="Select status" />
+        </SelectTrigger>
+        <SelectContent>
+          {WORK_ITEM_STATUSES.map((status) => (
+            <SelectItem key={status} value={status}>
+              {formatLabelWithSpace(status)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  } else {
+    fieldControl = (
+      <SearchableSelect
+        id={`patch-${fieldConfig.field}`}
+        value={selectedValue}
+        onValueChange={setSelectedValue}
+        disabled={isPending}
+        placeholder={fieldConfig.unassignedLabel ?? 'Search…'}
+        options={buildMemberSelectOptions({
+          members: options,
+          unassignedLabel: fieldConfig.unassignedLabel,
+          unassignedValue: UNASSIGNED_VALUE,
+        })}
+        emptyText="No matching people."
+      />
+    );
+  }
+
   return (
     <WorkItemActionDialog
       open={open}
@@ -251,53 +307,7 @@ export function WorkItemFieldPatchDialog({
         <Label htmlFor={`patch-${fieldConfig.field}`}>
           {fieldConfig.label}
         </Label>
-        {isTextField ? (
-          <Input
-            id={`patch-${fieldConfig.field}`}
-            value={selectedValue}
-            maxLength={200}
-            disabled={isPending}
-            autoFocus
-            onChange={(event) => setSelectedValue(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                handleSave().catch(() => {});
-              }
-            }}
-          />
-        ) : (
-          <Select
-            value={selectedValue}
-            onValueChange={setSelectedValue}
-            disabled={isPending}
-          >
-            <SelectTrigger id={`patch-${fieldConfig.field}`}>
-              <SelectValue
-                placeholder={
-                  isStatusField
-                    ? 'Select status'
-                    : (fieldConfig.unassignedLabel ?? 'Select…')
-                }
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {isStatusField ? (
-                WORK_ITEM_STATUSES.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {formatLabelWithSpace(status)}
-                  </SelectItem>
-                ))
-              ) : (
-                <MemberSelectItems
-                  members={options}
-                  unassignedLabel={fieldConfig.unassignedLabel}
-                  unassignedValue={UNASSIGNED_VALUE}
-                />
-              )}
-            </SelectContent>
-          </Select>
-        )}
+        {fieldControl}
       </div>
 
       <FormStatusAlerts error={alert?.error} success={alert?.success} />
