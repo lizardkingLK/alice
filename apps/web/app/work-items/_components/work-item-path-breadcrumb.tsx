@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { Fragment } from 'react';
-import { Badge } from '@repo/ui/components/ui/badge';
 import {
   Breadcrumb,
   BreadcrumbEllipsis,
@@ -12,10 +11,12 @@ import {
 } from '@repo/ui/components/ui/breadcrumb';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { toShortId } from '@/app/_shared/utility';
+import { WorkItemTypeBadge } from '@/app/work-items/_components/workItem-badge-type';
 import type {
   DbWorkItem,
   WorkItemAncestor,
 } from '@/app/work-items/_services/workItem.service.server';
+import type { WorkItemType } from '@repo/types';
 
 type WorkItemPathBreadcrumbProps = {
   readonly workItem: Pick<
@@ -26,12 +27,13 @@ type WorkItemPathBreadcrumbProps = {
   readonly ancestors?: readonly WorkItemAncestor[];
 };
 
-function PathTypeChip({ type, id }: Readonly<{ type: string; id: string }>) {
+function PathTypeChip({
+  type,
+  id,
+}: Readonly<{ type: WorkItemType; id: string }>) {
   return (
     <span className="flex items-center gap-2">
-      <Badge variant="outline" className="font-normal">
-        {type}
-      </Badge>
+      <WorkItemTypeBadge type={type} className="font-normal" />
       <span className="text-muted-foreground font-mono text-xs">
         {toShortId(id)}
       </span>

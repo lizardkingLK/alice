@@ -3,19 +3,11 @@
 import type React from 'react';
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
-import {
-  BACKLOG_TYPE_STYLES,
-  getInitials,
-  projectDisplayKey,
-} from '@/app/backlog/_helpers/backlog-item-utils';
+import { WorkItemTypeBadge } from '@/app/work-items/_components/workItem-badge-type';
+import { projectDisplayKey } from '@/app/backlog/_helpers/backlog-item-utils';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@repo/ui/components/ui/avatar';
-import { Badge } from '@repo/ui/components/ui/badge';
+import { UserAvatar } from '@/components/user-avatar';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';
 import { GripVertical } from '@repo/ui/lib/icons';
@@ -57,15 +49,7 @@ export function BacklogIssueRow({
           <GripVertical className="size-4" />
         </div>
 
-        <Badge
-          variant="outline"
-          className={cn(
-            'h-4 shrink-0 border px-1.5 py-0 text-[9px] uppercase',
-            BACKLOG_TYPE_STYLES[item.type]
-          )}
-        >
-          {item.type}
-        </Badge>
+        <WorkItemTypeBadge type={item.type} compact />
 
         <span className="text-muted-foreground shrink-0 font-mono text-xs font-semibold tracking-tight">
           {displayKey}
@@ -79,21 +63,11 @@ export function BacklogIssueRow({
       <div className="flex shrink-0 items-center gap-2 self-end @md/backlog-pane:self-auto">
         <WorkItemStatusBadge status={item.status} />
         <PriorityBadge priority={item.priority} />
-        <Avatar
-          size="sm"
-          className="border-border/80 size-6 border"
+        <UserAvatar
+          name={item.assignee?.name}
+          imageUrl={item.assignee?.profile_picture}
           title={item.assignee?.name ?? 'Unassigned'}
-        >
-          {item.assignee?.profile_picture ? (
-            <AvatarImage
-              src={item.assignee.profile_picture}
-              alt={item.assignee.name ?? 'Assignee'}
-            />
-          ) : null}
-          <AvatarFallback className="bg-muted text-muted-foreground text-[9px] font-semibold">
-            {getInitials(item.assignee?.name)}
-          </AvatarFallback>
-        </Avatar>
+        />
       </div>
     </button>
   );

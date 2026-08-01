@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import {
@@ -21,12 +20,12 @@ import {
   SheetTitle,
 } from '@repo/ui/components/ui/sheet';
 import {
-  BACKLOG_TYPE_STYLES,
   mapPriority,
   projectDisplayKey,
 } from '@/app/backlog/_helpers/backlog-item-utils';
 import { formatLabelWithSpace } from '@/app/_shared/utility';
 import { buildMemberSelectOptions } from '@/app/work-items/_components/member-select-items';
+import { WorkItemTypeBadge } from '@/app/work-items/_components/workItem-badge-type';
 import { SearchableSelect } from '@/components/searchable-select';
 import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
 import { WORK_ITEM_STATUSES } from '@/app/work-items/_helpers/work-item-status';
@@ -34,7 +33,6 @@ import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.ser
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
 import type { User as DbUser } from '@/app/users/_services/users.service';
-import { cn } from '@repo/ui/lib/utils';
 import { ExternalLink } from '@repo/ui/lib/icons';
 
 /* eslint-disable no-unused-vars */
@@ -93,15 +91,11 @@ export function BacklogItemDetailsSheet({
           <div className="space-y-6">
             <SheetHeader className="pb-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    'text-[10px] font-semibold uppercase',
-                    BACKLOG_TYPE_STYLES[item.type]
-                  )}
-                >
-                  {item.type}
-                </Badge>
+                <WorkItemTypeBadge
+                  type={item.type}
+                  compact
+                  className="text-[10px] font-semibold"
+                />
                 <Button
                   asChild
                   variant="link"
