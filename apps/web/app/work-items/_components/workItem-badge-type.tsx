@@ -1,4 +1,4 @@
-import type { RendererProps } from '@/app/work-items/_components/workItems-table';
+import type { RendererProps } from '@/app/work-items/_components/workItems-table-types';
 import {
   WORK_ITEM_TYPE_BADGE_STYLES,
   WORK_ITEM_TYPE_ICONS,
