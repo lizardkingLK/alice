@@ -31,10 +31,12 @@ import {
 } from './dashboard-mock-data';
 import { DashboardWidgetShell } from './dashboard-widget-shell';
 import { SIDEBAR_LAYOUT_SETTLE_MS } from '@/hooks/use-sidebar-layout-settling';
-import { apiFetch } from '@/lib/api/api-client';
 import { createClient } from '@/lib/supabase/client';
 import { readBoardDefaults } from '@/app/board/_helpers/board-defaults-storage';
 import { ALL_PROJECTS_ID } from '@/app/board/_helpers/workspace-defaults-shared';
+import { loadSprintBurndownAction } from '@/app/dashboard/_components/actions';
+import type { DashboardBurndownBootstrap } from '@/app/dashboard/_services/dashboard-burndown.server';
+import type { SprintBurndownPayload } from '@/app/sprints/_services/sprint-burndown.server';
 
 const widgetById = Object.fromEntries(
   WIDGET_CATALOG.map((widget) => [widget.id, widget])
@@ -185,28 +187,16 @@ function StatusMixWidget() {
   );
 }
 
-type BurndownPoint = {
-  date: string; // ISO date "YYYY-MM-DD"
-  remaining: number | null;
-  ideal: number;
-};
-
-type BurndownResponse = {
-  sprint: {
-    id: string;
-    name: string;
-    startDate: string;
-    endDate: string;
-    status: string;
-  };
-  estimatedTotal: number;
-  series: BurndownPoint[];
-};
+type BurndownPoint = SprintBurndownPayload['series'][number];
 
 type BurndownAxisRange = {
   startDate: string;
   endDate: string;
 };
+
+const BURNDOWN_EMPTY_NO_SPRINT = 'No active sprint selected.';
+const BURNDOWN_EMPTY_UNAVAILABLE =
+  'Burndown is temporarily unavailable. If you are an admin, verify the burndown migration is applied and this sprint has work items.';
 
 function defaultBurndownAxisRange(): BurndownAxisRange {
   const end = new Date();
@@ -259,11 +249,7 @@ function formatBurndownTick(isoDate: string) {
   });
 }
 
-type BurndownSprintListItem = {
-  id: string;
-  status: 'Not Started' | 'Ongoing' | 'Completed' | 'Archived';
-  project?: { id: string } | null;
-};
+type BurndownSprintListItem = DashboardBurndownBootstrap['sprints'][number];
 
 function selectBurndownSprint(
   sprints: readonly BurndownSprintListItem[],
@@ -287,107 +273,131 @@ function selectBurndownSprint(
   );
 }
 
-function BurndownWidget() {
-  const meta = widgetById['sprint-burndown'];
+function applyBurndownPayload(burndown: SprintBurndownPayload | null): {
+  series: BurndownPoint[];
+  estimatedTotal: number;
+  axisRange: BurndownAxisRange;
+  emptyHint: string | null;
+} {
+  if (!burndown) {
+    return {
+      series: [],
+      estimatedTotal: 0,
+      axisRange: defaultBurndownAxisRange(),
+      emptyHint: BURNDOWN_EMPTY_NO_SPRINT,
+    };
+  }
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [emptyHint, setEmptyHint] = useState<string | null>(null);
-  const [series, setSeries] = useState<BurndownPoint[]>([]);
+  return {
+    series: burndown.series,
+    estimatedTotal: burndown.estimatedTotal,
+    axisRange: {
+      startDate: burndown.sprint.startDate,
+      endDate: burndown.sprint.endDate,
+    },
+    emptyHint: null,
+  };
+}
+
+async function resolvePreferredBurndown(
+  bootstrap: DashboardBurndownBootstrap
+): Promise<{
+  series: BurndownPoint[];
+  estimatedTotal: number;
+  axisRange: BurndownAxisRange;
+  emptyHint: string | null;
+}> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const preference = user
+    ? (readBoardDefaults(user.id)?.preference ?? null)
+    : null;
+  const selected = selectBurndownSprint(bootstrap.sprints, preference);
+
+  if (!selected) {
+    return {
+      series: [],
+      estimatedTotal: 0,
+      axisRange: defaultBurndownAxisRange(),
+      emptyHint: BURNDOWN_EMPTY_NO_SPRINT,
+    };
+  }
+
+  if (selected.id === bootstrap.defaultSprintId && bootstrap.burndown) {
+    return applyBurndownPayload(bootstrap.burndown);
+  }
+
+  try {
+    const burndown = await loadSprintBurndownAction(selected.id);
+    if (!burndown) {
+      return {
+        series: [],
+        estimatedTotal: 0,
+        axisRange: defaultBurndownAxisRange(),
+        emptyHint: BURNDOWN_EMPTY_UNAVAILABLE,
+      };
+    }
+    return applyBurndownPayload(burndown);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Failed to load burndown';
+    const unavailable =
+      message.includes('Failed to fetch work items for burndown') ||
+      message.includes('Failed to fetch work logs for burndown');
+
+    return {
+      series: [],
+      estimatedTotal: 0,
+      axisRange: defaultBurndownAxisRange(),
+      emptyHint: unavailable ? BURNDOWN_EMPTY_UNAVAILABLE : message,
+    };
+  }
+}
+
+type BurndownWidgetProps = {
+  readonly bootstrap: DashboardBurndownBootstrap;
+};
+
+function BurndownWidget({ bootstrap }: BurndownWidgetProps) {
+  const meta = widgetById['sprint-burndown'];
+  const initial = bootstrap.burndown
+    ? applyBurndownPayload(bootstrap.burndown)
+    : {
+        series: [] as BurndownPoint[],
+        estimatedTotal: 0,
+        axisRange: defaultBurndownAxisRange(),
+        emptyHint: bootstrap.defaultSprintId
+          ? BURNDOWN_EMPTY_UNAVAILABLE
+          : BURNDOWN_EMPTY_NO_SPRINT,
+      };
+
+  const [emptyHint, setEmptyHint] = useState<string | null>(initial.emptyHint);
+  const [series, setSeries] = useState<BurndownPoint[]>(initial.series);
   const [axisRange, setAxisRange] = useState<BurndownAxisRange>(
-    defaultBurndownAxisRange
+    initial.axisRange
   );
-  const [estimatedTotal, setEstimatedTotal] = useState(0);
+  const [estimatedTotal, setEstimatedTotal] = useState(initial.estimatedTotal);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function load() {
-      setIsLoading(true);
-      setEmptyHint(null);
-
-      try {
-        const supabase = createClient();
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        const boardDefaults = user ? readBoardDefaults(user.id) : null;
-        const preference = boardDefaults?.preference ?? null;
-
-        const list = await apiFetch<{
-          sprints: BurndownSprintListItem[];
-        }>(`/api/sprints?status=active&page=1&limit=50`);
-
-        const selected = selectBurndownSprint(list.sprints, preference);
-
-        if (!selected) {
-          if (!cancelled) {
-            setSeries([]);
-            setEstimatedTotal(0);
-            setAxisRange(defaultBurndownAxisRange());
-            setEmptyHint('No active sprint selected.');
-            setIsLoading(false);
-          }
-          return;
-        }
-
-        const burndown = await apiFetch<BurndownResponse>(
-          `/api/sprints/${selected.id}/burndown`
-        );
-
-        if (cancelled) return;
-        setSeries(burndown.series);
-        setEstimatedTotal(burndown.estimatedTotal);
-        setAxisRange({
-          startDate: burndown.sprint.startDate,
-          endDate: burndown.sprint.endDate,
-        });
-        setEmptyHint(null);
-      } catch (e) {
-        if (cancelled) return;
-        const message =
-          e instanceof Error ? e.message : 'Failed to load burndown';
-
-        setSeries([]);
-        setEstimatedTotal(0);
-        setAxisRange(defaultBurndownAxisRange());
-
-        // Backend currently throws explicit messages when the burndown query fails
-        // (e.g. missing `work_items.done_at`). Keep axes visible with a hint.
-        if (
-          message.includes('Failed to fetch work items for burndown') ||
-          message.includes('Failed to fetch work logs for burndown')
-        ) {
-          setEmptyHint(
-            'Burndown is temporarily unavailable. If you are an admin, verify the burndown migration is applied and this sprint has work items.'
-          );
-          return;
-        }
-
-        setEmptyHint(message);
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
+    async function reconcilePreference() {
+      const next = await resolvePreferredBurndown(bootstrap);
+      if (cancelled) return;
+      setSeries(next.series);
+      setEstimatedTotal(next.estimatedTotal);
+      setAxisRange(next.axisRange);
+      setEmptyHint(next.emptyHint);
     }
 
-    void load();
+    void reconcilePreference();
 
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  if (isLoading) {
-    return (
-      <DashboardWidgetShell title={meta.title} description={meta.description}>
-        <div className="text-muted-foreground flex flex-1 items-center justify-center text-sm">
-          Loading burndown…
-        </div>
-      </DashboardWidgetShell>
-    );
-  }
+  }, [bootstrap]);
 
   const hasData = series.length > 0;
   const chartData = hasData
@@ -502,9 +512,15 @@ function ActivityWidget() {
   );
 }
 
-type DashboardWidgetType = { id: WidgetId };
+type DashboardWidgetType = {
+  id: WidgetId;
+  burndownBootstrap: DashboardBurndownBootstrap;
+};
 
-export function DashboardWidget({ id }: Readonly<DashboardWidgetType>) {
+export function DashboardWidget({
+  id,
+  burndownBootstrap,
+}: Readonly<DashboardWidgetType>) {
   switch (id) {
     case 'open-issues':
     case 'in-progress':
@@ -514,7 +530,7 @@ export function DashboardWidget({ id }: Readonly<DashboardWidgetType>) {
     case 'status-mix':
       return <StatusMixWidget />;
     case 'sprint-burndown':
-      return <BurndownWidget />;
+      return <BurndownWidget bootstrap={burndownBootstrap} />;
     case 'velocity':
       return <VelocityWidget />;
     case 'recent-activity':
