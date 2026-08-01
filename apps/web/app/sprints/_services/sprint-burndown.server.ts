@@ -1,9 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
 import { isMissingRelationError, throwIfError } from '@/lib/db/query';
-import { computeBurndown, type SprintBurndownPayload } from '@repo/types';
-import type { Tables } from '@repo/types';
-
-export type { BurndownPoint, SprintBurndownPayload } from '@repo/types';
+import { 
+  computeBurndown,
+  type SprintBurndownPayload,
+  type Tables,
+  type BurndownPoint,
+  type SprintBurndownPayload,
+} from '@repo/types';
 
 type BurndownWorkItem = {
   id: string;
