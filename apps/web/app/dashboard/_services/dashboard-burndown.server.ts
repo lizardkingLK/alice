@@ -1,10 +1,8 @@
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.service.server';
-import {
-  getSprintBurndownServer,
-  type SprintBurndownPayload,
-} from '@/app/sprints/_services/sprint-burndown.server';
+import { getSprintBurndownServer } from '@/app/sprints/_services/sprint-burndown.server';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
+import type { SprintBurndownPayload } from '@repo/types';
 
 export type DashboardBurndownSprint = Pick<Sprint, 'id' | 'status'> & {
   project?: { id: string } | null;

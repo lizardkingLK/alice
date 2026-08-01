@@ -36,7 +36,7 @@ import { readBoardDefaults } from '@/app/board/_helpers/board-defaults-storage';
 import { ALL_PROJECTS_ID } from '@/app/board/_helpers/workspace-defaults-shared';
 import { loadSprintBurndownAction } from '@/app/dashboard/_components/actions';
 import type { DashboardBurndownBootstrap } from '@/app/dashboard/_services/dashboard-burndown.server';
-import type { SprintBurndownPayload } from '@/app/sprints/_services/sprint-burndown.server';
+import type { SprintBurndownPayload } from '@repo/types';
 
 const widgetById = Object.fromEntries(
   WIDGET_CATALOG.map((widget) => [widget.id, widget])
