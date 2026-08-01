@@ -157,5 +157,15 @@ export const userFactory = {
 - [ ] Teardown covers mocks, env, and timers used by the suite
 - [ ] Domain data comes from factories (or justified static fixtures)
 - [ ] Shared navigation/UI mocks reused from `tests/mocks`
+- [ ] Shared interaction helpers reused from `tests/helpers` (e.g. combobox pickers)
 - [ ] No fixed sleeps; async via Testing Library queries
 - [ ] `pnpm turbo run test` passes for affected packages
+
+## Agent: when to run tests
+
+Also enforced by always-on QA Dev Member (`.cursor/rules/07-qa-dev-member.mdc`):
+
+- After feature work with **no further follow-ups**, run affected package tests.
+- After the user asks for **duplication prescan / dedupe** (changes accepted), run
+  tests once extractions (if any) are done.
+- Prefer `pnpm turbo run test --filter=<pkg>`; fix regressions you introduced.
