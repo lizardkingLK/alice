@@ -131,8 +131,8 @@ export function BoardDefaultsDialog({
           <DialogTitle>Workspace defaults</DialogTitle>
           <DialogDescription>
             Choose the project and sprint to open by default when you visit the
-            board or backlog. Changing filters later will not update this
-            preference.
+            board, backlog, or work items list. Changing filters later will not
+            update this preference.
           </DialogDescription>
         </DialogHeader>
 

@@ -3,8 +3,15 @@ import {
   getWorkItemsPaginated,
   type DbWorkItem,
 } from '@/app/work-items/_services/workItem.service.server';
+import {
+  EMPTY_ACTIVE_SPRINTS_PAGE,
+  getSuggestedBoardDefaults,
+} from '@/app/board/_services/board-defaults.server';
 import { getUserList } from '@/app/users/_services/users.service.server';
 import { getProjectList } from '@/app/projects/_services/projects.service.server';
+import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.service.server';
+import { getDbUser } from '@/lib/auth';
+import { filterActiveProjects } from '@/lib/projects/active-projects';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import {
   parseStandardParams,
@@ -40,26 +47,47 @@ export async function WorkItemsData({
   const filters = parseWorkItemFilters(resolvedSearchParams);
   const projectId = lockedProjectId ?? filters.projectId;
   const assigneeId = lockedAssigneeId ?? filters.assigneeId;
-  const { type } = filters;
+  const { type, sprintId } = filters;
+  const dbUser = await getDbUser();
+  const resolvedUserId = currentUserId ?? dbUser?.id ?? null;
+  const isProjectLocked = Boolean(lockedProjectId);
+  const needsClientBootstrap = !isProjectLocked && !projectId;
 
-  const [projects, projectMembers, workItemsResult] = await Promise.all([
+  const [projects, projectMembers, sprintsResult] = await Promise.all([
     safeServerFetch(getProjectList(), [], 'fetch projects for work items'),
     safeServerFetch(getUserList(), [], 'fetch users for work items'),
     safeServerFetch(
-      getWorkItemsPaginated(page, limit, search, {
-        projectId,
-        type,
-        assigneeId,
-      }),
-      EMPTY_WORK_ITEMS,
-      'fetch work items list'
+      getSprintsPaginatedServer('active', 1, 100),
+      EMPTY_ACTIVE_SPRINTS_PAGE,
+      'fetch sprints for work items'
     ),
   ]);
 
+  const activeProjects = filterActiveProjects(projects);
+  const sprints = sprintsResult.sprints;
+  const suggestedDefaults =
+    !isProjectLocked && dbUser
+      ? await getSuggestedBoardDefaults(dbUser, activeProjects, sprints)
+      : null;
+
+  const workItemsResult = needsClientBootstrap
+    ? EMPTY_WORK_ITEMS
+    : await safeServerFetch(
+        getWorkItemsPaginated(page, limit, search, {
+          projectId,
+          type,
+          assigneeId,
+          sprintId,
+        }),
+        EMPTY_WORK_ITEMS,
+        'fetch work items list'
+      );
+
   return (
     <WorkItemsWorkspace
-      projects={projects}
+      projects={isProjectLocked ? projects : activeProjects}
       projectMembers={projectMembers}
+      sprints={sprints}
       initialWorkItems={workItemsResult.workItems}
       totalCount={workItemsResult.totalCount}
       page={workItemsResult.page}
@@ -67,11 +95,14 @@ export async function WorkItemsData({
       totalPages={workItemsResult.totalPages}
       search={search}
       projectFilter={projectId ?? ''}
+      sprintFilter={sprintId ?? ''}
       typeFilter={type ?? ''}
       assigneeFilter={assigneeId ?? ''}
       lockedProjectId={lockedProjectId}
       lockedAssigneeId={lockedAssigneeId}
-      currentUserId={currentUserId}
+      currentUserId={resolvedUserId}
+      suggestedDefaults={suggestedDefaults}
+      needsClientBootstrap={needsClientBootstrap}
     />
   );
 }

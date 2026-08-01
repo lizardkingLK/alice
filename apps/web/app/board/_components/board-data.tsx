@@ -1,5 +1,8 @@
 import { KanbanBoard } from '@/app/board/_components/kanban-board';
-import { getSuggestedBoardDefaults } from '@/app/board/_services/board-defaults.server';
+import {
+  EMPTY_ACTIVE_SPRINTS_PAGE,
+  getSuggestedBoardDefaults,
+} from '@/app/board/_services/board-defaults.server';
 import { getProjectList } from '@/app/projects/_services/projects.service.server';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.service.server';
 import { getWorkItems } from '@/app/work-items/_services/workItem.service.server';
@@ -10,11 +13,6 @@ import {
   parseWorkItemFilters,
   type RawSearchParams,
 } from '@/lib/search-params';
-
-const EMPTY_SPRINTS = {
-  sprints: [],
-  pagination: { page: 1, limit: 100, totalCount: 0, totalPages: 1 },
-};
 
 type BoardDataProps = {
   readonly searchParams: Promise<RawSearchParams>;
@@ -31,7 +29,7 @@ export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
     safeServerFetch(getProjectList(), [], 'fetch projects for board'),
     safeServerFetch(
       getSprintsPaginatedServer('active', 1, 100),
-      EMPTY_SPRINTS,
+      EMPTY_ACTIVE_SPRINTS_PAGE,
       'fetch sprints for board'
     ),
   ]);

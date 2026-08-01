@@ -55,7 +55,10 @@ import { formatLabelWithSpace } from '@/app/_shared/utility';
 import { BoardDefaultsDialog } from '@/app/board/_components/board-defaults-dialog';
 import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
-import { resolveDefaultBoardSprint } from '@/app/board/_services/board-defaults';
+import {
+  applyProjectFilterToSearchParams,
+  buildSprintFilterOptions,
+} from '@/app/board/_services/board-defaults';
 import type { Project } from '@/app/projects/_services/projects.service.base';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
@@ -173,19 +176,11 @@ export function KanbanBoard({
   const handleProjectChange = useCallback(
     (nextProject: string) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (!nextProject || nextProject === 'all') {
-        params.delete('project');
-        params.delete('sprint');
-      } else {
-        params.set('project', nextProject);
-        const defaultSprint = resolveDefaultBoardSprint(sprints, nextProject);
-        if (defaultSprint) {
-          params.set('sprint', defaultSprint.id);
-        } else {
-          params.delete('sprint');
-        }
-      }
-      params.delete('page');
+      applyProjectFilterToSearchParams(params, {
+        nextProject,
+        sprints,
+        pageMode: 'delete',
+      });
       const query = params.toString();
       router.push(query ? `${pathname}?${query}` : pathname);
     },
@@ -193,15 +188,10 @@ export function KanbanBoard({
   );
 
   const projectSelectValue = projectFilter || 'all';
-  const sprintOptions = useMemo(() => {
-    const scoped = projectFilter
-      ? sprints.filter((sprint) => sprint.project?.id === projectFilter)
-      : sprints;
-    return scoped.map((sprint) => ({
-      value: sprint.id,
-      label: sprint.name,
-    }));
-  }, [projectFilter, sprints]);
+  const sprintOptions = useMemo(
+    () => buildSprintFilterOptions(sprints, projectFilter),
+    [projectFilter, sprints]
+  );
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [activeDropCol, setActiveDropCol] = useState<BoardStatus | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
