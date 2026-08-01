@@ -43,6 +43,7 @@ import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults
 import { formatDate } from '@/app/_shared/utility';
 import statusRenderer from '@/app/work-items/_components/workItem-badge-status';
 import priorityRenderer from '@/app/work-items/_components/workItem-badge-priority';
+import typeRenderer from '@/app/work-items/_components/workItem-badge-type';
 import Link from 'next/link';
 import { cn } from '@repo/ui/lib/utils';
 import { Pagination } from '@/components/pagination';
@@ -50,6 +51,7 @@ import { DataTable } from '@/components/data-table';
 import { SearchInput } from '@/components/search-input';
 import { DismissibleError } from '@/components/dismissible-error';
 import { ListFilterSelect } from '@/components/list-filter-select';
+import { UserAvatar } from '@/components/user-avatar';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { useQueryFilter } from '@/hooks/use-query-filter';
@@ -105,25 +107,33 @@ const titleRenderer = ({
   </Link>
 );
 
-const typeRenderer = ({ row }: RendererProps) => (
-  <Badge variant="outline">{row.original.type}</Badge>
-);
-
 const assigneeRenderer = ({
   row,
   currentUserId,
 }: RendererProps & { currentUserId?: string | null }) => {
-  const assigneeName = row.original.assignee?.name ?? '—';
+  const assignee = row.original.assignee;
+  const assigneeName = assignee?.name ?? '—';
   const isAssignedToSelf = row.original.assignee_id === currentUserId;
 
+  if (!assignee) {
+    return <p className="text-muted-foreground font-medium">{assigneeName}</p>;
+  }
+
   return (
-    <div className="space-y-1">
-      <p className="font-medium">{assigneeName}</p>
-      {isAssignedToSelf ? (
-        <Badge variant="secondary" className="text-[10px]">
-          You
-        </Badge>
-      ) : null}
+    <div className="flex items-center gap-2">
+      <UserAvatar
+        name={assignee.name}
+        imageUrl={assignee.profile_picture}
+        title={assigneeName}
+      />
+      <div className="space-y-1">
+        <p className="font-medium">{assigneeName}</p>
+        {isAssignedToSelf ? (
+          <Badge variant="secondary" className="text-[10px]">
+            You
+          </Badge>
+        ) : null}
+      </div>
     </div>
   );
 };
