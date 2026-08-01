@@ -17,7 +17,12 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import {
+  ChevronDown,
+  ChevronRight,
   ClipboardPenLine,
+  List,
+  ListTree,
+  Loader2,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -34,6 +39,11 @@ import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form-
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { WorkItemWorkspaceProps } from '@/app/work-items/_components/workItems-workspace';
 import {
+  flattenWorkItemHierarchyRows,
+  type WorkItemHierarchyDisplayRow,
+} from '@/app/work-items/_helpers/work-item-hierarchy-rows';
+import { useWorkItemHierarchy } from '@/app/work-items/_hooks/use-work-item-hierarchy';
+import {
   applyProjectFilterToSearchParams,
   buildSprintFilterOptions,
 } from '@/app/board/_services/board-defaults';
@@ -41,9 +51,9 @@ import { BoardDefaultsDialog } from '@/app/board/_components/board-defaults-dial
 import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
 import { formatDate } from '@/app/_shared/utility';
-import statusRenderer from '@/app/work-items/_components/workItem-badge-status';
-import priorityRenderer from '@/app/work-items/_components/workItem-badge-priority';
-import typeRenderer from '@/app/work-items/_components/workItem-badge-type';
+import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
+import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
+import { WorkItemTypeBadge } from '@/app/work-items/_components/workItem-badge-type';
 import Link from 'next/link';
 import { cn } from '@repo/ui/lib/utils';
 import { Pagination } from '@/components/pagination';
@@ -58,6 +68,7 @@ import { useQueryFilter } from '@/hooks/use-query-filter';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Constants } from '@repo/types/database';
 import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
+import type { WorkItemListView } from '@/lib/search-params';
 
 /** Match DialogContent `duration-200` so edit UI doesn't flash to create while closing. */
 const DIALOG_CLOSE_MS = 200;
@@ -70,50 +81,110 @@ const WORK_ITEM_FILTER_PARAMS = [
   'assignee',
 ] as const;
 
+const TITLE_INDENT_CLASS = ['pl-0', 'pl-4', 'pl-8', 'pl-12'] as const;
+
 type WorkItemsTableProps = WorkItemWorkspaceProps;
 
+type DisplayRow = WorkItemHierarchyDisplayRow;
+
+/** Shared by status/type/priority badge cell renderers (flat `DbWorkItem` rows). */
 export type RendererProps = { row: Row<DbWorkItem> };
+
+type HierarchyRendererProps = { row: Row<DisplayRow> };
+
+function HierarchyExpandIcon({
+  isLoading,
+  isExpanded,
+}: Readonly<{ isLoading: boolean; isExpanded: boolean }>) {
+  if (isLoading) {
+    return <Loader2 className="size-4 animate-spin" />;
+  }
+  if (isExpanded) {
+    return <ChevronDown className="size-4" />;
+  }
+  return <ChevronRight className="size-4" />;
+}
 
 const titleRenderer = ({
   row,
   fromProjectId,
   fromAssigneeId,
-}: RendererProps & {
+  isHierarchy,
+  onToggleExpand,
+}: HierarchyRendererProps & {
   fromProjectId?: string | null;
   fromAssigneeId?: string | null;
-}) => (
-  <Link
-    className="flex min-w-48 items-center gap-3"
-    href={workItemDetailHref(row.original.id, {
-      fromProjectId,
-      fromAssigneeId,
-    })}
-  >
-    <div
-      className={cn(
-        'bg-primary/10 text-primary border-primary/20',
-        'flex size-8 shrink-0 items-center justify-center',
-        'rounded-lg border text-xs font-bold'
-      )}
-    >
-      {row.original.title.slice(0, 1).toUpperCase()}
+  isHierarchy: boolean;
+  // eslint-disable-next-line no-unused-vars -- expand toggle callback
+  onToggleExpand?: (workItemId: string) => void;
+}) => {
+  const { workItem, depth, canExpand, isExpanded, isLoading } = row.original;
+  const indentClass =
+    TITLE_INDENT_CLASS[Math.min(depth, TITLE_INDENT_CLASS.length - 1)] ??
+    'pl-12';
+
+  return (
+    <div className={cn('flex min-w-48 items-center gap-2', indentClass)}>
+      {isHierarchy ? (
+        <div className="flex size-7 shrink-0 items-center justify-center">
+          {canExpand ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="size-7 cursor-pointer"
+              aria-label={isExpanded ? 'Collapse subtasks' : 'Expand subtasks'}
+              aria-expanded={isExpanded}
+              disabled={isLoading}
+              onClick={(event) => {
+                event.preventDefault();
+                onToggleExpand?.(workItem.id);
+              }}
+            >
+              <HierarchyExpandIcon
+                isLoading={isLoading}
+                isExpanded={isExpanded}
+              />
+            </Button>
+          ) : (
+            <span className="size-7" aria-hidden />
+          )}
+        </div>
+      ) : null}
+      <Link
+        className="flex min-w-0 flex-1 items-center gap-3"
+        href={workItemDetailHref(workItem.id, {
+          fromProjectId,
+          fromAssigneeId,
+        })}
+      >
+        <div
+          className={cn(
+            'bg-primary/10 text-primary border-primary/20',
+            'flex size-8 shrink-0 items-center justify-center',
+            'rounded-lg border text-xs font-bold'
+          )}
+        >
+          {workItem.title.slice(0, 1).toUpperCase()}
+        </div>
+        <div className="space-y-1 font-medium">
+          {workItem.title}
+          <p className="text-muted-foreground text-xs">
+            Created {formatDate(workItem.created_at)}
+          </p>
+        </div>
+      </Link>
     </div>
-    <div className="space-y-1 font-medium">
-      {row.original.title}
-      <p className="text-muted-foreground text-xs">
-        Created {formatDate(row.original.created_at)}
-      </p>
-    </div>
-  </Link>
-);
+  );
+};
 
 const assigneeRenderer = ({
   row,
   currentUserId,
-}: RendererProps & { currentUserId?: string | null }) => {
-  const assignee = row.original.assignee;
+}: HierarchyRendererProps & { currentUserId?: string | null }) => {
+  const assignee = row.original.workItem.assignee;
   const assigneeName = assignee?.name ?? '—';
-  const isAssignedToSelf = row.original.assignee_id === currentUserId;
+  const isAssignedToSelf = row.original.workItem.assignee_id === currentUserId;
 
   if (!assignee) {
     return <p className="text-muted-foreground font-medium">{assigneeName}</p>;
@@ -138,9 +209,9 @@ const assigneeRenderer = ({
   );
 };
 
-const dueDateRenderer = ({ row }: RendererProps) => (
+const dueDateRenderer = ({ row }: HierarchyRendererProps) => (
   <span className="text-muted-foreground">
-    {formatDate(row.original.due_date)}
+    {formatDate(row.original.workItem.due_date)}
   </span>
 );
 
@@ -149,8 +220,10 @@ const actionsHeaderRenderer = () => <span className="sr-only">Actions</span>;
 const actionsRenderer = ({
   row,
   openEditDialog,
+}: HierarchyRendererProps & {
   // eslint-disable-next-line no-unused-vars
-}: RendererProps & { openEditDialog: (workItem: DbWorkItem) => void }) => (
+  openEditDialog: (workItem: DbWorkItem) => void;
+}) => (
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
       <Button variant="ghost" size="icon-sm" className="cursor-pointer">
@@ -159,7 +232,7 @@ const actionsRenderer = ({
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end">
-      <DropdownMenuItem onClick={() => openEditDialog(row.original)}>
+      <DropdownMenuItem onClick={() => openEditDialog(row.original.workItem)}>
         <Pencil />
         Edit
       </DropdownMenuItem>
@@ -172,6 +245,112 @@ const actionsRenderer = ({
 );
 
 const WORK_ITEM_TYPES = Constants.public.Enums.WorkItemType;
+
+function resolveWorkItemsListDescription(options: {
+  readonly isAssigneeLocked: boolean;
+  readonly isProjectLocked: boolean;
+  readonly isHierarchy: boolean;
+}): string {
+  if (options.isAssigneeLocked) {
+    return 'View and manage work items assigned to you.';
+  }
+  if (options.isProjectLocked) {
+    return 'View, filter, and manage work items for this project.';
+  }
+  if (options.isHierarchy) {
+    return 'Browse root work items and expand to view nested subtasks.';
+  }
+  return 'View, filter, and manage work items across your workspace.';
+}
+
+function buildWorkItemDisplayRows(options: {
+  readonly isHierarchy: boolean;
+  readonly roots: readonly DbWorkItem[];
+  readonly childrenByParentId: ReadonlyMap<string, readonly DbWorkItem[]>;
+  readonly expandedIds: ReadonlySet<string>;
+  readonly loadingIds: ReadonlySet<string>;
+}): DisplayRow[] {
+  if (!options.isHierarchy) {
+    return options.roots.map((workItem) => ({
+      workItem,
+      depth: 0,
+      canExpand: false,
+      isExpanded: false,
+      isLoading: false,
+    }));
+  }
+
+  return flattenWorkItemHierarchyRows(
+    options.roots,
+    options.childrenByParentId,
+    options.expandedIds,
+    options.loadingIds
+  );
+}
+
+function hasActiveWorkItemFilters(options: {
+  readonly searchParams: URLSearchParams;
+  readonly isProjectLocked: boolean;
+  readonly isAssigneeLocked: boolean;
+  readonly showWorkspaceDefaults: boolean;
+  readonly urlFiltersActive: boolean;
+}): boolean {
+  return WORK_ITEM_FILTER_PARAMS.some((key) => {
+    if (key === 'project' && options.isProjectLocked) {
+      return false;
+    }
+    if (key === 'sprint' && options.isProjectLocked) {
+      return false;
+    }
+    if (key === 'assignee' && options.isAssigneeLocked) {
+      return false;
+    }
+    if (
+      options.showWorkspaceDefaults &&
+      (key === 'project' || key === 'sprint') &&
+      !options.urlFiltersActive
+    ) {
+      return false;
+    }
+    return Boolean(options.searchParams.get(key)?.trim());
+  });
+}
+
+function applyWorkItemListViewParam(
+  params: URLSearchParams,
+  listView: WorkItemListView
+): void {
+  if (listView === 'hierarchy') {
+    params.set('view', 'hierarchy');
+    return;
+  }
+  params.delete('view');
+}
+
+function buildClearedWorkItemFilterParams(options: {
+  readonly searchParams: URLSearchParams;
+  readonly listView: WorkItemListView;
+  readonly lockedProjectId?: string;
+  readonly lockedAssigneeId?: string;
+}): URLSearchParams {
+  const next = new URLSearchParams();
+  const limitParam = options.searchParams.get('limit');
+  const tabParam = options.searchParams.get('tab');
+  if (limitParam) {
+    next.set('limit', limitParam);
+  }
+  if (tabParam) {
+    next.set('tab', tabParam);
+  }
+  applyWorkItemListViewParam(next, options.listView);
+  if (options.lockedProjectId) {
+    next.set('project', options.lockedProjectId);
+  }
+  if (options.lockedAssigneeId) {
+    next.set('assignee', options.lockedAssigneeId);
+  }
+  return next;
+}
 
 export default function WorkItemsTable({
   projects,
@@ -187,6 +366,7 @@ export default function WorkItemsTable({
   sprintFilter = '',
   typeFilter,
   assigneeFilter,
+  listView = 'flat',
   lockedProjectId,
   lockedAssigneeId,
   currentUserId,
@@ -204,6 +384,7 @@ export default function WorkItemsTable({
   const assigneeQuery = useQueryFilter('assignee', assigneeFilter);
   const isProjectLocked = Boolean(lockedProjectId);
   const isAssigneeLocked = Boolean(lockedAssigneeId);
+  const isHierarchy = listView === 'hierarchy';
   // Workspace defaults belong on /work-items (and board/backlog), not My Work
   // (/member) or project-embedded lists — bootstrap would rewrite the URL.
   const showWorkspaceDefaults =
@@ -231,13 +412,11 @@ export default function WorkItemsTable({
     suggestedDefaults,
   });
 
-  let listDescription =
-    'View, filter, and manage work items across your workspace.';
-  if (isAssigneeLocked) {
-    listDescription = 'View and manage work items assigned to you.';
-  } else if (isProjectLocked) {
-    listDescription = 'View, filter, and manage work items for this project.';
-  }
+  const listDescription = resolveWorkItemsListDescription({
+    isAssigneeLocked,
+    isProjectLocked,
+    isHierarchy,
+  });
 
   const sprintOptions = useMemo(
     () => buildSprintFilterOptions(sprints, projectFilter),
@@ -253,32 +432,30 @@ export default function WorkItemsTable({
         allValue: projectQuery.allValue,
         pageMode: 'one',
       });
+      applyWorkItemListViewParam(params, listView);
       const query = params.toString();
       router.push(query ? `${pathname}?${query}` : pathname);
     },
-    [pathname, projectQuery.allValue, router, searchParams, sprints]
+    [listView, pathname, projectQuery.allValue, router, searchParams, sprints]
   );
 
-  const hasActiveFilters = WORK_ITEM_FILTER_PARAMS.some((key) => {
-    if (key === 'project' && isProjectLocked) {
-      return false;
-    }
-    if (key === 'sprint' && isProjectLocked) {
-      return false;
-    }
-    if (key === 'assignee' && isAssigneeLocked) {
-      return false;
-    }
-    // Project/sprint matching saved defaults are not "active" extras — the
-    // BadgeCheck already signals applied defaults (same as board).
-    if (
-      showWorkspaceDefaults &&
-      (key === 'project' || key === 'sprint') &&
-      !urlFiltersActive
-    ) {
-      return false;
-    }
-    return Boolean(searchParams.get(key)?.trim());
+  const setListView = useCallback(
+    (nextView: WorkItemListView) => {
+      const params = new URLSearchParams(searchParams.toString());
+      applyWorkItemListViewParam(params, nextView);
+      params.set('page', '1');
+      const query = params.toString();
+      router.push(query ? `${pathname}?${query}` : pathname);
+    },
+    [pathname, router, searchParams]
+  );
+
+  const hasActiveFilters = hasActiveWorkItemFilters({
+    searchParams,
+    isProjectLocked,
+    isAssigneeLocked,
+    showWorkspaceDefaults,
+    urlFiltersActive,
   });
 
   const handleClearFilters = () => {
@@ -287,21 +464,12 @@ export default function WorkItemsTable({
       resetUrlFilters();
       return;
     }
-    const next = new URLSearchParams();
-    const limitParam = searchParams.get('limit');
-    const tabParam = searchParams.get('tab');
-    if (limitParam) {
-      next.set('limit', limitParam);
-    }
-    if (tabParam) {
-      next.set('tab', tabParam);
-    }
-    if (isProjectLocked && lockedProjectId) {
-      next.set('project', lockedProjectId);
-    }
-    if (isAssigneeLocked && lockedAssigneeId) {
-      next.set('assignee', lockedAssigneeId);
-    }
+    const next = buildClearedWorkItemFilterParams({
+      searchParams,
+      listView,
+      lockedProjectId: isProjectLocked ? lockedProjectId : undefined,
+      lockedAssigneeId: isAssigneeLocked ? lockedAssigneeId : undefined,
+    });
     const query = next.toString();
     router.push(query ? `${pathname}?${query}` : pathname);
   };
@@ -313,8 +481,25 @@ export default function WorkItemsTable({
     null
   );
 
+  const reportHierarchyError = useCallback((message: string) => {
+    setError(message);
+  }, []);
+
+  const {
+    expandedIds,
+    childrenByParentId,
+    loadingIds,
+    isExpandingAll,
+    toggleExpand: handleToggleExpand,
+    expandAll: handleExpandAll,
+    collapseAll: handleCollapseAll,
+  } = useWorkItemHierarchy({
+    enabled: isHierarchy,
+    roots: initialWorkItems,
+    onError: reportHierarchyError,
+  });
+
   const isEditMode = itemToEdit !== null;
-  const workItems = initialWorkItems;
 
   const cancelPendingEditClear = useCallback(() => {
     if (clearEditTimeoutRef.current) {
@@ -366,32 +551,52 @@ export default function WorkItemsTable({
     router.refresh();
   }, [router, clearItemToEditAfterClose]);
 
-  const columns = useMemo<ColumnDef<DbWorkItem>[]>(
+  const displayRows = useMemo<DisplayRow[]>(
+    () =>
+      buildWorkItemDisplayRows({
+        isHierarchy,
+        roots: initialWorkItems,
+        childrenByParentId,
+        expandedIds,
+        loadingIds,
+      }),
+    [childrenByParentId, expandedIds, initialWorkItems, isHierarchy, loadingIds]
+  );
+
+  const columns = useMemo<ColumnDef<DisplayRow>[]>(
     () => [
       {
-        accessorKey: 'title',
+        id: 'title',
         header: 'Title',
         cell: ({ row }) =>
           titleRenderer({
             row,
             fromProjectId: lockedProjectId,
             fromAssigneeId: lockedAssigneeId,
+            isHierarchy,
+            onToggleExpand: handleToggleExpand,
           }),
       },
       {
-        accessorKey: 'type',
+        id: 'type',
         header: 'Type',
-        cell: typeRenderer,
+        cell: ({ row }) => (
+          <WorkItemTypeBadge type={row.original.workItem.type} />
+        ),
       },
       {
-        accessorKey: 'status',
+        id: 'status',
         header: 'Status',
-        cell: statusRenderer,
+        cell: ({ row }) => (
+          <WorkItemStatusBadge status={row.original.workItem.status} />
+        ),
       },
       {
-        accessorKey: 'priority',
+        id: 'priority',
         header: 'Priority',
-        cell: priorityRenderer,
+        cell: ({ row }) => (
+          <PriorityBadge priority={row.original.workItem.priority} />
+        ),
       },
       {
         id: 'assignee',
@@ -399,7 +604,7 @@ export default function WorkItemsTable({
         cell: ({ row }) => assigneeRenderer({ row, currentUserId }),
       },
       {
-        accessorKey: 'due_date',
+        id: 'due_date',
         header: 'Due Date',
         cell: dueDateRenderer,
       },
@@ -409,115 +614,55 @@ export default function WorkItemsTable({
         cell: ({ row }) => actionsRenderer({ row, openEditDialog }),
       },
     ],
-    [currentUserId, openEditDialog, lockedProjectId, lockedAssigneeId]
+    [
+      currentUserId,
+      handleToggleExpand,
+      isHierarchy,
+      lockedAssigneeId,
+      lockedProjectId,
+      openEditDialog,
+    ]
   );
 
   const table = useReactTable({
-    data: workItems,
+    data: displayRows,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    getRowId: (row) => row.workItem.id,
   });
 
   return (
     <div className="space-y-6">
       <DismissibleError message={error} onDismiss={() => setError(null)} />
 
-      {/* Work-Items Options */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-          <SearchInput
-            value={searchQuery}
-            onValueChange={setSearchQuery}
-            placeholder="Search work items..."
-          />
+      <WorkItemsTableToolbar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        isProjectLocked={isProjectLocked}
+        isAssigneeLocked={isAssigneeLocked}
+        isHierarchy={isHierarchy}
+        projects={projects}
+        projectMembers={projectMembers}
+        projectQuery={projectQuery}
+        sprintQuery={sprintQuery}
+        typeQuery={typeQuery}
+        assigneeQuery={assigneeQuery}
+        sprintOptions={sprintOptions}
+        onProjectChange={handleProjectChange}
+        onListViewChange={setListView}
+        rootCount={initialWorkItems.length}
+        isExpandingAll={isExpandingAll}
+        expandedCount={expandedIds.size}
+        onExpandAll={handleExpandAll}
+        onCollapseAll={handleCollapseAll}
+        showWorkspaceDefaults={showWorkspaceDefaults}
+        onOpenDefaultsDialog={openDefaultsDialog}
+        savedDefaultsApplied={savedDefaultsApplied}
+        hasActiveFilters={hasActiveFilters}
+        onClearFilters={handleClearFilters}
+        onCreate={openCreateDialog}
+      />
 
-          {isProjectLocked ? null : (
-            <ListFilterSelect
-              value={projectQuery.value}
-              onValueChange={handleProjectChange}
-              allValue={projectQuery.allValue}
-              allLabel="All Projects"
-              ariaLabel="Filter by project"
-              placeholder="All Projects"
-              triggerClassName="sm:w-44"
-              options={projects.map((project) => ({
-                value: project.id,
-                label: project.name,
-              }))}
-            />
-          )}
-
-          {isProjectLocked ? null : (
-            <ListFilterSelect
-              value={sprintQuery.value}
-              onValueChange={sprintQuery.setFilter}
-              allValue={sprintQuery.allValue}
-              allLabel="All Sprints"
-              ariaLabel="Filter by sprint"
-              placeholder="All Sprints"
-              triggerClassName="sm:w-44"
-              options={sprintOptions}
-            />
-          )}
-
-          <ListFilterSelect
-            value={typeQuery.value}
-            onValueChange={typeQuery.setFilter}
-            allValue={typeQuery.allValue}
-            allLabel="All Types"
-            ariaLabel="Filter by type"
-            placeholder="All Types"
-            triggerClassName="sm:w-36"
-            options={WORK_ITEM_TYPES.map((workItemType) => ({
-              value: workItemType,
-              label: workItemType,
-            }))}
-          />
-
-          {isAssigneeLocked ? null : (
-            <ListFilterSelect
-              value={assigneeQuery.value}
-              onValueChange={assigneeQuery.setFilter}
-              allValue={assigneeQuery.allValue}
-              allLabel="All Assignees"
-              ariaLabel="Filter by assignee"
-              placeholder="All Assignees"
-              triggerClassName="sm:w-44"
-              options={projectMembers.map((member) => ({
-                value: member.id,
-                label: member.name,
-              }))}
-            />
-          )}
-
-          {showWorkspaceDefaults ? (
-            <WorkspaceDefaultsControls
-              onOpenDefaultsDialog={openDefaultsDialog}
-              savedDefaultsApplied={savedDefaultsApplied}
-            />
-          ) : null}
-
-          {hasActiveFilters ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleClearFilters}
-              className="text-muted-foreground hover:text-foreground h-9 cursor-pointer px-3 text-xs"
-            >
-              Clear filters
-              <X className="size-3.5" />
-            </Button>
-          ) : null}
-        </div>
-
-        <Button onClick={openCreateDialog} className="shrink-0 self-start">
-          <Plus />
-          Add Work-Item
-        </Button>
-      </div>
-
-      {/* Work-Items Table */}
       <Card className="border-border bg-card/50 backdrop-blur-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight">
@@ -550,7 +695,6 @@ export default function WorkItemsTable({
         </CardContent>
       </Card>
 
-      {/* Work-Item Create/Edit */}
       <WorkItemFormDialog
         open={dialogOpen}
         onOpenChange={handleDialogChange}
@@ -581,6 +725,240 @@ export default function WorkItemsTable({
           allowSkip={allowSkipInDialog}
         />
       ) : null}
+    </div>
+  );
+}
+
+type FilterQuery = {
+  readonly value: string;
+  // eslint-disable-next-line no-unused-vars -- filter setter signature
+  readonly setFilter: (value: string) => void;
+  readonly allValue: string;
+};
+
+const WORK_ITEM_LIST_VIEW_OPTIONS = [
+  { view: 'flat' as const, label: 'Flat', Icon: List },
+  { view: 'hierarchy' as const, label: 'Hierarchy', Icon: ListTree },
+] as const;
+
+function WorkItemListViewToggle({
+  listView,
+  onListViewChange,
+}: Readonly<{
+  listView: WorkItemListView;
+  // eslint-disable-next-line no-unused-vars -- view change callback
+  onListViewChange: (view: WorkItemListView) => void;
+}>) {
+  return (
+    <div
+      className="border-border flex h-9 items-center rounded-lg border p-0.5"
+      aria-label="Work items view mode"
+    >
+      {WORK_ITEM_LIST_VIEW_OPTIONS.map(({ view, label, Icon }) => {
+        const isActive = listView === view;
+        return (
+          <Button
+            key={view}
+            type="button"
+            variant={isActive ? 'secondary' : 'ghost'}
+            size="sm"
+            className="h-8 cursor-pointer gap-1.5 px-2.5 text-xs"
+            aria-pressed={isActive}
+            onClick={() => onListViewChange(view)}
+          >
+            <Icon className="size-3.5" />
+            {label}
+          </Button>
+        );
+      })}
+    </div>
+  );
+}
+
+function WorkItemsTableToolbar({
+  searchQuery,
+  onSearchChange,
+  isProjectLocked,
+  isAssigneeLocked,
+  isHierarchy,
+  projects,
+  projectMembers,
+  projectQuery,
+  sprintQuery,
+  typeQuery,
+  assigneeQuery,
+  sprintOptions,
+  onProjectChange,
+  onListViewChange,
+  rootCount,
+  isExpandingAll,
+  expandedCount,
+  onExpandAll,
+  onCollapseAll,
+  showWorkspaceDefaults,
+  onOpenDefaultsDialog,
+  savedDefaultsApplied,
+  hasActiveFilters,
+  onClearFilters,
+  onCreate,
+}: Readonly<{
+  searchQuery: string;
+  // eslint-disable-next-line no-unused-vars
+  onSearchChange: (value: string) => void;
+  isProjectLocked: boolean;
+  isAssigneeLocked: boolean;
+  isHierarchy: boolean;
+  projects: WorkItemWorkspaceProps['projects'];
+  projectMembers: WorkItemWorkspaceProps['projectMembers'];
+  projectQuery: FilterQuery;
+  sprintQuery: FilterQuery;
+  typeQuery: FilterQuery;
+  assigneeQuery: FilterQuery;
+  sprintOptions: { readonly value: string; readonly label: string }[];
+  // eslint-disable-next-line no-unused-vars
+  onProjectChange: (value: string) => void;
+  // eslint-disable-next-line no-unused-vars
+  onListViewChange: (view: WorkItemListView) => void;
+  rootCount: number;
+  isExpandingAll: boolean;
+  expandedCount: number;
+  onExpandAll: () => Promise<void>;
+  onCollapseAll: () => void;
+  showWorkspaceDefaults: boolean;
+  onOpenDefaultsDialog: () => void;
+  savedDefaultsApplied: boolean;
+  hasActiveFilters: boolean;
+  onClearFilters: () => void;
+  onCreate: () => void;
+}>) {
+  return (
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <SearchInput
+          value={searchQuery}
+          onValueChange={onSearchChange}
+          placeholder="Search work items..."
+        />
+
+        {isProjectLocked ? null : (
+          <ListFilterSelect
+            value={projectQuery.value}
+            onValueChange={onProjectChange}
+            allValue={projectQuery.allValue}
+            allLabel="All Projects"
+            ariaLabel="Filter by project"
+            placeholder="All Projects"
+            triggerClassName="sm:w-44"
+            options={projects.map((project) => ({
+              value: project.id,
+              label: project.name,
+            }))}
+          />
+        )}
+
+        {isProjectLocked ? null : (
+          <ListFilterSelect
+            value={sprintQuery.value}
+            onValueChange={sprintQuery.setFilter}
+            allValue={sprintQuery.allValue}
+            allLabel="All Sprints"
+            ariaLabel="Filter by sprint"
+            placeholder="All Sprints"
+            triggerClassName="sm:w-44"
+            options={sprintOptions}
+          />
+        )}
+
+        <ListFilterSelect
+          value={typeQuery.value}
+          onValueChange={typeQuery.setFilter}
+          allValue={typeQuery.allValue}
+          allLabel="All Types"
+          ariaLabel="Filter by type"
+          placeholder="All Types"
+          triggerClassName="sm:w-36"
+          options={WORK_ITEM_TYPES.map((workItemType) => ({
+            value: workItemType,
+            label: workItemType,
+          }))}
+        />
+
+        {isAssigneeLocked ? null : (
+          <ListFilterSelect
+            value={assigneeQuery.value}
+            onValueChange={assigneeQuery.setFilter}
+            allValue={assigneeQuery.allValue}
+            allLabel="All Assignees"
+            ariaLabel="Filter by assignee"
+            placeholder="All Assignees"
+            triggerClassName="sm:w-44"
+            options={projectMembers.map((member) => ({
+              value: member.id,
+              label: member.name,
+            }))}
+          />
+        )}
+
+        <WorkItemListViewToggle
+          listView={isHierarchy ? 'hierarchy' : 'flat'}
+          onListViewChange={onListViewChange}
+        />
+
+        {isHierarchy ? (
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground h-9 cursor-pointer gap-1.5 px-3 text-xs"
+              disabled={isExpandingAll || rootCount === 0}
+              onClick={() => {
+                void onExpandAll();
+              }}
+            >
+              {isExpandingAll ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : null}
+              <span>Expand all</span>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground h-9 cursor-pointer px-3 text-xs"
+              disabled={expandedCount === 0}
+              onClick={onCollapseAll}
+            >
+              Collapse all
+            </Button>
+          </div>
+        ) : null}
+
+        {showWorkspaceDefaults ? (
+          <WorkspaceDefaultsControls
+            onOpenDefaultsDialog={onOpenDefaultsDialog}
+            savedDefaultsApplied={savedDefaultsApplied}
+          />
+        ) : null}
+
+        {hasActiveFilters ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onClearFilters}
+            className="text-muted-foreground hover:text-foreground h-9 cursor-pointer px-3 text-xs"
+          >
+            Clear filters
+            <X className="size-3.5" />
+          </Button>
+        ) : null}
+      </div>
+
+      <Button onClick={onCreate} className="shrink-0 self-start">
+        <Plus />
+        Add Work-Item
+      </Button>
     </div>
   );
 }

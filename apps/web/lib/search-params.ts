@@ -14,6 +14,8 @@ export interface RawSearchParams {
   assignee?: string;
   fromProject?: string;
   fromAssignee?: string;
+  /** Work-items list layout: flat (default) or hierarchy (roots + expand). */
+  view?: string;
 }
 
 export interface ParsedStandardParams {
@@ -23,6 +25,8 @@ export interface ParsedStandardParams {
 }
 
 export type WorkItemTypeFilter = WorkItemType;
+
+export type WorkItemListView = 'flat' | 'hierarchy';
 
 export interface ParsedWorkItemFilters {
   projectId?: string;
@@ -70,6 +74,21 @@ export function parseWorkItemFilters(
       : undefined;
 
   return { projectId, sprintId, type, assigneeId };
+}
+
+/** Work-items list view mode. Default is flat (all matching rows). */
+export function parseWorkItemListView(value?: string | null): WorkItemListView {
+  return value === 'hierarchy' ? 'hierarchy' : 'flat';
+}
+
+/**
+ * Extra list filters for hierarchy mode (roots only).
+ * Spread into `getWorkItemsPaginated` / `getWorkItems` filter objects.
+ */
+export function workItemHierarchyListFilter(
+  listView: WorkItemListView
+): { readonly parentId: null } | Record<string, never> {
+  return listView === 'hierarchy' ? { parentId: null } : {};
 }
 
 export function parseTabStatus(tab?: string): 'active' | 'archived' {

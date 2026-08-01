@@ -5,6 +5,8 @@ import {
   parseStandardParams,
   parseTeamStatusFilter,
   parseWorkItemFilters,
+  parseWorkItemListView,
+  workItemHierarchyListFilter,
   type RawSearchParams,
 } from '@/lib/search-params';
 import { getUserList } from '@/app/users/_services/users.service.server';
@@ -63,6 +65,7 @@ function toWorkItemsPayload(
     readonly search: string;
     readonly typeFilter: string;
     readonly assigneeFilter: string;
+    readonly listView: 'flat' | 'hierarchy';
   }
 ) {
   return {
@@ -74,6 +77,7 @@ function toWorkItemsPayload(
     search: options.active ? options.search : '',
     typeFilter: options.active ? options.typeFilter : '',
     assigneeFilter: options.active ? options.assigneeFilter : '',
+    listView: options.active ? options.listView : 'flat',
   };
 }
 
@@ -112,6 +116,7 @@ export type ProjectWorkspaceData = {
     search: string;
     typeFilter: string;
     assigneeFilter: string;
+    listView: 'flat' | 'hierarchy';
   };
   teams: {
     items: Team[];
@@ -135,6 +140,7 @@ export async function getProjectWorkspace(
   const activeTab = parseProjectDetailsTab(searchParams.tab);
   const { page, limit, search } = parseStandardParams(searchParams, 10);
   const { type, assigneeId } = parseWorkItemFilters(searchParams);
+  const listView = parseWorkItemListView(searchParams.view);
   const teamStatus = parseTeamStatusFilter(searchParams.teamStatus);
   const teamsPage = activeTab === 'teams' ? page : 1;
   const teamsLimit = activeTab === 'teams' ? limit : 1;
@@ -159,7 +165,13 @@ export async function getProjectWorkspace(
       safeServerFetch(
         getWorkItemsPaginated(workItemsPage, workItemsLimit, workItemsSearch, {
           projectId,
-          ...(isWorkItemsTab ? { type, assigneeId } : {}),
+          ...(isWorkItemsTab
+            ? {
+                type,
+                assigneeId,
+                ...workItemHierarchyListFilter(listView),
+              }
+            : {}),
         }),
         EMPTY_WORK_ITEMS,
         'fetch project work items'
@@ -195,6 +207,7 @@ export async function getProjectWorkspace(
       search,
       typeFilter: type ?? '',
       assigneeFilter: assigneeId ?? '',
+      listView,
     }),
     teams: toTeamsPayload(teamsResult, {
       active: activeTab === 'teams',

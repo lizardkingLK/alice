@@ -67,6 +67,7 @@ interface ProjectWorkItemsProps {
   readonly search: string;
   readonly typeFilter: string;
   readonly assigneeFilter: string;
+  readonly listView: 'flat' | 'hierarchy';
 }
 
 interface ProjectTeamsProps {
@@ -717,6 +718,7 @@ export function ProjectDetailsWorkspace({
             sprintFilter=""
             typeFilter={workItems.typeFilter}
             assigneeFilter={workItems.assigneeFilter}
+            listView={workItems.listView}
             lockedProjectId={project.id}
           />
         </TabsContent>

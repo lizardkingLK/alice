@@ -49,6 +49,23 @@ The in-page path above the title (`WorkItemPathBreadcrumb`) shows hierarchy ance
 
 The dashboard shell breadcrumb on work-item detail is always project-scoped when the item has a `project_id`: `Dashboard → Projects → {project} → Work Items → {item}`. Entry query flags (`fromProject` / `fromAssignee`) are not used for that trail — use the browser back button for navigation history.
 
+## List views (Flat vs Hierarchy)
+
+`WorkItemsTable` (used on `/work-items`, My Work `/member`, and the project **Work items** tab) supports a URL toggle:
+
+| `view` query        | Behavior                                                                                  |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| _(absent)_ / `flat` | Default: paginated flat list of all matching work items                                   |
+| `hierarchy`         | Paginated **roots only** (`parent_id IS NULL`); expand a row to lazy-load direct children |
+
+Toolbar:
+
+- **Flat / Hierarchy** segmented control writes `view` and resets `page=1`
+- In hierarchy mode: **Expand all** recursively loads children for expandable types on the current page; **Collapse all** hides nested rows
+- Filters (project, sprint, type, assignee, search) apply to the **root query** only; expanded children are not re-filtered so the tree stays coherent
+
+Chevron affordances follow `getAllowedChildType` (Epic / Story / Task). Issues are leaves.
+
 ## Done status gates
 
 ### Incomplete subtasks (implemented)
@@ -73,16 +90,17 @@ When `status === Done`, the details record is **read-only except Status** (so th
 
 P0 component coverage lives under `apps/web/tests/work-items/`:
 
-| Spec                                          | SUT                           | Focus                                                                 |
-| --------------------------------------------- | ----------------------------- | --------------------------------------------------------------------- |
-| `workItem-form.test.tsx`                      | `WorkItemForm`                | Create/edit submit, subtask `parent_id` / locked type, errors, cancel |
-| `workItem-details.test.tsx`                   | `WorkItemDetails`             | Create vs link vs unlink, leaf Issue hide, Subtasks list, refresh     |
-| `work-item-link-subtask-dialog.test.tsx`      | `WorkItemLinkSubtaskDialog`   | PATCH `parent_id`, empty candidates                                   |
-| `work-item-unlink-subtask-dialog.test.tsx`    | `WorkItemUnlinkSubtaskDialog` | Confirm clears `parent_id`; cancel does nothing                       |
-| `workItem-details-sidebar-done-gate.test.tsx` | `WorkItemSidebar`             | Block Done when incomplete subtasks; allow when all Done / none       |
-| `workItem-title-editor.test.tsx`              | `WorkItemTitleEditor`         | Hide edit control when Done (`readOnly`)                              |
-| `work-item-path-breadcrumb.test.tsx`          | `WorkItemPathBreadcrumb`      | Root path, parent link, full Epic→Story→Task→Issue ancestor chain     |
-| `workItems-table.test.tsx`                    | `WorkItemsTable`              | Row render, “You” badge, empty state, search, pagination, dialogs     |
+| Spec                                          | SUT                            | Focus                                                                 |
+| --------------------------------------------- | ------------------------------ | --------------------------------------------------------------------- |
+| `workItem-form.test.tsx`                      | `WorkItemForm`                 | Create/edit submit, subtask `parent_id` / locked type, errors, cancel |
+| `workItem-details.test.tsx`                   | `WorkItemDetails`              | Create vs link vs unlink, leaf Issue hide, Subtasks list, refresh     |
+| `work-item-link-subtask-dialog.test.tsx`      | `WorkItemLinkSubtaskDialog`    | PATCH `parent_id`, empty candidates                                   |
+| `work-item-unlink-subtask-dialog.test.tsx`    | `WorkItemUnlinkSubtaskDialog`  | Confirm clears `parent_id`; cancel does nothing                       |
+| `workItem-details-sidebar-done-gate.test.tsx` | `WorkItemSidebar`              | Block Done when incomplete subtasks; allow when all Done / none       |
+| `workItem-title-editor.test.tsx`              | `WorkItemTitleEditor`          | Hide edit control when Done (`readOnly`)                              |
+| `work-item-path-breadcrumb.test.tsx`          | `WorkItemPathBreadcrumb`       | Root path, parent link, full Epic→Story→Task→Issue ancestor chain     |
+| `workItems-table.test.tsx`                    | `WorkItemsTable`               | Row render, view toggle, hierarchy expand/collapse, filters, dialogs  |
+| `work-item-hierarchy-rows.test.ts`            | `flattenWorkItemHierarchyRows` | Root flatten, expanded children, leaf Issues                          |
 
 Shared fixtures/mocks used by these suites:
 

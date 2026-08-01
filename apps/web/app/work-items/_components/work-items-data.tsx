@@ -17,6 +17,8 @@ import { safeServerFetch } from '@/lib/safe-server-fetch';
 import {
   parseStandardParams,
   parseWorkItemFilters,
+  parseWorkItemListView,
+  workItemHierarchyListFilter,
   type RawSearchParams,
 } from '@/lib/search-params';
 
@@ -46,6 +48,7 @@ export async function WorkItemsData({
   const resolvedSearchParams = await searchParams;
   const { page, limit, search } = parseStandardParams(resolvedSearchParams, 10);
   const filters = parseWorkItemFilters(resolvedSearchParams);
+  const listView = parseWorkItemListView(resolvedSearchParams.view);
   const projectId = lockedProjectId ?? filters.projectId;
   const assigneeId = lockedAssigneeId ?? filters.assigneeId;
   const { type, sprintId } = filters;
@@ -77,12 +80,14 @@ export async function WorkItemsData({
 
   // Always fetch: missing projectId means "All projects", not an empty list.
   // needsClientBootstrap only drives client-side URL seeding from localStorage.
+  // Hierarchy mode lists roots only; children load on expand.
   const workItemsResult = await safeServerFetch(
     getWorkItemsPaginated(page, limit, search, {
       projectId,
       type,
       assigneeId,
       sprintId,
+      ...workItemHierarchyListFilter(listView),
     }),
     EMPTY_WORK_ITEMS,
     'fetch work items list'
@@ -103,6 +108,7 @@ export async function WorkItemsData({
       sprintFilter={sprintId ?? ''}
       typeFilter={type ?? ''}
       assigneeFilter={assigneeId ?? ''}
+      listView={listView}
       lockedProjectId={lockedProjectId}
       lockedAssigneeId={lockedAssigneeId}
       currentUserId={resolvedUserId}
