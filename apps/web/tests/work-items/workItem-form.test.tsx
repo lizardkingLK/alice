@@ -8,6 +8,7 @@ import {
 import { userFactory } from '../factories/user.factory';
 import { projectFactory } from '../factories/project.factory';
 import { workItemFactory } from '../factories/workItem.factory';
+import { pickComboboxOption } from '../helpers/pick-combobox-option';
 
 vi.mock('@/app/work-items/_services/workItem.service.client', () => ({
   createWorkItem: vi.fn(),
@@ -21,18 +22,6 @@ vi.mock('@/app/_shared/utility', async (importOriginal) => {
     delay: vi.fn(() => Promise.resolve()),
   };
 });
-
-/** Open a searchable combobox and choose an option (Base UI popup). */
-async function pickComboboxOption(
-  fieldLabel: RegExp,
-  optionName: string | RegExp
-) {
-  const input = screen.getByLabelText(fieldLabel);
-  fireEvent.focus(input);
-  fireEvent.keyDown(input, { key: 'ArrowDown' });
-  const option = await screen.findByRole('option', { name: optionName });
-  fireEvent.click(option);
-}
 
 describe('WorkItemForm', () => {
   const projects = projectFactory.buildList(2);

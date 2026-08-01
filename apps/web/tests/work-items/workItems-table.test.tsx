@@ -13,6 +13,7 @@ import { userFactory } from '../factories/user.factory';
 import { projectFactory } from '../factories/project.factory';
 import { workItemFactory } from '../factories/workItem.factory';
 import { paginationFactory } from '../factories/pagination.factory';
+import { pickComboboxOption } from '../helpers/pick-combobox-option';
 
 vi.mock('next/navigation', () => import('../mocks/next-navigation'));
 
@@ -223,7 +224,7 @@ describe('WorkItemsTable', () => {
     expect(mockPush).toHaveBeenCalledWith('/work-items?page=1&limit=5');
   });
 
-  it('navigates when project type or assignee filters change', () => {
+  it('navigates when project type or assignee filters change', async () => {
     // Arrange
     const projects = projectFactory.buildList(1);
     const projectMembers = userFactory.buildList(1);
@@ -246,10 +247,10 @@ describe('WorkItemsTable', () => {
     );
 
     // Act — project
-    fireEvent.click(
-      screen.getByRole('combobox', { name: /Filter by project/i })
+    await pickComboboxOption(
+      { name: /Filter by project/i },
+      projects[0]!.name
     );
-    fireEvent.click(screen.getByRole('option', { name: projects[0]!.name }));
 
     // Assert
     expect(mockPush).toHaveBeenCalledWith(
@@ -257,18 +258,15 @@ describe('WorkItemsTable', () => {
     );
 
     // Act — type
-    fireEvent.click(screen.getByRole('combobox', { name: /Filter by type/i }));
-    fireEvent.click(screen.getByRole('option', { name: 'Task' }));
+    await pickComboboxOption({ name: /Filter by type/i }, 'Task');
 
     // Assert
     expect(mockPush).toHaveBeenCalledWith('/work-items?type=Task&page=1');
 
     // Act — assignee
-    fireEvent.click(
-      screen.getByRole('combobox', { name: /Filter by assignee/i })
-    );
-    fireEvent.click(
-      screen.getByRole('option', { name: projectMembers[0]!.name })
+    await pickComboboxOption(
+      { name: /Filter by assignee/i },
+      projectMembers[0]!.name
     );
 
     // Assert

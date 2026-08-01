@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { WorkItemLinkSubtaskDialog } from '@/app/work-items/_components/work-item-link-subtask-dialog';
 import { updateWorkItem } from '@/app/work-items/_services/workItem.service.client';
 import { workItemFactory } from '../factories/workItem.factory';
+import { pickComboboxOption } from '../helpers/pick-combobox-option';
 
 vi.mock('@/app/work-items/_services/workItem.service.client', () => ({
   updateWorkItem: vi.fn(),
@@ -69,8 +70,7 @@ describe('WorkItemLinkSubtaskDialog', () => {
     );
 
     // Act
-    fireEvent.click(screen.getByLabelText(/^Task$/i));
-    fireEvent.click(screen.getByRole('option', { name: /Orphan task one/i }));
+    await pickComboboxOption(/^Task$/i, /Orphan task one/i);
     fireEvent.click(screen.getByRole('button', { name: /^Link$/i }));
 
     // Assert
