@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import {
   Combobox,
   ComboboxContent,
@@ -34,6 +35,9 @@ type SearchableSelectProps = {
 /**
  * Searchable single-select for long entity lists (users, projects, work items).
  * Prefer plain Select for tiny enums (status, priority, type).
+ *
+ * Controlled when `value` is passed; otherwise keeps internal selection so
+ * `name`/form usage works (e.g. project members allocate form).
  */
 export function SearchableSelect({
   options,
@@ -49,17 +53,38 @@ export function SearchableSelect({
   id,
   showClear = false,
 }: SearchableSelectProps) {
+  const isControlled = value !== undefined;
+  const [uncontrolledValue, setUncontrolledValue] = useState(value ?? '');
+  const resolvedValue = isControlled ? (value ?? '') : uncontrolledValue;
+
+  useEffect(() => {
+    if (isControlled) {
+      return;
+    }
+    // Drop stale selection when options shrink (e.g. after allocating a member).
+    if (
+      uncontrolledValue &&
+      !options.some((option) => option.value === uncontrolledValue)
+    ) {
+      setUncontrolledValue('');
+    }
+  }, [isControlled, options, uncontrolledValue]);
+
   const selected =
-    value === undefined || value === ''
+    resolvedValue === ''
       ? null
-      : (options.find((option) => option.value === value) ?? null);
+      : (options.find((option) => option.value === resolvedValue) ?? null);
 
   return (
     <Combobox
       items={[...options]}
       value={selected}
       onValueChange={(next) => {
-        onValueChange?.(next?.value ?? '');
+        const nextValue = next?.value ?? '';
+        if (!isControlled) {
+          setUncontrolledValue(nextValue);
+        }
+        onValueChange?.(nextValue);
       }}
       isItemEqualToValue={(a, b) => a.value === b.value}
       name={name}
