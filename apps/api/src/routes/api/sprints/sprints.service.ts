@@ -1,3 +1,4 @@
+import { computeBurndown, type SprintBurndownPayload } from '@repo/types';
 import type {
   CreateSprintBody,
   SprintResponse,
@@ -8,9 +9,13 @@ import {
   sprintBurndownRepository,
   type SprintRowWithProject,
   type SprintRow,
-  type BurndownWorkItem,
 } from './sprints.repository';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
+
+export type {
+  BurndownPoint,
+  SprintBurndownPayload as BurndownResponse,
+} from '@repo/types';
 
 async function requireManagerOrAdmin(actorId: string) {
   return await requireUserWithRole(
@@ -163,85 +168,8 @@ export class SprintsService {
 
 export const sprintsService = new SprintsService();
 
-export type BurndownPoint = {
-  date: string;
-  remaining: number | null;
-  ideal: number;
-};
-
-export type BurndownResponse = {
-  sprint: {
-    id: string;
-    name: string;
-    startDate: string;
-    endDate: string;
-    status: string;
-  };
-  estimatedTotal: number;
-  series: BurndownPoint[];
-};
-
-function computeBurndown(
-  sprint: { start_date: string; end_date: string; status: string },
-  items: BurndownWorkItem[],
-  workLogs: Array<{ logged_at: string; logged_hours: number }>
-): { estimatedTotal: number; series: BurndownPoint[] } {
-  const start = new Date(sprint.start_date);
-  const end = new Date(sprint.end_date);
-  const todayStr = new Date().toISOString().slice(0, 10);
-
-  const estimatedTotal = items.reduce(
-    (sum, item) => sum + (item.story_points ?? 0),
-    0
-  );
-
-  const durationDays = (end.getTime() - start.getTime()) / 86_400_000;
-
-  const series: BurndownPoint[] = [];
-  const hasWorkLogs = workLogs.length > 0;
-
-  for (let cur = new Date(start); cur <= end; cur.setDate(cur.getDate() + 1)) {
-    const dayLabel = cur.toISOString().slice(0, 10);
-
-    const elapsed = (cur.getTime() - start.getTime()) / 86_400_000;
-    const ideal =
-      durationDays === 0
-        ? 0
-        : Math.max(0, estimatedTotal * (1 - elapsed / durationDays));
-
-    const isPast = sprint.status === 'closed' ? true : dayLabel <= todayStr;
-
-    let remaining: number | null = null;
-    if (isPast) {
-      if (hasWorkLogs) {
-        const spent = workLogs.reduce((sum, log) => {
-          const loggedDay = log.logged_at.slice(0, 10);
-          return loggedDay <= dayLabel ? sum + log.logged_hours : sum;
-        }, 0);
-
-        // Simple mapping: treat 1 logged hour as 1 spent point.
-        remaining = Math.max(0, estimatedTotal - spent);
-      } else {
-        remaining = items.reduce((sum, item) => {
-          const doneBefore =
-            item.done_at !== null && item.done_at.slice(0, 10) <= dayLabel;
-          return doneBefore ? sum : sum + (item.story_points ?? 0);
-        }, 0);
-      }
-    }
-
-    series.push({
-      date: dayLabel,
-      remaining,
-      ideal: Math.round(ideal * 100) / 100,
-    });
-  }
-
-  return { estimatedTotal, series };
-}
-
 export class SprintBurndownService {
-  async getBurndown(sprintId: string): Promise<BurndownResponse | null> {
+  async getBurndown(sprintId: string): Promise<SprintBurndownPayload | null> {
     const sprint = await sprintBurndownRepository.getSprintById(sprintId);
     if (!sprint) {
       return null;

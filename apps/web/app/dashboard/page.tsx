@@ -1,10 +1,14 @@
-import { DashboardOverview } from '@/app/dashboard/_components/dashboard-overview';
-import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
+import { Suspense } from 'react';
+import { DashboardOverviewData } from '@/app/dashboard/_components/dashboard-overview-data';
+import { DashboardOverviewFrame } from '@/app/dashboard/_components/dashboard-overview-frame';
+import { DashboardOverviewSkeleton } from '@/app/dashboard/_components/dashboard-overview-skeleton';
 
-export default async function DashboardPage() {
+export default function DashboardPage() {
   return (
-    <DashboardShell description="Customize your overview — drag, resize, and glance at team progress.">
-      <DashboardOverview />
-    </DashboardShell>
+    <DashboardOverviewFrame>
+      <Suspense fallback={<DashboardOverviewSkeleton />}>
+        <DashboardOverviewData />
+      </Suspense>
+    </DashboardOverviewFrame>
   );
 }

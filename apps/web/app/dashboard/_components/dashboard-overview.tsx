@@ -22,6 +22,7 @@ import {
   type WidgetId,
 } from './dashboard-mock-data';
 import { DashboardWidget } from './dashboard-widgets';
+import type { DashboardBurndownBootstrap } from '@/app/dashboard/_services/dashboard-burndown.server';
 import 'react-grid-layout/css/styles.css';
 import './dashboard-grid.css';
 
@@ -55,7 +56,13 @@ function readStoredLayout(): LayoutItem[] {
   });
 }
 
-export function DashboardOverview() {
+type DashboardOverviewProps = {
+  readonly burndownBootstrap: DashboardBurndownBootstrap;
+};
+
+export function DashboardOverview({
+  burndownBootstrap,
+}: DashboardOverviewProps) {
   const { width, containerRef, mounted } = useContainerWidth({
     initialWidth: 1200,
   });
@@ -144,7 +151,10 @@ export function DashboardOverview() {
           >
             {layout.map((item) => (
               <div key={item.i} className="dashboard-widget-root">
-                <DashboardWidget id={item.i as WidgetId} />
+                <DashboardWidget
+                  id={item.i as WidgetId}
+                  burndownBootstrap={burndownBootstrap}
+                />
               </div>
             ))}
           </ReactGridLayout>
