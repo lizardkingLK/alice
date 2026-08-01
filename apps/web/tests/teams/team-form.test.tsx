@@ -373,7 +373,9 @@ describe('TeamForm Component', () => {
 
     const projectTrigger = screen.getByLabelText(/Associated Project/i);
     expect(projectTrigger).toBeDisabled();
-    expect((projectTrigger as HTMLInputElement).value).toMatch(/Project Alpha/i);
+    expect((projectTrigger as HTMLInputElement).value).toMatch(
+      /Project Alpha/i
+    );
 
     const checkbox = await screen.findByRole('checkbox', {
       name: /Developer One/i,
@@ -412,7 +414,9 @@ describe('TeamForm Component', () => {
 
     const projectTrigger = screen.getByLabelText(/Associated Project/i);
     expect(projectTrigger).toBeDisabled();
-    expect((projectTrigger as HTMLInputElement).value).toMatch(/Project Alpha/i);
+    expect((projectTrigger as HTMLInputElement).value).toMatch(
+      /Project Alpha/i
+    );
     expect(
       screen.getByText(/Project is fixed for this team/i)
     ).toBeInTheDocument();

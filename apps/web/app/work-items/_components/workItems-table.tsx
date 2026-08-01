@@ -204,7 +204,10 @@ export default function WorkItemsTable({
   const assigneeQuery = useQueryFilter('assignee', assigneeFilter);
   const isProjectLocked = Boolean(lockedProjectId);
   const isAssigneeLocked = Boolean(lockedAssigneeId);
-  const showWorkspaceDefaults = Boolean(currentUserId) && !isProjectLocked;
+  // Workspace defaults belong on /work-items (and board/backlog), not My Work
+  // (/member) or project-embedded lists — bootstrap would rewrite the URL.
+  const showWorkspaceDefaults =
+    Boolean(currentUserId) && !isProjectLocked && !isAssigneeLocked;
 
   const {
     defaultsDialogOpen,

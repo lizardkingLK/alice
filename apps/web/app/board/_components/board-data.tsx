@@ -1,4 +1,5 @@
 import { KanbanBoard } from '@/app/board/_components/kanban-board';
+import { needsWorkspaceProjectBootstrap } from '@/app/board/_helpers/workspace-defaults-shared';
 import {
   EMPTY_ACTIVE_SPRINTS_PAGE,
   getSuggestedBoardDefaults,
@@ -41,17 +42,19 @@ export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
     ? await getSuggestedBoardDefaults(dbUser, activeProjects, sprints)
     : null;
 
-  const needsClientBootstrap = !projectId;
-  const workItems = needsClientBootstrap
-    ? []
-    : await safeServerFetch(
-        getWorkItems({
-          projectId,
-          sprintId,
-        }),
-        [],
-        'fetch work items for board'
-      );
+  const needsClientBootstrap = needsWorkspaceProjectBootstrap(
+    resolvedSearchParams.project
+  );
+  // Always fetch: missing/all projectId means unfiltered board data.
+  // needsClientBootstrap only drives client-side URL seeding from localStorage.
+  const workItems = await safeServerFetch(
+    getWorkItems({
+      projectId,
+      sprintId,
+    }),
+    [],
+    'fetch work items for board'
+  );
   const boardItems = workItems.filter((item) => item.status !== 'Draft');
 
   return (

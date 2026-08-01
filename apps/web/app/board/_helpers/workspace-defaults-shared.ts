@@ -70,6 +70,16 @@ export function isAllProjectsPreference(
   return preference.projectId === ALL_PROJECTS_ID;
 }
 
+/**
+ * True when the URL has no `project` query yet (client should seed defaults).
+ * `project=all` is an intentional All-projects filter, not bootstrap.
+ */
+export function needsWorkspaceProjectBootstrap(
+  projectQuery: string | null | undefined
+): boolean {
+  return !projectQuery?.trim();
+}
+
 export function preferenceToProjectFilter(
   preference: BoardDefaultsPreference
 ): string {

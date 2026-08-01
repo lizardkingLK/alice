@@ -153,10 +153,7 @@ describe('ProjectForm Component', () => {
     fireEvent.change(screen.getByLabelText(/Description/i), {
       target: { value: 'Project description details' },
     });
-    await pickComboboxOption(
-      /Project Owner/i,
-      'Manager One (mgr1@alice.dev)'
-    );
+    await pickComboboxOption(/Project Owner/i, 'Manager One (mgr1@alice.dev)');
     fireEvent.change(screen.getByLabelText(/Start Date/i), {
       target: { value: '2026-07-10' },
     });
@@ -326,10 +323,7 @@ describe('ProjectForm Component', () => {
     fireEvent.change(screen.getByLabelText(/Project Key/i), {
       target: { value: 'alice' },
     });
-    await pickComboboxOption(
-      /Project Owner/i,
-      'Manager One (mgr1@alice.dev)'
-    );
+    await pickComboboxOption(/Project Owner/i, 'Manager One (mgr1@alice.dev)');
 
     // Toggle Jira checkbox
     fireEvent.click(screen.getByLabelText(/Import tasks from Jira Cloud/i));

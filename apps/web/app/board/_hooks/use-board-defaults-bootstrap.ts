@@ -5,7 +5,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import {
   buildProjectSprintLookups,
-  isAllProjectsPreference,
   loadValidatedBoardDefaults,
   preferenceMatchesBoardFilters,
   projectFilterToPreference,
@@ -58,14 +57,6 @@ export function useBoardDefaultsBootstrap({
 
   const navigateToPreference = useCallback(
     (preference: BoardDefaultsPreference) => {
-      if (isAllProjectsPreference(preference)) {
-        const path = buildWorkspaceFilterRedirectPath(basePath, {
-          sprintId: preference.sprintId ?? undefined,
-        });
-        router.replace(path ?? pathname);
-        return;
-      }
-
       const path = buildWorkspaceFilterRedirectPath(basePath, {
         projectId: preference.projectId,
         sprintId: preference.sprintId ?? undefined,
