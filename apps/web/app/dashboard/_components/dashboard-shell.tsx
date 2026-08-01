@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { SidebarInset, SidebarProvider } from '@repo/ui/components/ui/sidebar';
 import { TooltipProvider } from '@repo/ui/components/ui/tooltip';
 import { cn } from '@repo/ui/lib/utils';
+import { getDbUser } from '@/lib/auth';
 import { DashboardHeader } from './dashboard-header';
 import { DashboardSidebar } from './dashboard-sidebar';
 import type { DashboardBreadcrumbOverride } from './dashboard-breadcrumb';
@@ -25,10 +26,12 @@ export async function DashboardShell({
   sidebarDefaultOpen = true,
   contentClassName,
 }: Readonly<DashboardShellProps>) {
+  const dbUser = await getDbUser();
+
   return (
     <TooltipProvider>
       <SidebarProvider defaultOpen={sidebarDefaultOpen}>
-        <DashboardSidebar />
+        <DashboardSidebar userId={dbUser?.id ?? null} />
         <SidebarInset>
           <DashboardHeader
             description={description}

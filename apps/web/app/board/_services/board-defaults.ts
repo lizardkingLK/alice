@@ -132,6 +132,45 @@ export function buildWorkspaceFilterRedirectPath(
   return query ? `${pathname}?${query}` : null;
 }
 
+/** Routes that honor workspace project/sprint defaults in the URL. */
+export const WORKSPACE_DEFAULT_QUERY_PATHS = [
+  '/backlog',
+  '/board',
+  '/work-items',
+] as const;
+
+export type WorkspaceDefaultQueryPath =
+  (typeof WORKSPACE_DEFAULT_QUERY_PATHS)[number];
+
+export function isWorkspaceDefaultQueryPath(
+  path: string
+): path is WorkspaceDefaultQueryPath {
+  return (WORKSPACE_DEFAULT_QUERY_PATHS as readonly string[]).includes(path);
+}
+
+/**
+ * Attach stored project/sprint defaults to a workspace nav path.
+ * Returns the bare path when there is no preference.
+ */
+export function buildWorkspaceNavHref(
+  basePath: string,
+  preference: {
+    readonly projectId: string;
+    readonly sprintId: string | null;
+  } | null
+): string {
+  if (!preference || !isWorkspaceDefaultQueryPath(basePath)) {
+    return basePath;
+  }
+
+  return (
+    buildWorkspaceFilterRedirectPath(basePath, {
+      projectId: preference.projectId,
+      sprintId: preference.sprintId ?? undefined,
+    }) ?? basePath
+  );
+}
+
 export function buildBoardFilterRedirectPath(options: {
   readonly projectId?: string;
   readonly sprintId?: string;
