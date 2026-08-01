@@ -39,13 +39,6 @@ const SEED_USERS = [
   },
 ] as const;
 
-const DEFAULT_INSTRUMENTS = [
-  'violin',
-  'viola',
-  'cello',
-  'double bass',
-] as const;
-
 type TiptapMark = { type: string };
 
 type TiptapTextNode = {
@@ -287,28 +280,6 @@ async function seedUsers(): Promise<UserIds> {
   }
 
   return ids;
-}
-
-async function seedInstruments(actorId: string): Promise<void> {
-  for (const name of DEFAULT_INSTRUMENTS) {
-    const { data: existing } = await supabase
-      .from('instruments')
-      .select('id')
-      .eq('name', name)
-      .maybeSingle();
-
-    if (existing) {
-      continue;
-    }
-
-    const { error } = await supabase
-      .from('instruments')
-      .insert({ name, ...auditCreate(actorId) });
-
-    if (error) {
-      throw new Error(`Failed to seed instrument "${name}": ${error.message}`);
-    }
-  }
 }
 
 async function seedTeam(userIds: UserIds, actorId: string): Promise<string> {
@@ -855,9 +826,6 @@ async function main(): Promise<void> {
 
   console.log('info. seeding access allowlist...');
   await seedAccessAllowlist(adminId);
-
-  console.log('info. seeding instruments...');
-  await seedInstruments(adminId);
 
   console.log('info. seeding team...');
   const teamId = await seedTeam(userIds, adminId);
