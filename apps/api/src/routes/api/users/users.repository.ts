@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabase';
 import { auditCreate, auditUpdate } from '../../../lib/audit';
+import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
 
 export type UserRow = {
   id: string;
@@ -112,7 +113,8 @@ export class UsersRepository {
     data: Partial<
       Omit<UserRow, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'email'>
     >,
-    actorId: string
+    actorId: string,
+    expectedUpdatedAt: string
   ): Promise<UserRow> {
     const { data: updated, error } = await supabase
       .from('users')
@@ -121,15 +123,16 @@ export class UsersRepository {
         ...auditUpdate(actorId),
       })
       .eq('id', id)
+      .eq('updated_at', expectedUpdatedAt)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      console.error('error. failed to update user:', error.message);
-      throw new Error(`Database update failed: ${error.message}`);
-    }
-
-    return updated as UserRow;
+    return (await resolveOptimisticUpdate({
+      data: updated as UserRow | null,
+      error,
+      fetchCurrent: () => this.findById(id),
+      notFoundMessage: 'User not found',
+    })) as UserRow;
   }
 
   async delete(id: string): Promise<void> {

@@ -76,13 +76,13 @@ import {
   CommentItem,
   CommentUser,
   CommentWorkItemOption,
+  updateComment,
+  archiveComment,
+  restoreComment,
 } from '../_services/comments.service';
-import {
-  createCommentAction,
-  updateCommentAction,
-  archiveCommentAction,
-  restoreCommentAction,
-} from './actions';
+import { createCommentAction } from './actions';
+import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
+import { tryHandleLockedMutationError } from '@/lib/optimistic-lock/run-locked-mutation';
 
 type CommentsFeedProps = {
   initialComments: CommentItem[];
@@ -615,6 +615,7 @@ export function CommentsFeed({
   workItemId,
   embedded = false,
 }: Readonly<CommentsFeedProps>) {
+  const { handleMutationError } = useOptimisticLock();
   const [activeUserId, setActiveUserId] = useState<string>(currentUserId);
   const [comments, setComments] = useState<CommentItem[]>(initialComments);
   const [searchQuery, setSearchQuery] = useState('');
@@ -1061,35 +1062,41 @@ export function CommentsFeed({
     if (!editContent.trim()) return;
 
     const targetComment = comments.find((c) => c.id === commentId);
-    const targetWIId = targetComment?.work_item_id || newWorkItemId;
+    if (!targetComment) {
+      return;
+    }
+
+    const targetWIId = targetComment.work_item_id || newWorkItemId;
+    const expectedUpdatedAt = targetComment.updated_at;
+    const processedContent = await processCommentBeforeSave(
+      editContent.trim(),
+      targetWIId
+    );
 
     try {
-      const processedContent = await processCommentBeforeSave(
-        editContent.trim(),
-        targetWIId
+      const updated = await updateComment(
+        commentId,
+        processedContent,
+        expectedUpdatedAt
       );
-      const res = await updateCommentAction(commentId, processedContent);
-      if (!res.success) {
-        throw new Error(res.error || 'Failed to update comment');
-      }
-      const updated = res.data!;
       setComments((prev) =>
         prev.map((c) => (c.id === commentId ? updated : c))
       );
     } catch (err) {
+      if (
+        await tryHandleLockedMutationError({
+          error: err,
+          handleMutationError,
+          entityType: 'comment',
+          entityId: commentId,
+          expectedUpdatedAt,
+          pendingFields: { content: processedContent },
+          currentUserId,
+        })
+      ) {
+        return;
+      }
       console.error('Failed to update comment:', err);
-      const processedContent = await processCommentBeforeSave(
-        editContent.trim(),
-        targetWIId,
-        true
-      );
-      setComments((prev) =>
-        prev.map((c) =>
-          c.id === commentId
-            ? { ...c, content: processedContent, edited: true }
-            : c
-        )
-      );
     } finally {
       setEditingCommentId(null);
       setEditContent('');
@@ -1108,29 +1115,57 @@ export function CommentsFeed({
 
   // Handle Archive
   const handleArchive = async (commentId: string) => {
+    const targetComment = comments.find((c) => c.id === commentId);
+    if (!targetComment) {
+      return;
+    }
+
     try {
-      const res = await archiveCommentAction(commentId);
-      if (!res.success) {
-        throw new Error(res.error || 'Failed to archive comment');
-      }
+      await archiveComment(commentId, targetComment.updated_at);
       updateCommentStatusLocal(commentId, 'archived');
     } catch (err) {
+      if (
+        await tryHandleLockedMutationError({
+          error: err,
+          handleMutationError,
+          entityType: 'comment',
+          entityId: commentId,
+          expectedUpdatedAt: targetComment.updated_at,
+          pendingFields: { status: 'archived' },
+          currentUserId,
+        })
+      ) {
+        return;
+      }
       console.error('Failed to archive comment:', err);
-      updateCommentStatusLocal(commentId, 'archived');
     }
   };
 
   // Handle Restore
   const handleRestore = async (commentId: string) => {
+    const targetComment = comments.find((c) => c.id === commentId);
+    if (!targetComment) {
+      return;
+    }
+
     try {
-      const res = await restoreCommentAction(commentId);
-      if (!res.success) {
-        throw new Error(res.error || 'Failed to restore comment');
-      }
+      await restoreComment(commentId, targetComment.updated_at);
       updateCommentStatusLocal(commentId, 'active');
     } catch (err) {
+      if (
+        await tryHandleLockedMutationError({
+          error: err,
+          handleMutationError,
+          entityType: 'comment',
+          entityId: commentId,
+          expectedUpdatedAt: targetComment.updated_at,
+          pendingFields: { status: 'active' },
+          currentUserId,
+        })
+      ) {
+        return;
+      }
       console.error('Failed to restore comment:', err);
-      updateCommentStatusLocal(commentId, 'active');
     }
   };
 
@@ -1144,14 +1179,15 @@ export function CommentsFeed({
     if (!deletingCommentId) return;
     setIsDeleting(true);
     try {
-      const res = await archiveCommentAction(deletingCommentId, true);
-      if (!res.success) {
-        throw new Error(res.error || 'Failed to delete comment');
-      }
+      const targetComment = comments.find((c) => c.id === deletingCommentId);
+      await archiveComment(
+        deletingCommentId,
+        targetComment?.updated_at ?? '2024-01-01T00:00:00.000Z',
+        true
+      );
       setComments((prev) => prev.filter((c) => c.id !== deletingCommentId));
     } catch (err) {
       console.error('Failed to delete comment permanently:', err);
-      setComments((prev) => prev.filter((c) => c.id !== deletingCommentId));
     } finally {
       setIsDeleting(false);
       setDeletingCommentId(null);

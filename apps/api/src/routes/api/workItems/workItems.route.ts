@@ -5,6 +5,7 @@ import {
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
 import { parsePagination } from '../../../lib/pagination';
+import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
 import {
   WorkItemValidationError,
   type WorkItemService,
@@ -85,6 +86,7 @@ function buildWorkItemPayload(
       parsedData.jira_issue_key,
       existingWorkItem.jira_issue_key
     ),
+    expectedUpdatedAt: parsedData.expectedUpdatedAt,
   };
 }
 
@@ -103,12 +105,16 @@ export function shouldNotifyAssigneeChange(
 function sendWorkItemMutationError(
   res: {
     status: (code: number) => {
-      json: (body: { data: null; error: string }) => void;
+      json: (body: Record<string, unknown>) => void;
     };
   },
   error: unknown,
   fallbackMessage: string
 ) {
+  if (trySendOptimisticLockError(res, error)) {
+    return;
+  }
+
   const message = error instanceof Error ? error.message : fallbackMessage;
   if (error instanceof WorkItemValidationError) {
     return res.status(400).json({ data: null, error: message });
@@ -329,10 +335,12 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
         }
 
         const payload = buildWorkItemPayload(parsed.data, existingWorkItem);
+        const { expectedUpdatedAt, ...domainFields } = payload;
         const workItem = await workItemService.updateWorkItem(
           req.userId!,
           req.params.id!,
-          payload
+          domainFields,
+          expectedUpdatedAt
         );
 
         if (

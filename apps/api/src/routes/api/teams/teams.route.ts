@@ -5,8 +5,13 @@ import {
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
 import { teamsService } from './teams.service';
-import { createTeamSchema, updateTeamSchema } from './teams.schemas';
-import { updateTeamMemberSchema } from '@repo/types';
+import {
+  createTeamSchema,
+  teamLockActionSchema,
+  updateTeamMemberSchema,
+  updateTeamSchema,
+} from './teams.schemas';
+import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
 import { parsePagination } from '../../../lib/pagination';
 
 const teamsRouter: Router = Router();
@@ -91,13 +96,16 @@ teamsRouter.put(
     }
 
     try {
+      const { expectedUpdatedAt, ...input } = validation.data;
       const updatedRecord = await teamsService.updateTeam(
         req.userId!,
         teamIdParam,
-        validation.data
+        input,
+        expectedUpdatedAt
       );
       res.json({ team: updatedRecord });
     } catch (error) {
+      if (trySendOptimisticLockError(res, error)) return;
       const message =
         error instanceof Error ? error.message : 'Failed to modify team';
       res.status(500).json({ error: message });
@@ -114,13 +122,20 @@ teamsRouter.patch(
       return res.status(400).json({ error: 'Team identifier is required' });
     }
 
+    const validation = teamLockActionSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({ error: z.treeifyError(validation.error) });
+    }
+
     try {
       const archivedRecord = await teamsService.softDeleteTeam(
         req.userId!,
-        teamIdParam
+        teamIdParam,
+        validation.data.expectedUpdatedAt
       );
       res.json({ team: archivedRecord });
     } catch (error) {
+      if (trySendOptimisticLockError(res, error)) return;
       const message =
         error instanceof Error ? error.message : 'Failed to archive team';
       res.status(500).json({ error: message });
@@ -137,13 +152,20 @@ teamsRouter.patch(
       return res.status(400).json({ error: 'Team identifier is required' });
     }
 
+    const validation = teamLockActionSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({ error: z.treeifyError(validation.error) });
+    }
+
     try {
       const restoredRecord = await teamsService.restoreTeam(
         req.userId!,
-        teamIdParam
+        teamIdParam,
+        validation.data.expectedUpdatedAt
       );
       res.json({ team: restoredRecord });
     } catch (error) {
+      if (trySendOptimisticLockError(res, error)) return;
       const message =
         error instanceof Error ? error.message : 'Failed to restore team';
       res.status(500).json({ error: message });
@@ -168,14 +190,17 @@ teamsRouter.patch(
     }
 
     try {
+      const { expectedUpdatedAt, ...patch } = validation.data;
       await teamsService.updateTeamMember(
         teamId,
         userId,
-        validation.data,
-        req.userId!
+        patch,
+        req.userId!,
+        expectedUpdatedAt
       );
       res.json({ success: true });
     } catch (error) {
+      if (trySendOptimisticLockError(res, error)) return;
       const message =
         error instanceof Error ? error.message : 'Failed to update team member';
       res.status(500).json({ error: message });

@@ -3,10 +3,10 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ProjectRegistry } from '@/app/projects/_components/project-registry';
 import {
-  softDeleteProject,
-  restoreProject,
-  hardDeleteProject,
-} from '@/app/projects/_components/actions';
+  softDeleteProject as clientSoftDeleteProject,
+  restoreProject as clientRestoreProject,
+} from '@/app/projects/_services/projects.service';
+import { hardDeleteProject } from '@/app/projects/_components/actions';
 import type { Project } from '@/app/projects/_services/projects.service';
 import type { User } from '@/app/users/_services/users.service';
 
@@ -69,9 +69,12 @@ vi.mock(
   () => import('../mocks/dropdown-menu')
 );
 
-vi.mock('@/app/projects/_components/actions', () => ({
+vi.mock('@/app/projects/_services/projects.service', () => ({
   softDeleteProject: vi.fn(),
   restoreProject: vi.fn(),
+}));
+
+vi.mock('@/app/projects/_components/actions', () => ({
   hardDeleteProject: vi.fn(),
 }));
 
@@ -306,10 +309,9 @@ describe('ProjectRegistry Component', () => {
   });
 
   it('performs soft-delete action on confirmation', async () => {
-    vi.mocked(softDeleteProject).mockResolvedValue({
-      success: true,
-      error: null,
-    });
+    vi.mocked(clientSoftDeleteProject).mockResolvedValue(
+      mockProjects[0]! as never
+    );
 
     render(
       <ProjectRegistry
@@ -339,7 +341,10 @@ describe('ProjectRegistry Component', () => {
     fireEvent.click(confirmBtn);
 
     await waitFor(() => {
-      expect(softDeleteProject).toHaveBeenCalledWith('proj-1');
+      expect(clientSoftDeleteProject).toHaveBeenCalledWith(
+        'proj-1',
+        '2026-07-01T00:00:00Z'
+      );
       expect(mockRefresh).toHaveBeenCalled();
     });
   });
@@ -386,7 +391,9 @@ describe('ProjectRegistry Component', () => {
   });
 
   it('performs restore action directly without modal', async () => {
-    vi.mocked(restoreProject).mockResolvedValue({ success: true, error: null });
+    vi.mocked(clientRestoreProject).mockResolvedValue(
+      mockProjects[1]! as never
+    );
 
     render(
       <ProjectRegistry
@@ -407,7 +414,10 @@ describe('ProjectRegistry Component', () => {
     fireEvent.click(restoreBtn!);
 
     await waitFor(() => {
-      expect(restoreProject).toHaveBeenCalledWith('proj-1');
+      expect(clientRestoreProject).toHaveBeenCalledWith(
+        'proj-1',
+        '2026-07-01T00:00:00Z'
+      );
       expect(mockRefresh).toHaveBeenCalled();
     });
   });

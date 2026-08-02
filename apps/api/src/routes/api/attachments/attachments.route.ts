@@ -6,6 +6,7 @@ import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
+import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
 import {
   AttachmentGoneError,
   AttachmentNotFoundError,
@@ -16,6 +17,7 @@ import {
   uploadAttachmentFile,
 } from './attachments.service';
 import {
+  archiveAttachmentSchema,
   createUploadSessionSchema,
   finalizeUploadSchema,
   workItemIdSchema,
@@ -72,10 +74,20 @@ attachmentsRouter.delete(
   '/:id',
   requireApiAuth,
   async (req: AuthenticatedRequest, res) => {
+    const parsed = archiveAttachmentSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: z.treeifyError(parsed.error) });
+    }
+
     try {
-      await deleteAttachment(req.params.id!, req.userId!);
+      await deleteAttachment(
+        req.params.id!,
+        req.userId!,
+        parsed.data.expectedUpdatedAt
+      );
       res.json({ success: true });
     } catch (error) {
+      if (trySendOptimisticLockError(res, error)) return;
       const message =
         error instanceof Error ? error.message : 'Failed to delete attachment';
       console.error('error. attachment delete failed:', message);

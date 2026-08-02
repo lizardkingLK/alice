@@ -28,6 +28,8 @@ import {
   type Project,
 } from '../_services/projects.service';
 import { apiFetch } from '@/lib/api/api-client';
+import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
+import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 
 interface ProjectFormProps {
   readonly onClose?: () => void;
@@ -62,6 +64,7 @@ export function ProjectForm({
   onJiraImportToggle,
 }: Readonly<ProjectFormProps>) {
   const isEditMode = !!projectToEdit;
+  const { handleMutationError } = useOptimisticLock();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
@@ -219,7 +222,32 @@ export function ProjectForm({
 
       let result;
       if (projectToEdit) {
-        result = await updateProject(projectToEdit.id, projectData);
+        const expectedUpdatedAt = projectToEdit.updated_at;
+        const pendingFields = {
+          name: projectData.name,
+          key: projectData.key,
+          description: projectData.description,
+          owner_id: projectData.owner_id,
+          start_date: projectData.start_date,
+          end_date: projectData.end_date,
+          status: projectData.status,
+          attributes_config: projectData.attributes_config,
+          workflow_config: projectData.workflow_config,
+          jira_url: projectData.jira_url,
+          jira_project_key: projectData.jira_project_key,
+        };
+        result = await runLockedMutationOrThrow({
+          mutate: () =>
+            updateProject(projectToEdit.id, pendingFields, expectedUpdatedAt),
+          handleMutationError,
+          entityType: 'project',
+          entityId: projectToEdit.id,
+          expectedUpdatedAt,
+          pendingFields,
+        });
+        if (!result) {
+          return;
+        }
         setMessage(`Project "${result.name}" updated.`);
       } else {
         result = await createProject(projectData);

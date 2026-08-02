@@ -5,6 +5,7 @@ const service = createProjectsService(apiFetch);
 
 export const createProject = service.createProject;
 export const updateProject = service.updateProject;
+export const forceUpdateProject = service.forceUpdateProject;
 export const softDeleteProject = service.softDeleteProject;
 export const restoreProject = service.restoreProject;
 export const hardDeleteProject = service.hardDeleteProject;

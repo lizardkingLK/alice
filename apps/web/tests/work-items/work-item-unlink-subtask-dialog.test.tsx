@@ -36,6 +36,7 @@ describe('WorkItemUnlinkSubtaskDialog', () => {
         childTitle="Orphan candidate"
         childType="Task"
         parentType="Story"
+        childUpdatedAt="2024-01-01T00:00:00.000Z"
         onUnlinked={onUnlinked}
       />
     );
@@ -50,6 +51,9 @@ describe('WorkItemUnlinkSubtaskDialog', () => {
     expect(vi.mocked(updateWorkItem).mock.calls[0]![0]).toBe('child-1');
     const formData = vi.mocked(updateWorkItem).mock.calls[0]![1] as FormData;
     expect(formData.get('parent_id')).toBe('');
+    expect(vi.mocked(updateWorkItem).mock.calls[0]![2]).toBe(
+      '2024-01-01T00:00:00.000Z'
+    );
     await waitFor(() => {
       expect(onUnlinked).toHaveBeenCalledTimes(1);
       expect(onOpenChange).toHaveBeenCalledWith(false);
@@ -69,6 +73,7 @@ describe('WorkItemUnlinkSubtaskDialog', () => {
         childTitle="Keep linked"
         childType="Task"
         parentType="Story"
+        childUpdatedAt="2024-01-01T00:00:00.000Z"
         onUnlinked={onUnlinked}
       />
     );

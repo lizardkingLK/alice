@@ -5,14 +5,13 @@ import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { SprintList } from '@/app/sprints/_components/sprint-list';
 import { SprintForm } from '@/app/sprints/_components/sprint-form';
-import {
-  Sprint,
-  updateSprintStatus,
-} from '@/app/sprints/_services/sprints.service';
+import { Sprint } from '@/app/sprints/_services/sprints.service';
+import { updateSprintStatusWithOptimisticLock } from '@/app/sprints/_helpers/update-sprint-status-with-lock';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Search, Plus } from '@repo/ui/lib/icons';
 import type { Project } from '@/app/projects/_services/projects.service.base';
+import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 
 interface SprintsWorkspaceProps {
   readonly sprints: Sprint[];
@@ -49,6 +48,18 @@ export function SprintsWorkspace({
   } = usePaginationNavigation(pagination.totalPages, pagination.limit);
 
   const isManagerOrAdmin = userRole === 'admin' || userRole === 'manager';
+  const { handleMutationError } = useOptimisticLock();
+
+  const updateStatusWithLock = async (
+    sprint: Sprint,
+    status: Sprint['status']
+  ) =>
+    updateSprintStatusWithOptimisticLock({
+      sprint,
+      status,
+      handleMutationError,
+      currentUserId,
+    });
 
   const { searchQuery, setSearchQuery } = useDebouncedSearch(search);
   const [isAddSprintOpen, setIsAddSprintOpen] = useState(false);
@@ -85,8 +96,10 @@ export function SprintsWorkspace({
 
   const handleArchiveSprint = async (sprint: Sprint) => {
     try {
-      const updated = await updateSprintStatus(sprint.id, 'Archived');
-      handleSprintUpdated(updated);
+      const updated = await updateStatusWithLock(sprint, 'Archived');
+      if (updated) {
+        handleSprintUpdated(updated);
+      }
     } catch (archiveError) {
       console.error('Failed to archive sprint:', archiveError);
     }
@@ -94,8 +107,10 @@ export function SprintsWorkspace({
 
   const handleRestoreSprint = async (sprint: Sprint) => {
     try {
-      const updated = await updateSprintStatus(sprint.id, 'Completed');
-      handleSprintUpdated(updated);
+      const updated = await updateStatusWithLock(sprint, 'Completed');
+      if (updated) {
+        handleSprintUpdated(updated);
+      }
     } catch (restoreError) {
       console.error('Failed to restore sprint:', restoreError);
     }

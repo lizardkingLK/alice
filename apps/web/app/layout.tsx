@@ -9,6 +9,7 @@ import React from 'react';
 import { cn } from '@repo/ui/lib/utils';
 import { Toaster } from '@repo/ui/components/ui/sonner';
 import { geistMono, geistSans, inter } from '@/app/_config/fonts';
+import { OptimisticLockProvider } from '@/components/optimistic-lock/optimistic-lock-provider';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -28,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={cn('font-sans', inter.variable)}>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        {children}
+        <OptimisticLockProvider>{children}</OptimisticLockProvider>
         <Toaster />
       </body>
     </html>

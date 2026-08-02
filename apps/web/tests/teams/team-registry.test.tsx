@@ -3,10 +3,10 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { TeamRegistry } from '@/app/manager/_components/team-registry';
 import {
-  softDeleteTeam,
-  restoreTeam,
-  hardDeleteTeam,
-} from '@/app/manager/_components/actions';
+  softDeleteTeam as clientSoftDeleteTeam,
+  restoreTeam as clientRestoreTeam,
+} from '@/app/manager/_services/teams.service';
+import { hardDeleteTeam } from '@/app/manager/_components/actions';
 import type { Team } from '@/app/manager/_services/teams.service';
 import type { User } from '@/app/users/_services/users.service';
 
@@ -62,9 +62,12 @@ vi.mock(
   () => import('../mocks/dropdown-menu')
 );
 
-vi.mock('@/app/manager/_components/actions', () => ({
+vi.mock('@/app/manager/_services/teams.service', () => ({
   softDeleteTeam: vi.fn(),
   restoreTeam: vi.fn(),
+}));
+
+vi.mock('@/app/manager/_components/actions', () => ({
   hardDeleteTeam: vi.fn(),
 }));
 
@@ -235,7 +238,7 @@ describe('TeamRegistry Component', () => {
   });
 
   it('opens confirmation modal and triggers soft delete action', async () => {
-    vi.mocked(softDeleteTeam).mockResolvedValue({ success: true, error: null });
+    vi.mocked(clientSoftDeleteTeam).mockResolvedValue(mockTeams[0]!);
 
     render(
       <TeamRegistry
@@ -264,7 +267,10 @@ describe('TeamRegistry Component', () => {
     fireEvent.click(confirmBtn);
 
     await waitFor(() => {
-      expect(softDeleteTeam).toHaveBeenCalledWith('team-1', 'proj-1');
+      expect(clientSoftDeleteTeam).toHaveBeenCalledWith(
+        'team-1',
+        '2026-07-01T00:00:00Z'
+      );
       expect(mockRefresh).toHaveBeenCalled();
     });
   });
@@ -309,7 +315,7 @@ describe('TeamRegistry Component', () => {
   });
 
   it('triggers restore team action when restore button clicked in archived tab', async () => {
-    vi.mocked(restoreTeam).mockResolvedValue({ success: true, error: null });
+    vi.mocked(clientRestoreTeam).mockResolvedValue(mockTeams[1]!);
 
     render(
       <TeamRegistry
@@ -332,7 +338,10 @@ describe('TeamRegistry Component', () => {
     fireEvent.click(restoreBtn);
 
     await waitFor(() => {
-      expect(restoreTeam).toHaveBeenCalledWith('team-2', null);
+      expect(clientRestoreTeam).toHaveBeenCalledWith(
+        'team-2',
+        '2026-07-01T00:00:00Z'
+      );
       expect(mockRefresh).toHaveBeenCalled();
     });
   });

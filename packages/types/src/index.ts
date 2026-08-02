@@ -25,3 +25,4 @@ export * from './work-item-status.js';
 export * from './work-item-types.js';
 export * from './access-allowlist.js';
 export * from './sprint-burndown.js';
+export * from './optimistic-lock.js';

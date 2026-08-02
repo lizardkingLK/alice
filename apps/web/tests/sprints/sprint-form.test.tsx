@@ -194,13 +194,17 @@ describe('SprintForm Component', () => {
     fireEvent.submit(form);
 
     await waitFor(() => {
-      expect(updateSprint).toHaveBeenCalledWith('sprint-123', {
-        name: 'Sprint 1 Updated',
-        goal: 'Achieve project milestone',
-        projectId: 'proj-1',
-        startDate: '2026-07-10',
-        endDate: '2026-07-24',
-      });
+      expect(updateSprint).toHaveBeenCalledWith(
+        'sprint-123',
+        {
+          name: 'Sprint 1 Updated',
+          goal: 'Achieve project milestone',
+          projectId: 'proj-1',
+          startDate: '2026-07-10',
+          endDate: '2026-07-24',
+        },
+        mockSprint.updatedAt
+      );
     });
 
     expect(

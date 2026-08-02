@@ -35,6 +35,8 @@ import type {
   ProjectMembersByProjectId,
 } from '@/app/projects/_services/projects.service.base';
 import type { Team } from '../_services/teams.service';
+import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
+import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 
 interface ProjectMembersListProps {
   projectMembers: ProjectMemberWithUser[];
@@ -118,6 +120,7 @@ export function TeamForm({
   lockedProjectId,
 }: Readonly<TeamFormProps>) {
   const editActionActive = !!teamToEdit;
+  const { handleMutationError } = useOptimisticLock();
   // Lock once a project is stored; allow picking one when legacy rows have null.
   const projectLocked =
     Boolean(lockedProjectId) ||
@@ -249,16 +252,29 @@ export function TeamForm({
       };
 
       if (editActionActive && teamToEdit) {
-        await updateTeam(teamToEdit.id, {
+        const teamPayload = {
           name: teamData.name,
           tech_stack: teamData.tech_stack,
           description: teamData.description,
           manager_id: teamData.manager_id,
           status: teamData.status,
           member_ids: teamData.member_ids,
-          // Persist project when repairing legacy rows that were saved without one.
           ...(teamToEdit.project_id ? {} : { project_id: teamData.project_id }),
+        };
+        const expectedUpdatedAt = teamToEdit.updated_at;
+
+        const updated = await runLockedMutationOrThrow({
+          mutate: () =>
+            updateTeam(teamToEdit.id, teamPayload, expectedUpdatedAt),
+          handleMutationError,
+          entityType: 'team',
+          entityId: teamToEdit.id,
+          expectedUpdatedAt,
+          pendingFields: teamPayload,
         });
+        if (!updated) {
+          return;
+        }
         setMessage('The team configuration has been successfully updated.');
       } else {
         await createTeam(teamData);

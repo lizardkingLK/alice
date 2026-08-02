@@ -5,8 +5,13 @@ import {
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
 import { env } from '../../../config/env';
+import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
 import { projectsService } from './projects.service';
-import { createProjectSchema, updateProjectSchema } from './projects.schemas';
+import {
+  createProjectSchema,
+  projectLockActionSchema,
+  updateProjectSchema,
+} from './projects.schemas';
 import { parsePagination } from '../../../lib/pagination';
 import { ProjectRowWithOwner, withoutJiraToken } from './projects.repository';
 import { workItems } from '../../../config/composition';
@@ -545,13 +550,16 @@ projectsRouter.put(
     }
 
     try {
+      const { expectedUpdatedAt, ...input } = parsed.data;
       const project = await projectsService.updateProject(
         req.userId!,
         id,
-        parsed.data
+        input,
+        expectedUpdatedAt
       );
       res.json({ project: withoutJiraToken(project) });
     } catch (error) {
+      if (trySendOptimisticLockError(res, error)) return;
       const message =
         error instanceof Error ? error.message : 'Failed to update project';
       res.status(500).json({ error: message });
@@ -568,10 +576,20 @@ projectsRouter.patch(
       return res.status(400).json({ error: 'Project ID is required' });
     }
 
+    const parsed = projectLockActionSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: z.treeifyError(parsed.error) });
+    }
+
     try {
-      const project = await projectsService.softDeleteProject(req.userId!, id);
+      const project = await projectsService.softDeleteProject(
+        req.userId!,
+        id,
+        parsed.data.expectedUpdatedAt
+      );
       res.json({ project: withoutJiraToken(project) });
     } catch (error) {
+      if (trySendOptimisticLockError(res, error)) return;
       const message =
         error instanceof Error
           ? error.message
@@ -590,10 +608,20 @@ projectsRouter.patch(
       return res.status(400).json({ error: 'Project ID is required' });
     }
 
+    const parsed = projectLockActionSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: z.treeifyError(parsed.error) });
+    }
+
     try {
-      const project = await projectsService.restoreProject(req.userId!, id);
+      const project = await projectsService.restoreProject(
+        req.userId!,
+        id,
+        parsed.data.expectedUpdatedAt
+      );
       res.json({ project: withoutJiraToken(project) });
     } catch (error) {
+      if (trySendOptimisticLockError(res, error)) return;
       const message =
         error instanceof Error ? error.message : 'Failed to restore project';
       res.status(500).json({ error: message });

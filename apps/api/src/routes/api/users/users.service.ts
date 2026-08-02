@@ -102,7 +102,8 @@ export class UsersService {
   async updateUser(
     actorId: string,
     targetUserId: string,
-    input: UpdateUserInput
+    input: UpdateUserInput,
+    expectedUpdatedAt: string
   ): Promise<UserRow> {
     await requireAdmin(actorId);
 
@@ -113,7 +114,8 @@ export class UsersService {
         name: input.name,
         role: input.role,
       },
-      actorId
+      actorId,
+      expectedUpdatedAt
     );
 
     // 2. Sync metadata in Supabase Auth
@@ -137,7 +139,8 @@ export class UsersService {
   async toggleUserActive(
     actorId: string,
     targetUserId: string,
-    active: boolean
+    active: boolean,
+    expectedUpdatedAt: string
   ): Promise<UserRow> {
     await requireAdmin(actorId);
 
@@ -153,7 +156,8 @@ export class UsersService {
       {
         active,
       },
-      actorId
+      actorId,
+      expectedUpdatedAt
     );
 
     // 2. Ban/unban in Supabase Auth to prevent logins

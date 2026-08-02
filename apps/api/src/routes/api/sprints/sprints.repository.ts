@@ -1,5 +1,6 @@
 import { projectRelationSelect, type Tables } from '@repo/types';
 import { supabase } from '../../../lib/supabase';
+import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type SprintRow = Tables<'sprints'>;
@@ -50,7 +51,8 @@ export class SprintsRepository {
   async updateStatus(
     userId: string,
     sprintId: string,
-    status: SprintRow['status']
+    status: SprintRow['status'],
+    expectedUpdatedAt: string
   ): Promise<SprintRowWithProject> {
     const { data, error } = await supabase
       .from('sprints')
@@ -60,15 +62,16 @@ export class SprintsRepository {
         updated_at: new Date().toISOString(),
       })
       .eq('id', sprintId)
+      .eq('updated_at', expectedUpdatedAt)
       .select(SPRINT_WITH_PROJECT)
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      console.error('error. failed to update sprint status:', error.message);
-      throw new Error('Failed to update sprint status');
-    }
-
-    return data as unknown as SprintRowWithProject;
+    return (await resolveOptimisticUpdate({
+      data: data as unknown as SprintRowWithProject | null,
+      error,
+      fetchCurrent: () => this.findById(sprintId),
+      notFoundMessage: 'Sprint not found',
+    })) as SprintRowWithProject;
   }
 
   async getWorkItemCount(sprintId: string): Promise<number> {
@@ -127,7 +130,8 @@ export class SprintsRepository {
       startDate: string;
       endDate: string;
       projectId: string;
-    }
+    },
+    expectedUpdatedAt: string
   ): Promise<SprintRowWithProject> {
     const { data, error } = await supabase
       .from('sprints')
@@ -141,15 +145,16 @@ export class SprintsRepository {
         updated_at: new Date().toISOString(),
       })
       .eq('id', sprintId)
+      .eq('updated_at', expectedUpdatedAt)
       .select(SPRINT_WITH_PROJECT)
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      console.error('error. failed to update sprint:', error.message);
-      throw new Error('Failed to update sprint');
-    }
-
-    return data as unknown as SprintRowWithProject;
+    return (await resolveOptimisticUpdate({
+      data: data as unknown as SprintRowWithProject | null,
+      error,
+      fetchCurrent: () => this.findById(sprintId),
+      notFoundMessage: 'Sprint not found',
+    })) as SprintRowWithProject;
   }
 }
 

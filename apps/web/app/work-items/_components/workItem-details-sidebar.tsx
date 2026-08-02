@@ -73,11 +73,13 @@ const PLACEHOLDER_LABELS = [
 
 function StatusDropdown({
   workItemId,
+  expectedUpdatedAt,
   workItemStatus,
   childStatuses,
   onPatched,
 }: Readonly<{
   workItemId: string;
+  expectedUpdatedAt: string;
   workItemStatus: DbWorkItem['status'];
   childStatuses: readonly WorkItemStatus[];
   // eslint-disable-next-line no-unused-vars -- callback signature
@@ -143,6 +145,7 @@ function StatusDropdown({
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         workItemId={workItemId}
+        expectedUpdatedAt={expectedUpdatedAt}
         fieldConfig={WORK_ITEM_PATCH_FIELD_CONFIG.status}
         currentValue={pendingStatus}
         onPatched={onPatched}
@@ -355,6 +358,7 @@ export default function WorkItemSidebar({
     <aside className="space-y-4 lg:col-span-2">
       <StatusDropdown
         workItemId={workItem.id}
+        expectedUpdatedAt={workItem.updated_at}
         workItemStatus={workItem.status}
         childStatuses={childStatuses}
         onPatched={onWorkItemPatched}
@@ -509,6 +513,7 @@ export default function WorkItemSidebar({
             }
           }}
           workItemId={workItem.id}
+          expectedUpdatedAt={workItem.updated_at}
           fieldConfig={activeConfig}
           options={projectMembers}
           currentValue={currentValue}

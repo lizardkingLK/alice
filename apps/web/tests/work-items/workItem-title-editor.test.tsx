@@ -21,6 +21,7 @@ describe('WorkItemTitleEditor', () => {
       <WorkItemTitleEditor
         workItemId="wi-1"
         title="Editable title"
+        expectedUpdatedAt="2024-01-01T00:00:00.000Z"
         onPatched={vi.fn()}
       />
     );
@@ -35,6 +36,7 @@ describe('WorkItemTitleEditor', () => {
       <WorkItemTitleEditor
         workItemId="wi-1"
         title="Done title"
+        expectedUpdatedAt="2024-01-01T00:00:00.000Z"
         onPatched={vi.fn()}
         readOnly
       />

@@ -1,16 +1,18 @@
 import { Router, type Response } from 'express';
 import { z } from 'zod';
-import {
-  accessAllowlistCreateSchema,
-  accessAllowlistUpdateSchema,
-} from '@repo/types';
 import { requireActorId } from '../../../lib/audit';
 import { parsePagination } from '../../../lib/pagination';
+import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
 import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
 import { accessAllowlistService } from './accessAllowlist.service';
+import {
+  accessAllowlistCreateSchema,
+  accessAllowlistLockActionSchema,
+  accessAllowlistUpdateSchema,
+} from './accessAllowlist.schemas';
 
 const accessAllowlistRouter: Router = Router();
 
@@ -159,6 +161,7 @@ accessAllowlistRouter.put(
 
       res.json({ entry });
     } catch (error) {
+      if (trySendOptimisticLockError(res, error)) return;
       routeError(res, error, 'Failed to update access allowlist entry');
     }
   }
@@ -175,10 +178,22 @@ accessAllowlistRouter.delete(
         return res.status(400).json({ error: 'Invalid id' });
       }
 
-      await accessAllowlistService.deleteAccessAllowlist(actorId, id);
+      const bodyParsed = accessAllowlistLockActionSchema.safeParse(req.body);
+      if (!bodyParsed.success) {
+        return res
+          .status(400)
+          .json({ error: z.treeifyError(bodyParsed.error) });
+      }
+
+      await accessAllowlistService.deleteAccessAllowlist(
+        actorId,
+        id,
+        bodyParsed.data.expectedUpdatedAt
+      );
 
       res.json({ success: true });
     } catch (error) {
+      if (trySendOptimisticLockError(res, error)) return;
       routeError(res, error, 'Failed to delete access allowlist entry');
     }
   }

@@ -136,11 +136,15 @@ describe('AccessAllowlistForm', () => {
 
     // Assert
     await waitFor(() => {
-      expect(updateAccessAllowlistEntry).toHaveBeenCalledWith(entry.id, {
-        label: 'Updated client',
-        expires_at: null,
-        status: 'active',
-      });
+      expect(updateAccessAllowlistEntry).toHaveBeenCalledWith(
+        entry.id,
+        {
+          label: 'Updated client',
+          expires_at: null,
+          status: 'active',
+        },
+        entry.updated_at
+      );
     });
     expect(
       await screen.findByText(/Allowlist entry updated/i)

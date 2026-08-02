@@ -26,6 +26,7 @@ export type UpdateAccessAllowlistInput = {
   label?: string | null;
   expires_at?: string | null;
   status?: AccessAllowlistStatus;
+  expectedUpdatedAt: string;
 };
 
 export class AccessAllowlistService {
@@ -79,12 +80,21 @@ export class AccessAllowlistService {
       label: input.label,
       expires_at: input.expires_at,
       status: input.status,
+      expectedUpdatedAt: input.expectedUpdatedAt,
     });
   }
 
-  async deleteAccessAllowlist(actorId: string, id: string): Promise<void> {
+  async deleteAccessAllowlist(
+    actorId: string,
+    id: string,
+    expectedUpdatedAt: string
+  ): Promise<void> {
     await requireAdmin(actorId);
-    return await accessAllowlistRepository.softDelete({ actorId, id });
+    return await accessAllowlistRepository.softDelete({
+      actorId,
+      id,
+      expectedUpdatedAt,
+    });
   }
 }
 

@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 import { Tables } from '@repo/types';
 import type { User } from '@/app/users/_services/users.service';
+import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
 
 export type Project = Omit<
   Tables<'projects'>,
@@ -100,33 +101,56 @@ export function createProjectsService(
 
     async updateProject(
       id: string,
-      input: UpdateProjectInput
+      input: UpdateProjectInput,
+      expectedUpdatedAt: string
     ): Promise<Tables<'projects'>> {
       const data = await apiFetch<{ project: Tables<'projects'> }>(
         `${apiProjects}/${id}`,
         {
           method: 'PUT',
-          body: JSON.stringify(input),
+          body: JSON.stringify({ ...input, expectedUpdatedAt }),
         }
       );
       return data.project;
     },
 
-    async softDeleteProject(id: string): Promise<Tables<'projects'>> {
+    /** Force-apply pending fields after a user confirms Keep mine / merge. */
+    async forceUpdateProject(
+      id: string,
+      pendingFields: Record<string, unknown>,
+      expectedUpdatedAt: string
+    ): Promise<Tables<'projects'>> {
+      const data = await forceOptimisticPatch<{ project: Tables<'projects'> }>(
+        apiFetch,
+        `${apiProjects}/${id}`,
+        { pendingFields, expectedUpdatedAt }
+      );
+      return data.project;
+    },
+
+    async softDeleteProject(
+      id: string,
+      expectedUpdatedAt: string
+    ): Promise<Tables<'projects'>> {
       const data = await apiFetch<{ project: Tables<'projects'> }>(
         `${apiProjects}/${id}/soft-delete`,
         {
           method: 'PATCH',
+          body: JSON.stringify({ expectedUpdatedAt }),
         }
       );
       return data.project;
     },
 
-    async restoreProject(id: string): Promise<Tables<'projects'>> {
+    async restoreProject(
+      id: string,
+      expectedUpdatedAt: string
+    ): Promise<Tables<'projects'>> {
       const data = await apiFetch<{ project: Tables<'projects'> }>(
         `${apiProjects}/${id}/restore`,
         {
           method: 'PATCH',
+          body: JSON.stringify({ expectedUpdatedAt }),
         }
       );
       return data.project;

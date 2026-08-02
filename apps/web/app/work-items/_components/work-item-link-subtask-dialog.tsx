@@ -11,7 +11,10 @@ import type { WorkItemType } from '@repo/types';
 import { Label } from '@repo/ui/components/ui/label';
 import { SearchableSelect } from '@/components/searchable-select';
 
-type LinkableWorkItemOption = Pick<DbWorkItem, 'id' | 'title' | 'type'>;
+type LinkableWorkItemOption = Pick<
+  DbWorkItem,
+  'id' | 'title' | 'type' | 'updated_at'
+>;
 
 /* eslint-disable no-unused-vars */
 type WorkItemLinkSubtaskDialogProps = {
@@ -59,11 +62,24 @@ export function WorkItemLinkSubtaskDialog({
       return;
     }
 
+    const selected = candidates.find((item) => item.id === selectedId);
+    if (!selected) {
+      setAlert({
+        success: null,
+        error: `Please select a ${childType} to link.`,
+      });
+      return;
+    }
+
     setIsPending(true);
     setAlert(null);
 
     try {
-      await patchWorkItemParentId(selectedId, parentWorkItemId);
+      await patchWorkItemParentId(
+        selectedId,
+        parentWorkItemId,
+        selected.updated_at
+      );
 
       setAlert({ success: 'Subtask linked successfully.', error: null });
       await delay();

@@ -74,7 +74,8 @@ export class TeamsService {
   async updateTeam(
     actorId: string,
     teamId: string,
-    input: UpdateTeamInput
+    input: UpdateTeamInput,
+    expectedUpdatedAt: string
   ): Promise<TeamRow> {
     await requireTeamManager(actorId);
 
@@ -87,10 +88,19 @@ export class TeamsService {
       }
     }
 
-    return await teamsRepository.update(teamId, input, actorId);
+    return await teamsRepository.update(
+      teamId,
+      input,
+      actorId,
+      expectedUpdatedAt
+    );
   }
 
-  async softDeleteTeam(actorId: string, teamId: string): Promise<TeamRow> {
+  async softDeleteTeam(
+    actorId: string,
+    teamId: string,
+    expectedUpdatedAt: string
+  ): Promise<TeamRow> {
     await requireTeamManager(actorId);
 
     return await teamsRepository.update(
@@ -98,11 +108,16 @@ export class TeamsService {
       {
         status: 'archived',
       },
-      actorId
+      actorId,
+      expectedUpdatedAt
     );
   }
 
-  async restoreTeam(actorId: string, teamId: string): Promise<TeamRow> {
+  async restoreTeam(
+    actorId: string,
+    teamId: string,
+    expectedUpdatedAt: string
+  ): Promise<TeamRow> {
     await requireTeamManager(actorId);
 
     return await teamsRepository.update(
@@ -110,7 +125,8 @@ export class TeamsService {
       {
         status: 'active',
       },
-      actorId
+      actorId,
+      expectedUpdatedAt
     );
   }
 
@@ -118,10 +134,17 @@ export class TeamsService {
     teamId: string,
     userId: string,
     patch: { capacity?: number | null; allocation?: number | null },
-    actorId: string
+    actorId: string,
+    expectedUpdatedAt: string
   ): Promise<void> {
     await requireTeamManager(actorId);
-    await teamsRepository.updateMember(teamId, userId, patch, actorId);
+    await teamsRepository.updateMember(
+      teamId,
+      userId,
+      patch,
+      actorId,
+      expectedUpdatedAt
+    );
   }
 
   async hardDeleteTeam(actorId: string, teamId: string): Promise<void> {

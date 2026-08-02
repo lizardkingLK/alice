@@ -119,10 +119,14 @@ describe('UserForm Component', () => {
     fireEvent.submit(form);
 
     await waitFor(() => {
-      expect(updateUser).toHaveBeenCalledWith('user-123', {
-        name: 'Erlich Bachman Updated',
-        role: 'manager',
-      });
+      expect(updateUser).toHaveBeenCalledWith(
+        'user-123',
+        {
+          name: 'Erlich Bachman Updated',
+          role: 'manager',
+        },
+        '2026-07-09T10:00:00Z'
+      );
     });
 
     expect(
