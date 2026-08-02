@@ -103,13 +103,19 @@ describe('createAccessAllowlistService', () => {
     const service = createAccessAllowlistService(apiFetch);
 
     // Act
-    await service.deleteAccessAllowlistEntry('allowlist-123');
+    await service.deleteAccessAllowlistEntry(
+      'allowlist-123',
+      '2024-01-02T00:00:00.000Z'
+    );
 
     // Assert
     expect(apiFetch).toHaveBeenCalledWith(
       '/api/accessAllowlist/allowlist-123',
       {
         method: 'DELETE',
+        body: JSON.stringify({
+          expectedUpdatedAt: '2024-01-02T00:00:00.000Z',
+        }),
       }
     );
   });

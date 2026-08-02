@@ -116,7 +116,12 @@ export function OptimisticLockProvider({
         }
       }
 
-      if (!serverEntity) {
+      if (!serverEntity || Object.keys(serverEntity).length === 0) {
+        return false;
+      }
+
+      const serverUpdatedAt = serverUpdatedAtFromEntity(serverEntity);
+      if (!serverUpdatedAt) {
         return false;
       }
 
@@ -127,7 +132,7 @@ export function OptimisticLockProvider({
         baseUpdatedAt: options.baseUpdatedAt,
         pendingFields: options.pendingFields,
         serverEntity,
-        serverUpdatedAt: serverUpdatedAtFromEntity(serverEntity),
+        serverUpdatedAt,
       });
       return true;
     },

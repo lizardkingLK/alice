@@ -108,9 +108,13 @@ export function createAccessAllowlistService(
     return data.entry;
   }
 
-  async function deleteAccessAllowlistEntry(id: string): Promise<void> {
+  async function deleteAccessAllowlistEntry(
+    id: string,
+    expectedUpdatedAt: string
+  ): Promise<void> {
     await apiFetch<{ success: boolean }>(`${apiAccessAllowlist}/${id}`, {
       method: 'DELETE',
+      body: JSON.stringify({ expectedUpdatedAt }),
     });
   }
 

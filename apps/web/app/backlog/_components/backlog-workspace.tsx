@@ -147,6 +147,22 @@ export function BacklogWorkspace({
     );
   };
 
+  const restoreWorkItemAfterFailedMutation = (
+    itemId: string,
+    patch: Partial<DbWorkItem>,
+    fallbackMessage: string,
+    error: unknown
+  ) => {
+    setWorkItems((prev) =>
+      prev.map((item) => (item.id === itemId ? { ...item, ...patch } : item))
+    );
+    setSelectedItem((prev) =>
+      prev?.id === itemId ? { ...prev, ...patch } : prev
+    );
+    setActionError(error instanceof Error ? error.message : fallbackMessage);
+    console.error('error. failed to update work item', error);
+  };
+
   // Helper: Drag-and-Drop Handlers
   const handleDragStart = (e: React.DragEvent, itemId: string) => {
     e.dataTransfer.setData('text/plain', itemId);
@@ -196,6 +212,7 @@ export function BacklogWorkspace({
       formData.append('sprint_id', targetId || '');
       const draggedItem = workItems.find((item) => item.id === itemId);
       if (draggedItem) {
+        const previousSprintId = draggedItem.sprint_id;
         const expectedUpdatedAt = draggedItem.updated_at;
         runLockedMutation({
           mutate: () => updateWorkItem(itemId, formData, expectedUpdatedAt),
@@ -207,7 +224,12 @@ export function BacklogWorkspace({
           currentUserId,
         }).then((result) => {
           if (!result.ok && !result.conflict) {
-            console.error('Failed to update work item sprint:', result.error);
+            restoreWorkItemAfterFailedMutation(
+              itemId,
+              { sprint_id: previousSprintId },
+              'Failed to update work item sprint.',
+              result.error
+            );
           }
         });
       }
@@ -523,6 +545,12 @@ export function BacklogWorkspace({
     const targetItem = workItems.find((item) => item.id === itemId);
     if (targetItem) {
       const expectedUpdatedAt = targetItem.updated_at;
+      const previousValues = Object.fromEntries(
+        Object.keys(updates).map((key) => [
+          key,
+          targetItem[key as keyof typeof targetItem],
+        ])
+      ) as Partial<DbWorkItem>;
       runLockedMutation({
         mutate: () => updateWorkItem(itemId, formData, expectedUpdatedAt),
         handleMutationError,
@@ -533,7 +561,12 @@ export function BacklogWorkspace({
         currentUserId,
       }).then((result) => {
         if (!result.ok && !result.conflict) {
-          console.error(`Failed to update work item ${itemId}:`, result.error);
+          restoreWorkItemAfterFailedMutation(
+            itemId,
+            previousValues,
+            `Failed to update work item ${itemId}.`,
+            result.error
+          );
         }
       });
     }

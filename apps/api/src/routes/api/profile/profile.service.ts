@@ -36,13 +36,17 @@ export type ProfileUser = {
   email: string;
   role: string;
   profile_picture: string | null;
+  updated_at: string;
 };
+
+const PROFILE_USER_SELECT =
+  'id, name, email, role, profile_picture, updated_at' as const;
 
 export class ProfileService {
   private async findProfileUser(userId: string): Promise<ProfileUser | null> {
     const { data, error } = await supabase
       .from('users')
-      .select('id, name, email, role, profile_picture')
+      .select(PROFILE_USER_SELECT)
       .eq('id', userId)
       .maybeSingle();
 
@@ -66,7 +70,7 @@ export class ProfileService {
       })
       .eq('id', userId)
       .eq('updated_at', input.expectedUpdatedAt)
-      .select('id, name, email, role, profile_picture')
+      .select(PROFILE_USER_SELECT)
       .maybeSingle();
 
     return (await resolveOptimisticUpdate({
@@ -110,7 +114,7 @@ export class ProfileService {
       })
       .eq('id', userId)
       .eq('updated_at', expectedUpdatedAt)
-      .select('id, name, email, role, profile_picture')
+      .select(PROFILE_USER_SELECT)
       .maybeSingle();
 
     let resolvedUser: ProfileUser;

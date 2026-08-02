@@ -7,6 +7,7 @@ import {
   OptimisticLockError,
   isOptimisticLockError,
   resolveOptimisticUpdate,
+  sendRouteMutationError,
   trySendOptimisticLockError,
 } from './optimistic-lock.js';
 
@@ -73,5 +74,32 @@ describe('trySendOptimisticLockError', () => {
       trySendOptimisticLockError({ status: vi.fn() }, new Error('x'))
     ).toBe(false);
     expect(isOptimisticLockError(new Error('x'))).toBe(false);
+  });
+});
+
+describe('sendRouteMutationError', () => {
+  it('delegates optimistic lock conflicts to 409', () => {
+    const serverEntity = { id: '1' };
+    const json = vi.fn();
+    const status = vi.fn(() => ({ json }));
+    sendRouteMutationError(
+      { status },
+      new OptimisticLockError(serverEntity),
+      'fallback'
+    );
+    expect(status).toHaveBeenCalledWith(OPTIMISTIC_LOCK_HTTP_STATUS);
+    expect(json).toHaveBeenCalledWith({
+      code: OPTIMISTIC_LOCK_ERROR_CODE,
+      error: 'This record was updated by someone else.',
+      serverEntity,
+    });
+  });
+
+  it('sends 500 with message for other errors', () => {
+    const json = vi.fn();
+    const status = vi.fn(() => ({ json }));
+    sendRouteMutationError({ status }, new Error('boom'), 'fallback');
+    expect(status).toHaveBeenCalledWith(500);
+    expect(json).toHaveBeenCalledWith({ error: 'boom' });
   });
 });

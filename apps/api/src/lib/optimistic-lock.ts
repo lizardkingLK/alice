@@ -66,6 +66,7 @@ type JsonResponder = {
   status: (code: number) => {
     json: (body: Record<string, unknown>) => unknown;
   };
+  json?: (body: Record<string, unknown>) => unknown;
 };
 
 /** Returns true when the error was handled as a 409 optimistic lock response. */
@@ -83,4 +84,73 @@ export function trySendOptimisticLockError(
     serverEntity: error.serverEntity,
   });
   return true;
+}
+
+/**
+ * Send 409 for optimistic-lock conflicts, otherwise 500 with the error message.
+ */
+export function sendRouteMutationError(
+  res: JsonResponder,
+  error: unknown,
+  fallbackMessage: string
+): void {
+  if (trySendOptimisticLockError(res, error)) {
+    return;
+  }
+  const message = error instanceof Error ? error.message : fallbackMessage;
+  res.status(500).json({ error: message });
+}
+
+type LockActionBody = {
+  readonly expectedUpdatedAt: string;
+};
+
+type LockActionParseResult =
+  | { readonly success: true; readonly data: LockActionBody }
+  | { readonly success: false; readonly error: unknown };
+
+type LockedStatusRouteOptions<TRecord> = {
+  readonly res: JsonResponder;
+  readonly actorId: string;
+  readonly id: string | undefined;
+  readonly missingIdMessage: string;
+  readonly parseBody: () => LockActionParseResult;
+  readonly treeifyError: (error: unknown) => unknown;
+  readonly action: (
+    actorId: string,
+    id: string,
+    expectedUpdatedAt: string
+  ) => Promise<TRecord>;
+  readonly toResponseBody: (record: TRecord) => Record<string, unknown>;
+  readonly failureMessage: string;
+};
+
+/**
+ * Shared soft-delete / restore handler: parse id + lock body, run action, map JSON.
+ */
+export async function runLockedStatusRoute<TRecord>(
+  options: LockedStatusRouteOptions<TRecord>
+): Promise<unknown> {
+  if (!options.id) {
+    return options.res.status(400).json({ error: options.missingIdMessage });
+  }
+
+  const parsed = options.parseBody();
+  if (!parsed.success) {
+    return options.res
+      .status(400)
+      .json({ error: options.treeifyError(parsed.error) });
+  }
+
+  try {
+    const record = await options.action(
+      options.actorId,
+      options.id,
+      parsed.data.expectedUpdatedAt
+    );
+    return options.res.status(200).json(options.toResponseBody(record));
+  } catch (error) {
+    sendRouteMutationError(options.res, error, options.failureMessage);
+    return undefined;
+  }
 }
