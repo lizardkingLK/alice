@@ -1,9 +1,13 @@
 'use client';
 
-import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { rewriteDocsMarkdownHref } from '@/lib/docs/docs-shared';
+import {
+  DocsMarkdownSlugProvider,
+  docsMarkdownComponents,
+} from '@/app/docs/_components/docs-markdown-components';
+import { DocsPager } from '@/app/docs/_components/docs-pager';
+import type { DocsIndexEntry } from '@/lib/docs/docs-shared';
 import { cn } from '@repo/ui/lib/utils';
 
 type DocsArticleProps = {
@@ -11,6 +15,8 @@ type DocsArticleProps = {
   readonly section: string;
   readonly slug: string;
   readonly markdown: string;
+  readonly previous?: DocsIndexEntry | null;
+  readonly next?: DocsIndexEntry | null;
 };
 
 export function DocsArticle({
@@ -18,6 +24,8 @@ export function DocsArticle({
   section,
   slug,
   markdown,
+  previous = null,
+  next = null,
 }: DocsArticleProps) {
   return (
     <article className="mx-auto w-full max-w-3xl">
@@ -40,64 +48,16 @@ export function DocsArticle({
           'prose-hr:border-border prose-thead:border-border prose-tr:border-border'
         )}
       >
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-            a: ({ href, children, ...props }) => {
-              const nextHref = rewriteDocsMarkdownHref(href ?? '', slug);
-              const isInternal = nextHref.startsWith('/docs');
-              if (isInternal) {
-                return (
-                  <Link href={nextHref} {...props}>
-                    {children}
-                  </Link>
-                );
-              }
-              return (
-                <a
-                  href={nextHref}
-                  rel="noopener noreferrer"
-                  target={nextHref.startsWith('http') ? '_blank' : undefined}
-                  {...props}
-                >
-                  {children}
-                </a>
-              );
-            },
-            // Avoid duplicate H1 when markdown starts with # title
-            h1: ({ children }) => (
-              <h2 className="text-foreground text-2xl font-semibold tracking-tight">
-                {children}
-              </h2>
-            ),
-            code: ({ className, children, ...props }) => {
-              const isBlock = Boolean(className);
-              if (isBlock) {
-                return (
-                  <code className={className} {...props}>
-                    {children}
-                  </code>
-                );
-              }
-              return (
-                <code
-                  className="bg-muted text-foreground rounded px-1 py-0.5 text-[0.85em]"
-                  {...props}
-                >
-                  {children}
-                </code>
-              );
-            },
-            table: ({ children }) => (
-              <div className="my-4 overflow-x-auto">
-                <table>{children}</table>
-              </div>
-            ),
-          }}
-        >
-          {markdown}
-        </ReactMarkdown>
+        <DocsMarkdownSlugProvider slug={slug}>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={docsMarkdownComponents}
+          >
+            {markdown}
+          </ReactMarkdown>
+        </DocsMarkdownSlugProvider>
       </div>
+      <DocsPager previous={previous} next={next} />
     </article>
   );
 }

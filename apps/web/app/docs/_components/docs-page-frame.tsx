@@ -35,6 +35,7 @@ export function DocsPageFrame({
       breadcrumbOverrides={breadcrumbOverrides}
       breadcrumbAsTrail={breadcrumbAsTrail}
       sidebarDefaultOpen={false}
+      stickyHeader
     >
       <DocsShell sections={sections} entries={entries}>
         {children}

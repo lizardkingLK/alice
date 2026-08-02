@@ -3,9 +3,13 @@ import {
   buildDocsIndexEntry,
   docHref,
   filterDocsIndex,
+  flattenDocsEntries,
+  getAdjacentDocs,
+  groupDocsBySection,
   pathToSlug,
   rewriteDocsMarkdownHref,
   sectionFromPath,
+  type DocsIndexEntry,
 } from '@/lib/docs/docs-shared';
 
 describe('docs-shared path helpers', () => {
@@ -96,5 +100,38 @@ describe('buildDocsIndexEntry and filterDocsIndex', () => {
     // Assert
     expect(matches).toHaveLength(1);
     expect(matches[0]?.slug).toBe('guides/SONAR');
+  });
+});
+
+describe('getAdjacentDocs', () => {
+  const entries: DocsIndexEntry[] = [
+    buildDocsIndexEntry('README.md', '# Overview\n\nIntro.'),
+    buildDocsIndexEntry('guides/A.md', '# Alpha\n\nFirst guide.'),
+    buildDocsIndexEntry('guides/B.md', '# Beta\n\nSecond guide.'),
+  ];
+
+  it('returns previous and next from flattened section order', () => {
+    // Arrange
+    const ordered = flattenDocsEntries(groupDocsBySection(entries));
+
+    // Act
+    const middle = getAdjacentDocs('guides/A', ordered);
+    const first = getAdjacentDocs('index', ordered);
+    const last = getAdjacentDocs('guides/B', ordered);
+
+    // Assert
+    expect(middle.previous?.slug).toBe('index');
+    expect(middle.next?.slug).toBe('guides/B');
+    expect(first.previous).toBeNull();
+    expect(first.next?.slug).toBe('guides/A');
+    expect(last.next).toBeNull();
+    expect(last.previous?.slug).toBe('guides/A');
+  });
+
+  it('returns null neighbors for an unknown slug', () => {
+    expect(getAdjacentDocs('missing', entries)).toEqual({
+      previous: null,
+      next: null,
+    });
   });
 });

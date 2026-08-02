@@ -5,7 +5,13 @@ import {
   DocsPageFrame,
   DOCS_ROBOTS,
 } from '@/app/docs/_components/docs-page-frame';
-import { docHref, getDocBySlug, getDocsIndex } from '@/app/docs/_lib/docs';
+import {
+  docHref,
+  getDocBySlug,
+  getDocsIndex,
+  getDocsSections,
+} from '@/app/docs/_lib/docs';
+import { flattenDocsEntries, getAdjacentDocs } from '@/lib/docs/docs-shared';
 
 type DocsSlugPageProps = {
   readonly params: Promise<{ slug: string[] }>;
@@ -37,6 +43,11 @@ export default async function DocsSlugPage({ params }: DocsSlugPageProps) {
     notFound();
   }
 
+  const { previous, next } = getAdjacentDocs(
+    doc.entry.slug,
+    flattenDocsEntries(getDocsSections())
+  );
+
   return (
     <DocsPageFrame
       breadcrumbOverrides={[
@@ -53,6 +64,8 @@ export default async function DocsSlugPage({ params }: DocsSlugPageProps) {
         section={doc.entry.section}
         slug={doc.entry.slug}
         markdown={doc.markdown}
+        previous={previous}
+        next={next}
       />
     </DocsPageFrame>
   );

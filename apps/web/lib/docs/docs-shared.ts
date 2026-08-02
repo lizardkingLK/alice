@@ -41,8 +41,10 @@ export function sectionFromPath(relativePath: string): string {
   return SECTION_LABELS[first] ?? titleCase(first);
 }
 
+const MARKDOWN_H1_TITLE = /^#\s+([^\n]+)/m;
+
 export function extractTitle(markdown: string, fallbackSlug: string): string {
-  const heading = markdown.match(/^#\s+([^\n]+)/m);
+  const heading = MARKDOWN_H1_TITLE.exec(markdown);
   if (heading?.[1]) {
     return heading[1].trim();
   }
@@ -255,4 +257,35 @@ export function filterDocsIndex(
 
 export function docHref(slug: string): string {
   return slug === 'index' ? '/docs' : `/docs/${slug}`;
+}
+
+/** Flatten section groups into reading order (nav / prev-next). */
+export function flattenDocsEntries(
+  sections: ReadonlyArray<{
+    readonly section: string;
+    readonly entries: readonly DocsIndexEntry[];
+  }>
+): DocsIndexEntry[] {
+  return sections.flatMap(({ entries }) => [...entries]);
+}
+
+export function getAdjacentDocs(
+  slug: string,
+  orderedEntries: readonly DocsIndexEntry[]
+): {
+  readonly previous: DocsIndexEntry | null;
+  readonly next: DocsIndexEntry | null;
+} {
+  const index = orderedEntries.findIndex((entry) => entry.slug === slug);
+  if (index === -1) {
+    return { previous: null, next: null };
+  }
+
+  return {
+    previous: index > 0 ? (orderedEntries[index - 1] ?? null) : null,
+    next:
+      index < orderedEntries.length - 1
+        ? (orderedEntries[index + 1] ?? null)
+        : null,
+  };
 }

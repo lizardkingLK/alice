@@ -53,18 +53,31 @@ Related:
 ```mermaid
 flowchart TD
   rsc["WorkItemDetailsData RSC"]
-  rsc --> wi["getWorkItem"]
-  rsc --> comments["getWorkItemDiscussion"]
-  rsc --> atts["getWorkItemAttachments"]
-  atts --> props["attachments props metadata only"]
-  props --> click["User clicks card"]
-  click --> cacheHit{"In-memory cache hit?"}
-  cacheHit -->|yes| tryUse["Use cached URLs"]
-  cacheHit -->|no| mint["GET/POST attachments/:id/url"]
-  mint --> store["Cache URLs"]
-  tryUse --> ok{"Preview works?"}
-  ok -->|yes| viewer["Modal preview + download"]
-  ok -->|no| expired["Expired UI + Generate new link"]
+  wi["getWorkItem"]
+  comments["getWorkItemDiscussion"]
+  atts["getWorkItemAttachments"]
+  props["attachments props metadata only"]
+  userClick["User clicks card"]
+  cacheHit{"In-memory cache hit?"}
+  tryUse["Use cached URLs"]
+  mint["GET/POST attachments/:id/url"]
+  store["Cache URLs"]
+  ok{"Preview works?"}
+  viewer["Modal preview + download"]
+  expired["Expired UI + Generate new link"]
+
+  rsc --> wi
+  rsc --> comments
+  rsc --> atts
+  atts --> props
+  props --> userClick
+  userClick --> cacheHit
+  cacheHit -->|yes| tryUse
+  cacheHit -->|no| mint
+  mint --> store
+  tryUse --> ok
+  ok -->|yes| viewer
+  ok -->|no| expired
   expired --> mint
 ```
 

@@ -52,6 +52,7 @@ One folder per product area. Prefer a local `README.md` as the index.
 | Sprints    | [features/sprints/](./features/sprints/)                                                              |
 | Dashboard  | [features/dashboard/](./features/dashboard/)                                                          |
 | Profile    | [features/profile/](./features/profile/) ([EDIT_PROFILE.md](./features/profile/EDIT_PROFILE.md))      |
+| Docs (app) | [features/docs/](./features/docs/) — in-app `/docs` browser (**Living**)                              |
 
 ### Database
 
