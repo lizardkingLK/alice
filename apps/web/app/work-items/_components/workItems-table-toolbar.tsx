@@ -26,9 +26,8 @@ function WorkItemListViewToggle({
   onListViewChange: (view: WorkItemListView) => void;
 }>) {
   return (
-    <div
-      role="group"
-      className="border-border flex h-9 items-center rounded-lg border p-0.5"
+    <fieldset
+      className="border-border m-0 flex h-9 min-w-0 items-center rounded-lg border p-0.5"
       aria-label="Work items view mode"
     >
       {WORK_ITEM_LIST_VIEW_OPTIONS.map(({ view, label, Icon }) => {
@@ -48,7 +47,7 @@ function WorkItemListViewToggle({
           </Button>
         );
       })}
-    </div>
+    </fieldset>
   );
 }
 
