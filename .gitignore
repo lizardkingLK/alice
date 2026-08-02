@@ -39,3 +39,7 @@ yarn-error.log*
 .vercel
 .pnpm-store
 *.txt
+
+# Generated in-app docs (source of truth: repo-root docs/)
+apps/web/content/docs/
+apps/web/content/docs-index.json
