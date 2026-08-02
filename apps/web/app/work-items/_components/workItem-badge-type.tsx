@@ -1,4 +1,3 @@
-import type { RendererProps } from '@/app/work-items/_components/workItems-table';
 import {
   WORK_ITEM_TYPE_BADGE_STYLES,
   WORK_ITEM_TYPE_ICONS,
@@ -35,8 +34,4 @@ export function WorkItemTypeBadge({
       {type}
     </Badge>
   );
-}
-
-export default function typeRenderer({ row }: RendererProps) {
-  return <WorkItemTypeBadge type={row.original.type} />;
 }

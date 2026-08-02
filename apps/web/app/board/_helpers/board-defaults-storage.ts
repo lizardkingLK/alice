@@ -75,6 +75,7 @@ export function writeBoardDefaults(
   }
 
   setLocalStorageJson(storageKey(userId), record);
+  emitBoardDefaultsChanged(userId);
 }
 
 export function clearBoardDefaults(userId: string): void {
@@ -83,6 +84,19 @@ export function clearBoardDefaults(userId: string): void {
   }
 
   removeLocalStorageItem(storageKey(userId));
+  emitBoardDefaultsChanged(userId);
+}
+
+/** Same-tab signal so nav (sidebar) can refresh after defaults are saved. */
+export const BOARD_DEFAULTS_CHANGED_EVENT = 'alice:board-defaults-changed';
+
+function emitBoardDefaultsChanged(userId: string): void {
+  if (globalThis.window === undefined) {
+    return;
+  }
+  globalThis.window.dispatchEvent(
+    new CustomEvent(BOARD_DEFAULTS_CHANGED_EVENT, { detail: { userId } })
+  );
 }
 
 /**

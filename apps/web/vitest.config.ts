@@ -14,5 +14,18 @@ export default defineConfig({
     environment: 'happy-dom',
     setupFiles: ['./tests/setup.ts'],
     globals: true,
+    // Next build output is huge (~40k files) and can exhaust inotify watches
+    // if the watcher picks it up under the app root.
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/.{idea,git,cache,output,temp}/**',
+      '**/.next/**',
+    ],
+  },
+  server: {
+    watch: {
+      ignored: ['**/.next/**', '**/node_modules/**'],
+    },
   },
 });

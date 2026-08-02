@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import WorkItemsTable from '@/app/work-items/_components/workItems-table';
+import { loadWorkItemChildrenAction } from '@/app/work-items/_components/actions';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { formatDate } from '@/app/_shared/utility';
 import {
@@ -21,6 +22,10 @@ vi.mock(
   '@repo/ui/components/ui/dropdown-menu',
   () => import('../mocks/dropdown-menu')
 );
+
+vi.mock('@/app/work-items/_components/actions', () => ({
+  loadWorkItemChildrenAction: vi.fn(),
+}));
 
 vi.mock('@/app/work-items/_components/workItem-form', () => ({
   WorkItemForm: ({
@@ -58,6 +63,7 @@ function renderTable(
     projectFilter: string;
     typeFilter: string;
     assigneeFilter: string;
+    listView: 'flat' | 'hierarchy';
   }> = {}
 ) {
   const projects = projectFactory.buildList(1);
@@ -90,9 +96,29 @@ function renderTable(
       sprintFilter=""
       typeFilter={overrides.typeFilter ?? ''}
       assigneeFilter={overrides.assigneeFilter ?? ''}
+      listView={overrides.listView}
       currentUserId={overrides.currentUserId}
     />
   );
+}
+
+function arrangeEpicWithChildStory() {
+  const epic = workItemFactory.build({
+    id: 'epic-1',
+    type: 'Epic',
+    title: 'Parent epic',
+    parent_id: null,
+  });
+  const story = workItemFactory.build({
+    id: 'story-1',
+    type: 'Story',
+    title: 'Child story',
+    parent_id: 'epic-1',
+  });
+  vi.mocked(loadWorkItemChildrenAction).mockImplementation(async (parentId) =>
+    parentId === 'epic-1' ? [story] : []
+  );
+  return { epic, story };
 }
 
 describe('WorkItemsTable', () => {
@@ -102,6 +128,7 @@ describe('WorkItemsTable', () => {
       pathname: '/work-items',
       searchParams: {},
     });
+    vi.mocked(loadWorkItemChildrenAction).mockReset();
   });
 
   it('renders work item rows with core columns', () => {
@@ -358,5 +385,102 @@ describe('WorkItemsTable', () => {
     expect(
       screen.queryByRole('button', { name: /Clear filters/i })
     ).not.toBeInTheDocument();
+  });
+
+  it('navigates to hierarchy view when Hierarchy is selected', () => {
+    // Arrange
+    renderTable();
+
+    // Act
+    fireEvent.click(screen.getByRole('button', { name: /^Hierarchy$/i }));
+
+    // Assert
+    expect(mockPush).toHaveBeenCalledWith('/work-items?view=hierarchy&page=1');
+  });
+
+  it('expands a root row and shows lazy-loaded children', async () => {
+    // Arrange
+    const { epic } = arrangeEpicWithChildStory();
+
+    renderTable({
+      initialWorkItems: [epic],
+      listView: 'hierarchy',
+      totalCount: 1,
+      totalPages: 1,
+    });
+
+    // Act
+    fireEvent.click(screen.getByRole('button', { name: /Expand subtasks/i }));
+
+    // Assert
+    await waitFor(() => {
+      expect(loadWorkItemChildrenAction).toHaveBeenCalledWith('epic-1');
+    });
+    expect(await screen.findByText('Child story')).toBeInTheDocument();
+
+    // Act — collapse
+    fireEvent.click(screen.getByRole('button', { name: /Collapse subtasks/i }));
+
+    // Assert
+    await waitFor(() => {
+      expect(screen.queryByText('Child story')).not.toBeInTheDocument();
+    });
+  });
+
+  it('shows an error and re-collapses the row when child loading fails', async () => {
+    // Arrange
+    const epic = workItemFactory.build({
+      id: 'epic-1',
+      type: 'Epic',
+      title: 'Parent epic',
+      parent_id: null,
+    });
+    vi.mocked(loadWorkItemChildrenAction).mockRejectedValue(
+      new Error('error. failed to load subtasks')
+    );
+
+    renderTable({
+      initialWorkItems: [epic],
+      listView: 'hierarchy',
+      totalCount: 1,
+      totalPages: 1,
+    });
+
+    // Act
+    fireEvent.click(screen.getByRole('button', { name: /Expand subtasks/i }));
+
+    // Assert
+    expect(
+      await screen.findByText('error. failed to load subtasks')
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: /Expand subtasks/i })
+    ).toBeInTheDocument();
+  });
+
+  it('expands all and collapses all in hierarchy mode', async () => {
+    // Arrange
+    const { epic } = arrangeEpicWithChildStory();
+
+    renderTable({
+      initialWorkItems: [epic],
+      listView: 'hierarchy',
+      totalCount: 1,
+      totalPages: 1,
+    });
+
+    // Act
+    fireEvent.click(screen.getByRole('button', { name: /Expand all/i }));
+
+    // Assert
+    expect(await screen.findByText('Child story')).toBeInTheDocument();
+
+    // Act
+    fireEvent.click(screen.getByRole('button', { name: /Collapse all/i }));
+
+    // Assert
+    await waitFor(() => {
+      expect(screen.queryByText('Child story')).not.toBeInTheDocument();
+    });
   });
 });
