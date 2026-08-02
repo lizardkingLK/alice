@@ -283,7 +283,7 @@ export function AccessAllowlistRegistry({
   const confirmDelete = () => {
     if (!deletingEntry) return;
     setIsBusy(true);
-    deleteAccessAllowlistEntry(deletingEntry.id)
+    deleteAccessAllowlistEntry(deletingEntry.id, deletingEntry.updated_at)
       .then(() => {
         setDeletingEntry(null);
         setError(null);

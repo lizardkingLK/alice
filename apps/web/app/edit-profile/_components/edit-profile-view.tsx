@@ -32,6 +32,7 @@ import { getInitials } from '@/app/_shared/utility';
 import { FormStatusAlerts } from '@/app/work-items/_components/workItem-form-alerts';
 import { BIO_MAX_LENGTH } from '@/app/edit-profile/_components/edit-profile-constants';
 import { apiFetch } from '@/lib/api/api-client';
+import { ApiError } from '@/lib/api/api';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { tryHandleLockedMutationError } from '@/lib/optimistic-lock/run-locked-mutation';
 
@@ -147,17 +148,20 @@ export function EditProfileView({
       setSuccess('Profile picture updated.');
       router.refresh();
     } catch (uploadError) {
-      if (
-        await tryHandleLockedMutationError({
-          error: uploadError,
-          handleMutationError,
-          entityType: 'user',
-          entityId: userId,
-          expectedUpdatedAt: updatedAt,
-          pendingFields: { profile_picture: file.name },
-          currentUserId: userId,
-        })
-      ) {
+      if (uploadError instanceof ApiError && uploadError.status === 409) {
+        const entity =
+          uploadError.serverEntity &&
+          typeof uploadError.serverEntity === 'object' &&
+          !Array.isArray(uploadError.serverEntity)
+            ? (uploadError.serverEntity as Record<string, unknown>)
+            : null;
+        const nextUpdatedAt = entity?.updated_at;
+        if (typeof nextUpdatedAt === 'string') {
+          setUpdatedAt(nextUpdatedAt);
+        }
+        setError(
+          'Someone else updated your profile. Refresh, then upload your photo again.'
+        );
         return;
       }
       setError(

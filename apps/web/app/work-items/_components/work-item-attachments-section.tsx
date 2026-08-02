@@ -621,6 +621,13 @@ export function AttachmentsSection({
       toast.success('Attachment deleted.');
       router.refresh();
     } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        toast.error(
+          error.message || 'This attachment changed on the server. Refreshing.'
+        );
+        router.refresh();
+        return;
+      }
       const message =
         error instanceof Error ? error.message : 'Failed to delete attachment.';
       toast.error(message);

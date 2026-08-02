@@ -101,7 +101,7 @@ export function SprintsWorkspace({
         handleSprintUpdated(updated);
       }
     } catch (archiveError) {
-      console.error('Failed to archive sprint:', archiveError);
+      console.error('error. Failed to archive sprint', archiveError);
     }
   };
 

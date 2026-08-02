@@ -1091,7 +1091,7 @@ export function CommentsFeed({
           entityId: commentId,
           expectedUpdatedAt,
           pendingFields: { content: processedContent },
-          currentUserId,
+          currentUserId: activeUserId,
         })
       ) {
         return;
@@ -1132,7 +1132,7 @@ export function CommentsFeed({
           entityId: commentId,
           expectedUpdatedAt: targetComment.updated_at,
           pendingFields: { status: 'archived' },
-          currentUserId,
+          currentUserId: activeUserId,
         })
       ) {
         return;
@@ -1160,7 +1160,7 @@ export function CommentsFeed({
           entityId: commentId,
           expectedUpdatedAt: targetComment.updated_at,
           pendingFields: { status: 'active' },
-          currentUserId,
+          currentUserId: activeUserId,
         })
       ) {
         return;
@@ -1177,17 +1177,14 @@ export function CommentsFeed({
   // Confirm and execute delete from modal
   const confirmDelete = async () => {
     if (!deletingCommentId) return;
+    const targetComment = comments.find((c) => c.id === deletingCommentId);
+    if (!targetComment) return;
     setIsDeleting(true);
     try {
-      const targetComment = comments.find((c) => c.id === deletingCommentId);
-      await archiveComment(
-        deletingCommentId,
-        targetComment?.updated_at ?? '2024-01-01T00:00:00.000Z',
-        true
-      );
+      await archiveComment(deletingCommentId, targetComment.updated_at, true);
       setComments((prev) => prev.filter((c) => c.id !== deletingCommentId));
     } catch (err) {
-      console.error('Failed to delete comment permanently:', err);
+      console.error('error. failed to delete comment permanently', err);
     } finally {
       setIsDeleting(false);
       setDeletingCommentId(null);

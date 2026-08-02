@@ -9,6 +9,9 @@ import {
   setLocalStorageJson,
 } from '@/lib/local-storage';
 
+/** Discard pending localStorage snapshots older than this. */
+const OPTIMISTIC_PENDING_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
 export function optimisticPendingStorageKey(
   entityType: OptimisticLockEntityType,
   entityId: string,
@@ -34,7 +37,17 @@ export function readOptimisticPending(
     parsed.userId !== userId ||
     typeof parsed.baseUpdatedAt !== 'string' ||
     typeof parsed.pendingFields !== 'object' ||
-    parsed.pendingFields === null
+    parsed.pendingFields === null ||
+    typeof parsed.savedAt !== 'string'
+  ) {
+    removeLocalStorageItem(key);
+    return null;
+  }
+
+  const savedAtMs = Date.parse(parsed.savedAt);
+  if (
+    Number.isNaN(savedAtMs) ||
+    Date.now() - savedAtMs > OPTIMISTIC_PENDING_MAX_AGE_MS
   ) {
     removeLocalStorageItem(key);
     return null;

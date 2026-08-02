@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { toast } from '@repo/ui/components/ui/sonner';
 import { forceUpdateComment } from '@/app/comments/_services/comments.service';
 import { forceUpdateProject } from '@/app/projects/_services/projects.service';
 import {
@@ -42,7 +43,10 @@ async function applyOptimisticResolution(detail: ResolveDetail): Promise<void> {
       await forceUpdateProject(entityId, pendingFields, expectedUpdatedAt);
       break;
     case 'sprint':
-      if (pendingFields.status !== undefined) {
+      if (
+        pendingFields.status !== undefined &&
+        Object.keys(pendingFields).length === 1
+      ) {
         await forceUpdateSprintStatus(
           entityId,
           pendingFields,
@@ -61,6 +65,10 @@ async function applyOptimisticResolution(detail: ResolveDetail): Promise<void> {
         pendingFields.role !== undefined
       ) {
         await forceUpdateUser(entityId, pendingFields, expectedUpdatedAt);
+      } else if (pendingFields.profile_picture !== undefined) {
+        throw new Error(
+          'Profile picture conflicts must be resolved by uploading again.'
+        );
       } else {
         await apiFetch(`/api/profile`, {
           method: 'PATCH',
@@ -76,7 +84,7 @@ async function applyOptimisticResolution(detail: ResolveDetail): Promise<void> {
       );
       break;
     default:
-      return;
+      throw new Error(`Unsupported optimistic-lock entity: ${entityType}`);
   }
 }
 
@@ -102,7 +110,15 @@ export function OptimisticResolveListener() {
           );
           window.location.reload();
         } catch (error) {
-          console.error('Failed to apply optimistic lock resolution:', error);
+          console.error(
+            'error. failed to apply optimistic lock resolution',
+            error
+          );
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : 'Could not apply your changes. Try again.'
+          );
         }
       })();
     };

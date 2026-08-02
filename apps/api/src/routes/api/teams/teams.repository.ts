@@ -237,20 +237,30 @@ export class TeamsRepository {
 
       if (deleteResponse.error) {
         console.error(
-          'database failure deleting team members:',
+          'error. database failure deleting team members:',
           deleteResponse.error.message
         );
         throw new Error(
-          `Failed to update team members: ${deleteResponse.error.message}`
+          `Failed to update team members after the team row was updated. Reload the team and retry: ${deleteResponse.error.message}`
         );
       }
 
-      await insertTeamMembers(
-        teamId,
-        member_ids,
-        userId,
-        'Failed to update team members'
-      );
+      try {
+        await insertTeamMembers(
+          teamId,
+          member_ids,
+          userId,
+          'Failed to update team members'
+        );
+      } catch (memberError) {
+        const detail =
+          memberError instanceof Error
+            ? memberError.message
+            : 'Unknown membership error';
+        throw new Error(
+          `Failed to update team members after the team row was updated. Reload the team and retry: ${detail}`
+        );
+      }
     }
 
     return updatedTeam;

@@ -48,6 +48,24 @@ export class CommentsRepository {
     return data as unknown as CommentRow | null;
   }
 
+  /** Narrow projection for optimistic-lock conflict payloads (no joined PII). */
+  private async getLockSnapshotById(
+    id: string
+  ): Promise<{ id: string; status: string; updated_at: string } | null> {
+    const { data, error } = await supabase
+      .from('comments')
+      .select('id, status, updated_at')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) {
+      console.error('error. failed to load comment status:', error.message);
+      throw new Error('Failed to retrieve comment');
+    }
+
+    return data;
+  }
+
   async listAll(workItemId?: string): Promise<CommentRow[]> {
     let query = supabase.from('comments').select(COMMENT_WITH_RELATIONS);
 
@@ -134,7 +152,7 @@ export class CommentsRepository {
     await resolveOptimisticUpdate({
       data,
       error,
-      fetchCurrent: () => this.getById(id),
+      fetchCurrent: () => this.getLockSnapshotById(id),
       notFoundMessage: 'Comment not found',
     });
   }
@@ -154,7 +172,7 @@ export class CommentsRepository {
     await resolveOptimisticUpdate({
       data,
       error,
-      fetchCurrent: () => this.getById(id),
+      fetchCurrent: () => this.getLockSnapshotById(id),
       notFoundMessage: 'Comment not found',
     });
   }

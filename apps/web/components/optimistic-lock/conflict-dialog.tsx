@@ -168,8 +168,10 @@ export function OptimisticLockConflictDialog({
     finish(true);
   };
 
+  const canForceResolve = Boolean(session.serverUpdatedAt);
+
   const keepMine = () => {
-    if (resolvedRef.current) {
+    if (resolvedRef.current || !canForceResolve) {
       return;
     }
     const detail = {
@@ -187,7 +189,7 @@ export function OptimisticLockConflictDialog({
   };
 
   const applyMerge = () => {
-    if (resolvedRef.current) {
+    if (resolvedRef.current || !canForceResolve) {
       return;
     }
     const merged: Record<string, unknown> = {};
@@ -273,6 +275,7 @@ export function OptimisticLockConflictDialog({
                 <div className="grid gap-2 sm:grid-cols-2">
                   <button
                     type="button"
+                    aria-pressed={choice === 'mine'}
                     className={cn(
                       'rounded-md border p-2 text-left transition-colors',
                       choice === 'mine'
@@ -297,6 +300,7 @@ export function OptimisticLockConflictDialog({
                   </button>
                   <button
                     type="button"
+                    aria-pressed={choice === 'theirs'}
                     className={cn(
                       'rounded-md border p-2 text-left transition-colors',
                       choice === 'theirs'
@@ -329,10 +333,19 @@ export function OptimisticLockConflictDialog({
           <Button type="button" variant="outline" onClick={takeTheirs}>
             Take theirs
           </Button>
-          <Button type="button" variant="outline" onClick={keepMine}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={keepMine}
+            disabled={!canForceResolve}
+          >
             Keep mine
           </Button>
-          <Button type="button" onClick={applyMerge}>
+          <Button
+            type="button"
+            onClick={applyMerge}
+            disabled={!canForceResolve}
+          >
             Apply merge
           </Button>
         </DialogFooter>

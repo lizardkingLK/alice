@@ -290,9 +290,16 @@ export class ProjectsRepository {
       .maybeSingle();
 
     return await resolveOptimisticUpdate({
-      data: updated as unknown as ProjectRow | null,
+      data: updated
+        ? (withoutJiraToken(updated as ProjectRow) as ProjectRow)
+        : null,
       error,
-      fetchCurrent: () => this.findById(id),
+      fetchCurrent: async () => {
+        const current = await this.findById(id);
+        return current
+          ? (withoutJiraToken(current) as unknown as ProjectRow)
+          : null;
+      },
       notFoundMessage: 'Project not found',
     });
   }

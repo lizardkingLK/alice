@@ -37,9 +37,10 @@ conflicts, even if different fields were edited.
 | **Keep mine**            | Force-apply all pending fields using the server timestamp as the new base                    |
 | **Take theirs**          | Discard pending localStorage; reload UI from `serverEntity`                                  |
 
-Closing the dialog (X / Escape) or refreshing / revisiting the page has the same
-effect as **Take theirs**: pending edits are discarded and the loaded server row
-wins.
+Closing the dialog (X / Escape) discards pending edits (**Take theirs**).
+Refreshing or revisiting preserves pending edits when `baseUpdatedAt` still
+matches the server `updated_at`, and discards them only when those timestamps
+differ (stale base → treat as **Take theirs**).
 
 ---
 
