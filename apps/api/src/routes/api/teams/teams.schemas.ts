@@ -1,12 +1,10 @@
+export { createTeamSchema } from '@repo/types';
 import {
-  createTeamSchema,
   expectedUpdatedAtSchema,
   teamMemberPatchFields,
   updateTeamSchema as baseUpdateTeamSchema,
 } from '@repo/types';
 import { z } from 'zod';
-
-export { createTeamSchema };
 
 export const updateTeamSchema = baseUpdateTeamSchema.extend({
   expectedUpdatedAt: expectedUpdatedAtSchema,

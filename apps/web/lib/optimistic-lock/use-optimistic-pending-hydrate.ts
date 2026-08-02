@@ -2,8 +2,10 @@
 
 import { useEffect, useRef } from 'react';
 import type { OptimisticLockEntityType } from '@repo/types';
-import { clearOptimisticPending } from '@/lib/optimistic-lock/pending-storage';
-import { readOptimisticPending } from '@/lib/optimistic-lock/pending-storage';
+import {
+  clearOptimisticPending,
+  readOptimisticPending,
+} from '@/lib/optimistic-lock/pending-storage';
 
 type UseOptimisticPendingHydrateOptions = {
   readonly entityType: OptimisticLockEntityType;

@@ -1,11 +1,9 @@
+export { createProjectSchema } from '@repo/types';
 import {
-  createProjectSchema,
   expectedUpdatedAtSchema,
   updateProjectSchema as baseUpdateProjectSchema,
 } from '@repo/types';
 import { z } from 'zod';
-
-export { createProjectSchema };
 
 export const updateProjectSchema = baseUpdateProjectSchema.extend({
   expectedUpdatedAt: expectedUpdatedAtSchema,

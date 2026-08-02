@@ -1,11 +1,9 @@
+export { accessAllowlistCreateSchema } from '@repo/types';
 import {
-  accessAllowlistCreateSchema,
   accessAllowlistUpdateSchema as baseAccessAllowlistUpdateSchema,
   expectedUpdatedAtSchema,
 } from '@repo/types';
 import { z } from 'zod';
-
-export { accessAllowlistCreateSchema };
 
 export const accessAllowlistUpdateSchema =
   baseAccessAllowlistUpdateSchema.extend({

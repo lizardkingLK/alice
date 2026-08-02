@@ -1,15 +1,13 @@
-import {
-  OPTIMISTIC_PENDING_INTERVAL_MS,
-  type OptimisticLockEntityType,
-  type OptimisticPendingPayload,
+export { OPTIMISTIC_PENDING_INTERVAL_MS } from '@repo/types';
+import type {
+  OptimisticLockEntityType,
+  OptimisticPendingPayload,
 } from '@repo/types';
 import {
   getLocalStorageJson,
   removeLocalStorageItem,
   setLocalStorageJson,
 } from '@/lib/local-storage';
-
-export { OPTIMISTIC_PENDING_INTERVAL_MS };
 
 export function optimisticPendingStorageKey(
   entityType: OptimisticLockEntityType,
@@ -89,7 +87,7 @@ export function upsertOptimisticPendingFields(options: {
     userId: options.userId,
     baseUpdatedAt: existing?.baseUpdatedAt ?? options.baseUpdatedAt,
     pendingFields: {
-      ...(existing?.pendingFields ?? {}),
+      ...existing?.pendingFields,
       ...options.pendingFields,
     },
     savedAt: new Date().toISOString(),

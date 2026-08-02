@@ -1,7 +1,5 @@
-type ApiFetchFn = {
-  // eslint-disable-next-line no-unused-vars -- generic fetch signature
-  <T>(path: string, init?: RequestInit): Promise<T>;
-};
+// eslint-disable-next-line no-unused-vars -- generic fetch signature
+type ApiFetchFn = <T>(path: string, init?: RequestInit) => Promise<T>;
 
 /**
  * Force-apply pending fields after Keep mine / merge, sending the server's
