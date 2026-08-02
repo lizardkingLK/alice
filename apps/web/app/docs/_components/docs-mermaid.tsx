@@ -19,17 +19,15 @@ const MAX_SCALE = 16;
 let mermaidInit: Promise<MermaidApi> | null = null;
 
 function getMermaid(): Promise<MermaidApi> {
-  if (!mermaidInit) {
-    mermaidInit = import('mermaid').then((mod) => {
-      mod.default.initialize({
-        startOnLoad: false,
-        securityLevel: 'strict',
-        theme: 'neutral',
-        fontFamily: 'inherit',
-      });
-      return mod.default;
+  mermaidInit ??= import('mermaid').then((mod) => {
+    mod.default.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: 'neutral',
+      fontFamily: 'inherit',
     });
-  }
+    return mod.default;
+  });
   return mermaidInit;
 }
 
@@ -122,12 +120,15 @@ function MermaidViewport({
           contentClass="flex h-full w-full items-center justify-center [&_svg]:h-auto [&_svg]:max-w-none"
           wrapperStyle={{ width: '100%', height: '100%' }}
         >
-          <div
-            role="img"
-            aria-label="Mermaid diagram. Scroll to zoom, drag to pan."
-            // Mermaid returns SVG from local markdown via securityLevel: strict.
-            dangerouslySetInnerHTML={{ __html: svg }}
-          />
+          <figure className="m-0">
+            <div
+              // Mermaid returns SVG from local markdown via securityLevel: strict.
+              dangerouslySetInnerHTML={{ __html: svg }}
+            />
+            <figcaption className="sr-only">
+              Mermaid diagram. Scroll to zoom, drag to pan.
+            </figcaption>
+          </figure>
         </TransformComponent>
       </TransformWrapper>
     </div>
