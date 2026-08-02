@@ -1,5 +1,4 @@
 import { formatLabelWithSpace } from '@/app/_shared/utility';
-import { RendererProps } from '@/app/work-items/_components/workItems-table-types';
 import { WORK_ITEM_STATUS_BADGE_STYLES } from '@/app/work-items/_helpers/work-item-status';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { Badge } from '@repo/ui/components/ui/badge';
@@ -17,7 +16,3 @@ export const WorkItemStatusBadge = ({ status }: { status: WorkItemStatus }) => {
     </Badge>
   );
 };
-
-export default function statusRenderer({ row }: RendererProps) {
-  return <WorkItemStatusBadge status={row.original.status} />;
-}
