@@ -26,8 +26,8 @@ function WorkItemListViewToggle({
   onListViewChange: (view: WorkItemListView) => void;
 }>) {
   return (
-    <div
-      className="border-border flex h-9 items-center rounded-lg border p-0.5"
+    <fieldset
+      className="border-border m-0 flex h-9 min-w-0 items-center rounded-lg border p-0.5"
       aria-label="Work items view mode"
     >
       {WORK_ITEM_LIST_VIEW_OPTIONS.map(({ view, label, Icon }) => {
@@ -47,7 +47,7 @@ function WorkItemListViewToggle({
           </Button>
         );
       })}
-    </div>
+    </fieldset>
   );
 }
 
@@ -79,7 +79,7 @@ export function WorkItemsTableToolbar({
   onCreate,
 }: Readonly<{
   searchQuery: string;
-  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line no-unused-vars -- search change callback
   onSearchChange: (value: string) => void;
   isProjectLocked: boolean;
   isAssigneeLocked: boolean;
@@ -91,9 +91,9 @@ export function WorkItemsTableToolbar({
   typeQuery: FilterQuery;
   assigneeQuery: FilterQuery;
   sprintOptions: { readonly value: string; readonly label: string }[];
-  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line no-unused-vars -- project filter callback
   onProjectChange: (value: string) => void;
-  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line no-unused-vars -- view change callback
   onListViewChange: (view: WorkItemListView) => void;
   rootCount: number;
   isExpandingAll: boolean;
@@ -189,7 +189,9 @@ export function WorkItemsTableToolbar({
               className="text-muted-foreground hover:text-foreground h-9 cursor-pointer gap-1.5 px-3 text-xs"
               disabled={isExpandingAll || rootCount === 0}
               onClick={() => {
-                void onExpandAll();
+                onExpandAll().catch(() => {
+                  // Hierarchy hook reports failures via onError / DismissibleError.
+                });
               }}
             >
               {isExpandingAll ? (

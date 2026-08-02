@@ -9,7 +9,6 @@ import {
   Loader2,
   MoreHorizontal,
   Pencil,
-  Trash,
 } from '@repo/ui/lib/icons';
 import {
   DropdownMenu,
@@ -162,7 +161,7 @@ const actionsRenderer = ({
   row,
   openEditDialog,
 }: HierarchyRendererProps & {
-  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line no-unused-vars -- edit dialog opener
   openEditDialog: (workItem: DbWorkItem) => void;
 }) => (
   <DropdownMenu>
@@ -176,10 +175,6 @@ const actionsRenderer = ({
       <DropdownMenuItem onClick={() => openEditDialog(row.original.workItem)}>
         <Pencil />
         Edit
-      </DropdownMenuItem>
-      <DropdownMenuItem variant="destructive">
-        <Trash />
-        Delete
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>

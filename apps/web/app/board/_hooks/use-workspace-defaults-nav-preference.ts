@@ -21,7 +21,9 @@ export function useWorkspaceDefaultsNavPreference(
   );
 
   useEffect(() => {
-    if (userIdProp) {
+    // Explicit null from the shell must clear prefs; only omit (undefined)
+    // falls back to the Supabase session user.
+    if (userIdProp !== undefined) {
       setUserId(userIdProp);
       return;
     }

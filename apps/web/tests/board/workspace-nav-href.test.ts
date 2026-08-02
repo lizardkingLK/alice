@@ -7,42 +7,73 @@ import { ALL_PROJECTS_ID } from '@/app/board/_helpers/board-defaults-storage';
 
 describe('buildWorkspaceNavHref', () => {
   it('returns bare path when preference is missing', () => {
-    expect(buildWorkspaceNavHref('/work-items', null)).toBe('/work-items');
+    // Arrange
+    const preference = null;
+
+    // Act
+    const href = buildWorkspaceNavHref('/work-items', preference);
+
+    // Assert
+    expect(href).toBe('/work-items');
   });
 
   it('leaves non-workspace routes unchanged', () => {
-    expect(
-      buildWorkspaceNavHref('/member', {
-        projectId: 'proj-1',
-        sprintId: 'sprint-1',
-      })
-    ).toBe('/member');
+    // Arrange
+    const preference = {
+      projectId: 'proj-1',
+      sprintId: 'sprint-1',
+    };
+
+    // Act
+    const href = buildWorkspaceNavHref('/member', preference);
+
+    // Assert
+    expect(href).toBe('/member');
   });
 
   it('attaches project and sprint query params', () => {
-    expect(
-      buildWorkspaceNavHref('/board', {
-        projectId: 'proj-1',
-        sprintId: 'sprint-1',
-      })
-    ).toBe('/board?project=proj-1&sprint=sprint-1');
+    // Arrange
+    const preference = {
+      projectId: 'proj-1',
+      sprintId: 'sprint-1',
+    };
+
+    // Act
+    const href = buildWorkspaceNavHref('/board', preference);
+
+    // Assert
+    expect(href).toBe('/board?project=proj-1&sprint=sprint-1');
   });
 
   it('attaches project=all without sprint', () => {
-    expect(
-      buildWorkspaceNavHref('/backlog', {
-        projectId: ALL_PROJECTS_ID,
-        sprintId: null,
-      })
-    ).toBe('/backlog?project=all');
+    // Arrange
+    const preference = {
+      projectId: ALL_PROJECTS_ID,
+      sprintId: null,
+    };
+
+    // Act
+    const href = buildWorkspaceNavHref('/backlog', preference);
+
+    // Assert
+    expect(href).toBe('/backlog?project=all');
   });
 });
 
 describe('isWorkspaceDefaultQueryPath', () => {
   it('recognizes workspace filter routes', () => {
-    expect(isWorkspaceDefaultQueryPath('/backlog')).toBe(true);
-    expect(isWorkspaceDefaultQueryPath('/board')).toBe(true);
-    expect(isWorkspaceDefaultQueryPath('/work-items')).toBe(true);
-    expect(isWorkspaceDefaultQueryPath('/member')).toBe(false);
+    // Arrange
+    const workspacePaths = ['/backlog', '/board', '/work-items'] as const;
+    const nonWorkspacePath = '/member';
+
+    // Act
+    const workspaceResults = workspacePaths.map((path) =>
+      isWorkspaceDefaultQueryPath(path)
+    );
+    const memberResult = isWorkspaceDefaultQueryPath(nonWorkspacePath);
+
+    // Assert
+    expect(workspaceResults).toEqual([true, true, true]);
+    expect(memberResult).toBe(false);
   });
 });

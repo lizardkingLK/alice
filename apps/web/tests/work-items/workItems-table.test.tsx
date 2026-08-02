@@ -102,6 +102,25 @@ function renderTable(
   );
 }
 
+function arrangeEpicWithChildStory() {
+  const epic = workItemFactory.build({
+    id: 'epic-1',
+    type: 'Epic',
+    title: 'Parent epic',
+    parent_id: null,
+  });
+  const story = workItemFactory.build({
+    id: 'story-1',
+    type: 'Story',
+    title: 'Child story',
+    parent_id: 'epic-1',
+  });
+  vi.mocked(loadWorkItemChildrenAction).mockImplementation(async (parentId) =>
+    parentId === 'epic-1' ? [story] : []
+  );
+  return { epic, story };
+}
+
 describe('WorkItemsTable', () => {
   beforeEach(() => {
     resetNextNavigationMock();
@@ -381,26 +400,7 @@ describe('WorkItemsTable', () => {
 
   it('expands a root row and shows lazy-loaded children', async () => {
     // Arrange
-    const epic = workItemFactory.build({
-      id: 'epic-1',
-      type: 'Epic',
-      title: 'Parent epic',
-      parent_id: null,
-    });
-    const story = workItemFactory.build({
-      id: 'story-1',
-      type: 'Story',
-      title: 'Child story',
-      parent_id: 'epic-1',
-    });
-    vi.mocked(loadWorkItemChildrenAction).mockImplementation(
-      async (parentId) => {
-        if (parentId === 'epic-1') {
-          return [story];
-        }
-        return [];
-      }
-    );
+    const { epic } = arrangeEpicWithChildStory();
 
     renderTable({
       initialWorkItems: [epic],
@@ -427,7 +427,7 @@ describe('WorkItemsTable', () => {
     });
   });
 
-  it('expands all and collapses all in hierarchy mode', async () => {
+  it('shows an error and re-collapses the row when child loading fails', async () => {
     // Arrange
     const epic = workItemFactory.build({
       id: 'epic-1',
@@ -435,20 +435,32 @@ describe('WorkItemsTable', () => {
       title: 'Parent epic',
       parent_id: null,
     });
-    const story = workItemFactory.build({
-      id: 'story-1',
-      type: 'Story',
-      title: 'Child story',
-      parent_id: 'epic-1',
-    });
-    vi.mocked(loadWorkItemChildrenAction).mockImplementation(
-      async (parentId) => {
-        if (parentId === 'epic-1') {
-          return [story];
-        }
-        return [];
-      }
+    vi.mocked(loadWorkItemChildrenAction).mockRejectedValue(
+      new Error('error. failed to load subtasks')
     );
+
+    renderTable({
+      initialWorkItems: [epic],
+      listView: 'hierarchy',
+      totalCount: 1,
+      totalPages: 1,
+    });
+
+    // Act
+    fireEvent.click(screen.getByRole('button', { name: /Expand subtasks/i }));
+
+    // Assert
+    expect(
+      await screen.findByText('error. failed to load subtasks')
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: /Expand subtasks/i })
+    ).toBeInTheDocument();
+  });
+
+  it('expands all and collapses all in hierarchy mode', async () => {
+    // Arrange
+    const { epic } = arrangeEpicWithChildStory();
 
     renderTable({
       initialWorkItems: [epic],

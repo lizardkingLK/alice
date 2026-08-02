@@ -12,8 +12,127 @@ type UseWorkItemHierarchyOptions = {
   readonly onError?: (message: string) => void;
 };
 
+type ExpandAllState = {
+  readonly nextExpanded: Set<string>;
+  readonly nextChildren: Map<string, DbWorkItem[]>;
+  readonly visited: Set<string>;
+};
+
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
+}
+
+function mergeChildrenMaps(
+  base: Map<string, DbWorkItem[]>,
+  incoming: Map<string, DbWorkItem[]>
+): Map<string, DbWorkItem[]> {
+  const next = new Map(base);
+  for (const [parentId, children] of incoming) {
+    next.set(parentId, children);
+  }
+  return next;
+}
+
+function mergeIdSets(base: Set<string>, incoming: Set<string>): Set<string> {
+  const next = new Set(base);
+  for (const id of incoming) {
+    next.add(id);
+  }
+  return next;
+}
+
+function rootExpandableIds(roots: readonly DbWorkItem[]): string[] {
+  return roots
+    .filter((item) => workItemCanExpand(item.type))
+    .map((item) => item.id);
+}
+
+function markLevelVisited(
+  parentsThisLevel: readonly string[],
+  state: ExpandAllState
+): void {
+  for (const parentId of parentsThisLevel) {
+    state.visited.add(parentId);
+    state.nextExpanded.add(parentId);
+  }
+}
+
+async function loadMissingLevelChildren(
+  parentsThisLevel: readonly string[],
+  state: ExpandAllState
+): Promise<void> {
+  const missingParents = parentsThisLevel.filter(
+    (parentId) => !state.nextChildren.has(parentId)
+  );
+  if (missingParents.length === 0) {
+    return;
+  }
+
+  const loaded = await Promise.all(
+    missingParents.map(async (parentId) => {
+      const children = await loadWorkItemChildrenAction(parentId);
+      return [parentId, children] as const;
+    })
+  );
+
+  for (const [parentId, children] of loaded) {
+    state.nextChildren.set(parentId, children);
+  }
+}
+
+function collectNextExpandableLevel(
+  parentsThisLevel: readonly string[],
+  state: ExpandAllState
+): string[] {
+  const nextLevel: string[] = [];
+  for (const parentId of parentsThisLevel) {
+    const children = state.nextChildren.get(parentId) ?? [];
+    for (const child of children) {
+      if (workItemCanExpand(child.type) && !state.visited.has(child.id)) {
+        nextLevel.push(child.id);
+      }
+    }
+  }
+  return nextLevel;
+}
+
+async function expandHierarchyBreadthFirst(options: {
+  readonly roots: readonly DbWorkItem[];
+  readonly expandedIds: ReadonlySet<string>;
+  readonly childrenByParentId: ReadonlyMap<string, DbWorkItem[]>;
+  readonly commitChildren: (
+    // eslint-disable-next-line no-unused-vars -- Map merge updater
+    updater: (prev: Map<string, DbWorkItem[]>) => Map<string, DbWorkItem[]>
+  ) => void;
+  readonly commitExpanded: (
+    // eslint-disable-next-line no-unused-vars -- Set merge updater
+    updater: (prev: Set<string>) => Set<string>
+  ) => void;
+}): Promise<void> {
+  const state: ExpandAllState = {
+    nextExpanded: new Set(options.expandedIds),
+    nextChildren: new Map(options.childrenByParentId),
+    visited: new Set(),
+  };
+
+  let level = rootExpandableIds(options.roots);
+
+  while (level.length > 0) {
+    const parentsThisLevel = level.filter(
+      (parentId) => !state.visited.has(parentId)
+    );
+
+    markLevelVisited(parentsThisLevel, state);
+    await loadMissingLevelChildren(parentsThisLevel, state);
+
+    // Merge so concurrent toggle loads / collapses are preserved.
+    options.commitChildren((prev) =>
+      mergeChildrenMaps(prev, state.nextChildren)
+    );
+    options.commitExpanded((prev) => mergeIdSets(prev, state.nextExpanded));
+
+    level = collectNextExpandableLevel(parentsThisLevel, state);
+  }
 }
 
 export function useWorkItemHierarchy({
@@ -93,36 +212,13 @@ export function useWorkItemHierarchy({
   const expandAll = useCallback(async () => {
     setIsExpandingAll(true);
     try {
-      const nextExpanded = new Set(expandedIds);
-      const nextChildren = new Map(childrenByParentId);
-      const visited = new Set<string>();
-      const queue = roots
-        .filter((item) => workItemCanExpand(item.type))
-        .map((item) => item.id);
-
-      while (queue.length > 0) {
-        const parentId = queue.shift();
-        if (!parentId || visited.has(parentId)) {
-          continue;
-        }
-        visited.add(parentId);
-        nextExpanded.add(parentId);
-
-        let children = nextChildren.get(parentId);
-        if (!children) {
-          children = await loadWorkItemChildrenAction(parentId);
-          nextChildren.set(parentId, children);
-        }
-
-        for (const child of children) {
-          if (workItemCanExpand(child.type) && !visited.has(child.id)) {
-            queue.push(child.id);
-          }
-        }
-      }
-
-      setChildrenByParentId(nextChildren);
-      setExpandedIds(nextExpanded);
+      await expandHierarchyBreadthFirst({
+        roots,
+        expandedIds,
+        childrenByParentId,
+        commitChildren: setChildrenByParentId,
+        commitExpanded: setExpandedIds,
+      });
     } catch (expandError) {
       onError?.(errorMessage(expandError, 'Failed to expand work items.'));
     } finally {

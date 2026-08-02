@@ -39,8 +39,6 @@ import { useQueryFilter } from '@/hooks/use-query-filter';
 import { usePathname, useSearchParams } from 'next/navigation';
 import type { WorkItemListView } from '@/lib/search-params';
 
-export type { RendererProps } from '@/app/work-items/_components/workItems-table-types';
-
 /** Match DialogContent `duration-200` so edit UI doesn't flash to create while closing. */
 const DIALOG_CLOSE_MS = 200;
 

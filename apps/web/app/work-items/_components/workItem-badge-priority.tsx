@@ -1,5 +1,4 @@
 import { formatLabelFirstLetterCapitalized } from '@/app/_shared/utility';
-import { RendererProps } from '@/app/work-items/_components/workItems-table-types';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { Badge } from '@repo/ui/components/ui/badge';
 
@@ -23,7 +22,3 @@ export const PriorityBadge = ({ priority }: { priority: WorkItemPriority }) => {
     </Badge>
   );
 };
-
-export default function priorityRenderer({ row }: RendererProps) {
-  return <PriorityBadge priority={row.original.priority} />;
-}
