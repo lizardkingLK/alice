@@ -86,7 +86,7 @@ export function BacklogLayoutMenu({
           type="button"
           variant="outline"
           size="sm"
-          className="h-9 cursor-pointer"
+          className="h-8 cursor-pointer"
           aria-label="Change backlog layout"
         >
           <LayoutGrid className="size-4" />

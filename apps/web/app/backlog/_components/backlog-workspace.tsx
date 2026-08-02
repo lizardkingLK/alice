@@ -31,14 +31,14 @@ import {
   type BacklogAssignee,
 } from '@/app/backlog/_helpers/backlog-item-utils';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
-import {
-  Sprint,
-  updateSprintStatus,
-} from '@/app/sprints/_services/sprints.service';
+import { Sprint } from '@/app/sprints/_services/sprints.service';
+import { updateSprintStatusWithOptimisticLock } from '@/app/sprints/_helpers/update-sprint-status-with-lock';
 import { Project as DbProject } from '@/app/projects/_services/projects.service';
 import { User as DbUser } from '@/app/users/_services/users.service';
 import { updateWorkItem } from '@/app/work-items/_services/workItem.service.client';
 import { resolveWorkItemMember } from '@/app/work-items/_helpers/work-item-member';
+import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
+import { runLockedMutation } from '@/lib/optimistic-lock/run-locked-mutation';
 
 interface BacklogWorkspaceProps {
   projects: DbProject[];
@@ -62,6 +62,18 @@ export function BacklogWorkspace({
   error = null,
 }: Readonly<BacklogWorkspaceProps>) {
   const isManagerOrAdmin = userRole === 'admin' || userRole === 'manager';
+  const { handleMutationError } = useOptimisticLock();
+
+  const updateSprintStatusWithLock = async (
+    sprint: Sprint,
+    status: Sprint['status']
+  ) =>
+    updateSprintStatusWithOptimisticLock({
+      sprint,
+      status,
+      handleMutationError,
+      currentUserId,
+    });
 
   // Client state
   const [sprintList, setSprintList] = useState<Sprint[]>(sprints);
@@ -135,6 +147,22 @@ export function BacklogWorkspace({
     );
   };
 
+  const restoreWorkItemAfterFailedMutation = (
+    itemId: string,
+    patch: Partial<DbWorkItem>,
+    fallbackMessage: string,
+    error: unknown
+  ) => {
+    setWorkItems((prev) =>
+      prev.map((item) => (item.id === itemId ? { ...item, ...patch } : item))
+    );
+    setSelectedItem((prev) =>
+      prev?.id === itemId ? { ...prev, ...patch } : prev
+    );
+    setActionError(error instanceof Error ? error.message : fallbackMessage);
+    console.error('error. failed to update work item', error);
+  };
+
   // Helper: Drag-and-Drop Handlers
   const handleDragStart = (e: React.DragEvent, itemId: string) => {
     e.dataTransfer.setData('text/plain', itemId);
@@ -182,9 +210,29 @@ export function BacklogWorkspace({
       }
       const formData = new FormData();
       formData.append('sprint_id', targetId || '');
-      updateWorkItem(itemId, formData).catch((err) => {
-        console.error('Failed to update work item sprint:', err);
-      });
+      const draggedItem = workItems.find((item) => item.id === itemId);
+      if (draggedItem) {
+        const previousSprintId = draggedItem.sprint_id;
+        const expectedUpdatedAt = draggedItem.updated_at;
+        runLockedMutation({
+          mutate: () => updateWorkItem(itemId, formData, expectedUpdatedAt),
+          handleMutationError,
+          entityType: 'work_item',
+          entityId: itemId,
+          expectedUpdatedAt,
+          pendingFields: { sprint_id: targetId },
+          currentUserId,
+        }).then((result) => {
+          if (!result.ok && !result.conflict) {
+            restoreWorkItemAfterFailedMutation(
+              itemId,
+              { sprint_id: previousSprintId },
+              'Failed to update work item sprint.',
+              result.error
+            );
+          }
+        });
+      }
     }
     setDraggedItemId(null);
     setDragOverTargetId(null);
@@ -286,10 +334,18 @@ export function BacklogWorkspace({
       setActionError('Only admins and managers can perform this action.');
       return;
     }
+    const sprint = sprintList.find((entry) => entry.id === sprintId);
+    if (!sprint) {
+      setActionError('Sprint not found.');
+      return;
+    }
     setActionError(null);
     setIsActionPending(true);
     try {
-      const updatedSprint = await updateSprintStatus(sprintId, 'Ongoing');
+      const updatedSprint = await updateSprintStatusWithLock(sprint, 'Ongoing');
+      if (!updatedSprint) {
+        return;
+      }
       setSprintList((prev) =>
         prev.map((s) => (s.id === sprintId ? updatedSprint : s))
       );
@@ -310,10 +366,21 @@ export function BacklogWorkspace({
       setActionError('Only admins and managers can perform this action.');
       return;
     }
+    const sprint = sprintList.find((entry) => entry.id === sprintId);
+    if (!sprint) {
+      setActionError('Sprint not found.');
+      return;
+    }
     setActionError(null);
     setIsActionPending(true);
     try {
-      const updatedSprint = await updateSprintStatus(sprintId, 'Completed');
+      const updatedSprint = await updateSprintStatusWithLock(
+        sprint,
+        'Completed'
+      );
+      if (!updatedSprint) {
+        return;
+      }
       setSprintList((prev) =>
         prev.map((s) => (s.id === sprintId ? updatedSprint : s))
       );
@@ -475,9 +542,34 @@ export function BacklogWorkspace({
       formData.append(key, getFormDataStringValue(value));
     }
 
-    updateWorkItem(itemId, formData).catch((err) => {
-      console.error(`Failed to update work item ${itemId}:`, err);
-    });
+    const targetItem = workItems.find((item) => item.id === itemId);
+    if (targetItem) {
+      const expectedUpdatedAt = targetItem.updated_at;
+      const previousValues = Object.fromEntries(
+        Object.keys(updates).map((key) => [
+          key,
+          targetItem[key as keyof typeof targetItem],
+        ])
+      ) as Partial<DbWorkItem>;
+      runLockedMutation({
+        mutate: () => updateWorkItem(itemId, formData, expectedUpdatedAt),
+        handleMutationError,
+        entityType: 'work_item',
+        entityId: itemId,
+        expectedUpdatedAt,
+        pendingFields: updates as Record<string, unknown>,
+        currentUserId,
+      }).then((result) => {
+        if (!result.ok && !result.conflict) {
+          restoreWorkItemAfterFailedMutation(
+            itemId,
+            previousValues,
+            `Failed to update work item ${itemId}.`,
+            result.error
+          );
+        }
+      });
+    }
   };
 
   // Clear filters

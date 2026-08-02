@@ -6,10 +6,8 @@ import type {
   CommentItem,
   CommentWorkItemOption,
 } from '@/app/comments/_services/comments.service';
-import {
-  createCommentAction,
-  updateCommentAction,
-} from '@/app/comments/_components/actions';
+import { createCommentAction } from '@/app/comments/_components/actions';
+import { updateComment } from '@/app/comments/_services/comments.service';
 import { userFactory } from '../factories/user.factory';
 import { projectFactory } from '../factories/project.factory';
 import { workItemFactory } from '../factories/workItem.factory';
@@ -36,9 +34,19 @@ vi.mock('@/lib/supabase/client', () => {
 vi.mock('@/app/comments/_components/actions', () => {
   return {
     createCommentAction: vi.fn(),
-    updateCommentAction: vi.fn(),
-    archiveCommentAction: vi.fn(),
-    restoreCommentAction: vi.fn(),
+  };
+});
+
+vi.mock('@/app/comments/_services/comments.service', async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import('@/app/comments/_services/comments.service')
+    >();
+  return {
+    ...actual,
+    updateComment: vi.fn(),
+    archiveComment: vi.fn(),
+    restoreComment: vi.fn(),
   };
 });
 
@@ -310,10 +318,7 @@ describe('Comment Form Dialog & Editor', () => {
       content: 'Security audit completed for the auth module (Updated).',
       edited: true,
     };
-    vi.mocked(updateCommentAction).mockResolvedValue({
-      success: true,
-      data: mockUpdatedComment,
-    });
+    vi.mocked(updateComment).mockResolvedValue(mockUpdatedComment);
 
     renderForm();
 
@@ -347,9 +352,10 @@ describe('Comment Form Dialog & Editor', () => {
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(updateCommentAction).toHaveBeenCalledWith(
+      expect(updateComment).toHaveBeenCalledWith(
         'comment-1',
-        'Security audit completed for the auth module (Updated).'
+        'Security audit completed for the auth module (Updated).',
+        formatDateToISOString(2026, 6, 20, 10, 0, 0)
       );
     });
   });
@@ -372,10 +378,7 @@ describe('Comment Form Dialog & Editor', () => {
         role: 'admin',
       },
     };
-    vi.mocked(updateCommentAction).mockResolvedValue({
-      success: true,
-      data: mockUpdatedReply,
-    });
+    vi.mocked(updateComment).mockResolvedValue(mockUpdatedReply);
 
     renderForm();
 
@@ -409,9 +412,10 @@ describe('Comment Form Dialog & Editor', () => {
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(updateCommentAction).toHaveBeenCalledWith(
+      expect(updateComment).toHaveBeenCalledWith(
         'reply-1',
-        'Yes, this is a reply to the security audit (Updated).'
+        'Yes, this is a reply to the security audit (Updated).',
+        formatDateToISOString(2026, 6, 20, 11, 0, 0)
       );
     });
   });

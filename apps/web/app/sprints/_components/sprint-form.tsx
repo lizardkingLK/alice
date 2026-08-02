@@ -30,6 +30,8 @@ import {
 import type { Project } from '@/app/projects/_services/projects.service.base';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
 import { createClient } from '@/lib/supabase/client';
+import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
+import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 
 type SprintFormProps = {
   className?: string;
@@ -77,6 +79,7 @@ export function SprintForm({
   currentUserId,
 }: Readonly<SprintFormProps>) {
   const isEditMode = !!sprintToEdit;
+  const { handleMutationError } = useOptimisticLock();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
@@ -174,7 +177,21 @@ export function SprintForm({
 
       let result: Sprint;
       if (sprintToEdit) {
-        result = await updateSprint(sprintToEdit.id, sprintData);
+        const expectedUpdatedAt = sprintToEdit.updatedAt;
+        const updated = await runLockedMutationOrThrow({
+          mutate: () =>
+            updateSprint(sprintToEdit.id, sprintData, expectedUpdatedAt),
+          handleMutationError,
+          entityType: 'sprint',
+          entityId: sprintToEdit.id,
+          expectedUpdatedAt,
+          pendingFields: sprintData,
+          currentUserId,
+        });
+        if (!updated) {
+          return;
+        }
+        result = updated;
         setMessage(`Sprint "${result.name}" updated.`);
       } else {
         result = await createSprint(sprintData);

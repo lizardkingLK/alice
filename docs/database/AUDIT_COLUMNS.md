@@ -6,6 +6,7 @@ Related:
 
 - [`ER_DIAGRAM.md`](./ER_DIAGRAM.md) — entity model
 - [`../guides/DATABASE.md`](../guides/DATABASE.md) — migrations and workflow
+- [`../features/optimistic-locking/README.md`](../features/optimistic-locking/README.md) — `updated_at` is also the optimistic-lock token for concurrent edits
 
 ---
 

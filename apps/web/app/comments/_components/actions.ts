@@ -47,7 +47,8 @@ export async function createCommentAction(input: {
 
 export async function updateCommentAction(
   commentId: string,
-  content: string
+  content: string,
+  expectedUpdatedAt: string
 ): Promise<{ success: boolean; data?: CommentItem; error?: string }> {
   const currentUser = await getDbUser();
   if (!currentUser) {
@@ -55,7 +56,11 @@ export async function updateCommentAction(
   }
 
   try {
-    const updated = await apiUpdateComment(commentId, content);
+    const updated = await apiUpdateComment(
+      commentId,
+      content,
+      expectedUpdatedAt
+    );
 
     revalidatePath('/comments');
     return { success: true, data: updated };
@@ -68,6 +73,7 @@ export async function updateCommentAction(
 
 export async function archiveCommentAction(
   commentId: string,
+  expectedUpdatedAt: string,
   permanent?: boolean
 ): Promise<{ success: boolean; error?: string }> {
   const currentUser = await getDbUser();
@@ -76,7 +82,7 @@ export async function archiveCommentAction(
   }
 
   try {
-    await apiArchiveComment(commentId, permanent);
+    await apiArchiveComment(commentId, expectedUpdatedAt, permanent);
 
     revalidatePath('/comments');
     return { success: true };
@@ -88,7 +94,8 @@ export async function archiveCommentAction(
 }
 
 export async function restoreCommentAction(
-  commentId: string
+  commentId: string,
+  expectedUpdatedAt: string
 ): Promise<{ success: boolean; error?: string }> {
   const currentUser = await getDbUser();
   if (!currentUser) {
@@ -96,7 +103,7 @@ export async function restoreCommentAction(
   }
 
   try {
-    await apiRestoreComment(commentId);
+    await apiRestoreComment(commentId, expectedUpdatedAt);
 
     revalidatePath('/comments');
     return { success: true };

@@ -32,6 +32,9 @@ import { getInitials } from '@/app/_shared/utility';
 import { FormStatusAlerts } from '@/app/work-items/_components/workItem-form-alerts';
 import { BIO_MAX_LENGTH } from '@/app/edit-profile/_components/edit-profile-constants';
 import { apiFetch } from '@/lib/api/api-client';
+import { ApiError } from '@/lib/api/api';
+import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
+import { tryHandleLockedMutationError } from '@/lib/optimistic-lock/run-locked-mutation';
 
 const MAX_PROFILE_PICTURE_BYTES = 2 * 1024 * 1024;
 
@@ -63,6 +66,8 @@ export type EditProfileViewProps = {
   emailVerified: boolean;
   role: string;
   avatarUrl: string | null;
+  userId: string;
+  updatedAt: string;
 };
 
 type ProfilePictureUploadResult = {
@@ -92,11 +97,15 @@ export function EditProfileView({
   emailVerified,
   role,
   avatarUrl: initialAvatarUrl,
+  userId,
+  updatedAt: initialUpdatedAt,
 }: Readonly<EditProfileViewProps>) {
   const router = useRouter();
+  const { handleMutationError } = useOptimisticLock();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(initialName);
   const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl);
+  const [updatedAt, setUpdatedAt] = useState(initialUpdatedAt);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSavingName, startSaveName] = useTransition();
@@ -126,6 +135,7 @@ export function EditProfileView({
     try {
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('expectedUpdatedAt', updatedAt);
       const result = await apiFetch<ProfilePictureUploadResult>(
         '/api/profile',
         {
@@ -134,9 +144,26 @@ export function EditProfileView({
         }
       );
       setAvatarUrl(result.url);
+      setUpdatedAt(new Date().toISOString());
       setSuccess('Profile picture updated.');
       router.refresh();
     } catch (uploadError) {
+      if (uploadError instanceof ApiError && uploadError.status === 409) {
+        const entity =
+          uploadError.serverEntity &&
+          typeof uploadError.serverEntity === 'object' &&
+          !Array.isArray(uploadError.serverEntity)
+            ? (uploadError.serverEntity as Record<string, unknown>)
+            : null;
+        const nextUpdatedAt = entity?.updated_at;
+        if (typeof nextUpdatedAt === 'string') {
+          setUpdatedAt(nextUpdatedAt);
+        }
+        setError(
+          'Someone else updated your profile. Refresh, then upload your photo again.'
+        );
+        return;
+      }
       setError(
         uploadError instanceof Error
           ? uploadError.message
@@ -161,12 +188,26 @@ export function EditProfileView({
       try {
         await apiFetch<ProfileUpdateResult>('/api/profile', {
           method: 'PATCH',
-          body: JSON.stringify({ name: trimmed }),
+          body: JSON.stringify({ name: trimmed, expectedUpdatedAt: updatedAt }),
         });
         setName(trimmed);
+        setUpdatedAt(new Date().toISOString());
         setSuccess('Profile saved.');
         router.refresh();
       } catch (saveError) {
+        if (
+          await tryHandleLockedMutationError({
+            error: saveError,
+            handleMutationError,
+            entityType: 'user',
+            entityId: userId,
+            expectedUpdatedAt: updatedAt,
+            pendingFields: { name: trimmed },
+            currentUserId: userId,
+          })
+        ) {
+          return;
+        }
         setError(
           saveError instanceof Error
             ? saveError.message

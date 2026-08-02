@@ -1,3 +1,4 @@
+import { expectedUpdatedAtSchema } from '@repo/types';
 import { z } from 'zod';
 import { auditUpdate } from '../../../lib/audit';
 import { env } from '../../../config/env';
@@ -8,6 +9,7 @@ import {
   storagePathFromPublicUrl,
   uploadToStorage,
 } from '../../../lib/file-helpers';
+import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
 import { supabase } from '../../../lib/supabase';
 
 const ALLOWED_MIME_TYPES = new Set([
@@ -23,6 +25,7 @@ export const updateOwnProfileSchema = z.object({
     .trim()
     .min(2, 'Name must be at least 2 characters.')
     .max(100, 'Name must be at most 100 characters.'),
+  expectedUpdatedAt: expectedUpdatedAtSchema,
 });
 
 export type UpdateOwnProfileInput = z.infer<typeof updateOwnProfileSchema>;
@@ -33,9 +36,28 @@ export type ProfileUser = {
   email: string;
   role: string;
   profile_picture: string | null;
+  updated_at: string;
 };
 
+const PROFILE_USER_SELECT =
+  'id, name, email, role, profile_picture, updated_at' as const;
+
 export class ProfileService {
+  private async findProfileUser(userId: string): Promise<ProfileUser | null> {
+    const { data, error } = await supabase
+      .from('users')
+      .select(PROFILE_USER_SELECT)
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('error. failed to load profile user:', error.message);
+      throw new Error('Failed to load profile.');
+    }
+
+    return data as ProfileUser | null;
+  }
+
   async updateOwnName(
     userId: string,
     input: UpdateOwnProfileInput
@@ -47,24 +69,22 @@ export class ProfileService {
         ...auditUpdate(userId),
       })
       .eq('id', userId)
-      .select('id, name, email, role, profile_picture')
+      .eq('updated_at', input.expectedUpdatedAt)
+      .select(PROFILE_USER_SELECT)
       .maybeSingle();
 
-    if (error) {
-      console.error('error. failed to update own profile:', error.message);
-      throw new Error('Failed to update profile.');
-    }
-
-    if (!user) {
-      throw new Error('User profile not found.');
-    }
-
-    return user as ProfileUser;
+    return (await resolveOptimisticUpdate({
+      data: user as ProfileUser | null,
+      error,
+      fetchCurrent: () => this.findProfileUser(userId),
+      notFoundMessage: 'User profile not found.',
+    })) as ProfileUser;
   }
 
   async updateOwnProfilePicture(
     userId: string,
-    file: Express.Multer.File
+    file: Express.Multer.File,
+    expectedUpdatedAt: string
   ): Promise<{ success: true; url: string; path: string; user: ProfileUser }> {
     if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
       throw new Error('Invalid file type. Use JPEG, PNG, WebP, or GIF.');
@@ -74,20 +94,7 @@ export class ProfileService {
     const safeName = sanitizeFileName(file.originalname, 'avatar');
     const objectPath = `${userId}/${Date.now()}-${safeName}`;
 
-    const { data: existing, error: lookupError } = await supabase
-      .from('users')
-      .select('id, name, email, role, profile_picture')
-      .eq('id', userId)
-      .maybeSingle();
-
-    if (lookupError) {
-      console.error(
-        'error. failed to load user before profile picture upload:',
-        lookupError.message
-      );
-      throw new Error('Failed to update profile picture.');
-    }
-
+    const existing = await this.findProfileUser(userId);
     if (!existing) {
       throw new Error('User profile not found.');
     }
@@ -99,25 +106,28 @@ export class ProfileService {
       contentType: file.mimetype,
     });
 
-    const publicUrl = getPublicStorageUrl(bucket, uploaded.path);
-
     const { data: updated, error: updateError } = await supabase
       .from('users')
       .update({
-        profile_picture: publicUrl,
+        profile_picture: getPublicStorageUrl(bucket, uploaded.path),
         ...auditUpdate(userId),
       })
       .eq('id', userId)
-      .select('id, name, email, role, profile_picture')
+      .eq('updated_at', expectedUpdatedAt)
+      .select(PROFILE_USER_SELECT)
       .maybeSingle();
 
-    if (updateError || !updated) {
-      console.error(
-        'error. failed to persist profile picture URL:',
-        updateError?.message ?? 'missing user'
-      );
+    let resolvedUser: ProfileUser;
+    try {
+      resolvedUser = (await resolveOptimisticUpdate({
+        data: updated as ProfileUser | null,
+        error: updateError,
+        fetchCurrent: () => this.findProfileUser(userId),
+        notFoundMessage: 'User profile not found.',
+      })) as ProfileUser;
+    } catch (error) {
       await removeStorageObjects(bucket, [uploaded.path]);
-      throw new Error('Failed to save profile picture.');
+      throw error;
     }
 
     const previousUrl = existing.profile_picture;
@@ -130,9 +140,9 @@ export class ProfileService {
 
     return {
       success: true,
-      url: publicUrl,
+      url: resolvedUser.profile_picture!,
       path: uploaded.path,
-      user: updated as ProfileUser,
+      user: resolvedUser,
     };
   }
 }

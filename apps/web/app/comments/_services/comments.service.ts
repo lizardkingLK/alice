@@ -6,6 +6,7 @@ const service = createCommentsService(apiFetch);
 export const getCommentsList = service.getCommentsList;
 export const createComment = service.createComment;
 export const updateComment = service.updateComment;
+export const forceUpdateComment = service.forceUpdateComment;
 export const archiveComment = service.archiveComment;
 export const restoreComment = service.restoreComment;
 

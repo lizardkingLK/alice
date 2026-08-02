@@ -31,6 +31,8 @@ import {
   type AccessAllowlistKind,
   type AccessAllowlistStatus,
 } from '@/app/access-allowlist/_services/accessAllowlist.service';
+import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
+import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 
 interface AccessAllowlistFormProps {
   readonly entry?: AccessAllowlistEntry;
@@ -77,6 +79,7 @@ export function AccessAllowlistForm({
   onSuccess,
 }: Readonly<AccessAllowlistFormProps>) {
   const isEdit = Boolean(entry);
+  const { handleMutationError } = useOptimisticLock();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
@@ -102,11 +105,28 @@ export function AccessAllowlistForm({
 
     try {
       if (isEdit && entry) {
-        await updateAccessAllowlistEntry(entry.id, {
+        const pendingFields = {
           label: label.trim() || null,
           expires_at: fromDateInputValue(expiresAt),
           status,
+        };
+
+        const updated = await runLockedMutationOrThrow({
+          mutate: () =>
+            updateAccessAllowlistEntry(
+              entry.id,
+              pendingFields,
+              entry.updated_at
+            ),
+          handleMutationError,
+          entityType: 'access_allowlist',
+          entityId: entry.id,
+          expectedUpdatedAt: entry.updated_at,
+          pendingFields,
         });
+        if (!updated) {
+          return;
+        }
         setMessage('Allowlist entry updated.');
       } else {
         const validated = validateAllowlistValue(kind, value);

@@ -614,13 +614,20 @@ export function AttachmentsSection({
 
     setDeleting(true);
     try {
-      await deleteWorkItemAttachment(active.id);
+      await deleteWorkItemAttachment(active.id, active.updated_at);
       urlCacheRef.current.delete(active.id);
       setAttachments((prev) => prev.filter((item) => item.id !== active.id));
       closeViewer();
       toast.success('Attachment deleted.');
       router.refresh();
     } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        toast.error(
+          error.message || 'This attachment changed on the server. Refreshing.'
+        );
+        router.refresh();
+        return;
+      }
       const message =
         error instanceof Error ? error.message : 'Failed to delete attachment.';
       toast.error(message);

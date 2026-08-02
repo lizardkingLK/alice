@@ -78,9 +78,11 @@ export async function uploadWorkItemAttachment(
 
 /** Soft-delete attachment (archives row + best-effort Storage remove). */
 export async function deleteWorkItemAttachment(
-  attachmentId: string
+  attachmentId: string,
+  expectedUpdatedAt: string
 ): Promise<void> {
   await apiFetch<{ success: true }>(`${API}/${attachmentId}`, {
     method: 'DELETE',
+    body: JSON.stringify({ expectedUpdatedAt }),
   });
 }

@@ -104,7 +104,8 @@ export class ProjectsService {
   async updateProject(
     actorId: string,
     projectId: string,
-    input: UpdateProjectInput
+    input: UpdateProjectInput,
+    expectedUpdatedAt: string
   ): Promise<ProjectRow> {
     await requireProjectManager(actorId);
 
@@ -120,12 +121,18 @@ export class ProjectsService {
       }
     }
 
-    return await projectsRepository.update(projectId, input, actorId);
+    return await projectsRepository.update(
+      projectId,
+      input,
+      actorId,
+      expectedUpdatedAt
+    );
   }
 
   async softDeleteProject(
     actorId: string,
-    projectId: string
+    projectId: string,
+    expectedUpdatedAt: string
   ): Promise<ProjectRow> {
     await requireProjectManager(actorId);
 
@@ -135,13 +142,15 @@ export class ProjectsService {
         deleted_at: new Date().toISOString(),
         status: 'archived',
       },
-      actorId
+      actorId,
+      expectedUpdatedAt
     );
   }
 
   async restoreProject(
     actorId: string,
-    projectId: string
+    projectId: string,
+    expectedUpdatedAt: string
   ): Promise<ProjectRow> {
     await requireProjectManager(actorId);
 
@@ -151,7 +160,8 @@ export class ProjectsService {
         deleted_at: null,
         status: 'active',
       },
-      actorId
+      actorId,
+      expectedUpdatedAt
     );
   }
 

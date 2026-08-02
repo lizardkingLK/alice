@@ -5,7 +5,12 @@ import {
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
 import { usersService } from './users.service';
-import { createUserSchema, updateUserSchema } from './users.schemas';
+import {
+  createUserSchema,
+  toggleUserActiveSchema,
+  updateUserSchema,
+} from './users.schemas';
+import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
 import { parsePagination } from '../../../lib/pagination';
 
 const usersRouter: Router = Router();
@@ -78,9 +83,16 @@ usersRouter.put(
     }
 
     try {
-      const user = await usersService.updateUser(req.userId!, id, parsed.data);
+      const { expectedUpdatedAt, ...input } = parsed.data;
+      const user = await usersService.updateUser(
+        req.userId!,
+        id,
+        input,
+        expectedUpdatedAt
+      );
       res.json({ user });
     } catch (error) {
+      if (trySendOptimisticLockError(res, error)) return;
       const message =
         error instanceof Error ? error.message : 'Failed to update user';
       res.status(500).json({ error: message });
@@ -97,10 +109,7 @@ usersRouter.patch(
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    const toggleSchema = z.object({
-      active: z.boolean(),
-    });
-    const parsed = toggleSchema.safeParse(req.body);
+    const parsed = toggleUserActiveSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: z.treeifyError(parsed.error) });
     }
@@ -109,10 +118,12 @@ usersRouter.patch(
       const user = await usersService.toggleUserActive(
         req.userId!,
         id,
-        parsed.data.active
+        parsed.data.active,
+        parsed.data.expectedUpdatedAt
       );
       res.json({ user });
     } catch (error) {
+      if (trySendOptimisticLockError(res, error)) return;
       const message =
         error instanceof Error
           ? error.message

@@ -223,19 +223,23 @@ describe('ProjectForm Component', () => {
     fireEvent.submit(form);
 
     await waitFor(() => {
-      expect(updateProject).toHaveBeenCalledWith('proj-123', {
-        name: 'Project Alice Updated',
-        key: 'ALICE',
-        description: 'Project description details',
-        owner_id: 'user-mgr-1',
-        start_date: '2026-07-10',
-        end_date: '2026-08-10',
-        status: 'active',
-        attributes_config: null,
-        workflow_config: null,
-        jira_url: null,
-        jira_project_key: null,
-      });
+      expect(updateProject).toHaveBeenCalledWith(
+        'proj-123',
+        {
+          name: 'Project Alice Updated',
+          key: 'ALICE',
+          description: 'Project description details',
+          owner_id: 'user-mgr-1',
+          start_date: '2026-07-10',
+          end_date: '2026-08-10',
+          status: 'active',
+          attributes_config: null,
+          workflow_config: null,
+          jira_url: null,
+          jira_project_key: null,
+        },
+        '2026-07-09T10:00:00Z'
+      );
     });
 
     expect(

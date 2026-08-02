@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 import { Tables } from '@repo/types';
 import type { User } from '@/app/users/_services/users.service';
+import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
 
 export type Team = Tables<'teams'> & {
   manager?: Pick<User, 'id' | 'name' | 'email'> | null;
@@ -70,33 +71,56 @@ export function createTeamsService(
 
     async updateTeam(
       id: string,
-      input: UpdateTeamInput
+      input: UpdateTeamInput,
+      expectedUpdatedAt: string
     ): Promise<Tables<'teams'>> {
       const data = await apiFetch<{ team: Tables<'teams'> }>(
         `${apiTeams}/${id}`,
         {
           method: 'PUT',
-          body: JSON.stringify(input),
+          body: JSON.stringify({ ...input, expectedUpdatedAt }),
         }
       );
       return data.team;
     },
 
-    async softDeleteTeam(id: string): Promise<Tables<'teams'>> {
+    /** Force-apply pending fields after a user confirms Keep mine / merge. */
+    async forceUpdateTeam(
+      id: string,
+      pendingFields: Record<string, unknown>,
+      expectedUpdatedAt: string
+    ): Promise<Tables<'teams'>> {
+      const data = await forceOptimisticPatch<{ team: Tables<'teams'> }>(
+        apiFetch,
+        `${apiTeams}/${id}`,
+        { pendingFields, expectedUpdatedAt }
+      );
+      return data.team;
+    },
+
+    async softDeleteTeam(
+      id: string,
+      expectedUpdatedAt: string
+    ): Promise<Tables<'teams'>> {
       const data = await apiFetch<{ team: Tables<'teams'> }>(
         `${apiTeams}/${id}/soft-delete`,
         {
           method: 'PATCH',
+          body: JSON.stringify({ expectedUpdatedAt }),
         }
       );
       return data.team;
     },
 
-    async restoreTeam(id: string): Promise<Tables<'teams'>> {
+    async restoreTeam(
+      id: string,
+      expectedUpdatedAt: string
+    ): Promise<Tables<'teams'>> {
       const data = await apiFetch<{ team: Tables<'teams'> }>(
         `${apiTeams}/${id}/restore`,
         {
           method: 'PATCH',
+          body: JSON.stringify({ expectedUpdatedAt }),
         }
       );
       return data.team;

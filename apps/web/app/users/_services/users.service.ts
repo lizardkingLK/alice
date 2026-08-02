@@ -5,6 +5,7 @@ const service = createUsersService(apiFetch);
 
 export const createUser = service.createUser;
 export const updateUser = service.updateUser;
+export const forceUpdateUser = service.forceUpdateUser;
 export const toggleUserActive = service.toggleUserActive;
 
 export type {

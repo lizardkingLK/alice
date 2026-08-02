@@ -189,7 +189,10 @@ describe('AccessAllowlistRegistry', () => {
 
     // Assert
     await waitFor(() => {
-      expect(deleteAccessAllowlistEntry).toHaveBeenCalledWith('allow-1');
+      expect(deleteAccessAllowlistEntry).toHaveBeenCalledWith(
+        'allow-1',
+        entries[0]!.updated_at
+      );
     });
     expect(mockRefresh).toHaveBeenCalled();
   });

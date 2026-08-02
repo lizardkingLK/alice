@@ -65,6 +65,7 @@ export async function updateTeam(
   teamId: string,
   _prevState: ActionState | null,
   formData: FormData,
+  expectedUpdatedAt: string,
   projectId?: string | null
 ): Promise<ActionState> {
   return runTeamMutation(async () => {
@@ -73,7 +74,11 @@ export async function updateTeam(
       return parsed.state;
     }
 
-    await apiUpdateTeam(teamId, toTeamWriteFields(parsed.data));
+    await apiUpdateTeam(
+      teamId,
+      toTeamWriteFields(parsed.data),
+      expectedUpdatedAt
+    );
 
     revalidateTeamViews(projectId);
     return actionSuccess();
@@ -82,10 +87,11 @@ export async function updateTeam(
 
 export async function softDeleteTeam(
   teamId: string,
+  expectedUpdatedAt: string,
   projectId?: string | null
 ): Promise<ActionState> {
   return runTeamMutation(async () => {
-    await apiSoftDeleteTeam(teamId);
+    await apiSoftDeleteTeam(teamId, expectedUpdatedAt);
     revalidateTeamViews(projectId);
     return actionSuccess();
   });
@@ -93,10 +99,11 @@ export async function softDeleteTeam(
 
 export async function restoreTeam(
   teamId: string,
+  expectedUpdatedAt: string,
   projectId?: string | null
 ): Promise<ActionState> {
   return runTeamMutation(async () => {
-    await apiRestoreTeam(teamId);
+    await apiRestoreTeam(teamId, expectedUpdatedAt);
     revalidateTeamViews(projectId);
     return actionSuccess();
   });

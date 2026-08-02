@@ -25,6 +25,8 @@ import { FormStatusAlerts } from '@/app/work-items/_components/workItem-form-ale
 import { Project as DbProject } from '@/app/projects/_services/projects.service';
 import { delay } from '@/app/_shared/utility';
 import { ResponseDTO } from '@repo/types/connection';
+import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
+import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 
 type WorkItemFormMember = Pick<DbUser, 'id' | 'name' | 'email'>;
 
@@ -81,6 +83,7 @@ export function WorkItemForm({
   allowedTypes,
   lockType = false,
 }: Readonly<WorkItemFormProps>) {
+  const { handleMutationError } = useOptimisticLock();
   const availableTypes =
     allowedTypes && allowedTypes.length > 0 ? allowedTypes : taskTypes;
   const typeLocked = lockType || availableTypes.length === 1;
@@ -113,7 +116,19 @@ export function WorkItemForm({
       const isUpdate = isEditMode && itemToEdit;
       let response: ResponseDTO<DbWorkItem> | null = null;
       if (isUpdate) {
-        response = await updateWorkItem(itemToEdit.id, formData);
+        const expectedUpdatedAt = itemToEdit.updated_at;
+        response = await runLockedMutationOrThrow({
+          mutate: () =>
+            updateWorkItem(itemToEdit.id, formData, expectedUpdatedAt),
+          handleMutationError,
+          entityType: 'work_item',
+          entityId: itemToEdit.id,
+          expectedUpdatedAt,
+          pendingFields: Object.fromEntries(formData.entries()),
+        });
+        if (!response) {
+          return;
+        }
       } else {
         response = await createWorkItem(formData);
       }

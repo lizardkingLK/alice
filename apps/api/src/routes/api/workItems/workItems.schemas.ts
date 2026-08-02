@@ -1,4 +1,8 @@
-import { WORK_ITEM_STATUSES, WORK_ITEM_TYPES } from '@repo/types';
+import {
+  WORK_ITEM_STATUSES,
+  WORK_ITEM_TYPES,
+  expectedUpdatedAtSchema,
+} from '@repo/types';
 import { z } from 'zod';
 
 const dateStringSchema = z
@@ -144,9 +148,15 @@ export const patchUpdateWorkItemBodySchema = workItemCoreObject
     status: workItemStatusSchema,
   })
   .partial()
-  .refine((data) => Object.keys(data).length > 0, {
-    message: 'At least one field must be provided for update',
-  });
+  .extend({
+    expectedUpdatedAt: expectedUpdatedAtSchema,
+  })
+  .refine(
+    (data) => Object.keys(data).some((key) => key !== 'expectedUpdatedAt'),
+    {
+      message: 'At least one field must be provided for update',
+    }
+  );
 
 export type WorkItemBody = z.infer<typeof createUpdateWorkItemBodySchema>;
 export type PatchWorkItemBody = z.infer<typeof patchUpdateWorkItemBodySchema>;

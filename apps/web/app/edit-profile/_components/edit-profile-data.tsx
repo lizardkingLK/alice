@@ -30,6 +30,8 @@ export async function EditProfileData() {
       emailVerified={emailVerified}
       role={dbUser.role}
       avatarUrl={dbUser.profile_picture ?? null}
+      userId={dbUser.id}
+      updatedAt={dbUser.updated_at}
     />
   );
 }

@@ -4,6 +4,7 @@ import {
   auditUpdate,
   type RecordStatus,
 } from '../../../lib/audit';
+import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
 import {
   isValidAccessAllowlistDomain,
   normalizeAccessAllowlistDomain,
@@ -25,6 +26,24 @@ function normalizeValue(kind: AccessAllowlistKind, value: string): string {
 }
 
 export class AccessAllowlistRepository {
+  async findById(id: string): Promise<AccessAllowlistRow | null> {
+    const { data, error } = await supabase
+      .from('access_allowlist')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) {
+      console.error(
+        'error. failed to find access_allowlist entry by id:',
+        error.message
+      );
+      throw new Error('Failed to find access allowlist entry');
+    }
+
+    return data as AccessAllowlistRow | null;
+  }
+
   async listAll(status?: AccessAllowlistStatus): Promise<AccessAllowlistRow[]> {
     let query = supabase
       .from('access_allowlist')
@@ -190,6 +209,7 @@ export class AccessAllowlistRepository {
     label?: string | null;
     expires_at?: string | null;
     status?: AccessAllowlistStatus;
+    expectedUpdatedAt: string;
   }): Promise<AccessAllowlistRow> {
     let expires_at: string | null | undefined = undefined;
     if (params.expires_at !== undefined) {
@@ -213,21 +233,23 @@ export class AccessAllowlistRepository {
         ...auditUpdate(params.actorId),
       })
       .eq('id', params.id)
+      .eq('updated_at', params.expectedUpdatedAt)
       .select('*')
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      console.error(
-        'error. failed to update access_allowlist entry:',
-        error.message
-      );
-      throw new Error('Failed to update access allowlist entry');
-    }
-
-    return data as AccessAllowlistRow;
+    return await resolveOptimisticUpdate({
+      data: data as AccessAllowlistRow | null,
+      error,
+      fetchCurrent: () => this.findById(params.id),
+      notFoundMessage: 'Access allowlist entry not found',
+    });
   }
 
-  async softDelete(params: { actorId: string; id: string }) {
+  async softDelete(params: {
+    actorId: string;
+    id: string;
+    expectedUpdatedAt: string;
+  }) {
     const { data, error } = await supabase
       .from('access_allowlist')
       .update({
@@ -235,20 +257,16 @@ export class AccessAllowlistRepository {
         ...auditUpdate(params.actorId),
       })
       .eq('id', params.id)
+      .eq('updated_at', params.expectedUpdatedAt)
       .select('*')
       .maybeSingle();
 
-    if (error) {
-      console.error(
-        'error. failed to delete access_allowlist entry:',
-        error.message
-      );
-      throw new Error('Failed to delete access allowlist entry');
-    }
-
-    if (!data) {
-      throw new Error('Access allowlist entry not found');
-    }
+    await resolveOptimisticUpdate({
+      data: data as AccessAllowlistRow | null,
+      error,
+      fetchCurrent: () => this.findById(params.id),
+      notFoundMessage: 'Access allowlist entry not found',
+    });
   }
 }
 

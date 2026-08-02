@@ -82,7 +82,11 @@ function SidebarNavItems({
     <SidebarMenu>
       {items.map(({ path, label, icon: Icon }) => (
         <SidebarMenuItem key={path}>
-          <SidebarMenuButton asChild isActive={isNavActive(pathname, path)}>
+          <SidebarMenuButton
+            asChild
+            isActive={isNavActive(pathname, path)}
+            tooltip={label}
+          >
             <Link href={buildWorkspaceNavHref(path, preference)}>
               <Icon />
               <span>{label}</span>
@@ -174,6 +178,7 @@ export function DashboardSidebar({
                 <SidebarMenuButton
                   asChild
                   isActive={isNavActive(pathname, '/profile')}
+                  tooltip="Profile"
                 >
                   <Link href="/profile">
                     <User />

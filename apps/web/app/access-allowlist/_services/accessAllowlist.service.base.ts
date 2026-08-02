@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 import { type Tables } from '@repo/types';
+import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
 
 export type AccessAllowlistEntry = Tables<'access_allowlist'>;
 
@@ -79,22 +80,41 @@ export function createAccessAllowlistService(
 
   async function updateAccessAllowlistEntry(
     id: string,
-    input: AccessAllowlistUpdateInput
+    input: AccessAllowlistUpdateInput,
+    expectedUpdatedAt: string
   ): Promise<AccessAllowlistEntry> {
     const data = await apiFetch<{ entry: AccessAllowlistEntry }>(
       `${apiAccessAllowlist}/${id}`,
       {
         method: 'PUT',
-        body: JSON.stringify(input),
+        body: JSON.stringify({ ...input, expectedUpdatedAt }),
       }
     );
 
     return data.entry;
   }
 
-  async function deleteAccessAllowlistEntry(id: string): Promise<void> {
+  async function forceUpdateAccessAllowlistEntry(
+    id: string,
+    pendingFields: Record<string, unknown>,
+    expectedUpdatedAt: string
+  ): Promise<AccessAllowlistEntry> {
+    const data = await forceOptimisticPatch<{ entry: AccessAllowlistEntry }>(
+      apiFetch,
+      `${apiAccessAllowlist}/${id}`,
+      { pendingFields, expectedUpdatedAt }
+    );
+
+    return data.entry;
+  }
+
+  async function deleteAccessAllowlistEntry(
+    id: string,
+    expectedUpdatedAt: string
+  ): Promise<void> {
     await apiFetch<{ success: boolean }>(`${apiAccessAllowlist}/${id}`, {
       method: 'DELETE',
+      body: JSON.stringify({ expectedUpdatedAt }),
     });
   }
 
@@ -102,6 +122,7 @@ export function createAccessAllowlistService(
     listAccessAllowlist,
     createAccessAllowlistEntry,
     updateAccessAllowlistEntry,
+    forceUpdateAccessAllowlistEntry,
     deleteAccessAllowlistEntry,
   };
 }

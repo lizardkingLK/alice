@@ -1,15 +1,48 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import { z } from 'zod';
 import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
 import { teamsService } from './teams.service';
-import { createTeamSchema, updateTeamSchema } from './teams.schemas';
-import { updateTeamMemberSchema } from '@repo/types';
+import {
+  createTeamSchema,
+  teamLockActionSchema,
+  updateTeamMemberSchema,
+  updateTeamSchema,
+} from './teams.schemas';
+import {
+  sendRouteMutationError,
+  runLockedStatusRoute,
+} from '../../../lib/optimistic-lock';
 import { parsePagination } from '../../../lib/pagination';
 
 const teamsRouter: Router = Router();
+
+type TeamLockAction = (
+  actorId: string,
+  teamId: string,
+  expectedUpdatedAt: string
+) => Promise<unknown>;
+
+async function handleTeamLockAction(
+  req: AuthenticatedRequest,
+  res: Response,
+  action: TeamLockAction,
+  failureMessage: string
+) {
+  await runLockedStatusRoute({
+    res,
+    actorId: req.userId!,
+    id: req.params.id,
+    missingIdMessage: 'Team identifier is required',
+    parseBody: () => teamLockActionSchema.safeParse(req.body),
+    treeifyError: (error) => z.treeifyError(error as z.ZodError),
+    action,
+    toResponseBody: (team) => ({ team }),
+    failureMessage,
+  });
+}
 
 teamsRouter.get('/', requireApiAuth, async (req: AuthenticatedRequest, res) => {
   try {
@@ -91,64 +124,46 @@ teamsRouter.put(
     }
 
     try {
+      const { expectedUpdatedAt, ...input } = validation.data;
       const updatedRecord = await teamsService.updateTeam(
         req.userId!,
         teamIdParam,
-        validation.data
+        input,
+        expectedUpdatedAt
       );
       res.json({ team: updatedRecord });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to modify team';
-      res.status(500).json({ error: message });
+      sendRouteMutationError(res, error, 'Failed to modify team');
     }
   }
 );
 
-teamsRouter.patch(
+function registerTeamLockAction(
+  path: '/:id/soft-delete' | '/:id/restore',
+  action: TeamLockAction,
+  failureMessage: string
+) {
+  teamsRouter.patch(
+    path,
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      await handleTeamLockAction(req, res, action, failureMessage);
+    }
+  );
+}
+
+registerTeamLockAction(
   '/:id/soft-delete',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    const teamIdParam = req.params.id;
-    if (!teamIdParam) {
-      return res.status(400).json({ error: 'Team identifier is required' });
-    }
-
-    try {
-      const archivedRecord = await teamsService.softDeleteTeam(
-        req.userId!,
-        teamIdParam
-      );
-      res.json({ team: archivedRecord });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to archive team';
-      res.status(500).json({ error: message });
-    }
-  }
+  (actorId, teamId, expectedUpdatedAt) =>
+    teamsService.softDeleteTeam(actorId, teamId, expectedUpdatedAt),
+  'Failed to archive team'
 );
 
-teamsRouter.patch(
+registerTeamLockAction(
   '/:id/restore',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    const teamIdParam = req.params.id;
-    if (!teamIdParam) {
-      return res.status(400).json({ error: 'Team identifier is required' });
-    }
-
-    try {
-      const restoredRecord = await teamsService.restoreTeam(
-        req.userId!,
-        teamIdParam
-      );
-      res.json({ team: restoredRecord });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to restore team';
-      res.status(500).json({ error: message });
-    }
-  }
+  (actorId, teamId, expectedUpdatedAt) =>
+    teamsService.restoreTeam(actorId, teamId, expectedUpdatedAt),
+  'Failed to restore team'
 );
 
 teamsRouter.patch(
@@ -168,17 +183,17 @@ teamsRouter.patch(
     }
 
     try {
+      const { expectedUpdatedAt, ...patch } = validation.data;
       await teamsService.updateTeamMember(
         teamId,
         userId,
-        validation.data,
-        req.userId!
+        patch,
+        req.userId!,
+        expectedUpdatedAt
       );
       res.json({ success: true });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to update team member';
-      res.status(500).json({ error: message });
+      sendRouteMutationError(res, error, 'Failed to update team member');
     }
   }
 );

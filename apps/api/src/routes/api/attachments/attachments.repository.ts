@@ -1,5 +1,6 @@
 import { auditCreate, auditUpdate } from '../../../lib/audit';
 import { supabase } from '../../../lib/supabase';
+import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
 import { ATTACHMENT_SELECT, type AttachmentWithUploader } from '@repo/types';
 
 export type CreateAttachmentInput = {
@@ -50,19 +51,28 @@ export class AttachmentsRepository {
     return data as unknown as AttachmentWithUploader;
   }
 
-  async archive(id: string, actorId: string): Promise<void> {
-    const { error } = await supabase
+  async archive(
+    id: string,
+    actorId: string,
+    expectedUpdatedAt: string
+  ): Promise<void> {
+    const { data, error } = await supabase
       .from('attachments')
       .update({
         status: 'archived',
         ...auditUpdate(actorId),
       })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('updated_at', expectedUpdatedAt)
+      .select('id')
+      .maybeSingle();
 
-    if (error) {
-      console.error('database error archive attachment:', error.message);
-      throw new Error('Failed to delete attachment');
-    }
+    await resolveOptimisticUpdate({
+      data,
+      error,
+      fetchCurrent: () => this.getById(id),
+      notFoundMessage: 'Attachment not found',
+    });
   }
 
   async workItemExists(workItemId: string): Promise<boolean> {

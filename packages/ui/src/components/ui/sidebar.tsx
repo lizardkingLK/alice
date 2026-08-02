@@ -533,11 +533,12 @@ function SidebarMenuButton({
   }
 
   return (
-    <Tooltip>
+    <Tooltip delayDuration={400}>
       <TooltipTrigger asChild>{button}</TooltipTrigger>
       <TooltipContent
         side="right"
         align="center"
+        sideOffset={8}
         hidden={state !== 'collapsed' || isMobile}
         {...tooltip}
       />

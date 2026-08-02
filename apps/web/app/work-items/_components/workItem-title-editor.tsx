@@ -13,6 +13,8 @@ import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.ser
 type WorkItemTitleEditorProps = {
   readonly workItemId: string;
   readonly title: string;
+  /** ISO `updated_at` from the last successful load/save (optimistic lock). */
+  readonly expectedUpdatedAt: string;
   // eslint-disable-next-line no-unused-vars -- callback signature
   readonly onPatched: (updated: Partial<DbWorkItem>) => void;
   readonly className?: string;
@@ -23,6 +25,7 @@ type WorkItemTitleEditorProps = {
 export function WorkItemTitleEditor({
   workItemId,
   title,
+  expectedUpdatedAt,
   onPatched,
   className,
   readOnly = false,
@@ -59,6 +62,7 @@ export function WorkItemTitleEditor({
           open={dialogOpen}
           onOpenChange={setDialogOpen}
           workItemId={workItemId}
+          expectedUpdatedAt={expectedUpdatedAt}
           fieldConfig={WORK_ITEM_PATCH_FIELD_CONFIG.title}
           currentValue={title}
           onPatched={onPatched}

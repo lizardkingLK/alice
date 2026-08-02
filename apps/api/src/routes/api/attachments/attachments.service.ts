@@ -237,14 +237,15 @@ export async function getAttachmentSignedUrls(
 /** Soft-delete the row and best-effort remove the Storage object. */
 export async function deleteAttachment(
   attachmentId: string,
-  actorId: string
+  actorId: string,
+  expectedUpdatedAt: string
 ): Promise<void> {
   const attachment = await attachmentsRepository.getById(attachmentId);
   if (attachment?.status !== 'active') {
     throw new AttachmentNotFoundError();
   }
 
-  await attachmentsRepository.archive(attachmentId, actorId);
+  await attachmentsRepository.archive(attachmentId, actorId, expectedUpdatedAt);
   await removeStorageObjects(env.STORAGE_BUCKET_ATTACHMENTS, [
     attachment.storage_path,
   ]);

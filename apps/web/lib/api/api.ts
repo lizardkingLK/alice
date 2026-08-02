@@ -1,19 +1,34 @@
 import { BackendUnreachableError } from '@/lib/errors/backend-unreachable';
+import {
+  OPTIMISTIC_LOCK_ERROR_CODE,
+  OPTIMISTIC_LOCK_HTTP_STATUS,
+  isOptimisticLockConflictBody,
+} from '@repo/types';
 
 export { BACKEND_UNREACHABLE_MESSAGE } from '@/lib/errors/backend-unreachable';
 
 type ApiErrorResponse = {
   error: unknown;
+  code?: string;
+  serverEntity?: unknown;
 };
 
 /** Error carrying the HTTP status so callers can branch (e.g. 410 Gone). */
 export class ApiError extends Error {
   readonly status: number;
+  readonly code?: string;
+  readonly serverEntity?: unknown;
 
-  constructor(message: string, status: number) {
+  constructor(
+    message: string,
+    status: number,
+    options?: { code?: string; serverEntity?: unknown }
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.code = options?.code;
+    this.serverEntity = options?.serverEntity;
   }
 }
 
@@ -148,6 +163,15 @@ export async function getResponse<T>(
 
   if (!response.ok) {
     const message = getApiErrorMessage(data);
+    if (
+      response.status === OPTIMISTIC_LOCK_HTTP_STATUS &&
+      isOptimisticLockConflictBody(data)
+    ) {
+      throw new ApiError(message, response.status, {
+        code: OPTIMISTIC_LOCK_ERROR_CODE,
+        serverEntity: data.serverEntity,
+      });
+    }
     throw new ApiError(message, response.status);
   }
 

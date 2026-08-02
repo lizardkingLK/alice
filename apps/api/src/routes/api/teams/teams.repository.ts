@@ -1,5 +1,9 @@
 import { supabase } from '../../../lib/supabase';
 import { auditCreateWithoutStatus, auditUpdate } from '../../../lib/audit';
+import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
+import type { Tables } from '@repo/types';
+
+export type TeamMemberRow = Tables<'team_members'>;
 
 export type TeamRow = {
   id: string;
@@ -202,7 +206,8 @@ export class TeamsRepository {
         'id' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'
       >
     > & { member_ids?: string[] },
-    userId: string
+    userId: string,
+    expectedUpdatedAt: string
   ): Promise<TeamRow> {
     const { member_ids, ...teamData } = teamInput;
     const payload = {
@@ -213,13 +218,16 @@ export class TeamsRepository {
       .from('teams')
       .update(payload)
       .eq('id', teamId)
+      .eq('updated_at', expectedUpdatedAt)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (response.error) {
-      console.error('database failure updating team:', response.error.message);
-      throw new Error(`Update team DB error: ${response.error.message}`);
-    }
+    const updatedTeam = await resolveOptimisticUpdate({
+      data: response.data,
+      error: response.error,
+      fetchCurrent: () => this.findById(teamId),
+      notFoundMessage: 'Team not found',
+    });
 
     if (member_ids) {
       const deleteResponse = await supabase
@@ -229,32 +237,62 @@ export class TeamsRepository {
 
       if (deleteResponse.error) {
         console.error(
-          'database failure deleting team members:',
+          'error. database failure deleting team members:',
           deleteResponse.error.message
         );
         throw new Error(
-          `Failed to update team members: ${deleteResponse.error.message}`
+          `Failed to update team members after the team row was updated. Reload the team and retry: ${deleteResponse.error.message}`
         );
       }
 
-      await insertTeamMembers(
-        teamId,
-        member_ids,
-        userId,
-        'Failed to update team members'
-      );
+      try {
+        await insertTeamMembers(
+          teamId,
+          member_ids,
+          userId,
+          'Failed to update team members'
+        );
+      } catch (memberError) {
+        const detail =
+          memberError instanceof Error
+            ? memberError.message
+            : 'Unknown membership error';
+        throw new Error(
+          `Failed to update team members after the team row was updated. Reload the team and retry: ${detail}`
+        );
+      }
     }
 
-    return response.data;
+    return updatedTeam;
+  }
+
+  async findMember(
+    teamId: string,
+    userId: string
+  ): Promise<TeamMemberRow | null> {
+    const { data, error } = await supabase
+      .from('team_members')
+      .select('*')
+      .eq('team_id', teamId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('database query error find team member:', error.message);
+      throw new Error('Failed to locate team member');
+    }
+
+    return data;
   }
 
   async updateMember(
     teamId: string,
     userId: string,
     patch: { capacity?: number | null; allocation?: number | null },
-    actorId: string
+    actorId: string,
+    expectedUpdatedAt: string
   ): Promise<void> {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('team_members')
       .update({
         ...patch,
@@ -262,12 +300,17 @@ export class TeamsRepository {
         updated_at: new Date().toISOString(),
       })
       .eq('team_id', teamId)
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .eq('updated_at', expectedUpdatedAt)
+      .select('team_id')
+      .maybeSingle();
 
-    if (error) {
-      console.error('database error updating team member:', error.message);
-      throw new Error('Failed to update team member');
-    }
+    await resolveOptimisticUpdate({
+      data,
+      error,
+      fetchCurrent: () => this.findMember(teamId, userId),
+      notFoundMessage: 'Team member not found',
+    });
   }
 
   async delete(teamId: string): Promise<void> {

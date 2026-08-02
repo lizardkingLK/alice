@@ -1,19 +1,70 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import { z } from 'zod';
 import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
 import { env } from '../../../config/env';
+import {
+  sendRouteMutationError,
+  runLockedStatusRoute,
+} from '../../../lib/optimistic-lock';
 import { projectsService } from './projects.service';
-import { createProjectSchema, updateProjectSchema } from './projects.schemas';
+import {
+  createProjectSchema,
+  projectLockActionSchema,
+  updateProjectSchema,
+} from './projects.schemas';
 import { parsePagination } from '../../../lib/pagination';
-import { ProjectRowWithOwner, withoutJiraToken } from './projects.repository';
+import {
+  type ProjectRow,
+  type ProjectRowWithOwner,
+  withoutJiraToken,
+} from './projects.repository';
 import { workItems } from '../../../config/composition';
 import { type WorkItemBody } from '../workItems/workItems.schemas';
 import { supabase } from '../../../lib/supabase';
 
 const projectsRouter: Router = Router();
+
+type ProjectLockAction = (
+  actorId: string,
+  projectId: string,
+  expectedUpdatedAt: string
+) => Promise<ProjectRow>;
+
+async function handleProjectLockAction(
+  req: AuthenticatedRequest,
+  res: Response,
+  action: ProjectLockAction,
+  failureMessage: string
+) {
+  await runLockedStatusRoute({
+    res,
+    actorId: req.userId!,
+    id: req.params.id,
+    missingIdMessage: 'Project ID is required',
+    parseBody: () => projectLockActionSchema.safeParse(req.body),
+    treeifyError: (error) => z.treeifyError(error as z.ZodError),
+    action,
+    toResponseBody: (project) => ({ project: withoutJiraToken(project) }),
+    failureMessage,
+  });
+}
+
+function registerProjectLockAction(
+  path: '/:id/soft-delete' | '/:id/restore',
+  action: ProjectLockAction,
+  failureMessage: string
+) {
+  projectsRouter.patch(
+    path,
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      await handleProjectLockAction(req, res, action, failureMessage);
+    }
+  );
+}
 
 const jiraSettingsBodySchema = z.object({
   jiraUrl: z.url({ message: 'Jira URL must be a valid URL' }),
@@ -545,60 +596,32 @@ projectsRouter.put(
     }
 
     try {
+      const { expectedUpdatedAt, ...input } = parsed.data;
       const project = await projectsService.updateProject(
         req.userId!,
         id,
-        parsed.data
+        input,
+        expectedUpdatedAt
       );
       res.json({ project: withoutJiraToken(project) });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to update project';
-      res.status(500).json({ error: message });
+      sendRouteMutationError(res, error, 'Failed to update project');
     }
   }
 );
 
-projectsRouter.patch(
+registerProjectLockAction(
   '/:id/soft-delete',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ error: 'Project ID is required' });
-    }
-
-    try {
-      const project = await projectsService.softDeleteProject(req.userId!, id);
-      res.json({ project: withoutJiraToken(project) });
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Failed to soft delete project';
-      res.status(500).json({ error: message });
-    }
-  }
+  (actorId, projectId, expectedUpdatedAt) =>
+    projectsService.softDeleteProject(actorId, projectId, expectedUpdatedAt),
+  'Failed to soft delete project'
 );
 
-projectsRouter.patch(
+registerProjectLockAction(
   '/:id/restore',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ error: 'Project ID is required' });
-    }
-
-    try {
-      const project = await projectsService.restoreProject(req.userId!, id);
-      res.json({ project: withoutJiraToken(project) });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to restore project';
-      res.status(500).json({ error: message });
-    }
-  }
+  (actorId, projectId, expectedUpdatedAt) =>
+    projectsService.restoreProject(actorId, projectId, expectedUpdatedAt),
+  'Failed to restore project'
 );
 
 projectsRouter.delete(

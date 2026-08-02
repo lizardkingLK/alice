@@ -55,6 +55,8 @@ import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { toggleUserActive } from '../_services/users.service';
 import type { User } from '../_services/users.service';
 import { UserForm } from './user-form';
+import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
+import { runLockedMutation } from '@/lib/optimistic-lock/run-locked-mutation';
 
 interface UserRegistryProps {
   readonly users: User[];
@@ -297,6 +299,30 @@ export function UserRegistry({
   const [isTogglingActive, setIsTogglingActive] = useState(false);
 
   const isAdmin = currentUserRole === 'admin';
+  const { handleMutationError } = useOptimisticLock();
+
+  const toggleActiveWithLock = useCallback(
+    async (usr: User, active: boolean) => {
+      const expectedUpdatedAt = usr.updated_at;
+      const result = await runLockedMutation({
+        mutate: () => toggleUserActive(usr.id, active, expectedUpdatedAt),
+        handleMutationError,
+        entityType: 'user',
+        entityId: usr.id,
+        expectedUpdatedAt,
+        pendingFields: { active },
+        currentUserId,
+      });
+      if (result.ok) {
+        return true;
+      }
+      if (result.conflict) {
+        return false;
+      }
+      throw result.error;
+    },
+    [currentUserId, handleMutationError]
+  );
 
   const openEditDialog = useCallback((usr: User) => {
     setEditingUser(usr);
@@ -311,8 +337,11 @@ export function UserRegistry({
       }
 
       setIsTogglingActive(true);
-      toggleUserActive(usr.id, true)
-        .then(() => {
+      toggleActiveWithLock(usr, true)
+        .then((applied) => {
+          if (!applied) {
+            return;
+          }
           setError(null);
           router.refresh();
         })
@@ -327,15 +356,18 @@ export function UserRegistry({
           setIsTogglingActive(false);
         });
     },
-    [router]
+    [router, toggleActiveWithLock]
   );
 
   const confirmDeactivation = () => {
     if (!deactivatingUser) return;
 
     setIsTogglingActive(true);
-    toggleUserActive(deactivatingUser.id, false)
-      .then(() => {
+    toggleActiveWithLock(deactivatingUser, false)
+      .then((applied) => {
+        if (!applied) {
+          return;
+        }
         setDeactivatingUser(null);
         setError(null);
         router.refresh();

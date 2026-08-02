@@ -59,6 +59,51 @@ export const formatDateTime = (value: string | null): string => {
 };
 
 /**
+ * Relative time for client UI (e.g. "2 minutes ago"). Not hydration-safe —
+ * only use in client components after mount when needed.
+ */
+export const formatRelativeTime = (value: string | null): string => {
+  if (!value) {
+    return '—';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '—';
+  }
+
+  const diffSeconds = Math.round((date.getTime() - Date.now()) / 1000);
+  const absSeconds = Math.abs(diffSeconds);
+  const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+
+  if (absSeconds < 60) {
+    return rtf.format(diffSeconds, 'second');
+  }
+
+  const diffMinutes = Math.round(diffSeconds / 60);
+  if (Math.abs(diffMinutes) < 60) {
+    return rtf.format(diffMinutes, 'minute');
+  }
+
+  const diffHours = Math.round(diffMinutes / 60);
+  if (Math.abs(diffHours) < 24) {
+    return rtf.format(diffHours, 'hour');
+  }
+
+  const diffDays = Math.round(diffHours / 24);
+  if (Math.abs(diffDays) < 30) {
+    return rtf.format(diffDays, 'day');
+  }
+
+  const diffMonths = Math.round(diffDays / 30);
+  if (Math.abs(diffMonths) < 12) {
+    return rtf.format(diffMonths, 'month');
+  }
+
+  return rtf.format(Math.round(diffMonths / 12), 'year');
+};
+
+/**
  * Formats a time-of-day for display. Hydration-safe via `en-US` + UTC.
  */
 export const formatTime = (value: string | null): string => {

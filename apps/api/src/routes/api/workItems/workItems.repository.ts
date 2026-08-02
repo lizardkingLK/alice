@@ -9,6 +9,7 @@ import {
 } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { auditCreate, auditCreateWithoutStatus } from '../../../lib/audit';
+import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
 import { WorkItemBody, WorkItemUpdateBody } from './workItems.schemas';
 
 export type DbWorkItem = Tables<'work_items'>;
@@ -20,6 +21,7 @@ export type CreateWorkItemRecord = WorkItemBody & {
 export type UpdateWorkItemRecord = WorkItemUpdateBody & {
   id: string;
   updatedBy: string;
+  expectedUpdatedAt: string;
 };
 
 const ASSIGNEE_SELECT = userRelationSelect('assignee', 'assignee_id');
@@ -256,15 +258,16 @@ export class WorkItemRepository {
         updated_at: new Date().toISOString(),
       })
       .eq('id', input.id)
+      .eq('updated_at', input.expectedUpdatedAt)
       .select(WORK_ITEM_WITH_PEOPLE)
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      console.error('error. failed to update work-item:', error.message);
-      throw new Error('Failed to update work-item');
-    }
-
-    return data as unknown as DbWorkItem;
+    return (await resolveOptimisticUpdate({
+      data: data as unknown as DbWorkItem | null,
+      error,
+      fetchCurrent: () => this.getById(input.id),
+      notFoundMessage: 'Work item not found',
+    })) as DbWorkItem;
   }
 
   async listWorkItemWorkLogs(

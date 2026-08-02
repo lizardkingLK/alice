@@ -60,7 +60,8 @@ export class WorkItemService {
   async updateWorkItem(
     userId: string,
     workItemId: string,
-    input: WorkItemUpdateBody
+    input: WorkItemUpdateBody,
+    expectedUpdatedAt: string
   ): Promise<DbWorkItem> {
     const current = await this.workItems.getById(workItemId);
 
@@ -80,6 +81,7 @@ export class WorkItemService {
       ...input,
       id: workItemId,
       updatedBy: userId,
+      expectedUpdatedAt,
     });
   }
 
