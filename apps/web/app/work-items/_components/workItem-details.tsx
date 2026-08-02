@@ -72,6 +72,10 @@ import { toast } from '@repo/ui/components/ui/sonner';
 import { CommentItem } from '@/app/comments/_services/comments.service';
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
 import type { WorkItemAncestor } from '@/app/work-items/_services/workItem.service.server';
+import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
+import { useOptimisticPending } from '@/lib/optimistic-lock/use-optimistic-pending';
+import { useOptimisticPendingHydrate } from '@/lib/optimistic-lock/use-optimistic-pending-hydrate';
+import { tryHandleLockedMutationError } from '@/lib/optimistic-lock/run-locked-mutation';
 
 function childWorkItemKey(child: DbWorkItem): string {
   return child.jira_issue_key?.trim() || child.id.slice(0, 8).toUpperCase();
@@ -94,7 +98,10 @@ export default function WorkItemDetails({
   childWorkItems?: DbWorkItem[];
   /** Active comment counts (incl. replies) keyed by child work item id. */
   childCommentCounts?: Readonly<Record<string, number>>;
-  linkableWorkItems?: readonly Pick<DbWorkItem, 'id' | 'title' | 'type'>[];
+  linkableWorkItems?: readonly Pick<
+    DbWorkItem,
+    'id' | 'title' | 'type' | 'updated_at'
+  >[];
   ancestors?: readonly WorkItemAncestor[];
   project?: DbProject | null;
   initialComments?: CommentItem[];
@@ -104,6 +111,7 @@ export default function WorkItemDetails({
   projectMembers?: readonly WorkItemPatchMemberOption[];
 }>) {
   const router = useRouter();
+  const { handleMutationError } = useOptimisticLock();
   const [workItem, setWorkItem] = useState<DbWorkItem>(workItemDetails);
   const [isEditing, setEditing] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(true);
@@ -117,7 +125,7 @@ export default function WorkItemDetails({
     useState<SubtaskSortDirection>('asc');
   const [unlinkTarget, setUnlinkTarget] = useState<Pick<
     DbWorkItem,
-    'id' | 'title' | 'type'
+    'id' | 'title' | 'type' | 'updated_at'
   > | null>(null);
   const [workLogs, setWorkLogs] = useState<WorkItemWorkLog[]>(initialWorkLogs);
   const [activityTab, setActivityTab] =
@@ -128,6 +136,13 @@ export default function WorkItemDetails({
   );
   const [workLogCommentInput, setWorkLogCommentInput] = useState<string>('');
   const [isLoggingWork, setIsLoggingWork] = useState(false);
+
+  useOptimisticPendingHydrate({
+    entityType: 'work_item',
+    entityId: workItem.id,
+    userId: currentUserId,
+    serverUpdatedAt: workItem.updated_at,
+  });
 
   useEffect(() => {
     setMoreFieldsOpen(readMoreFieldsOpen(currentUserId));
@@ -152,6 +167,15 @@ export default function WorkItemDetails({
     () => toTiptapContent(workItem.description),
     [workItem.description]
   );
+
+  useOptimisticPending({
+    entityType: 'work_item',
+    entityId: workItem.id,
+    userId: currentUserId,
+    baseUpdatedAt: workItem.updated_at,
+    pendingFields: isEditing ? { description: descriptionContent } : {},
+    enabled: isEditing,
+  });
 
   const childDonePercent = useMemo(
     () =>
@@ -182,12 +206,39 @@ export default function WorkItemDetails({
   const handleDescriptionUpdate = async (content: Json) => {
     const formData = new FormData();
     formData.set('description', JSON.stringify(content));
+    const expectedUpdatedAt = workItem.updated_at;
 
-    await updateWorkItem(workItem.id, formData);
-
-    setWorkItem((prev) => ({ ...prev, description: content }));
-    setEditing(false);
-    toast.success('Description saved');
+    try {
+      const response = await updateWorkItem(
+        workItem.id,
+        formData,
+        expectedUpdatedAt
+      );
+      setWorkItem((prev) => ({
+        ...prev,
+        description: content,
+        updated_at: response.data?.updated_at ?? prev.updated_at,
+      }));
+      setEditing(false);
+      toast.success('Description saved');
+    } catch (error) {
+      if (
+        await tryHandleLockedMutationError({
+          error,
+          handleMutationError,
+          entityType: 'work_item',
+          entityId: workItem.id,
+          expectedUpdatedAt,
+          pendingFields: { description: content },
+          currentUserId,
+        })
+      ) {
+        return;
+      }
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to save description.'
+      );
+    }
   };
 
   const handleWorkLogSubmit = async (event: FormEvent) => {
@@ -252,6 +303,7 @@ export default function WorkItemDetails({
             <WorkItemTitleEditor
               workItemId={workItem.id}
               title={workItem.title}
+              expectedUpdatedAt={workItem.updated_at}
               onPatched={handleWorkItemPatched}
               readOnly={isRecordReadOnly}
             />
@@ -442,6 +494,7 @@ export default function WorkItemDetails({
                                   id: child.id,
                                   title: child.title,
                                   type: child.type,
+                                  updated_at: child.updated_at,
                                 })
                               }
                             />
@@ -559,6 +612,7 @@ export default function WorkItemDetails({
           childId={unlinkTarget.id}
           childTitle={unlinkTarget.title}
           childType={unlinkTarget.type as WorkItemType}
+          childUpdatedAt={unlinkTarget.updated_at}
           parentType={workItem.type as WorkItemType}
           onUnlinked={handleSubtaskUnlinked}
         />

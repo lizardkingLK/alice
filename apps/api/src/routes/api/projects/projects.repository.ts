@@ -5,6 +5,7 @@ import {
   auditCreateWithoutStatus,
   auditUpdate,
 } from '../../../lib/audit';
+import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
 
 export type ProjectRow = {
   id: string;
@@ -273,7 +274,8 @@ export class ProjectsRepository {
   async update(
     id: string,
     data: Partial<Omit<ProjectRow, 'id' | 'created_at' | 'updated_at'>>,
-    actorId: string
+    actorId: string,
+    expectedUpdatedAt: string
   ): Promise<ProjectRow> {
     const updateData = {
       ...data,
@@ -283,15 +285,16 @@ export class ProjectsRepository {
       .from('projects')
       .update(updateData)
       .eq('id', id)
+      .eq('updated_at', expectedUpdatedAt)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      console.error('error. failed to update project:', error.message);
-      throw new Error(`Database update failed: ${error.message}`);
-    }
-
-    return updated;
+    return await resolveOptimisticUpdate({
+      data: updated as unknown as ProjectRow | null,
+      error,
+      fetchCurrent: () => this.findById(id),
+      notFoundMessage: 'Project not found',
+    });
   }
 
   async delete(id: string): Promise<void> {

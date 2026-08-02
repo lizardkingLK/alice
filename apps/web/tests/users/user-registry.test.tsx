@@ -163,7 +163,11 @@ describe('UserRegistry Component', () => {
     fireEvent.click(activateBtn);
 
     await waitFor(() => {
-      expect(toggleUserActive).toHaveBeenCalledWith('user-bob-id', true);
+      expect(toggleUserActive).toHaveBeenCalledWith(
+        'user-bob-id',
+        true,
+        '2026-07-05T10:00:00Z'
+      );
       expect(mockRefresh).toHaveBeenCalled();
     });
   });
@@ -215,7 +219,11 @@ describe('UserRegistry Component', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Deactivate User' }));
 
     await waitFor(() => {
-      expect(toggleUserActive).toHaveBeenCalledWith('user-mgr-id', false);
+      expect(toggleUserActive).toHaveBeenCalledWith(
+        'user-mgr-id',
+        false,
+        '2026-07-01T10:00:00Z'
+      );
       expect(mockRefresh).toHaveBeenCalled();
     });
   }, 15_000);

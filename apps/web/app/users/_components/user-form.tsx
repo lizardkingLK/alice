@@ -22,6 +22,8 @@ import {
 import { UserPlus, Loader2, X } from '@repo/ui/lib/icons';
 import type { User } from '../_services/users.service';
 import { createUser, updateUser } from '../_services/users.service';
+import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
+import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 
 interface UserFormProps {
   readonly user?: User;
@@ -35,6 +37,7 @@ export function UserForm({
   onSuccess,
 }: Readonly<UserFormProps>) {
   const isEdit = !!user;
+  const { handleMutationError } = useOptimisticLock();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
@@ -62,10 +65,20 @@ export function UserForm({
 
     try {
       if (isEdit) {
-        await updateUser(user.id, {
-          name: name.trim(),
-          role,
+        const expectedUpdatedAt = user.updated_at;
+        const pendingFields = { name: name.trim(), role };
+
+        const updated = await runLockedMutationOrThrow({
+          mutate: () => updateUser(user.id, pendingFields, expectedUpdatedAt),
+          handleMutationError,
+          entityType: 'user',
+          entityId: user.id,
+          expectedUpdatedAt,
+          pendingFields,
         });
+        if (!updated) {
+          return;
+        }
         setMessage(`User details updated successfully!`);
       } else {
         const origin =

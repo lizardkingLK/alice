@@ -80,6 +80,9 @@ describe('WorkItemLinkSubtaskDialog', () => {
     expect(vi.mocked(updateWorkItem).mock.calls[0]![0]).toBe(candidates[0]!.id);
     const formData = vi.mocked(updateWorkItem).mock.calls[0]![1] as FormData;
     expect(formData.get('parent_id')).toBe(parentId);
+    expect(vi.mocked(updateWorkItem).mock.calls[0]![2]).toBe(
+      candidates[0]!.updated_at
+    );
     await waitFor(() => {
       expect(onLinked).toHaveBeenCalledTimes(1);
       expect(onOpenChange).toHaveBeenCalledWith(false);

@@ -4,6 +4,7 @@ import {
   userRelationSelect,
 } from '@repo/types';
 import { supabase } from '../../../lib/supabase';
+import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
 
 export type CommentRow = {
   id: string;
@@ -32,6 +33,21 @@ const COMMENT_WITH_RELATIONS = `
       `;
 
 export class CommentsRepository {
+  async getById(id: string): Promise<CommentRow | null> {
+    const { data, error } = await supabase
+      .from('comments')
+      .select(COMMENT_WITH_RELATIONS)
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) {
+      console.error('database error get comment:', error.message);
+      throw new Error('Failed to retrieve comment');
+    }
+
+    return data as unknown as CommentRow | null;
+  }
+
   async listAll(workItemId?: string): Promise<CommentRow[]> {
     let query = supabase.from('comments').select(COMMENT_WITH_RELATIONS);
 
@@ -78,7 +94,11 @@ export class CommentsRepository {
     return data as unknown as CommentRow;
   }
 
-  async update(id: string, content: string): Promise<CommentRow> {
+  async update(
+    id: string,
+    content: string,
+    expectedUpdatedAt: string
+  ): Promise<CommentRow> {
     const { data, error } = await supabase
       .from('comments')
       .update({
@@ -87,45 +107,56 @@ export class CommentsRepository {
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
+      .eq('updated_at', expectedUpdatedAt)
       .select(COMMENT_WITH_RELATIONS)
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      console.error('database error update comment:', error.message);
-      throw new Error(`Failed to update comment: ${error.message}`);
-    }
-
-    return data as unknown as CommentRow;
+    return (await resolveOptimisticUpdate({
+      data: data as unknown as CommentRow | null,
+      error,
+      fetchCurrent: () => this.getById(id),
+      notFoundMessage: 'Comment not found',
+    })) as CommentRow;
   }
 
-  async archive(id: string): Promise<void> {
-    const { error } = await supabase
+  async archive(id: string, expectedUpdatedAt: string): Promise<void> {
+    const { data, error } = await supabase
       .from('comments')
       .update({
         status: 'archived',
         updated_at: new Date().toISOString(),
       })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('updated_at', expectedUpdatedAt)
+      .select('id')
+      .maybeSingle();
 
-    if (error) {
-      console.error('database error archive comment:', error.message);
-      throw new Error(`Failed to archive comment: ${error.message}`);
-    }
+    await resolveOptimisticUpdate({
+      data,
+      error,
+      fetchCurrent: () => this.getById(id),
+      notFoundMessage: 'Comment not found',
+    });
   }
 
-  async restore(id: string): Promise<void> {
-    const { error } = await supabase
+  async restore(id: string, expectedUpdatedAt: string): Promise<void> {
+    const { data, error } = await supabase
       .from('comments')
       .update({
         status: 'active',
         updated_at: new Date().toISOString(),
       })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('updated_at', expectedUpdatedAt)
+      .select('id')
+      .maybeSingle();
 
-    if (error) {
-      console.error('database error restore comment:', error.message);
-      throw new Error(`Failed to restore comment: ${error.message}`);
-    }
+    await resolveOptimisticUpdate({
+      data,
+      error,
+      fetchCurrent: () => this.getById(id),
+      notFoundMessage: 'Comment not found',
+    });
   }
 
   async hardDelete(id: string): Promise<void> {

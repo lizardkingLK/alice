@@ -81,7 +81,8 @@ export class SprintsService {
   async updateSprintStatus(
     userId: string,
     sprintId: string,
-    status: SprintRow['status']
+    status: SprintRow['status'],
+    expectedUpdatedAt: string
   ): Promise<SprintResponse> {
     await requireManagerOrAdmin(userId);
 
@@ -124,7 +125,12 @@ export class SprintsService {
       }
     }
 
-    const row = await sprintsRepository.updateStatus(userId, sprintId, status);
+    const row = await sprintsRepository.updateStatus(
+      userId,
+      sprintId,
+      status,
+      expectedUpdatedAt
+    );
     return toSprintResponse(row);
   }
 
@@ -154,13 +160,18 @@ export class SprintsService {
       }
     }
 
-    const row = await sprintsRepository.update(userId, sprintId, {
-      name: input.name,
-      goal,
-      startDate: input.startDate,
-      endDate: input.endDate,
-      projectId: input.projectId,
-    });
+    const row = await sprintsRepository.update(
+      userId,
+      sprintId,
+      {
+        name: input.name,
+        goal,
+        startDate: input.startDate,
+        endDate: input.endDate,
+        projectId: input.projectId,
+      },
+      input.expectedUpdatedAt
+    );
 
     return toSprintResponse(row);
   }

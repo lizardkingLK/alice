@@ -5,6 +5,7 @@ const service = createTeamsService(apiFetch);
 
 export const createTeam = service.createTeam;
 export const updateTeam = service.updateTeam;
+export const forceUpdateTeam = service.forceUpdateTeam;
 export const softDeleteTeam = service.softDeleteTeam;
 export const restoreTeam = service.restoreTeam;
 export const hardDeleteTeam = service.hardDeleteTeam;

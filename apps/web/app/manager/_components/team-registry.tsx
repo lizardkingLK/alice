@@ -25,7 +25,13 @@ import {
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { TeamForm } from './team-form';
-import { softDeleteTeam, restoreTeam, hardDeleteTeam } from './actions';
+import { hardDeleteTeam } from './actions';
+import {
+  softDeleteTeam as clientSoftDeleteTeam,
+  restoreTeam as clientRestoreTeam,
+} from '../_services/teams.service';
+import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
+import { runRegistryLockedAction } from '@/lib/optimistic-lock/run-locked-mutation';
 import { Users, Shield, Plus, Search, FolderOpen } from '@repo/ui/lib/icons';
 import { Pagination } from '@/components/pagination';
 import { DataTable } from '@/components/data-table';
@@ -230,6 +236,7 @@ export function TeamRegistry({
   const [deleteMode, setDeleteMode] = useState<'soft' | 'hard'>('soft');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const { handleMutationError } = useOptimisticLock();
 
   const isManagerOrAdmin =
     currentUserRole === 'admin' || currentUserRole === 'manager';
@@ -285,15 +292,35 @@ export function TeamRegistry({
     if (teamToDelete === null) return;
 
     startTransition(async () => {
-      const actionResult = isSoftDelete
-        ? await softDeleteTeam(teamToDelete.id, teamToDelete.project_id)
-        : await hardDeleteTeam(teamToDelete.id, teamToDelete.project_id);
-
-      if (!actionResult.success) {
-        setError(
-          actionResult.error ?? `Operation failed during ${deleteMode} delete.`
+      if (isSoftDelete) {
+        const ok = await runRegistryLockedAction({
+          mutate: () =>
+            clientSoftDeleteTeam(teamToDelete.id, teamToDelete.updated_at),
+          handleMutationError,
+          entityType: 'team',
+          entityId: teamToDelete.id,
+          expectedUpdatedAt: teamToDelete.updated_at,
+          pendingFields: { status: 'archived' },
+          currentUserId,
+          failureFallback: `Operation failed during ${deleteMode} delete.`,
+          onError: setError,
+        });
+        if (!ok) {
+          return;
+        }
+      } else {
+        const actionResult = await hardDeleteTeam(
+          teamToDelete.id,
+          teamToDelete.project_id
         );
-        return;
+
+        if (!actionResult.success) {
+          setError(
+            actionResult.error ??
+              `Operation failed during ${deleteMode} delete.`
+          );
+          return;
+        }
       }
 
       setTeamToDelete(null);
@@ -306,15 +333,23 @@ export function TeamRegistry({
     (item: Team) => {
       setError(null);
       startTransition(async () => {
-        const actionResult = await restoreTeam(item.id, item.project_id);
-        if (actionResult.success) {
-          router.refresh();
-        } else {
-          setError(actionResult.error ?? 'Unable to restore team.');
-        }
+        await runRegistryLockedAction({
+          mutate: () => clientRestoreTeam(item.id, item.updated_at),
+          handleMutationError,
+          entityType: 'team',
+          entityId: item.id,
+          expectedUpdatedAt: item.updated_at,
+          pendingFields: { status: 'active' },
+          currentUserId,
+          failureFallback: 'Unable to restore team.',
+          onError: setError,
+          onSuccess: () => {
+            router.refresh();
+          },
+        });
       });
     },
-    [router]
+    [currentUserId, handleMutationError, router]
   );
 
   const openEdit = useCallback((team: Team) => {

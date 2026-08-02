@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 import type { Tables } from '@repo/types';
+import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
 
 export type CommentUser = Pick<Tables<'users'>, 'id' | 'name' | 'email'> &
   Partial<Pick<Tables<'users'>, 'role' | 'profile_picture'>>;
@@ -89,30 +90,54 @@ export function createCommentsService(
       return data.comment;
     },
 
-    async updateComment(id: string, content: string): Promise<CommentItem> {
+    async updateComment(
+      id: string,
+      content: string,
+      expectedUpdatedAt: string
+    ): Promise<CommentItem> {
       const data = await apiFetch<{ comment: CommentItem }>(
         `${apiComments}/${id}`,
         {
           method: 'PATCH',
-          body: JSON.stringify({ content }),
+          body: JSON.stringify({ content, expectedUpdatedAt }),
         }
       );
       return data.comment;
     },
 
-    async archiveComment(id: string, permanent?: boolean): Promise<void> {
+    /** Force-apply pending fields after a user confirms Keep mine / merge. */
+    async forceUpdateComment(
+      id: string,
+      pendingFields: Record<string, unknown>,
+      expectedUpdatedAt: string
+    ): Promise<CommentItem> {
+      const data = await forceOptimisticPatch<{ comment: CommentItem }>(
+        apiFetch,
+        `${apiComments}/${id}`,
+        { pendingFields, expectedUpdatedAt, method: 'PATCH' }
+      );
+      return data.comment;
+    },
+
+    async archiveComment(
+      id: string,
+      expectedUpdatedAt: string,
+      permanent?: boolean
+    ): Promise<void> {
       let url = `${apiComments}/${id}`;
       if (permanent) {
         url += `?permanent=true`;
       }
       await apiFetch(url, {
         method: 'DELETE',
+        body: permanent ? undefined : JSON.stringify({ expectedUpdatedAt }),
       });
     },
 
-    async restoreComment(id: string): Promise<void> {
+    async restoreComment(id: string, expectedUpdatedAt: string): Promise<void> {
       await apiFetch(`${apiComments}/${id}/restore`, {
         method: 'POST',
+        body: JSON.stringify({ expectedUpdatedAt }),
       });
     },
   };

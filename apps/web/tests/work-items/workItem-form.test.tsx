@@ -178,6 +178,9 @@ describe('WorkItemForm', () => {
     const formData = vi.mocked(updateWorkItem).mock.calls[0]![1] as FormData;
     expect(formData.get('title')).toBe('Updated title');
     expect(formData.get('story_points')).toBe('13');
+    expect(vi.mocked(updateWorkItem).mock.calls[0]![2]).toBe(
+      itemToEdit.updated_at
+    );
 
     expect(
       await screen.findByText(/Work item updated successfully/i)

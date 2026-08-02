@@ -6,6 +6,8 @@ const service = createAccessAllowlistService(apiFetch);
 export const listAccessAllowlist = service.listAccessAllowlist;
 export const createAccessAllowlistEntry = service.createAccessAllowlistEntry;
 export const updateAccessAllowlistEntry = service.updateAccessAllowlistEntry;
+export const forceUpdateAccessAllowlistEntry =
+  service.forceUpdateAccessAllowlistEntry;
 export const deleteAccessAllowlistEntry = service.deleteAccessAllowlistEntry;
 
 export type {

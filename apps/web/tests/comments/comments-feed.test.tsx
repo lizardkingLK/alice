@@ -7,9 +7,9 @@ import type {
   CommentWorkItemOption,
 } from '@/app/comments/_services/comments.service';
 import {
-  archiveCommentAction,
-  restoreCommentAction,
-} from '@/app/comments/_components/actions';
+  archiveComment,
+  restoreComment,
+} from '@/app/comments/_services/comments.service';
 import { userFactory } from '../factories/user.factory';
 import { projectFactory } from '../factories/project.factory';
 import { workItemFactory } from '../factories/workItem.factory';
@@ -36,9 +36,19 @@ vi.mock('@/lib/supabase/client', () => {
 vi.mock('@/app/comments/_components/actions', () => {
   return {
     createCommentAction: vi.fn(),
-    updateCommentAction: vi.fn(),
-    archiveCommentAction: vi.fn(),
-    restoreCommentAction: vi.fn(),
+  };
+});
+
+vi.mock('@/app/comments/_services/comments.service', async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import('@/app/comments/_services/comments.service')
+    >();
+  return {
+    ...actual,
+    updateComment: vi.fn(),
+    archiveComment: vi.fn(),
+    restoreComment: vi.fn(),
   };
 });
 
@@ -332,7 +342,7 @@ describe('CommentsFeed Component', () => {
   });
 
   it('calls archiveComment when a comment is archived', async () => {
-    vi.mocked(archiveCommentAction).mockResolvedValue({ success: true });
+    vi.mocked(archiveComment).mockResolvedValue(undefined);
 
     renderFeed();
 
@@ -345,12 +355,15 @@ describe('CommentsFeed Component', () => {
     fireEvent.click(archiveBtn);
 
     await waitFor(() => {
-      expect(archiveCommentAction).toHaveBeenCalledWith('comment-1');
+      expect(archiveComment).toHaveBeenCalledWith(
+        'comment-1',
+        formatDateToISOString(2026, 6, 20, 10, 0, 0)
+      );
     });
   });
 
-  it('calls archiveCommentAction (permanent) when a thread reply is deleted', async () => {
-    vi.mocked(archiveCommentAction).mockResolvedValue({ success: true });
+  it('calls archiveComment (permanent) when a thread reply is deleted', async () => {
+    vi.mocked(archiveComment).mockResolvedValue(undefined);
 
     renderFeed();
 
@@ -367,17 +380,21 @@ describe('CommentsFeed Component', () => {
     fireEvent.click(confirmBtn);
 
     await waitFor(() => {
-      expect(archiveCommentAction).toHaveBeenCalledWith('reply-1', true);
+      expect(archiveComment).toHaveBeenCalledWith(
+        'reply-1',
+        formatDateToISOString(2026, 6, 20, 11, 0, 0),
+        true
+      );
     });
   });
 
-  it('calls restoreCommentAction when an archived parent comment is restored', async () => {
+  it('calls restoreComment when an archived parent comment is restored', async () => {
     const archivedComment: CommentItem = {
       ...mockComments[0]!,
       id: 'comment-archived-1',
       status: 'archived',
     };
-    vi.mocked(restoreCommentAction).mockResolvedValue({ success: true });
+    vi.mocked(restoreComment).mockResolvedValue(undefined);
 
     renderFeed({ initialComments: [archivedComment] });
 
@@ -394,17 +411,20 @@ describe('CommentsFeed Component', () => {
     fireEvent.click(restoreBtn);
 
     await waitFor(() => {
-      expect(restoreCommentAction).toHaveBeenCalledWith('comment-archived-1');
+      expect(restoreComment).toHaveBeenCalledWith(
+        'comment-archived-1',
+        formatDateToISOString(2026, 6, 20, 10, 0, 0)
+      );
     });
   });
 
-  it('calls archiveCommentAction (permanent) when an archived parent comment is deleted permanently', async () => {
+  it('calls archiveComment (permanent) when an archived parent comment is deleted permanently', async () => {
     const archivedComment: CommentItem = {
       ...mockComments[0]!,
       id: 'comment-archived-1',
       status: 'archived',
     };
-    vi.mocked(archiveCommentAction).mockResolvedValue({ success: true });
+    vi.mocked(archiveComment).mockResolvedValue(undefined);
 
     renderFeed({ initialComments: [archivedComment] });
 
@@ -425,8 +445,9 @@ describe('CommentsFeed Component', () => {
     fireEvent.click(confirmBtn);
 
     await waitFor(() => {
-      expect(archiveCommentAction).toHaveBeenCalledWith(
+      expect(archiveComment).toHaveBeenCalledWith(
         'comment-archived-1',
+        formatDateToISOString(2026, 6, 20, 10, 0, 0),
         true
       );
     });

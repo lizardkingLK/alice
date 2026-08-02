@@ -28,11 +28,13 @@ import { Badge } from '@repo/ui/components/ui/badge';
 import { Input } from '@repo/ui/components/ui/input';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { ProjectForm } from './project-form';
+import { hardDeleteProject } from './actions';
 import {
-  softDeleteProject,
-  restoreProject,
-  hardDeleteProject,
-} from './actions';
+  softDeleteProject as clientSoftDeleteProject,
+  restoreProject as clientRestoreProject,
+} from '../_services/projects.service';
+import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
+import { runRegistryLockedAction } from '@/lib/optimistic-lock/run-locked-mutation';
 import {
   Folder,
   Calendar,
@@ -254,6 +256,7 @@ export function ProjectRegistry({
   } = usePaginationNavigation(totalPages, limit);
 
   const { searchQuery, setSearchQuery } = useDebouncedSearch(search);
+  const { handleMutationError } = useOptimisticLock();
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [isAddWide, setIsAddWide] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
@@ -290,15 +293,23 @@ export function ProjectRegistry({
     (proj: Project) => {
       setError(null);
       startTransition(async () => {
-        const result = await restoreProject(proj.id);
-        if (result.success) {
-          router.refresh();
-        } else {
-          setError(result.error || 'Failed to restore project.');
-        }
+        await runRegistryLockedAction({
+          mutate: () => clientRestoreProject(proj.id, proj.updated_at),
+          handleMutationError,
+          entityType: 'project',
+          entityId: proj.id,
+          expectedUpdatedAt: proj.updated_at,
+          pendingFields: { status: 'active' },
+          currentUserId,
+          failureFallback: 'Failed to restore project.',
+          onError: setError,
+          onSuccess: () => {
+            router.refresh();
+          },
+        });
       });
     },
-    [router]
+    [currentUserId, handleMutationError, router]
   );
 
   const openEdit = useCallback((proj: Project) => {
@@ -309,13 +320,32 @@ export function ProjectRegistry({
     if (!projectToDelete) return;
 
     startTransition(async () => {
-      const result = isSoftDelete
-        ? await softDeleteProject(projectToDelete.id)
-        : await hardDeleteProject(projectToDelete.id);
+      if (isSoftDelete) {
+        const ok = await runRegistryLockedAction({
+          mutate: () =>
+            clientSoftDeleteProject(
+              projectToDelete.id,
+              projectToDelete.updated_at
+            ),
+          handleMutationError,
+          entityType: 'project',
+          entityId: projectToDelete.id,
+          expectedUpdatedAt: projectToDelete.updated_at,
+          pendingFields: { status: 'archived' },
+          currentUserId,
+          failureFallback: `Failed to ${deleteMode} delete project.`,
+          onError: setError,
+        });
+        if (!ok) {
+          return;
+        }
+      } else {
+        const result = await hardDeleteProject(projectToDelete.id);
 
-      if (!result.success) {
-        setError(result.error || `Failed to ${deleteMode} delete project.`);
-        return;
+        if (!result.success) {
+          setError(result.error || `Failed to ${deleteMode} delete project.`);
+          return;
+        }
       }
 
       setProjectToDelete(null);

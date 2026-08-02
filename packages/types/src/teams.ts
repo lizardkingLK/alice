@@ -14,22 +14,25 @@ export const createTeamSchema = z.object({
 
 export const updateTeamSchema = createTeamSchema.partial();
 
+/** Raw team-member patch fields, exported so callers can extend before refining. */
+export const teamMemberPatchFields = {
+  capacity: z
+    .number()
+    .int({ message: 'Capacity must be a whole number.' })
+    .min(0, { message: 'Capacity must be at least 0.' })
+    .nullable()
+    .optional(),
+  allocation: z
+    .number()
+    .int({ message: 'Allocation must be a whole number.' })
+    .min(0, { message: 'Allocation must be at least 0.' })
+    .max(100, { message: 'Allocation must be at most 100.' })
+    .nullable()
+    .optional(),
+};
+
 export const updateTeamMemberSchema = z
-  .object({
-    capacity: z
-      .number()
-      .int({ message: 'Capacity must be a whole number.' })
-      .min(0, { message: 'Capacity must be at least 0.' })
-      .nullable()
-      .optional(),
-    allocation: z
-      .number()
-      .int({ message: 'Allocation must be a whole number.' })
-      .min(0, { message: 'Allocation must be at least 0.' })
-      .max(100, { message: 'Allocation must be at most 100.' })
-      .nullable()
-      .optional(),
-  })
+  .object(teamMemberPatchFields)
   .refine((d) => d.capacity !== undefined || d.allocation !== undefined, {
     message: 'At least one of capacity or allocation must be provided.',
   });

@@ -15,6 +15,7 @@ type WorkItemUnlinkSubtaskDialogProps = {
   readonly childId: string;
   readonly childTitle: string;
   readonly childType: WorkItemType;
+  readonly childUpdatedAt: string;
   readonly parentType: WorkItemType;
   readonly onUnlinked: () => void;
 };
@@ -26,6 +27,7 @@ export function WorkItemUnlinkSubtaskDialog({
   childId,
   childTitle,
   childType,
+  childUpdatedAt,
   parentType,
   onUnlinked,
 }: Readonly<WorkItemUnlinkSubtaskDialogProps>) {
@@ -34,7 +36,7 @@ export function WorkItemUnlinkSubtaskDialog({
   const handleConfirm = async () => {
     setIsPending(true);
     try {
-      await patchWorkItemParentId(childId, null);
+      await patchWorkItemParentId(childId, null, childUpdatedAt);
       toast.success('Subtask unlinked');
       onUnlinked();
       onOpenChange(false);

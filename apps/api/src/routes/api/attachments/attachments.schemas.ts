@@ -1,6 +1,12 @@
+import { expectedUpdatedAtSchema } from '@repo/types';
 import z from 'zod';
 
 export const workItemIdSchema = z.uuid({ message: 'Invalid work item id.' });
+
+/** Body for the archive (soft-delete) mutation, which still needs the lock check. */
+export const archiveAttachmentSchema = z.object({
+  expectedUpdatedAt: expectedUpdatedAtSchema,
+});
 
 export const createUploadSessionSchema = z.object({
   work_item_id: workItemIdSchema.optional(),

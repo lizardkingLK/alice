@@ -86,7 +86,8 @@ export async function createUser(
 
 export async function toggleUserActive(
   userId: string,
-  active: boolean
+  active: boolean,
+  expectedUpdatedAt: string
 ): Promise<ActionState> {
   const currentUser = await getDbUser();
   if (!currentUser) {
@@ -112,7 +113,7 @@ export async function toggleUserActive(
 
   try {
     // Call API backend
-    await apiToggleUserActive(userId, active);
+    await apiToggleUserActive(userId, active, expectedUpdatedAt);
 
     revalidatePath('/users');
     invalidateDropdownCache(DROPDOWN_CACHE_TAGS.users);
@@ -137,6 +138,7 @@ export async function updateUser(
   const id = formData.get('id') as string;
   const name = formData.get('name') as string;
   const role = formData.get('role') as string;
+  const expectedUpdatedAt = formData.get('expectedUpdatedAt') as string;
 
   const validation = updateUserSchema.safeParse({ id, name, role });
 
@@ -165,10 +167,14 @@ export async function updateUser(
 
   try {
     // Call API backend
-    await apiUpdateUser(validation.data.id, {
-      name: validation.data.name,
-      role: validation.data.role,
-    });
+    await apiUpdateUser(
+      validation.data.id,
+      {
+        name: validation.data.name,
+        role: validation.data.role,
+      },
+      expectedUpdatedAt
+    );
 
     revalidatePath('/users');
     invalidateDropdownCache(DROPDOWN_CACHE_TAGS.users);

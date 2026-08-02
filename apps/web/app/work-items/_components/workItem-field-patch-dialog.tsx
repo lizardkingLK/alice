@@ -23,6 +23,8 @@ import {
   updateWorkItemStatus,
 } from '@/app/work-items/_services/workItem.service.client';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
+import { tryHandleLockedMutationError } from '@/lib/optimistic-lock/run-locked-mutation';
 
 export type WorkItemPatchFieldId =
   'assignee_id' | 'reporter_id' | 'title' | 'status';
@@ -91,6 +93,8 @@ type WorkItemFieldPatchDialogProps = {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly workItemId: string;
+  /** ISO `updated_at` from the last successful load/save (optimistic lock). */
+  readonly expectedUpdatedAt: string;
   readonly fieldConfig: WorkItemPatchFieldConfig;
   readonly options?: readonly WorkItemPatchMemberOption[];
   readonly currentValue: string | null;
@@ -134,11 +138,13 @@ export function WorkItemFieldPatchDialog({
   open,
   onOpenChange,
   workItemId,
+  expectedUpdatedAt,
   fieldConfig,
   options = [],
   currentValue,
   onPatched,
 }: Readonly<WorkItemFieldPatchDialogProps>) {
+  const { handleMutationError } = useOptimisticLock();
   const isTextField = fieldConfig.kind === 'text';
   const isStatusField = fieldConfig.kind === 'status';
   const [selectedValue, setSelectedValue] = useState(
@@ -178,23 +184,35 @@ export function WorkItemFieldPatchDialog({
 
     const formData = new FormData();
     formData.set('title', nextTextValue);
-    const response = await updateWorkItem(workItemId, formData);
+    const response = await updateWorkItem(
+      workItemId,
+      formData,
+      expectedUpdatedAt
+    );
 
     await finishWithInDialogSuccess(
       `${fieldConfig.label} updated successfully.`,
       {
         title: response.data?.title ?? nextTextValue,
+        updated_at: response.data?.updated_at,
       }
     );
   };
 
   const saveStatusField = async () => {
     const nextStatus = selectedValue as DbWorkItem['status'];
-    const response = await updateWorkItemStatus(workItemId, nextStatus);
+    const response = await updateWorkItemStatus(
+      workItemId,
+      nextStatus,
+      expectedUpdatedAt
+    );
     const status = response.data?.status ?? nextStatus;
 
     toast.success(`Status updated to ${formatLabelWithSpace(status)}.`);
-    onPatched({ status });
+    onPatched({
+      status,
+      updated_at: response.data?.updated_at,
+    });
     onOpenChange(false);
   };
 
@@ -202,17 +220,24 @@ export function WorkItemFieldPatchDialog({
     const nextId = selectedValue === UNASSIGNED_VALUE ? '' : selectedValue;
     const formData = new FormData();
     formData.set(fieldConfig.field, nextId);
-    const response = await updateWorkItem(workItemId, formData);
+    const response = await updateWorkItem(
+      workItemId,
+      formData,
+      expectedUpdatedAt
+    );
     const userField = fieldConfig.field as 'assignee_id' | 'reporter_id';
 
     await finishWithInDialogSuccess(
       `${fieldConfig.label} updated successfully.`,
-      buildUserPatchPayload({
-        field: userField,
-        nextId,
-        members: options,
-        updated: response.data,
-      })
+      {
+        ...buildUserPatchPayload({
+          field: userField,
+          nextId,
+          members: options,
+          updated: response.data,
+        }),
+        updated_at: response.data?.updated_at,
+      }
     );
   };
 
@@ -229,6 +254,30 @@ export function WorkItemFieldPatchDialog({
         await saveUserField();
       }
     } catch (error) {
+      const pendingFields: Record<string, unknown> = {};
+      if (fieldConfig.kind === 'text') {
+        pendingFields.title = selectedValue.trim();
+      } else if (fieldConfig.kind === 'status') {
+        pendingFields.status = selectedValue;
+      } else {
+        pendingFields[fieldConfig.field] =
+          selectedValue === UNASSIGNED_VALUE ? null : selectedValue;
+      }
+
+      if (
+        await tryHandleLockedMutationError({
+          error,
+          handleMutationError,
+          entityType: 'work_item',
+          entityId: workItemId,
+          expectedUpdatedAt,
+          pendingFields,
+        })
+      ) {
+        onOpenChange(false);
+        return;
+      }
+
       const message =
         error instanceof Error ? error.message : 'Something went wrong.';
       setAlert({ success: null, error: message });

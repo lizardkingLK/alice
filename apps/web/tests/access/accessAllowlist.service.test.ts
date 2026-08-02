@@ -80,12 +80,19 @@ describe('createAccessAllowlistService', () => {
     const input = { label: 'Updated', status: 'inactive' as const };
 
     // Act
-    const updated = await service.updateAccessAllowlistEntry(entry.id, input);
+    const updated = await service.updateAccessAllowlistEntry(
+      entry.id,
+      input,
+      '2024-01-01T00:00:00.000Z'
+    );
 
     // Assert
     expect(apiFetch).toHaveBeenCalledWith(`/api/accessAllowlist/${entry.id}`, {
       method: 'PUT',
-      body: JSON.stringify(input),
+      body: JSON.stringify({
+        ...input,
+        expectedUpdatedAt: '2024-01-01T00:00:00.000Z',
+      }),
     });
     expect(updated).toEqual(entry);
   });

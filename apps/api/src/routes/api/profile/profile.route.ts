@@ -1,10 +1,12 @@
 import multer, { Multer } from 'multer';
 import { Router } from 'express';
 import { z } from 'zod';
+import { expectedUpdatedAtSchema } from '@repo/types';
 import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
+import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
 import { profileService, updateOwnProfileSchema } from './profile.service';
 
 const profileRouter: Router = Router();
@@ -39,10 +41,25 @@ profileRouter.post(
       return;
     }
 
+    const expectedUpdatedAtResult = expectedUpdatedAtSchema.safeParse(
+      req.body?.expectedUpdatedAt
+    );
+    if (!expectedUpdatedAtResult.success) {
+      res.status(400).json({
+        error: z.treeifyError(expectedUpdatedAtResult.error),
+      });
+      return;
+    }
+
     try {
-      const result = await profileService.updateOwnProfilePicture(userId, file);
+      const result = await profileService.updateOwnProfilePicture(
+        userId,
+        file,
+        expectedUpdatedAtResult.data
+      );
       res.json(result);
     } catch (error) {
+      if (trySendOptimisticLockError(res, error)) return;
       const message =
         error instanceof Error
           ? error.message
@@ -88,6 +105,7 @@ profileRouter.patch(
       const user = await profileService.updateOwnName(userId, parsed.data);
       res.json({ user });
     } catch (error) {
+      if (trySendOptimisticLockError(res, error)) return;
       const message =
         error instanceof Error ? error.message : 'Failed to update profile.';
       const status = message.includes('not found') ? 404 : 500;

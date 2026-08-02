@@ -53,18 +53,27 @@ function Toaster({ ...props }: Readonly<ToasterProps>) {
       toastOptions={{
         classNames: {
           toast:
-            'cn-toast flex! min-h-12 w-auto min-w-[16rem] items-center border py-2.5 pr-2 pl-3.5 shadow-md',
-          title: 'text-sm leading-none font-medium',
+            'cn-toast flex! min-h-12 w-auto min-w-[16rem] items-center gap-2 border py-2.5 pr-3.5 pl-3.5 shadow-md',
+          title: 'text-sm leading-snug font-medium',
           content: 'flex! w-auto! flex-none! items-center',
-          icon: 'm-0! mr-2!',
-          success: '[&_[data-icon]]:text-primary!',
+          icon: 'm-0! mr-0!',
+          success: [
+            'bg-emerald-500/10! text-emerald-600! border-emerald-500/20!',
+            'dark:text-emerald-400! [&_[data-icon]]:text-emerald-600! dark:[&_[data-icon]]:text-emerald-400!',
+            '[&_[data-close-button]]:text-emerald-600/70! dark:[&_[data-close-button]]:text-emerald-400/70!',
+            '[&_[data-close-button]:hover]:text-emerald-700! dark:[&_[data-close-button]:hover]:text-emerald-300!',
+          ].join(' '),
           error: [
-            'bg-destructive! text-white! [&_[data-icon]]:text-white',
-            '[&_[data-close-button]]:text-white/80! [&_[data-close-button]:hover]:text-white!',
+            'bg-destructive/10! text-destructive! border-destructive/20!',
+            '[&_[data-icon]]:text-destructive!',
+            '[&_[data-close-button]]:text-destructive/70!',
+            '[&_[data-close-button]:hover]:text-destructive!',
           ].join(' '),
           warning: [
-            'bg-amber-500! text-white! dark:bg-amber-600! [&_[data-icon]]:text-white',
-            '[&_[data-close-button]]:text-white/80! [&_[data-close-button]:hover]:text-white!',
+            'bg-amber-500/10! text-amber-700! border-amber-500/20!',
+            'dark:text-amber-400! [&_[data-icon]]:text-amber-600! dark:[&_[data-icon]]:text-amber-400!',
+            '[&_[data-close-button]]:text-amber-700/70! dark:[&_[data-close-button]]:text-amber-400/70!',
+            '[&_[data-close-button]:hover]:text-amber-800! dark:[&_[data-close-button]:hover]:text-amber-300!',
           ].join(' '),
           info: '[&_[data-icon]]:text-primary!',
           description: 'hidden',

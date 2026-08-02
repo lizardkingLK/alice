@@ -78,7 +78,8 @@ export async function createProject(
 export async function updateProject(
   projectId: string,
   _prevState: ActionState | null,
-  formData: FormData
+  formData: FormData,
+  expectedUpdatedAt: string
 ): Promise<ActionState> {
   return runProjectMutation(async () => {
     const parsed = parseProjectForm(formData);
@@ -86,16 +87,19 @@ export async function updateProject(
       return parsed.state;
     }
 
-    // Call API backend
-    await apiUpdateProject(projectId, {
-      name: parsed.data.name,
-      key: parsed.data.key,
-      description: parsed.data.description ?? null,
-      owner_id: parsed.data.owner_id,
-      start_date: parsed.data.start_date ?? null,
-      end_date: parsed.data.end_date ?? null,
-      status: parsed.data.status,
-    });
+    await apiUpdateProject(
+      projectId,
+      {
+        name: parsed.data.name,
+        key: parsed.data.key,
+        description: parsed.data.description ?? null,
+        owner_id: parsed.data.owner_id,
+        start_date: parsed.data.start_date ?? null,
+        end_date: parsed.data.end_date ?? null,
+        status: parsed.data.status,
+      },
+      expectedUpdatedAt
+    );
 
     revalidateProjects();
     return actionSuccess();
@@ -103,18 +107,22 @@ export async function updateProject(
 }
 
 export async function softDeleteProject(
-  projectId: string
+  projectId: string,
+  expectedUpdatedAt: string
 ): Promise<ActionState> {
   return runProjectMutation(async () => {
-    await apiSoftDeleteProject(projectId);
+    await apiSoftDeleteProject(projectId, expectedUpdatedAt);
     revalidateProjects();
     return actionSuccess();
   });
 }
 
-export async function restoreProject(projectId: string): Promise<ActionState> {
+export async function restoreProject(
+  projectId: string,
+  expectedUpdatedAt: string
+): Promise<ActionState> {
   return runProjectMutation(async () => {
-    await apiRestoreProject(projectId);
+    await apiRestoreProject(projectId, expectedUpdatedAt);
     revalidateProjects();
     return actionSuccess();
   });

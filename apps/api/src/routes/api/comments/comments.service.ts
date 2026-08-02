@@ -63,9 +63,14 @@ export class CommentsService {
   async updateComment(
     id: string,
     content: string,
+    expectedUpdatedAt: string,
     actorId?: string
   ): Promise<CommentRow> {
-    const updated = await commentsRepository.update(id, content);
+    const updated = await commentsRepository.update(
+      id,
+      content,
+      expectedUpdatedAt
+    );
 
     const editorId = actorId || updated.author_id;
     this.notifyMentionedUsers(editorId, updated).catch((err) => {
@@ -75,12 +80,12 @@ export class CommentsService {
     return updated;
   }
 
-  async archiveComment(id: string): Promise<void> {
-    await commentsRepository.archive(id);
+  async archiveComment(id: string, expectedUpdatedAt: string): Promise<void> {
+    await commentsRepository.archive(id, expectedUpdatedAt);
   }
 
-  async restoreComment(id: string): Promise<void> {
-    await commentsRepository.restore(id);
+  async restoreComment(id: string, expectedUpdatedAt: string): Promise<void> {
+    await commentsRepository.restore(id, expectedUpdatedAt);
   }
 
   async hardDeleteComment(id: string): Promise<void> {

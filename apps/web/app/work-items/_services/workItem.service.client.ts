@@ -1,5 +1,6 @@
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { apiFetch } from '@/lib/api/api-client';
+import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
 import type { WorkItemWorkLog } from '@repo/types';
 import { ResponseDTO } from '@repo/types/connection';
 
@@ -39,22 +40,46 @@ export async function createWorkItem(
   });
 }
 
+function formDataToPatchBody(
+  formData: FormData,
+  expectedUpdatedAt: string
+): Record<string, unknown> {
+  const body: Record<string, unknown> = Object.fromEntries(formData.entries());
+  body.expectedUpdatedAt = expectedUpdatedAt;
+  return body;
+}
+
 export async function updateWorkItem(
   id: string,
-  formData: FormData
+  formData: FormData,
+  expectedUpdatedAt: string
 ): Promise<ResponseDTO<DbWorkItem>> {
   return await apiFetch<ResponseDTO<DbWorkItem>>(`${workItemsPath}/${id}`, {
     method: 'PATCH',
-    body: JSON.stringify(Object.fromEntries(formData.entries())),
+    body: JSON.stringify(formDataToPatchBody(formData, expectedUpdatedAt)),
   });
 }
 
 export async function updateWorkItemStatus(
   id: string,
-  status: DbWorkItem['status']
+  status: DbWorkItem['status'],
+  expectedUpdatedAt: string
 ): Promise<ResponseDTO<DbWorkItem>> {
   return await apiFetch<ResponseDTO<DbWorkItem>>(`${workItemsPath}/${id}`, {
     method: 'PATCH',
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, expectedUpdatedAt }),
   });
+}
+
+/** Force-apply pending fields after a user confirms Keep mine / merge. */
+export async function forceUpdateWorkItemFields(
+  id: string,
+  pendingFields: Record<string, unknown>,
+  expectedUpdatedAt: string
+): Promise<ResponseDTO<DbWorkItem>> {
+  return forceOptimisticPatch<ResponseDTO<DbWorkItem>>(
+    apiFetch,
+    `${workItemsPath}/${id}`,
+    { pendingFields, expectedUpdatedAt, method: 'PATCH' }
+  );
 }

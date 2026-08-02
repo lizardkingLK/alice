@@ -70,7 +70,9 @@ import { updateWorkItemStatus } from '@/app/work-items/_services/workItem.servic
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { ListFilterSelect } from '@/components/list-filter-select';
 import { SearchInput } from '@/components/search-input';
+import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { useQueryFilter } from '@/hooks/use-query-filter';
+import { tryHandleLockedMutationError } from '@/lib/optimistic-lock/run-locked-mutation';
 
 type BoardStatus = Exclude<DbWorkItem['status'], 'Draft'>;
 type BoardPriority = DbWorkItem['priority'];
@@ -132,6 +134,7 @@ export function KanbanBoard({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { handleMutationError } = useOptimisticLock();
   const [workItems, setWorkItems] = useState<DbWorkItem[]>(initialWorkItems);
   const [search, setSearch] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
@@ -318,6 +321,19 @@ export function KanbanBoard({
     });
   };
 
+  const reportStatusUpdateFailure = (error: unknown) => {
+    let message: string;
+    if (error instanceof Error && error.message.trim()) {
+      message = error.message;
+    } else if (typeof error === 'string' && error.trim()) {
+      message = error;
+    } else {
+      message = 'Failed to update work item status.';
+    }
+
+    setStatusError(message);
+  };
+
   const applyStatusChange = (id: string, targetStatus: BoardStatus) => {
     const currentItem = workItems.find((item) => item.id === id);
     if (!currentItem || currentItem.status === targetStatus) {
@@ -333,11 +349,11 @@ export function KanbanBoard({
     setPendingStatusIds((previous) => new Set(previous).add(id));
     restoreStatus(id, targetStatus);
 
-    updateWorkItemStatus(id, targetStatus)
+    updateWorkItemStatus(id, targetStatus, currentItem.updated_at)
       .then((response) => {
         if (response.error || !response.data) {
           restoreStatus(id, previousStatus);
-          setStatusError(
+          reportStatusUpdateFailure(
             typeof response.error === 'string'
               ? response.error
               : 'Failed to update work item status.'
@@ -347,9 +363,22 @@ export function KanbanBoard({
 
         syncWorkItem(id, response.data);
       })
-      .catch(() => {
+      .catch(async (error) => {
         restoreStatus(id, previousStatus);
-        setStatusError('Failed to update work item status.');
+        if (
+          await tryHandleLockedMutationError({
+            error,
+            handleMutationError,
+            entityType: 'work_item',
+            entityId: id,
+            expectedUpdatedAt: currentItem.updated_at,
+            pendingFields: { status: targetStatus },
+            currentUserId: userId,
+          })
+        ) {
+          return;
+        }
+        reportStatusUpdateFailure(error);
       })
       .finally(() => {
         clearPendingStatus(id);

@@ -4,6 +4,7 @@ import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
+import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
 import {
   createSprintBodySchema,
   updateSprintStatusSchema,
@@ -63,10 +64,12 @@ sprintsRouter.patch(
       const sprint = await sprintsService.updateSprintStatus(
         req.userId!,
         req.params.id!,
-        serviceStatus
+        serviceStatus,
+        parsed.data.expectedUpdatedAt
       );
       res.json({ sprint });
     } catch (error) {
+      if (trySendOptimisticLockError(res, error)) return;
       const message =
         error instanceof Error
           ? error.message
@@ -94,6 +97,7 @@ sprintsRouter.patch(
       );
       res.json({ sprint });
     } catch (error) {
+      if (trySendOptimisticLockError(res, error)) return;
       const message =
         error instanceof Error ? error.message : 'Failed to update sprint';
       res.status(500).json({ error: message });
