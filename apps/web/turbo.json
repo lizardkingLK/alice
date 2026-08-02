@@ -1,0 +1,20 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": ["$TURBO_DEFAULT$", ".env*", "$TURBO_ROOT$/docs/**"]
+    },
+    "dev": {
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/docs/**"]
+    },
+    "docs:sync": {
+      "cache": false,
+      "inputs": [
+        "$TURBO_ROOT$/docs/**",
+        "scripts/docs-sync.mjs",
+        "lib/docs/docs-shared.ts"
+      ],
+      "outputs": ["content/docs/**", "content/docs-index.json"]
+    }
+  }
+}
