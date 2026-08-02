@@ -59,7 +59,9 @@ function markLevelVisited(
 
 async function loadMissingLevelChildren(
   parentsThisLevel: readonly string[],
-  state: ExpandAllState
+  state: ExpandAllState,
+  // eslint-disable-next-line no-unused-vars -- error callback signature
+  onError?: (message: string) => void
 ): Promise<void> {
   const missingParents = parentsThisLevel.filter(
     (parentId) => !state.nextChildren.has(parentId)
@@ -70,8 +72,13 @@ async function loadMissingLevelChildren(
 
   const loaded = await Promise.all(
     missingParents.map(async (parentId) => {
-      const children = await loadWorkItemChildrenAction(parentId);
-      return [parentId, children] as const;
+      try {
+        const children = await loadWorkItemChildrenAction(parentId);
+        return [parentId, children] as const;
+      } catch (loadError) {
+        onError?.(errorMessage(loadError, 'Failed to load subtasks.'));
+        return [parentId, [] as DbWorkItem[]] as const;
+      }
     })
   );
 
@@ -108,6 +115,8 @@ async function expandHierarchyBreadthFirst(options: {
     // eslint-disable-next-line no-unused-vars -- Set merge updater
     updater: (prev: Set<string>) => Set<string>
   ) => void;
+  // eslint-disable-next-line no-unused-vars -- error callback signature
+  readonly onError?: (message: string) => void;
 }): Promise<void> {
   const state: ExpandAllState = {
     nextExpanded: new Set(options.expandedIds),
@@ -123,7 +132,7 @@ async function expandHierarchyBreadthFirst(options: {
     );
 
     markLevelVisited(parentsThisLevel, state);
-    await loadMissingLevelChildren(parentsThisLevel, state);
+    await loadMissingLevelChildren(parentsThisLevel, state, options.onError);
 
     // Merge so concurrent toggle loads / collapses are preserved.
     options.commitChildren((prev) =>
@@ -218,6 +227,7 @@ export function useWorkItemHierarchy({
         childrenByParentId,
         commitChildren: setChildrenByParentId,
         commitExpanded: setExpandedIds,
+        onError,
       });
     } catch (expandError) {
       onError?.(errorMessage(expandError, 'Failed to expand work items.'));
