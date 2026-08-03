@@ -311,8 +311,11 @@ sequenceDiagram
 
 ### Activate / deactivate
 
-- API toggles `public.users.active` and Auth `ban_duration` so deactivated users cannot keep using tokens effectively.
+- Shared API kill switch: `public.users.active = false` + Auth `ban_duration` via `usersService.deactivateUser`.
+- **Admin:** `/users` registry → `PATCH /api/users/:id/toggle-active`.
+- **Self:** Edit profile Danger zone → same toggle-active on own id → sign out → `/?account=closed`.
 - Web `getUser()` treats inactive registry rows as unauthenticated for UI gates.
+- **Webhook** offboarding still planned — see [ACCOUNT_DEACTIVATION.md](../features/users/ACCOUNT_DEACTIVATION.md). No allowlist deny-list.
 
 ### Security notes
 

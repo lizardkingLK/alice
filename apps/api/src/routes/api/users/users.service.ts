@@ -32,6 +32,13 @@ export type UpdateUserInput = {
   role: 'admin' | 'manager' | 'member';
 };
 
+export type DeactivateActor =
+  | { type: 'admin'; actorId: string }
+  | { type: 'self'; actorId: string }
+  | { type: 'webhook'; source: string };
+
+const AUTH_BAN_DURATION = '87600h';
+
 export class UsersService {
   async listUsers(actorId: string): Promise<UserRow[]>;
   async listUsers(
@@ -136,43 +143,134 @@ export class UsersService {
     return updated;
   }
 
+  /**
+   * Shared kill switch: `public.users.active = false` + Auth ban.
+   * Used by admin toggle, self-deactivate, and (later) webhook.
+   */
+  async deactivateUser(
+    targetUserId: string,
+    actor: DeactivateActor,
+    options?: { expectedUpdatedAt?: string }
+  ): Promise<UserRow> {
+    const target = await usersRepository.findById(targetUserId);
+    if (!target) {
+      throw new Error('User not found.');
+    }
+
+    if (actor.type === 'admin') {
+      await requireAdmin(actor.actorId);
+    } else if (actor.type === 'self') {
+      if (actor.actorId !== targetUserId) {
+        throw new Error(
+          'Unauthorized. You can only deactivate your own account.'
+        );
+      }
+    } else if (actor.type === 'webhook') {
+      // Authz is enforced at the webhook route (shared secret).
+    }
+
+    if (!target.active) {
+      await this.setAuthBanDuration(targetUserId, AUTH_BAN_DURATION);
+      this.logDeactivation('idempotent', actor.type);
+      return target;
+    }
+
+    if (target.role === 'admin') {
+      const otherAdmins =
+        await usersRepository.countOtherActiveAdmins(targetUserId);
+      if (otherAdmins < 1) {
+        throw new Error('Cannot deactivate the last active admin.');
+      }
+    }
+
+    const actorIdForAudit =
+      actor.type === 'webhook' ? targetUserId : actor.actorId;
+
+    const expectedUpdatedAt = options?.expectedUpdatedAt ?? target.updated_at;
+
+    const updated = await usersRepository.update(
+      targetUserId,
+      { active: false },
+      actorIdForAudit,
+      expectedUpdatedAt
+    );
+
+    await this.setAuthBanDuration(targetUserId, AUTH_BAN_DURATION);
+    this.logDeactivation('deactivated', actor.type);
+
+    return updated;
+  }
+
+  /**
+   * Log only closed-enum actor types — never interpolate request ids/source
+   * (Sonar tssecurity:S5145).
+   */
+  private logDeactivation(
+    outcome: 'idempotent' | 'deactivated',
+    actorType: DeactivateActor['type']
+  ): void {
+    switch (actorType) {
+      case 'admin':
+        console.warn(`warn. user deactivated (${outcome}): actor=admin`);
+        return;
+      case 'self':
+        console.warn(`warn. user deactivated (${outcome}): actor=self`);
+        return;
+      case 'webhook':
+        console.warn(`warn. user deactivated (${outcome}): actor=webhook`);
+        return;
+    }
+  }
+
+  /** Ban (`87600h`) or unban (`none`) in Supabase Auth. */
+  private async setAuthBanDuration(
+    userId: string,
+    banDuration: typeof AUTH_BAN_DURATION | 'none'
+  ): Promise<void> {
+    const { error: authError } = await supabase.auth.admin.updateUserById(
+      userId,
+      { ban_duration: banDuration }
+    );
+
+    if (authError) {
+      console.error('Failed to update ban status in Supabase Auth');
+    }
+  }
+
   async toggleUserActive(
     actorId: string,
     targetUserId: string,
     active: boolean,
     expectedUpdatedAt: string
   ): Promise<UserRow> {
-    await requireAdmin(actorId);
+    if (active) {
+      await requireAdmin(actorId);
 
-    if (targetUserId === actorId && !active) {
-      throw new Error(
-        'Self lockout protection: You cannot deactivate your own account.'
+      const updated = await usersRepository.update(
+        targetUserId,
+        { active: true },
+        actorId,
+        expectedUpdatedAt
+      );
+
+      await this.setAuthBanDuration(targetUserId, 'none');
+      return updated;
+    }
+
+    // Deactivate: admin (other user) or self (same user) via the same route.
+    if (actorId === targetUserId) {
+      return this.deactivateUser(
+        targetUserId,
+        { type: 'self', actorId },
+        { expectedUpdatedAt }
       );
     }
 
-    // 1. Update public.users status
-    const updated = await usersRepository.update(
+    return this.deactivateUser(
       targetUserId,
-      {
-        active,
-      },
-      actorId,
-      expectedUpdatedAt
+      { type: 'admin', actorId },
+      { expectedUpdatedAt }
     );
-
-    // 2. Ban/unban in Supabase Auth to prevent logins
-    const { error: authError } = await supabase.auth.admin.updateUserById(
-      targetUserId,
-      {
-        ban_duration: active ? 'none' : '87600h',
-      }
-    );
-
-    if (authError) {
-      console.error('Failed to update ban status in Supabase Auth');
-    }
-
-    return updated;
   }
 }
 

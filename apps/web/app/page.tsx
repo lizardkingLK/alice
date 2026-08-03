@@ -10,7 +10,7 @@ import { HomeHowItWorks } from '@/app/_components/home/home-how-it-works';
 import './globals.css';
 
 type HomeProps = {
-  searchParams: Promise<{ reset?: string }>;
+  searchParams: Promise<{ reset?: string; account?: string }>;
 };
 
 export default async function Home({ searchParams }: Readonly<HomeProps>) {
@@ -18,8 +18,9 @@ export default async function Home({ searchParams }: Readonly<HomeProps>) {
 
   const showAppLinks = user?.email ? await isEmailAllowed(user.email) : false;
 
-  const { reset } = await searchParams;
+  const { reset, account } = await searchParams;
   const resetSuccess = reset === 'success';
+  const accountClosed = account === 'closed';
 
   return (
     <main className="h-dvh snap-y snap-mandatory overflow-y-auto">
@@ -33,6 +34,12 @@ export default async function Home({ searchParams }: Readonly<HomeProps>) {
         {resetSuccess ? (
           <output className="absolute top-16 text-sm text-emerald-600">
             Password updated. Sign in with your new password.
+          </output>
+        ) : null}
+        {accountClosed ? (
+          <output className="text-muted-foreground absolute top-16 max-w-md px-4 text-center text-sm">
+            Your account has been deactivated. Contact an administrator if you
+            need access restored.
           </output>
         ) : null}
         <div>

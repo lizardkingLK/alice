@@ -68,6 +68,26 @@ export class UsersRepository {
     return data as UserRow | null;
   }
 
+  /** Active admins other than `excludeUserId` (for last-admin guard). */
+  async countOtherActiveAdmins(excludeUserId: string): Promise<number> {
+    const { count, error } = await supabase
+      .from('users')
+      .select('id', { count: 'exact', head: true })
+      .eq('role', 'admin')
+      .eq('active', true)
+      .neq('id', excludeUserId);
+
+    if (error) {
+      console.error(
+        'error. failed to count other active admins:',
+        error.message
+      );
+      throw new Error('Failed to verify admin coverage');
+    }
+
+    return count ?? 0;
+  }
+
   async findByEmail(email: string): Promise<UserRow | null> {
     const { data, error } = await supabase
       .from('users')
