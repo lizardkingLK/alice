@@ -57,6 +57,19 @@ function markLevelVisited(
   }
 }
 
+async function loadChildrenForParent(
+  parentId: string,
+  // eslint-disable-next-line no-unused-vars -- error callback signature
+  onError?: (message: string) => void
+): Promise<DbWorkItem[] | null> {
+  const result = await loadWorkItemChildrenAction(parentId);
+  if (!result.ok) {
+    onError?.(result.error);
+    return null;
+  }
+  return result.children;
+}
+
 async function loadMissingLevelChildren(
   parentsThisLevel: readonly string[],
   state: ExpandAllState,
@@ -72,13 +85,8 @@ async function loadMissingLevelChildren(
 
   const loaded = await Promise.all(
     missingParents.map(async (parentId) => {
-      try {
-        const children = await loadWorkItemChildrenAction(parentId);
-        return [parentId, children] as const;
-      } catch (loadError) {
-        onError?.(errorMessage(loadError, 'Failed to load subtasks.'));
-        return [parentId, [] as DbWorkItem[]] as const;
-      }
+      const children = await loadChildrenForParent(parentId, onError);
+      return [parentId, children ?? []] as const;
     })
   );
 
@@ -171,7 +179,15 @@ export function useWorkItemHierarchy({
 
       setLoadingIds((prev) => new Set(prev).add(parentId));
       try {
-        const children = await loadWorkItemChildrenAction(parentId);
+        const children = await loadChildrenForParent(parentId, onError);
+        if (children === null) {
+          setExpandedIds((prev) => {
+            const next = new Set(prev);
+            next.delete(parentId);
+            return next;
+          });
+          return [];
+        }
         setChildrenByParentId((prev) => {
           const next = new Map(prev);
           next.set(parentId, children);
