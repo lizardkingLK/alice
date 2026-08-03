@@ -128,6 +128,20 @@ usersRouter.patch(
         error instanceof Error
           ? error.message
           : 'Failed to update user active status';
+
+      if (
+        message.includes('Unauthorized') ||
+        message.includes('only deactivate') ||
+        message.includes('last active admin')
+      ) {
+        return res.status(403).json({ error: message });
+      }
+      if (message === 'User not found.' || message === 'Not authenticated.') {
+        return res.status(message === 'Not authenticated.' ? 401 : 404).json({
+          error: message,
+        });
+      }
+
       res.status(500).json({ error: message });
     }
   }

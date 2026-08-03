@@ -1,8 +1,9 @@
 # Users feature documentation
 
-| Document                                   | Description                                                      |
-| ------------------------------------------ | ---------------------------------------------------------------- |
-| [USER_MANAGEMENT.md](./USER_MANAGEMENT.md) | Registry UI, invitation emails, activate/deactivate, RBAC status |
+| Document                                             | Description                                                                     | Status       |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------- | ------------ |
+| [USER_MANAGEMENT.md](./USER_MANAGEMENT.md)           | Registry UI, invitation emails, activate/deactivate, RBAC status                | Living       |
+| [ACCOUNT_DEACTIVATION.md](./ACCOUNT_DEACTIVATION.md) | Offboarding: admin + self-deactivate + webhook → shared `deactivateUser` helper | Phase 1 done |
 
 Quick links:
 

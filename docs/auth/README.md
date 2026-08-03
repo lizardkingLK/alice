@@ -11,4 +11,5 @@ Identity and access docs for Alice (Jira Teams). Start with the living authentic
 Related feature docs:
 
 - [User management](../features/users/) — registry UI, roles, activate/deactivate; allowlist admin tab
+- [Account deactivation](../features/users/ACCOUNT_DEACTIVATION.md) — offboarding (admin / self done; webhook planned)
 - [Access allowlist](../features/access/) — email domain / email admission gate (**Living**)

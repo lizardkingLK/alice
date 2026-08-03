@@ -104,15 +104,8 @@ export async function toggleUserActive(
     };
   }
 
-  if (userId === currentUser.id && !active) {
-    return {
-      success: false,
-      error: 'Self lockout protection: You cannot deactivate your own account.',
-    };
-  }
-
   try {
-    // Call API backend
+    // Call API backend (self-deactivate allowed at API with last-admin guard)
     await apiToggleUserActive(userId, active, expectedUpdatedAt);
 
     revalidatePath('/users');
