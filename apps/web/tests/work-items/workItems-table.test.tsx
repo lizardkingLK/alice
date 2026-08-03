@@ -116,7 +116,9 @@ function arrangeEpicWithChildStory() {
     parent_id: 'epic-1',
   });
   vi.mocked(loadWorkItemChildrenAction).mockImplementation(async (parentId) =>
-    parentId === 'epic-1' ? [story] : []
+    parentId === 'epic-1'
+      ? { ok: true, children: [story] }
+      : { ok: true, children: [] }
   );
   return { epic, story };
 }
@@ -435,9 +437,10 @@ describe('WorkItemsTable', () => {
       title: 'Parent epic',
       parent_id: null,
     });
-    vi.mocked(loadWorkItemChildrenAction).mockRejectedValue(
-      new Error('error. failed to load subtasks')
-    );
+    vi.mocked(loadWorkItemChildrenAction).mockResolvedValue({
+      ok: false,
+      error: 'Not authorized to view this work item.',
+    });
 
     renderTable({
       initialWorkItems: [epic],
@@ -451,7 +454,7 @@ describe('WorkItemsTable', () => {
 
     // Assert
     expect(
-      await screen.findByText('error. failed to load subtasks')
+      await screen.findByText('Not authorized to view this work item.')
     ).toBeInTheDocument();
     expect(
       await screen.findByRole('button', { name: /Expand subtasks/i })
