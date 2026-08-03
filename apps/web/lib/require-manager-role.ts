@@ -1,25 +1,13 @@
-import { getDbUser } from '@/lib/auth';
-import type { Tables } from '@repo/types';
+import {
+  requireManagerOrAdmin,
+  type RolePermissionResult,
+} from '@/lib/rbac/require-role';
 
-export type ManagePermissionResult =
-  | { allowed: true; currentUser: Tables<'users'> }
-  | { allowed: false; error: string };
+export type ManagePermissionResult = RolePermissionResult;
 
 /** Auth gate for admin/manager-only server mutations. */
 export async function requireManagerRole(
   unauthorizedMessage: string
 ): Promise<ManagePermissionResult> {
-  const currentUser = await getDbUser();
-  if (!currentUser) {
-    return { allowed: false, error: 'Not authenticated.' };
-  }
-
-  if (currentUser.role !== 'admin' && currentUser.role !== 'manager') {
-    return {
-      allowed: false,
-      error: unauthorizedMessage,
-    };
-  }
-
-  return { allowed: true, currentUser };
+  return requireManagerOrAdmin(unauthorizedMessage);
 }

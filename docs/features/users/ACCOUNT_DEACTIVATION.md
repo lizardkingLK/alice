@@ -109,7 +109,7 @@ async function deactivateUser(
 ### Activate stays separate
 
 `toggleUserActive(..., active: true)` (or rename to `activateUser`) remains admin-only and does **not** go through `deactivateUser`.  
-`toggleUserActive(..., active: false)` becomes a thin wrapper: self-lockout check → `deactivateUser(id, { type: 'admin', actorId }, { expectedUpdatedAt })`.
+`toggleUserActive(..., active: false)` is a thin wrapper that picks `self` vs `admin` actor from `actorId === targetUserId`, then calls `deactivateUser`.
 
 ---
 

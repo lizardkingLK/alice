@@ -67,7 +67,7 @@ Schema and domain notes (not the migration runbook — that lives under Guides).
 Authentication and authorization. Index: [auth/README.md](./auth/README.md).
 
 - [AUTHENTICATION.md](./auth/AUTHENTICATION.md) — sign up, sign in, Google, linking, admin invite, password reset + sequence diagrams (**Living**)
-- [RBAC_AUTHORIZATION_SKELETON.md](./auth/RBAC_AUTHORIZATION_SKELETON.md) — RBAC rollout (**Plan**)
+- [RBAC_AUTHORIZATION_SKELETON.md](./auth/RBAC_AUTHORIZATION_SKELETON.md) — Phase-1 role route matrix (**Implemented**)
 - [FORGOT_PASSWORD_AUTH_PLAN.md](./auth/FORGOT_PASSWORD_AUTH_PLAN.md) — original recovery plan (**Plan**; see AUTHENTICATION.md §7 for as-built)
 - Admission allowlist: [features/access/ACCESS_ALLOWLIST.md](./features/access/ACCESS_ALLOWLIST.md) (**Living**)
 - Account deactivation / offboarding: [features/users/ACCOUNT_DEACTIVATION.md](./features/users/ACCOUNT_DEACTIVATION.md) (phase 1 implemented)

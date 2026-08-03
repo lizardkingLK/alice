@@ -54,7 +54,10 @@ export async function DashboardShell({
         defaultOpen={sidebarDefaultOpen}
         className="h-svh overflow-hidden"
       >
-        <DashboardSidebar userId={dbUser?.id ?? null} />
+        <DashboardSidebar
+          userId={dbUser?.id ?? null}
+          role={dbUser?.role ?? null}
+        />
         <SidebarInset className="min-h-0 overflow-hidden">
           {stickyHeader ? (
             <>
