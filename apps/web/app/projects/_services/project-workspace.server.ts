@@ -1,4 +1,5 @@
 import { getDbUser } from '@/lib/auth';
+import { canAccessProjectWorkspace } from '@/lib/projects/project-workspace-access';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import {
   parseProjectDetailsTab,
@@ -101,13 +102,14 @@ function toTeamsPayload(
   };
 }
 
-export type ProjectWorkspaceData = {
-  project: Project;
-  members: ProjectMemberWithUser[];
-  allUsers: Awaited<ReturnType<typeof getUserList>>;
-  currentUserId?: string | null;
-  currentUserRole: string;
-  workItems: {
+export type ProjectWorkspaceAllowed = {
+  readonly access: 'allowed';
+  readonly project: Project;
+  readonly members: ProjectMemberWithUser[];
+  readonly allUsers: Awaited<ReturnType<typeof getUserList>>;
+  readonly currentUserId?: string | null;
+  readonly currentUserRole: string;
+  readonly workItems: {
     initialWorkItems: DbWorkItem[];
     totalCount: number;
     page: number;
@@ -118,7 +120,7 @@ export type ProjectWorkspaceData = {
     assigneeFilter: string;
     listView: 'flat' | 'hierarchy';
   };
-  teams: {
+  readonly teams: {
     items: Team[];
     totalCount: number;
     page: number;
@@ -129,14 +131,46 @@ export type ProjectWorkspaceData = {
   };
 };
 
+export type ProjectWorkspaceDenied = {
+  readonly access: 'denied';
+  readonly project: Project;
+};
+
+export type ProjectWorkspaceResult =
+  ProjectWorkspaceAllowed | ProjectWorkspaceDenied | null;
+
 /**
  * M4.2 — single RSC loader for the project detail surface
  * (details + members + users dropdown + project work items).
+ * Gates heavy loads behind admin | owner | project_members.
  */
 export async function getProjectWorkspace(
   projectId: string,
   searchParams: RawSearchParams
-): Promise<ProjectWorkspaceData | null> {
+): Promise<ProjectWorkspaceResult> {
+  const [dbUser, project] = await Promise.all([
+    getDbUser(),
+    safeServerFetch(getProjectDetails(projectId), null, 'load project details'),
+  ]);
+
+  if (!project) {
+    return null;
+  }
+
+  if (!dbUser) {
+    return { access: 'denied', project };
+  }
+
+  const allowed = await canAccessProjectWorkspace(
+    dbUser.id,
+    dbUser.role,
+    projectId
+  );
+  if (!allowed) {
+    console.warn('warn. project workspace access denied: role gate');
+    return { access: 'denied', project };
+  }
+
   const activeTab = parseProjectDetailsTab(searchParams.tab);
   const { page, limit, search } = parseStandardParams(searchParams, 10);
   const { type, assigneeId } = parseWorkItemFilters(searchParams);
@@ -150,57 +184,47 @@ export async function getProjectWorkspace(
   const workItemsLimit = isWorkItemsTab ? limit : 1;
   const workItemsSearch = isWorkItemsTab ? search : undefined;
 
-  const [dbUser, projectBundle, allUsers, workItemsResult, teamsResult] =
-    await Promise.all([
-      getDbUser(),
-      safeServerFetch<[Project, ProjectMemberWithUser[]] | null>(
-        Promise.all([
-          getProjectDetails(projectId),
-          getProjectMembers(projectId),
-        ]),
-        null,
-        'load project details'
+  const [members, allUsers, workItemsResult, teamsResult] = await Promise.all([
+    safeServerFetch(
+      getProjectMembers(projectId),
+      [] as ProjectMemberWithUser[],
+      'load project members'
+    ),
+    safeServerFetch(getUserList(), [], 'fetch users for project members'),
+    safeServerFetch(
+      getWorkItemsPaginated(workItemsPage, workItemsLimit, workItemsSearch, {
+        projectId,
+        ...(isWorkItemsTab
+          ? {
+              type,
+              assigneeId,
+              ...workItemHierarchyListFilter(listView),
+            }
+          : {}),
+      }),
+      EMPTY_WORK_ITEMS,
+      'fetch project work items'
+    ),
+    safeServerFetch(
+      getTeamListPaginated(
+        teamsPage,
+        teamsLimit,
+        teamStatus,
+        teamsSearch,
+        projectId
       ),
-      safeServerFetch(getUserList(), [], 'fetch users for project members'),
-      safeServerFetch(
-        getWorkItemsPaginated(workItemsPage, workItemsLimit, workItemsSearch, {
-          projectId,
-          ...(isWorkItemsTab
-            ? {
-                type,
-                assigneeId,
-                ...workItemHierarchyListFilter(listView),
-              }
-            : {}),
-        }),
-        EMPTY_WORK_ITEMS,
-        'fetch project work items'
-      ),
-      safeServerFetch(
-        getTeamListPaginated(
-          teamsPage,
-          teamsLimit,
-          teamStatus,
-          teamsSearch,
-          projectId
-        ),
-        EMPTY_TEAMS,
-        'fetch project teams'
-      ),
-    ]);
-
-  if (!projectBundle) {
-    return null;
-  }
-
-  const [project, members] = projectBundle;
+      EMPTY_TEAMS,
+      'fetch project teams'
+    ),
+  ]);
 
   return {
+    access: 'allowed',
     project,
     members,
     allUsers,
-    currentUserId: dbUser?.id,
-    currentUserRole: dbUser?.role ?? 'member',
+    currentUserId: dbUser.id,
+    currentUserRole: dbUser.role,
     workItems: toWorkItemsPayload(workItemsResult, {
       active: isWorkItemsTab,
       defaultLimit: limit,

@@ -2,7 +2,7 @@ import { USER_PROJECTION_WITH_ROLE, userRelationSelect } from '@repo/types';
 import { apiFetch } from '@/lib/api/api-client.server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { getUser } from '@/lib/auth';
+import { getDbUser, getUser } from '@/lib/auth';
 import { pageRange, paginationMeta } from '@/lib/db/pagination';
 import {
   applyListSearch,
@@ -11,6 +11,7 @@ import {
   zeroCountsById,
 } from '@/lib/db/query';
 import { getCachedProjectList } from '@/lib/cache/dropdown-cache';
+import { listAccessibleProjectIds } from '@/lib/projects/project-workspace-access';
 import { createProjectsService } from './projects.service.base';
 import type {
   GetProjectsPaginatedResponse,
@@ -49,11 +50,27 @@ export async function getProjectListPaginated(
   search?: string
 ): Promise<GetProjectsPaginatedResponse> {
   const supabase = await createClient();
+  const dbUser = await getDbUser();
+  const accessibleIds = dbUser
+    ? await listAccessibleProjectIds(dbUser.id, dbUser.role)
+    : [];
+
+  if (accessibleIds !== 'all' && accessibleIds.length === 0) {
+    return {
+      projects: [],
+      ...paginationMeta(0, page, limit),
+    };
+  }
+
   const { from, to } = pageRange(page, limit);
 
   let query = supabase
     .from('projects')
     .select(`*, ${OWNER_SELECT}`, { count: 'exact' });
+
+  if (accessibleIds !== 'all') {
+    query = query.in('id', accessibleIds);
+  }
 
   if (status === 'archived') {
     query = query.not('deleted_at', 'is', null);
