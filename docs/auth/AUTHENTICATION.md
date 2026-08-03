@@ -13,7 +13,7 @@ Living guide to how identity works in **Alice** (Jira Teams): email/password, Go
 Related:
 
 - [Auth index](./README.md)
-- [RBAC plan](./RBAC_AUTHORIZATION_SKELETON.md) — page-level authorization (partial)
+- [RBAC plan](./RBAC_AUTHORIZATION_SKELETON.md) — phase-1 role route matrix (implemented)
 - [User management](../features/users/USER_MANAGEMENT.md) — registry UI and roles
 - [Forgot-password plan](./FORGOT_PASSWORD_AUTH_PLAN.md) — historical plan; this doc is the as-built source of truth
 

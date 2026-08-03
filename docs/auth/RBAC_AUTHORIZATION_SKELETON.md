@@ -1,88 +1,109 @@
-# RBAC and Dashboard Authorization Plan (Skeleton)
+# RBAC and Dashboard Authorization (Phase 1)
 
 ## Document Metadata
 
 - Project: Alice (Jira Teams)
 - Area: Web Authorization (`apps/web`)
-- Version: 0.2 (Draft)
-- Status: Proposed
+- Version: 1.0 (Phase 1)
+- Status: Implemented
 - Owner: TBD
-- Last Updated: 2026-06-28
+- Last Updated: 2026-08-03
 
 ## 1. Understood Requirements
 
-This document captures the agreed direction:
-
 - Use **Supabase Auth** for authentication only (sign-in, sessions, JWT identity).
 - Do **not** store application roles in Supabase Auth `user_metadata` for authorization decisions.
-- Implement custom RBAC in application-owned database tables.
-- Add route-level authorization checks to decide whether a signed-in user can access a requested page.
-- Add dashboard access checks to block outside users from internal workspace routes.
+- Authorize from `public.users.role` (`admin` | `manager` | `member`) and `public.users.active`.
+- Enforce route access with defense in depth: sidebar hide + RSC layout redirects + Server Action / API guards.
 
-Related: `FORGOT_PASSWORD_AUTH_PLAN.md` (password recovery). User invites use the same `/reset-password` route — see `docs/features/users/USER_MANAGEMENT.md`. Index: `docs/README.md`.
+Related: `AUTHENTICATION.md`, `docs/features/users/USER_MANAGEMENT.md`, `docs/README.md`.
 
 ## 2. Problem Statement
 
-- Authorization rules must be portable, explicit, and owned by this codebase.
-- Access decisions need a single standard pattern for all protected routes.
-- Identity (`auth.users.id`) comes from Supabase; permissions come from app tables.
+- Signed-in users must not reach System or Projects admin surfaces without the right app role.
+- Access decisions need one policy module shared by UI and server gates.
+- Hide-in-UI alone is not security; layouts and mutations must enforce the same rules.
 
 ## 3. Scope
 
-### In Scope
+### In Scope (Phase 1)
 
-- Custom RBAC model design (users, roles, memberships, grants).
-- Authorization guard utilities for Next.js App Router pages/layouts.
-- Dashboard gate for outside/internal user classification.
-- Audit/logging hooks for denied access events.
+- Role hierarchy helpers and route/nav policy in `apps/web/lib/rbac/`.
+- Layout guards: `/users` (admin); `/projects`, `/sprints`, `/manager` (manager+).
+- Sidebar filtering for System and Projects groups.
+- Shared `requireAdmin` / `requireManagerOrAdmin` (and existing `requireManagerRole` wrapper).
 
-### Out of Scope (for initial rollout)
+### Out of Scope (Phase 2+)
 
-- Fine-grained field-level permissions.
-- Multi-tenant billing/entitlement policy engine.
-- UI for full admin permission matrix editing.
+- Separate `roles` / `permissions` / `role_permissions` tables.
+- Admin permission-matrix UI.
+- Fine-grained field-level grants or object-level ACLs beyond project membership.
+- Putting role into JWT / trusting `user_metadata` for authz.
+- Middleware path→role redirects via server-only role cookie (optional later).
 
 ## 4. Terminology
 
-- **Authenticated User:** Identity verified by Supabase Auth (`supabase.auth.getUser()`).
-- **Authorized User:** Authenticated user allowed by app RBAC policy.
-- **Outside User:** Signed-in identity without internal membership permission.
-- **Role:** Named permission grouping (example: `admin`, `manager`, `member`).
-- **Permission:** Atomic action grant (example: `project.read`, `issue.write`).
+- **Authenticated User:** Identity verified by Supabase Auth (`getUser()`).
+- **App role:** Value of `public.users.role` — `member` < `manager` < `admin`.
+- **Nav group:** Sidebar section keyed by policy (`platform`, `system`, `projects`, …).
 
-## 5. Proposed Architecture (Skeleton)
+## 5. Phase 1 Role × Route Matrix
 
-- Auth source: Supabase Auth user ID (`user.id` UUID).
-- Authorization source: App database tables (Supabase / `@repo/db` migrations).
-- Decision point: Shared server-side guard functions used by routes/layouts.
-- Enforcement layer:
-  - Page-level route guard.
-  - API-level guard middleware/service checks.
+| Role        | Platform | Projects (`/projects`, `/sprints`, `/manager`) | System (`/users`) |
+| ----------- | -------- | ---------------------------------------------- | ----------------- |
+| **admin**   | yes      | yes (superset)                                 | yes               |
+| **manager** | yes      | yes                                            | no                |
+| **member**  | yes      | no                                             | no                |
 
-## 6. Data Model Draft (Skeleton)
+Platform / Account / Help (e.g. `/dashboard`, `/backlog`, `/board`, `/work-items`, `/member`, `/profile`, `/docs`, `/help`, `/roadmap`) remain available to any authenticated admitted role.
 
-## 7. Route Guard Design (Skeleton)
+**Explicit default:** Admin is a Projects superset. Manager cannot open System. Member stays on Platform / Account / Help.
 
-- Shared server-side authorization helpers for App Router pages/layouts.
-- Route-level checks for role membership and internal-user dashboard access.
-- UI shell uses shared `@repo/ui` primitives (`sidebar`, `breadcrumb`, `separator`, `skeleton`, `card`).
+## 6. Enforcement Layers
 
-## 8. Dashboard Access Policy (Skeleton)
+```text
+Request → proxy (session + allowlist) → RSC layout (requireRole) → page
+                                              ↓ deny
+                                     redirect('/dashboard')
+Mutations → requireAdmin / requireManagerRole (never client-only)
+```
 
-## 9. Error Handling and UX (Skeleton)
+| Layer                | Responsibility                                                  |
+| -------------------- | --------------------------------------------------------------- |
+| `proxy.ts`           | Session refresh + admission allowlist (not full RBAC)           |
+| `lib/rbac/*`         | Single source of truth for roles + path/nav policy              |
+| Route layouts        | Thin wrappers around `RoleGatedLayout` (authoritative redirect) |
+| Sidebar              | UX hide via `canAccessNavGroup`                                 |
+| Server Actions / API | Mutation guards                                                 |
 
-## 10. Security Considerations (Skeleton)
+Denied layout access uses `redirect('/dashboard')` — do not throw opaque digests for expected authz failures.
+
+## 7. Policy Module
+
+- `roles.ts` — `AppRole`, `roleAtLeast`, `isAdmin`, `isManagerOrAdmin`
+- `route-policy.ts` — `canAccessNavGroup`, `canAccessPath`, `minimumRoleForPath`
+- `require-role.ts` — `requireRole`, `requireAdmin`, `assertAdminOrRedirect`, `assertManagerOrRedirect`
+- `role-gated-layout.tsx` — shared `RoleGatedLayout` + `roleGatedPageMetadata` for route segments
+- `require-manager-role.ts` — thin wrapper over `requireManagerOrAdmin`
+
+**Deny-by-default for new admin routes:** register the path prefix in `route-policy` before shipping UI links.
+
+## 8. Security Considerations
 
 - Never use `user_metadata` JWT claims for authorization (user-editable).
 - Use `getUser()` on the server, not `getSession()` alone.
-- API routes validate Bearer tokens via `requireApiAuth`.
+- Continue `public.users.active` admission; deactivated users stay out.
+- Log denials with `warn.` prefixes for observability.
+- API routes continue validating Bearer tokens via `requireApiAuth` plus role checks where applicable.
 
-## 11. Rollout Plan (Skeleton)
+## 9. Phase 2 (Deferred)
 
-## 12. Test Plan (Skeleton)
+- Custom RBAC tables and permission matrix UI (previous skeleton §§6–8).
+- Field-level and richer object ACLs.
+- Optional middleware role cookie for earlier redirects.
 
-## 13. Open Questions
+## 10. Test Plan
 
-- Where should source-of-truth RBAC data live first (Supabase table design)?
-- Do we need temporary role seeding for local development?
-- What is the first minimal permission set needed for dashboard and role routes?
+- Unit: route policy matrix and role hierarchy.
+- Component: sidebar omits System for manager/member; omits Projects for member.
+- Guard: non-admin hitting `/users` layout redirects; member hitting Projects layouts redirects.

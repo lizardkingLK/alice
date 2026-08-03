@@ -9,17 +9,39 @@ import {
 } from '../_services/users.service.server';
 import { buildAuthCallbackUrl } from '@/lib/auth-redirect';
 import { resolveRequestOrigin } from '@/lib/auth-redirect.server';
-import { getDbUser } from '@/lib/auth';
 import {
   DROPDOWN_CACHE_TAGS,
   invalidateDropdownCache,
 } from '@/lib/cache/dropdown-cache';
-import { createUserSchema, updateUserSchema } from '@repo/types';
+import { requireAdmin } from '@/lib/rbac/require-role';
+import {
+  actionFailure,
+  actionSuccess,
+  firstValidationError,
+  unexpectedActionError,
+  type ActionState,
+} from '@/lib/server-actions';
+import { createUserSchema, updateUserSchema, type Tables } from '@repo/types';
 
-export type ActionState = {
-  success: boolean;
-  error: string | null;
-};
+export type { ActionState };
+
+async function requireAdminAction(
+  unauthorizedMessage: string
+): Promise<
+  | { allowed: true; currentUser: Tables<'users'> }
+  | { allowed: false; state: ActionState }
+> {
+  const auth = await requireAdmin(unauthorizedMessage);
+  if (!auth.allowed) {
+    return { allowed: false, state: actionFailure(auth.error) };
+  }
+  return { allowed: true, currentUser: auth.currentUser };
+}
+
+function revalidateUsersViews() {
+  revalidatePath('/users');
+  invalidateDropdownCache(DROPDOWN_CACHE_TAGS.users);
+}
 
 export async function createUser(
   _prevState: ActionState | null,
@@ -30,28 +52,15 @@ export async function createUser(
   const role = formData.get('role') as string;
 
   const validation = createUserSchema.safeParse({ name, email, role });
-
   if (!validation.success) {
-    return {
-      success: false,
-      error: validation.error.issues[0]?.message ?? 'Invalid input data.',
-    };
+    return firstValidationError(validation.error.issues);
   }
 
-  // Verify the currently logged-in user is an admin
-  const currentUser = await getDbUser();
-  if (!currentUser) {
-    return {
-      success: false,
-      error: 'Not authenticated.',
-    };
-  }
-
-  if (currentUser.role !== 'admin') {
-    return {
-      success: false,
-      error: 'Unauthorized. Only administrators can add new users.',
-    };
+  const auth = await requireAdminAction(
+    'Unauthorized. Only administrators can add new users.'
+  );
+  if (!auth.allowed) {
+    return auth.state;
   }
 
   try {
@@ -60,7 +69,6 @@ export async function createUser(
     const origin = resolveRequestOrigin(requestOrigin);
     const redirectToUrl = buildAuthCallbackUrl(origin, '/reset-password');
 
-    // Call API backend
     await apiCreateUser({
       name: validation.data.name,
       email: validation.data.email,
@@ -68,19 +76,10 @@ export async function createUser(
       redirectTo: redirectToUrl,
     });
 
-    revalidatePath('/users');
-    invalidateDropdownCache(DROPDOWN_CACHE_TAGS.users);
-    return {
-      success: true,
-      error: null,
-    };
+    revalidateUsersViews();
+    return actionSuccess();
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : 'An unexpected error occurred.';
-    return {
-      success: false,
-      error: message,
-    };
+    return unexpectedActionError(err);
   }
 }
 
@@ -89,45 +88,25 @@ export async function toggleUserActive(
   active: boolean,
   expectedUpdatedAt: string
 ): Promise<ActionState> {
-  const currentUser = await getDbUser();
-  if (!currentUser) {
-    return {
-      success: false,
-      error: 'Not authenticated.',
-    };
+  const auth = await requireAdminAction(
+    'Unauthorized. Only administrators can modify user status.'
+  );
+  if (!auth.allowed) {
+    return auth.state;
   }
 
-  if (currentUser.role !== 'admin') {
-    return {
-      success: false,
-      error: 'Unauthorized. Only administrators can modify user status.',
-    };
-  }
-
-  if (userId === currentUser.id && !active) {
-    return {
-      success: false,
-      error: 'Self lockout protection: You cannot deactivate your own account.',
-    };
+  if (userId === auth.currentUser.id && !active) {
+    return actionFailure(
+      'Self lockout protection: You cannot deactivate your own account.'
+    );
   }
 
   try {
-    // Call API backend
     await apiToggleUserActive(userId, active, expectedUpdatedAt);
-
-    revalidatePath('/users');
-    invalidateDropdownCache(DROPDOWN_CACHE_TAGS.users);
-    return {
-      success: true,
-      error: null,
-    };
+    revalidateUsersViews();
+    return actionSuccess();
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : 'An unexpected error occurred.';
-    return {
-      success: false,
-      error: message,
-    };
+    return unexpectedActionError(err);
   }
 }
 
@@ -141,32 +120,18 @@ export async function updateUser(
   const expectedUpdatedAt = formData.get('expectedUpdatedAt') as string;
 
   const validation = updateUserSchema.safeParse({ id, name, role });
-
   if (!validation.success) {
-    return {
-      success: false,
-      error: validation.error.issues[0]?.message ?? 'Invalid input data.',
-    };
+    return firstValidationError(validation.error.issues);
   }
 
-  // Verify the currently logged-in user is an admin
-  const currentUser = await getDbUser();
-  if (!currentUser) {
-    return {
-      success: false,
-      error: 'Not authenticated.',
-    };
-  }
-
-  if (currentUser.role !== 'admin') {
-    return {
-      success: false,
-      error: 'Unauthorized. Only administrators can edit users.',
-    };
+  const auth = await requireAdminAction(
+    'Unauthorized. Only administrators can edit users.'
+  );
+  if (!auth.allowed) {
+    return auth.state;
   }
 
   try {
-    // Call API backend
     await apiUpdateUser(
       validation.data.id,
       {
@@ -176,18 +141,9 @@ export async function updateUser(
       expectedUpdatedAt
     );
 
-    revalidatePath('/users');
-    invalidateDropdownCache(DROPDOWN_CACHE_TAGS.users);
-    return {
-      success: true,
-      error: null,
-    };
+    revalidateUsersViews();
+    return actionSuccess();
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : 'An unexpected error occurred.';
-    return {
-      success: false,
-      error: message,
-    };
+    return unexpectedActionError(err);
   }
 }
