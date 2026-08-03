@@ -24,8 +24,12 @@ export async function deactivateMyAccount(
   _prev: DeactivateAccountState | null,
   formData: FormData
 ): Promise<DeactivateAccountState> {
-  const confirmation = String(formData.get('confirmation') ?? '').trim();
-  const expectedUpdatedAt = String(formData.get('expectedUpdatedAt') ?? '');
+  const confirmationEntry = formData.get('confirmation');
+  const confirmation =
+    typeof confirmationEntry === 'string' ? confirmationEntry.trim() : '';
+  const expectedUpdatedAtEntry = formData.get('expectedUpdatedAt');
+  const expectedUpdatedAt =
+    typeof expectedUpdatedAtEntry === 'string' ? expectedUpdatedAtEntry : '';
 
   const currentUser = await getDbUser();
   if (!currentUser) {

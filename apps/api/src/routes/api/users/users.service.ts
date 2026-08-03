@@ -171,10 +171,7 @@ export class UsersService {
 
     if (!target.active) {
       await this.setAuthBanDuration(targetUserId, AUTH_BAN_DURATION);
-      console.warn(
-        'warn. user deactivated (idempotent):',
-        `actor=${actor.type} target=${targetUserId}`
-      );
+      this.logDeactivation('idempotent', actor.type);
       return target;
     }
 
@@ -199,14 +196,30 @@ export class UsersService {
     );
 
     await this.setAuthBanDuration(targetUserId, AUTH_BAN_DURATION);
-
-    const source = actor.type === 'webhook' ? ` source=${actor.source}` : '';
-    console.warn(
-      'warn. user deactivated:',
-      `actor=${actor.type} target=${targetUserId}${source}`
-    );
+    this.logDeactivation('deactivated', actor.type);
 
     return updated;
+  }
+
+  /**
+   * Log only closed-enum actor types — never interpolate request ids/source
+   * (Sonar tssecurity:S5145).
+   */
+  private logDeactivation(
+    outcome: 'idempotent' | 'deactivated',
+    actorType: DeactivateActor['type']
+  ): void {
+    switch (actorType) {
+      case 'admin':
+        console.warn(`warn. user deactivated (${outcome}): actor=admin`);
+        return;
+      case 'self':
+        console.warn(`warn. user deactivated (${outcome}): actor=self`);
+        return;
+      case 'webhook':
+        console.warn(`warn. user deactivated (${outcome}): actor=webhook`);
+        return;
+    }
   }
 
   /** Ban (`87600h`) or unban (`none`) in Supabase Auth. */
