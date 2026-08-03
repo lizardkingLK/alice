@@ -34,6 +34,8 @@ import {
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import { useWorkspaceDefaultsNavPreference } from '@/app/board/_hooks/use-workspace-defaults-nav-preference';
 import { buildWorkspaceNavHref } from '@/app/board/_services/board-defaults';
+import { canAccessNavGroup } from '@/lib/rbac/route-policy';
+import type { AppRole } from '@/lib/rbac/roles';
 
 type NavItem = {
   /** Pathname used for active matching (no query). */
@@ -125,15 +127,20 @@ function SidebarNavGroup({
 
 type DashboardSidebarProps = {
   readonly userId?: string | null;
+  /** App role from `public.users.role`; null hides role-gated nav groups. */
+  readonly role?: AppRole | null;
 };
 
 export function DashboardSidebar({
   userId = null,
+  role = null,
 }: Readonly<DashboardSidebarProps>) {
   const pathname = usePathname();
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
   const preference = useWorkspaceDefaultsNavPreference(userId);
+  const showSystem = canAccessNavGroup(role, 'system');
+  const showProjects = canAccessNavGroup(role, 'projects');
 
   return (
     <Sidebar collapsible="icon">
@@ -157,18 +164,22 @@ export function DashboardSidebar({
           pathname={pathname}
           preference={preference}
         />
-        <SidebarNavGroup
-          label="System"
-          items={SYSTEM_NAV}
-          pathname={pathname}
-          preference={preference}
-        />
-        <SidebarNavGroup
-          label="Projects"
-          items={PROJECTS_NAV}
-          pathname={pathname}
-          preference={preference}
-        />
+        {showSystem ? (
+          <SidebarNavGroup
+            label="System"
+            items={SYSTEM_NAV}
+            pathname={pathname}
+            preference={preference}
+          />
+        ) : null}
+        {showProjects ? (
+          <SidebarNavGroup
+            label="Projects"
+            items={PROJECTS_NAV}
+            pathname={pathname}
+            preference={preference}
+          />
+        ) : null}
 
         <SidebarGroup>
           <SidebarGroupLabel>Account</SidebarGroupLabel>

@@ -1,16 +1,13 @@
-import { Metadata } from 'next';
-import React from 'react';
+import type { ReactNode } from 'react';
+import {
+  RoleGatedLayout,
+  roleGatedPageMetadata,
+} from '@/lib/rbac/role-gated-layout';
 
-export const metadata: Metadata = {
-  title: 'Team',
-  robots: {
-    index: false,
-    follow: false,
-  },
-};
+export const metadata = roleGatedPageMetadata('Team');
 
-export default function TeamsLayout({
+export default async function TeamsLayout({
   children,
-}: Readonly<{ children: React.ReactNode }>) {
-  return <section>{children}</section>;
+}: Readonly<{ children: ReactNode }>) {
+  return <RoleGatedLayout minimum="manager">{children}</RoleGatedLayout>;
 }
