@@ -66,6 +66,7 @@ import { WorkItemTypeBadge } from '@/app/work-items/_components/workItem-badge-t
 import { DescriptionView } from '@/app/work-items/_components/workItem-description-view';
 import { descriptionToPlainText } from '@/app/work-items/_helpers/work-item-description';
 import { BOARD_STATUS_COLUMNS } from '@/app/work-items/_helpers/work-item-status';
+import { PRIORITY_BORDER_STYLES } from '@/app/work-items/_helpers/work-item-priority-ui';
 import { updateWorkItemStatus } from '@/app/work-items/_services/workItem.service.client';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { ListFilterSelect } from '@/components/list-filter-select';
@@ -78,14 +79,6 @@ type BoardStatus = Exclude<DbWorkItem['status'], 'Draft'>;
 type BoardPriority = DbWorkItem['priority'];
 
 const COLUMNS = BOARD_STATUS_COLUMNS;
-
-const PRIORITY_BORDERS: Record<BoardPriority, string> = {
-  highest: 'border-l-destructive',
-  high: 'border-l-destructive',
-  medium: 'border-l-primary',
-  low: 'border-l-border',
-  lowest: 'border-l-border',
-};
 
 const MAX_VISIBLE_ASSIGNEES = 3;
 
@@ -628,7 +621,7 @@ export function KanbanBoard({
                           }}
                           className={cn(
                             'group cursor-grab rounded-l-none border-y-0 border-r-0 border-l-4 py-0 shadow-none active:cursor-grabbing',
-                            PRIORITY_BORDERS[item.priority],
+                            PRIORITY_BORDER_STYLES[item.priority],
                             (draggedTaskId === item.id ||
                               pendingStatusIds.has(item.id)) &&
                               'opacity-40'
@@ -642,7 +635,7 @@ export function KanbanBoard({
                               <PriorityBadge priority={item.priority} />
                             </div>
 
-                            <TruncatedText className="text-foreground group-hover:text-primary text-sm leading-snug font-semibold transition-colors">
+                            <TruncatedText className="text-foreground group-hover:text-primary w-[17rem] max-w-full text-sm leading-snug font-semibold transition-colors">
                               {item.title}
                             </TruncatedText>
 
