@@ -50,6 +50,7 @@ import {
   deactivateMyAccount,
   type DeactivateAccountState,
 } from '@/app/edit-profile/_components/actions';
+import { EditProfilePreferencesCard } from '@/app/edit-profile/_components/edit-profile-preferences-card';
 import { apiFetch } from '@/lib/api/api-client';
 import { ApiError } from '@/lib/api/api';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
@@ -267,8 +268,7 @@ export function EditProfileView({
             Edit profile
           </h1>
           <p className="text-muted-foreground text-sm">
-            Update your photo and display name. Other preferences are coming
-            soon.
+            Update your photo, display name, and browser preferences.
           </p>
         </div>
 
@@ -538,6 +538,8 @@ export function EditProfileView({
               ))}
             </CardContent>
           </Card>
+
+          <EditProfilePreferencesCard />
 
           <Card className="border-destructive/30 shadow-none">
             <CardHeader>
