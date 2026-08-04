@@ -243,7 +243,7 @@ export class WorkItemRepository {
         title: input.title,
         project_id: input.project_id,
         type: input.type,
-        priority: input.priority,
+        priority: input.priority ?? 'medium',
         assignee_id: input.assignee_id,
         reporter_id: input.reporter_id,
         due_date: input.due_date,

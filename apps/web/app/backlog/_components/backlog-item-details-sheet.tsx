@@ -29,6 +29,7 @@ import { WorkItemTypeBadge } from '@/app/work-items/_components/workItem-badge-t
 import { SearchableSelect } from '@/components/searchable-select';
 import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
 import { WORK_ITEM_STATUSES } from '@/app/work-items/_helpers/work-item-status';
+import { BACKLOG_PRIORITY_OPTIONS } from '@/app/work-items/_helpers/work-item-priority-ui';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
@@ -193,9 +194,11 @@ export function BacklogItemDetailsSheet({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="high">▲ High</SelectItem>
-                    <SelectItem value="medium">▪ Medium</SelectItem>
-                    <SelectItem value="low">▼ Low</SelectItem>
+                    {BACKLOG_PRIORITY_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
