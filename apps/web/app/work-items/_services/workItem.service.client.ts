@@ -31,6 +31,15 @@ export async function createWorkItemWorkLog(
   return data.worklog;
 }
 
+function isTiptapDoc(value: unknown): value is { type: 'doc' } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    (value as { type?: unknown }).type === 'doc'
+  );
+}
+
 function formDataToCreateBody(formData: FormData): Record<string, unknown> {
   const body: Record<string, unknown> = Object.fromEntries(formData.entries());
 
@@ -41,7 +50,11 @@ function formDataToCreateBody(formData: FormData): Record<string, unknown> {
       delete body.description;
     } else {
       try {
-        body.description = JSON.parse(raw) as unknown;
+        const parsed: unknown = JSON.parse(raw);
+        if (isTiptapDoc(parsed)) {
+          body.description = parsed;
+        }
+        // Non-doc JSON (null, arrays, unrelated objects) stays a plain string.
       } catch {
         // Keep plain-string descriptions for legacy callers.
       }

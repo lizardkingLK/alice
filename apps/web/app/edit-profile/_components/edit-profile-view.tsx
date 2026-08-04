@@ -139,6 +139,7 @@ export function EditProfileView({
 
   useEffect(() => {
     if (deactivateState?.error) {
+      // Keep page-level alert for non-dialog contexts; dialog also shows inline.
       setError(deactivateState.error);
     }
   }, [deactivateState]);
@@ -598,6 +599,11 @@ export function EditProfileView({
           </DialogHeader>
           <form action={deactivateAction} className="space-y-4">
             <input type="hidden" name="expectedUpdatedAt" value={updatedAt} />
+            {deactivateState?.error ? (
+              <p className="text-destructive text-sm" role="alert">
+                {deactivateState.error}
+              </p>
+            ) : null}
             <div className="space-y-2">
               <Label htmlFor="deactivate-confirmation">
                 Email confirmation

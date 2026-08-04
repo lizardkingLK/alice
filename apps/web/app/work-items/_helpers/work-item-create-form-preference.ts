@@ -3,6 +3,7 @@ import { getLocalStorageJson, setLocalStorageJson } from '@/lib/local-storage';
 export type WorkItemCreateFormMode = 'classic' | 'modern';
 
 const STORAGE_KEY = 'alice:work-item-create-form-mode';
+export const WORK_ITEM_CREATE_FORM_MODE_STORAGE_KEY = STORAGE_KEY;
 const DEFAULT_MODE: WorkItemCreateFormMode = 'classic';
 
 /** Same-tab signal so open create dialogs can refresh after profile changes. */

@@ -10,7 +10,6 @@ export {
 export {
   canAccessNavGroup,
   canAccessPath,
-  canAccessProjectsNav,
   canAccessSystemNav,
   minimumRoleForPath,
   type NavGroupId,

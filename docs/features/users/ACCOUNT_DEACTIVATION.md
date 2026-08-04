@@ -165,10 +165,10 @@ Admin registry and edit-profile are **different UI mechanisms** over one kill-sw
 
 1. **Document** — done (§1–3)
 2. **Sketch** — done (this version)
-3. **Implement phase 1**
+3. **Implement phase 1** — done
    - Extract `deactivateUser` in API users service
    - Refactor admin deactivate onto it
-   - Add `POST /api/users/me/deactivate` + edit-profile Danger zone + `/?account=closed` banner
+   - Reuse `PATCH /api/users/:id/toggle-active` for self-deactivate + edit-profile Danger zone + `/?account=closed` banner
    - Tests per §8
 4. **Implement phase 2** — webhook router when a caller is ready
 
@@ -207,7 +207,7 @@ Admin registry and edit-profile are **different UI mechanisms** over one kill-sw
 | Area                | Touch                                                                                 |
 | ------------------- | ------------------------------------------------------------------------------------- |
 | API service         | `users.service.ts` — `deactivateUser`, refactor `toggleUserActive`                    |
-| API route           | `users.route.ts` — `POST /me/deactivate` (register **before** `/:id` routes)          |
+| API route           | `users.route.ts` — `PATCH /:id/toggle-active` (admin + self)                          |
 | API schema          | `users.schemas.ts` — `deactivateMeSchema`                                             |
 | Web action / client | edit-profile action or service calling API                                            |
 | Web UI              | `edit-profile-view.tsx` — Danger zone + confirm dialog                                |

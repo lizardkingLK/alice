@@ -943,7 +943,14 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      deactivate_user_guarded: {
+        Args: {
+          p_user_id: string;
+          p_actor_id: string;
+          p_expected_updated_at: string;
+        };
+        Returns: Database['public']['Tables']['users']['Row'][];
+      };
     };
     Enums: {
       AccessAllowlistKind: 'domain' | 'email';

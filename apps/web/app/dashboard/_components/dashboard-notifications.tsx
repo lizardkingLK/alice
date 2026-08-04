@@ -50,6 +50,28 @@ const iconColorMap: Record<string, string> = {
   default: 'text-muted-foreground bg-muted border-border',
 };
 
+function NotificationsEmptyState({
+  icon,
+  title,
+  description,
+}: Readonly<{
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}>) {
+  return (
+    <div className="text-muted-foreground flex flex-col items-center justify-center gap-3 px-4 py-12 text-center">
+      <div className="bg-muted/40 border-border/50 rounded-full border p-3">
+        {icon}
+      </div>
+      <div className="space-y-1">
+        <p className="text-foreground text-sm font-medium">{title}</p>
+        <p className="max-w-xs text-xs">{description}</p>
+      </div>
+    </div>
+  );
+}
+
 function formatRelativeTime(dateString: string): string {
   const date = new Date(dateString);
   const now = new Date();
@@ -96,19 +118,24 @@ function removeNotificationFromList(
 export function NotificationInbox({
   userId,
   initialNotifications = [],
+  initialLoadFailed = false,
 }: Readonly<{
   userId: string;
   initialNotifications?: Notification[];
+  /** True when the server-side initial query timed out or failed. */
+  initialLoadFailed?: boolean;
 }>) {
   const [notifications, setNotifications] =
     useState<Notification[]>(initialNotifications);
+  const [loadFailed, setLoadFailed] = useState(initialLoadFailed);
   const loading = false;
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     setNotifications(initialNotifications);
-  }, [initialNotifications]);
+    setLoadFailed(initialLoadFailed);
+  }, [initialNotifications, initialLoadFailed]);
 
   useEffect(() => {
     if (!userId) return;
@@ -157,17 +184,14 @@ export function NotificationInbox({
 
   const handleMarkAsRead = async (id: string) => {
     const supabase = createClient();
+    const current = notifications.find((n) => n.id === id);
     // Optimistic update
     setNotifications((prev) => {
-      const result: Notification[] = [];
-      for (const n of prev) {
-        if (n.id === id) {
-          result.push({ ...n, read_status: true });
-        } else {
-          result.push(n);
-        }
+      const target = prev.find((n) => n.id === id);
+      if (!target) {
+        return prev;
       }
-      return result;
+      return updateNotificationsList(prev, { ...target, read_status: true });
     });
 
     const { error } = await supabase
@@ -178,17 +202,12 @@ export function NotificationInbox({
     if (error) {
       console.error('Failed to mark notification as read:', error);
       // Rollback on error
-      setNotifications((prev) => {
-        const result: Notification[] = [];
-        for (const n of prev) {
-          if (n.id === id) {
-            result.push({ ...n, read_status: false });
-          } else {
-            result.push(n);
-          }
-        }
-        return result;
-      });
+      if (!current) {
+        return;
+      }
+      setNotifications((prev) =>
+        updateNotificationsList(prev, { ...current, read_status: false })
+      );
     }
   };
 
@@ -287,21 +306,23 @@ export function NotificationInbox({
       );
     }
 
+    if (loadFailed) {
+      return (
+        <NotificationsEmptyState
+          icon={<AlertCircle className="text-destructive/80 size-6" />}
+          title="Couldn't load notifications"
+          description="Refresh the page to try again. New alerts may still arrive in realtime."
+        />
+      );
+    }
+
     if (notifications.length === 0) {
       return (
-        <div className="text-muted-foreground flex flex-col items-center justify-center gap-3 px-4 py-12 text-center">
-          <div className="bg-muted/40 border-border/50 rounded-full border p-3">
-            <InboxIcon className="text-muted-foreground/60 size-6" />
-          </div>
-          <div className="space-y-1">
-            <p className="text-foreground text-sm font-medium">
-              No notifications yet
-            </p>
-            <p className="max-w-xs text-xs">
-              We&apos;ll let you know when you get mentioned or updates occur.
-            </p>
-          </div>
-        </div>
+        <NotificationsEmptyState
+          icon={<InboxIcon className="text-muted-foreground/60 size-6" />}
+          title="No notifications yet"
+          description="We'll let you know when you get mentioned or updates occur."
+        />
       );
     }
 

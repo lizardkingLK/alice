@@ -60,14 +60,14 @@ describe('DashboardSidebar RBAC', () => {
     ).toBeInTheDocument();
   });
 
-  it('hides System and Projects for member', () => {
+  it('hides System for member but keeps Projects (not Sprints)', () => {
     renderSidebar('member');
 
     expect(screen.queryByText('System')).not.toBeInTheDocument();
     expect(screen.queryByText('Users')).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('link', { name: /^Projects$/i })
-    ).not.toBeInTheDocument();
+      screen.getByRole('link', { name: /^Projects$/i })
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole('link', { name: /^Sprints$/i })
     ).not.toBeInTheDocument();

@@ -16,20 +16,20 @@ export type LoadWorkItemChildrenResult =
   | { readonly ok: false; readonly error: string };
 
 /**
- * Hierarchy expand must work on My Work (/member): roots are assignee-scoped,
- * but children of any assignee should load when the viewer can see the parent
- * chain. Project membership alone is too strict for that — also allow project
- * owners who may not appear in `project_members`.
+ * Hierarchy expand auth for My Work and registry.
+ * - Project-scoped parents: workspace ACL only (owner / active member / admin).
+ * - Non-project parents: assignee, reporter, or ancestor assignee/reporter.
  */
 async function canLoadWorkItemChildren(
   userId: string,
   role: string,
   parent: DbWorkItem
 ): Promise<boolean> {
+  // Project-scoped items: workspace ACL is terminal. Do not fall back to
+  // assignee/reporter — a removed member who remains assignee must not load
+  // project children.
   if (parent.project_id) {
-    if (await canAccessProjectWorkspace(userId, role, parent.project_id)) {
-      return true;
-    }
+    return canAccessProjectWorkspace(userId, role, parent.project_id);
   }
 
   if (parent.assignee_id === userId || parent.reporter_id === userId) {

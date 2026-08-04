@@ -3,6 +3,7 @@ import {
   mapPriorityToBacklogPriority,
   type BacklogPriority,
 } from '@/app/work-items/_helpers/work-item-priority-ui';
+import type { WorkItemPriority } from '@repo/types';
 
 export type BacklogActiveTab = 'active' | 'completed';
 
@@ -13,8 +14,8 @@ export type BacklogAssignee = {
   profile_picture?: string | null;
 };
 
-export function mapPriority(priority: string): BacklogPriority {
-  return mapPriorityToBacklogPriority(priority as DbWorkItem['priority']);
+export function mapPriority(priority: WorkItemPriority): BacklogPriority {
+  return mapPriorityToBacklogPriority(priority);
 }
 
 export function formatDateRange(

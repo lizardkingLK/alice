@@ -1,9 +1,4 @@
-import {
-  isAdmin,
-  isManagerOrAdmin,
-  roleAtLeast,
-  type AppRole,
-} from '@/lib/rbac/roles';
+import { isAdmin, roleAtLeast, type AppRole } from '@/lib/rbac/roles';
 
 export type NavGroupId =
   'platform' | 'system' | 'projects' | 'account' | 'help';
@@ -13,7 +8,8 @@ const NAV_GROUP_MINIMUM_ROLE: Record<NavGroupId, AppRole | null> = {
   platform: null,
   account: null,
   help: null,
-  projects: 'manager',
+  // Project registry is ACL-filtered for owners/members; any authenticated role.
+  projects: null,
   system: 'admin',
 };
 
@@ -40,7 +36,7 @@ const ROUTE_MINIMUM_ROLE: ReadonlyArray<{
   readonly minimum: AppRole;
 }> = [
   { prefix: '/users', minimum: 'admin' },
-  { prefix: '/projects', minimum: 'manager' },
+  // `/projects` is open to any authenticated role; workspace ACL filters rows.
   { prefix: '/sprints', minimum: 'manager' },
   { prefix: '/manager', minimum: 'manager' },
 ];
@@ -78,10 +74,4 @@ export function canAccessPath(
 
 export function canAccessSystemNav(role: AppRole | null | undefined): boolean {
   return isAdmin(role);
-}
-
-export function canAccessProjectsNav(
-  role: AppRole | null | undefined
-): boolean {
-  return isManagerOrAdmin(role);
 }

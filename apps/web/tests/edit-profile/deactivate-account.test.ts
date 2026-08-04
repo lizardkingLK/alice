@@ -40,7 +40,6 @@ import { deactivateMyAccount } from '@/app/edit-profile/_components/actions';
 
 describe('deactivateMyAccount', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
     getDbUserMock.mockResolvedValue({
       id: 'user-1',
       email: 'pat@example.com',
