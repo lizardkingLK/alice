@@ -111,7 +111,7 @@ export const CommentComposer = forwardRef<
 
   const submitSafely = () => {
     handleSubmit().catch((error) => {
-      console.error('Failed to submit comment:', error);
+      console.error('error. failed to submit comment', error);
     });
   };
 

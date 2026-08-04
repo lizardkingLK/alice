@@ -207,7 +207,7 @@ export function CommentsFeed({
     loadActiveCommentUsers()
       .then(setUsers)
       .catch((error) => {
-        console.error('Failed to load comment users:', error);
+        console.error('error. failed to load comment users', error);
       });
   }, []);
 
@@ -263,7 +263,8 @@ export function CommentsFeed({
       setShowNewCommentModal(false);
       setReplyingParentId(null);
     } catch (err) {
-      console.error('Failed to create comment:', err);
+      console.error('error. failed to create comment', err);
+      throw err;
     } finally {
       setIsSubmitting(false);
     }
@@ -315,7 +316,7 @@ export function CommentsFeed({
         commentId,
         expectedUpdatedAt,
         pendingFields: { content: doc },
-        fallbackMessage: 'Failed to update comment:',
+        fallbackMessage: 'error. failed to update comment',
       });
     } finally {
       setEditingCommentId(null);
@@ -350,7 +351,7 @@ export function CommentsFeed({
         commentId,
         expectedUpdatedAt: targetComment.updated_at,
         pendingFields: { status: nextStatus },
-        fallbackMessage: `Failed to ${nextStatus === 'archived' ? 'archive' : 'restore'} comment:`,
+        fallbackMessage: `error. failed to ${nextStatus === 'archived' ? 'archive' : 'restore'} comment`,
       });
     }
   };
@@ -635,7 +636,7 @@ export function CommentsFeed({
                 disabled={isSubmitting || !newWorkItemId}
                 onClick={() => {
                   submitModalComment().catch((error) => {
-                    console.error('Failed to post comment:', error);
+                    console.error('error. failed to post comment', error);
                   });
                 }}
               >
