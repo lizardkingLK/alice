@@ -64,7 +64,7 @@ Platform / Account / Help (e.g. `/dashboard`, `/backlog`, `/board`, `/work-items
 ## 6. Enforcement Layers
 
 ```text
-Request → proxy (session + allowlist) → RSC layout (requireRole) → page
+Request → proxy (session + allowlist) → RSC layout (assertRoleOrRedirect) → page
                                               ↓ deny
                                      redirect('/dashboard')
 Mutations → requireAdmin / requireManagerRole (never client-only)

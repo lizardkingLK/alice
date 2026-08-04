@@ -1,15 +1,25 @@
 import 'dotenv/config';
 
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import {
   auditCreate,
   auditCreateWithoutStatus,
   auditUpdate,
 } from '@repo/types/audit';
 import { createClient } from '@supabase/supabase-js';
+import pg from 'pg';
 
 import { env } from './env.js';
 
 const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+
+const packageRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..'
+);
 
 function getSeedUserPassword(): string {
   const password = process.env.SEED_USER_PASSWORD;
@@ -819,7 +829,25 @@ async function seedAccessAllowlist(actorId: string): Promise<void> {
   }
 }
 
+async function ensureDeactivateUserGuardedRpc(): Promise<void> {
+  const sqlPath = path.join(
+    packageRoot,
+    'prisma/migrations/deactivate_user_guarded/migration.sql'
+  );
+  const sql = fs.readFileSync(sqlPath, 'utf8');
+  const client = new pg.Client({ connectionString: env.DIRECT_URL });
+  await client.connect();
+  try {
+    await client.query(sql);
+  } finally {
+    await client.end();
+  }
+}
+
 async function main(): Promise<void> {
+  console.log('info. ensuring deactivate_user_guarded RPC...');
+  await ensureDeactivateUserGuardedRpc();
+
   console.log('info. seeding users and auth accounts...');
   const userIds = await seedUsers();
   const adminId = userIds['admin@alice.dev'];

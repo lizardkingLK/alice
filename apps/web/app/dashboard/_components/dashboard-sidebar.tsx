@@ -34,7 +34,7 @@ import {
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import { useWorkspaceDefaultsNavPreference } from '@/app/board/_hooks/use-workspace-defaults-nav-preference';
 import { buildWorkspaceNavHref } from '@/app/board/_services/board-defaults';
-import { canAccessNavGroup } from '@/lib/rbac/route-policy';
+import { canAccessNavGroup, canAccessPath } from '@/lib/rbac/route-policy';
 import type { AppRole } from '@/lib/rbac/roles';
 
 type NavItem = {
@@ -58,6 +58,9 @@ const SYSTEM_NAV: readonly NavItem[] = [
 
 const PROJECTS_NAV: readonly NavItem[] = [
   { path: '/projects', label: 'Projects', icon: FolderKanban },
+];
+
+const SPRINTS_NAV: readonly NavItem[] = [
   { path: '/sprints', label: 'Sprints', icon: Timer },
 ];
 
@@ -141,6 +144,10 @@ export function DashboardSidebar({
   const preference = useWorkspaceDefaultsNavPreference(userId);
   const showSystem = canAccessNavGroup(role, 'system');
   const showProjects = canAccessNavGroup(role, 'projects');
+  const showSprints = canAccessPath(role, '/sprints');
+  const projectsNavItems = showSprints
+    ? [...PROJECTS_NAV, ...SPRINTS_NAV]
+    : [...PROJECTS_NAV];
 
   return (
     <Sidebar collapsible="icon">
@@ -175,7 +182,7 @@ export function DashboardSidebar({
         {showProjects ? (
           <SidebarNavGroup
             label="Projects"
-            items={PROJECTS_NAV}
+            items={projectsNavItems}
             pathname={pathname}
             preference={preference}
           />

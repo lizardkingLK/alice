@@ -4,7 +4,7 @@ import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
-import { usersService } from './users.service';
+import { usersService, isUsersServiceError } from './users.service';
 import {
   createUserSchema,
   toggleUserActiveSchema,
@@ -124,22 +124,16 @@ usersRouter.patch(
       res.json({ user });
     } catch (error) {
       if (trySendOptimisticLockError(res, error)) return;
+      if (isUsersServiceError(error)) {
+        return res.status(error.status).json({ error: error.message });
+      }
       const message =
         error instanceof Error
           ? error.message
           : 'Failed to update user active status';
 
-      if (
-        message.includes('Unauthorized') ||
-        message.includes('only deactivate') ||
-        message.includes('last active admin')
-      ) {
+      if (message.includes('Cannot deactivate the last active admin')) {
         return res.status(403).json({ error: message });
-      }
-      if (message === 'User not found.' || message === 'Not authenticated.') {
-        return res.status(message === 'Not authenticated.' ? 401 : 404).json({
-          error: message,
-        });
       }
 
       res.status(500).json({ error: message });

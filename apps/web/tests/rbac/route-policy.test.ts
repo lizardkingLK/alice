@@ -31,8 +31,8 @@ describe('rbac route policy', () => {
   it('maps path prefixes to minimum roles', () => {
     expect(minimumRoleForPath('/users')).toBe('admin');
     expect(minimumRoleForPath('/users/edit')).toBe('admin');
-    expect(minimumRoleForPath('/projects')).toBe('manager');
-    expect(minimumRoleForPath('/projects/abc')).toBe('manager');
+    expect(minimumRoleForPath('/projects')).toBeNull();
+    expect(minimumRoleForPath('/projects/abc')).toBeNull();
     expect(minimumRoleForPath('/sprints')).toBe('manager');
     expect(minimumRoleForPath('/manager')).toBe('manager');
     expect(minimumRoleForPath('/dashboard')).toBeNull();
@@ -45,7 +45,9 @@ describe('rbac route policy', () => {
     expect(canAccessPath('member', '/users')).toBe(false);
 
     expect(canAccessPath('admin', '/projects')).toBe(true);
+    expect(canAccessPath('member', '/projects')).toBe(true);
     expect(canAccessPath('manager', '/sprints')).toBe(true);
+    expect(canAccessPath('member', '/sprints')).toBe(false);
     expect(canAccessPath('member', '/manager')).toBe(false);
 
     expect(canAccessPath('member', '/dashboard')).toBe(true);
@@ -59,7 +61,7 @@ describe('rbac route policy', () => {
 
     expect(canAccessNavGroup('admin', 'projects')).toBe(true);
     expect(canAccessNavGroup('manager', 'projects')).toBe(true);
-    expect(canAccessNavGroup('member', 'projects')).toBe(false);
+    expect(canAccessNavGroup('member', 'projects')).toBe(true);
 
     expect(canAccessNavGroup('member', 'platform')).toBe(true);
   });

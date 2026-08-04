@@ -96,19 +96,24 @@ function removeNotificationFromList(
 export function NotificationInbox({
   userId,
   initialNotifications = [],
+  initialLoadFailed = false,
 }: Readonly<{
   userId: string;
   initialNotifications?: Notification[];
+  /** True when the server-side initial query timed out or failed. */
+  initialLoadFailed?: boolean;
 }>) {
   const [notifications, setNotifications] =
     useState<Notification[]>(initialNotifications);
+  const [loadFailed, setLoadFailed] = useState(initialLoadFailed);
   const loading = false;
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     setNotifications(initialNotifications);
-  }, [initialNotifications]);
+    setLoadFailed(initialLoadFailed);
+  }, [initialNotifications, initialLoadFailed]);
 
   useEffect(() => {
     if (!userId) return;
@@ -283,6 +288,25 @@ export function NotificationInbox({
         <div className="text-muted-foreground flex flex-col items-center justify-center gap-2 py-8 text-sm">
           <div className="border-primary size-4 animate-spin rounded-full border-2 border-t-transparent" />
           <span>Loading notifications...</span>
+        </div>
+      );
+    }
+
+    if (loadFailed) {
+      return (
+        <div className="text-muted-foreground flex flex-col items-center justify-center gap-3 px-4 py-12 text-center">
+          <div className="bg-muted/40 border-border/50 rounded-full border p-3">
+            <AlertCircle className="text-destructive/80 size-6" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-foreground text-sm font-medium">
+              Couldn&apos;t load notifications
+            </p>
+            <p className="max-w-xs text-xs">
+              Refresh the page to try again. New alerts may still arrive in
+              realtime.
+            </p>
+          </div>
         </div>
       );
     }

@@ -143,6 +143,7 @@ export function WorkItemFormModernFields({
               contextLabel ? 'bg-muted/60 text-foreground' : 'invisible'
             )}
             aria-hidden={!contextLabel}
+            title={contextLabel ?? undefined}
           >
             {contextLabel || 'Project'}
           </span>
