@@ -26,23 +26,15 @@ import { Label } from '@repo/ui/components/ui/label';
 import { cn } from '@repo/ui/lib/utils';
 import EditorCommand from '@/app/work-items/_components/workItem-description-editor-command';
 import {
-  CustomLinkExtension,
-  normalizeLinkHref,
-} from '@/lib/editor/tiptap-link-configuration';
+  applyEditorLink,
+  type EditorSelectionRange,
+} from '@/lib/editor/tiptap-apply-link';
+import { CustomLinkExtension } from '@/lib/editor/tiptap-link-configuration';
 
 type WorkItemFormModernDescriptionProps = {
   // eslint-disable-next-line no-unused-vars -- callback for FormData sync
   readonly onJsonChange: (json: string | null) => void;
 };
-
-type EditorSelectionRange = {
-  from: number;
-  to: number;
-};
-
-function isBlankHref(href: string): boolean {
-  return !href || href === 'https://' || href === 'http://';
-}
 
 /**
  * Compact TipTap description for modern create. Toolbar floats only when text
@@ -146,31 +138,9 @@ export function WorkItemFormModernDescription({
     if (!editor) {
       return;
     }
-
-    const href = normalizeLinkHref(linkUrl);
-    if (isBlankHref(href)) {
+    if (!applyEditorLink(editor, linkUrl, pendingSelection)) {
       return;
     }
-
-    const selection = pendingSelection ?? {
-      from: editor.state.selection.from,
-      to: editor.state.selection.to,
-    };
-    const { from, to } = selection;
-    const chain = editor.chain().focus().setTextSelection({ from, to });
-
-    if (from === to) {
-      chain
-        .insertContent({
-          type: 'text',
-          text: href,
-          marks: [{ type: 'link', attrs: { href } }],
-        })
-        .run();
-    } else {
-      chain.setLink({ href }).run();
-    }
-
     setPendingSelection(null);
     setLinkDialogOpen(false);
   };

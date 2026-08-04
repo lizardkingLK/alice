@@ -1,6 +1,11 @@
 'use client';
 
 import EditorCommand from '@/app/work-items/_components/workItem-description-editor-command';
+import {
+  applyEditorLink,
+  isBlankHref,
+  type EditorSelectionRange,
+} from '@/lib/editor/tiptap-apply-link';
 import { normalizeLinkHref } from '@/lib/editor/tiptap-link-configuration';
 import { Button } from '@repo/ui/components/ui/button';
 import {
@@ -26,15 +31,6 @@ import {
 } from '@repo/ui/lib/icons';
 import { Editor, useEditorState } from '@tiptap/react';
 import { FormEvent, memo, useCallback, useId, useState } from 'react';
-
-type EditorSelectionRange = {
-  from: number;
-  to: number;
-};
-
-function isBlankHref(href: string): boolean {
-  return !href || href === 'https://' || href === 'http://';
-}
 
 const EditorCommandsBar = memo(function ({
   editor,
@@ -90,33 +86,9 @@ const EditorCommandsBar = memo(function ({
   const applyLink = useCallback(
     (event?: FormEvent<HTMLFormElement>) => {
       event?.preventDefault();
-
-      const href = normalizeLinkHref(linkUrl);
-      if (isBlankHref(href)) {
+      if (!applyEditorLink(editor, linkUrl, pendingSelection)) {
         return;
       }
-
-      const selection = pendingSelection ?? {
-        from: editor.state.selection.from,
-        to: editor.state.selection.to,
-      };
-
-      const { from, to } = selection;
-      const chain = editor.chain().focus().setTextSelection({ from, to });
-
-      // No selected text — insert the URL as linked text.
-      if (from === to) {
-        chain
-          .insertContent({
-            type: 'text',
-            text: href,
-            marks: [{ type: 'link', attrs: { href } }],
-          })
-          .run();
-      } else {
-        chain.setLink({ href }).run();
-      }
-
       setPendingSelection(null);
       setLinkDialogOpen(false);
     },
