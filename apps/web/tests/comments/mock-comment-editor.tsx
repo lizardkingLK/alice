@@ -5,7 +5,11 @@ import {
   useState,
   type ForwardedRef,
 } from 'react';
-import { plainTextToCommentDoc } from '@repo/types';
+import {
+  commentContentToPlainText,
+  plainTextToCommentDoc,
+  type Json,
+} from '@repo/types';
 import type { JSONContent } from '@tiptap/react';
 
 type MockCommentEditorProps = {
@@ -34,12 +38,8 @@ function initialPlainFromContent(initialContent: unknown): string {
     return initialContent;
   }
 
-  if (
-    initialContent &&
-    typeof initialContent === 'object' &&
-    'content' in initialContent
-  ) {
-    return 'Security audit completed for the auth module.';
+  if (initialContent && typeof initialContent === 'object') {
+    return commentContentToPlainText(initialContent as Json);
   }
 
   return '';

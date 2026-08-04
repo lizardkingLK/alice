@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@repo/ui/lib/utils';
+import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { getInitials } from '@/app/_shared/utility';
 import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
 import type { CommentUser } from '@/app/comments/_services/comments.service.base';
@@ -61,11 +62,13 @@ export function CommentMentionList({
               </span>
             )}
             <span className="min-w-0 flex-1">
-              <span className="block truncate font-medium">{item.label}</span>
+              <TruncatedText className="block font-medium">
+                {item.label}
+              </TruncatedText>
               {item.description ? (
-                <span className="text-muted-foreground block truncate text-xs">
+                <TruncatedText className="text-muted-foreground block text-xs">
                   {item.description}
-                </span>
+                </TruncatedText>
               ) : null}
             </span>
           </button>

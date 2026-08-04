@@ -21,6 +21,8 @@ SET "content_json" = jsonb_build_object(
   )
 );
 
+-- Irreversible: drops the legacy TEXT "content" column after JSONB migration.
+-- Rollback requires restoring from backup; the TEXT values are not retained.
 ALTER TABLE "comments" DROP COLUMN "content";
 
 ALTER TABLE "comments" RENAME COLUMN "content_json" TO "content";

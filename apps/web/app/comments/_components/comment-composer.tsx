@@ -109,6 +109,12 @@ export const CommentComposer = forwardRef<
     editorRef.current.clear();
   };
 
+  const submitSafely = () => {
+    handleSubmit().catch((error) => {
+      console.error('Failed to submit comment:', error);
+    });
+  };
+
   return (
     <div className={cn('flex items-start gap-3', className)}>
       <UserAvatar
@@ -124,9 +130,7 @@ export const CommentComposer = forwardRef<
           users={users}
           workItems={workItems}
           placeholder="Add a comment..."
-          onSubmit={() => {
-            void handleSubmit();
-          }}
+          onSubmit={submitSafely}
           className="min-h-20"
         />
 
@@ -160,9 +164,7 @@ export const CommentComposer = forwardRef<
             type="button"
             size="sm"
             disabled={isSubmitting}
-            onClick={() => {
-              void handleSubmit();
-            }}
+            onClick={submitSafely}
           >
             Save
           </Button>

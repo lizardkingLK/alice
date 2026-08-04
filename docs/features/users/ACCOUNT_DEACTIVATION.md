@@ -90,9 +90,9 @@ async function deactivateUser(
 
 ### Behaviour (all actors)
 
-1. Load target `public.users` row; 404-style error if missing.
-2. If `active === false` already → **idempotent success** (return row; ensure Auth still banned — best-effort re-apply ban).
-3. Apply actor authz (table below).
+1. Apply actor authz (table below) **before** existence lookup so unauthorized callers cannot probe whether a user id exists.
+2. Load target `public.users` row; 404-style error if missing.
+3. If `active === false` already → **idempotent success** (return row; ensure Auth still banned — best-effort re-apply ban).
 4. **Last-admin guard:** if target is `role === 'admin'` and `active`, and no _other_ `active` admin exists → reject (`Cannot deactivate the last active admin.`). Applies to **self** and **webhook**. Admin path already blocks self-deactivate; deactivating _another_ last-admin is also rejected.
 5. Update `public.users.active = false` (`updated_by` = `actorId` for admin/self; for webhook use a well-known system actor or leave `updated_by` null / service user — decide at implement; prefer nullable + log `source`).
 6. `supabase.auth.admin.updateUserById(id, { ban_duration: '87600h' })`.
@@ -208,7 +208,7 @@ Admin registry and edit-profile are **different UI mechanisms** over one kill-sw
 | ------------------- | ------------------------------------------------------------------------------------- |
 | API service         | `users.service.ts` — `deactivateUser`, refactor `toggleUserActive`                    |
 | API route           | `users.route.ts` — `PATCH /:id/toggle-active` (admin + self)                          |
-| API schema          | `users.schemas.ts` — `deactivateMeSchema`                                             |
+| API schema          | `users.schemas.ts` — `toggleActiveSchema` (shared admin + self)                       |
 | Web action / client | edit-profile action or service calling API                                            |
 | Web UI              | `edit-profile-view.tsx` — Danger zone + confirm dialog                                |
 | Web home            | `app/page.tsx` / home component — read `account=closed` query                         |

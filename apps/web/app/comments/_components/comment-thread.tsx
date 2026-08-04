@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import type { JSONContent } from '@tiptap/react';
+import { plainTextToCommentDoc, type Json } from '@repo/types';
 import { X } from '@repo/ui/lib/icons';
 import { CommentEditorFormShell } from '@/app/comments/_components/comment-editor-form-shell';
 import { CommentListItem } from '@/app/comments/_components/comment-list-item';
@@ -45,6 +47,46 @@ type CommentThreadProps = {
   onPurge: (commentId: string) => void;
 };
 
+function bindCommentItemHandlers(options: {
+  commentId: string;
+  replyParentId: string;
+  // eslint-disable-next-line no-unused-vars -- callback signatures
+  onStartEdit: (commentId: string) => void;
+  onCancelEdit: () => void;
+  // eslint-disable-next-line no-unused-vars -- callback signatures
+  onSaveEdit: (commentId: string, doc: JSONContent) => void | Promise<void>;
+  // eslint-disable-next-line no-unused-vars -- callback signatures
+  onStartReply: (parentId: string) => void;
+  onCancelReply: () => void;
+  // eslint-disable-next-line no-unused-vars -- callback signatures
+  onArchive: (commentId: string) => void | Promise<void>;
+  // eslint-disable-next-line no-unused-vars -- callback signatures
+  onRestore: (commentId: string) => void | Promise<void>;
+  // eslint-disable-next-line no-unused-vars -- callback signatures
+  onPurge: (commentId: string) => void;
+  onBeforeStartReply?: () => void;
+}) {
+  return {
+    onStartEdit: () => options.onStartEdit(options.commentId),
+    onCancelEdit: options.onCancelEdit,
+    onSaveEdit: (doc: JSONContent) => {
+      options.onSaveEdit(options.commentId, doc);
+    },
+    onStartReply: () => {
+      options.onBeforeStartReply?.();
+      options.onStartReply(options.replyParentId);
+    },
+    onCancelReply: options.onCancelReply,
+    onArchive: () => {
+      options.onArchive(options.commentId);
+    },
+    onRestore: () => {
+      options.onRestore(options.commentId);
+    },
+    onPurge: () => options.onPurge(options.commentId),
+  };
+}
+
 export function CommentThread({
   parent,
   replies,
@@ -68,6 +110,36 @@ export function CommentThread({
   onRestore,
   onPurge,
 }: Readonly<CommentThreadProps>) {
+  const [replySeedEmoji, setReplySeedEmoji] = useState<string | null>(null);
+  const isReplying = replyingParentId === parent.id;
+
+  const clearReplySeed = () => {
+    setReplySeedEmoji(null);
+  };
+
+  const handleCancelReply = () => {
+    clearReplySeed();
+    onCancelReply();
+  };
+
+  const sharedHandlers = {
+    onStartEdit,
+    onCancelEdit,
+    onSaveEdit,
+    onStartReply,
+    onCancelReply: handleCancelReply,
+    onArchive,
+    onRestore,
+    onPurge,
+    onBeforeStartReply: clearReplySeed,
+  };
+
+  const parentHandlers = bindCommentItemHandlers({
+    commentId: parent.id,
+    replyParentId: parent.id,
+    ...sharedHandlers,
+  });
+
   return (
     <div className="space-y-4">
       <CommentListItem
@@ -75,49 +147,48 @@ export function CommentThread({
         activeUserId={activeUserId}
         showWorkItemBadge={showWorkItemBadge}
         isEditing={editingCommentId === parent.id}
-        isReplying={replyingParentId === parent.id}
+        isReplying={isReplying}
         users={users}
         workItems={workItems}
-        onStartEdit={() => onStartEdit(parent.id)}
-        onCancelEdit={onCancelEdit}
-        onSaveEdit={(doc) => {
-          onSaveEdit(parent.id, doc);
+        {...parentHandlers}
+        onQuickEmoji={(emoji) => {
+          setReplySeedEmoji(emoji);
+          onStartReply(parent.id);
         }}
-        onStartReply={() => onStartReply(parent.id)}
-        onCancelReply={onCancelReply}
-        onArchive={() => {
-          onArchive(parent.id);
-        }}
-        onRestore={() => {
-          onRestore(parent.id);
-        }}
-        onPurge={() => onPurge(parent.id)}
-        onQuickEmoji={() => onStartReply(parent.id)}
         onUserMentionClick={onUserMentionClick}
         replySlot={
-          <CommentEditorFormShell
-            className="mt-2"
-            users={users}
-            workItems={workItems}
-            placeholder="Write a reply..."
-            avatarName={currentUserName}
-            avatarImageUrl={currentUserImageUrl}
-            autoFocus
-            submitLabel="Post reply"
-            cancelLabel={
-              <span className="flex items-center gap-1">
-                <X className="size-4" />
-                Cancel
-              </span>
-            }
-            isSubmitDisabled={isSubmitting}
-            onCancel={onCancelReply}
-            onSubmit={(doc) => {
-              onPostReply(doc, parent).catch((error) => {
-                console.error('Failed to post reply:', error);
-              });
-            }}
-          />
+          isReplying ? (
+            <CommentEditorFormShell
+              key={replySeedEmoji ?? 'reply'}
+              className="mt-2"
+              users={users}
+              workItems={workItems}
+              placeholder="Write a reply..."
+              initialContent={
+                replySeedEmoji
+                  ? (plainTextToCommentDoc(replySeedEmoji) as Json)
+                  : undefined
+              }
+              avatarName={currentUserName}
+              avatarImageUrl={currentUserImageUrl}
+              autoFocus
+              submitLabel="Post reply"
+              cancelLabel={
+                <span className="flex items-center gap-1">
+                  <X className="size-4" />
+                  Cancel
+                </span>
+              }
+              isSubmitDisabled={isSubmitting}
+              onCancel={handleCancelReply}
+              onSubmit={(doc) => {
+                clearReplySeed();
+                onPostReply(doc, parent).catch((error) => {
+                  console.error('Failed to post reply:', error);
+                });
+              }}
+            />
+          ) : null
         }
       />
 
@@ -132,20 +203,11 @@ export function CommentThread({
               isReplying={false}
               users={users}
               workItems={workItems}
-              onStartEdit={() => onStartEdit(reply.id)}
-              onCancelEdit={onCancelEdit}
-              onSaveEdit={(doc) => {
-                onSaveEdit(reply.id, doc);
-              }}
-              onStartReply={() => onStartReply(parent.id)}
-              onCancelReply={onCancelReply}
-              onArchive={() => {
-                onArchive(reply.id);
-              }}
-              onRestore={() => {
-                onRestore(reply.id);
-              }}
-              onPurge={() => onPurge(reply.id)}
+              {...bindCommentItemHandlers({
+                commentId: reply.id,
+                replyParentId: parent.id,
+                ...sharedHandlers,
+              })}
               onUserMentionClick={onUserMentionClick}
             />
           ))}
