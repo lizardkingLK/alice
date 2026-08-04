@@ -45,6 +45,7 @@ describe('WorkItemForm', () => {
     expect(screen.getByLabelText(/^Title$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^Project$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^Type$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Priority/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Due date/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Assign to/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Story points/i)).toBeInTheDocument();
@@ -99,6 +100,9 @@ describe('WorkItemForm', () => {
       target: { value: '8' },
     });
 
+    fireEvent.click(screen.getByLabelText(/^Priority$/i));
+    fireEvent.click(screen.getByRole('option', { name: 'High' }));
+
     fireEvent.submit(screen.getByLabelText(/^Title$/i).closest('form')!);
 
     // Assert
@@ -110,6 +114,7 @@ describe('WorkItemForm', () => {
     expect(formData.get('title')).toBe('New backlog item');
     expect(formData.get('project_id')).toBe(projects[0]!.id);
     expect(formData.get('type')).toBe('Task');
+    expect(formData.get('priority')).toBe('high');
     expect(formData.get('due_date')).toBe('2026-08-01');
     expect(formData.get('assignee_id')).toBe(projectMembers[0]!.id);
     expect(formData.get('story_points')).toBe('8');
@@ -154,6 +159,7 @@ describe('WorkItemForm', () => {
 
     // Assert — populated
     expect(screen.getByLabelText(/^Title$/i)).toHaveValue('Original title');
+    expect(screen.getByLabelText(/Priority/i)).toHaveTextContent('Medium');
     expect(screen.getByLabelText(/Due date/i)).toHaveValue('2026-07-20');
     expect(screen.getByLabelText(/Story points/i)).toHaveValue(5);
     expect(
@@ -167,6 +173,8 @@ describe('WorkItemForm', () => {
     fireEvent.change(screen.getByLabelText(/Story points/i), {
       target: { value: '13' },
     });
+    fireEvent.click(screen.getByLabelText(/^Priority$/i));
+    fireEvent.click(screen.getByRole('option', { name: 'High' }));
     fireEvent.submit(screen.getByLabelText(/^Title$/i).closest('form')!);
 
     // Assert
@@ -178,6 +186,7 @@ describe('WorkItemForm', () => {
     const formData = vi.mocked(updateWorkItem).mock.calls[0]![1] as FormData;
     expect(formData.get('title')).toBe('Updated title');
     expect(formData.get('story_points')).toBe('13');
+    expect(formData.get('priority')).toBe('high');
     expect(vi.mocked(updateWorkItem).mock.calls[0]![2]).toBe(
       itemToEdit.updated_at
     );

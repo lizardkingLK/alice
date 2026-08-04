@@ -8,7 +8,6 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '@repo/ui/components/ui/avatar';
-import { Badge } from '@repo/ui/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
-import { Book, CircleHelp, Settings, User } from '@repo/ui/lib/icons';
+import { User } from '@repo/ui/lib/icons';
 import Image from 'next/image';
 import { cn } from '@repo/ui/lib/utils';
 import { PendingSubmitButton } from '@/components/pending-submit-button';
@@ -25,6 +24,7 @@ import {
   formatLabelFirstLetterCapitalized,
   getInitials,
 } from '@/app/_shared/utility';
+import { Badge } from '@repo/ui/components/ui/badge';
 
 type AuthControlsProps = {
   email?: string | null;
@@ -83,47 +83,21 @@ const UserProfile = ({
                 {getInitials(displayName)}
               </AvatarFallback>
             </Avatar>
-            <div className="min-w-0 flex-1 space-y-1">
-              <TruncatedText className="text-sm font-medium">
-                {displayName}
-              </TruncatedText>
-              <TruncatedText className="text-muted-foreground text-xs">
-                {email}
-              </TruncatedText>
+            <div className="flex w-full items-center justify-between">
+              <div className="min-w-0 flex-1 space-y-1">
+                <TruncatedText className="text-sm font-medium">
+                  {displayName}
+                </TruncatedText>
+                <TruncatedText className="text-muted-foreground text-xs">
+                  {email}
+                </TruncatedText>
+              </div>
               {roleLabel ? (
-                <Badge variant="secondary" className="font-normal">
+                <Badge variant="outline" className="font-normal">
                   {roleLabel}
                 </Badge>
               ) : null}
             </div>
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild className="cursor-pointer justify-center">
-          <Link
-            href="/docs"
-            className="flex w-full items-center justify-center gap-2"
-          >
-            <Book className="size-4" />
-            Docs
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild className="cursor-pointer justify-center">
-          <Link
-            href="/settings"
-            className="flex w-full items-center justify-center gap-2"
-          >
-            <Settings className="size-4" />
-            Settings
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild className="cursor-pointer justify-center">
-          <Link
-            href="/help"
-            className="flex w-full items-center justify-center gap-2"
-          >
-            <CircleHelp className="size-4" />
-            Help
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

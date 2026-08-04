@@ -18,6 +18,11 @@ import { Loader2 } from '@repo/ui/lib/icons';
 import { User as DbUser } from '@/app/users/_services/users.service';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import {
+  PRIORITY_LABELS,
+  WORK_ITEM_PRIORITY_OPTIONS,
+  type WorkItemPriority,
+} from '@/app/work-items/_helpers/work-item-priority-ui';
+import {
   createWorkItem,
   updateWorkItem,
 } from '@/app/work-items/_services/workItem.service.client';
@@ -102,6 +107,11 @@ export function WorkItemForm({
   const [type, setType] = useState(
     itemToEdit?.type ?? (typeLocked ? (availableTypes[0] ?? '') : '')
   );
+  const [priority, setPriority] = useState<WorkItemPriority>(() => {
+    // Backend already defaults to `medium` when omitted, but we surface the choice
+    // in both create and edit flows.
+    return itemToEdit?.priority ?? 'medium';
+  });
   const isEditMode = itemToEdit !== null;
   const lockAssignee = Boolean(lockAssigneeId);
 
@@ -200,6 +210,27 @@ export function WorkItemForm({
             </SelectContent>
           </Select>
           <input type="hidden" name="type" value={type} />
+        </div>
+
+        {/* Priority */}
+        <div className="space-y-2">
+          <Label htmlFor="priority">Priority</Label>
+          <Select
+            value={priority}
+            onValueChange={(value) => setPriority(value as WorkItemPriority)}
+          >
+            <SelectTrigger id="priority">
+              <SelectValue placeholder="Select priority..." />
+            </SelectTrigger>
+            <SelectContent>
+              {WORK_ITEM_PRIORITY_OPTIONS.map((p) => (
+                <SelectItem key={p} value={p}>
+                  {PRIORITY_LABELS[p]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <input type="hidden" name="priority" value={priority} />
         </div>
 
         {parentId ? (

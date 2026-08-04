@@ -16,6 +16,7 @@ globs: "**/*"
 
 - Do not use `any` (`@typescript-eslint/no-explicit-any`).
 - Do not add `eslint-disable` for lint rules without a brief justification.
+- Never use nested ternary operators (`a ? b : c ? d : e`). Prefer `if` / `else if` / `else` (or early returns) for readability and to satisfy SonarQube (`typescript:S3358`). A single-level ternary is fine for simple one-line assignments.
 
 ### React (TSX)
 
@@ -24,6 +25,7 @@ globs: "**/*"
 - Respect `react-refresh/only-export-components` where applicable.
 - Do not put `role="button"` on non-`<button>` elements (SonarQube / a11y). Use a real `<button type="button">` (optionally inside a heading) and style it instead of faking button semantics with ARIA.
 - Do not use the `void someAsyncFn()` pattern to silence floating promises (SonarQube). Prefer `.catch(...)` on the promise, or structure the flow so the async work is awaited in a proper async function.
+- Same nested-ternary ban as TypeScript: do not nest ternaries in JSX or component bodies; extract a helper with `if` statements when branching needs more than one condition.
 
 ### Before you finish
 
