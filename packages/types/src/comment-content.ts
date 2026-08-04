@@ -217,18 +217,19 @@ function walkNodes(
   node: CommentTiptapNode,
   visit: (node: CommentTiptapNode) => void,
   depth = 0,
-  state: { count: number } = { count: 0 }
+  state?: { count: number }
 ): void {
+  const walkState = state ?? { count: 0 };
   const MAX_DEPTH = 32;
   const MAX_NODES = 5_000;
-  if (depth > MAX_DEPTH || state.count >= MAX_NODES) {
+  if (depth > MAX_DEPTH || walkState.count >= MAX_NODES) {
     return;
   }
-  state.count += 1;
+  walkState.count += 1;
   visit(node);
   if (Array.isArray(node.content)) {
     for (const child of node.content) {
-      walkNodes(child, visit, depth + 1, state);
+      walkNodes(child, visit, depth + 1, walkState);
     }
   }
 }
@@ -270,7 +271,7 @@ export function commentContentToPlainText(
       node.type === 'listItem' ||
       node.type === 'blockquote'
     ) {
-      if (parts.length > 0 && !parts[parts.length - 1]?.endsWith('\n')) {
+      if (parts.length > 0 && !parts.at(-1)?.endsWith('\n')) {
         parts.push('\n');
       }
       return;
