@@ -182,10 +182,13 @@ export function CommentThread({
               isSubmitDisabled={isSubmitting}
               onCancel={handleCancelReply}
               onSubmit={(doc) => {
-                clearReplySeed();
-                onPostReply(doc, parent).catch((error) => {
-                  console.error('Failed to post reply:', error);
-                });
+                onPostReply(doc, parent)
+                  .then(() => {
+                    clearReplySeed();
+                  })
+                  .catch((error) => {
+                    console.error('error. failed to post reply', error);
+                  });
               }}
             />
           ) : null
