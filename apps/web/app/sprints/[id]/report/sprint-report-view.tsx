@@ -6,6 +6,7 @@ import { useReactToPrint } from 'react-to-print';
 import Image from 'next/image';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
 import {
   Calendar,
   CheckCircle,
@@ -487,12 +488,7 @@ export function SprintReportView({
                         {item.title}
                       </td>
                       <td className="p-4 whitespace-nowrap">
-                        <Badge
-                          variant="outline"
-                          className="border-zinc-500/20 bg-zinc-500/5 text-xs text-zinc-600 capitalize dark:text-zinc-400"
-                        >
-                          {item.priority}
-                        </Badge>
+                        <PriorityBadge priority={item.priority} />
                       </td>
                       <td className="p-4 whitespace-nowrap">
                         <span

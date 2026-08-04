@@ -1,6 +1,9 @@
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
-
-export type BacklogPriority = 'low' | 'medium' | 'high';
+import {
+  mapPriorityToBacklogPriority,
+  type BacklogPriority,
+} from '@/app/work-items/_helpers/work-item-priority-ui';
+import type { WorkItemPriority } from '@repo/types';
 
 export type BacklogActiveTab = 'active' | 'completed';
 
@@ -11,17 +14,8 @@ export type BacklogAssignee = {
   profile_picture?: string | null;
 };
 
-export const BACKLOG_PRIORITY_STYLES: Record<string, string> = {
-  high: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
-  medium:
-    'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
-  low: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-};
-
-export function mapPriority(priority: string): BacklogPriority {
-  if (priority === 'highest') return 'high';
-  if (priority === 'lowest') return 'low';
-  return priority as BacklogPriority;
+export function mapPriority(priority: WorkItemPriority): BacklogPriority {
+  return mapPriorityToBacklogPriority(priority);
 }
 
 export function formatDateRange(

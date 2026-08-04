@@ -1,13 +1,12 @@
 'use server';
 
-import { getActiveMemberProjectIds } from '@/app/board/_services/board-defaults.server';
 import {
   getWorkItem,
   getWorkItems,
   type DbWorkItem,
 } from '@/app/work-items/_services/workItem.service.server';
-import { createClient } from '@/lib/supabase/server';
 import { getDbUser } from '@/lib/auth';
+import { canAccessProjectWorkspace } from '@/lib/projects/project-workspace-access';
 
 /** Cap ancestor walks (Epic → Story → Task(+)). */
 const MAX_HIERARCHY_AUTH_DEPTH = 8;
@@ -16,67 +15,21 @@ export type LoadWorkItemChildrenResult =
   | { readonly ok: true; readonly children: DbWorkItem[] }
   | { readonly ok: false; readonly error: string };
 
-async function isProjectOwner(
-  userId: string,
-  projectId: string
-): Promise<boolean> {
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from('projects')
-      .select('id')
-      .eq('id', projectId)
-      .eq('owner_id', userId)
-      .maybeSingle();
-
-    if (error) {
-      console.error('error. failed to check project ownership:', error.message);
-      return false;
-    }
-
-    return Boolean(data?.id);
-  } catch (ownershipError) {
-    console.error('error. failed to check project ownership', ownershipError);
-    return false;
-  }
-}
-
-async function listMemberProjectIdsSafe(userId: string): Promise<string[]> {
-  try {
-    return await getActiveMemberProjectIds(userId);
-  } catch (membershipError) {
-    console.error(
-      'error. failed to list member projects for hierarchy auth',
-      membershipError
-    );
-    return [];
-  }
-}
-
 /**
- * Hierarchy expand must work on My Work (/member): roots are assignee-scoped,
- * but children of any assignee should load when the viewer can see the parent
- * chain. Project membership alone is too strict for that — also allow project
- * owners who may not appear in `project_members`.
+ * Hierarchy expand auth for My Work and registry.
+ * - Project-scoped parents: workspace ACL only (owner / active member / admin).
+ * - Non-project parents: assignee, reporter, or ancestor assignee/reporter.
  */
 async function canLoadWorkItemChildren(
   userId: string,
-  isAdmin: boolean,
+  role: string,
   parent: DbWorkItem
 ): Promise<boolean> {
-  if (isAdmin) {
-    return true;
-  }
-
+  // Project-scoped items: workspace ACL is terminal. Do not fall back to
+  // assignee/reporter — a removed member who remains assignee must not load
+  // project children.
   if (parent.project_id) {
-    const memberProjectIds = await listMemberProjectIdsSafe(userId);
-    if (memberProjectIds.includes(parent.project_id)) {
-      return true;
-    }
-
-    if (await isProjectOwner(userId, parent.project_id)) {
-      return true;
-    }
+    return canAccessProjectWorkspace(userId, role, parent.project_id);
   }
 
   if (parent.assignee_id === userId || parent.reporter_id === userId) {
@@ -132,13 +85,15 @@ export async function loadWorkItemChildrenAction(
 
     const allowed = await canLoadWorkItemChildren(
       currentUser.id,
-      currentUser.role === 'admin',
+      currentUser.role,
       parent
     );
     if (!allowed) {
       return {
         ok: false,
-        error: 'Not authorized to view this work item.',
+        error: parent.project_id
+          ? "You're not a member of this project."
+          : 'Not authorized to view this work item.',
       };
     }
 

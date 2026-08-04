@@ -15,6 +15,7 @@ import { projectFactory } from '../factories/project.factory';
 import { workItemFactory } from '../factories/workItem.factory';
 import { commentFactory } from '../factories/comment.factory';
 import { formatDateToISOString } from '@/app/_shared/utility';
+import { plainTextToCommentDoc } from '@repo/types';
 
 vi.mock('@/lib/supabase/client', () => {
   const mockOrder = vi.fn(() => new Promise(() => {}));
@@ -37,6 +38,11 @@ vi.mock('@/app/comments/_components/actions', () => {
   return {
     createCommentAction: vi.fn(),
   };
+});
+
+vi.mock('@/app/comments/_components/comment-editor', async () => {
+  const { MockCommentEditor } = await import('./mock-comment-editor');
+  return { CommentEditor: MockCommentEditor };
 });
 
 vi.mock('@/app/comments/_services/comments.service', async (importOriginal) => {
@@ -172,7 +178,9 @@ const mockComments: CommentItem[] = [
     work_item_id: workItem1.id,
     author_id: aliceAdmin.id,
     parent_id: null,
-    content: 'Security audit completed for the auth module.',
+    content: plainTextToCommentDoc(
+      'Security audit completed for the auth module.'
+    ),
     edited: false,
     status: 'active',
     created_at: formatDateToISOString(2026, 6, 20, 10, 0, 0),
@@ -200,7 +208,9 @@ const mockComments: CommentItem[] = [
     work_item_id: workItem2.id,
     author_id: bobDev.id,
     parent_id: null,
-    content: 'Navigation CSS alignment fix is ready for review.',
+    content: plainTextToCommentDoc(
+      'Navigation CSS alignment fix is ready for review.'
+    ),
     edited: false,
     status: 'active',
     created_at: formatDateToISOString(2026, 6, 21, 8, 0, 0),
@@ -223,7 +233,9 @@ const mockComments: CommentItem[] = [
     work_item_id: workItem1.id,
     author_id: aliceAdmin.id,
     parent_id: 'comment-1',
-    content: 'Yes, this is a reply to the security audit.',
+    content: plainTextToCommentDoc(
+      'Yes, this is a reply to the security audit.'
+    ),
     edited: false,
     status: 'active',
     created_at: formatDateToISOString(2026, 6, 20, 11, 0, 0),
@@ -308,7 +320,9 @@ describe('CommentsFeed Component', () => {
     const commentWithMention: CommentItem = {
       ...mockComments[0]!,
       id: 'comment-mention-1',
-      content: 'Hey @[Alice Admin](user-admin-1) please check this.',
+      content: plainTextToCommentDoc(
+        'Hey @[Alice Admin](user-admin-1) please check this.'
+      ),
     };
 
     renderFeed({ initialComments: [commentWithMention] });
@@ -320,17 +334,37 @@ describe('CommentsFeed Component', () => {
     const commentWithIssue: CommentItem = {
       ...mockComments[0]!,
       id: 'comment-issue-1',
-      content: 'Please refer to #[AL-1](wi-1) for details.',
+      content: {
+        type: 'doc',
+        content: [
+          {
+            type: 'paragraph',
+            content: [
+              { type: 'text', text: 'Please refer to ' },
+              {
+                type: 'workItemMention',
+                attrs: {
+                  id: 'wi-1',
+                  label: 'AL-1',
+                  title: 'Login flow',
+                  mentionType: 'workItem',
+                },
+              },
+              { type: 'text', text: ' for details.' },
+            ],
+          },
+        ],
+      },
     };
 
     renderFeed({ initialComments: [commentWithIssue] });
-    const link = screen.getByRole('link', { name: '#AL-1' });
+    const link = screen.getByRole('link', { name: /#AL-1 · Login flow/i });
     expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute('href', '/work-items');
+    expect(link).toHaveAttribute('href', '/work-items/wi-1');
     expect(screen.getByText(/for details/)).toBeInTheDocument();
   });
 
-  it('renders inline comments list and add box when workItemId is provided', () => {
+  it('renders composer when workItemId is provided', () => {
     renderFeed({ workItemId: 'wi-1' });
 
     expect(screen.getByText('Discussion (3)')).toBeInTheDocument();
@@ -338,19 +372,19 @@ describe('CommentsFeed Component', () => {
       screen.queryByText('Discussions & Comments')
     ).not.toBeInTheDocument();
     expect(screen.queryByText('New Comment')).not.toBeInTheDocument();
-    expect(screen.getByText('Add to discussion')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Add a comment...')).toBeInTheDocument();
   });
 
   it('calls archiveComment when a comment is archived', async () => {
     vi.mocked(archiveComment).mockResolvedValue(undefined);
 
-    renderFeed();
+    renderFeed({ currentUserId: aliceAdmin.id });
 
-    // Open dropdown menu
-    const menuBtn = screen.getAllByRole('button', { name: /Open menu/i })[0]!;
+    const menuBtn = screen.getAllByRole('button', {
+      name: /More actions/i,
+    })[0]!;
     fireEvent.click(menuBtn);
 
-    // Click Archive button
     const archiveBtn = screen.getAllByText('Archive')[0]!;
     fireEvent.click(archiveBtn);
 
@@ -362,20 +396,23 @@ describe('CommentsFeed Component', () => {
     });
   });
 
-  it('calls archiveComment (permanent) when a thread reply is deleted', async () => {
+  it('calls archiveComment (permanent) when an archived reply is purged', async () => {
     vi.mocked(archiveComment).mockResolvedValue(undefined);
 
-    renderFeed();
+    const archivedReply: CommentItem = {
+      ...mockComments[2]!,
+      status: 'archived',
+    };
 
-    // Open dropdown menu for reply (the second Open menu button)
-    const menuBtn = screen.getAllByRole('button', { name: /Open menu/i })[1]!;
-    fireEvent.click(menuBtn);
+    renderFeed({
+      currentUserId: aliceAdmin.id,
+      initialComments: [mockComments[0]!, archivedReply],
+      workItemId: workItem1.id,
+    });
 
-    // Click Delete button to open modal
-    const deleteBtn = screen.getByText('Delete');
-    fireEvent.click(deleteBtn);
+    const purgeBtn = screen.getByRole('button', { name: /Purge/i });
+    fireEvent.click(purgeBtn);
 
-    // Click confirm delete button
     const confirmBtn = screen.getByRole('button', { name: 'Purge Comment' });
     fireEvent.click(confirmBtn);
 
@@ -396,18 +433,15 @@ describe('CommentsFeed Component', () => {
     };
     vi.mocked(restoreComment).mockResolvedValue(undefined);
 
-    renderFeed({ initialComments: [archivedComment] });
+    renderFeed({
+      currentUserId: aliceAdmin.id,
+      initialComments: [archivedComment],
+    });
 
-    // Switch status filter to "archived"
     const select = screen.getByTestId('status-select');
     fireEvent.change(select, { target: { value: 'archived' } });
 
-    // Open dropdown menu
-    const menuBtn = screen.getByRole('button', { name: /Open menu/i });
-    fireEvent.click(menuBtn);
-
-    // Click Restore button
-    const restoreBtn = screen.getByText('Restore');
+    const restoreBtn = screen.getByRole('button', { name: /Restore/i });
     fireEvent.click(restoreBtn);
 
     await waitFor(() => {
@@ -426,21 +460,17 @@ describe('CommentsFeed Component', () => {
     };
     vi.mocked(archiveComment).mockResolvedValue(undefined);
 
-    renderFeed({ initialComments: [archivedComment] });
+    renderFeed({
+      currentUserId: aliceAdmin.id,
+      initialComments: [archivedComment],
+    });
 
-    // Switch status filter to "archived"
     const select = screen.getByTestId('status-select');
     fireEvent.change(select, { target: { value: 'archived' } });
 
-    // Open dropdown menu
-    const menuBtn = screen.getByRole('button', { name: /Open menu/i });
-    fireEvent.click(menuBtn);
-
-    // Click Purge button to open confirm modal
-    const deleteBtn = screen.getByText('Purge');
+    const deleteBtn = screen.getByRole('button', { name: /Purge/i });
     fireEvent.click(deleteBtn);
 
-    // Click Purge Comment in the confirm modal
     const confirmBtn = screen.getByRole('button', { name: 'Purge Comment' });
     fireEvent.click(confirmBtn);
 

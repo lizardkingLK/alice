@@ -1,6 +1,9 @@
 import { supabase } from '../../../lib/supabase';
 import { auditCreate, auditUpdate } from '../../../lib/audit';
-import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
+import {
+  OptimisticLockError,
+  resolveOptimisticUpdate,
+} from '../../../lib/optimistic-lock';
 
 export type UserRow = {
   id: string;
@@ -66,6 +69,68 @@ export class UsersRepository {
     }
 
     return data as UserRow | null;
+  }
+
+  /** Active admins other than `excludeUserId` (for last-admin guard / tests). */
+  async countOtherActiveAdmins(excludeUserId: string): Promise<number> {
+    const { count, error } = await supabase
+      .from('users')
+      .select('id', { count: 'exact', head: true })
+      .eq('role', 'admin')
+      .eq('active', true)
+      .neq('id', excludeUserId);
+
+    if (error) {
+      console.error(
+        'error. failed to count other active admins:',
+        error.message
+      );
+      throw new Error('Failed to verify admin coverage');
+    }
+
+    return count ?? 0;
+  }
+
+  /**
+   * Deactivate under a row lock with last-admin protection (Postgres RPC).
+   * Throws on last-admin / not-found; maps optimistic conflicts to OptimisticLockError.
+   */
+  async deactivateGuarded(
+    id: string,
+    actorId: string,
+    expectedUpdatedAt: string
+  ): Promise<UserRow> {
+    const { data, error } = await supabase.rpc('deactivate_user_guarded', {
+      p_user_id: id,
+      p_actor_id: actorId,
+      p_expected_updated_at: expectedUpdatedAt,
+    });
+
+    if (error) {
+      const message = error.message ?? '';
+      if (message.includes('Cannot deactivate the last active admin')) {
+        throw new Error('Cannot deactivate the last active admin.');
+      }
+      if (message.includes('User not found')) {
+        throw new Error('User not found.');
+      }
+      if (message.includes('OPTIMISTIC_LOCK_CONFLICT')) {
+        const current = await this.findById(id);
+        if (!current) {
+          throw new Error('User not found.');
+        }
+        throw new OptimisticLockError(current);
+      }
+      console.error('error. deactivate_user_guarded failed:', message);
+      throw new Error('Failed to deactivate user');
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) {
+      throw new Error('User not found.');
+    }
+
+    return row as UserRow;
   }
 
   async findByEmail(email: string): Promise<UserRow | null> {

@@ -22,8 +22,9 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
 import { cn } from '@repo/ui/lib/utils';
+import { Button } from '@repo/ui/components/ui/button';
 
-type Notification = Database['public']['Tables']['notifications']['Row'];
+export type Notification = Database['public']['Tables']['notifications']['Row'];
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   mention: AtSign,
@@ -48,6 +49,28 @@ const iconColorMap: Record<string, string> = {
     'text-rose-500 bg-rose-500/10 border-rose-500/20 dark:bg-rose-500/20',
   default: 'text-muted-foreground bg-muted border-border',
 };
+
+function NotificationsEmptyState({
+  icon,
+  title,
+  description,
+}: Readonly<{
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}>) {
+  return (
+    <div className="text-muted-foreground flex flex-col items-center justify-center gap-3 px-4 py-12 text-center">
+      <div className="bg-muted/40 border-border/50 rounded-full border p-3">
+        {icon}
+      </div>
+      <div className="space-y-1">
+        <p className="text-foreground text-sm font-medium">{title}</p>
+        <p className="max-w-xs text-xs">{description}</p>
+      </div>
+    </div>
+  );
+}
 
 function formatRelativeTime(dateString: string): string {
   const date = new Date(dateString);
@@ -92,52 +115,27 @@ function removeNotificationFromList(
   return result;
 }
 
-export function NotificationInbox() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
+export function NotificationInbox({
+  userId,
+  initialNotifications = [],
+  initialLoadFailed = false,
+}: Readonly<{
+  userId: string;
+  initialNotifications?: Notification[];
+  /** True when the server-side initial query timed out or failed. */
+  initialLoadFailed?: boolean;
+}>) {
+  const [notifications, setNotifications] =
+    useState<Notification[]>(initialNotifications);
+  const [loadFailed, setLoadFailed] = useState(initialLoadFailed);
+  const loading = false;
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const supabase = createClient();
-
-    const initUserAndData = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        if (!user) {
-          setLoading(false);
-          return;
-        }
-
-        setUserId(user.id);
-
-        // Fetch notifications
-        const { data, error } = await supabase
-          .from('notifications')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .order('created_at', { ascending: false })
-          .limit(50);
-
-        if (error) {
-          console.error('Failed to fetch notifications:', error);
-        } else if (data) {
-          setNotifications(data);
-        }
-      } catch (err) {
-        console.error('Error during notification initialization:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initUserAndData();
-  }, []);
+    setNotifications(initialNotifications);
+    setLoadFailed(initialLoadFailed);
+  }, [initialNotifications, initialLoadFailed]);
 
   useEffect(() => {
     if (!userId) return;
@@ -186,17 +184,14 @@ export function NotificationInbox() {
 
   const handleMarkAsRead = async (id: string) => {
     const supabase = createClient();
+    const current = notifications.find((n) => n.id === id);
     // Optimistic update
     setNotifications((prev) => {
-      const result: Notification[] = [];
-      for (const n of prev) {
-        if (n.id === id) {
-          result.push({ ...n, read_status: true });
-        } else {
-          result.push(n);
-        }
+      const target = prev.find((n) => n.id === id);
+      if (!target) {
+        return prev;
       }
-      return result;
+      return updateNotificationsList(prev, { ...target, read_status: true });
     });
 
     const { error } = await supabase
@@ -207,17 +202,12 @@ export function NotificationInbox() {
     if (error) {
       console.error('Failed to mark notification as read:', error);
       // Rollback on error
-      setNotifications((prev) => {
-        const result: Notification[] = [];
-        for (const n of prev) {
-          if (n.id === id) {
-            result.push({ ...n, read_status: false });
-          } else {
-            result.push(n);
-          }
-        }
-        return result;
-      });
+      if (!current) {
+        return;
+      }
+      setNotifications((prev) =>
+        updateNotificationsList(prev, { ...current, read_status: false })
+      );
     }
   };
 
@@ -316,21 +306,23 @@ export function NotificationInbox() {
       );
     }
 
+    if (loadFailed) {
+      return (
+        <NotificationsEmptyState
+          icon={<AlertCircle className="text-destructive/80 size-6" />}
+          title="Couldn't load notifications"
+          description="Refresh the page to try again. New alerts may still arrive in realtime."
+        />
+      );
+    }
+
     if (notifications.length === 0) {
       return (
-        <div className="text-muted-foreground flex flex-col items-center justify-center gap-3 px-4 py-12 text-center">
-          <div className="bg-muted/40 border-border/50 rounded-full border p-3">
-            <InboxIcon className="text-muted-foreground/60 size-6" />
-          </div>
-          <div className="space-y-1">
-            <p className="text-foreground text-sm font-medium">
-              No notifications yet
-            </p>
-            <p className="max-w-xs text-xs">
-              We&apos;ll let you know when you get mentioned or updates occur.
-            </p>
-          </div>
-        </div>
+        <NotificationsEmptyState
+          icon={<InboxIcon className="text-muted-foreground/60 size-6" />}
+          title="No notifications yet"
+          description="We'll let you know when you get mentioned or updates occur."
+        />
       );
     }
 
@@ -397,15 +389,14 @@ export function NotificationInbox() {
     });
   };
 
-  if (!userId) return null;
-
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="icon"
           aria-label="View notifications"
-          className="border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border transition-all focus-visible:outline-hidden active:scale-95"
+          className="relative cursor-pointer"
         >
           <Bell
             className={cn(
@@ -418,7 +409,7 @@ export function NotificationInbox() {
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
-        </button>
+        </Button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent

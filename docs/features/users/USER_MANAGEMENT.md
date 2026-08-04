@@ -2,21 +2,22 @@
 
 ## Document metadata
 
-| Field        | Value                                  |
-| ------------ | -------------------------------------- |
-| Project      | Alice (Jira Teams)                     |
-| Area         | Web — `apps/web/app/users`             |
-| Version      | 1.0                                    |
-| Status       | Implemented (partial RBAC enforcement) |
-| Last updated | 2026-06-30                             |
+| Field        | Value                            |
+| ------------ | -------------------------------- |
+| Project      | Alice (Jira Teams)               |
+| Area         | Web — `apps/web/app/users`       |
+| Version      | 1.0                              |
+| Status       | Implemented (phase-1 route RBAC) |
+| Last updated | 2026-06-30                       |
 
 Related:
 
 - `docs/auth/AUTHENTICATION.md` — living auth guide (admin invite + reset sequences)
-- `docs/auth/RBAC_AUTHORIZATION_SKELETON.md` — full RBAC rollout plan
+- `docs/auth/RBAC_AUTHORIZATION_SKELETON.md` — phase-1 role route matrix
 - `docs/auth/FORGOT_PASSWORD_AUTH_PLAN.md` — original password-reset plan
 - `docs/guides/DATABASE.md` — `public.users` schema and migrations
 - `docs/features/access/ACCESS_ALLOWLIST.md` — admission allowlist; admin UI at `/users?tab=allowlist`
+- `docs/features/users/ACCOUNT_DEACTIVATION.md` — offboarding plan (admin / self / webhook → shared helper)
 
 ---
 
@@ -36,9 +37,10 @@ User management lets workspace administrators register team members, assign role
 
 | Route             | Access today                      | Purpose                             |
 | ----------------- | --------------------------------- | ----------------------------------- |
-| `/users`          | Any signed-in user                | User registry list + add-user modal |
+| `/users`          | Admin only (layout RBAC)          | User registry list + add-user modal |
 | `/auth/callback`  | Public (invite/reset links)       | Exchanges auth code for session     |
 | `/reset-password` | User with recovery/invite session | Set initial or new password         |
+| `/edit-profile`   | Signed-in user                    | Profile + self-deactivate           |
 
 **Navigation:** Dashboard sidebar → **Users** (`/users`).
 
@@ -121,40 +123,36 @@ sequenceDiagram
 
 ## Activate / deactivate users
 
-`toggleUserActive` is **admin-only** (same check as `createUser`).
+Shared kill switch lives in the API as `deactivateUser` (see [ACCOUNT_DEACTIVATION.md](./ACCOUNT_DEACTIVATION.md)).
 
-| Action     | `public.users`   | Supabase Auth            |
-| ---------- | ---------------- | ------------------------ |
-| Deactivate | `active = false` | `ban_duration: '87600h'` |
-| Activate   | `active = true`  | `ban_duration: 'none'`   |
+| Path    | Who                | Mechanism                                                 |
+| ------- | ------------------ | --------------------------------------------------------- |
+| Admin   | Admin on `/users`  | `PATCH /api/users/:id/toggle-active`                      |
+| Self    | Any signed-in user | Edit profile Danger zone → same `toggle-active` on own id |
+| Webhook | External (phase 2) | Planned                                                   |
 
-**Self lockout protection:** an admin cannot deactivate their own account.
+| Action     | `public.users`   | Supabase Auth                       |
+| ---------- | ---------------- | ----------------------------------- |
+| Deactivate | `active = false` | `ban_duration: '87600h'`            |
+| Activate   | `active = true`  | `ban_duration: 'none'` (admin only) |
 
-**Sign-in gate:** `getUser()` in `lib/auth.ts` returns `null` when `public.users.active` is `false`, so deactivated users cannot access protected pages even if a session cookie remains.
+**Last-admin guard:** the API rejects deactivating the last remaining active admin.
+**Sign-in gate:** `getUser()` returns `null` when `active` is `false`.
 
 ---
 
 ## Authorization status (RBAC)
 
-### Enforced today (Server Actions)
+Phase-1 enforcement uses `apps/web/lib/rbac` (`requireAdmin`, layout `assertAdminOrRedirect`, sidebar `canAccessNavGroup`).
 
-| Action             | Admin required?                                    |
-| ------------------ | -------------------------------------------------- |
-| `createUser`       | Yes — `currentUser.role !== 'admin'` returns error |
-| `toggleUserActive` | Yes — same check                                   |
+| Surface                 | Enforcement                                                          |
+| ----------------------- | -------------------------------------------------------------------- |
+| **`/users` page**       | `app/users/layout.tsx` — admin only; others redirect to `/dashboard` |
+| **System sidebar**      | Hidden unless role is `admin`                                        |
+| **`createUser` / edit** | Server Actions via shared `requireAdmin()`                           |
+| **`toggleUserActive`**  | Same `requireAdmin()` gate                                           |
 
-### Not yet strictly enforced
-
-| Gap                      | Current behaviour                                             | Planned                                                      |
-| ------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------ |
-| **`/users` page access** | Any authenticated user can open `/users` and see the registry | Route/layout guard: admin-only                               |
-| **Add User UI**          | Button visible to all signed-in users on `/users`             | Hide unless `getUserRole() === 'admin'`                      |
-| **Role dashboards**      | `/admin`, `/manager`, `/member` require sign-in only          | Redirect by `public.users.role`                              |
-| **Shared guard helper**  | Checks duplicated in actions                                  | Central `requireAdmin()` / `requireRole()` per RBAC skeleton |
-
-Server Actions already reject non-admins, but **the page and UI are not admin-gated yet**. Treat full admin-only access as **planned RBAC work**, not complete.
-
-See `docs/auth/RBAC_AUTHORIZATION_SKELETON.md` for the target architecture.
+Phase-2 (permission tables / matrix UI) remains deferred — see `docs/auth/RBAC_AUTHORIZATION_SKELETON.md`.
 
 ---
 

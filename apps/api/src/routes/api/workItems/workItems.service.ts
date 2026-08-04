@@ -155,6 +155,7 @@ export class WorkItemService {
       input.title !== current.title ||
       input.project_id !== current.project_id ||
       input.type !== current.type ||
+      input.priority !== current.priority ||
       !sameNullable(input.assignee_id, current.assignee_id) ||
       !sameNullable(input.reporter_id, current.reporter_id) ||
       !dueUnchanged ||

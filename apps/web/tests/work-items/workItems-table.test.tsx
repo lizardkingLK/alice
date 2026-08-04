@@ -439,7 +439,7 @@ describe('WorkItemsTable', () => {
     });
     vi.mocked(loadWorkItemChildrenAction).mockResolvedValue({
       ok: false,
-      error: 'Not authorized to view this work item.',
+      error: "You're not a member of this project.",
     });
 
     renderTable({
@@ -454,7 +454,7 @@ describe('WorkItemsTable', () => {
 
     // Assert
     expect(
-      await screen.findByText('Not authorized to view this work item.')
+      await screen.findByText("You're not a member of this project.")
     ).toBeInTheDocument();
     expect(
       await screen.findByRole('button', { name: /Expand subtasks/i })

@@ -16,6 +16,7 @@ import { ListFilterSelect } from '@/components/list-filter-select';
 import { BacklogLayoutMenu } from '@/app/backlog/_components/backlog-layout-menu';
 import type { BacklogLayoutId } from '@/app/backlog/_helpers/backlog-layout-storage';
 import type { BacklogActiveTab } from '@/app/backlog/_helpers/backlog-item-utils';
+import { BACKLOG_PRIORITY_OPTIONS } from '@/app/work-items/_helpers/work-item-priority-ui';
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
 import type { User as DbUser } from '@/app/users/_services/users.service';
 
@@ -180,9 +181,11 @@ export function BacklogToolbar({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Priorities</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
+            {BACKLOG_PRIORITY_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 

@@ -63,7 +63,7 @@ import {
   sortSubtasks,
   type SubtaskSortDirection,
   type SubtaskSortField,
-} from '@/app/work-items/_helpers/sort-subtasks';
+} from '@/app/work-items/_helpers/work-item-sort-subtasks';
 import {
   readMoreFieldsOpen,
   writeMoreFieldsOpen,
@@ -195,12 +195,12 @@ export default function WorkItemDetails({
       {
         id: workItem.id,
         title: workItem.title,
-        key: workItem.id.slice(0, 8).toUpperCase(),
+        key: childWorkItemKey(workItem),
         type: workItem.type,
         project_id: workItem.project_id || '',
       },
     ],
-    [workItem.id, workItem.title, workItem.type, workItem.project_id]
+    [workItem]
   );
 
   const handleDescriptionUpdate = async (content: Json) => {
@@ -293,7 +293,7 @@ export default function WorkItemDetails({
   };
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6">
+    <div className="mx-auto w-full max-w-7xl space-y-6">
       {/* Title + actions — same 3∶2 column ratio as the body so the
           title pencil lines up above the description pencil. */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">

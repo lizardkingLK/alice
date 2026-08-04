@@ -34,6 +34,8 @@ import {
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import { useWorkspaceDefaultsNavPreference } from '@/app/board/_hooks/use-workspace-defaults-nav-preference';
 import { buildWorkspaceNavHref } from '@/app/board/_services/board-defaults';
+import { canAccessNavGroup, canAccessPath } from '@/lib/rbac/route-policy';
+import type { AppRole } from '@/lib/rbac/roles';
 
 type NavItem = {
   /** Pathname used for active matching (no query). */
@@ -56,6 +58,9 @@ const SYSTEM_NAV: readonly NavItem[] = [
 
 const PROJECTS_NAV: readonly NavItem[] = [
   { path: '/projects', label: 'Projects', icon: FolderKanban },
+];
+
+const SPRINTS_NAV: readonly NavItem[] = [
   { path: '/sprints', label: 'Sprints', icon: Timer },
 ];
 
@@ -125,15 +130,24 @@ function SidebarNavGroup({
 
 type DashboardSidebarProps = {
   readonly userId?: string | null;
+  /** App role from `public.users.role`; null hides role-gated nav groups. */
+  readonly role?: AppRole | null;
 };
 
 export function DashboardSidebar({
   userId = null,
+  role = null,
 }: Readonly<DashboardSidebarProps>) {
   const pathname = usePathname();
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
   const preference = useWorkspaceDefaultsNavPreference(userId);
+  const showSystem = canAccessNavGroup(role, 'system');
+  const showProjects = canAccessNavGroup(role, 'projects');
+  const showSprints = canAccessPath(role, '/sprints');
+  const projectsNavItems = showSprints
+    ? [...PROJECTS_NAV, ...SPRINTS_NAV]
+    : [...PROJECTS_NAV];
 
   return (
     <Sidebar collapsible="icon">
@@ -157,18 +171,22 @@ export function DashboardSidebar({
           pathname={pathname}
           preference={preference}
         />
-        <SidebarNavGroup
-          label="System"
-          items={SYSTEM_NAV}
-          pathname={pathname}
-          preference={preference}
-        />
-        <SidebarNavGroup
-          label="Projects"
-          items={PROJECTS_NAV}
-          pathname={pathname}
-          preference={preference}
-        />
+        {showSystem ? (
+          <SidebarNavGroup
+            label="System"
+            items={SYSTEM_NAV}
+            pathname={pathname}
+            preference={preference}
+          />
+        ) : null}
+        {showProjects ? (
+          <SidebarNavGroup
+            label="Projects"
+            items={projectsNavItems}
+            pathname={pathname}
+            preference={preference}
+          />
+        ) : null}
 
         <SidebarGroup>
           <SidebarGroupLabel>Account</SidebarGroupLabel>

@@ -13,7 +13,7 @@ Living guide to how identity works in **Alice** (Jira Teams): email/password, Go
 Related:
 
 - [Auth index](./README.md)
-- [RBAC plan](./RBAC_AUTHORIZATION_SKELETON.md) — page-level authorization (partial)
+- [RBAC plan](./RBAC_AUTHORIZATION_SKELETON.md) — phase-1 role route matrix (implemented)
 - [User management](../features/users/USER_MANAGEMENT.md) — registry UI and roles
 - [Forgot-password plan](./FORGOT_PASSWORD_AUTH_PLAN.md) — historical plan; this doc is the as-built source of truth
 
@@ -311,8 +311,11 @@ sequenceDiagram
 
 ### Activate / deactivate
 
-- API toggles `public.users.active` and Auth `ban_duration` so deactivated users cannot keep using tokens effectively.
+- Shared API kill switch: `public.users.active = false` + Auth `ban_duration` via `usersService.deactivateUser`.
+- **Admin:** `/users` registry → `PATCH /api/users/:id/toggle-active`.
+- **Self:** Edit profile Danger zone → same toggle-active on own id → sign out → `/?account=closed`.
 - Web `getUser()` treats inactive registry rows as unauthenticated for UI gates.
+- **Webhook** offboarding still planned — see [ACCOUNT_DEACTIVATION.md](../features/users/ACCOUNT_DEACTIVATION.md). No allowlist deny-list.
 
 ### Security notes
 

@@ -72,7 +72,9 @@ export async function listCommentWorkItemOptions(
 
   const { data, error } = await supabase
     .from('work_items')
-    .select(`id, title, type, project_id, ${projectRelationSelect()}`)
+    .select(
+      `id, title, type, project_id, jira_issue_key, ${projectRelationSelect()}`
+    )
     .limit(limit);
 
   throwIfError(

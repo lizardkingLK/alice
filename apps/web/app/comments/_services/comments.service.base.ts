@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import type { Tables } from '@repo/types';
+import type { Json, Tables } from '@repo/types';
 import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
 
 export type CommentUser = Pick<Tables<'users'>, 'id' | 'name' | 'email'> &
@@ -16,7 +16,7 @@ export type CommentWorkItem = Pick<
 /** Row shape returned by the comments dropdown work-items query. */
 export type CommentWorkItemOptionRow = Pick<
   Tables<'work_items'>,
-  'id' | 'title' | 'type' | 'project_id'
+  'id' | 'title' | 'type' | 'project_id' | 'jira_issue_key'
 > & {
   project?: Pick<Tables<'projects'>, 'name' | 'key'> | null;
 };
@@ -33,12 +33,15 @@ export type CommentWorkItemOption = Pick<
 export function mapCommentWorkItemOption(
   row: CommentWorkItemOptionRow
 ): CommentWorkItemOption {
+  const issueKey = row.jira_issue_key?.trim();
   return {
     id: row.id,
     title: row.title,
     type: row.type,
     project_id: row.project_id,
-    key: `${row.project?.key || 'ITEM'}-${row.id.slice(0, 4).toUpperCase()}`,
+    key:
+      issueKey ||
+      `${row.project?.key || 'ITEM'}-${row.id.slice(0, 4).toUpperCase()}`,
     project_name: row.project?.name || 'Project',
   };
 }
@@ -62,7 +65,7 @@ export type CommentItem = Pick<
 
 export type CreateCommentInput = {
   work_item_id: string;
-  content: string;
+  content: Json;
   author_id: string;
   parent_id?: string | null;
 };
@@ -92,7 +95,7 @@ export function createCommentsService(
 
     async updateComment(
       id: string,
-      content: string,
+      content: Json,
       expectedUpdatedAt: string
     ): Promise<CommentItem> {
       const data = await apiFetch<{ comment: CommentItem }>(

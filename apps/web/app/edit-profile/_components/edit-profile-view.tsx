@@ -2,7 +2,14 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useRef, useState, useTransition, type ChangeEvent } from 'react';
+import {
+  useActionState,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+  type ChangeEvent,
+} from 'react';
 import { BadgeCheck, ChevronLeft, Loader2, Pencil } from '@repo/ui/lib/icons';
 import {
   Avatar,
@@ -18,6 +25,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@repo/ui/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@repo/ui/components/ui/dialog';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { Separator } from '@repo/ui/components/ui/separator';
@@ -31,6 +46,11 @@ import {
 import { getInitials } from '@/app/_shared/utility';
 import { FormStatusAlerts } from '@/app/work-items/_components/workItem-form-alerts';
 import { BIO_MAX_LENGTH } from '@/app/edit-profile/_components/edit-profile-constants';
+import {
+  deactivateMyAccount,
+  type DeactivateAccountState,
+} from '@/app/edit-profile/_components/actions';
+import { EditProfilePreferencesCard } from '@/app/edit-profile/_components/edit-profile-preferences-card';
 import { apiFetch } from '@/lib/api/api-client';
 import { ApiError } from '@/lib/api/api';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
@@ -88,7 +108,7 @@ type ProfileUpdateResult = {
 
 /**
  * Self-service account settings. Photo + name persist to `public.users`.
- * Security, notifications, phone, bio, and danger zone remain deferred UI.
+ * Security and notifications remain deferred; danger zone supports self-deactivate.
  */
 export function EditProfileView({
   name: initialName,
@@ -110,6 +130,19 @@ export function EditProfileView({
   const [success, setSuccess] = useState<string | null>(null);
   const [isSavingName, startSaveName] = useTransition();
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [deactivateOpen, setDeactivateOpen] = useState(false);
+  const [confirmation, setConfirmation] = useState('');
+  const [deactivateState, deactivateAction, isDeactivating] = useActionState<
+    DeactivateAccountState | null,
+    FormData
+  >(deactivateMyAccount, null);
+
+  useEffect(() => {
+    if (deactivateState?.error) {
+      // Keep page-level alert for non-dialog contexts; dialog also shows inline.
+      setError(deactivateState.error);
+    }
+  }, [deactivateState]);
 
   const openFilePicker = () => {
     fileInputRef.current?.click();
@@ -217,7 +250,9 @@ export function EditProfileView({
     });
   };
 
-  const isBusy = isSavingName || isUploadingPhoto;
+  const isBusy = isSavingName || isUploadingPhoto || isDeactivating;
+  const confirmationMatches =
+    confirmation.trim().toLowerCase() === email.trim().toLowerCase();
 
   return (
     <div className="bg-background min-h-full">
@@ -234,8 +269,7 @@ export function EditProfileView({
             Edit profile
           </h1>
           <p className="text-muted-foreground text-sm">
-            Update your photo and display name. Other preferences are coming
-            soon.
+            Update your photo, display name, and browser preferences.
           </p>
         </div>
 
@@ -506,26 +540,33 @@ export function EditProfileView({
             </CardContent>
           </Card>
 
+          <EditProfilePreferencesCard />
+
           <Card className="border-destructive/30 shadow-none">
             <CardHeader>
               <CardTitle className="text-destructive">Danger zone</CardTitle>
               <CardDescription>
-                Irreversible actions (coming soon).
+                Deactivating signs you out and blocks further sign-in until an
+                administrator reactivates your account.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-0.5">
                 <p className="text-sm font-medium">Deactivate account</p>
                 <p className="text-muted-foreground text-xs">
-                  Disable your account and revoke access. This can be undone by
-                  an administrator.
+                  Disable your account and revoke access. An administrator can
+                  undo this from Users.
                 </p>
               </div>
               <Button
                 type="button"
                 variant="destructive"
                 className="w-full sm:w-auto"
-                disabled
+                disabled={isBusy}
+                onClick={() => {
+                  setConfirmation('');
+                  setDeactivateOpen(true);
+                }}
               >
                 Deactivate account
               </Button>
@@ -533,6 +574,79 @@ export function EditProfileView({
           </Card>
         </div>
       </div>
+
+      <Dialog
+        open={deactivateOpen}
+        onOpenChange={(open) => {
+          if (!isDeactivating) {
+            setDeactivateOpen(open);
+            if (!open) {
+              setConfirmation('');
+            }
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Deactivate your account?</DialogTitle>
+            <DialogDescription>
+              You will be signed out immediately and will not be able to sign in
+              with email/password or Google until an administrator reactivates
+              you. Type your email{' '}
+              <span className="text-foreground font-medium">{email}</span> to
+              confirm.
+            </DialogDescription>
+          </DialogHeader>
+          <form action={deactivateAction} className="space-y-4">
+            <input type="hidden" name="expectedUpdatedAt" value={updatedAt} />
+            {deactivateState?.error ? (
+              <p className="text-destructive text-sm" role="alert">
+                {deactivateState.error}
+              </p>
+            ) : null}
+            <div className="space-y-2">
+              <Label htmlFor="deactivate-confirmation">
+                Email confirmation
+              </Label>
+              <Input
+                id="deactivate-confirmation"
+                name="confirmation"
+                type="email"
+                autoComplete="off"
+                value={confirmation}
+                onChange={(event) => setConfirmation(event.target.value)}
+                placeholder={email}
+                disabled={isDeactivating}
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isDeactivating}
+                onClick={() => setDeactivateOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="destructive"
+                disabled={isDeactivating || !confirmationMatches}
+              >
+                {isDeactivating ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Deactivating…
+                  </>
+                ) : (
+                  'Deactivate account'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <div className="bg-background/80 sticky bottom-0 z-10 border-t backdrop-blur">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-end gap-3 px-4 py-3 sm:px-6">

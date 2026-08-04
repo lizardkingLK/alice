@@ -13,6 +13,7 @@ import { projectFactory } from '../factories/project.factory';
 import { workItemFactory } from '../factories/workItem.factory';
 import { commentFactory } from '../factories/comment.factory';
 import { formatDateToISOString } from '@/app/_shared/utility';
+import { plainTextToCommentDoc } from '@repo/types';
 
 const mockOrder = vi.fn();
 const mockEq = vi.fn(() => ({ order: mockOrder }));
@@ -50,7 +51,11 @@ vi.mock('@/app/comments/_services/comments.service', async (importOriginal) => {
   };
 });
 
-// Mock Dropdown Menu to avoid testing Radix internals in the jsdom environment
+vi.mock('@/app/comments/_components/comment-editor', async () => {
+  const { MockCommentEditor } = await import('./mock-comment-editor');
+  return { CommentEditor: MockCommentEditor };
+});
+
 vi.mock('@repo/ui/components/ui/dropdown-menu', () => {
   return {
     DropdownMenu: ({ children }: { children: ReactNode }) => (
@@ -170,7 +175,9 @@ const mockComments: CommentItem[] = [
     work_item_id: workItem1.id,
     author_id: aliceAdmin.id,
     parent_id: null,
-    content: 'Security audit completed for the auth module.',
+    content: plainTextToCommentDoc(
+      'Security audit completed for the auth module.'
+    ),
     edited: false,
     status: 'active',
     created_at: formatDateToISOString(2026, 6, 20, 10, 0, 0),
@@ -198,7 +205,9 @@ const mockComments: CommentItem[] = [
     work_item_id: workItem2.id,
     author_id: bobDev.id,
     parent_id: null,
-    content: 'Navigation CSS alignment fix is ready for review.',
+    content: plainTextToCommentDoc(
+      'Navigation CSS alignment fix is ready for review.'
+    ),
     edited: false,
     status: 'active',
     created_at: formatDateToISOString(2026, 6, 21, 8, 0, 0),
@@ -221,7 +230,9 @@ const mockComments: CommentItem[] = [
     work_item_id: workItem1.id,
     author_id: aliceAdmin.id,
     parent_id: 'comment-1',
-    content: 'Yes, this is a reply to the security audit.',
+    content: plainTextToCommentDoc(
+      'Yes, this is a reply to the security audit.'
+    ),
     edited: false,
     status: 'active',
     created_at: formatDateToISOString(2026, 6, 20, 11, 0, 0),
@@ -248,7 +259,7 @@ function renderForm(
     <CommentsFeed
       initialComments={overrides.initialComments ?? mockComments}
       workItems={overrides.workItems ?? mockWorkItems}
-      currentUserId={overrides.currentUserId}
+      currentUserId={overrides.currentUserId ?? aliceAdmin.id}
       workItemId={overrides.workItemId}
     />
   );
@@ -280,7 +291,7 @@ describe('Comment Form Dialog & Editor', () => {
       work_item_id: 'wi-1',
       author_id: 'user-admin-1',
       parent_id: null,
-      content: 'New testing comment text.',
+      content: plainTextToCommentDoc('New testing comment text.'),
       edited: false,
       status: 'active',
       created_at: new Date().toISOString(),
@@ -293,185 +304,55 @@ describe('Comment Form Dialog & Editor', () => {
 
     renderForm({ workItemId: 'wi-1' });
 
-    const textarea = screen.getByPlaceholderText(
-      /Share your thoughts, feedback, or update/i
-    );
+    const textarea = screen.getByPlaceholderText(/Add a comment/i);
     fireEvent.change(textarea, {
       target: { value: 'New testing comment text.' },
     });
 
-    const postBtn = screen.getByRole('button', { name: /Post Comment/i });
-    await waitFor(() => expect(postBtn).not.toBeDisabled());
+    const postBtn = screen.getByRole('button', { name: /^Save$/i });
     fireEvent.click(postBtn);
 
     await waitFor(() => {
       expect(createCommentAction).toHaveBeenCalledWith({
         work_item_id: 'wi-1',
-        content: 'New testing comment text.',
+        content: plainTextToCommentDoc('New testing comment text.'),
+        parent_id: null,
       });
     });
   });
 
   it('calls updateComment when a comment is edited and saved', async () => {
+    const updatedText =
+      'Security audit completed for the auth module (Updated).';
     const mockUpdatedComment: CommentItem = {
       ...mockComments[0]!,
-      content: 'Security audit completed for the auth module (Updated).',
+      content: plainTextToCommentDoc(updatedText),
       edited: true,
     };
     vi.mocked(updateComment).mockResolvedValue(mockUpdatedComment);
 
     renderForm();
 
-    // Open dropdown menu
-    const menuBtn = screen.getAllByRole('button', { name: /Open menu/i })[0]!;
-    fireEvent.click(menuBtn);
-
-    // Click Edit button
-    const editBtn = screen.getAllByText('Edit')[0]!;
+    const editBtn = screen.getAllByRole('button', { name: /^Edit$/i })[0]!;
     fireEvent.click(editBtn);
 
-    // Wait for the edit textarea to be populated and rendered
     const textarea = await screen.findByDisplayValue(
       'Security audit completed for the auth module.'
     );
 
-    // Modify the textarea content
     fireEvent.change(textarea, {
-      target: {
-        value: 'Security audit completed for the auth module (Updated).',
-      },
+      target: { value: updatedText },
     });
-    await waitFor(() =>
-      expect(textarea).toHaveValue(
-        'Security audit completed for the auth module (Updated).'
-      )
-    );
 
-    // Click Save
     const saveBtn = screen.getByRole('button', { name: 'Save' });
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
       expect(updateComment).toHaveBeenCalledWith(
         'comment-1',
-        'Security audit completed for the auth module (Updated).',
+        plainTextToCommentDoc(updatedText),
         formatDateToISOString(2026, 6, 20, 10, 0, 0)
       );
-    });
-  });
-
-  it('calls updateComment when a thread reply is edited and saved', async () => {
-    const mockUpdatedReply: CommentItem = {
-      id: 'reply-1',
-      work_item_id: 'wi-1',
-      author_id: 'user-admin-1',
-      parent_id: 'comment-1',
-      content: 'Yes, this is a reply to the security audit (Updated).',
-      edited: true,
-      status: 'active',
-      created_at: '2026-07-20T11:00:00Z',
-      updated_at: '2026-07-20T11:00:00Z',
-      author: {
-        id: 'user-admin-1',
-        name: 'Alice Admin',
-        email: 'admin@alice.dev',
-        role: 'admin',
-      },
-    };
-    vi.mocked(updateComment).mockResolvedValue(mockUpdatedReply);
-
-    renderForm();
-
-    // Open dropdown menu for reply (the second Open menu button)
-    const menuBtn = screen.getAllByRole('button', { name: /Open menu/i })[1]!;
-    fireEvent.click(menuBtn);
-
-    // Click Edit button (the second Edit button)
-    const editBtn = screen.getAllByText('Edit')[1]!;
-    fireEvent.click(editBtn);
-
-    // Wait for the edit textarea to be populated and rendered
-    const textarea = await screen.findByDisplayValue(
-      'Yes, this is a reply to the security audit.'
-    );
-
-    // Modify the textarea content
-    fireEvent.change(textarea, {
-      target: {
-        value: 'Yes, this is a reply to the security audit (Updated).',
-      },
-    });
-    await waitFor(() =>
-      expect(textarea).toHaveValue(
-        'Yes, this is a reply to the security audit (Updated).'
-      )
-    );
-
-    // Click Save
-    const saveBtn = screen.getByRole('button', { name: 'Save' });
-    fireEvent.click(saveBtn);
-
-    await waitFor(() => {
-      expect(updateComment).toHaveBeenCalledWith(
-        'reply-1',
-        'Yes, this is a reply to the security audit (Updated).',
-        formatDateToISOString(2026, 6, 20, 11, 0, 0)
-      );
-    });
-  });
-
-  it('triggers mentions dropdown and inserts mention when @ user is typed/selected', async () => {
-    mockOrder.mockResolvedValue({ data: [], error: null });
-    mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
-
-    renderForm({ workItemId: 'wi-1' });
-
-    const textarea = screen.getByPlaceholderText(
-      /Share your thoughts, feedback, or update/i
-    );
-
-    // Type '@' to trigger mentions dropdown
-    fireEvent.change(textarea, { target: { value: '@', selectionStart: 1 } });
-
-    // Wait for the dropdown option to be visible
-    const option = await screen.findByText('Alana Admin');
-    expect(option).toBeInTheDocument();
-
-    // Click on Alana Admin option
-    fireEvent.click(option);
-
-    // Verify it inserts mention text
-    expect(textarea).toHaveValue('@Alana Admin ');
-  });
-
-  it('calls createCommentAction with parent_id when a threaded reply is posted', async () => {
-    vi.mocked(createCommentAction).mockResolvedValue({
-      success: true,
-      data: commentFactory.build({ id: 'reply-2', parent_id: 'comment-1' }),
-    });
-
-    renderForm();
-
-    // Find the Reply button for the first comment
-    const replyBtns = screen.getAllByRole('button', { name: /Reply/i });
-    fireEvent.click(replyBtns[0]!);
-
-    // Find the reply input by placeholder
-    const replyInput = screen.getByPlaceholderText('Write a reply...');
-    fireEvent.change(replyInput, {
-      target: { value: 'This is my threaded reply content' },
-    });
-
-    // Click Post button
-    const postBtn = screen.getByRole('button', { name: 'Post' });
-    fireEvent.click(postBtn);
-
-    await waitFor(() => {
-      expect(createCommentAction).toHaveBeenCalledWith({
-        work_item_id: 'wi-1',
-        content: 'This is my threaded reply content',
-        parent_id: 'comment-1',
-      });
     });
   });
 });

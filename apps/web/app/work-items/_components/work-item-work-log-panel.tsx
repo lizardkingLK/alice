@@ -59,7 +59,7 @@ export function WorkItemWorkLogPanel({
       {readOnly ? null : (
         <form
           onSubmit={onSubmit}
-          className="space-y-3 rounded-lg border p-4"
+          className="space-y-3 rounded-lg border px-4 pt-4 pb-6"
           aria-label="Work log form"
         >
           <div className="grid gap-3 sm:grid-cols-2">

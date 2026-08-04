@@ -1,7 +1,9 @@
 'use server';
 
+import type { Json } from '@repo/types';
 import { revalidatePath } from 'next/cache';
 import { getDbUser } from '@/lib/auth';
+import { unexpectedActionError } from '@/lib/server-actions';
 import {
   createComment as apiCreateComment,
   updateComment as apiUpdateComment,
@@ -10,22 +12,35 @@ import {
 } from '../_services/comments.service.server';
 import type { CommentItem } from '../_services/comments.service.base';
 
-export type ActionState = {
-  success: boolean;
-  error: string | null;
-};
+type CommentActionFailure = { success: false; error: string };
+type CommentDbUser = NonNullable<Awaited<ReturnType<typeof getDbUser>>>;
 
-export async function createCommentAction(input: {
-  work_item_id: string;
-  content: string;
-  parent_id?: string | null;
-}): Promise<{ success: boolean; data?: CommentItem; error?: string }> {
+async function runAuthenticatedCommentAction<T extends { success: boolean }>(
+  // eslint-disable-next-line no-unused-vars -- callback signature
+  action: (user: CommentDbUser) => Promise<T>
+): Promise<T | CommentActionFailure> {
   const currentUser = await getDbUser();
   if (!currentUser) {
     return { success: false, error: 'Not authenticated.' };
   }
 
   try {
+    return await action(currentUser);
+  } catch (err) {
+    const { error } = unexpectedActionError(err);
+    return {
+      success: false,
+      error: error ?? 'An unexpected error occurred.',
+    };
+  }
+}
+
+export async function createCommentAction(input: {
+  work_item_id: string;
+  content: Json;
+  parent_id?: string | null;
+}): Promise<{ success: boolean; data?: CommentItem; error?: string }> {
+  return runAuthenticatedCommentAction(async (currentUser) => {
     const created = await apiCreateComment({
       work_item_id: input.work_item_id,
       content: input.content,
@@ -38,24 +53,15 @@ export async function createCommentAction(input: {
       revalidatePath(`/work-items/${input.work_item_id}`);
     }
     return { success: true, data: created };
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : 'An unexpected error occurred.';
-    return { success: false, error: message };
-  }
+  });
 }
 
 export async function updateCommentAction(
   commentId: string,
-  content: string,
+  content: Json,
   expectedUpdatedAt: string
 ): Promise<{ success: boolean; data?: CommentItem; error?: string }> {
-  const currentUser = await getDbUser();
-  if (!currentUser) {
-    return { success: false, error: 'Not authenticated.' };
-  }
-
-  try {
+  return runAuthenticatedCommentAction(async () => {
     const updated = await apiUpdateComment(
       commentId,
       content,
@@ -64,11 +70,7 @@ export async function updateCommentAction(
 
     revalidatePath('/comments');
     return { success: true, data: updated };
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : 'An unexpected error occurred.';
-    return { success: false, error: message };
-  }
+  });
 }
 
 export async function archiveCommentAction(
@@ -76,40 +78,22 @@ export async function archiveCommentAction(
   expectedUpdatedAt: string,
   permanent?: boolean
 ): Promise<{ success: boolean; error?: string }> {
-  const currentUser = await getDbUser();
-  if (!currentUser) {
-    return { success: false, error: 'Not authenticated.' };
-  }
-
-  try {
+  return runAuthenticatedCommentAction(async () => {
     await apiArchiveComment(commentId, expectedUpdatedAt, permanent);
 
     revalidatePath('/comments');
     return { success: true };
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : 'An unexpected error occurred.';
-    return { success: false, error: message };
-  }
+  });
 }
 
 export async function restoreCommentAction(
   commentId: string,
   expectedUpdatedAt: string
 ): Promise<{ success: boolean; error?: string }> {
-  const currentUser = await getDbUser();
-  if (!currentUser) {
-    return { success: false, error: 'Not authenticated.' };
-  }
-
-  try {
+  return runAuthenticatedCommentAction(async () => {
     await apiRestoreComment(commentId, expectedUpdatedAt);
 
     revalidatePath('/comments');
     return { success: true };
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : 'An unexpected error occurred.';
-    return { success: false, error: message };
-  }
+  });
 }
