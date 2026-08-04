@@ -100,7 +100,8 @@ export function NotificationInbox({
   userId: string;
   initialNotifications?: Notification[];
 }>) {
-  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+  const [notifications, setNotifications] =
+    useState<Notification[]>(initialNotifications);
   const loading = false;
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();

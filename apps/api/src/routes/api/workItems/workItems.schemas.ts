@@ -1,4 +1,5 @@
 import {
+  WORK_ITEM_PRIORITIES,
   WORK_ITEM_STATUSES,
   WORK_ITEM_TYPES,
   expectedUpdatedAtSchema,
@@ -11,6 +12,10 @@ const dateStringSchema = z
 
 const workItemTypeSchema = z.enum(WORK_ITEM_TYPES, {
   message: 'Please select a work item type',
+});
+
+const workItemPrioritySchema = z.enum(WORK_ITEM_PRIORITIES, {
+  message: 'Please select a valid priority',
 });
 
 export const workItemStatusSchema = z.enum(WORK_ITEM_STATUSES, {
@@ -89,6 +94,12 @@ export const workItemCoreObject = z.object({
     .max(200, 'Title must be at most 200 characters'),
   project_id: z.uuid({ message: 'Please select a valid project' }),
   type: workItemTypeSchema,
+  priority: z.preprocess((value) => {
+    if (value === '' || value === undefined || value === null) {
+      return undefined;
+    }
+    return value;
+  }, workItemPrioritySchema.optional()),
   assignee_id: z.preprocess(
     emptyStringToNull,
     z.uuid({ message: 'Please select a valid assignee' }).nullable()

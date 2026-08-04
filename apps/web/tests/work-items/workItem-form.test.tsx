@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { WorkItemForm } from '@/app/work-items/_components/workItem-form';
 import {
   createWorkItem,
@@ -22,6 +23,29 @@ vi.mock('@/app/_shared/utility', async (importOriginal) => {
     delay: vi.fn(() => Promise.resolve()),
   };
 });
+
+vi.mock('@repo/ui/components/ui/dropdown-menu', () => ({
+  DropdownMenu: ({ children }: { children: ReactNode }) => (
+    <div data-testid="dropdown-menu">{children}</div>
+  ),
+  DropdownMenuTrigger: ({ children }: { children: ReactNode }) => (
+    <>{children}</>
+  ),
+  DropdownMenuContent: ({ children }: { children: ReactNode }) => (
+    <div role="menu">{children}</div>
+  ),
+  DropdownMenuItem: ({
+    children,
+    onSelect,
+  }: {
+    children: ReactNode;
+    onSelect?: () => void;
+  }) => (
+    <button type="button" role="menuitem" onClick={() => onSelect?.()}>
+      {children}
+    </button>
+  ),
+}));
 
 describe('WorkItemForm', () => {
   const projects = projectFactory.buildList(2);
@@ -47,6 +71,7 @@ describe('WorkItemForm', () => {
     expect(screen.getByLabelText(/^Type$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Due date/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Assign to/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Priority$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Story points/i)).toBeInTheDocument();
 
     await pickComboboxOption(/^Project$/i, projects[0]!.name);
@@ -61,6 +86,77 @@ describe('WorkItemForm', () => {
     expect(screen.getByRole('combobox', { name: /Assign to/i })).toHaveValue(
       `${projectMembers[0]!.name} (${projectMembers[0]!.email})`
     );
+  });
+
+  it('renders modern create fields when createFormMode is modern', () => {
+    render(
+      <WorkItemForm
+        projects={projects}
+        projectMembers={projectMembers}
+        onSuccess={vi.fn()}
+        createFormMode="modern"
+      />
+    );
+
+    expect(screen.getByLabelText(/^Title$/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/^Title$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Description$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Project$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Type$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Assignee$/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Priority$/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/^More fields$/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Labels$/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Due date$/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /^Create$/i })
+    ).toBeInTheDocument();
+  });
+
+  it('adds optional modern fields one at a time from More menu', () => {
+    render(
+      <WorkItemForm
+        projects={projects}
+        projectMembers={projectMembers}
+        onSuccess={vi.fn()}
+        createFormMode="modern"
+      />
+    );
+
+    expect(screen.queryByLabelText(/^Priority$/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('menuitem', { name: /^Priority$/i })
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('menuitem', { name: /^Priority$/i }));
+
+    expect(screen.getByLabelText(/^Priority$/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole('menuitem', { name: /^Priority$/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps classic fields in edit mode even when createFormMode is modern', () => {
+    const itemToEdit = workItemFactory.build({
+      title: 'Existing item',
+      project_id: projects[0]!.id,
+      type: 'Task',
+      assignee_id: projectMembers[0]!.id,
+    });
+
+    render(
+      <WorkItemForm
+        projects={projects}
+        projectMembers={projectMembers}
+        itemToEdit={itemToEdit}
+        onSuccess={vi.fn()}
+        createFormMode="modern"
+      />
+    );
+
+    expect(screen.getByLabelText(/^Title$/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Description$/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Labels$/i)).not.toBeInTheDocument();
   });
 
   it('submits in create mode and calls onSuccess', async () => {

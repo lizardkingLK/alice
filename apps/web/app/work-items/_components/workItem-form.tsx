@@ -1,19 +1,15 @@
 'use client';
 
-import { WORK_ITEM_TYPES, type WorkItemType } from '@repo/types';
-import { useState, type FormEvent } from 'react';
-import { Button } from '@repo/ui/components/ui/button';
-import { Input } from '@repo/ui/components/ui/input';
-import { Label } from '@repo/ui/components/ui/label';
-import { DialogFooter } from '@repo/ui/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@repo/ui/components/ui/select';
-import { SearchableSelect } from '@/components/searchable-select';
+  DEFAULT_WORK_ITEM_PRIORITY,
+  WORK_ITEM_PRIORITIES,
+  WORK_ITEM_TYPES,
+  type WorkItemPriority,
+  type WorkItemType,
+} from '@repo/types';
+import { useEffect, useState, type FormEvent } from 'react';
+import { Button } from '@repo/ui/components/ui/button';
+import { DialogFooter } from '@repo/ui/components/ui/dialog';
 import { Loader2 } from '@repo/ui/lib/icons';
 import { User as DbUser } from '@/app/users/_services/users.service';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
@@ -22,6 +18,9 @@ import {
   updateWorkItem,
 } from '@/app/work-items/_services/workItem.service.client';
 import { FormStatusAlerts } from '@/app/work-items/_components/workItem-form-alerts';
+import { WorkItemFormClassicFields } from '@/app/work-items/_components/work-item-form-classic';
+import { WorkItemFormModernFields } from '@/app/work-items/_components/work-item-form-modern';
+import type { WorkItemCreateFormMode } from '@/app/work-items/_helpers/work-item-create-form-preference';
 import { Project as DbProject } from '@/app/projects/_services/projects.service';
 import { delay } from '@/app/_shared/utility';
 import { ResponseDTO } from '@repo/types/connection';
@@ -47,14 +46,29 @@ export interface WorkItemFormProps {
   allowedTypes?: readonly WorkItemType[];
   /** When true, type select is disabled (value still submitted). */
   lockType?: boolean;
+  /**
+   * Create layout preference. Edit mode always uses classic.
+   * Defaults to classic when omitted.
+   */
+  createFormMode?: WorkItemCreateFormMode;
 }
 
 const taskTypes = WORK_ITEM_TYPES;
+const ALERT_DISMISS_MS = 5000;
+
+function isWorkItemPriority(value: string): value is WorkItemPriority {
+  return (WORK_ITEM_PRIORITIES as readonly string[]).includes(value);
+}
 
 const SubmitButtonText = ({
   isPending,
   isEditMode,
-}: Readonly<{ isPending: boolean; isEditMode: boolean }>) => {
+  modernCreate,
+}: Readonly<{
+  isPending: boolean;
+  isEditMode: boolean;
+  modernCreate: boolean;
+}>) => {
   if (isPending) {
     return (
       <>
@@ -68,7 +82,7 @@ const SubmitButtonText = ({
     return 'Save Changes';
   }
 
-  return 'Create Work Item';
+  return modernCreate ? 'Create' : 'Create Work Item';
 };
 
 export function WorkItemForm({
@@ -82,11 +96,14 @@ export function WorkItemForm({
   parentId = null,
   allowedTypes,
   lockType = false,
+  createFormMode = 'classic',
 }: Readonly<WorkItemFormProps>) {
   const { handleMutationError } = useOptimisticLock();
   const availableTypes =
     allowedTypes && allowedTypes.length > 0 ? allowedTypes : taskTypes;
   const typeLocked = lockType || availableTypes.length === 1;
+  const isEditMode = itemToEdit !== null;
+  const useModernCreate = !isEditMode && createFormMode === 'modern';
 
   const [isPending, setPending] = useState(false);
   const [state, setState] = useState<{
@@ -102,8 +119,24 @@ export function WorkItemForm({
   const [type, setType] = useState(
     itemToEdit?.type ?? (typeLocked ? (availableTypes[0] ?? '') : '')
   );
-  const isEditMode = itemToEdit !== null;
+  const [priority, setPriority] = useState<WorkItemPriority>(() => {
+    const existing = itemToEdit?.priority;
+    if (existing && isWorkItemPriority(existing)) {
+      return existing;
+    }
+    return DEFAULT_WORK_ITEM_PRIORITY;
+  });
   const lockAssignee = Boolean(lockAssigneeId);
+
+  useEffect(() => {
+    if (!useModernCreate || !state?.error) {
+      return;
+    }
+    const timer = globalThis.setTimeout(() => {
+      setState((current) => (current ? { ...current, error: null } : current));
+    }, ALERT_DISMISS_MS);
+    return () => globalThis.clearTimeout(timer);
+  }, [useModernCreate, state?.error]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -152,103 +185,36 @@ export function WorkItemForm({
     }
   };
 
+  const fieldProps = {
+    projects,
+    projectMembers,
+    availableTypes,
+    projectId,
+    assigneeId,
+    type,
+    priority,
+    parentId,
+    lockProject,
+    lockAssignee,
+    typeLocked,
+    onProjectIdChange: setProjectId,
+    onAssigneeIdChange: setAssigneeId,
+    onTypeChange: setType,
+    onPriorityChange: setPriority,
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2">
-        {/* Title */}
-        <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="title">Title</Label>
-          <Input
-            id="title"
-            name="title"
-            placeholder="e.g. Implement dashboard filters"
-            defaultValue={itemToEdit?.title ?? ''}
-          />
-        </div>
-
-        {/* Project */}
-        <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="project_id">Project</Label>
-          <SearchableSelect
-            id="project_id"
-            value={projectId}
-            onValueChange={setProjectId}
-            disabled={lockProject}
-            placeholder="Search projects…"
-            options={projects.map((project) => ({
-              value: project.id,
-              label: project.name,
-            }))}
-            emptyText="No matching projects."
-          />
-          <input type="hidden" name="project_id" value={projectId} />
-        </div>
-
-        {/* Type */}
-        <div className="space-y-2">
-          <Label htmlFor="type">Type</Label>
-          <Select value={type} onValueChange={setType} disabled={typeLocked}>
-            <SelectTrigger id="type">
-              <SelectValue placeholder="Select type..." />
-            </SelectTrigger>
-            <SelectContent>
-              {availableTypes.map((taskType) => (
-                <SelectItem key={taskType} value={taskType}>
-                  {taskType}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <input type="hidden" name="type" value={type} />
-        </div>
-
-        {parentId ? (
-          <input type="hidden" name="parent_id" value={parentId} />
-        ) : null}
-
-        {/* Due date */}
-        <div className="space-y-2">
-          <Label htmlFor="due_date">Due date</Label>
-          <Input
-            id="due_date"
-            name="due_date"
-            type="date"
-            defaultValue={itemToEdit?.due_date ?? ''}
-          />
-        </div>
-
-        {/* Assign To */}
-        <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="assignee_id">Assign to</Label>
-          <SearchableSelect
-            id="assignee_id"
-            value={assigneeId}
-            onValueChange={setAssigneeId}
-            disabled={lockAssignee}
-            placeholder="Search assignees…"
-            options={projectMembers.map((member) => ({
-              value: member.id,
-              label: `${member.name} (${member.email})`,
-            }))}
-            emptyText="No matching assignees."
-          />
-          <input type="hidden" name="assignee_id" value={assigneeId} />
-        </div>
-
-        {/* Story Points */}
-        <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="story_points">Story points</Label>
-          <Input
-            id="story_points"
-            name="story_points"
-            type="number"
-            min="0"
-            step="1"
-            placeholder="Enter Story Points"
-            defaultValue={itemToEdit?.story_points ?? ''}
-          />
-        </div>
-      </div>
+      {useModernCreate ? (
+        <WorkItemFormModernFields {...fieldProps} />
+      ) : (
+        <WorkItemFormClassicFields
+          {...fieldProps}
+          titleDefault={itemToEdit?.title ?? ''}
+          dueDateDefault={itemToEdit?.due_date ?? ''}
+          storyPointsDefault={itemToEdit?.story_points ?? null}
+        />
+      )}
 
       <FormStatusAlerts error={state?.error} success={state?.success} />
 
@@ -264,7 +230,11 @@ export function WorkItemForm({
           </Button>
         ) : null}
         <Button type="submit">
-          <SubmitButtonText isPending={isPending} isEditMode={isEditMode} />
+          <SubmitButtonText
+            isPending={isPending}
+            isEditMode={isEditMode}
+            modernCreate={useModernCreate}
+          />
         </Button>
       </DialogFooter>
     </form>

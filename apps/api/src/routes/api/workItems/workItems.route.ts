@@ -53,6 +53,10 @@ function buildWorkItemPayload(
       existingWorkItem.project_id
     ),
     type: coalescePatchField(parsedData.type, existingWorkItem.type),
+    priority: coalescePatchField(
+      parsedData.priority,
+      existingWorkItem.priority
+    ),
     assignee_id: coalescePatchField(
       parsedData.assignee_id,
       existingWorkItem.assignee_id
