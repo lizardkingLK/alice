@@ -1,6 +1,6 @@
 import { all, createLowlight } from 'lowlight';
 
-import { escapeHtml } from '@/app/work-items/_helpers/escape-html';
+import { escapeHtml } from '@/app/work-items/_helpers/work-item-escape-html';
 
 const lowlight = createLowlight(all);
 

@@ -19,7 +19,7 @@ import {
   SUBTASK_SORT_FIELDS,
   type SubtaskSortDirection,
   type SubtaskSortField,
-} from '@/app/work-items/_helpers/sort-subtasks';
+} from '@/app/work-items/_helpers/work-item-sort-subtasks';
 
 /* eslint-disable no-unused-vars */
 type LabelledSortRadioGroupProps<T extends string> = {

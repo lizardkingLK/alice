@@ -289,7 +289,7 @@ model comments {
   work_item_id String       @db.Uuid
   author_id    String       @db.Uuid
   parent_id    String?      @db.Uuid
-  content      String
+  content      Json
   edited       Boolean      @default(false)
   status       RecordStatus @default(active)
   created_by   String?      @db.Uuid

@@ -1,3 +1,4 @@
+import type { Json } from '@repo/types';
 import { commentsRepository, type CommentRow } from './comments.repository';
 import { notificationsService } from '../notifications/notifications.service';
 import {
@@ -44,7 +45,7 @@ export class CommentsService {
     actorId: string,
     input: {
       work_item_id: string;
-      content: string;
+      content: Json;
       parent_id?: string | null;
     }
   ): Promise<CommentRow> {
@@ -62,7 +63,7 @@ export class CommentsService {
 
   async updateComment(
     id: string,
-    content: string,
+    content: Json,
     expectedUpdatedAt: string,
     actorId?: string
   ): Promise<CommentRow> {

@@ -2,6 +2,7 @@ import {
   USER_PROJECTION_WITH_ROLE,
   projectRelationSelect,
   userRelationSelect,
+  type Json,
 } from '@repo/types';
 import { supabase } from '../../../lib/supabase';
 import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
@@ -11,7 +12,7 @@ export type CommentRow = {
   work_item_id: string;
   author_id: string;
   parent_id: string | null;
-  content: string;
+  content: Json;
   edited: boolean;
   status: 'active' | 'archived' | 'deleted';
   created_at: string;
@@ -87,7 +88,7 @@ export class CommentsRepository {
 
   async create(input: {
     work_item_id: string;
-    content: string;
+    content: Json;
     author_id: string;
     parent_id?: string | null;
   }): Promise<CommentRow> {
@@ -114,7 +115,7 @@ export class CommentsRepository {
 
   async update(
     id: string,
-    content: string,
+    content: Json,
     expectedUpdatedAt: string
   ): Promise<CommentRow> {
     const { data, error } = await supabase
@@ -138,30 +139,22 @@ export class CommentsRepository {
   }
 
   async archive(id: string, expectedUpdatedAt: string): Promise<void> {
-    const { data, error } = await supabase
-      .from('comments')
-      .update({
-        status: 'archived',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .eq('updated_at', expectedUpdatedAt)
-      .select('id')
-      .maybeSingle();
-
-    await resolveOptimisticUpdate({
-      data,
-      error,
-      fetchCurrent: () => this.getLockSnapshotById(id),
-      notFoundMessage: 'Comment not found',
-    });
+    await this.setStatus(id, 'archived', expectedUpdatedAt);
   }
 
   async restore(id: string, expectedUpdatedAt: string): Promise<void> {
+    await this.setStatus(id, 'active', expectedUpdatedAt);
+  }
+
+  private async setStatus(
+    id: string,
+    status: 'archived' | 'active',
+    expectedUpdatedAt: string
+  ): Promise<void> {
     const { data, error } = await supabase
       .from('comments')
       .update({
-        status: 'active',
+        status,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
