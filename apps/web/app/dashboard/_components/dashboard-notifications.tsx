@@ -22,8 +22,9 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
 import { cn } from '@repo/ui/lib/utils';
+import { Button } from '@repo/ui/components/ui/button';
 
-type Notification = Database['public']['Tables']['notifications']['Row'];
+export type Notification = Database['public']['Tables']['notifications']['Row'];
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   mention: AtSign,
@@ -92,52 +93,21 @@ function removeNotificationFromList(
   return result;
 }
 
-export function NotificationInbox() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
+export function NotificationInbox({
+  userId,
+  initialNotifications = [],
+}: Readonly<{
+  userId: string;
+  initialNotifications?: Notification[];
+}>) {
+  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+  const loading = false;
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const supabase = createClient();
-
-    const initUserAndData = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        if (!user) {
-          setLoading(false);
-          return;
-        }
-
-        setUserId(user.id);
-
-        // Fetch notifications
-        const { data, error } = await supabase
-          .from('notifications')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .order('created_at', { ascending: false })
-          .limit(50);
-
-        if (error) {
-          console.error('Failed to fetch notifications:', error);
-        } else if (data) {
-          setNotifications(data);
-        }
-      } catch (err) {
-        console.error('Error during notification initialization:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initUserAndData();
-  }, []);
+    setNotifications(initialNotifications);
+  }, [initialNotifications]);
 
   useEffect(() => {
     if (!userId) return;
@@ -397,15 +367,14 @@ export function NotificationInbox() {
     });
   };
 
-  if (!userId) return null;
-
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="icon"
           aria-label="View notifications"
-          className="border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border transition-all focus-visible:outline-hidden active:scale-95"
+          className="relative cursor-pointer"
         >
           <Bell
             className={cn(
@@ -418,7 +387,7 @@ export function NotificationInbox() {
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
-        </button>
+        </Button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
