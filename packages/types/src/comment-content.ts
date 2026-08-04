@@ -215,12 +215,20 @@ function normalizeDocMentions(doc: CommentTiptapDoc): CommentTiptapDoc {
 
 function walkNodes(
   node: CommentTiptapNode,
-  visit: (node: CommentTiptapNode) => void
+  visit: (node: CommentTiptapNode) => void,
+  depth = 0,
+  state: { count: number } = { count: 0 }
 ): void {
+  const MAX_DEPTH = 32;
+  const MAX_NODES = 5_000;
+  if (depth > MAX_DEPTH || state.count >= MAX_NODES) {
+    return;
+  }
+  state.count += 1;
   visit(node);
   if (Array.isArray(node.content)) {
     for (const child of node.content) {
-      walkNodes(child, visit);
+      walkNodes(child, visit, depth + 1, state);
     }
   }
 }
@@ -257,6 +265,16 @@ export function commentContentToPlainText(
 
   const parts: string[] = [];
   walkNodes(doc, (node) => {
+    if (
+      node.type === 'paragraph' ||
+      node.type === 'listItem' ||
+      node.type === 'blockquote'
+    ) {
+      if (parts.length > 0 && !parts[parts.length - 1]?.endsWith('\n')) {
+        parts.push('\n');
+      }
+      return;
+    }
     if (node.type === 'text' && typeof node.text === 'string') {
       parts.push(node.text);
       return;
@@ -274,7 +292,11 @@ export function commentContentToPlainText(
     }
   });
 
-  return parts.join('').replace(/\s+/g, ' ').trim();
+  return parts
+    .join('')
+    .replace(/[^\S\n]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 export function createCommentSnippet(

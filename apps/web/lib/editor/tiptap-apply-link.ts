@@ -33,16 +33,14 @@ export function applyEditorLink(
   const chain = editor.chain().focus().setTextSelection({ from, to });
 
   if (from === to) {
-    chain
+    return chain
       .insertContent({
         type: 'text',
         text: href,
         marks: [{ type: 'link', attrs: { href } }],
       })
       .run();
-  } else {
-    chain.setLink({ href }).run();
   }
 
-  return true;
+  return chain.setLink({ href }).run();
 }

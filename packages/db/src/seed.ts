@@ -9,7 +9,7 @@ import {
   auditCreateWithoutStatus,
   auditUpdate,
 } from '@repo/types/audit';
-import { plainTextToCommentDoc } from '@repo/types';
+import { plainTextToCommentDoc, commentContentToPlainText } from '@repo/types';
 import { createClient } from '@supabase/supabase-js';
 import pg from 'pg';
 
@@ -631,26 +631,28 @@ async function seedWorkItems(
   return { storyId, taskId, backlogId };
 }
 
-async function seedComments(
-  workItemId: string,
-  authorId: string
-): Promise<string> {
-  const plain = 'Seed comment — ready for review.';
+async function upsertSeedComment(options: {
+  workItemId: string;
+  authorId: string;
+  plain: string;
+  parentId?: string | null;
+}): Promise<string> {
+  const { workItemId, authorId, plain, parentId = null } = options;
   const content = plainTextToCommentDoc(plain);
 
-  const { data: existing } = await supabase
+  let query = supabase
     .from('comments')
     .select('id, content')
-    .eq('work_item_id', workItemId)
-    .eq('author_id', authorId)
-    .is('parent_id', null)
-    .limit(20);
+    .eq('work_item_id', workItemId);
 
-  const found = (existing ?? []).find((row) => {
-    const text = JSON.stringify(row.content);
-    return text.includes(plain);
-  });
+  query = parentId
+    ? query.eq('parent_id', parentId)
+    : query.eq('author_id', authorId).is('parent_id', null);
 
+  const { data: existing } = await query;
+  const found = (existing ?? []).find(
+    (row) => commentContentToPlainText(row.content) === plain
+  );
   if (found) {
     return found.id;
   }
@@ -661,16 +663,30 @@ async function seedComments(
       work_item_id: workItemId,
       author_id: authorId,
       content,
+      ...(parentId ? { parent_id: parentId } : {}),
       ...auditCreate(authorId),
     })
     .select('id')
     .single();
 
   if (error) {
-    throw new Error(`Failed to seed comment: ${error.message}`);
+    throw new Error(
+      `Failed to seed comment${parentId ? ' reply' : ''}: ${error.message}`
+    );
   }
 
   return data.id;
+}
+
+async function seedComments(
+  workItemId: string,
+  authorId: string
+): Promise<string> {
+  return upsertSeedComment({
+    workItemId,
+    authorId,
+    plain: 'Seed comment — ready for review.',
+  });
 }
 
 async function seedCommentReply(
@@ -678,35 +694,12 @@ async function seedCommentReply(
   authorId: string,
   parentId: string
 ): Promise<void> {
-  const plain = 'Reply — acknowledged, will pick up in standup.';
-  const content = plainTextToCommentDoc(plain);
-
-  const { data: existing } = await supabase
-    .from('comments')
-    .select('id, content')
-    .eq('work_item_id', workItemId)
-    .eq('parent_id', parentId)
-    .limit(20);
-
-  const found = (existing ?? []).some((row) =>
-    JSON.stringify(row.content).includes(plain)
-  );
-
-  if (found) {
-    return;
-  }
-
-  const { error } = await supabase.from('comments').insert({
-    work_item_id: workItemId,
-    author_id: authorId,
-    parent_id: parentId,
-    content,
-    ...auditCreate(authorId),
+  await upsertSeedComment({
+    workItemId,
+    authorId,
+    parentId,
+    plain: 'Reply — acknowledged, will pick up in standup.',
   });
-
-  if (error) {
-    throw new Error(`Failed to seed comment reply: ${error.message}`);
-  }
 }
 
 async function seedAttachment(

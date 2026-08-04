@@ -1,11 +1,7 @@
 'use client';
 
 import { useCallback, useState, type ReactNode } from 'react';
-import {
-  WORK_ITEM_PRIORITIES,
-  type WorkItemPriority,
-  type WorkItemType,
-} from '@repo/types';
+import { type WorkItemPriority, type WorkItemType } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import {
@@ -39,10 +35,14 @@ import {
   Tag,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
-import { SearchableSelect } from '@/components/searchable-select';
-import { formatLabelFirstLetterCapitalized } from '@/app/_shared/utility';
+import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
+import {
+  SearchableSelect,
+  type SearchableSelectOption,
+} from '@/components/searchable-select';
 import type { WorkItemFormSharedFieldProps } from '@/app/work-items/_components/work-item-form-field-props';
 import { WorkItemFormModernDescription } from '@/app/work-items/_components/work-item-form-modern-description';
+import { WorkItemPrioritySelect } from '@/app/work-items/_components/work-item-priority-select';
 import { WORK_ITEM_TYPE_ICONS } from '@/app/work-items/_helpers/work-item-type';
 
 export type WorkItemFormModernFieldsProps = WorkItemFormSharedFieldProps;
@@ -75,6 +75,47 @@ function FieldTooltip({
       <TooltipTrigger asChild>{children}</TooltipTrigger>
       <TooltipContent side="top">{label}</TooltipContent>
     </Tooltip>
+  );
+}
+
+function IconSearchablePill({
+  icon,
+  id,
+  value,
+  onValueChange,
+  disabled,
+  placeholder,
+  options,
+  emptyText,
+}: Readonly<{
+  icon: ReactNode;
+  id: string;
+  value: string;
+  // eslint-disable-next-line no-unused-vars -- callback signature
+  onValueChange: (value: string) => void;
+  disabled?: boolean;
+  placeholder: string;
+  options: readonly SearchableSelectOption[];
+  emptyText: string;
+}>) {
+  return (
+    <div className="relative min-w-40 flex-1 sm:max-w-56">
+      <span className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 z-10 size-3.5 -translate-y-1/2 [&_svg]:size-3.5">
+        {icon}
+      </span>
+      <SearchableSelect
+        id={id}
+        value={value}
+        onValueChange={onValueChange}
+        disabled={disabled}
+        placeholder={placeholder}
+        ariaLabel={placeholder}
+        options={options}
+        emptyText={emptyText}
+        className={cn(pillTriggerClassName(Boolean(value)), 'pl-8')}
+      />
+      <input type="hidden" name={id} value={value} />
+    </div>
   );
 }
 
@@ -137,16 +178,15 @@ export function WorkItemFormModernFields({
       <div className="space-y-4">
         {/* Always reserve breadcrumb height so the dialog close control never covers title. */}
         <div className="text-muted-foreground flex min-h-7 items-center gap-1.5 pr-10 text-xs">
-          <span
+          <TruncatedText
             className={cn(
-              'inline-flex max-w-48 items-center truncate rounded-md px-2 py-1 font-medium',
+              'inline-flex max-w-48 items-center rounded-md px-2 py-1 font-medium',
               contextLabel ? 'bg-muted/60 text-foreground' : 'invisible'
             )}
             aria-hidden={!contextLabel}
-            title={contextLabel ?? undefined}
           >
             {contextLabel || 'Project'}
-          </span>
+          </TruncatedText>
           <ChevronRight
             className={cn(
               'size-3.5 shrink-0',
@@ -181,26 +221,21 @@ export function WorkItemFormModernFields({
 
         <div className="flex flex-wrap items-center gap-2">
           <FieldTooltip label="Project">
-            <div className="relative min-w-40 flex-1 sm:max-w-56">
-              <FolderKanban className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 z-10 size-3.5 -translate-y-1/2" />
-              <SearchableSelect
-                id="project_id"
-                value={projectId}
-                onValueChange={onProjectIdChange}
-                disabled={lockProject}
-                placeholder="Project"
-                ariaLabel="Project"
-                options={projects.map((project) => ({
-                  value: project.id,
-                  label: project.key
-                    ? `${project.key} · ${project.name}`
-                    : project.name,
-                }))}
-                emptyText="No matching projects."
-                className={cn(pillTriggerClassName(Boolean(projectId)), 'pl-8')}
-              />
-              <input type="hidden" name="project_id" value={projectId} />
-            </div>
+            <IconSearchablePill
+              icon={<FolderKanban />}
+              id="project_id"
+              value={projectId}
+              onValueChange={onProjectIdChange}
+              disabled={lockProject}
+              placeholder="Project"
+              options={projects.map((project) => ({
+                value: project.id,
+                label: project.key
+                  ? `${project.key} · ${project.name}`
+                  : project.name,
+              }))}
+              emptyText="No matching projects."
+            />
           </FieldTooltip>
 
           <FieldTooltip label="Type">
@@ -235,27 +270,19 @@ export function WorkItemFormModernFields({
           ) : null}
 
           <FieldTooltip label="Assignee">
-            <div className="relative min-w-40 flex-1 sm:max-w-56">
-              <CircleUserRound className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 z-10 size-3.5 -translate-y-1/2" />
-              <SearchableSelect
-                id="assignee_id"
-                value={assigneeId}
-                onValueChange={onAssigneeIdChange}
-                disabled={lockAssignee}
-                placeholder="Assignee"
-                ariaLabel="Assignee"
-                options={projectMembers.map((member) => ({
-                  value: member.id,
-                  label: member.name,
-                }))}
-                emptyText="No matching assignees."
-                className={cn(
-                  pillTriggerClassName(Boolean(assigneeId)),
-                  'pl-8'
-                )}
-              />
-              <input type="hidden" name="assignee_id" value={assigneeId} />
-            </div>
+            <IconSearchablePill
+              icon={<CircleUserRound />}
+              id="assignee_id"
+              value={assigneeId}
+              onValueChange={onAssigneeIdChange}
+              disabled={lockAssignee}
+              placeholder="Assignee"
+              options={projectMembers.map((member) => ({
+                value: member.id,
+                label: member.name,
+              }))}
+              emptyText="No matching assignees."
+            />
           </FieldTooltip>
 
           <ModernOptionalFieldPills
@@ -293,29 +320,15 @@ function ModernOptionalFieldPills({
       {optionalFields.has('priority') ? (
         <FieldTooltip label="Priority">
           <div>
-            <Select
-              value={priority}
-              onValueChange={(value) =>
-                onPriorityChange(value as WorkItemPriority)
-              }
-            >
-              <SelectTrigger
-                id="priority"
-                aria-label="Priority"
-                className={pillTriggerClassName(Boolean(priority))}
-              >
+            <WorkItemPrioritySelect
+              priority={priority}
+              onPriorityChange={onPriorityChange}
+              placeholder="Priority"
+              triggerClassName={pillTriggerClassName(Boolean(priority))}
+              triggerStart={
                 <Signal className="text-muted-foreground size-3.5 shrink-0" />
-                <SelectValue placeholder="Priority" />
-              </SelectTrigger>
-              <SelectContent>
-                {WORK_ITEM_PRIORITIES.map((item) => (
-                  <SelectItem key={item} value={item}>
-                    {formatLabelFirstLetterCapitalized(item)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <input type="hidden" name="priority" value={priority} />
+              }
+            />
           </div>
         </FieldTooltip>
       ) : (

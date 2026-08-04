@@ -15,7 +15,7 @@ export type InlineMarkHandlers<T> = {
 };
 /* eslint-enable no-unused-vars */
 
-/** Shared link href guard for TipTap link marks (rejects empty / `#`). */
+/** Shared link href guard for TipTap link marks (safe schemes only). */
 export function getMarkHref(
   attrs: TiptapAttrs | undefined
 ): string | undefined {
@@ -23,7 +23,16 @@ export function getMarkHref(
   if (!href || href === '#') {
     return undefined;
   }
-  return href;
+  // Reject javascript:/data:/protocol-relative and other unsafe schemes.
+  if (
+    /^https?:\/\//i.test(href) ||
+    href.startsWith('mailto:') ||
+    href.startsWith('tel:') ||
+    (href.startsWith('/') && !href.startsWith('//'))
+  ) {
+    return href;
+  }
+  return undefined;
 }
 
 /**

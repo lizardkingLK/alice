@@ -56,7 +56,6 @@ import {
 import { CommentsFeedStatCard } from '@/app/comments/_components/comments-feed-stat-card';
 import { CommentsSortMenu } from '@/app/comments/_components/comments-sort-menu';
 import {
-  buildMockComment,
   computeCommentStats,
   filterComments,
   groupRepliesByParent,
@@ -166,7 +165,7 @@ export function CommentsFeed({
   const pendingUserMentionRef = useRef<CommentUserMentionTarget | null>(null);
 
   const { handleMutationError } = useOptimisticLock();
-  const activeUserId = currentUserId || users[0]?.id || '';
+  const activeUserId = currentUserId ?? '';
   const currentUser = users.find((u) => u.id === activeUserId);
   const currentUserName = currentUser?.name ?? 'You';
   const currentUserImageUrl = currentUser?.profile_picture ?? null;
@@ -265,22 +264,33 @@ export function CommentsFeed({
       setReplyingParentId(null);
     } catch (err) {
       console.error('Failed to create comment:', err);
-      setComments((prev) => [
-        buildMockComment({
-          content: doc as Json,
-          targetWorkItemId,
-          parentId: parentId ?? null,
-          activeUserId,
-          currentUserName,
-          workItems,
-        }),
-        ...prev,
-      ]);
-      setShowNewCommentModal(false);
-      setReplyingParentId(null);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCommentLockedError = async (options: {
+    error: unknown;
+    commentId: string;
+    expectedUpdatedAt: string;
+    pendingFields: Record<string, unknown>;
+    fallbackMessage: string;
+  }) => {
+    if (
+      await tryHandleLockedMutationError({
+        error: options.error,
+        handleMutationError,
+        entityType: 'comment',
+        entityId: options.commentId,
+        expectedUpdatedAt: options.expectedUpdatedAt,
+        pendingFields: options.pendingFields,
+        currentUserId: activeUserId,
+      })
+    ) {
+      return true;
+    }
+    console.error(options.fallbackMessage, options.error);
+    return false;
   };
 
   const handleSaveEdit = async (commentId: string, doc: JSONContent) => {
@@ -300,20 +310,13 @@ export function CommentsFeed({
         prev.map((c) => (c.id === commentId ? updated : c))
       );
     } catch (err) {
-      if (
-        await tryHandleLockedMutationError({
-          error: err,
-          handleMutationError,
-          entityType: 'comment',
-          entityId: commentId,
-          expectedUpdatedAt,
-          pendingFields: { content: doc },
-          currentUserId: activeUserId,
-        })
-      ) {
-        return;
-      }
-      console.error('Failed to update comment:', err);
+      await handleCommentLockedError({
+        error: err,
+        commentId,
+        expectedUpdatedAt,
+        pendingFields: { content: doc },
+        fallbackMessage: 'Failed to update comment:',
+      });
     } finally {
       setEditingCommentId(null);
     }
@@ -342,23 +345,13 @@ export function CommentsFeed({
       await apiCall(commentId, targetComment.updated_at);
       updateCommentStatusLocal(commentId, nextStatus);
     } catch (err) {
-      if (
-        await tryHandleLockedMutationError({
-          error: err,
-          handleMutationError,
-          entityType: 'comment',
-          entityId: commentId,
-          expectedUpdatedAt: targetComment.updated_at,
-          pendingFields: { status: nextStatus },
-          currentUserId: activeUserId,
-        })
-      ) {
-        return;
-      }
-      console.error(
-        `Failed to ${nextStatus === 'archived' ? 'archive' : 'restore'} comment:`,
-        err
-      );
+      await handleCommentLockedError({
+        error: err,
+        commentId,
+        expectedUpdatedAt: targetComment.updated_at,
+        pendingFields: { status: nextStatus },
+        fallbackMessage: `Failed to ${nextStatus === 'archived' ? 'archive' : 'restore'} comment:`,
+      });
     }
   };
 

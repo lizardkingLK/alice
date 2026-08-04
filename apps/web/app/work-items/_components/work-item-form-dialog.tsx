@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -38,7 +39,19 @@ export function WorkItemFormDialog({
   ...formProps
 }: Readonly<WorkItemFormDialogProps>) {
   const preferredMode = useWorkItemCreateFormMode();
-  const createFormMode = createFormModeProp ?? preferredMode;
+  const [sessionMode, setSessionMode] = useState(
+    () => createFormModeProp ?? preferredMode
+  );
+  const wasOpenRef = useRef(open);
+
+  useEffect(() => {
+    if (open && !wasOpenRef.current) {
+      setSessionMode(createFormModeProp ?? preferredMode);
+    }
+    wasOpenRef.current = open;
+  }, [open, createFormModeProp, preferredMode]);
+
+  const createFormMode = createFormModeProp ?? sessionMode;
   const useModernCreate = itemToEdit == null && createFormMode === 'modern';
 
   return (

@@ -243,11 +243,31 @@ function renderListItems(
   users?: CommentContentViewProps['users'],
   workItems?: CommentContentViewProps['workItems']
 ): ReactNode[] {
-  return (nodes ?? []).map((item, i) => (
-    <li key={`${key}-li-${i}`}>
-      {renderInline(item.content, onUserMentionClick, users, workItems)}
-    </li>
-  ));
+  return (nodes ?? []).map((item, i) => {
+    const content = item.content ?? [];
+    const hasBlockChild = content.some(
+      (child) =>
+        child.type === 'paragraph' ||
+        child.type === 'bulletList' ||
+        child.type === 'orderedList'
+    );
+
+    return (
+      <li key={`${key}-li-${i}`}>
+        {hasBlockChild
+          ? content.map((child, childIndex) =>
+              renderBlock(
+                child,
+                childIndex,
+                onUserMentionClick,
+                users,
+                workItems
+              )
+            )
+          : renderInline(content, onUserMentionClick, users, workItems)}
+      </li>
+    );
+  });
 }
 
 function renderBlock(
@@ -273,9 +293,14 @@ function renderBlock(
     );
   }
 
-  if (node.type === 'bulletList') {
+  if (node.type === 'bulletList' || node.type === 'orderedList') {
+    const ListTag = node.type === 'bulletList' ? 'ul' : 'ol';
+    const listClassName =
+      node.type === 'bulletList'
+        ? 'my-1 list-disc pl-5'
+        : 'my-1 list-decimal pl-5';
     return (
-      <ul key={key} className="my-1 list-disc pl-5">
+      <ListTag key={key} className={listClassName}>
         {renderListItems(
           node.content,
           key,
@@ -283,21 +308,7 @@ function renderBlock(
           users,
           workItems
         )}
-      </ul>
-    );
-  }
-
-  if (node.type === 'orderedList') {
-    return (
-      <ol key={key} className="my-1 list-decimal pl-5">
-        {renderListItems(
-          node.content,
-          key,
-          onUserMentionClick,
-          users,
-          workItems
-        )}
-      </ol>
+      </ListTag>
     );
   }
 

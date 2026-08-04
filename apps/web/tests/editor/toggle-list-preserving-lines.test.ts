@@ -1,11 +1,14 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Editor } from '@tiptap/core';
 import type { JSONContent } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { toggleListPreservingLines } from '@/lib/editor/toggle-list-preserving-lines';
 
 function createEditor(content: JSONContent) {
+  const element = document.createElement('div');
+  document.body.appendChild(element);
   return new Editor({
+    element,
     extensions: [
       StarterKit.configure({
         heading: false,
@@ -33,10 +36,17 @@ function listItemTexts(doc: JSONContent): string[] {
 }
 
 describe('toggleListPreservingLines', () => {
-  let editor: Editor;
+  let editor: Editor | undefined;
+
+  afterEach(() => {
+    editor?.destroy();
+    editor = undefined;
+    document.body.replaceChildren();
+  });
 
   beforeEach(() => {
     editor?.destroy();
+    editor = undefined;
   });
 
   it('wraps each paragraph in its own ordered list item', () => {

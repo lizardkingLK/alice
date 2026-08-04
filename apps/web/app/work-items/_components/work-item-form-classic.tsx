@@ -1,6 +1,5 @@
 'use client';
 
-import { WORK_ITEM_PRIORITIES, type WorkItemPriority } from '@repo/types';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import {
@@ -11,8 +10,8 @@ import {
   SelectValue,
 } from '@repo/ui/components/ui/select';
 import { SearchableSelect } from '@/components/searchable-select';
-import { formatLabelFirstLetterCapitalized } from '@/app/_shared/utility';
 import type { WorkItemFormSharedFieldProps } from '@/app/work-items/_components/work-item-form-field-props';
+import { WorkItemPrioritySelect } from '@/app/work-items/_components/work-item-priority-select';
 
 export type WorkItemFormClassicFieldsProps = WorkItemFormSharedFieldProps & {
   readonly titleDefault?: string;
@@ -92,22 +91,10 @@ export function WorkItemFormClassicFields({
 
       <div className="space-y-2">
         <Label htmlFor="priority">Priority</Label>
-        <Select
-          value={priority}
-          onValueChange={(value) => onPriorityChange(value as WorkItemPriority)}
-        >
-          <SelectTrigger id="priority">
-            <SelectValue placeholder="Select priority..." />
-          </SelectTrigger>
-          <SelectContent>
-            {WORK_ITEM_PRIORITIES.map((item) => (
-              <SelectItem key={item} value={item}>
-                {formatLabelFirstLetterCapitalized(item)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <input type="hidden" name="priority" value={priority} />
+        <WorkItemPrioritySelect
+          priority={priority}
+          onPriorityChange={onPriorityChange}
+        />
       </div>
 
       {parentId ? (

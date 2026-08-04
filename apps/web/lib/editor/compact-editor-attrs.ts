@@ -21,7 +21,7 @@ export function getCompactEditorAttributes({
 } {
   return {
     class: cn(
-      'max-w-none min-h-16 px-3 py-2 outline-none',
+      'max-w-none min-h-16 px-3 py-2 outline-none focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2',
       'prose-p:my-1',
       COMPACT_EDITOR_LIST_CLASSES,
       // Only the empty-doc class — not every empty paragraph — so placeholder
