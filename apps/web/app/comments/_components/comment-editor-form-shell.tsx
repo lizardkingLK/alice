@@ -10,8 +10,10 @@ import {
   CommentEditor,
   type CommentEditorHandle,
 } from '@/app/comments/_components/comment-editor';
-import type { CommentUser } from '@/app/comments/_services/comments.service.base';
-import type { CommentWorkItemOption } from '@/app/comments/_services/comments.service.base';
+import type {
+  CommentUser,
+  CommentWorkItemOption,
+} from '@/app/comments/_services/comments.service.base';
 
 type CommentEditorFormShellProps = {
   users: CommentUser[];

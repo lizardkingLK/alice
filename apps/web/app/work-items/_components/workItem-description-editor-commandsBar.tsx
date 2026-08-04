@@ -3,6 +3,7 @@
 import EditorCommand from '@/app/work-items/_components/workItem-description-editor-command';
 import { EditorFormatCommands } from '@/lib/editor/editor-format-commands';
 import { useEditorLinkDialog } from '@/lib/editor/editor-link-dialog';
+import { selectEditorFormatState } from '@/lib/editor/select-editor-format-state';
 import { Button } from '@repo/ui/components/ui/button';
 import { Code2, Maximize2, Minimize2 } from '@repo/ui/lib/icons';
 import { Editor, useEditorState } from '@tiptap/react';
@@ -25,12 +26,7 @@ const EditorCommandsBar = memo(function ({
   const editorState = useEditorState({
     editor,
     selector: (ctx) => ({
-      isBoldActive: ctx.editor.isActive('bold'),
-      isItalicActive: ctx.editor.isActive('italic'),
-      isUnderlineActive: ctx.editor.isActive('underline'),
-      isLinkActive: ctx.editor.isActive('link'),
-      isBulletListActive: ctx.editor.isActive('bulletList'),
-      isOrderedListActive: ctx.editor.isActive('orderedList'),
+      ...selectEditorFormatState(ctx.editor),
       isCodeBlockActive: ctx.editor.isActive('codeBlock'),
     }),
   });
@@ -41,14 +37,7 @@ const EditorCommandsBar = memo(function ({
         <div className="flex items-center gap-1">
           <EditorFormatCommands
             editor={editor}
-            state={{
-              isBoldActive: editorState.isBoldActive,
-              isItalicActive: editorState.isItalicActive,
-              isUnderlineActive: editorState.isUnderlineActive,
-              isLinkActive: editorState.isLinkActive,
-              isBulletListActive: editorState.isBulletListActive,
-              isOrderedListActive: editorState.isOrderedListActive,
-            }}
+            state={editorState}
             onOpenLink={openLinkDialog}
             iconClassName="h-4 w-4"
             bulletListTitle="List"

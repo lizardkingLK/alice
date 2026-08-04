@@ -1,8 +1,4 @@
-import {
-  createCommentSnippet,
-  extractMentionedUserIdsFromContent,
-  type Json,
-} from '@repo/types';
+import { extractMentionedUserIdsFromContent, type Json } from '@repo/types';
 
 export function extractMentionedUserIds(
   content: Json | string,
@@ -11,4 +7,4 @@ export function extractMentionedUserIds(
   return extractMentionedUserIdsFromContent(content, actorId);
 }
 
-export { createCommentSnippet };
+export { createCommentSnippet } from '@repo/types';

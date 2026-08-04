@@ -1,5 +1,3 @@
-import { emojiPlainText, getAttrString, mentionPlainText } from '@repo/types';
-
 export type TiptapMark = {
   type?: string;
   attrs?: Record<string, unknown>;
@@ -15,7 +13,7 @@ export type TiptapNode = {
 
 export const EMPTY_DESCRIPTION = 'No description provided.';
 
-export { getAttrString, emojiPlainText, mentionPlainText };
+export { getAttrString, emojiPlainText, mentionPlainText } from '@repo/types';
 
 export function getAttrNumber(
   attrs: Record<string, unknown> | undefined,

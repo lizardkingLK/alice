@@ -11,9 +11,8 @@ import {
   forwardRef,
 } from 'react';
 import { createPortal } from 'react-dom';
-import type { JSONContent } from '@tiptap/react';
+import type { JSONContent, Editor } from '@tiptap/react';
 import { EditorContent, useEditor } from '@tiptap/react';
-import type { Editor } from '@tiptap/react';
 import {
   commentContentToPlainText,
   emptyCommentDoc,
@@ -35,8 +34,10 @@ import {
   CommentMentionList,
   type CommentMentionItem,
 } from '@/app/comments/_components/comment-mention-list';
-import type { CommentUser } from '@/app/comments/_services/comments.service.base';
-import type { CommentWorkItemOption } from '@/app/comments/_services/comments.service.base';
+import type {
+  CommentUser,
+  CommentWorkItemOption,
+} from '@/app/comments/_services/comments.service.base';
 
 export type CommentEditorHandle = {
   focus: () => void;
@@ -71,6 +72,28 @@ type TriggerState = {
   to: number;
 } | null;
 
+function matchTrigger(
+  textBefore: string,
+  caretFrom: number,
+  marker: '@' | '#',
+  kind: 'user' | 'workItem'
+): TriggerState {
+  const pattern =
+    marker === '@' ? /(?:^|\s)@([^\s@#]*)$/ : /(?:^|\s)#([^\s@#]*)$/;
+  const match = pattern.exec(textBefore);
+  if (!match) {
+    return null;
+  }
+  const query = match[1] ?? '';
+  const triggerLen = query.length + 1;
+  return {
+    kind,
+    query,
+    from: caretFrom - triggerLen,
+    to: caretFrom,
+  };
+}
+
 function getTriggerState(editor: Editor): TriggerState {
   const { from, empty } = editor.state.selection;
   if (!empty) {
@@ -83,32 +106,11 @@ function getTriggerState(editor: Editor): TriggerState {
     '\n',
     '\0'
   );
-  const atMatch = /(?:^|\s)@([^\s@#]*)$/.exec(textBefore);
-  const hashMatch = /(?:^|\s)#([^\s@#]*)$/.exec(textBefore);
 
-  if (atMatch) {
-    const query = atMatch[1] ?? '';
-    const triggerLen = query.length + 1;
-    return {
-      kind: 'user',
-      query,
-      from: from - triggerLen,
-      to: from,
-    };
-  }
-
-  if (hashMatch) {
-    const query = hashMatch[1] ?? '';
-    const triggerLen = query.length + 1;
-    return {
-      kind: 'workItem',
-      query,
-      from: from - triggerLen,
-      to: from,
-    };
-  }
-
-  return null;
+  return (
+    matchTrigger(textBefore, from, '@', 'user') ??
+    matchTrigger(textBefore, from, '#', 'workItem')
+  );
 }
 
 export const CommentEditor = forwardRef<

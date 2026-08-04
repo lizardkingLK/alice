@@ -26,12 +26,16 @@ import {
 } from '@repo/ui/lib/icons';
 import { formatDateTime } from '@/app/_shared/utility';
 import { UserAvatar } from '@/components/user-avatar';
-import { CommentContentView } from '@/app/comments/_components/comment-content-view';
-import type { CommentUserMentionTarget } from '@/app/comments/_components/comment-content-view';
+import {
+  CommentContentView,
+  type CommentUserMentionTarget,
+} from '@/app/comments/_components/comment-content-view';
 import { CommentEditorFormShell } from '@/app/comments/_components/comment-editor-form-shell';
-import type { CommentItem } from '@/app/comments/_services/comments.service.base';
-import type { CommentUser } from '@/app/comments/_services/comments.service.base';
-import type { CommentWorkItemOption } from '@/app/comments/_services/comments.service.base';
+import type {
+  CommentItem,
+  CommentUser,
+  CommentWorkItemOption,
+} from '@/app/comments/_services/comments.service.base';
 
 const ISSUE_BADGE_CLASS =
   'border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400';

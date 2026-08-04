@@ -328,14 +328,19 @@ export function CommentsFeed({
     );
   };
 
-  const handleArchive = async (commentId: string) => {
+  const mutateCommentStatus = async (
+    commentId: string,
+    nextStatus: 'active' | 'archived',
+    // eslint-disable-next-line no-unused-vars -- callback signature
+    apiCall: (id: string, updatedAt: string) => Promise<unknown>
+  ) => {
     const targetComment = comments.find((c) => c.id === commentId);
     if (!targetComment) {
       return;
     }
     try {
-      await archiveComment(commentId, targetComment.updated_at);
-      updateCommentStatusLocal(commentId, 'archived');
+      await apiCall(commentId, targetComment.updated_at);
+      updateCommentStatusLocal(commentId, nextStatus);
     } catch (err) {
       if (
         await tryHandleLockedMutationError({
@@ -344,41 +349,24 @@ export function CommentsFeed({
           entityType: 'comment',
           entityId: commentId,
           expectedUpdatedAt: targetComment.updated_at,
-          pendingFields: { status: 'archived' },
+          pendingFields: { status: nextStatus },
           currentUserId: activeUserId,
         })
       ) {
         return;
       }
-      console.error('Failed to archive comment:', err);
+      console.error(
+        `Failed to ${nextStatus === 'archived' ? 'archive' : 'restore'} comment:`,
+        err
+      );
     }
   };
 
-  const handleRestore = async (commentId: string) => {
-    const targetComment = comments.find((c) => c.id === commentId);
-    if (!targetComment) {
-      return;
-    }
-    try {
-      await restoreComment(commentId, targetComment.updated_at);
-      updateCommentStatusLocal(commentId, 'active');
-    } catch (err) {
-      if (
-        await tryHandleLockedMutationError({
-          error: err,
-          handleMutationError,
-          entityType: 'comment',
-          entityId: commentId,
-          expectedUpdatedAt: targetComment.updated_at,
-          pendingFields: { status: 'active' },
-          currentUserId: activeUserId,
-        })
-      ) {
-        return;
-      }
-      console.error('Failed to restore comment:', err);
-    }
-  };
+  const handleArchive = (commentId: string) =>
+    mutateCommentStatus(commentId, 'archived', archiveComment);
+
+  const handleRestore = (commentId: string) =>
+    mutateCommentStatus(commentId, 'active', restoreComment);
 
   const confirmDelete = async () => {
     if (!deletingCommentId) {
@@ -418,6 +406,34 @@ export function CommentsFeed({
   const postReply = async (doc: JSONContent, parent: CommentItem) => {
     await handleCreateComment(doc, parent.id, parent.work_item_id);
   };
+
+  const renderParentThreads = (showWorkItemBadge: boolean) =>
+    parentComments.map((parent) => (
+      <CommentThread
+        key={parent.id}
+        parent={parent}
+        replies={repliesByParent.get(parent.id) ?? []}
+        activeUserId={activeUserId}
+        showWorkItemBadge={showWorkItemBadge}
+        editingCommentId={editingCommentId}
+        replyingParentId={replyingParentId}
+        isSubmitting={isSubmitting}
+        users={users}
+        workItems={mentionWorkItems}
+        currentUserName={currentUserName}
+        currentUserImageUrl={currentUserImageUrl}
+        onUserMentionClick={handleUserMentionClick}
+        onStartEdit={setEditingCommentId}
+        onCancelEdit={() => setEditingCommentId(null)}
+        onSaveEdit={handleSaveEdit}
+        onStartReply={startReply}
+        onCancelReply={cancelReply}
+        onPostReply={postReply}
+        onArchive={handleArchive}
+        onRestore={handleRestore}
+        onPurge={setDeletingCommentId}
+      />
+    ));
 
   return (
     <div className="space-y-6">
@@ -536,34 +552,7 @@ export function CommentsFeed({
             onSubmit={(doc) => handleCreateComment(doc)}
           />
 
-          <div className="space-y-6 pb-2">
-            {parentComments.map((parent) => (
-              <CommentThread
-                key={parent.id}
-                parent={parent}
-                replies={repliesByParent.get(parent.id) ?? []}
-                activeUserId={activeUserId}
-                showWorkItemBadge={false}
-                editingCommentId={editingCommentId}
-                replyingParentId={replyingParentId}
-                isSubmitting={isSubmitting}
-                users={users}
-                workItems={mentionWorkItems}
-                currentUserName={currentUserName}
-                currentUserImageUrl={currentUserImageUrl}
-                onUserMentionClick={handleUserMentionClick}
-                onStartEdit={setEditingCommentId}
-                onCancelEdit={() => setEditingCommentId(null)}
-                onSaveEdit={handleSaveEdit}
-                onStartReply={startReply}
-                onCancelReply={cancelReply}
-                onPostReply={postReply}
-                onArchive={handleArchive}
-                onRestore={handleRestore}
-                onPurge={setDeletingCommentId}
-              />
-            ))}
-          </div>
+          <div className="space-y-6 pb-2">{renderParentThreads(false)}</div>
         </div>
       ) : (
         <div className="space-y-4">
@@ -592,32 +581,7 @@ export function CommentsFeed({
               </CardContent>
             </Card>
           ) : (
-            parentComments.map((parent) => (
-              <CommentThread
-                key={parent.id}
-                parent={parent}
-                replies={repliesByParent.get(parent.id) ?? []}
-                activeUserId={activeUserId}
-                showWorkItemBadge
-                editingCommentId={editingCommentId}
-                replyingParentId={replyingParentId}
-                isSubmitting={isSubmitting}
-                users={users}
-                workItems={mentionWorkItems}
-                currentUserName={currentUserName}
-                currentUserImageUrl={currentUserImageUrl}
-                onUserMentionClick={handleUserMentionClick}
-                onStartEdit={setEditingCommentId}
-                onCancelEdit={() => setEditingCommentId(null)}
-                onSaveEdit={handleSaveEdit}
-                onStartReply={startReply}
-                onCancelReply={cancelReply}
-                onPostReply={postReply}
-                onArchive={handleArchive}
-                onRestore={handleRestore}
-                onPurge={setDeletingCommentId}
-              />
-            ))
+            renderParentThreads(true)
           )}
         </div>
       )}

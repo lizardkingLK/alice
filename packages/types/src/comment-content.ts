@@ -3,6 +3,7 @@ import {
   emojiPlainText,
   getAttrString,
   mentionPlainText,
+  normalizeMentionNode,
 } from './tiptap-node-attrs.js';
 
 /** TipTap JSON node shape used for comment content (subset). */
@@ -150,23 +151,10 @@ function normalizeMentionAttrs(node: CommentTiptapNode): CommentTiptapNode {
     return node;
   }
 
-  const id = getAttrString(node.attrs, 'id') ?? '';
-  const label = getAttrString(node.attrs, 'label') ?? id;
-  const title = getAttrString(node.attrs, 'title');
-  const isWorkItem =
-    node.type === 'workItemMention' ||
-    getAttrString(node.attrs, 'mentionType') === 'workItem';
-
-  return {
-    type: isWorkItem ? 'workItemMention' : 'mention',
-    attrs: {
-      id,
-      label,
-      ...(title ? { title } : {}),
-      mentionType: isWorkItem ? 'workItem' : 'user',
-      mentionSuggestionChar: isWorkItem ? '#' : '@',
-    },
-  };
+  return normalizeMentionNode({
+    type: node.type,
+    attrs: node.attrs ?? null,
+  }) as CommentTiptapNode;
 }
 
 function normalizeInlineNodes(nodes: CommentTiptapNode[]): CommentTiptapNode[] {

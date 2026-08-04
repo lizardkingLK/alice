@@ -1,32 +1,11 @@
 import type { JSONContent } from '@tiptap/react';
-
-function asNonEmptyString(value: unknown): string | null {
-  if (typeof value !== 'string') {
-    return null;
-  }
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-}
+import { normalizeMentionNode, type TiptapAttrs } from '@repo/types';
 
 function serializeMentionNode(node: JSONContent): JSONContent {
-  const attrs = node.attrs ?? {};
-  const isWorkItem =
-    node.type === 'workItemMention' || attrs.mentionType === 'workItem';
-
-  const id = asNonEmptyString(attrs.id) ?? '';
-  const label = asNonEmptyString(attrs.label) ?? id;
-  const title = asNonEmptyString(attrs.title);
-
-  return {
-    type: isWorkItem ? 'workItemMention' : 'mention',
-    attrs: {
-      id,
-      label,
-      ...(title ? { title } : {}),
-      mentionType: isWorkItem ? 'workItem' : 'user',
-      mentionSuggestionChar: isWorkItem ? '#' : '@',
-    },
-  };
+  return normalizeMentionNode({
+    type: node.type,
+    attrs: (node.attrs ?? null) as TiptapAttrs,
+  });
 }
 
 function serializeNode(node: JSONContent): JSONContent {
@@ -49,6 +28,6 @@ function serializeNode(node: JSONContent): JSONContent {
  * server-action / JSONB round-trips never drop id/label/title.
  */
 export function serializeCommentDoc(doc: JSONContent): JSONContent {
-  const cloned = JSON.parse(JSON.stringify(doc)) as JSONContent;
+  const cloned = structuredClone(doc);
   return serializeNode(cloned);
 }

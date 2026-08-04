@@ -16,7 +16,9 @@ export type InlineMarkHandlers<T> = {
 /* eslint-enable no-unused-vars */
 
 /** Shared link href guard for TipTap link marks (rejects empty / `#`). */
-export function getMarkHref(attrs: TiptapAttrs): string | undefined {
+export function getMarkHref(
+  attrs: TiptapAttrs | undefined
+): string | undefined {
   const href = getAttrString(attrs, 'href')?.trim();
   if (!href || href === '#') {
     return undefined;
@@ -67,6 +69,6 @@ export function foldMarks<T>(
   }
 
   return fromRight
-    ? marks.reduceRight(apply, initial)
-    : marks.reduce(apply, initial);
+    ? marks.reduceRight((acc, mark) => apply(acc, mark), initial)
+    : marks.reduce((acc, mark) => apply(acc, mark), initial);
 }

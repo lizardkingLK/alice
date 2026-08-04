@@ -26,7 +26,7 @@ export function splitHardBreaksInSelection(editor: Editor): boolean {
   for (const pos of [...hardBreakPositions].reverse()) {
     const mappedPos = tr.mapping.map(pos);
     const hardBreakNode = tr.doc.nodeAt(mappedPos);
-    if (!hardBreakNode || hardBreakNode.type.name !== 'hardBreak') {
+    if (hardBreakNode?.type.name !== 'hardBreak') {
       continue;
     }
 

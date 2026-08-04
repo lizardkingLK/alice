@@ -5,6 +5,7 @@ import { BubbleMenu } from '@tiptap/react/menus';
 import { useEditorState } from '@tiptap/react';
 import { EditorFormatCommands } from '@/lib/editor/editor-format-commands';
 import { useEditorLinkDialog } from '@/lib/editor/editor-link-dialog';
+import { selectEditorFormatState } from '@/lib/editor/select-editor-format-state';
 
 type CompactEditorBubbleToolbarProps = {
   editor: Editor;
@@ -20,14 +21,7 @@ export function CompactEditorBubbleToolbar({
 
   const editorState = useEditorState({
     editor,
-    selector: (ctx) => ({
-      isBoldActive: ctx.editor?.isActive('bold') ?? false,
-      isItalicActive: ctx.editor?.isActive('italic') ?? false,
-      isUnderlineActive: ctx.editor?.isActive('underline') ?? false,
-      isLinkActive: ctx.editor?.isActive('link') ?? false,
-      isBulletListActive: ctx.editor?.isActive('bulletList') ?? false,
-      isOrderedListActive: ctx.editor?.isActive('orderedList') ?? false,
-    }),
+    selector: (ctx) => selectEditorFormatState(ctx.editor),
   });
 
   return (
@@ -38,14 +32,7 @@ export function CompactEditorBubbleToolbar({
       >
         <EditorFormatCommands
           editor={editor}
-          state={{
-            isBoldActive: editorState?.isBoldActive ?? false,
-            isItalicActive: editorState?.isItalicActive ?? false,
-            isUnderlineActive: editorState?.isUnderlineActive ?? false,
-            isLinkActive: editorState?.isLinkActive ?? false,
-            isBulletListActive: editorState?.isBulletListActive ?? false,
-            isOrderedListActive: editorState?.isOrderedListActive ?? false,
-          }}
+          state={editorState ?? selectEditorFormatState(null)}
           onOpenLink={openLinkDialog}
         />
       </BubbleMenu>

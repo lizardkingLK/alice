@@ -21,26 +21,26 @@ function mentionAttrSpecs(defaults: {
   return {
     id: {
       default: null as string | null,
-      parseHTML: (element: HTMLElement) => element.getAttribute('data-id'),
+      parseHTML: (element: HTMLElement) => element.dataset.id ?? null,
       renderHTML: (attributes: MentionAttrs) =>
         attributes.id ? { 'data-id': attributes.id } : {},
     },
     label: {
       default: null as string | null,
-      parseHTML: (element: HTMLElement) => element.getAttribute('data-label'),
+      parseHTML: (element: HTMLElement) => element.dataset.label ?? null,
       renderHTML: (attributes: MentionAttrs) =>
         attributes.label ? { 'data-label': attributes.label } : {},
     },
     title: {
       default: null as string | null,
-      parseHTML: (element: HTMLElement) => element.getAttribute('data-title'),
+      parseHTML: (element: HTMLElement) => element.dataset.title ?? null,
       renderHTML: (attributes: MentionAttrs) =>
         attributes.title ? { 'data-title': attributes.title } : {},
     },
     mentionType: {
       default: defaults.mentionType,
       parseHTML: (element: HTMLElement) =>
-        element.getAttribute('data-mention-type') ?? defaults.mentionType,
+        element.dataset.mentionType ?? defaults.mentionType,
       renderHTML: (attributes: MentionAttrs) => ({
         'data-mention-type': attributes.mentionType ?? defaults.mentionType,
       }),
@@ -48,8 +48,7 @@ function mentionAttrSpecs(defaults: {
     mentionSuggestionChar: {
       default: defaults.mentionSuggestionChar,
       parseHTML: (element: HTMLElement) =>
-        element.getAttribute('data-mention-suggestion-char') ??
-        defaults.mentionSuggestionChar,
+        element.dataset.mentionSuggestionChar ?? defaults.mentionSuggestionChar,
       renderHTML: (attributes: MentionAttrs) => ({
         'data-mention-suggestion-char':
           attributes.mentionSuggestionChar ?? defaults.mentionSuggestionChar,
@@ -68,6 +67,40 @@ function workItemMentionText(attrs: MentionAttrs): string {
   return `#${key}${title}`;
 }
 
+function createTypedMentionExtension(config: {
+  name: 'mention' | 'workItemMention';
+  className: string;
+  mentionType: 'user' | 'workItem';
+  mentionSuggestionChar: '@' | '#';
+  // eslint-disable-next-line no-unused-vars -- callback signature
+  toPlainText: (attrs: MentionAttrs) => string;
+}) {
+  return Mention.extend({
+    name: config.name,
+    addProseMirrorPlugins() {
+      return [];
+    },
+    addAttributes() {
+      return mentionAttrSpecs({
+        mentionType: config.mentionType,
+        mentionSuggestionChar: config.mentionSuggestionChar,
+      });
+    },
+  }).configure({
+    HTMLAttributes: { class: config.className },
+    renderText({ node }) {
+      return config.toPlainText(node.attrs as MentionAttrs);
+    },
+    renderHTML({ options, node }) {
+      return [
+        'span',
+        mergeAttributes({ 'data-type': config.name }, options.HTMLAttributes),
+        config.toPlainText(node.attrs as MentionAttrs),
+      ];
+    },
+  });
+}
+
 /**
  * Mention node extensions without TipTap Suggestion UI.
  * Autocomplete is handled in CommentEditor via editor text/selection.
@@ -77,60 +110,22 @@ function workItemMentionText(attrs: MentionAttrs): string {
  * — not the Node view `{ node, HTMLAttributes }` shape (that caused undefined.nodeType).
  */
 export function createCommentMentionExtensions() {
-  const UserMention = Mention.extend({
-    name: 'mention',
-    addProseMirrorPlugins() {
-      return [];
-    },
-    addAttributes() {
-      return mentionAttrSpecs({
-        mentionType: 'user',
-        mentionSuggestionChar: '@',
-      });
-    },
-  }).configure({
-    HTMLAttributes: { class: MENTION_CLASS },
-    renderText({ node }) {
-      return userMentionText(node.attrs as MentionAttrs);
-    },
-    renderHTML({ options, node }) {
-      return [
-        'span',
-        mergeAttributes({ 'data-type': 'mention' }, options.HTMLAttributes),
-        userMentionText(node.attrs as MentionAttrs),
-      ];
-    },
-  });
-
-  const WorkItemMention = Mention.extend({
-    name: 'workItemMention',
-    addProseMirrorPlugins() {
-      return [];
-    },
-    addAttributes() {
-      return mentionAttrSpecs({
-        mentionType: 'workItem',
-        mentionSuggestionChar: '#',
-      });
-    },
-  }).configure({
-    HTMLAttributes: { class: WORK_ITEM_MENTION_CLASS },
-    renderText({ node }) {
-      return workItemMentionText(node.attrs as MentionAttrs);
-    },
-    renderHTML({ options, node }) {
-      return [
-        'span',
-        mergeAttributes(
-          { 'data-type': 'workItemMention' },
-          options.HTMLAttributes
-        ),
-        workItemMentionText(node.attrs as MentionAttrs),
-      ];
-    },
-  });
-
-  return [UserMention, WorkItemMention];
+  return [
+    createTypedMentionExtension({
+      name: 'mention',
+      className: MENTION_CLASS,
+      mentionType: 'user',
+      mentionSuggestionChar: '@',
+      toPlainText: userMentionText,
+    }),
+    createTypedMentionExtension({
+      name: 'workItemMention',
+      className: WORK_ITEM_MENTION_CLASS,
+      mentionType: 'workItem',
+      mentionSuggestionChar: '#',
+      toPlainText: workItemMentionText,
+    }),
+  ];
 }
 
 export type CommentMentionRef = {
