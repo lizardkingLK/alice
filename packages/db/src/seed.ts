@@ -5,6 +5,7 @@ import {
   auditCreateWithoutStatus,
   auditUpdate,
 } from '@repo/types/audit';
+import { plainTextToCommentDoc } from '@repo/types';
 import { createClient } from '@supabase/supabase-js';
 
 import { env } from './env.js';
@@ -624,17 +625,24 @@ async function seedComments(
   workItemId: string,
   authorId: string
 ): Promise<string> {
-  const content = 'Seed comment — ready for review.';
+  const plain = 'Seed comment — ready for review.';
+  const content = plainTextToCommentDoc(plain);
 
   const { data: existing } = await supabase
     .from('comments')
-    .select('id')
+    .select('id, content')
     .eq('work_item_id', workItemId)
-    .eq('content', content)
-    .maybeSingle();
+    .eq('author_id', authorId)
+    .is('parent_id', null)
+    .limit(20);
 
-  if (existing) {
-    return existing.id;
+  const found = (existing ?? []).find((row) => {
+    const text = JSON.stringify(row.content);
+    return text.includes(plain);
+  });
+
+  if (found) {
+    return found.id;
   }
 
   const { data, error } = await supabase
@@ -660,16 +668,21 @@ async function seedCommentReply(
   authorId: string,
   parentId: string
 ): Promise<void> {
-  const content = 'Reply — acknowledged, will pick up in standup.';
+  const plain = 'Reply — acknowledged, will pick up in standup.';
+  const content = plainTextToCommentDoc(plain);
 
   const { data: existing } = await supabase
     .from('comments')
-    .select('id')
+    .select('id, content')
     .eq('work_item_id', workItemId)
-    .eq('content', content)
-    .maybeSingle();
+    .eq('parent_id', parentId)
+    .limit(20);
 
-  if (existing) {
+  const found = (existing ?? []).some((row) =>
+    JSON.stringify(row.content).includes(plain)
+  );
+
+  if (found) {
     return;
   }
 

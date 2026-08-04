@@ -173,7 +173,7 @@ export type Database = {
       comments: {
         Row: {
           author_id: string;
-          content: string;
+          content: Json;
           created_at: string;
           created_by: string | null;
           edited: boolean;
@@ -186,7 +186,7 @@ export type Database = {
         };
         Insert: {
           author_id: string;
-          content: string;
+          content: Json;
           created_at?: string;
           created_by?: string | null;
           edited?: boolean;
@@ -199,7 +199,7 @@ export type Database = {
         };
         Update: {
           author_id?: string;
-          content?: string;
+          content?: Json;
           created_at?: string;
           created_by?: string | null;
           edited?: boolean;

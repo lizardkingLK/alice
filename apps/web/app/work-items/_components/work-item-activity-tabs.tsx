@@ -2,6 +2,8 @@
 
 import { formatDate } from '@/app/_shared/utility';
 import { CommentsFeed } from '@/app/comments/_components/comments-feed';
+import { CommentsSortMenu } from '@/app/comments/_components/comments-sort-menu';
+import type { CommentsSortOrder } from '@/app/comments/_components/comments-feed-helpers';
 import type { CommentItem } from '@/app/comments/_services/comments.service';
 import { WorkItemWorkLogPanel } from '@/app/work-items/_components/work-item-work-log-panel';
 import type { WorkItemWorkLog } from '@repo/types';
@@ -14,7 +16,7 @@ import {
   TabsTrigger,
 } from '@repo/ui/components/ui/tabs';
 import { History } from '@repo/ui/lib/icons';
-import { useLayoutEffect, useRef, type FormEvent } from 'react';
+import { useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 
 export type WorkItemActivityTab = 'discussion' | 'activity' | 'work-log';
 
@@ -101,6 +103,8 @@ export function WorkItemActivityTabs({
   readOnly = false,
 }: Readonly<WorkItemActivityTabsProps>) {
   const captureScrollBeforeTabChange = usePreserveScrollOnTabChange(activeTab);
+  const [commentsSortOrder, setCommentsSortOrder] =
+    useState<CommentsSortOrder>('newest');
 
   const handleTabChange = (value: string) => {
     captureScrollBeforeTabChange();
@@ -112,24 +116,42 @@ export function WorkItemActivityTabs({
       <h2 className="text-sm font-semibold">Activity</h2>
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="h-auto w-full justify-start rounded-none border-b bg-transparent p-0">
-          <TabsTrigger
-            value="discussion"
-            className={ACTIVITY_TAB_TRIGGER_CLASS}
-          >
-            Discussion
-          </TabsTrigger>
-          <TabsTrigger value="activity" className={ACTIVITY_TAB_TRIGGER_CLASS}>
-            Activity
-          </TabsTrigger>
-          <TabsTrigger value="work-log" className={ACTIVITY_TAB_TRIGGER_CLASS}>
-            Work Log
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between gap-2 border-b">
+          <TabsList className="h-auto justify-start rounded-none border-0 bg-transparent p-0">
+            <TabsTrigger
+              value="discussion"
+              className={ACTIVITY_TAB_TRIGGER_CLASS}
+            >
+              Discussion
+            </TabsTrigger>
+            <TabsTrigger
+              value="activity"
+              className={ACTIVITY_TAB_TRIGGER_CLASS}
+            >
+              Activity
+            </TabsTrigger>
+            <TabsTrigger
+              value="work-log"
+              className={ACTIVITY_TAB_TRIGGER_CLASS}
+            >
+              Work Log
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="discussion" className="mt-4">
+          {activeTab === 'discussion' ? (
+            <CommentsSortMenu
+              sortOrder={commentsSortOrder}
+              onSortOrderChange={setCommentsSortOrder}
+            />
+          ) : null}
+        </div>
+
+        <TabsContent value="discussion" className="mt-4 pb-4">
           <CommentsFeed
             embedded
+            hideSortControl
+            sortOrder={commentsSortOrder}
+            onSortOrderChange={setCommentsSortOrder}
             initialComments={initialComments}
             workItemId={workItem.id}
             workItems={discussionWorkItems}
@@ -137,9 +159,9 @@ export function WorkItemActivityTabs({
           />
         </TabsContent>
 
-        <TabsContent value="activity" className="mt-4">
+        <TabsContent value="activity" className="mt-4 pb-4">
           <Card className="border-dashed">
-            <CardContent className="space-y-3 py-12 text-center">
+            <CardContent className="space-y-3 pt-12 pb-14 text-center">
               <div className="bg-muted mx-auto flex size-12 items-center justify-center rounded-full">
                 <History className="text-muted-foreground size-6" />
               </div>
@@ -156,7 +178,7 @@ export function WorkItemActivityTabs({
           </Card>
         </TabsContent>
 
-        <TabsContent value="work-log" className="mt-4">
+        <TabsContent value="work-log" className="mt-4 pb-4">
           <WorkItemWorkLogPanel
             workLogs={workLogs}
             currentUserId={currentUserId}

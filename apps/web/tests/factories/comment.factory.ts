@@ -4,6 +4,7 @@ import type {
   CommentWorkItem,
 } from '@/app/comments/_services/comments.service';
 import { formatDateToISOString } from '@/app/_shared/utility';
+import { plainTextToCommentDoc } from '@repo/types';
 
 const defaultAuthor: CommentUser = {
   id: 'user-admin-1',
@@ -31,7 +32,9 @@ export const commentFactory = {
       work_item_id: 'wi-1',
       author_id: defaultAuthor.id,
       parent_id: null,
-      content: 'Security audit completed for the auth module.',
+      content: plainTextToCommentDoc(
+        'Security audit completed for the auth module.'
+      ),
       edited: false,
       status: 'active',
       created_at: formatDateToISOString(2026, 6, 20, 10, 0, 0),
@@ -49,7 +52,7 @@ export const commentFactory = {
     return Array.from({ length: count }, (_, index) =>
       commentFactory.build({
         id: `comment-${index + 1}`,
-        content: `Comment content ${index + 1}`,
+        content: plainTextToCommentDoc(`Comment content ${index + 1}`),
         ...overrides,
       })
     );

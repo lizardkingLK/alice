@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sortSubtasks } from '@/app/work-items/_helpers/sort-subtasks';
+import { sortSubtasks } from '@/app/work-items/_helpers/work-item-sort-subtasks';
 import { workItemFactory } from '../factories/workItem.factory';
 
 describe('sortSubtasks', () => {

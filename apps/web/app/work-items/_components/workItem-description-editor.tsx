@@ -4,21 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { Spinner } from '@repo/ui/components/ui/spinner';
 import { cn } from '@repo/ui/lib/utils';
-import {
-  useEditor,
-  EditorContent,
-  JSONContent,
-  ReactNodeViewRenderer,
-} from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
-import { all, createLowlight } from 'lowlight';
+import { useEditor, EditorContent, JSONContent } from '@tiptap/react';
 import { useEditorAutosave } from '@/hooks/use-editor-autosave';
-import CodeBlockNodeView from '@/app/work-items/_components/workItem-description-editor-nodeView';
 import EditorCommandsBar from '@/app/work-items/_components/workItem-description-editor-commandsBar';
 import getEditorStyles from '@/app/work-items/_components/workItem-description-editor-styles';
 import { delay } from '@/app/_shared/utility';
-import { CustomLinkExtension } from '@/lib/editor/tiptap-link-configuration';
+import { createEditorExtensions } from '@/lib/editor/create-editor-extensions';
 import { removeLocalStorageItem } from '@/lib/local-storage';
 
 type WorkItemDescriptionEditorProps = {
@@ -28,8 +19,6 @@ type WorkItemDescriptionEditorProps = {
   onSave: (content: JSONContent) => void;
   onCancel: () => void;
 };
-
-const lowlight = createLowlight(all);
 
 export default function WorkItemDescriptionEditor({
   id,
@@ -44,21 +33,7 @@ export default function WorkItemDescriptionEditor({
 
   const editor = useEditor({
     immediatelyRender: true,
-    extensions: [
-      StarterKit.configure({
-        codeBlock: false,
-        link: false,
-      }),
-      CodeBlockLowlight.configure({
-        lowlight,
-        defaultLanguage: 'plaintext',
-      }).extend({
-        addNodeView() {
-          return ReactNodeViewRenderer(CodeBlockNodeView);
-        },
-      }),
-      CustomLinkExtension,
-    ],
+    extensions: createEditorExtensions({ mode: 'full' }),
     content: initialContent ?? '',
     editable: true,
     autofocus: 'end',
