@@ -75,9 +75,3 @@ export function canAccessPath(
 export function canAccessSystemNav(role: AppRole | null | undefined): boolean {
   return isAdmin(role);
 }
-
-export function canAccessProjectsNav(
-  role: AppRole | null | undefined
-): boolean {
-  return Boolean(role);
-}
