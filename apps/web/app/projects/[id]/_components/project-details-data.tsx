@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { ProjectDetailsWorkspace } from '@/app/projects/[id]/_components/project-details-workspace';
+import { ProjectWorkspaceAccessDenied } from '@/app/projects/[id]/_components/project-workspace-access-denied';
 import { getProjectWorkspace } from '@/app/projects/_services/project-workspace.server';
 import type { RawSearchParams } from '@/lib/search-params';
 
@@ -17,6 +18,17 @@ export async function ProjectDetailsData({
 
   if (!workspace) {
     notFound();
+  }
+
+  if (workspace.access === 'denied') {
+    return (
+      <div className="w-full py-8">
+        <ProjectWorkspaceAccessDenied
+          projectName={workspace.project.name}
+          projectKey={workspace.project.key}
+        />
+      </div>
+    );
   }
 
   return (

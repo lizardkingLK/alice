@@ -59,6 +59,8 @@ Platform / Account / Help (e.g. `/dashboard`, `/backlog`, `/board`, `/work-items
 
 **Explicit default:** Admin is a Projects superset. Manager cannot open System. Member stays on Platform / Account / Help.
 
+**Project object ACL (beyond this matrix):** Opening `/projects/[id]` and which rows appear on the `/projects` registry also require admin, project owner, or active `project_members` — see [features/projects/README.md](../features/projects/README.md) (Access model).
+
 ## 6. Enforcement Layers
 
 ```text
