@@ -10,6 +10,7 @@ import { ReactNode } from 'react';
 import { SprintList } from '@/app/sprints/_components/sprint-list';
 import { SprintsWorkspace } from '@/app/sprints/_components/sprints-workspace';
 import { Sprint } from '@/app/sprints/_services/sprints.service';
+import { sprintFactory } from '../factories/sprint.factory';
 
 const mockPush = vi.fn();
 const mockRefresh = vi.fn();
@@ -88,36 +89,28 @@ vi.mock('@repo/ui/components/ui/dropdown-menu', () => {
 });
 
 const mockSprints: Sprint[] = [
-  {
+  sprintFactory.build({
     id: 'sprint-1',
     name: 'Sprint Alpha',
     goal: 'Goal Alpha',
-    status: 'active' as const,
+    status: 'active',
     startDate: '2026-07-01',
     endDate: '2026-07-14',
-    createdBy: 'user-1',
-    updatedBy: null,
-    createdAt: '2026-07-01T00:00:00Z',
-    updatedAt: '2026-07-01T00:00:00Z',
     project: {
       id: 'proj-1',
       name: 'Project Alpha',
       key: 'PAL',
     },
-  },
-  {
+  }),
+  sprintFactory.build({
     id: 'sprint-2',
     name: 'Sprint Beta',
     goal: '',
-    status: 'planned' as const,
+    status: 'planned',
     startDate: '2026-07-15',
     endDate: '2026-07-28',
-    createdBy: 'user-1',
-    updatedBy: null,
-    createdAt: '2026-07-01T00:00:00Z',
-    updatedAt: '2026-07-01T00:00:00Z',
     project: null,
-  },
+  }),
 ];
 
 const mockPagination = {
@@ -377,45 +370,24 @@ describe('SprintList Component', () => {
   it('renders Archive button only for Completed sprints and triggers callback', () => {
     const onArchiveSprint = vi.fn();
     const testSprints: Sprint[] = [
-      {
+      sprintFactory.build({
         id: 'sprint-completed',
         name: 'Completed Sprint',
-        goal: null,
-        status: 'closed' as const,
-        startDate: '2026-07-01',
-        endDate: '2026-07-14',
-        createdBy: 'user-1',
-        updatedBy: null,
-        createdAt: '2026-07-01T00:00:00Z',
-        updatedAt: '2026-07-01T00:00:00Z',
+        status: 'closed',
         project: null,
-      },
-      {
+      }),
+      sprintFactory.build({
         id: 'sprint-ongoing',
         name: 'Ongoing Sprint',
-        goal: null,
-        status: 'active' as const,
-        startDate: '2026-07-01',
-        endDate: '2026-07-14',
-        createdBy: 'user-1',
-        updatedBy: null,
-        createdAt: '2026-07-01T00:00:00Z',
-        updatedAt: '2026-07-01T00:00:00Z',
+        status: 'active',
         project: null,
-      },
-      {
+      }),
+      sprintFactory.build({
         id: 'sprint-planned',
         name: 'Planned Sprint',
-        goal: null,
-        status: 'planned' as const,
-        startDate: '2026-07-01',
-        endDate: '2026-07-14',
-        createdBy: 'user-1',
-        updatedBy: null,
-        createdAt: '2026-07-01T00:00:00Z',
-        updatedAt: '2026-07-01T00:00:00Z',
+        status: 'planned',
         project: null,
-      },
+      }),
     ];
 
     render(
@@ -455,32 +427,18 @@ describe('SprintList Component', () => {
   it('renders Restore button only for Archived sprints and triggers callback', () => {
     const onRestoreSprint = vi.fn();
     const testSprints: Sprint[] = [
-      {
+      sprintFactory.build({
         id: 'sprint-archived',
         name: 'Archived Sprint',
-        goal: null,
-        status: 'archived' as const,
-        startDate: '2026-07-01',
-        endDate: '2026-07-14',
-        createdBy: 'user-1',
-        updatedBy: null,
-        createdAt: '2026-07-01T00:00:00Z',
-        updatedAt: '2026-07-01T00:00:00Z',
+        status: 'archived',
         project: null,
-      },
-      {
+      }),
+      sprintFactory.build({
         id: 'sprint-completed',
         name: 'Completed Sprint',
-        goal: null,
-        status: 'closed' as const,
-        startDate: '2026-07-01',
-        endDate: '2026-07-14',
-        createdBy: 'user-1',
-        updatedBy: null,
-        createdAt: '2026-07-01T00:00:00Z',
-        updatedAt: '2026-07-01T00:00:00Z',
+        status: 'closed',
         project: null,
-      },
+      }),
     ];
 
     render(
@@ -515,19 +473,12 @@ describe('SprintList Component', () => {
   it('does not render Edit button for Archived sprints', () => {
     const onEditSprint = vi.fn();
     const testSprints: Sprint[] = [
-      {
+      sprintFactory.build({
         id: 'sprint-archived',
         name: 'Archived Sprint',
-        goal: null,
-        status: 'archived' as const,
-        startDate: '2026-07-01',
-        endDate: '2026-07-14',
-        createdBy: 'user-1',
-        updatedBy: null,
-        createdAt: '2026-07-01T00:00:00Z',
-        updatedAt: '2026-07-01T00:00:00Z',
+        status: 'archived',
         project: null,
-      },
+      }),
     ];
 
     render(
