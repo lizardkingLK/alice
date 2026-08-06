@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import { SprintReportView } from './sprint-report-view';
 import { AlertCircle, ArrowLeft } from '@repo/ui/lib/icons';
 import { toShortId } from '@/app/_shared/utility';
+import { SprintStatusEnum } from '@repo/types';
 
 type ReportPageProps = Readonly<{
   params: Promise<{ id: string }>;
@@ -28,7 +29,7 @@ export default async function SprintReportPage({ params }: ReportPageProps) {
   }
 
   const isValidStatus =
-    sprint.status === 'closed' || sprint.status === 'active';
+    sprint.status === SprintStatusEnum.Closed || sprint.status === SprintStatusEnum.Active;
 
   if (!isValidStatus) {
     return (
