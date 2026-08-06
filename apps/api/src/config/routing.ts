@@ -9,6 +9,7 @@ import teamsRouter from '../routes/api/teams/teams.route';
 import commentsRouter from '../routes/api/comments/comments.route';
 import profileRouter from '../routes/api/profile/profile.route';
 import accessAllowlistRouter from '../routes/api/accessAllowlist/accessAllowlist.route';
+import chatRouter from '../routes/api/chat/chat.route';
 import { workItems } from './composition';
 
 const routesConfig: Router = Router();
@@ -24,5 +25,6 @@ routesConfig.use('/api/teams', teamsRouter);
 routesConfig.use('/api/users', usersRouter);
 routesConfig.use('/api/workItems', workItems.router);
 routesConfig.use('/api/accessAllowlist', accessAllowlistRouter);
+routesConfig.use('/api/chat', chatRouter);
 
 export default routesConfig;
