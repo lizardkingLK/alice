@@ -2,16 +2,13 @@ import {
   computeBurndown,
   mapSprintRowToResponse,
   type SprintBurndownPayload,
+  type SprintResponse,
 } from '@repo/types';
+import type { CreateSprintBody, UpdateSprintBody } from './sprints.schemas';
 import type {
-  CreateSprintBody,
-  SprintResponse,
-  UpdateSprintBody,
-} from './sprints.schemas';
-import {
-  sprintsRepository,
-  sprintBurndownRepository,
-  type SprintRow,
+  SprintsRepository,
+  SprintBurndownRepository,
+  SprintRow,
 } from './sprints.repository';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
 
@@ -29,6 +26,8 @@ async function requireManagerOrAdmin(actorId: string) {
 }
 
 export class SprintsService {
+  constructor(private readonly sprints: SprintsRepository) {}
+
   async createSprint(
     userId: string,
     input: CreateSprintBody
@@ -37,7 +36,7 @@ export class SprintsService {
     const goal =
       input.goal === undefined || input.goal === '' ? null : input.goal;
 
-    const row = await sprintsRepository.create({
+    const row = await this.sprints.create({
       name: input.name,
       goal,
       projectId: input.projectId,
@@ -58,7 +57,7 @@ export class SprintsService {
     await requireManagerOrAdmin(userId);
 
     if (status === 'active') {
-      const count = await sprintsRepository.getWorkItemCount(sprintId);
+      const count = await this.sprints.getWorkItemCount(sprintId);
       if (count === 0) {
         throw new Error(
           "If sprint haven't any work items cannot start the sprint."
@@ -67,7 +66,7 @@ export class SprintsService {
     }
 
     if (status === 'closed') {
-      const count = await sprintsRepository.getWorkItemCount(sprintId);
+      const count = await this.sprints.getWorkItemCount(sprintId);
       if (count === 0) {
         throw new Error(
           "If sprint haven't any work items cannot complete the sprint."
@@ -75,7 +74,7 @@ export class SprintsService {
       }
 
       const incompleteCount =
-        await sprintsRepository.getIncompleteWorkItemCount(sprintId);
+        await this.sprints.getIncompleteWorkItemCount(sprintId);
       if (incompleteCount > 0) {
         throw new Error(
           "Can't complete the sprint all the work items are not done."
@@ -84,7 +83,7 @@ export class SprintsService {
     }
 
     if (status === 'archived') {
-      const currentSprint = await sprintsRepository.findById(sprintId);
+      const currentSprint = await this.sprints.findById(sprintId);
       if (!currentSprint) {
         throw new Error('Sprint not found');
       }
@@ -96,7 +95,7 @@ export class SprintsService {
       }
     }
 
-    const row = await sprintsRepository.updateStatus(
+    const row = await this.sprints.updateStatus(
       userId,
       sprintId,
       status,
@@ -114,7 +113,7 @@ export class SprintsService {
     const goal =
       input.goal === undefined || input.goal === '' ? null : input.goal;
 
-    const currentSprint = await sprintsRepository.findById(sprintId);
+    const currentSprint = await this.sprints.findById(sprintId);
     if (!currentSprint) {
       throw new Error('Sprint not found');
     }
@@ -123,7 +122,7 @@ export class SprintsService {
     }
 
     if (input.projectId !== currentSprint.project_id) {
-      const count = await sprintsRepository.getWorkItemCount(sprintId);
+      const count = await this.sprints.getWorkItemCount(sprintId);
       if (count > 0) {
         throw new Error(
           'Cannot change the project of a sprint that has work items.'
@@ -131,7 +130,7 @@ export class SprintsService {
       }
     }
 
-    const row = await sprintsRepository.update(
+    const row = await this.sprints.update(
       userId,
       sprintId,
       {
@@ -148,20 +147,20 @@ export class SprintsService {
   }
 }
 
-export const sprintsService = new SprintsService();
-
 export class SprintBurndownService {
+  constructor(private readonly burndownRepo: SprintBurndownRepository) {}
+
   async getBurndown(sprintId: string): Promise<SprintBurndownPayload | null> {
-    const sprint = await sprintBurndownRepository.getSprintById(sprintId);
+    const sprint = await this.burndownRepo.getSprintById(sprintId);
     if (!sprint) {
       return null;
     }
 
     const items =
-      await sprintBurndownRepository.getWorkItemsForBurndown(sprintId);
+      await this.burndownRepo.getWorkItemsForBurndown(sprintId);
     const workItemIds = items.map((i) => i.id);
     const workLogs =
-      await sprintBurndownRepository.getWorkLogsForWorkItems(workItemIds);
+      await this.burndownRepo.getWorkLogsForWorkItems(workItemIds);
     const { estimatedTotal, series } = computeBurndown(sprint, items, workLogs);
 
     return {
@@ -177,5 +176,3 @@ export class SprintBurndownService {
     };
   }
 }
-
-export const sprintBurndownService = new SprintBurndownService();
