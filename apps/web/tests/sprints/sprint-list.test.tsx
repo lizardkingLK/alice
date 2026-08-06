@@ -92,7 +92,7 @@ const mockSprints: Sprint[] = [
     id: 'sprint-1',
     name: 'Sprint Alpha',
     goal: 'Goal Alpha',
-    status: 'Ongoing' as const,
+    status: 'active' as const,
     startDate: '2026-07-01',
     endDate: '2026-07-14',
     createdBy: 'user-1',
@@ -109,7 +109,7 @@ const mockSprints: Sprint[] = [
     id: 'sprint-2',
     name: 'Sprint Beta',
     goal: '',
-    status: 'Not Started' as const,
+    status: 'planned' as const,
     startDate: '2026-07-15',
     endDate: '2026-07-28',
     createdBy: 'user-1',
@@ -168,9 +168,12 @@ describe('SprintList Component', () => {
       />
     );
 
-    // Verify that the status text is rendered
-    expect(screen.getByText('Ongoing')).toBeInTheDocument();
-    expect(screen.getByText('Not Started')).toBeInTheDocument();
+    // Verify that the status text is rendered within the respective rows
+    const alphaRow = screen.getByText('Sprint Alpha').closest('tr')!;
+    expect(within(alphaRow).getByText('Active')).toBeInTheDocument();
+
+    const betaRow = screen.getByText('Sprint Beta').closest('tr')!;
+    expect(within(betaRow).getByText('Planned')).toBeInTheDocument();
 
     // Verify that the status dropdown menu or triggers are not present/active
     expect(screen.queryByTestId('dropdown-menu')).not.toBeInTheDocument();
@@ -381,7 +384,7 @@ describe('SprintList Component', () => {
         id: 'sprint-completed',
         name: 'Completed Sprint',
         goal: null,
-        status: 'Completed' as const,
+        status: 'closed' as const,
         startDate: '2026-07-01',
         endDate: '2026-07-14',
         createdBy: 'user-1',
@@ -394,7 +397,7 @@ describe('SprintList Component', () => {
         id: 'sprint-ongoing',
         name: 'Ongoing Sprint',
         goal: null,
-        status: 'Ongoing' as const,
+        status: 'active' as const,
         startDate: '2026-07-01',
         endDate: '2026-07-14',
         createdBy: 'user-1',
@@ -407,7 +410,7 @@ describe('SprintList Component', () => {
         id: 'sprint-planned',
         name: 'Planned Sprint',
         goal: null,
-        status: 'Not Started' as const,
+        status: 'planned' as const,
         startDate: '2026-07-01',
         endDate: '2026-07-14',
         createdBy: 'user-1',
@@ -459,7 +462,7 @@ describe('SprintList Component', () => {
         id: 'sprint-archived',
         name: 'Archived Sprint',
         goal: null,
-        status: 'Archived' as const,
+        status: 'archived' as const,
         startDate: '2026-07-01',
         endDate: '2026-07-14',
         createdBy: 'user-1',
@@ -472,7 +475,7 @@ describe('SprintList Component', () => {
         id: 'sprint-completed',
         name: 'Completed Sprint',
         goal: null,
-        status: 'Completed' as const,
+        status: 'closed' as const,
         startDate: '2026-07-01',
         endDate: '2026-07-14',
         createdBy: 'user-1',
@@ -519,7 +522,7 @@ describe('SprintList Component', () => {
         id: 'sprint-archived',
         name: 'Archived Sprint',
         goal: null,
-        status: 'Archived' as const,
+        status: 'archived' as const,
         startDate: '2026-07-01',
         endDate: '2026-07-14',
         createdBy: 'user-1',

@@ -25,22 +25,12 @@ async function requireManagerOrAdmin(actorId: string) {
   );
 }
 
-const dbStatusToResponseMap: Record<
-  'planned' | 'active' | 'closed' | 'archived',
-  'Not Started' | 'Ongoing' | 'Completed' | 'Archived'
-> = {
-  planned: 'Not Started',
-  active: 'Ongoing',
-  closed: 'Completed',
-  archived: 'Archived',
-};
-
 function toSprintResponse(row: SprintRowWithProject): SprintResponse {
   return {
     id: row.id,
     name: row.name,
     goal: row.goal,
-    status: dbStatusToResponseMap[row.status] || 'Not Started',
+    status: row.status,
     startDate: row.start_date,
     endDate: row.end_date,
     createdBy: row.created_by ?? '',
@@ -121,7 +111,7 @@ export class SprintsService {
         currentSprint.status === 'planned' ||
         currentSprint.status === 'active'
       ) {
-        throw new Error('Cannot archive ongoing or not started sprints.');
+        throw new Error('Cannot archive active or planned sprints.');
       }
     }
 

@@ -37,17 +37,6 @@ sprintsRouter.post(
     }
   }
 );
-
-const statusUpdateMap: Record<
-  'Not Started' | 'Ongoing' | 'Completed' | 'Archived',
-  'planned' | 'active' | 'closed' | 'archived'
-> = {
-  'Not Started': 'planned',
-  Ongoing: 'active',
-  Completed: 'closed',
-  Archived: 'archived',
-};
-
 sprintsRouter.patch(
   '/:id/status',
   requireApiAuth,
@@ -58,13 +47,11 @@ sprintsRouter.patch(
       return res.status(400).json({ error: z.treeifyError(parsed.error) });
     }
 
-    const serviceStatus = statusUpdateMap[parsed.data.status];
-
     try {
       const sprint = await sprintsService.updateSprintStatus(
         req.userId!,
         req.params.id!,
-        serviceStatus,
+        parsed.data.status,
         parsed.data.expectedUpdatedAt
       );
       res.json({ sprint });

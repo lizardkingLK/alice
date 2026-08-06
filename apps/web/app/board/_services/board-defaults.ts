@@ -48,13 +48,13 @@ export function resolveDefaultBoardSprint(
     (sprint) => sprint.project?.id === projectId
   );
 
-  const ongoing = forProject.find((sprint) => sprint.status === 'Ongoing');
+  const ongoing = forProject.find((sprint) => sprint.status === 'active');
   if (ongoing) {
     return ongoing;
   }
 
   const notStarted = forProject.find(
-    (sprint) => sprint.status === 'Not Started'
+    (sprint) => sprint.status === 'planned'
   );
   return notStarted ?? forProject[0] ?? null;
 }
