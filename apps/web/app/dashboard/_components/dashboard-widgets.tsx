@@ -5,7 +5,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   ChartContainer,
   ChartLegend,
   ChartLegendContent,
@@ -175,11 +174,7 @@ function StatusMixWidget() {
             outerRadius="78%"
             paddingAngle={2}
             strokeWidth={2}
-          >
-            {STATUS_MIX_DATA.map((entry) => (
-              <Cell key={entry.status} fill={entry.fill} />
-            ))}
-          </Pie>
+          />
           <ChartLegend content={<ChartLegendContent nameKey="status" />} />
         </PieChart>
       </ChartViewport>
@@ -267,8 +262,8 @@ function selectBurndownSprint(
     (preference?.sprintId
       ? candidates.find((sprint) => sprint.id === preference.sprintId)
       : undefined) ??
-    candidates.find((sprint) => sprint.status === 'Ongoing') ??
-    candidates.find((sprint) => sprint.status === 'Not Started') ??
+    candidates.find((sprint) => sprint.status === 'active') ??
+    candidates.find((sprint) => sprint.status === 'planned') ??
     candidates[0]
   );
 }

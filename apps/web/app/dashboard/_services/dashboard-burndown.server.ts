@@ -40,7 +40,7 @@ export async function getDashboardBurndownBootstrap(): Promise<DashboardBurndown
 
   const candidates: DashboardBurndownSprint[] = sprints
     .filter(
-      (sprint) => sprint.status === 'Ongoing' || sprint.status === 'Not Started'
+      (sprint) => sprint.status === 'active' || sprint.status === 'planned'
     )
     .map((sprint) => ({
       id: sprint.id,
@@ -49,7 +49,7 @@ export async function getDashboardBurndownBootstrap(): Promise<DashboardBurndown
     }));
 
   const defaultSprint =
-    candidates.find((sprint) => sprint.status === 'Ongoing') ?? candidates[0];
+    candidates.find((sprint) => sprint.status === 'active') ?? candidates[0];
 
   if (!defaultSprint) {
     return { sprints: candidates, defaultSprintId: null, burndown: null };

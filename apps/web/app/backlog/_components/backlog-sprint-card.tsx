@@ -23,18 +23,18 @@ import {
 const SPRINT_STATUS_BADGE: Partial<
   Record<Sprint['status'], { label: string; className: string }>
 > = {
-  Ongoing: {
-    label: 'Ongoing',
+  active: {
+    label: 'active',
     className:
       'border-primary/20 bg-primary/10 px-2 py-0 font-semibold text-primary',
   },
-  Completed: {
-    label: 'Completed',
+  closed: {
+    label: 'closed',
     className:
       'border-emerald-500/20 bg-emerald-500/10 px-2 py-0 font-semibold text-emerald-600 dark:text-emerald-400',
   },
-  'Not Started': {
-    label: 'Planned',
+  planned: {
+    label: 'planned',
     className:
       'border-muted-foreground/20 bg-muted px-2 py-0 font-semibold text-muted-foreground',
   },
@@ -84,7 +84,7 @@ function SprintCardActions({
   onStartSprint,
   onCompleteSprint,
 }: Readonly<SprintCardActionsProps>) {
-  if (sprint.status === 'Completed') {
+  if (sprint.status === 'closed') {
     if (!isManagerOrAdmin) {
       return null;
     }
@@ -115,7 +115,7 @@ function SprintCardActions({
         className="hidden h-6 @xl/sprint-card:block"
       />
 
-      {isManagerOrAdmin && sprint.status === 'Ongoing' ? (
+      {isManagerOrAdmin && sprint.status === 'active' ? (
         <Button
           size="sm"
           variant="outline"
@@ -129,7 +129,7 @@ function SprintCardActions({
         </Button>
       ) : null}
 
-      {isManagerOrAdmin && sprint.status === 'Not Started' ? (
+      {isManagerOrAdmin && sprint.status === 'planned' ? (
         <Button
           size="sm"
           className="h-8 cursor-pointer bg-emerald-600 text-white hover:bg-emerald-700"
@@ -140,7 +140,7 @@ function SprintCardActions({
         </Button>
       ) : null}
 
-      {isManagerOrAdmin && sprint.status === 'Ongoing' ? (
+      {isManagerOrAdmin && sprint.status === 'active' ? (
         <Button
           size="sm"
           className="h-8 cursor-pointer bg-sky-600 text-white hover:bg-sky-700"
@@ -177,7 +177,7 @@ export function BacklogSprintCard({
     <Card
       className={cn(
         'border-border/70 @container/sprint-card overflow-hidden shadow-sm transition-all duration-200',
-        sprint.status === 'Ongoing'
+        sprint.status === 'active'
           ? 'border-l-primary border-l-4'
           : 'border-l-muted-foreground/30 border-l-4'
       )}

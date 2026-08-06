@@ -25,7 +25,7 @@ export const createSprintBodySchema = refineSprintDates(sprintBodyObjectSchema);
 export type CreateSprintBody = z.infer<typeof createSprintBodySchema>;
 
 export const updateSprintStatusSchema = z.object({
-  status: z.enum(['Not Started', 'Ongoing', 'Completed', 'Archived']),
+  status: z.enum(['planned', 'active', 'closed', 'archived']),
   expectedUpdatedAt: expectedUpdatedAtSchema,
 });
 
@@ -41,7 +41,7 @@ export type SprintResponse = {
   id: string;
   name: string;
   goal: string | null;
-  status: 'Not Started' | 'Ongoing' | 'Completed' | 'Archived';
+  status: 'planned' | 'active' | 'closed' | 'archived';
   startDate: string;
   endDate: string;
   createdBy: string;

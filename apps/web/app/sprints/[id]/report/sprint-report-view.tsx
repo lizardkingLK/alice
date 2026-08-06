@@ -255,13 +255,13 @@ export function SprintReportView({
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              {sprint.status === 'Completed' ? (
+              {sprint.status === 'closed' ? (
                 <Badge
                   variant="outline"
                   className="border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 font-semibold text-emerald-600 dark:text-emerald-400"
                 >
                   <CheckCircle className="mr-1 h-3.5 w-3.5 fill-current" />
-                  Completed
+                  closed
                 </Badge>
               ) : (
                 <Badge
@@ -269,7 +269,7 @@ export function SprintReportView({
                   className="border-blue-500/20 bg-blue-500/10 px-2.5 py-0.5 font-semibold text-blue-600 dark:text-blue-400"
                 >
                   <AlertCircle className="mr-1 h-3.5 w-3.5 fill-current" />
-                  Ongoing
+                  active
                 </Badge>
               )}
               {sprint.project && (
@@ -336,7 +336,7 @@ export function SprintReportView({
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground text-xs">
-              {sprint.status === 'Completed'
+              {sprint.status === 'closed'
                 ? 'All planned work items successfully delivered'
                 : 'Current ratio of done vs planned sprint scope'}
             </p>
@@ -415,7 +415,7 @@ export function SprintReportView({
           </CardHeader>
           <CardContent className="text-muted-foreground space-y-3 text-sm">
             <p>
-              {sprint.status === 'Completed'
+              {sprint.status === 'closed'
                 ? `During this iteration, the team focused on aligning dependencies and meeting sprint goals. All ${totalIssues} work items committed to the sprint were brought to completion.`
                 : `This sprint is currently active. The team is collaborating to deliver ${totalIssues} work items. Currently, ${completedIssues} items have been completed.`}
             </p>

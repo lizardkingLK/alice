@@ -296,9 +296,9 @@ export function BacklogWorkspace({
   const displayedSprints = useMemo(() => {
     const byTab =
       activeTab === 'completed'
-        ? sprintList.filter((s) => s.status === 'Completed')
+        ? sprintList.filter((s) => s.status === 'closed')
         : sprintList.filter(
-            (s) => s.status === 'Ongoing' || s.status === 'Not Started'
+            (s) => s.status === 'active' || s.status === 'planned'
           );
 
     if (projectFilter === 'all') {
@@ -342,7 +342,7 @@ export function BacklogWorkspace({
     setActionError(null);
     setIsActionPending(true);
     try {
-      const updatedSprint = await updateSprintStatusWithLock(sprint, 'Ongoing');
+      const updatedSprint = await updateSprintStatusWithLock(sprint, 'active');
       if (!updatedSprint) {
         return;
       }
@@ -376,7 +376,7 @@ export function BacklogWorkspace({
     try {
       const updatedSprint = await updateSprintStatusWithLock(
         sprint,
-        'Completed'
+        'closed'
       );
       if (!updatedSprint) {
         return;

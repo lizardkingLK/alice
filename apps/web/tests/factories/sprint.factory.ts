@@ -19,7 +19,7 @@ export const sprintFactory = {
       id: 'sprint-123',
       name: 'Sprint 1',
       goal: 'Achieve project milestone',
-      status: 'Not Started',
+      status: 'planned',
       startDate: '2026-07-10',
       endDate: '2026-07-24',
       createdBy: 'user-1',

@@ -4,14 +4,7 @@ import { Tables } from '@repo/types';
 
 type DbSprint = Tables<'sprints'>;
 
-export type SprintStatus = 'Not Started' | 'Ongoing' | 'Completed' | 'Archived';
-
-const dbStatusToResponseMap = {
-  planned: 'Not Started',
-  active: 'Ongoing',
-  closed: 'Completed',
-  archived: 'Archived',
-} as const satisfies Record<DbSprint['status'], SprintStatus>;
+export type SprintStatus = 'planned' | 'active' | 'closed' | 'archived';
 
 export type Sprint = Pick<DbSprint, 'id' | 'name' | 'goal'> & {
   status: SprintStatus;
@@ -41,7 +34,7 @@ export function mapDbSprintToSprint(row: DbSprintRelation): Sprint {
     id: row.id,
     name: row.name,
     goal: row.goal,
-    status: dbStatusToResponseMap[row.status] ?? 'Not Started',
+    status: row.status,
     startDate: row.start_date,
     endDate: row.end_date,
     createdBy: row.created_by ?? '',
