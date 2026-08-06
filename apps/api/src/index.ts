@@ -4,15 +4,15 @@ import './config/env';
 import express, { type Express } from 'express';
 
 import useServer from './config/server';
-import securityConfig from './config/security';
 import corsConfig from './config/cors';
 import routesConfig from './config/routing';
 import jsonConfig from './config/json';
-import errorConfig from './middlewares/errors';
+import errorConfig from './config/errors';
+import poweredBy from './config/security';
 
 const app: Express = express();
-securityConfig(app);
 
+app.disable(poweredBy);
 app.use(corsConfig);
 app.use(jsonConfig);
 app.use(routesConfig);
