@@ -580,7 +580,7 @@ export function KanbanBoard({
               key={column.id}
               aria-label={formatLabelWithSpace(column.id)}
               className={cn(
-                'bg-muted/25 flex h-full min-h-128 flex-col rounded-xl border border-t-4 p-3 transition-colors',
+                'bg-muted/25 flex h-full min-h-128 min-w-0 flex-col rounded-xl border border-t-4 p-3 transition-colors',
                 column.accentClassName,
                 isOver && 'border-primary bg-primary/5 border-dashed'
               )}
@@ -594,7 +594,7 @@ export function KanbanBoard({
               </div>
 
               <ScrollArea className="h-0 min-h-0 flex-1 pr-2">
-                <div className="flex flex-col gap-3 pb-1">
+                <div className="flex min-w-0 flex-col gap-3 pb-1">
                   {columnItems.length === 0 ? (
                     <div className="text-muted-foreground flex min-h-40 flex-col items-center justify-center rounded-lg border border-dashed px-4 py-10 text-center text-xs">
                       <FolderDot className="text-muted-foreground/50 mb-2 size-8 stroke-1" />
@@ -620,14 +620,14 @@ export function KanbanBoard({
                             setIsDetailOpen(true);
                           }}
                           className={cn(
-                            'group cursor-grab rounded-l-none border-y-0 border-r-0 border-l-4 py-0 shadow-none active:cursor-grabbing',
+                            'group min-w-0 cursor-grab rounded-l-none border-y-0 border-r-0 border-l-4 py-0 shadow-none active:cursor-grabbing',
                             PRIORITY_BORDER_STYLES[item.priority],
                             (draggedTaskId === item.id ||
                               pendingStatusIds.has(item.id)) &&
                               'opacity-40'
                           )}
                         >
-                          <CardContent className="flex flex-col gap-2 p-3.5">
+                          <CardContent className="flex min-w-0 flex-col gap-2 p-3.5">
                             <div className="flex items-start justify-between gap-2">
                               <span className="text-muted-foreground font-mono text-[10px] font-medium tracking-wider uppercase">
                                 {shortId(item.id)}
@@ -635,7 +635,7 @@ export function KanbanBoard({
                               <PriorityBadge priority={item.priority} />
                             </div>
 
-                            <TruncatedText className="text-foreground group-hover:text-primary w-[17rem] max-w-full text-sm leading-snug font-semibold transition-colors">
+                            <TruncatedText className="text-foreground group-hover:text-primary w-full min-w-0 text-sm leading-snug font-semibold transition-colors">
                               {item.title}
                             </TruncatedText>
 

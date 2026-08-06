@@ -53,9 +53,12 @@ export function createEditorExtensions(
       Placeholder.configure({
         placeholder: options.placeholder,
         showOnlyWhenEditable: true,
-        // Decorate empty nodes, but CSS only paints `is-editor-empty` (whole
-        // doc empty) so trailing empty lines after typing stay placeholder-free.
+        // Decorate empty nodes; only `emptyEditorClass` paints the placeholder
+        // (whole doc empty). Put ::before utilities on that class so Tailwind
+        // keeps working after type → delete / clearContent.
         showOnlyCurrent: false,
+        emptyEditorClass:
+          'is-editor-empty before:pointer-events-none before:float-left before:h-0 before:text-muted-foreground before:content-[attr(data-placeholder)]',
       })
     );
   }

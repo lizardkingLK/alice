@@ -175,7 +175,8 @@ export const CommentEditor = forwardRef<
     () => ({
       focus: () => editor?.commands.focus('end'),
       clear: () => {
-        editor?.commands.setContent(emptyCommentDoc() as JSONContent);
+        // Prefer clearContent so Placeholder re-applies emptyEditorClass.
+        editor?.commands.clearContent(true);
         onChangeRef.current?.(emptyCommentDoc() as JSONContent, '');
       },
       insertText: (text: string) => {

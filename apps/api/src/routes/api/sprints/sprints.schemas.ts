@@ -1,4 +1,8 @@
-import { expectedUpdatedAtSchema, SPRINT_STATUSES, type SprintStatus } from '@repo/types';
+import {
+  expectedUpdatedAtSchema,
+  SPRINT_STATUSES,
+  type SprintStatus,
+} from '@repo/types';
 import { z } from 'zod';
 
 const dateStringSchema = z
