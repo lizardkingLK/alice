@@ -1,6 +1,7 @@
 import type { Project } from '@/app/projects/_services/projects.service.base';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
+import { SprintStatusEnum } from '@repo/types';
 
 /**
  * Prefer owned active projects for managers, else membership, else first active.
@@ -48,13 +49,15 @@ export function resolveDefaultBoardSprint(
     (sprint) => sprint.project?.id === projectId
   );
 
-  const ongoing = forProject.find((sprint) => sprint.status === 'active');
+  const ongoing = forProject.find(
+    (sprint) => sprint.status === SprintStatusEnum.Active
+  );
   if (ongoing) {
     return ongoing;
   }
 
   const notStarted = forProject.find(
-    (sprint) => sprint.status === 'planned'
+    (sprint) => sprint.status === SprintStatusEnum.Planned
   );
   return notStarted ?? forProject[0] ?? null;
 }

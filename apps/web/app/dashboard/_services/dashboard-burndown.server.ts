@@ -2,6 +2,7 @@ import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.servi
 import { getSprintBurndownServer } from '@/app/sprints/_services/sprint-burndown.server';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
+import { SprintStatusEnum } from '@repo/types';
 import type { SprintBurndownPayload } from '@repo/types';
 
 export type DashboardBurndownSprint = Pick<Sprint, 'id' | 'status'> & {
@@ -40,7 +41,9 @@ export async function getDashboardBurndownBootstrap(): Promise<DashboardBurndown
 
   const candidates: DashboardBurndownSprint[] = sprints
     .filter(
-      (sprint) => sprint.status === 'active' || sprint.status === 'planned'
+      (sprint) =>
+        sprint.status === SprintStatusEnum.Active ||
+        sprint.status === SprintStatusEnum.Planned
     )
     .map((sprint) => ({
       id: sprint.id,
@@ -49,7 +52,7 @@ export async function getDashboardBurndownBootstrap(): Promise<DashboardBurndown
     }));
 
   const defaultSprint =
-    candidates.find((sprint) => sprint.status === 'active') ?? candidates[0];
+    candidates.find((sprint) => sprint.status === SprintStatusEnum.Active) ?? candidates[0];
 
   if (!defaultSprint) {
     return { sprints: candidates, defaultSprintId: null, burndown: null };

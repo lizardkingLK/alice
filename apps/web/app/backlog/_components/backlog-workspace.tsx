@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { AlertCircle, HelpCircle } from '@repo/ui/lib/icons';
 import { TooltipProvider } from '@repo/ui/components/ui/tooltip';
+import { SprintStatusEnum } from '@repo/types';
 
 import { useBacklogLayout } from '@/app/backlog/_components/backlog-layout-menu';
 import { BacklogToolbar } from '@/app/backlog/_components/backlog-toolbar';
@@ -296,9 +297,11 @@ export function BacklogWorkspace({
   const displayedSprints = useMemo(() => {
     const byTab =
       activeTab === 'completed'
-        ? sprintList.filter((s) => s.status === 'closed')
+        ? sprintList.filter((s) => s.status === SprintStatusEnum.Closed)
         : sprintList.filter(
-            (s) => s.status === 'active' || s.status === 'planned'
+            (s) =>
+              s.status === SprintStatusEnum.Active ||
+              s.status === SprintStatusEnum.Planned
           );
 
     if (projectFilter === 'all') {

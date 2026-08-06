@@ -1,6 +1,7 @@
 import {
   computeBurndown,
   mapSprintRowToResponse,
+  SprintStatusEnum,
   type SprintBurndownPayload,
   type SprintResponse,
 } from '@repo/types';
@@ -56,7 +57,7 @@ export class SprintsService {
   ): Promise<SprintResponse> {
     await requireManagerOrAdmin(userId);
 
-    if (status === 'active') {
+    if (status === SprintStatusEnum.Active) {
       const count = await this.sprints.getWorkItemCount(sprintId);
       if (count === 0) {
         throw new Error(
@@ -65,7 +66,7 @@ export class SprintsService {
       }
     }
 
-    if (status === 'closed') {
+    if (status === SprintStatusEnum.Closed) {
       const count = await this.sprints.getWorkItemCount(sprintId);
       if (count === 0) {
         throw new Error(
@@ -82,14 +83,14 @@ export class SprintsService {
       }
     }
 
-    if (status === 'archived') {
+    if (status === SprintStatusEnum.Archived) {
       const currentSprint = await this.sprints.findById(sprintId);
       if (!currentSprint) {
         throw new Error('Sprint not found');
       }
       if (
-        currentSprint.status === 'planned' ||
-        currentSprint.status === 'active'
+        currentSprint.status === SprintStatusEnum.Planned ||
+        currentSprint.status === SprintStatusEnum.Active
       ) {
         throw new Error('Cannot archive active or planned sprints.');
       }
@@ -117,7 +118,7 @@ export class SprintsService {
     if (!currentSprint) {
       throw new Error('Sprint not found');
     }
-    if (currentSprint.status === 'archived') {
+    if (currentSprint.status === SprintStatusEnum.Archived) {
       throw new Error('Cannot edit an archived sprint');
     }
 

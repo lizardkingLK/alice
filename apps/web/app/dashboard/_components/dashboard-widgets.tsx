@@ -36,6 +36,7 @@ import { readBoardDefaults } from '@/app/board/_helpers/board-defaults-storage';
 import { ALL_PROJECTS_ID } from '@/app/board/_helpers/workspace-defaults-shared';
 import { loadSprintBurndownAction } from '@/app/dashboard/_components/actions';
 import type { DashboardBurndownBootstrap } from '@/app/dashboard/_services/dashboard-burndown.server';
+import { SprintStatusEnum } from '@repo/types';
 import type { SprintBurndownPayload } from '@repo/types';
 
 const widgetById = Object.fromEntries(
@@ -267,8 +268,8 @@ function selectBurndownSprint(
     (preference?.sprintId
       ? candidates.find((sprint) => sprint.id === preference.sprintId)
       : undefined) ??
-    candidates.find((sprint) => sprint.status === 'active') ??
-    candidates.find((sprint) => sprint.status === 'planned') ??
+    candidates.find((sprint) => sprint.status === SprintStatusEnum.Active) ??
+    candidates.find((sprint) => sprint.status === SprintStatusEnum.Planned) ??
     candidates[0]
   );
 }
