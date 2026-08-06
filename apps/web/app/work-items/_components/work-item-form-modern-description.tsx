@@ -3,7 +3,10 @@
 import { useEffect } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { createEditorExtensions } from '@/lib/editor/create-editor-extensions';
-import { getCompactEditorAttributes } from '@/lib/editor/compact-editor-attrs';
+import {
+  getCompactEditorAttributes,
+  MODERN_BORDERLESS_FOCUS_CLASSES,
+} from '@/lib/editor/compact-editor-attrs';
 import { CompactEditorBubbleToolbar } from '@/lib/editor/compact-editor-bubble-toolbar';
 
 type WorkItemFormModernDescriptionProps = {
@@ -29,6 +32,7 @@ export function WorkItemFormModernDescription({
       attributes: getCompactEditorAttributes({
         ariaLabel: 'Description',
         size: 'lg',
+        className: MODERN_BORDERLESS_FOCUS_CLASSES,
       }),
     },
   });
@@ -56,7 +60,7 @@ export function WorkItemFormModernDescription({
   if (!editor) {
     return (
       <div
-        className="text-muted-foreground/70 border-border/60 min-h-16 rounded-md border border-dashed px-3 py-2 text-lg"
+        className="text-muted-foreground/70 min-h-16 px-3 py-2 text-lg"
         aria-label="Description"
       >
         Add a description…
@@ -67,9 +71,7 @@ export function WorkItemFormModernDescription({
   return (
     <div className="relative">
       <CompactEditorBubbleToolbar editor={editor} />
-      <div className="border-border/60 relative rounded-md border border-dashed">
-        <EditorContent editor={editor} />
-      </div>
+      <EditorContent editor={editor} />
     </div>
   );
 }
