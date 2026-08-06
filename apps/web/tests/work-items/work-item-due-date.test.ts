@@ -1,15 +1,13 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
-import {
-  isWorkItemOverdue,
-  toDateOnly,
-} from '@/app/work-items/_helpers/work-item-due-date';
+import { toDateOnly } from '@repo/types';
+import { isWorkItemOverdue } from '@/app/work-items/_helpers/work-item-due-date';
 
 describe('work-item-due-date', () => {
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it('normalizes ISO timestamps to date-only', () => {
+  it('normalizes ISO timestamps to date-only via @repo/types', () => {
     expect(toDateOnly('2026-07-31T12:00:00.000Z')).toBe('2026-07-31');
     expect(toDateOnly(null)).toBeNull();
   });

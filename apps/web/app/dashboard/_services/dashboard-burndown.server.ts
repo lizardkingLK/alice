@@ -52,8 +52,7 @@ export async function getDashboardBurndownBootstrap(): Promise<DashboardBurndown
     }));
 
   const defaultSprint =
-    candidates.find((sprint) => sprint.status === SprintStatusEnum.Active) ??
-    candidates[0];
+    candidates.find((sprint) => sprint.status === SprintStatusEnum.Active) ?? candidates[0];
 
   if (!defaultSprint) {
     return { sprints: candidates, defaultSprintId: null, burndown: null };

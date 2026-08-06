@@ -35,3 +35,4 @@ const errorConfig: ErrorRequestHandler = (err, _req, res, _next) => {
 };
 
 export default errorConfig;
+

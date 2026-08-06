@@ -1,9 +1,4 @@
-import {
-  projectRelationSelect,
-  type Database,
-  type SprintRowWithProject,
-  type Tables,
-} from '@repo/types';
+import { projectRelationSelect, type Database, type SprintRowWithProject, type Tables } from '@repo/types';
 import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
 import type { SupabaseClient } from '@supabase/supabase-js';
 

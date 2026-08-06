@@ -9,6 +9,7 @@ export type Sprint = SprintResponse;
 /** Re-export the shared DB row type under its original local name. */
 export type DbSprintRelation = SprintRowWithProject;
 
+
 export type CreateSprintInput = {
   name: Tables<'sprints'>['name'];
   goal?: Tables<'sprints'>['goal'];
