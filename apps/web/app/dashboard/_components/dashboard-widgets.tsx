@@ -267,8 +267,8 @@ function selectBurndownSprint(
     (preference?.sprintId
       ? candidates.find((sprint) => sprint.id === preference.sprintId)
       : undefined) ??
-    candidates.find((sprint) => sprint.status === 'Ongoing') ??
-    candidates.find((sprint) => sprint.status === 'Not Started') ??
+    candidates.find((sprint) => sprint.status === 'active') ??
+    candidates.find((sprint) => sprint.status === 'planned') ??
     candidates[0]
   );
 }

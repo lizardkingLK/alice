@@ -64,13 +64,13 @@ type SprintListProps = {
 };
 
 const STATUS_STYLES = {
-  'Not Started':
+  planned:
     'border-rose-500/20 bg-rose-500/10 text-rose-500 dark:border-rose-500/30 dark:bg-rose-500/20 dark:text-rose-400',
-  Ongoing:
+  active:
     'border-blue-500/20 bg-blue-500/10 text-blue-500 dark:border-blue-500/30 dark:bg-blue-500/20 dark:text-blue-400',
-  Completed:
+  closed:
     'border-emerald-500/20 bg-emerald-500/10 text-emerald-500 dark:border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-400',
-  Archived:
+  archived:
     'border-amber-500/20 bg-amber-500/10 text-amber-500 dark:border-amber-500/30 dark:bg-amber-500/20 dark:text-amber-400',
 } as const;
 
@@ -88,7 +88,18 @@ export function SprintStatusDropdown({
         STATUS_STYLES[sprint.status]
       )}
     >
-      {sprint.status}
+      {(() => {
+        switch (sprint.status) {
+          case 'planned':
+            return 'Planned';
+          case 'active':
+            return 'Active';
+          case 'closed':
+            return 'Closed';
+          default:
+            return 'Archived';
+        }
+      })()}
     </span>
   );
 }
@@ -184,9 +195,9 @@ function renderActionsHeader() {
 function renderActionsCell({ row, table }: CellContext<Sprint, unknown>) {
   const meta = getSprintTableMeta(table);
   const sprint = row.original;
-  const showEdit = meta.onEditSprint && sprint.status !== 'Archived';
-  const showArchive = meta.onArchiveSprint && sprint.status === 'Completed';
-  const showRestore = meta.onRestoreSprint && sprint.status === 'Archived';
+  const showEdit = meta.onEditSprint && sprint.status !== 'archived';
+  const showArchive = meta.onArchiveSprint && sprint.status === 'closed';
+  const showRestore = meta.onRestoreSprint && sprint.status === 'archived';
 
   if (!showEdit && !showArchive && !showRestore) {
     return null;

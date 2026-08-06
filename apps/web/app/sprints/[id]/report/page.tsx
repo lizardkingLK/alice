@@ -28,7 +28,7 @@ export default async function SprintReportPage({ params }: ReportPageProps) {
   }
 
   const isValidStatus =
-    sprint.status === 'Completed' || sprint.status === 'Ongoing';
+    sprint.status === 'closed' || sprint.status === 'active';
 
   if (!isValidStatus) {
     return (

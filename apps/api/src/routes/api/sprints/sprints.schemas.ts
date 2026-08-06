@@ -1,4 +1,4 @@
-import { expectedUpdatedAtSchema } from '@repo/types';
+import { expectedUpdatedAtSchema, SPRINT_STATUSES, type SprintStatus } from '@repo/types';
 import { z } from 'zod';
 
 const dateStringSchema = z
@@ -25,7 +25,7 @@ export const createSprintBodySchema = refineSprintDates(sprintBodyObjectSchema);
 export type CreateSprintBody = z.infer<typeof createSprintBodySchema>;
 
 export const updateSprintStatusSchema = z.object({
-  status: z.enum(['Not Started', 'Ongoing', 'Completed', 'Archived']),
+  status: z.enum(SPRINT_STATUSES),
   expectedUpdatedAt: expectedUpdatedAtSchema,
 });
 
@@ -41,7 +41,7 @@ export type SprintResponse = {
   id: string;
   name: string;
   goal: string | null;
-  status: 'Not Started' | 'Ongoing' | 'Completed' | 'Archived';
+  status: SprintStatus;
   startDate: string;
   endDate: string;
   createdBy: string;

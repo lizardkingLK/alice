@@ -192,7 +192,7 @@ export function BacklogStartSprintDialog({
                 This sprint contains{' '}
                 <span className="font-semibold">{itemCount}</span> work items.
                 Starting it will change its status to{' '}
-                <span className="text-primary font-semibold">Ongoing</span>
+                <span className="text-primary font-semibold">Active</span>
                 {'.'}
               </p>
             )}

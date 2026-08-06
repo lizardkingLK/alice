@@ -1,17 +1,9 @@
-import { projectRelationSelect, type Tables } from '@repo/types';
+import { projectRelationSelect, type SprintRowWithProject, type Tables } from '@repo/types';
 import { supabase } from '../../../lib/supabase';
 import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type SprintRow = Tables<'sprints'>;
-
-export type SprintRowWithProject = SprintRow & {
-  project?: {
-    id: string;
-    name: string;
-    key: string;
-  } | null;
-};
 
 const SPRINT_WITH_PROJECT = `*, ${projectRelationSelect()}`;
 
