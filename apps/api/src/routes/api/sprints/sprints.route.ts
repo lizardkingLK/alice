@@ -105,7 +105,9 @@ export function createSprintsRouter(deps: SprintsRouterDeps): Router {
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const burndown = await sprintBurndownService.getBurndown(req.params.id!);
+        const burndown = await sprintBurndownService.getBurndown(
+          req.params.id!
+        );
         if (!burndown) {
           return res.status(404).json({ error: 'Sprint not found' });
         }

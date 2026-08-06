@@ -144,7 +144,7 @@ describe('WorkItemsTable', () => {
       type: 'Story',
       status: 'InProgress',
       priority: 'high',
-      due_date: '2026-07-31',
+      due_date: '2026-12-31',
       assignee_id: assignee.id,
       assignee: {
         id: assignee.id,
@@ -167,6 +167,44 @@ describe('WorkItemsTable', () => {
     expect(screen.getByText('High')).toBeInTheDocument();
     expect(screen.getByText('Gavin Belson')).toBeInTheDocument();
     expect(screen.getByText('GB')).toBeInTheDocument();
+    expect(screen.getByText(formatDate('2026-12-31'))).toBeInTheDocument();
+  });
+
+  it('shows Overdue pill for past due dates when status is not Done', () => {
+    const item = workItemFactory.build({
+      title: 'Late story',
+      status: 'InProgress',
+      due_date: '2026-07-31',
+    });
+
+    renderTable({
+      initialWorkItems: [item],
+      totalCount: 1,
+      totalPages: 1,
+    });
+
+    const overdue = screen.getByText('Overdue');
+    expect(overdue).toBeInTheDocument();
+    expect(overdue.closest('[title]')).toHaveAttribute(
+      'title',
+      formatDate('2026-07-31')
+    );
+  });
+
+  it('keeps plain due date for Done work items even when past due', () => {
+    const item = workItemFactory.build({
+      title: 'Finished late',
+      status: 'Done',
+      due_date: '2026-07-31',
+    });
+
+    renderTable({
+      initialWorkItems: [item],
+      totalCount: 1,
+      totalPages: 1,
+    });
+
+    expect(screen.queryByText('Overdue')).not.toBeInTheDocument();
     expect(screen.getByText(formatDate('2026-07-31'))).toBeInTheDocument();
   });
 
