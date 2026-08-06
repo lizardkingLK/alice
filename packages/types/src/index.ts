@@ -23,6 +23,7 @@ export * from './attachments.js';
 export * from './work-item-worklogs.js';
 export * from './work-item-status.js';
 export * from './sprint-status.js';
+export * from './sprint-response.js';
 export * from './work-item-types.js';
 export * from './work-item-priorities.js';
 export * from './access-allowlist.js';
