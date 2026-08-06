@@ -31,3 +31,4 @@ export * from './sprint-burndown.js';
 export * from './optimistic-lock.js';
 export * from './tiptap-node-attrs.js';
 export * from './comment-content.js';
+export * from './date-only.js';

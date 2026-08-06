@@ -19,12 +19,14 @@ import {
 import { formatDate } from '@/app/_shared/utility';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
+import { WorkItemOverdueBadge } from '@/app/work-items/_components/workItem-badge-overdue';
 import { WorkItemTypeBadge } from '@/app/work-items/_components/workItem-badge-type';
 import type {
   DisplayRow,
   HierarchyRendererProps,
 } from '@/app/work-items/_components/workItems-table-types';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import { isWorkItemOverdue } from '@/app/work-items/_helpers/work-item-due-date';
 import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
 import { UserAvatar } from '@/components/user-avatar';
 import Link from 'next/link';
@@ -149,11 +151,15 @@ const assigneeRenderer = ({
   );
 };
 
-const dueDateRenderer = ({ row }: HierarchyRendererProps) => (
-  <span className="text-muted-foreground">
-    {formatDate(row.original.workItem.due_date)}
-  </span>
-);
+const dueDateRenderer = ({ row }: HierarchyRendererProps) => {
+  const { due_date: dueDate, status } = row.original.workItem;
+
+  if (dueDate && isWorkItemOverdue(dueDate, status)) {
+    return <WorkItemOverdueBadge dueDate={dueDate} />;
+  }
+
+  return <span className="text-muted-foreground">{formatDate(dueDate)}</span>;
+};
 
 const actionsHeaderRenderer = () => <span className="sr-only">Actions</span>;
 
