@@ -44,6 +44,7 @@ import type { WorkItemFormSharedFieldProps } from '@/app/work-items/_components/
 import { WorkItemFormModernDescription } from '@/app/work-items/_components/work-item-form-modern-description';
 import { WorkItemPrioritySelect } from '@/app/work-items/_components/work-item-priority-select';
 import { WORK_ITEM_TYPE_ICONS } from '@/app/work-items/_helpers/work-item-type';
+import { MODERN_BORDERLESS_FOCUS_CLASSES } from '@/lib/editor/compact-editor-attrs';
 
 export type WorkItemFormModernFieldsProps = WorkItemFormSharedFieldProps;
 
@@ -211,7 +212,10 @@ export function WorkItemFormModernFields({
           name="title"
           placeholder="Title"
           aria-label="Title"
-          className="placeholder:text-muted-foreground/70 border-border/40 focus-visible:border-border/40 h-auto rounded-md border border-dashed bg-transparent! pr-10 pl-3 text-2xl! font-semibold shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          className={cn(
+            'placeholder:text-muted-foreground/70 h-auto rounded-md bg-transparent! pr-10 pl-3 text-2xl! font-semibold',
+            MODERN_BORDERLESS_FOCUS_CLASSES
+          )}
         />
 
         <WorkItemFormModernDescription onJsonChange={handleDescriptionChange} />
