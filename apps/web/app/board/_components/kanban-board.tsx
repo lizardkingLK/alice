@@ -55,8 +55,8 @@ import { BoardDefaultsDialog } from '@/app/board/_components/board-defaults-dial
 import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
 import {
-  applyProjectFilterToSearchParams,
-  buildSprintFilterOptions,
+  buildSprintFilterOptionsForQuery,
+  pushOptimisticProjectFilter,
 } from '@/app/board/_services/board-defaults';
 import type { Project } from '@/app/projects/_services/projects.service.base';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
@@ -158,27 +158,47 @@ export function KanbanBoard({
     suggestedDefaults,
   });
 
+  const projectQuery = useQueryFilter('project', projectFilter);
   const sprintQuery = useQueryFilter('sprint', sprintFilter);
+  const { setValue: setProjectFilterValue, allValue: projectAllValue } =
+    projectQuery;
+  const { setValue: setSprintFilterValue } = sprintQuery;
 
   const handleProjectChange = useCallback(
     (nextProject: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      applyProjectFilterToSearchParams(params, {
+      pushOptimisticProjectFilter({
+        searchParams,
         nextProject,
         sprints,
+        allValue: projectAllValue,
         pageMode: 'delete',
+        pathname,
+        push: (href) => router.push(href),
+        setProjectValue: setProjectFilterValue,
+        setSprintValue: setSprintFilterValue,
       });
-      const query = params.toString();
-      router.push(query ? `${pathname}?${query}` : pathname);
     },
-    [pathname, router, searchParams, sprints]
+    [
+      pathname,
+      projectAllValue,
+      router,
+      searchParams,
+      setProjectFilterValue,
+      setSprintFilterValue,
+      sprints,
+    ]
   );
 
-  const projectSelectValue = projectFilter || 'all';
   const sprintOptions = useMemo(
-    () => buildSprintFilterOptions(sprints, projectFilter),
-    [projectFilter, sprints]
+    () =>
+      buildSprintFilterOptionsForQuery(
+        sprints,
+        projectQuery.value,
+        projectAllValue
+      ),
+    [projectAllValue, projectQuery.value, sprints]
   );
+
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [activeDropCol, setActiveDropCol] = useState<BoardStatus | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -225,6 +245,8 @@ export function KanbanBoard({
     setPriorityFilter('all');
     setAssigneeFilter(null);
     if (urlFiltersActive) {
+      setProjectFilterValue(projectAllValue);
+      setSprintFilterValue(sprintQuery.allValue);
       resetUrlFilters();
     }
   };
@@ -430,9 +452,9 @@ export function KanbanBoard({
             />
 
             <ListFilterSelect
-              value={projectSelectValue}
+              value={projectQuery.value}
               onValueChange={handleProjectChange}
-              allValue="all"
+              allValue={projectQuery.allValue}
               allLabel="All Projects"
               ariaLabel="Filter by project"
               placeholder="All Projects"

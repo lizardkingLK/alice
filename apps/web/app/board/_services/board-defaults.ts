@@ -76,6 +76,16 @@ export function buildSprintFilterOptions(
   }));
 }
 
+/** Scope sprint options by an optimistic list-filter project value (`all` → unscoped). */
+export function buildSprintFilterOptionsForQuery(
+  sprints: readonly Sprint[],
+  projectValue: string,
+  allValue: string = 'all'
+): { readonly value: string; readonly label: string }[] {
+  const scopedProject = projectValue === allValue ? '' : projectValue;
+  return buildSprintFilterOptions(sprints, scopedProject);
+}
+
 /**
  * Mutates search params when the project filter changes: clears sprint on
  * "all", otherwise pairs the project with a suggested default sprint.
@@ -114,6 +124,43 @@ export function applyProjectFilterToSearchParams(
   } else if (options.pageMode === 'delete') {
     params.delete('page');
   }
+}
+
+/**
+ * Optimistic project filter change: rewrite URL params, update local select
+ * state immediately, then navigate (shared by board + work-items).
+ */
+export function pushOptimisticProjectFilter(options: {
+  readonly searchParams: { readonly toString: () => string };
+  readonly nextProject: string;
+  readonly sprints: readonly Sprint[];
+  readonly allValue: string;
+  readonly pageMode: 'delete' | 'one';
+  readonly pathname: string;
+  // eslint-disable-next-line no-unused-vars -- navigate callback
+  readonly push: (href: string) => void;
+  // eslint-disable-next-line no-unused-vars -- optimistic setter
+  readonly setProjectValue: (value: string) => void;
+  // eslint-disable-next-line no-unused-vars -- optimistic setter
+  readonly setSprintValue: (value: string) => void;
+  /** Extra param tweaks after project/sprint pairing (e.g. list view). */
+  // eslint-disable-next-line no-unused-vars -- optional mutate hook
+  readonly afterApply?: (params: URLSearchParams) => void;
+}): void {
+  const params = new URLSearchParams(options.searchParams.toString());
+  applyProjectFilterToSearchParams(params, {
+    nextProject: options.nextProject,
+    sprints: options.sprints,
+    allValue: options.allValue,
+    pageMode: options.pageMode,
+  });
+  options.afterApply?.(params);
+
+  options.setProjectValue(options.nextProject);
+  options.setSprintValue(params.get('sprint') ?? options.allValue);
+
+  const query = params.toString();
+  options.push(query ? `${options.pathname}?${query}` : options.pathname);
 }
 
 export function buildWorkspaceFilterRedirectPath(

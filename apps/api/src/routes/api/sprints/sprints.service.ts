@@ -157,8 +157,7 @@ export class SprintBurndownService {
       return null;
     }
 
-    const items =
-      await this.burndownRepo.getWorkItemsForBurndown(sprintId);
+    const items = await this.burndownRepo.getWorkItemsForBurndown(sprintId);
     const workItemIds = items.map((i) => i.id);
     const workLogs =
       await this.burndownRepo.getWorkLogsForWorkItems(workItemIds);

@@ -29,7 +29,8 @@ export default async function SprintReportPage({ params }: ReportPageProps) {
   }
 
   const isValidStatus =
-    sprint.status === SprintStatusEnum.Closed || sprint.status === SprintStatusEnum.Active;
+    sprint.status === SprintStatusEnum.Closed ||
+    sprint.status === SprintStatusEnum.Active;
 
   if (!isValidStatus) {
     return (

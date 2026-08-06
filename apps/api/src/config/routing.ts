@@ -25,4 +25,3 @@ routesConfig.use('/api/workItems', workItems.router);
 routesConfig.use('/api/accessAllowlist', accessAllowlistRouter);
 
 export default routesConfig;
-
