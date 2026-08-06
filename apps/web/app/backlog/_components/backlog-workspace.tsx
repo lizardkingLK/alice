@@ -374,7 +374,10 @@ export function BacklogWorkspace({
     setActionError(null);
     setIsActionPending(true);
     try {
-      const updatedSprint = await updateSprintStatusWithLock(sprint, 'closed');
+      const updatedSprint = await updateSprintStatusWithLock(
+        sprint,
+        'closed'
+      );
       if (!updatedSprint) {
         return;
       }

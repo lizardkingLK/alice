@@ -7,6 +7,7 @@ import StarterKit from '@tiptap/starter-kit';
 import { all, createLowlight } from 'lowlight';
 import CodeBlockNodeView from '@/app/work-items/_components/workItem-description-editor-nodeView';
 import { CustomLinkExtension } from '@/lib/editor/tiptap-link-configuration';
+import { EDITOR_EMPTY_PLACEHOLDER_CLASS } from '@/lib/editor/editor-placeholder-classes';
 
 export type EditorExtensionMode = 'compact' | 'full';
 
@@ -57,8 +58,7 @@ export function createEditorExtensions(
         // (whole doc empty). Put ::before utilities on that class so Tailwind
         // keeps working after type → delete / clearContent.
         showOnlyCurrent: false,
-        emptyEditorClass:
-          'is-editor-empty before:pointer-events-none before:float-left before:h-0 before:text-muted-foreground before:content-[attr(data-placeholder)]',
+        emptyEditorClass: EDITOR_EMPTY_PLACEHOLDER_CLASS,
       })
     );
   }

@@ -1,9 +1,4 @@
-import {
-  projectRelationSelect,
-  type SprintRowWithProject,
-  type Tables,
-} from '@repo/types';
-import { supabase } from '../../../lib/supabase';
+import { projectRelationSelect, type Database, type SprintRowWithProject, type Tables } from '@repo/types';
 import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -21,8 +16,10 @@ export type CreateSprintRecord = {
 };
 
 export class SprintsRepository {
+  constructor(private readonly db: SupabaseClient<Database>) {}
+
   async create(input: CreateSprintRecord): Promise<SprintRowWithProject> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('sprints')
       .insert({
         name: input.name,
@@ -50,7 +47,7 @@ export class SprintsRepository {
     status: SprintRow['status'],
     expectedUpdatedAt: string
   ): Promise<SprintRowWithProject> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('sprints')
       .update({
         status,
@@ -71,7 +68,7 @@ export class SprintsRepository {
   }
 
   async getWorkItemCount(sprintId: string): Promise<number> {
-    const { count, error } = await supabase
+    const { count, error } = await this.db
       .from('work_items')
       .select('*', { count: 'exact', head: true })
       .eq('sprint_id', sprintId);
@@ -85,7 +82,7 @@ export class SprintsRepository {
   }
 
   async getIncompleteWorkItemCount(sprintId: string): Promise<number> {
-    const { count, error } = await supabase
+    const { count, error } = await this.db
       .from('work_items')
       .select('*', { count: 'exact', head: true })
       .eq('sprint_id', sprintId)
@@ -103,7 +100,7 @@ export class SprintsRepository {
   }
 
   async findById(sprintId: string): Promise<SprintRowWithProject | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('sprints')
       .select(SPRINT_WITH_PROJECT)
       .eq('id', sprintId)
@@ -129,7 +126,7 @@ export class SprintsRepository {
     },
     expectedUpdatedAt: string
   ): Promise<SprintRowWithProject> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('sprints')
       .update({
         name: input.name,
@@ -160,11 +157,11 @@ export type BurndownWorkItem = {
   done_at: string | null;
 };
 
-export const sprintsRepository = new SprintsRepository();
-
 export class SprintBurndownRepository {
+  constructor(private readonly db: SupabaseClient<Database>) {}
+
   async getSprintById(sprintId: string): Promise<SprintRow | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('sprints')
       .select('id, name, start_date, end_date, status, project_id')
       .eq('id', sprintId)
@@ -182,7 +179,7 @@ export class SprintBurndownRepository {
   }
 
   async getWorkItemsForBurndown(sprintId: string): Promise<BurndownWorkItem[]> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('work_items')
       .select('id, story_points, done_at')
       .eq('sprint_id', sprintId);
@@ -207,7 +204,7 @@ export class SprintBurndownRepository {
 
     // New table isn't in generated `@repo/types` yet.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = supabase as unknown as SupabaseClient<any>;
+    const db = this.db as unknown as SupabaseClient<any>;
 
     const { data, error } = await db
       .from('work_item_worklogs')
@@ -225,5 +222,3 @@ export class SprintBurndownRepository {
     return (data ?? []) as Array<{ logged_at: string; logged_hours: number }>;
   }
 }
-
-export const sprintBurndownRepository = new SprintBurndownRepository();

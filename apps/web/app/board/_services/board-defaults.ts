@@ -53,7 +53,9 @@ export function resolveDefaultBoardSprint(
     return ongoing;
   }
 
-  const notStarted = forProject.find((sprint) => sprint.status === 'planned');
+  const notStarted = forProject.find(
+    (sprint) => sprint.status === 'planned'
+  );
   return notStarted ?? forProject[0] ?? null;
 }
 

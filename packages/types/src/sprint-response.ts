@@ -29,9 +29,7 @@ export type SprintRowWithProject = DbSprint & {
 };
 
 /** Map a DB sprint row (snake_case) to the camel-case API response shape. */
-export function mapSprintRowToResponse(
-  row: SprintRowWithProject
-): SprintResponse {
+export function mapSprintRowToResponse(row: SprintRowWithProject): SprintResponse {
   return {
     id: row.id,
     name: row.name,
