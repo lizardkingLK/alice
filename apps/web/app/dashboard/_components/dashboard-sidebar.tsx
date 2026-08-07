@@ -16,6 +16,7 @@ import {
   CircleHelp,
   BookOpen,
   Map,
+  MessageSquare,
   type LucideIcon,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
@@ -50,6 +51,7 @@ const PLATFORM_NAV: readonly NavItem[] = [
   { path: '/board', label: 'Board', icon: Kanban },
   { path: '/work-items', label: 'Work Items', icon: ClipboardPenIcon },
   { path: '/member', label: 'My Work', icon: CircleDot },
+  { path: '/chat', label: 'Chatbot', icon: MessageSquare },
 ];
 
 const SYSTEM_NAV: readonly NavItem[] = [

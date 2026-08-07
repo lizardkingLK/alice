@@ -10,7 +10,9 @@
     "CYPRESS_TEST_USER_PASSWORD",
     "JIRA_API_TOKEN",
     "JIRA_EMAIL",
-    "CRON_SECRET"
+    "CRON_SECRET",
+    "GEMINI_API_KEY",
+    "GEMINI_API_URL"
   ],
   "tasks": {
     "build": {
