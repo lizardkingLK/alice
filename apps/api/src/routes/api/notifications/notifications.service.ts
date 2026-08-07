@@ -4,6 +4,7 @@ import {
   AssignNotification,
   MentionNotification,
   DueDateNotification,
+  todayDateString,
 } from '@repo/types';
 
 export class NotificationsService {
@@ -188,14 +189,10 @@ export class NotificationsService {
   }
 
   async checkAndSendDueDateNotifications() {
-    
-    const TZ = 'Asia/Colombo';
-    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: TZ });
+    const todayStr = todayDateString();
     const tomorrowDate = new Date();
     tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-    const tomorrowStr = tomorrowDate.toLocaleDateString('en-CA', {
-      timeZone: TZ,
-    });
+    const tomorrowStr = todayDateString(tomorrowDate);
 
     // Fetch active work items (not Done status) with assignee and due date matching today or tomorrow
     const { data: workItems, error: fetchError } = await supabase
