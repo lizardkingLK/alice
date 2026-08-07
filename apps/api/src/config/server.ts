@@ -19,9 +19,16 @@ async function reservePort() {
   }
 }
 
-export default async function startServer(app: Express) {
+async function startServer(app: Express) {
   const port = await reservePort();
   app.listen(port, () =>
     console.log(`info. listening on http://localhost:${port}`)
   );
+}
+
+/** Listen locally; on Vercel the platform invokes the exported app directly. */
+export default function useServer(app: Express): void {
+  if (!process.env.VERCEL) {
+    void startServer(app);
+  }
 }

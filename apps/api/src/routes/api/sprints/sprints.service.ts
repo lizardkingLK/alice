@@ -1,14 +1,15 @@
-import { computeBurndown, type SprintBurndownPayload } from '@repo/types';
-import type {
-  CreateSprintBody,
-  SprintResponse,
-  UpdateSprintBody,
-} from './sprints.schemas';
 import {
-  sprintsRepository,
-  sprintBurndownRepository,
-  type SprintRowWithProject,
-  type SprintRow,
+  computeBurndown,
+  mapSprintRowToResponse,
+  SprintStatusEnum,
+  type SprintBurndownPayload,
+  type SprintResponse,
+} from '@repo/types';
+import type { CreateSprintBody, UpdateSprintBody } from './sprints.schemas';
+import type {
+  SprintsRepository,
+  SprintBurndownRepository,
+  SprintRow,
 } from './sprints.repository';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
 
@@ -25,39 +26,9 @@ async function requireManagerOrAdmin(actorId: string) {
   );
 }
 
-const dbStatusToResponseMap: Record<
-  'planned' | 'active' | 'closed' | 'archived',
-  'Not Started' | 'Ongoing' | 'Completed' | 'Archived'
-> = {
-  planned: 'Not Started',
-  active: 'Ongoing',
-  closed: 'Completed',
-  archived: 'Archived',
-};
-
-function toSprintResponse(row: SprintRowWithProject): SprintResponse {
-  return {
-    id: row.id,
-    name: row.name,
-    goal: row.goal,
-    status: dbStatusToResponseMap[row.status] || 'Not Started',
-    startDate: row.start_date,
-    endDate: row.end_date,
-    createdBy: row.created_by ?? '',
-    updatedBy: row.updated_by,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    project: row.project
-      ? {
-          id: row.project.id,
-          name: row.project.name,
-          key: row.project.key,
-        }
-      : null,
-  };
-}
-
 export class SprintsService {
+  constructor(private readonly sprints: SprintsRepository) {}
+
   async createSprint(
     userId: string,
     input: CreateSprintBody
@@ -66,7 +37,7 @@ export class SprintsService {
     const goal =
       input.goal === undefined || input.goal === '' ? null : input.goal;
 
-    const row = await sprintsRepository.create({
+    const row = await this.sprints.create({
       name: input.name,
       goal,
       projectId: input.projectId,
@@ -75,7 +46,7 @@ export class SprintsService {
       createdBy: userId,
     });
 
-    return toSprintResponse(row);
+    return mapSprintRowToResponse(row);
   }
 
   async updateSprintStatus(
@@ -86,8 +57,8 @@ export class SprintsService {
   ): Promise<SprintResponse> {
     await requireManagerOrAdmin(userId);
 
-    if (status === 'active') {
-      const count = await sprintsRepository.getWorkItemCount(sprintId);
+    if (status === SprintStatusEnum.Active) {
+      const count = await this.sprints.getWorkItemCount(sprintId);
       if (count === 0) {
         throw new Error(
           "If sprint haven't any work items cannot start the sprint."
@@ -95,8 +66,8 @@ export class SprintsService {
       }
     }
 
-    if (status === 'closed') {
-      const count = await sprintsRepository.getWorkItemCount(sprintId);
+    if (status === SprintStatusEnum.Closed) {
+      const count = await this.sprints.getWorkItemCount(sprintId);
       if (count === 0) {
         throw new Error(
           "If sprint haven't any work items cannot complete the sprint."
@@ -104,7 +75,7 @@ export class SprintsService {
       }
 
       const incompleteCount =
-        await sprintsRepository.getIncompleteWorkItemCount(sprintId);
+        await this.sprints.getIncompleteWorkItemCount(sprintId);
       if (incompleteCount > 0) {
         throw new Error(
           "Can't complete the sprint all the work items are not done."
@@ -112,26 +83,26 @@ export class SprintsService {
       }
     }
 
-    if (status === 'archived') {
-      const currentSprint = await sprintsRepository.findById(sprintId);
+    if (status === SprintStatusEnum.Archived) {
+      const currentSprint = await this.sprints.findById(sprintId);
       if (!currentSprint) {
         throw new Error('Sprint not found');
       }
       if (
-        currentSprint.status === 'planned' ||
-        currentSprint.status === 'active'
+        currentSprint.status === SprintStatusEnum.Planned ||
+        currentSprint.status === SprintStatusEnum.Active
       ) {
-        throw new Error('Cannot archive ongoing or not started sprints.');
+        throw new Error('Cannot archive active or planned sprints.');
       }
     }
 
-    const row = await sprintsRepository.updateStatus(
+    const row = await this.sprints.updateStatus(
       userId,
       sprintId,
       status,
       expectedUpdatedAt
     );
-    return toSprintResponse(row);
+    return mapSprintRowToResponse(row);
   }
 
   async updateSprint(
@@ -143,16 +114,16 @@ export class SprintsService {
     const goal =
       input.goal === undefined || input.goal === '' ? null : input.goal;
 
-    const currentSprint = await sprintsRepository.findById(sprintId);
+    const currentSprint = await this.sprints.findById(sprintId);
     if (!currentSprint) {
       throw new Error('Sprint not found');
     }
-    if (currentSprint.status === 'archived') {
+    if (currentSprint.status === SprintStatusEnum.Archived) {
       throw new Error('Cannot edit an archived sprint');
     }
 
     if (input.projectId !== currentSprint.project_id) {
-      const count = await sprintsRepository.getWorkItemCount(sprintId);
+      const count = await this.sprints.getWorkItemCount(sprintId);
       if (count > 0) {
         throw new Error(
           'Cannot change the project of a sprint that has work items.'
@@ -160,7 +131,7 @@ export class SprintsService {
       }
     }
 
-    const row = await sprintsRepository.update(
+    const row = await this.sprints.update(
       userId,
       sprintId,
       {
@@ -173,24 +144,23 @@ export class SprintsService {
       input.expectedUpdatedAt
     );
 
-    return toSprintResponse(row);
+    return mapSprintRowToResponse(row);
   }
 }
 
-export const sprintsService = new SprintsService();
-
 export class SprintBurndownService {
+  constructor(private readonly burndownRepo: SprintBurndownRepository) {}
+
   async getBurndown(sprintId: string): Promise<SprintBurndownPayload | null> {
-    const sprint = await sprintBurndownRepository.getSprintById(sprintId);
+    const sprint = await this.burndownRepo.getSprintById(sprintId);
     if (!sprint) {
       return null;
     }
 
-    const items =
-      await sprintBurndownRepository.getWorkItemsForBurndown(sprintId);
+    const items = await this.burndownRepo.getWorkItemsForBurndown(sprintId);
     const workItemIds = items.map((i) => i.id);
     const workLogs =
-      await sprintBurndownRepository.getWorkLogsForWorkItems(workItemIds);
+      await this.burndownRepo.getWorkLogsForWorkItems(workItemIds);
     const { estimatedTotal, series } = computeBurndown(sprint, items, workLogs);
 
     return {
@@ -206,5 +176,3 @@ export class SprintBurndownService {
     };
   }
 }
-
-export const sprintBurndownService = new SprintBurndownService();

@@ -1,69 +1,20 @@
 import { apiFetch } from '@/lib/api/api-client';
 import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
-import { Tables } from '@repo/types';
+import type { SprintResponse, SprintRowWithProject, Tables } from '@repo/types';
+export { mapSprintRowToResponse as mapDbSprintToSprint } from '@repo/types';
 
-type DbSprint = Tables<'sprints'>;
+/** Re-export the shared response type under its original local name. */
+export type Sprint = SprintResponse;
 
-export type SprintStatus = 'Not Started' | 'Ongoing' | 'Completed' | 'Archived';
-
-const dbStatusToResponseMap = {
-  planned: 'Not Started',
-  active: 'Ongoing',
-  closed: 'Completed',
-  archived: 'Archived',
-} as const satisfies Record<DbSprint['status'], SprintStatus>;
-
-export type Sprint = Pick<DbSprint, 'id' | 'name' | 'goal'> & {
-  status: SprintStatus;
-  startDate: DbSprint['start_date'];
-  endDate: DbSprint['end_date'];
-  createdBy: string;
-  updatedBy: DbSprint['updated_by'];
-  createdAt: DbSprint['created_at'];
-  updatedAt: DbSprint['updated_at'];
-  project?: {
-    id: string;
-    name: string;
-    key: string;
-  } | null;
-};
-
-export type DbSprintRelation = DbSprint & {
-  project: {
-    id: string;
-    name: string;
-    key: string;
-  } | null;
-};
-
-export function mapDbSprintToSprint(row: DbSprintRelation): Sprint {
-  return {
-    id: row.id,
-    name: row.name,
-    goal: row.goal,
-    status: dbStatusToResponseMap[row.status] ?? 'Not Started',
-    startDate: row.start_date,
-    endDate: row.end_date,
-    createdBy: row.created_by ?? '',
-    updatedBy: row.updated_by,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    project: row.project
-      ? {
-          id: row.project.id,
-          name: row.project.name,
-          key: row.project.key,
-        }
-      : null,
-  };
-}
+/** Re-export the shared DB row type under its original local name. */
+export type DbSprintRelation = SprintRowWithProject;
 
 export type CreateSprintInput = {
-  name: DbSprint['name'];
-  goal?: DbSprint['goal'];
-  projectId: DbSprint['project_id'];
-  startDate: DbSprint['start_date'];
-  endDate: DbSprint['end_date'];
+  name: Tables<'sprints'>['name'];
+  goal?: Tables<'sprints'>['goal'];
+  projectId: Tables<'sprints'>['project_id'];
+  startDate: Tables<'sprints'>['start_date'];
+  endDate: Tables<'sprints'>['end_date'];
 };
 
 const apiSprints = '/api/sprints';

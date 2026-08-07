@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { AlertCircle, HelpCircle } from '@repo/ui/lib/icons';
 import { TooltipProvider } from '@repo/ui/components/ui/tooltip';
+import { SprintStatusEnum } from '@repo/types';
 
 import { useBacklogLayout } from '@/app/backlog/_components/backlog-layout-menu';
 import { BacklogToolbar } from '@/app/backlog/_components/backlog-toolbar';
@@ -296,9 +297,11 @@ export function BacklogWorkspace({
   const displayedSprints = useMemo(() => {
     const byTab =
       activeTab === 'completed'
-        ? sprintList.filter((s) => s.status === 'Completed')
+        ? sprintList.filter((s) => s.status === SprintStatusEnum.Closed)
         : sprintList.filter(
-            (s) => s.status === 'Ongoing' || s.status === 'Not Started'
+            (s) =>
+              s.status === SprintStatusEnum.Active ||
+              s.status === SprintStatusEnum.Planned
           );
 
     if (projectFilter === 'all') {
@@ -328,8 +331,16 @@ export function BacklogWorkspace({
     }
   };
 
-  // Start Sprint API Caller
-  const confirmStartSprint = async (sprintId: string) => {
+  // Start / complete sprint (shared pending + lock + list update path)
+  const confirmSprintStatusChange = async (
+    sprintId: string,
+    status: 'active' | 'closed',
+    options: {
+      readonly actionLabel: string;
+      readonly clearDialog: () => void;
+      readonly afterSuccess?: () => void;
+    }
+  ) => {
     if (!isManagerOrAdmin) {
       setActionError('Only admins and managers can perform this action.');
       return;
@@ -342,64 +353,50 @@ export function BacklogWorkspace({
     setActionError(null);
     setIsActionPending(true);
     try {
-      const updatedSprint = await updateSprintStatusWithLock(sprint, 'Ongoing');
+      const updatedSprint = await updateSprintStatusWithLock(sprint, status);
       if (!updatedSprint) {
         return;
       }
       setSprintList((prev) =>
         prev.map((s) => (s.id === sprintId ? updatedSprint : s))
       );
-      setSprintToStart(null);
+      options.afterSuccess?.();
+      options.clearDialog();
     } catch (err) {
-      console.error('Failed to start sprint:', err);
+      console.error(`Failed to ${options.actionLabel} sprint:`, err);
       setActionError(
-        err instanceof Error ? err.message : 'Failed to start sprint.'
+        err instanceof Error
+          ? err.message
+          : `Failed to ${options.actionLabel} sprint.`
       );
     } finally {
       setIsActionPending(false);
     }
   };
 
-  // Complete Sprint API Caller
+  const confirmStartSprint = async (sprintId: string) => {
+    await confirmSprintStatusChange(sprintId, 'active', {
+      actionLabel: 'start',
+      clearDialog: () => setSprintToStart(null),
+    });
+  };
+
+  const clearIncompleteItemsFromSprint = (sprintId: string) => {
+    setWorkItems((prev) =>
+      prev.map((item) =>
+        item.sprint_id === sprintId && item.status !== 'Done'
+          ? { ...item, sprint_id: null }
+          : item
+      )
+    );
+  };
+
   const confirmCompleteSprint = async (sprintId: string) => {
-    if (!isManagerOrAdmin) {
-      setActionError('Only admins and managers can perform this action.');
-      return;
-    }
-    const sprint = sprintList.find((entry) => entry.id === sprintId);
-    if (!sprint) {
-      setActionError('Sprint not found.');
-      return;
-    }
-    setActionError(null);
-    setIsActionPending(true);
-    try {
-      const updatedSprint = await updateSprintStatusWithLock(
-        sprint,
-        'Completed'
-      );
-      if (!updatedSprint) {
-        return;
-      }
-      setSprintList((prev) =>
-        prev.map((s) => (s.id === sprintId ? updatedSprint : s))
-      );
-      setWorkItems((prev) =>
-        prev.map((item) =>
-          item.sprint_id === sprintId && item.status !== 'Done'
-            ? { ...item, sprint_id: null }
-            : item
-        )
-      );
-      setSprintToComplete(null);
-    } catch (err) {
-      console.error('Failed to complete sprint:', err);
-      setActionError(
-        err instanceof Error ? err.message : 'Failed to complete sprint.'
-      );
-    } finally {
-      setIsActionPending(false);
-    }
+    await confirmSprintStatusChange(sprintId, 'closed', {
+      actionLabel: 'complete',
+      clearDialog: () => setSprintToComplete(null),
+      afterSuccess: () => clearIncompleteItemsFromSprint(sprintId),
+    });
   };
 
   // Toggle Collapse

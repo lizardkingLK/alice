@@ -23,10 +23,11 @@ import {
   resolveWorkItemsListDescription,
 } from '@/app/work-items/_components/workItems-table-helpers';
 import { WorkItemsTableToolbar } from '@/app/work-items/_components/workItems-table-toolbar';
+import { WorkItemsSearchResultsPanel } from '@/app/work-items/_components/workItems-search-results-panel';
 import type { DisplayRow } from '@/app/work-items/_components/workItems-table-types';
 import {
-  applyProjectFilterToSearchParams,
-  buildSprintFilterOptions,
+  buildSprintFilterOptionsForQuery,
+  pushOptimisticProjectFilter,
 } from '@/app/board/_services/board-defaults';
 import { BoardDefaultsDialog } from '@/app/board/_components/board-defaults-dialog';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
@@ -74,6 +75,9 @@ export default function WorkItemsTable({
   const sprintQuery = useQueryFilter('sprint', sprintFilter);
   const typeQuery = useQueryFilter('type', typeFilter);
   const assigneeQuery = useQueryFilter('assignee', assigneeFilter);
+  const { setValue: setProjectFilterValue, allValue: projectAllValue } =
+    projectQuery;
+  const { setValue: setSprintFilterValue } = sprintQuery;
   const isProjectLocked = Boolean(lockedProjectId);
   const isAssigneeLocked = Boolean(lockedAssigneeId);
   const isHierarchy = listView === 'hierarchy';
@@ -111,24 +115,40 @@ export default function WorkItemsTable({
   });
 
   const sprintOptions = useMemo(
-    () => buildSprintFilterOptions(sprints, projectFilter),
-    [projectFilter, sprints]
+    () =>
+      buildSprintFilterOptionsForQuery(
+        sprints,
+        projectQuery.value,
+        projectAllValue
+      ),
+    [projectAllValue, projectQuery.value, sprints]
   );
 
   const handleProjectChange = useCallback(
     (nextProject: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      applyProjectFilterToSearchParams(params, {
+      pushOptimisticProjectFilter({
+        searchParams,
         nextProject,
         sprints,
-        allValue: projectQuery.allValue,
+        allValue: projectAllValue,
         pageMode: 'one',
+        pathname,
+        push: (href) => router.push(href),
+        setProjectValue: setProjectFilterValue,
+        setSprintValue: setSprintFilterValue,
+        afterApply: (params) => applyWorkItemListViewParam(params, listView),
       });
-      applyWorkItemListViewParam(params, listView);
-      const query = params.toString();
-      router.push(query ? `${pathname}?${query}` : pathname);
     },
-    [listView, pathname, projectQuery.allValue, router, searchParams, sprints]
+    [
+      listView,
+      pathname,
+      projectAllValue,
+      router,
+      searchParams,
+      setProjectFilterValue,
+      setSprintFilterValue,
+      sprints,
+    ]
   );
 
   const setListView = useCallback(
@@ -152,6 +172,10 @@ export default function WorkItemsTable({
 
   const handleClearFilters = () => {
     setSearchQuery('');
+    setProjectFilterValue(projectAllValue);
+    setSprintFilterValue(sprintQuery.allValue);
+    typeQuery.setValue(typeQuery.allValue);
+    assigneeQuery.setValue(assigneeQuery.allValue);
     if (showWorkspaceDefaults) {
       resetUrlFilters();
       return;
@@ -313,6 +337,8 @@ export default function WorkItemsTable({
         onClearFilters={handleClearFilters}
         onCreate={openCreateDialog}
       />
+
+      <WorkItemsSearchResultsPanel search={search} items={initialWorkItems} />
 
       <Card className="border-border bg-card/50 backdrop-blur-md">
         <CardHeader>

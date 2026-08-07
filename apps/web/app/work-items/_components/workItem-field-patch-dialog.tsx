@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
+import { parseWorkItemLabels } from '@repo/types';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import {
@@ -15,6 +16,7 @@ import { delay, formatLabelWithSpace } from '@/app/_shared/utility';
 import { WorkItemActionDialog } from '@/app/work-items/_components/work-item-action-dialog';
 import { buildMemberSelectOptions } from '@/app/work-items/_components/member-select-items';
 import { FormStatusAlerts } from '@/app/work-items/_components/workItem-form-alerts';
+import { WorkItemLabelsInput } from '@/app/work-items/_components/work-item-labels-input';
 import { resolveWorkItemMember } from '@/app/work-items/_helpers/work-item-member';
 import { WORK_ITEM_STATUSES } from '@/app/work-items/_helpers/work-item-status';
 import { SearchableSelect } from '@/components/searchable-select';
@@ -27,9 +29,9 @@ import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-
 import { tryHandleLockedMutationError } from '@/lib/optimistic-lock/run-locked-mutation';
 
 export type WorkItemPatchFieldId =
-  'assignee_id' | 'reporter_id' | 'title' | 'status';
+  'assignee_id' | 'reporter_id' | 'title' | 'status' | 'labels';
 
-export type WorkItemPatchFieldKind = 'user' | 'text' | 'status';
+export type WorkItemPatchFieldKind = 'user' | 'text' | 'status' | 'labels';
 
 export type WorkItemPatchFieldConfig = {
   readonly field: WorkItemPatchFieldId;
@@ -77,6 +79,14 @@ export const WORK_ITEM_PATCH_FIELD_CONFIG: Record<
     label: 'Reporter',
     unassignedLabel: 'Unassigned',
   },
+  labels: {
+    field: 'labels',
+    kind: 'labels',
+    title: 'Edit Labels',
+    description:
+      'Add or remove labels. Matching is exact and case-sensitive when searching.',
+    label: 'Labels',
+  },
 };
 
 export type WorkItemPatchMemberOption = {
@@ -98,6 +108,7 @@ type WorkItemFieldPatchDialogProps = {
   readonly fieldConfig: WorkItemPatchFieldConfig;
   readonly options?: readonly WorkItemPatchMemberOption[];
   readonly currentValue: string | null;
+  readonly currentLabels?: readonly string[];
   readonly onPatched: (updated: Partial<DbWorkItem>) => void;
 };
 /* eslint-enable no-unused-vars */
@@ -142,14 +153,19 @@ export function WorkItemFieldPatchDialog({
   fieldConfig,
   options = [],
   currentValue,
+  currentLabels = [],
   onPatched,
 }: Readonly<WorkItemFieldPatchDialogProps>) {
   const { handleMutationError } = useOptimisticLock();
   const isTextField = fieldConfig.kind === 'text';
   const isStatusField = fieldConfig.kind === 'status';
+  const isLabelsField = fieldConfig.kind === 'labels';
   const [selectedValue, setSelectedValue] = useState(
     initialSelectedValue(fieldConfig.kind, currentValue)
   );
+  const [labelsValue, setLabelsValue] = useState<string[]>(() => [
+    ...currentLabels,
+  ]);
   const [isPending, setIsPending] = useState(false);
   const [alert, setAlert] = useState<{
     success: string | null;
@@ -161,9 +177,10 @@ export function WorkItemFieldPatchDialog({
       return;
     }
     setSelectedValue(initialSelectedValue(fieldConfig.kind, currentValue));
+    setLabelsValue([...currentLabels]);
     setAlert(null);
     setIsPending(false);
-  }, [open, currentValue, fieldConfig.field, fieldConfig.kind]);
+  }, [open, currentValue, currentLabels, fieldConfig.field, fieldConfig.kind]);
 
   const finishWithInDialogSuccess = async (
     successMessage: string,
@@ -241,29 +258,65 @@ export function WorkItemFieldPatchDialog({
     );
   };
 
+  const saveLabelsField = async () => {
+    const formData = new FormData();
+    formData.set('labels', JSON.stringify(labelsValue));
+    const response = await updateWorkItem(
+      workItemId,
+      formData,
+      expectedUpdatedAt
+    );
+    const nextLabels =
+      parseWorkItemLabels(response.data?.labels) ?? labelsValue;
+
+    await finishWithInDialogSuccess(
+      `${fieldConfig.label} updated successfully.`,
+      {
+        labels: nextLabels,
+        updated_at: response.data?.updated_at,
+      }
+    );
+  };
+
+  const saveByKind = async () => {
+    switch (fieldConfig.kind) {
+      case 'text':
+        await saveTextField();
+        return;
+      case 'status':
+        await saveStatusField();
+        return;
+      case 'labels':
+        await saveLabelsField();
+        return;
+      default:
+        await saveUserField();
+    }
+  };
+
+  const pendingFieldsForKind = (): Record<string, unknown> => {
+    switch (fieldConfig.kind) {
+      case 'text':
+        return { title: selectedValue.trim() };
+      case 'status':
+        return { status: selectedValue };
+      case 'labels':
+        return { labels: labelsValue };
+      default:
+        return {
+          [fieldConfig.field]:
+            selectedValue === UNASSIGNED_VALUE ? null : selectedValue,
+        };
+    }
+  };
+
   const handleSave = async () => {
     setIsPending(true);
     setAlert(null);
 
     try {
-      if (fieldConfig.kind === 'text') {
-        await saveTextField();
-      } else if (fieldConfig.kind === 'status') {
-        await saveStatusField();
-      } else {
-        await saveUserField();
-      }
+      await saveByKind();
     } catch (error) {
-      const pendingFields: Record<string, unknown> = {};
-      if (fieldConfig.kind === 'text') {
-        pendingFields.title = selectedValue.trim();
-      } else if (fieldConfig.kind === 'status') {
-        pendingFields.status = selectedValue;
-      } else {
-        pendingFields[fieldConfig.field] =
-          selectedValue === UNASSIGNED_VALUE ? null : selectedValue;
-      }
-
       if (
         await tryHandleLockedMutationError({
           error,
@@ -271,7 +324,7 @@ export function WorkItemFieldPatchDialog({
           entityType: 'work_item',
           entityId: workItemId,
           expectedUpdatedAt,
-          pendingFields,
+          pendingFields: pendingFieldsForKind(),
         })
       ) {
         onOpenChange(false);
@@ -322,6 +375,16 @@ export function WorkItemFieldPatchDialog({
           ))}
         </SelectContent>
       </Select>
+    );
+  } else if (isLabelsField) {
+    fieldControl = (
+      <WorkItemLabelsInput
+        id={`patch-${fieldConfig.field}`}
+        name={`patch-${fieldConfig.field}`}
+        value={labelsValue}
+        onChange={setLabelsValue}
+        disabled={isPending}
+      />
     );
   } else {
     fieldControl = (

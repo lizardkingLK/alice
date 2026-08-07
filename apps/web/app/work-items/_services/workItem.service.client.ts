@@ -2,6 +2,7 @@ import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { apiFetch } from '@/lib/api/api-client';
 import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
 import type { WorkItemWorkLog } from '@repo/types';
+import { coerceLabelsFormField } from '@repo/types';
 import { ResponseDTO } from '@repo/types/connection';
 
 const workItemsPath = '/api/workItems';
@@ -40,6 +41,13 @@ function isTiptapDoc(value: unknown): value is { type: 'doc' } {
   );
 }
 
+function applyLabelsFormField(body: Record<string, unknown>): void {
+  if (!('labels' in body)) {
+    return;
+  }
+  body.labels = coerceLabelsFormField(body.labels);
+}
+
 function formDataToCreateBody(formData: FormData): Record<string, unknown> {
   const body: Record<string, unknown> = Object.fromEntries(formData.entries());
 
@@ -61,6 +69,8 @@ function formDataToCreateBody(formData: FormData): Record<string, unknown> {
     }
   }
 
+  applyLabelsFormField(body);
+
   return body;
 }
 
@@ -79,6 +89,7 @@ function formDataToPatchBody(
 ): Record<string, unknown> {
   const body: Record<string, unknown> = Object.fromEntries(formData.entries());
   body.expectedUpdatedAt = expectedUpdatedAt;
+  applyLabelsFormField(body);
   return body;
 }
 

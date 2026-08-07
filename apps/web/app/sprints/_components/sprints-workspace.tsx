@@ -83,8 +83,8 @@ export function SprintsWorkspace({
   const handleSprintUpdated = (updated?: Sprint) => {
     if (updated) {
       const isMovedToAnotherTab =
-        (filterTab === 'active' && updated.status === 'Archived') ||
-        (filterTab === 'archived' && updated.status !== 'Archived');
+        (filterTab === 'active' && updated.status === 'archived') ||
+        (filterTab === 'archived' && updated.status !== 'archived');
 
       if (isMovedToAnotherTab && sprints.length === 1 && pagination.page > 1) {
         handlePageChange(pagination.page - 1);
@@ -96,7 +96,7 @@ export function SprintsWorkspace({
 
   const handleArchiveSprint = async (sprint: Sprint) => {
     try {
-      const updated = await updateStatusWithLock(sprint, 'Archived');
+      const updated = await updateStatusWithLock(sprint, 'archived');
       if (updated) {
         handleSprintUpdated(updated);
       }
@@ -107,7 +107,7 @@ export function SprintsWorkspace({
 
   const handleRestoreSprint = async (sprint: Sprint) => {
     try {
-      const updated = await updateStatusWithLock(sprint, 'Completed');
+      const updated = await updateStatusWithLock(sprint, 'closed');
       if (updated) {
         handleSprintUpdated(updated);
       }

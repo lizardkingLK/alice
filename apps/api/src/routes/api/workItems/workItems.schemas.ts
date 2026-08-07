@@ -3,6 +3,10 @@ import {
   WORK_ITEM_STATUSES,
   WORK_ITEM_TYPES,
   expectedUpdatedAtSchema,
+  normalizeWorkItemLabels,
+  todayDateString,
+  toDateOnly,
+  WorkItemLabelsValidationError,
 } from '@repo/types';
 import { z } from 'zod';
 
@@ -22,21 +26,7 @@ export const workItemStatusSchema = z.enum(WORK_ITEM_STATUSES, {
   message: 'Please select a valid status',
 });
 
-function todayDateString(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-/** Normalize DB/ISO timestamps to `YYYY-MM-DD` for comparisons. */
-export function toDateOnly(value: string | null | undefined): string | null {
-  if (!value) {
-    return null;
-  }
-  return value.split('T')[0] ?? null;
-}
+export { toDateOnly };
 
 /**
  * PATCH may resubmit an existing past due date (edit forms). Block only when
@@ -69,6 +59,25 @@ function stringToNumberOrNull(value: unknown): unknown {
   }
   return value;
 }
+
+const labelsFieldSchema = z
+  .any()
+  .transform((value, ctx) => {
+    if (value === undefined || value === null || value === '') {
+      return undefined;
+    }
+    try {
+      return normalizeWorkItemLabels(value);
+    } catch (error) {
+      const message =
+        error instanceof WorkItemLabelsValidationError
+          ? error.message
+          : 'Invalid labels';
+      ctx.addIssue({ code: 'custom', message });
+      return z.NEVER;
+    }
+  })
+  .optional();
 
 const literalSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 type Literal = z.infer<typeof literalSchema>;
@@ -112,6 +121,7 @@ export const workItemCoreObject = z.object({
     .optional(),
   due_date: z.preprocess(emptyStringToNull, dateStringSchema.nullable()),
   description: jsonSchema.nullable().optional(),
+  labels: labelsFieldSchema,
   sprint_id: z
     .preprocess(
       emptyStringToNull,

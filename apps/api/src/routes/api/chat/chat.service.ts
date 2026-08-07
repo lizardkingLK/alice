@@ -2,8 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { projectsService } from '../projects/projects.service';
 import { projectsRepository } from '../projects/projects.repository';
-import { sprintsService } from '../sprints/sprints.service';
-import { workItems } from '../../../config/composition';
+import { workItems, sprints } from '../../../config/composition';
 import { supabase } from '../../../lib/supabase';
 import { systemInstruction, geminiTools } from './chat.route.data';
 import type {
@@ -81,7 +80,7 @@ async function handleCreateSprint(
   const projectId = String(args.projectId || '');
   const startDate = args.startDate ? String(args.startDate) : (new Date().toISOString().split('T')[0] || '');
   const endDate = args.endDate ? String(args.endDate) : (new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] || '');
-  const sprint = await sprintsService.createSprint(userId, {
+  const sprint = await sprints.sprintsService.createSprint(userId, {
     name: sprintName,
     goal: '',
     projectId,
