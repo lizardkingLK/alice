@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import {
@@ -11,12 +12,14 @@ import {
 } from '@repo/ui/components/ui/select';
 import { SearchableSelect } from '@/components/searchable-select';
 import type { WorkItemFormSharedFieldProps } from '@/app/work-items/_components/work-item-form-field-props';
+import { WorkItemLabelsInput } from '@/app/work-items/_components/work-item-labels-input';
 import { WorkItemPrioritySelect } from '@/app/work-items/_components/work-item-priority-select';
 
 export type WorkItemFormClassicFieldsProps = WorkItemFormSharedFieldProps & {
   readonly titleDefault?: string;
   readonly dueDateDefault?: string;
   readonly storyPointsDefault?: number | null;
+  readonly labelsDefault?: readonly string[];
 };
 
 /**
@@ -38,11 +41,14 @@ export function WorkItemFormClassicFields({
   titleDefault = '',
   dueDateDefault = '',
   storyPointsDefault = null,
+  labelsDefault = [],
   onProjectIdChange,
   onAssigneeIdChange,
   onTypeChange,
   onPriorityChange,
 }: Readonly<WorkItemFormClassicFieldsProps>) {
+  const [labels, setLabels] = useState<string[]>(() => [...labelsDefault]);
+
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <div className="space-y-2 sm:col-span-2">
@@ -139,6 +145,11 @@ export function WorkItemFormClassicFields({
           placeholder="Enter Story Points"
           defaultValue={storyPointsDefault ?? ''}
         />
+      </div>
+
+      <div className="space-y-2 sm:col-span-2">
+        <Label htmlFor="labels">Labels</Label>
+        <WorkItemLabelsInput value={labels} onChange={setLabels} />
       </div>
     </div>
   );

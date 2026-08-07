@@ -42,6 +42,7 @@ import {
 } from '@/components/searchable-select';
 import type { WorkItemFormSharedFieldProps } from '@/app/work-items/_components/work-item-form-field-props';
 import { WorkItemFormModernDescription } from '@/app/work-items/_components/work-item-form-modern-description';
+import { WorkItemLabelsInput } from '@/app/work-items/_components/work-item-labels-input';
 import { WorkItemPrioritySelect } from '@/app/work-items/_components/work-item-priority-select';
 import { WORK_ITEM_TYPE_ICONS } from '@/app/work-items/_helpers/work-item-type';
 import { MODERN_BORDERLESS_FOCUS_CLASSES } from '@/lib/editor/compact-editor-attrs';
@@ -147,6 +148,7 @@ export function WorkItemFormModernFields({
   onPriorityChange,
 }: Readonly<WorkItemFormModernFieldsProps>) {
   const [descriptionJson, setDescriptionJson] = useState<string | null>(null);
+  const [labels, setLabels] = useState<string[]>([]);
   const [optionalFields, setOptionalFields] = useState<
     ReadonlySet<OptionalField>
   >(() => new Set());
@@ -297,6 +299,16 @@ export function WorkItemFormModernFields({
             onAddOptionalField={addOptionalField}
           />
         </div>
+
+        {optionalFields.has('labels') ? (
+          <div className="space-y-1.5">
+            <div className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+              <Tag className="size-3.5" />
+              Labels
+            </div>
+            <WorkItemLabelsInput value={labels} onChange={setLabels} />
+          </div>
+        ) : null}
       </div>
     </TooltipProvider>
   );
@@ -369,23 +381,6 @@ function ModernOptionalFieldPills({
               className={cn(pillTriggerClassName(false), 'w-26 pr-2 pl-8')}
             />
           </div>
-        </FieldTooltip>
-      ) : null}
-
-      {optionalFields.has('labels') ? (
-        <FieldTooltip label="Labels (coming soon)">
-          <button
-            type="button"
-            disabled
-            aria-label="Labels"
-            className={cn(
-              pillTriggerClassName(false),
-              'inline-flex cursor-not-allowed items-center opacity-60'
-            )}
-          >
-            <Tag className="size-3.5 shrink-0" />
-            Labels
-          </button>
         </FieldTooltip>
       ) : null}
 

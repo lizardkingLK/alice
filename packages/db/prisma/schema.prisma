@@ -240,6 +240,7 @@ model work_items {
   type         WorkItemType
   priority     WorkItemPriority @default(medium)
   description  Json?
+  labels       Json             @default("[]")
   assignee_id  String?          @db.Uuid
   reporter_id  String?          @db.Uuid
   due_date     DateTime?        @db.Date

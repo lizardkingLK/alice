@@ -1,4 +1,8 @@
-import { getAllowedChildType, type WorkItemType } from '@repo/types';
+import {
+  getAllowedChildType,
+  type WorkItemType,
+  parseWorkItemLabels,
+} from '@repo/types';
 import { WorkItemRepository } from './workItems.repository';
 import type { DbWorkItem } from './workItems.repository';
 import { sameNullable } from './workItems.patch-utils';
@@ -150,6 +154,9 @@ export class WorkItemService {
     const descriptionUnchanged =
       JSON.stringify(input.description ?? null) ===
       JSON.stringify(current.description ?? null);
+    const labelsUnchanged =
+      JSON.stringify(input.labels ?? parseWorkItemLabels(current.labels)) ===
+      JSON.stringify(parseWorkItemLabels(current.labels));
 
     const nonStatusChanged =
       input.title !== current.title ||
@@ -163,6 +170,7 @@ export class WorkItemService {
       !sameNullable(input.story_points, current.story_points) ||
       !sameNullable(input.parent_id, current.parent_id) ||
       !descriptionUnchanged ||
+      !labelsUnchanged ||
       !sameNullable(input.jira_issue_key, current.jira_issue_key);
 
     if (nonStatusChanged) {

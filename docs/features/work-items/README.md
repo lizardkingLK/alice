@@ -4,6 +4,7 @@
 | ------------------------------------------------------------------- | ------------------------------------------------------------ | ----------- |
 | [WORK_ITEM_DESCRIPTION.md](../../database/WORK_ITEM_DESCRIPTION.md) | TipTap / ProseMirror JSON stored in `work_items.description` | Living      |
 | [ATTACHMENTS.md](./ATTACHMENTS.md)                                  | Private Storage attachments, SSR list, signed URLs on click  | Implemented |
+| [LABELS.md](./LABELS.md)                                            | JSONB text-array labels, create/details edit, search UX      | Implemented |
 | [ACTIVITY.md](./ACTIVITY.md)                                        | Work-item activity timeline next to Discussion               | Plan        |
 
 Quick links:

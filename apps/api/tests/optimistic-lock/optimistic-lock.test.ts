@@ -9,7 +9,7 @@ import {
   resolveOptimisticUpdate,
   sendRouteMutationError,
   trySendOptimisticLockError,
-} from './optimistic-lock.js';
+} from '../../src/lib/optimistic-lock.js';
 
 describe('resolveOptimisticUpdate', () => {
   it('returns data when the conditional update matched a row', async () => {

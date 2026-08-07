@@ -16,6 +16,11 @@ import { IncompleteSubtasksDoneBlockedDialog } from '@/app/work-items/_component
 import { hasIncompleteStatuses } from '@/app/work-items/_helpers/work-item-status';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import {
+  parseWorkItemLabels,
+  type WorkItemStatus,
+  type WorkItemWorkLog,
+} from '@repo/types';
+import {
   Avatar,
   AvatarFallback,
   AvatarImage,
@@ -55,7 +60,6 @@ import {
   Settings,
 } from '@repo/ui/lib/icons';
 import { WorkItemTimeTracking } from '@/app/work-items/_components/work-item-time-tracking';
-import type { WorkItemStatus, WorkItemWorkLog } from '@repo/types';
 import { cn } from '@repo/ui/lib/utils';
 import {
   useState,
@@ -63,13 +67,6 @@ import {
   type ReactNode,
   type SetStateAction,
 } from 'react';
-
-const PLACEHOLDER_LABELS = [
-  'Solar-powered',
-  'Mobile',
-  'Desktop',
-  'IT2',
-] as const;
 
 function StatusDropdown({
   workItemId,
@@ -279,6 +276,29 @@ type EditableUserFieldProps = {
 };
 /* eslint-enable no-unused-vars */
 
+function DetailFieldEditButton({
+  ariaLabel,
+  onClick,
+  className,
+}: Readonly<{
+  ariaLabel: string;
+  onClick: () => void;
+  className?: string;
+}>) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      className={cn('cursor-pointer', className)}
+      aria-label={ariaLabel}
+      onClick={onClick}
+    >
+      <PencilIcon className="size-3.5" />
+    </Button>
+  );
+}
+
 function EditableUserField({
   name,
   imageUrl,
@@ -296,16 +316,43 @@ function EditableUserField({
         emptyLabel={config.unassignedLabel ?? 'Unassigned'}
       />
       {readOnly ? null : (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          className="cursor-pointer"
-          aria-label={`Edit ${config.label.toLowerCase()}`}
+        <DetailFieldEditButton
+          ariaLabel={`Edit ${config.label.toLowerCase()}`}
           onClick={() => onEdit(field)}
-        >
-          <PencilIcon className="size-3.5" />
-        </Button>
+        />
+      )}
+    </div>
+  );
+}
+
+function EditableLabelsField({
+  labels,
+  onEdit,
+  readOnly = false,
+}: Readonly<{
+  readonly labels: readonly string[];
+  readonly onEdit: () => void;
+  readonly readOnly?: boolean;
+}>) {
+  return (
+    <div className="flex items-start justify-between gap-2">
+      <div className="flex min-w-0 flex-wrap gap-1.5">
+        {labels.length === 0 ? (
+          <span className="text-muted-foreground text-sm">No labels</span>
+        ) : (
+          labels.map((label) => (
+            <Badge key={label} variant="outline">
+              {label}
+            </Badge>
+          ))
+        )}
+      </div>
+      {readOnly ? null : (
+        <DetailFieldEditButton
+          ariaLabel="Edit labels"
+          className="shrink-0"
+          onClick={onEdit}
+        />
       )}
     </div>
   );
@@ -339,9 +386,10 @@ export default function WorkItemSidebar({
   readOnly?: boolean;
 }>) {
   const [activeField, setActiveField] = useState<
-    'assignee_id' | 'reporter_id' | null
+    'assignee_id' | 'reporter_id' | 'labels' | null
   >(null);
   const [developmentOpen, setDevelopmentOpen] = useState(true);
+  const labels = parseWorkItemLabels(workItem.labels);
 
   const activeConfig = activeField
     ? WORK_ITEM_PATCH_FIELD_CONFIG[activeField]
@@ -391,13 +439,11 @@ export default function WorkItemSidebar({
           <PriorityBadge priority={workItem.priority} />
         </DetailRow>
         <DetailRow label="Labels">
-          <div className="flex flex-wrap gap-1.5">
-            {PLACEHOLDER_LABELS.map((label) => (
-              <Badge key={label} variant="outline">
-                {label}
-              </Badge>
-            ))}
-          </div>
+          <EditableLabelsField
+            labels={labels}
+            onEdit={() => setActiveField('labels')}
+            readOnly={readOnly}
+          />
         </DetailRow>
       </SidebarCollapsibleSection>
 
@@ -517,6 +563,7 @@ export default function WorkItemSidebar({
           fieldConfig={activeConfig}
           options={projectMembers}
           currentValue={currentValue}
+          currentLabels={labels}
           onPatched={onWorkItemPatched}
         />
       ) : null}
