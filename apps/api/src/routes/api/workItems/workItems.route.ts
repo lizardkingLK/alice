@@ -20,6 +20,7 @@ import {
 } from './workItems.schemas';
 import type { DbWorkItem } from './workItems.repository';
 import { coalescePatchField } from './workItems.patch-utils';
+import { coerceLabelsFormField, parseWorkItemLabels } from '@repo/types';
 
 type PatchUpdateWorkItemPayload = z.infer<typeof patchUpdateWorkItemBodySchema>;
 
@@ -37,6 +38,10 @@ function parsePatchBody(body: Record<string, unknown>) {
     } catch {
       return null;
     }
+  }
+
+  if ('labels' in body) {
+    processedBody.labels = coerceLabelsFormField(body.labels);
   }
 
   return processedBody;
@@ -85,6 +90,10 @@ function buildWorkItemPayload(
     description: coalescePatchField(
       parsedData.description as WorkItemUpdateBody['description'] | undefined,
       existingWorkItem.description as WorkItemUpdateBody['description']
+    ),
+    labels: coalescePatchField(
+      parsedData.labels,
+      parseWorkItemLabels(existingWorkItem.labels)
     ),
     jira_issue_key: coalescePatchField(
       parsedData.jira_issue_key,

@@ -1,8 +1,4 @@
-import {
-  todayDateString,
-  toDateOnly,
-  type WorkItemStatus,
-} from '@repo/types';
+import { todayDateString, toDateOnly, type WorkItemStatus } from '@repo/types';
 
 /**
  * Past due date and not Done. Date-only values compare as calendar days

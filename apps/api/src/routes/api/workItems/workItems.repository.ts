@@ -4,6 +4,7 @@ import {
   WORK_ITEM_WORKLOG_SELECT,
   normalizeWorkLogRow,
   DEFAULT_WORK_ITEM_PRIORITY,
+  buildWorkItemSearchOrFilter,
   type Database,
   type WorkItemWorkLog,
   type WorkItemWorkLogRowRaw,
@@ -138,7 +139,7 @@ export class WorkItemRepository {
     });
 
     if (search?.trim()) {
-      query = query.ilike('title', `%${search.trim()}%`);
+      query = query.or(buildWorkItemSearchOrFilter(search));
     }
 
     query = applySprintIdFilter(query, filters);
@@ -211,6 +212,7 @@ export class WorkItemRepository {
         story_points: input.story_points,
         jira_issue_key: input.jira_issue_key,
         description: input.description ?? null,
+        labels: input.labels ?? [],
         parent_id: input.parent_id ?? null,
         ...auditCreateWithoutStatus(input.createdBy),
       })
@@ -249,6 +251,7 @@ export class WorkItemRepository {
         reporter_id: input.reporter_id,
         due_date: input.due_date,
         description: input.description,
+        labels: input.labels ?? [],
         status: input.status,
         sprint_id: input.sprint_id,
         story_points: input.story_points,

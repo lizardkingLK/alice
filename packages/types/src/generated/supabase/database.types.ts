@@ -832,6 +832,7 @@ export type Database = {
           due_date: string | null;
           id: string;
           jira_issue_key: string | null;
+          labels: Json;
           parent_id: string | null;
           priority: Database['public']['Enums']['WorkItemPriority'];
           project_id: string;
@@ -853,6 +854,7 @@ export type Database = {
           due_date?: string | null;
           id?: string;
           jira_issue_key?: string | null;
+          labels?: Json;
           parent_id?: string | null;
           priority?: Database['public']['Enums']['WorkItemPriority'];
           project_id: string;
@@ -874,6 +876,7 @@ export type Database = {
           due_date?: string | null;
           id?: string;
           jira_issue_key?: string | null;
+          labels?: Json;
           parent_id?: string | null;
           priority?: Database['public']['Enums']['WorkItemPriority'];
           project_id?: string;

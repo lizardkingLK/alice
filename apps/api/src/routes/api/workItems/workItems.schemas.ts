@@ -3,8 +3,10 @@ import {
   WORK_ITEM_STATUSES,
   WORK_ITEM_TYPES,
   expectedUpdatedAtSchema,
+  normalizeWorkItemLabels,
   todayDateString,
   toDateOnly,
+  WorkItemLabelsValidationError,
 } from '@repo/types';
 import { z } from 'zod';
 
@@ -58,6 +60,25 @@ function stringToNumberOrNull(value: unknown): unknown {
   return value;
 }
 
+const labelsFieldSchema = z
+  .any()
+  .transform((value, ctx) => {
+    if (value === undefined || value === null || value === '') {
+      return undefined;
+    }
+    try {
+      return normalizeWorkItemLabels(value);
+    } catch (error) {
+      const message =
+        error instanceof WorkItemLabelsValidationError
+          ? error.message
+          : 'Invalid labels';
+      ctx.addIssue({ code: 'custom', message });
+      return z.NEVER;
+    }
+  })
+  .optional();
+
 const literalSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 type Literal = z.infer<typeof literalSchema>;
 export type SupabaseJson =
@@ -100,6 +121,7 @@ export const workItemCoreObject = z.object({
     .optional(),
   due_date: z.preprocess(emptyStringToNull, dateStringSchema.nullable()),
   description: jsonSchema.nullable().optional(),
+  labels: labelsFieldSchema,
   sprint_id: z
     .preprocess(
       emptyStringToNull,

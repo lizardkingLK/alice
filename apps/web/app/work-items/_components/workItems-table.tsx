@@ -23,6 +23,7 @@ import {
   resolveWorkItemsListDescription,
 } from '@/app/work-items/_components/workItems-table-helpers';
 import { WorkItemsTableToolbar } from '@/app/work-items/_components/workItems-table-toolbar';
+import { WorkItemsSearchResultsPanel } from '@/app/work-items/_components/workItems-search-results-panel';
 import type { DisplayRow } from '@/app/work-items/_components/workItems-table-types';
 import {
   buildSprintFilterOptionsForQuery,
@@ -336,6 +337,8 @@ export default function WorkItemsTable({
         onClearFilters={handleClearFilters}
         onCreate={openCreateDialog}
       />
+
+      <WorkItemsSearchResultsPanel search={search} items={initialWorkItems} />
 
       <Card className="border-border bg-card/50 backdrop-blur-md">
         <CardHeader>

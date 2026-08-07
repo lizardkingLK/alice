@@ -6,6 +6,7 @@ import { throwIfError } from '@/lib/db/query';
 import {
   Enums,
   Tables,
+  buildWorkItemSearchOrFilter,
   projectRelationSelect,
   userRelationSelect,
 } from '@repo/types';
@@ -137,7 +138,7 @@ export async function getWorkItemsPaginated(
   );
 
   if (search?.trim()) {
-    query = query.ilike('title', `%${search.trim()}%`);
+    query = query.or(buildWorkItemSearchOrFilter(search));
   }
 
   const { data, error, count } = await query

@@ -157,7 +157,7 @@ describe('WorkItemForm', () => {
 
     expect(screen.getByLabelText(/^Title$/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/^Description$/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/^Labels$/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/^Labels$/i)).toBeInTheDocument();
   });
 
   it('submits in create mode and calls onSuccess', async () => {

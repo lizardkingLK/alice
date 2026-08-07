@@ -14,7 +14,7 @@ const {
   selectSingleMock: vi.fn(),
 }));
 
-vi.mock('../../../lib/supabase', () => ({
+vi.mock('../../src/lib/supabase', () => ({
   supabase: {
     from: vi.fn(() => ({
       select: vi.fn(() => ({
@@ -31,7 +31,7 @@ vi.mock('../../../lib/supabase', () => ({
   },
 }));
 
-vi.mock('./users.repository', () => ({
+vi.mock('../../src/routes/api/users/users.repository', () => ({
   usersRepository: {
     findById: findByIdMock,
     deactivateGuarded: deactivateGuardedMock,
@@ -39,7 +39,7 @@ vi.mock('./users.repository', () => ({
   },
 }));
 
-import { UsersService } from './users.service';
+import { UsersService } from '../../src/routes/api/users/users.service';
 
 const baseUser = {
   id: 'user-1',

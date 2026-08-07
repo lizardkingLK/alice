@@ -4,6 +4,7 @@ import {
   DEFAULT_WORK_ITEM_PRIORITY,
   WORK_ITEM_PRIORITIES,
   WORK_ITEM_TYPES,
+  parseWorkItemLabels,
   type WorkItemPriority,
   type WorkItemType,
 } from '@repo/types';
@@ -213,6 +214,7 @@ export function WorkItemForm({
           titleDefault={itemToEdit?.title ?? ''}
           dueDateDefault={itemToEdit?.due_date ?? ''}
           storyPointsDefault={itemToEdit?.story_points ?? null}
+          labelsDefault={parseWorkItemLabels(itemToEdit?.labels)}
         />
       )}
 
