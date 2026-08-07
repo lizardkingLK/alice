@@ -104,7 +104,8 @@ Current Workspace State:
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to process message';
-    console.error('error. chatbot processing failed:', message);
+    const sanitized = message.replace(/[\r\n]/g, '_');
+    console.error('error. chatbot processing failed:', sanitized);
     res.status(500).json({ error: message });
   }
 });

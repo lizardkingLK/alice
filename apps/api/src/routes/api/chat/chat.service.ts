@@ -40,9 +40,9 @@ async function handleCreateProject(
   args: Record<string, unknown>,
   toolActionsPerformed: ToolAction[]
 ): Promise<unknown> {
-  const projName = String(args.name || '');
-  const projKey = String(args.key || '');
-  const description = args.description ? String(args.description) : null;
+  const projName = typeof args.name === 'string' ? args.name : '';
+  const projKey = typeof args.key === 'string' ? args.key : '';
+  const description = typeof args.description === 'string' ? args.description : null;
   const project = await projectsService.createProject(userId, {
     name: projName,
     key: projKey.toUpperCase(),
@@ -62,7 +62,7 @@ async function handleCreateProject(
 }
 
 async function handleListSprints(args: Record<string, unknown>): Promise<unknown> {
-  const projectId = String(args.projectId || '');
+  const projectId = typeof args.projectId === 'string' ? args.projectId : '';
   const { data: sprints, error } = await supabase
     .from('sprints')
     .select('id, name, status, start_date, end_date')
@@ -76,10 +76,10 @@ async function handleCreateSprint(
   args: Record<string, unknown>,
   toolActionsPerformed: ToolAction[]
 ): Promise<unknown> {
-  const sprintName = String(args.name || '');
-  const projectId = String(args.projectId || '');
-  const startDate = args.startDate ? String(args.startDate) : (new Date().toISOString().split('T')[0] || '');
-  const endDate = args.endDate ? String(args.endDate) : (new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] || '');
+  const sprintName = typeof args.name === 'string' ? args.name : '';
+  const projectId = typeof args.projectId === 'string' ? args.projectId : '';
+  const startDate = typeof args.startDate === 'string' ? args.startDate : (new Date().toISOString().split('T')[0] || '');
+  const endDate = typeof args.endDate === 'string' ? args.endDate : (new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] || '');
   const sprint = await sprints.sprintsService.createSprint(userId, {
     name: sprintName,
     goal: '',
@@ -105,19 +105,19 @@ async function handleCreateWorkItem(
   args: Record<string, unknown>,
   toolActionsPerformed: ToolAction[]
 ): Promise<unknown> {
-  const title = String(args.title || '');
-  const projectId = String(args.projectId || '');
-  const sprintId = args.sprintId ? String(args.sprintId) : null;
-  const assigneeId = args.assigneeId ? String(args.assigneeId) : null;
+  const title = typeof args.title === 'string' ? args.title : '';
+  const projectId = typeof args.projectId === 'string' ? args.projectId : '';
+  const sprintId = typeof args.sprintId === 'string' ? args.sprintId : null;
+  const assigneeId = typeof args.assigneeId === 'string' ? args.assigneeId : null;
 
-  let typeValue = String(args.type || 'task');
+  let typeValue = typeof args.type === 'string' ? args.type : 'task';
   if (typeValue.toLowerCase() === 'task') typeValue = 'Task';
   else if (typeValue.toLowerCase() === 'story') typeValue = 'Story';
   else if (typeValue.toLowerCase() === 'bug') typeValue = 'Issue';
   else typeValue = 'Task';
 
-  const priorityValue = String(args.priority || 'medium');
-  const description = args.description ? String(args.description) : null;
+  const priorityValue = typeof args.priority === 'string' ? args.priority : 'medium';
+  const description = typeof args.description === 'string' ? args.description : null;
 
   const workItem = await workItems.workItemService.createWorkItem(userId, {
     title,
@@ -136,6 +136,7 @@ async function handleCreateWorkItem(
   toolActionsPerformed.push({ type: 'create_work_item', entity: result });
   return result;
 }
+
 
 async function executeTool(
   userId: string,
@@ -178,7 +179,9 @@ export async function processFunctionCalls(
     try {
       result = await executeTool(userId, name, args || {}, toolActionsPerformed);
     } catch (err: unknown) {
-      console.error(`Error executing tool ${name}:`, err);
+      const errMsg = err instanceof Error ? err.message : String(err);
+      const sanitizedMsg = errMsg.replace(/[\r\n]/g, '_');
+      console.error(`Error executing tool ${name}:`, sanitizedMsg);
       result = { error: err instanceof Error ? err.message : 'Unknown error' };
     }
 
@@ -201,12 +204,15 @@ function logGeminiError(errorDetails: {
   messagesCount: number;
 }) {
   const logMessage = `[${errorDetails.timestamp}] Attempt ${errorDetails.attempt} failed with Status ${errorDetails.status} (${errorDetails.statusText}). Body: ${errorDetails.errorBody}. Messages in history: ${errorDetails.messagesCount}\n`;
-  console.error(`Gemini Error: ${logMessage.trim()}`);
+  const sanitizedLog = logMessage.replace(/[\r\n]/g, '_');
+  console.error(`Gemini Error: ${sanitizedLog}`);
   try {
     const logFilePath = path.join(__dirname, '../../../../gemini-errors.log');
     fs.appendFileSync(logFilePath, logMessage);
   } catch (err) {
-    console.error('Failed to write to gemini-errors.log:', err);
+    const errPrefix = err instanceof Error ? err.message : String(err);
+    const sanitizedErr = errPrefix.replace(/[\r\n]/g, '_');
+    console.error('Failed to write to gemini-errors.log:', sanitizedErr);
   }
 }
 
