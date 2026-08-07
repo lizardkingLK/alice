@@ -179,9 +179,7 @@ export async function processFunctionCalls(
     try {
       result = await executeTool(userId, name, args || {}, toolActionsPerformed);
     } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : String(err);
-      const sanitizedMsg = errMsg.replace(/[\r\n]/g, '_');
-      console.error(`Error executing tool ${name}:`, sanitizedMsg);
+      console.error(`Error executing tool ${name}`);
       result = { error: err instanceof Error ? err.message : 'Unknown error' };
     }
 
@@ -204,15 +202,13 @@ function logGeminiError(errorDetails: {
   messagesCount: number;
 }) {
   const logMessage = `[${errorDetails.timestamp}] Attempt ${errorDetails.attempt} failed with Status ${errorDetails.status} (${errorDetails.statusText}). Body: ${errorDetails.errorBody}. Messages in history: ${errorDetails.messagesCount}\n`;
-  const sanitizedLog = logMessage.replace(/[\r\n]/g, '_');
-  console.error(`Gemini Error: ${sanitizedLog}`);
+  console.error(`Gemini Error: Request failed with status ${errorDetails.status}. See gemini-errors.log for details.`);
   try {
     const logFilePath = path.join(__dirname, '../../../../gemini-errors.log');
     fs.appendFileSync(logFilePath, logMessage);
   } catch (err) {
-    const errPrefix = err instanceof Error ? err.message : String(err);
-    const sanitizedErr = errPrefix.replace(/[\r\n]/g, '_');
-    console.error('Failed to write to gemini-errors.log:', sanitizedErr);
+    const errorName = err instanceof Error ? err.name : 'UnknownError';
+    console.error(`Failed to write to gemini-errors.log: ${errorName}`);
   }
 }
 
