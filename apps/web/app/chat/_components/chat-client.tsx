@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { apiFetch } from '@/lib/api/api-client';
 import {
   Send,
   Bot,
@@ -15,42 +14,9 @@ import {
 } from '@repo/ui/lib/icons';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-
-type ActionItem = {
-  type: 'create_project' | 'create_sprint' | 'create_work_item';
-  entity: {
-    id: string;
-    name?: string;
-    key?: string;
-    title?: string;
-    status?: string;
-  };
-};
-
-type ChatMessage = {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  actions?: ActionItem[];
-};
-
-const SUGGESTIONS = [
-  {
-    title: 'Create new work-item creation flow',
-    prompt: 'I need to add new work-item creation on selected project and selected sprint assigning to the relevant user.',
-    icon: Sparkles,
-  },
-  {
-    title: 'List my current projects',
-    prompt: 'Can you show me all the projects in the workspace?',
-    icon: FolderKanban,
-  },
-  {
-    title: 'Create a new bug task',
-    prompt: 'Create a new bug task titled "Fix registration login failure" with high priority.',
-    icon: Ticket,
-  },
-];
+import type { ChatMessage } from './chat-client.types';
+import { SUGGESTIONS } from './chat-client.data';
+import { sendChatMessage } from './chat-client.service';
 
 let messageCounter = 0;
 
@@ -92,17 +58,7 @@ export function ChatClient() {
     }));
 
     try {
-      const response = await apiFetch<{
-        reply: string;
-        actions?: ActionItem[];
-        error?: string;
-      }>('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ messages: history }),
-      });
+      const response = await sendChatMessage(history);
 
       if (response.error) {
         setError(response.error);
@@ -133,6 +89,7 @@ export function ChatClient() {
     e.preventDefault();
     handleSendMessage(inputValue);
   };
+
 
   return (
     <div className="flex h-[calc(100vh-140px)] flex-col rounded-xl border border-sidebar-border bg-card shadow-sm overflow-hidden">
