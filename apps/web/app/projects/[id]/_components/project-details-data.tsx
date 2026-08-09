@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { ProjectDetailsWorkspace } from '@/app/projects/[id]/_components/project-details-workspace';
 import { ProjectWorkspaceAccessDenied } from '@/app/projects/[id]/_components/project-workspace-access-denied';
 import { getProjectWorkspace } from '@/app/projects/_services/project-workspace.server';
+import { readWorkItemTableColumnVisibilityBootstrap } from '@/app/work-items/_helpers/work-item-table-columns-cookie.server';
 import type { RawSearchParams } from '@/lib/search-params';
 
 type ProjectDetailsDataProps = {
@@ -14,7 +15,10 @@ export async function ProjectDetailsData({
   searchParams,
 }: Readonly<ProjectDetailsDataProps>) {
   const resolvedSearchParams = await searchParams;
-  const workspace = await getProjectWorkspace(projectId, resolvedSearchParams);
+  const [workspace, columnVisibilityBootstrap] = await Promise.all([
+    getProjectWorkspace(projectId, resolvedSearchParams),
+    readWorkItemTableColumnVisibilityBootstrap(),
+  ]);
 
   if (!workspace) {
     notFound();
@@ -41,6 +45,8 @@ export async function ProjectDetailsData({
         currentUserRole={workspace.currentUserRole}
         workItems={workspace.workItems}
         teams={workspace.teams}
+        initialColumnVisibility={columnVisibilityBootstrap.visibility}
+        columnVisibilityHasCookie={columnVisibilityBootstrap.hasCookie}
       />
     </div>
   );

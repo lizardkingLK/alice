@@ -8,7 +8,10 @@ import { SprintStatusEnum } from '@repo/types';
 import { useBacklogLayout } from '@/app/backlog/_components/backlog-layout-menu';
 import { BacklogToolbar } from '@/app/backlog/_components/backlog-toolbar';
 import { useBacklogProjectDefaults } from '@/app/backlog/_hooks/use-backlog-project-defaults';
-import { BoardDefaultsDialog } from '@/app/board/_components/board-defaults-dialog';
+import {
+  pickWorkspaceDefaultsDialogController,
+  WorkspaceDefaultsDialogHost,
+} from '@/app/board/_components/workspace-defaults-dialog-host';
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import { BacklogSprintCard } from '@/app/backlog/_components/backlog-sprint-card';
 import { BacklogPanel } from '@/app/backlog/_components/backlog-panel';
@@ -86,25 +89,20 @@ export function BacklogWorkspace({
   const { preferredLayout, effectiveLayout, setPreferredLayout } =
     useBacklogLayout(currentUserId, showBacklogPane);
 
-  const {
-    projectFilter,
-    setProjectFilter,
-    savedDefaultsApplied,
-    baselineProjectId,
-    defaultsDialogOpen,
-    setDefaultsDialogOpen,
-    allowSkipInDialog,
-    dialogInitialPreference,
-    openDefaultsDialog,
-    handleSaveDefaults,
-    handleSkipDefaults,
-    resetProjectFilterToBaseline,
-  } = useBacklogProjectDefaults({
+  const backlogDefaults = useBacklogProjectDefaults({
     userId: currentUserId ?? null,
     projects,
     sprints,
     suggestedDefaults,
   });
+  const {
+    projectFilter,
+    setProjectFilter,
+    savedDefaultsApplied,
+    baselineProjectId,
+    openDefaultsDialog,
+    resetProjectFilterToBaseline,
+  } = backlogDefaults;
 
   // Filters state
   const [searchQuery, setSearchQuery] = useState('');
@@ -754,18 +752,12 @@ export function BacklogWorkspace({
           onAcknowledge={() => setIsMismatchOpen(false)}
         />
 
-        {currentUserId ? (
-          <BoardDefaultsDialog
-            open={defaultsDialogOpen}
-            onOpenChange={setDefaultsDialogOpen}
-            projects={projects}
-            sprints={sprints}
-            initialPreference={dialogInitialPreference}
-            onSave={handleSaveDefaults}
-            onSkip={handleSkipDefaults}
-            allowSkip={allowSkipInDialog}
-          />
-        ) : null}
+        <WorkspaceDefaultsDialogHost
+          enabled={Boolean(currentUserId)}
+          projects={projects}
+          sprints={sprints}
+          defaults={pickWorkspaceDefaultsDialogController(backlogDefaults)}
+        />
       </div>
     </TooltipProvider>
   );

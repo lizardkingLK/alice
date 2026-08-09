@@ -5,6 +5,10 @@ import {
 } from '@/components/registry-page-shell';
 import type { RawSearchParams } from '@/lib/search-params';
 
+/**
+ * Keep this page sync: awaiting cookies here would delay the Suspense fallback
+ * until the parent resolves. Cookie-accurate column counts live in `loading.tsx`.
+ */
 export default function WorkItemsDashboard({
   searchParams,
 }: Readonly<{

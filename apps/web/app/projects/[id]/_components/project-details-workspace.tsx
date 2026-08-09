@@ -39,6 +39,7 @@ import { UNDERLINE_TAB_TRIGGER_CLASS } from '@/components/underline-tab-trigger'
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { apiFetch } from '@/lib/api/api-client';
+import type { VisibilityState } from '@tanstack/react-table';
 import {
   Info,
   Users,
@@ -88,6 +89,8 @@ interface ProjectDetailsWorkspaceProps {
   readonly currentUserRole?: string | null;
   readonly workItems: ProjectWorkItemsProps;
   readonly teams: ProjectTeamsProps;
+  readonly initialColumnVisibility?: VisibilityState;
+  readonly columnVisibilityHasCookie?: boolean;
 }
 
 export function ProjectDetailsWorkspace({
@@ -98,6 +101,8 @@ export function ProjectDetailsWorkspace({
   currentUserRole,
   workItems,
   teams,
+  initialColumnVisibility,
+  columnVisibilityHasCookie,
 }: Readonly<ProjectDetailsWorkspaceProps>) {
   const router = useRouter();
   const pathname = usePathname();
@@ -720,6 +725,9 @@ export function ProjectDetailsWorkspace({
             assigneeFilter={workItems.assigneeFilter}
             listView={workItems.listView}
             lockedProjectId={project.id}
+            currentUserId={currentUserId}
+            initialColumnVisibility={initialColumnVisibility}
+            columnVisibilityHasCookie={columnVisibilityHasCookie}
           />
         </TabsContent>
       </Tabs>

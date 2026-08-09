@@ -42,7 +42,8 @@ async function handleCreateProject(
 ): Promise<unknown> {
   const projName = typeof args.name === 'string' ? args.name : '';
   const projKey = typeof args.key === 'string' ? args.key : '';
-  const description = typeof args.description === 'string' ? args.description : null;
+  const description =
+    typeof args.description === 'string' ? args.description : null;
   const project = await projectsService.createProject(userId, {
     name: projName,
     key: projKey.toUpperCase(),
@@ -61,7 +62,9 @@ async function handleCreateProject(
   return result;
 }
 
-async function handleListSprints(args: Record<string, unknown>): Promise<unknown> {
+async function handleListSprints(
+  args: Record<string, unknown>
+): Promise<unknown> {
   const projectId = typeof args.projectId === 'string' ? args.projectId : '';
   const { data: sprints, error } = await supabase
     .from('sprints')
@@ -78,8 +81,16 @@ async function handleCreateSprint(
 ): Promise<unknown> {
   const sprintName = typeof args.name === 'string' ? args.name : '';
   const projectId = typeof args.projectId === 'string' ? args.projectId : '';
-  const startDate = typeof args.startDate === 'string' ? args.startDate : (new Date().toISOString().split('T')[0] || '');
-  const endDate = typeof args.endDate === 'string' ? args.endDate : (new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] || '');
+  const startDate =
+    typeof args.startDate === 'string'
+      ? args.startDate
+      : new Date().toISOString().split('T')[0] || '';
+  const endDate =
+    typeof args.endDate === 'string'
+      ? args.endDate
+      : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split('T')[0] || '';
   const sprint = await sprints.sprintsService.createSprint(userId, {
     name: sprintName,
     goal: '',
@@ -108,7 +119,8 @@ async function handleCreateWorkItem(
   const title = typeof args.title === 'string' ? args.title : '';
   const projectId = typeof args.projectId === 'string' ? args.projectId : '';
   const sprintId = typeof args.sprintId === 'string' ? args.sprintId : null;
-  const assigneeId = typeof args.assigneeId === 'string' ? args.assigneeId : null;
+  const assigneeId =
+    typeof args.assigneeId === 'string' ? args.assigneeId : null;
 
   let typeValue = typeof args.type === 'string' ? args.type : 'task';
   if (typeValue.toLowerCase() === 'task') typeValue = 'Task';
@@ -116,8 +128,10 @@ async function handleCreateWorkItem(
   else if (typeValue.toLowerCase() === 'bug') typeValue = 'Issue';
   else typeValue = 'Task';
 
-  const priorityValue = typeof args.priority === 'string' ? args.priority : 'medium';
-  const description = typeof args.description === 'string' ? args.description : null;
+  const priorityValue =
+    typeof args.priority === 'string' ? args.priority : 'medium';
+  const description =
+    typeof args.description === 'string' ? args.description : null;
 
   const workItem = await workItems.workItemService.createWorkItem(userId, {
     title,
@@ -136,7 +150,6 @@ async function handleCreateWorkItem(
   toolActionsPerformed.push({ type: 'create_work_item', entity: result });
   return result;
 }
-
 
 async function executeTool(
   userId: string,
@@ -177,7 +190,12 @@ export async function processFunctionCalls(
     let result: unknown;
 
     try {
-      result = await executeTool(userId, name, args || {}, toolActionsPerformed);
+      result = await executeTool(
+        userId,
+        name,
+        args || {},
+        toolActionsPerformed
+      );
     } catch (err: unknown) {
       console.error(`Error executing tool ${name}`);
       result = { error: err instanceof Error ? err.message : 'Unknown error' };
@@ -202,7 +220,9 @@ function logGeminiError(errorDetails: {
   messagesCount: number;
 }) {
   const logMessage = `[${errorDetails.timestamp}] Attempt ${errorDetails.attempt} failed with Status ${errorDetails.status} (${errorDetails.statusText}). Body: ${errorDetails.errorBody}. Messages in history: ${errorDetails.messagesCount}\n`;
-  console.error(`Gemini Error: Request failed with status ${errorDetails.status}. See gemini-errors.log for details.`);
+  console.error(
+    `Gemini Error: Request failed with status ${errorDetails.status}. See gemini-errors.log for details.`
+  );
   try {
     const logFilePath = path.join(__dirname, '../../../../gemini-errors.log');
     fs.appendFileSync(logFilePath, logMessage);
@@ -218,11 +238,17 @@ export async function callGeminiAPI(
 ): Promise<GeminiResponse> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not configured in backend .env file. Please add it to start chatting.');
+    throw new Error(
+      'GEMINI_API_KEY is not configured in backend .env file. Please add it to start chatting.'
+    );
   }
 
-  const baseUrl = process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent';
-  const url = baseUrl.includes('key=') ? `${baseUrl}${apiKey}` : `${baseUrl}?key=${apiKey}`;
+  const baseUrl =
+    process.env.GEMINI_API_URL ||
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent';
+  const url = baseUrl.includes('key=')
+    ? `${baseUrl}${apiKey}`
+    : `${baseUrl}?key=${apiKey}`;
 
   const retries = 3;
   let delay = 2000;
@@ -242,7 +268,11 @@ export async function callGeminiAPI(
       }),
     });
 
-    if (response.status === 429 || response.status === 503 || (response.status >= 500 && response.status <= 504)) {
+    if (
+      response.status === 429 ||
+      response.status === 503 ||
+      (response.status >= 500 && response.status <= 504)
+    ) {
       const errorText = await response.text();
       logGeminiError({
         timestamp: new Date().toISOString(),
@@ -254,12 +284,16 @@ export async function callGeminiAPI(
       });
 
       if (i < retries - 1) {
-        console.warn(`Gemini transient error ${response.status}. Retrying in ${delay}ms...`);
+        console.warn(
+          `Gemini transient error ${response.status}. Retrying in ${delay}ms...`
+        );
         await new Promise((resolve) => setTimeout(resolve, delay));
         delay *= 2;
         continue;
       }
-      throw new Error(`Jira Teams AI service is temporarily unavailable due to Gemini error ${response.status}: ${errorText}`);
+      throw new Error(
+        `Jira Teams AI service is temporarily unavailable due to Gemini error ${response.status}: ${errorText}`
+      );
     }
 
     if (!response.ok) {

@@ -108,7 +108,9 @@ export async function getWorkItems(
   const supabase = await createClient();
 
   const query = applyWorkItemFilters(
-    supabase.from('work_items').select(`*, ${ASSIGNEE_SELECT}`),
+    supabase
+      .from('work_items')
+      .select(`*, ${ASSIGNEE_SELECT}, ${REPORTER_SELECT}`),
     filters
   );
 
@@ -133,7 +135,7 @@ export async function getWorkItemsPaginated(
   let query = applyWorkItemFilters(
     supabase
       .from('work_items')
-      .select(`*, ${ASSIGNEE_SELECT}`, { count: 'exact' }),
+      .select(`*, ${ASSIGNEE_SELECT}, ${REPORTER_SELECT}`, { count: 'exact' }),
     filters
   );
 

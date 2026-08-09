@@ -2,9 +2,11 @@
 
 import { Button } from '@repo/ui/components/ui/button';
 import { List, ListTree, Loader2, Plus, X } from '@repo/ui/lib/icons';
+import type { VisibilityState } from '@tanstack/react-table';
 import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
 import type { WorkItemWorkspaceProps } from '@/app/work-items/_components/workItems-workspace';
 import type { FilterQuery } from '@/app/work-items/_components/workItems-table-types';
+import { WorkItemsColumnsDialog } from '@/app/work-items/_components/work-items-columns-dialog';
 import { SearchInput } from '@/components/search-input';
 import { ListFilterSelect } from '@/components/list-filter-select';
 import { Constants } from '@repo/types/database';
@@ -54,6 +56,7 @@ function WorkItemListViewToggle({
 export function WorkItemsTableToolbar({
   searchQuery,
   onSearchChange,
+  onClearSearch,
   isProjectLocked,
   isAssigneeLocked,
   isHierarchy,
@@ -66,6 +69,9 @@ export function WorkItemsTableToolbar({
   sprintOptions,
   onProjectChange,
   onListViewChange,
+  columnVisibility,
+  onApplyColumnVisibility,
+  columnsHydrated,
   rootCount,
   isExpandingAll,
   expandedCount,
@@ -81,6 +87,7 @@ export function WorkItemsTableToolbar({
   searchQuery: string;
   // eslint-disable-next-line no-unused-vars -- search change callback
   onSearchChange: (value: string) => void;
+  onClearSearch: () => void;
   isProjectLocked: boolean;
   isAssigneeLocked: boolean;
   isHierarchy: boolean;
@@ -95,6 +102,10 @@ export function WorkItemsTableToolbar({
   onProjectChange: (value: string) => void;
   // eslint-disable-next-line no-unused-vars -- view change callback
   onListViewChange: (view: WorkItemListView) => void;
+  columnVisibility: VisibilityState;
+  // eslint-disable-next-line no-unused-vars -- apply staged columns
+  onApplyColumnVisibility: (visibility: VisibilityState) => void;
+  columnsHydrated: boolean;
   rootCount: number;
   isExpandingAll: boolean;
   expandedCount: number;
@@ -113,6 +124,7 @@ export function WorkItemsTableToolbar({
         <SearchInput
           value={searchQuery}
           onValueChange={onSearchChange}
+          onClear={onClearSearch}
           placeholder="Search work items..."
         />
 
@@ -178,6 +190,13 @@ export function WorkItemsTableToolbar({
         <WorkItemListViewToggle
           listView={isHierarchy ? 'hierarchy' : 'flat'}
           onListViewChange={onListViewChange}
+        />
+
+        <WorkItemsColumnsDialog
+          visibility={columnVisibility}
+          isProjectLocked={isProjectLocked}
+          disabled={!columnsHydrated}
+          onApply={onApplyColumnVisibility}
         />
 
         {isHierarchy ? (

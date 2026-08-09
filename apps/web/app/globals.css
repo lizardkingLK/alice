@@ -3,3 +3,17 @@
 
 @source './**/*.{ts,tsx}';
 @source '../../../packages/ui/src/**/*.{ts,tsx}';
+
+/* Work-item labels “train” — duration is overridden per strip for constant px/s. */
+@theme {
+  --animate-labels-train: labels-train 8s linear infinite;
+
+  @keyframes labels-train {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+}

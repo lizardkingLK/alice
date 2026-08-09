@@ -3,6 +3,7 @@
 import { FormCancelSubmitActions } from '@/components/form-cancel-submit-actions';
 import { FormEvent, useEffect, useState, type ChangeEvent } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
+import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import {
@@ -472,12 +473,13 @@ export function ProjectForm({
 
               {!isEditMode && (
                 <div className="flex items-center space-x-2 pt-2">
-                  <input
+                  <Checkbox
                     id="importFromJira"
-                    type="checkbox"
                     checked={importFromJira}
-                    onChange={(e) => handleJiraCheckboxChange(e.target.checked)}
-                    className="accent-primary focus:ring-primary h-4 w-4 cursor-pointer rounded border-gray-300"
+                    onCheckedChange={(value) =>
+                      handleJiraCheckboxChange(value === true)
+                    }
+                    className="cursor-pointer"
                   />
                   <Label
                     htmlFor="importFromJira"
@@ -491,7 +493,7 @@ export function ProjectForm({
 
             {/* Right Column: Jira Integration Details */}
             {!isEditMode && importFromJira && (
-              <div className="border-border/60 bg-muted/30 animate-fade-in flex h-full max-h-[400px] flex-col justify-start space-y-4 overflow-y-auto rounded-lg border p-4">
+              <div className="border-border/60 bg-muted/30 animate-fade-in flex h-full max-h-100 flex-col justify-start space-y-4 overflow-y-auto rounded-lg border p-4">
                 <div className="space-y-2">
                   <Label htmlFor="jiraUrl" className="text-xs font-medium">
                     Jira Cloud URL / Domain
