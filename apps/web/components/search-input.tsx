@@ -162,7 +162,7 @@ export function SearchInput({
           </InputGroup>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          Focus search
+          Focus search{' '}
           <kbd
             data-slot="kbd"
             className="bg-background/20 text-background rounded-sm px-1.5 py-0.5 font-sans text-[10px] font-medium"
