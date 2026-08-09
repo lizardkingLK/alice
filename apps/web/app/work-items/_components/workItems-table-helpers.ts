@@ -168,7 +168,7 @@ export function applyWorkItemsFilterDraftToSearchParams(
   applyQueryFilterParam(
     params,
     'labels',
-    labelsEncoded ? labelsEncoded : allValue,
+    labelsEncoded || allValue,
     allValue
   );
 

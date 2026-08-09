@@ -135,18 +135,20 @@ function buildVisibleFields(
   const fields: FilterFieldConfig[] = [];
 
   if (!isProjectLocked) {
-    fields.push({
-      id: 'project',
-      label: 'Project',
-      searchPlaceholder: 'Search projects',
-      wired: true,
-    });
-    fields.push({
-      id: 'sprint',
-      label: 'Sprint',
-      searchPlaceholder: 'Search sprints',
-      wired: true,
-    });
+    fields.push(
+      {
+        id: 'project',
+        label: 'Project',
+        searchPlaceholder: 'Search projects',
+        wired: true,
+      },
+      {
+        id: 'sprint',
+        label: 'Sprint',
+        searchPlaceholder: 'Search sprints',
+        wired: true,
+      }
+    );
   }
 
   fields.push({
