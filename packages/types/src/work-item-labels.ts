@@ -143,6 +143,52 @@ export function buildWorkItemSearchOrFilter(search: string): string {
 }
 
 /**
+ * PostgREST `.or()` filter: match work items that contain **any** of the
+ * given labels (exact, case-sensitive containment via GIN `@>` / `cs`).
+ */
+export function buildWorkItemLabelsOrFilter(
+  labels: readonly string[]
+): string | null {
+  const normalized = normalizeWorkItemLabels(labels);
+  if (normalized.length === 0) {
+    return null;
+  }
+  return normalized
+    .map((label) => `labels.cs.${JSON.stringify([label])}`)
+    .join(',');
+}
+
+/** Encode labels for a single URL search param (JSON array string). */
+export function serializeWorkItemLabelsFilter(
+  labels: readonly string[]
+): string {
+  const normalized = normalizeWorkItemLabels(labels);
+  return normalized.length > 0 ? JSON.stringify(normalized) : '';
+}
+
+/**
+ * Parse `?labels=` from the URL. Accepts a JSON array string.
+ * Invalid / empty → `undefined` (no filter).
+ */
+export function parseWorkItemLabelsFilterParam(
+  raw: string | null | undefined
+): string[] | undefined {
+  if (raw == null) {
+    return undefined;
+  }
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed === 'all') {
+    return undefined;
+  }
+  try {
+    const labels = normalizeWorkItemLabels(trimmed);
+    return labels.length > 0 ? labels : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Coerce a FormData/JSON body `labels` value.
  * Empty string → `[]`; valid JSON → parsed value; invalid JSON left as-is for Zod.
  */

@@ -35,12 +35,13 @@ Shared via `normalizeWorkItemLabels` / `parseWorkItemLabels`:
 
 ## Surfaces
 
-| Surface             | Behavior                                                      |
-| ------------------- | ------------------------------------------------------------- |
-| Classic create/edit | Always shows chip input; FormData `labels` JSON string        |
-| Modern create       | Optional “Labels” under More; chip row when enabled           |
-| Details sidebar     | Real badges (or “No labels”); pencil opens field-patch dialog |
-| List search         | Title `ilike` **or** exact case-sensitive label containment   |
+| Surface             | Behavior                                                       |
+| ------------------- | -------------------------------------------------------------- |
+| Classic create/edit | Always shows chip input; FormData `labels` JSON string         |
+| Modern create       | Optional “Labels” under More; chip row when enabled            |
+| Details sidebar     | Real badges (or “No labels”); pencil opens field-patch dialog  |
+| List search         | Title `ilike` **or** exact case-sensitive label containment    |
+| List filter dialog  | Same chip input; `?labels=["A","B"]`; OR exact GIN containment |
 
 ## Search UX
 

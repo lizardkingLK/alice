@@ -32,7 +32,8 @@ export const geminiTools = [
     functionDeclarations: [
       {
         name: 'list_projects',
-        description: 'Retrieve all active projects in the system. Use this to see if a project exists.',
+        description:
+          'Retrieve all active projects in the system. Use this to see if a project exists.',
       },
       {
         name: 'create_project',
@@ -41,8 +42,14 @@ export const geminiTools = [
           type: 'OBJECT',
           properties: {
             name: { type: 'STRING', description: 'Name of the project.' },
-            key: { type: 'STRING', description: 'Short unique capitalized key (2-10 letters).' },
-            description: { type: 'STRING', description: 'Description of the project (optional).' },
+            key: {
+              type: 'STRING',
+              description: 'Short unique capitalized key (2-10 letters).',
+            },
+            description: {
+              type: 'STRING',
+              description: 'Description of the project (optional).',
+            },
           },
           required: ['name', 'key'],
         },
@@ -66,15 +73,22 @@ export const geminiTools = [
           properties: {
             name: { type: 'STRING', description: 'Name of the sprint.' },
             projectId: { type: 'STRING', description: 'UUID of the project.' },
-            startDate: { type: 'STRING', description: 'Start date YYYY-MM-DD (optional).' },
-            endDate: { type: 'STRING', description: 'End date YYYY-MM-DD (optional).' },
+            startDate: {
+              type: 'STRING',
+              description: 'Start date YYYY-MM-DD (optional).',
+            },
+            endDate: {
+              type: 'STRING',
+              description: 'End date YYYY-MM-DD (optional).',
+            },
           },
           required: ['name', 'projectId'],
         },
       },
       {
         name: 'list_users',
-        description: 'Retrieve list of all users in the system to find assignees.',
+        description:
+          'Retrieve list of all users in the system to find assignees.',
       },
       {
         name: 'create_work_item',
@@ -84,11 +98,28 @@ export const geminiTools = [
           properties: {
             title: { type: 'STRING', description: 'Title of the work item.' },
             projectId: { type: 'STRING', description: 'UUID of the project.' },
-            sprintId: { type: 'STRING', description: 'UUID of the sprint (optional).' },
-            assigneeId: { type: 'STRING', description: 'UUID of the user assigned (optional).' },
-            type: { type: 'STRING', enum: ['story', 'task', 'bug'], description: 'Type of work item.' },
-            priority: { type: 'STRING', enum: ['low', 'medium', 'high', 'highest'], description: 'Priority level.' },
-            description: { type: 'STRING', description: 'Description of the work item (optional).' },
+            sprintId: {
+              type: 'STRING',
+              description: 'UUID of the sprint (optional).',
+            },
+            assigneeId: {
+              type: 'STRING',
+              description: 'UUID of the user assigned (optional).',
+            },
+            type: {
+              type: 'STRING',
+              enum: ['story', 'task', 'bug'],
+              description: 'Type of work item.',
+            },
+            priority: {
+              type: 'STRING',
+              enum: ['low', 'medium', 'high', 'highest'],
+              description: 'Priority level.',
+            },
+            description: {
+              type: 'STRING',
+              description: 'Description of the work item (optional).',
+            },
           },
           required: ['title', 'projectId', 'type', 'priority'],
         },
@@ -96,4 +127,3 @@ export const geminiTools = [
     ],
   },
 ];
-
