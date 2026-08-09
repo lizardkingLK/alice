@@ -66,6 +66,7 @@ function toWorkItemsPayload(
     readonly search: string;
     readonly typeFilter: string;
     readonly assigneeFilter: string;
+    readonly labelsFilter: readonly string[];
     readonly listView: 'flat' | 'hierarchy';
   }
 ) {
@@ -78,6 +79,7 @@ function toWorkItemsPayload(
     search: options.active ? options.search : '',
     typeFilter: options.active ? options.typeFilter : '',
     assigneeFilter: options.active ? options.assigneeFilter : '',
+    labelsFilter: options.active ? [...options.labelsFilter] : [],
     listView: options.active ? options.listView : 'flat',
   };
 }
@@ -118,6 +120,7 @@ export type ProjectWorkspaceAllowed = {
     search: string;
     typeFilter: string;
     assigneeFilter: string;
+    labelsFilter: string[];
     listView: 'flat' | 'hierarchy';
   };
   readonly teams: {
@@ -173,7 +176,7 @@ export async function getProjectWorkspace(
 
   const activeTab = parseProjectDetailsTab(searchParams.tab);
   const { page, limit, search } = parseStandardParams(searchParams, 10);
-  const { type, assigneeId } = parseWorkItemFilters(searchParams);
+  const { type, assigneeId, labels } = parseWorkItemFilters(searchParams);
   const listView = parseWorkItemListView(searchParams.view);
   const teamStatus = parseTeamStatusFilter(searchParams.teamStatus);
   const teamsPage = activeTab === 'teams' ? page : 1;
@@ -198,6 +201,7 @@ export async function getProjectWorkspace(
           ? {
               type,
               assigneeId,
+              labels,
               ...workItemHierarchyListFilter(listView),
             }
           : {}),
@@ -231,6 +235,7 @@ export async function getProjectWorkspace(
       search,
       typeFilter: type ?? '',
       assigneeFilter: assigneeId ?? '',
+      labelsFilter: labels ?? [],
       listView,
     }),
     teams: toTeamsPayload(teamsResult, {

@@ -3,14 +3,12 @@
 import { Button } from '@repo/ui/components/ui/button';
 import { List, ListTree, Loader2, Plus, X } from '@repo/ui/lib/icons';
 import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
-import type { WorkItemWorkspaceProps } from '@/app/work-items/_components/workItems-workspace';
+import type { WorkItemsFilterDraft } from '@/app/work-items/_components/workItems-table-helpers';
 import type { FilterQuery } from '@/app/work-items/_components/workItems-table-types';
+import { WorkItemsFilterDialog } from '@/app/work-items/_components/work-items-filter-dialog';
+import type { WorkItemWorkspaceProps } from '@/app/work-items/_components/workItems-workspace';
 import { SearchInput } from '@/components/search-input';
-import { ListFilterSelect } from '@/components/list-filter-select';
-import { Constants } from '@repo/types/database';
 import type { WorkItemListView } from '@/lib/search-params';
-
-const WORK_ITEM_TYPES = Constants.public.Enums.WorkItemType;
 
 const WORK_ITEM_LIST_VIEW_OPTIONS = [
   { view: 'flat' as const, label: 'Flat', Icon: List },
@@ -59,12 +57,13 @@ export function WorkItemsTableToolbar({
   isHierarchy,
   projects,
   projectMembers,
+  sprints,
   projectQuery,
   sprintQuery,
   typeQuery,
   assigneeQuery,
-  sprintOptions,
-  onProjectChange,
+  labelsQuery,
+  onApplyFilters,
   onListViewChange,
   rootCount,
   isExpandingAll,
@@ -86,13 +85,14 @@ export function WorkItemsTableToolbar({
   isHierarchy: boolean;
   projects: WorkItemWorkspaceProps['projects'];
   projectMembers: WorkItemWorkspaceProps['projectMembers'];
+  sprints: WorkItemWorkspaceProps['sprints'];
   projectQuery: FilterQuery;
   sprintQuery: FilterQuery;
   typeQuery: FilterQuery;
   assigneeQuery: FilterQuery;
-  sprintOptions: { readonly value: string; readonly label: string }[];
-  // eslint-disable-next-line no-unused-vars -- project filter callback
-  onProjectChange: (value: string) => void;
+  labelsQuery: FilterQuery;
+  // eslint-disable-next-line no-unused-vars -- apply staged filters
+  onApplyFilters: (draft: WorkItemsFilterDraft) => void;
   // eslint-disable-next-line no-unused-vars -- view change callback
   onListViewChange: (view: WorkItemListView) => void;
   rootCount: number;
@@ -116,64 +116,20 @@ export function WorkItemsTableToolbar({
           placeholder="Search work items..."
         />
 
-        {isProjectLocked ? null : (
-          <ListFilterSelect
-            value={projectQuery.value}
-            onValueChange={onProjectChange}
-            allValue={projectQuery.allValue}
-            allLabel="All Projects"
-            ariaLabel="Filter by project"
-            placeholder="All Projects"
-            triggerClassName="sm:w-44"
-            options={projects.map((project) => ({
-              value: project.id,
-              label: project.name,
-            }))}
-          />
-        )}
-
-        {isProjectLocked ? null : (
-          <ListFilterSelect
-            value={sprintQuery.value}
-            onValueChange={sprintQuery.setFilter}
-            allValue={sprintQuery.allValue}
-            allLabel="All Sprints"
-            ariaLabel="Filter by sprint"
-            placeholder="All Sprints"
-            triggerClassName="sm:w-44"
-            options={sprintOptions}
-          />
-        )}
-
-        <ListFilterSelect
-          value={typeQuery.value}
-          onValueChange={typeQuery.setFilter}
-          allValue={typeQuery.allValue}
-          allLabel="All Types"
-          ariaLabel="Filter by type"
-          placeholder="All Types"
-          triggerClassName="sm:w-36"
-          options={WORK_ITEM_TYPES.map((workItemType) => ({
-            value: workItemType,
-            label: workItemType,
-          }))}
+        <WorkItemsFilterDialog
+          projects={projects}
+          projectMembers={projectMembers}
+          sprints={sprints}
+          projectQuery={projectQuery}
+          sprintQuery={sprintQuery}
+          typeQuery={typeQuery}
+          assigneeQuery={assigneeQuery}
+          labelsQuery={labelsQuery}
+          isProjectLocked={isProjectLocked}
+          isAssigneeLocked={isAssigneeLocked}
+          onApplyFilters={onApplyFilters}
+          hasActiveFilters={hasActiveFilters}
         />
-
-        {isAssigneeLocked ? null : (
-          <ListFilterSelect
-            value={assigneeQuery.value}
-            onValueChange={assigneeQuery.setFilter}
-            allValue={assigneeQuery.allValue}
-            allLabel="All Assignees"
-            ariaLabel="Filter by assignee"
-            placeholder="All Assignees"
-            triggerClassName="sm:w-44"
-            options={projectMembers.map((member) => ({
-              value: member.id,
-              label: member.name,
-            }))}
-          />
-        )}
 
         <WorkItemListViewToggle
           listView={isHierarchy ? 'hierarchy' : 'flat'}

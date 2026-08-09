@@ -14,7 +14,27 @@ import { userFactory } from '../factories/user.factory';
 import { projectFactory } from '../factories/project.factory';
 import { workItemFactory } from '../factories/workItem.factory';
 import { paginationFactory } from '../factories/pagination.factory';
-import { pickComboboxOption } from '../helpers/pick-combobox-option';
+
+async function ensureFilterDialogOpen() {
+  const existing = screen.queryByRole('dialog');
+  if (existing) {
+    return existing;
+  }
+  fireEvent.click(screen.getByRole('button', { name: /Open filters/i }));
+  return screen.findByRole('dialog');
+}
+
+async function pickFilterFieldOption(fieldLabel: string, optionLabel: string) {
+  await ensureFilterDialogOpen();
+  fireEvent.click(screen.getByRole('button', { name: fieldLabel }));
+  const checkbox = await screen.findByRole('checkbox', { name: optionLabel });
+  fireEvent.click(checkbox);
+}
+
+async function applyFilterFieldOption(fieldLabel: string, optionLabel: string) {
+  await pickFilterFieldOption(fieldLabel, optionLabel);
+  fireEvent.click(screen.getByRole('button', { name: /^Okay$/i }));
+}
 
 vi.mock('next/navigation', () => import('../mocks/next-navigation'));
 
@@ -316,6 +336,8 @@ describe('WorkItemsTable', () => {
     // Arrange
     const projects = projectFactory.buildList(1);
     const projectMembers = userFactory.buildList(1);
+    const projectId = projects[0]!.id;
+    const assigneeId = projectMembers[0]!.id;
     render(
       <WorkItemsTable
         projects={projects}
@@ -334,30 +356,68 @@ describe('WorkItemsTable', () => {
       />
     );
 
-    // Act — project
-    await pickComboboxOption({ name: /Filter by project/i }, projects[0]!.name);
+    // Act — project selection alone does not navigate
+    await pickFilterFieldOption('Project', projects[0]!.name);
+    expect(mockPush).not.toHaveBeenCalled();
+
+    // Act — Okay applies staged filters
+    fireEvent.click(screen.getByRole('button', { name: /^Okay$/i }));
 
     // Assert
     expect(mockPush).toHaveBeenCalledWith(
-      `/work-items?project=${projects[0]!.id}&page=1`
+      `/work-items?project=${projectId}&page=1`
     );
 
-    // Act — type
-    await pickComboboxOption({ name: /Filter by type/i }, 'Task');
+    // Act — type (keeps previously applied project from optimistic state)
+    mockPush.mockClear();
+    await applyFilterFieldOption('Work type', 'Task');
 
     // Assert
-    expect(mockPush).toHaveBeenCalledWith('/work-items?type=Task&page=1');
+    expect(mockPush).toHaveBeenCalledWith(
+      `/work-items?project=${projectId}&type=Task&page=1`
+    );
 
     // Act — assignee
-    await pickComboboxOption(
-      { name: /Filter by assignee/i },
-      projectMembers[0]!.name
-    );
+    mockPush.mockClear();
+    await applyFilterFieldOption('Assignee', projectMembers[0]!.name);
 
     // Assert
     expect(mockPush).toHaveBeenCalledWith(
-      `/work-items?assignee=${projectMembers[0]!.id}&page=1`
+      `/work-items?project=${projectId}&type=Task&assignee=${assigneeId}&page=1`
     );
+  });
+
+  it('discards staged filters when Close is clicked', async () => {
+    // Arrange
+    const projects = projectFactory.buildList(1);
+    render(
+      <WorkItemsTable
+        projects={projects}
+        projectMembers={userFactory.buildList(1)}
+        sprints={[]}
+        initialWorkItems={workItemFactory.buildList(1)}
+        totalCount={1}
+        page={1}
+        limit={10}
+        totalPages={1}
+        search=""
+        projectFilter=""
+        sprintFilter=""
+        typeFilter=""
+        assigneeFilter=""
+      />
+    );
+
+    // Act
+    await pickFilterFieldOption('Project', projects[0]!.name);
+    const footerClose = screen
+      .getAllByRole('button', { name: /^Close$/i })
+      .find((button) => !button.querySelector('svg'));
+    fireEvent.click(footerClose!);
+
+    // Assert
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('opens create and edit dialogs with the mocked form', () => {

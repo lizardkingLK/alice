@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   WORK_ITEM_LABEL_MAX_LENGTH,
   WORK_ITEM_LABELS_MAX_COUNT,
+  buildWorkItemLabelsOrFilter,
   buildWorkItemSearchOrFilter,
   classifyWorkItemSearchMatch,
   coerceLabelsFormField,
   normalizeWorkItemLabels,
+  parseWorkItemLabelsFilterParam,
+  serializeWorkItemLabelsFilter,
   WorkItemLabelsValidationError,
 } from '@repo/types';
 import {
@@ -83,6 +86,27 @@ describe('buildWorkItemSearchOrFilter', () => {
     expect(buildWorkItemSearchOrFilter('a,b')).toBe(
       'title.ilike.%ab%,labels.cs.["a,b"]'
     );
+  });
+});
+
+describe('buildWorkItemLabelsOrFilter / serialize / parse', () => {
+  it('builds OR containment clauses for exact labels', () => {
+    expect(buildWorkItemLabelsOrFilter(['Mobile', 'auth'])).toBe(
+      'labels.cs.["Mobile"],labels.cs.["auth"]'
+    );
+    expect(buildWorkItemLabelsOrFilter([])).toBeNull();
+  });
+
+  it('round-trips URL serialization', () => {
+    expect(serializeWorkItemLabelsFilter(['Mobile', 'auth'])).toBe(
+      '["Mobile","auth"]'
+    );
+    expect(parseWorkItemLabelsFilterParam('["Mobile","auth"]')).toEqual([
+      'Mobile',
+      'auth',
+    ]);
+    expect(parseWorkItemLabelsFilterParam('')).toBeUndefined();
+    expect(parseWorkItemLabelsFilterParam('all')).toBeUndefined();
   });
 });
 

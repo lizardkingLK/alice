@@ -17,18 +17,16 @@ import { useWorkItemHierarchy } from '@/app/work-items/_hooks/use-work-item-hier
 import { buildWorkItemColumns } from '@/app/work-items/_components/workItems-table-columns';
 import {
   applyWorkItemListViewParam,
+  applyWorkItemsFilterDraftToSearchParams,
   buildClearedWorkItemFilterParams,
   buildWorkItemDisplayRows,
   hasActiveWorkItemFilters,
   resolveWorkItemsListDescription,
+  type WorkItemsFilterDraft,
 } from '@/app/work-items/_components/workItems-table-helpers';
 import { WorkItemsTableToolbar } from '@/app/work-items/_components/workItems-table-toolbar';
 import { WorkItemsSearchResultsPanel } from '@/app/work-items/_components/workItems-search-results-panel';
 import type { DisplayRow } from '@/app/work-items/_components/workItems-table-types';
-import {
-  buildSprintFilterOptionsForQuery,
-  pushOptimisticProjectFilter,
-} from '@/app/board/_services/board-defaults';
 import { BoardDefaultsDialog } from '@/app/board/_components/board-defaults-dialog';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
 import { Pagination } from '@/components/pagination';
@@ -38,6 +36,7 @@ import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { useQueryFilter } from '@/hooks/use-query-filter';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { serializeWorkItemLabelsFilter } from '@repo/types';
 import type { WorkItemListView } from '@/lib/search-params';
 
 /** Match DialogContent `duration-200` so edit UI doesn't flash to create while closing. */
@@ -59,6 +58,7 @@ export default function WorkItemsTable({
   sprintFilter = '',
   typeFilter,
   assigneeFilter,
+  labelsFilter = [],
   listView = 'flat',
   lockedProjectId,
   lockedAssigneeId,
@@ -75,6 +75,10 @@ export default function WorkItemsTable({
   const sprintQuery = useQueryFilter('sprint', sprintFilter);
   const typeQuery = useQueryFilter('type', typeFilter);
   const assigneeQuery = useQueryFilter('assignee', assigneeFilter);
+  const labelsQuery = useQueryFilter(
+    'labels',
+    serializeWorkItemLabelsFilter(labelsFilter)
+  );
   const { setValue: setProjectFilterValue, allValue: projectAllValue } =
     projectQuery;
   const { setValue: setSprintFilterValue } = sprintQuery;
@@ -114,32 +118,31 @@ export default function WorkItemsTable({
     isHierarchy,
   });
 
-  const sprintOptions = useMemo(
-    () =>
-      buildSprintFilterOptionsForQuery(
-        sprints,
-        projectQuery.value,
-        projectAllValue
-      ),
-    [projectAllValue, projectQuery.value, sprints]
-  );
+  const handleApplyFilters = useCallback(
+    (draft: WorkItemsFilterDraft) => {
+      setProjectFilterValue(draft.project);
+      setSprintFilterValue(draft.sprint);
+      typeQuery.setValue(draft.type);
+      assigneeQuery.setValue(draft.assignee);
+      labelsQuery.setValue(
+        serializeWorkItemLabelsFilter([...draft.labels]) || labelsQuery.allValue
+      );
 
-  const handleProjectChange = useCallback(
-    (nextProject: string) => {
-      pushOptimisticProjectFilter({
-        searchParams,
-        nextProject,
-        sprints,
+      const params = new URLSearchParams(searchParams.toString());
+      applyWorkItemsFilterDraftToSearchParams(params, draft, {
         allValue: projectAllValue,
-        pageMode: 'one',
-        pathname,
-        push: (href) => router.push(href),
-        setProjectValue: setProjectFilterValue,
-        setSprintValue: setSprintFilterValue,
-        afterApply: (params) => applyWorkItemListViewParam(params, listView),
+        isProjectLocked,
+        isAssigneeLocked,
+        listView,
       });
+      const query = params.toString();
+      router.push(query ? `${pathname}?${query}` : pathname);
     },
     [
+      assigneeQuery,
+      isAssigneeLocked,
+      isProjectLocked,
+      labelsQuery,
       listView,
       pathname,
       projectAllValue,
@@ -147,7 +150,7 @@ export default function WorkItemsTable({
       searchParams,
       setProjectFilterValue,
       setSprintFilterValue,
-      sprints,
+      typeQuery,
     ]
   );
 
@@ -176,6 +179,7 @@ export default function WorkItemsTable({
     setSprintFilterValue(sprintQuery.allValue);
     typeQuery.setValue(typeQuery.allValue);
     assigneeQuery.setValue(assigneeQuery.allValue);
+    labelsQuery.setValue(labelsQuery.allValue);
     if (showWorkspaceDefaults) {
       resetUrlFilters();
       return;
@@ -318,12 +322,13 @@ export default function WorkItemsTable({
         isHierarchy={isHierarchy}
         projects={projects}
         projectMembers={projectMembers}
+        sprints={sprints}
         projectQuery={projectQuery}
         sprintQuery={sprintQuery}
         typeQuery={typeQuery}
         assigneeQuery={assigneeQuery}
-        sprintOptions={sprintOptions}
-        onProjectChange={handleProjectChange}
+        labelsQuery={labelsQuery}
+        onApplyFilters={handleApplyFilters}
         onListViewChange={setListView}
         rootCount={initialWorkItems.length}
         isExpandingAll={isExpandingAll}
