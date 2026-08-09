@@ -7,16 +7,13 @@ import {
   User as UserIcon,
   Loader2,
   Sparkles,
-  FolderKanban,
-  Calendar,
-  Ticket,
   ChevronRight,
 } from '@repo/ui/lib/icons';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { ChatMessage } from './chat-client.types';
 import { SUGGESTIONS } from './chat-client.data';
 import { sendChatMessage } from './chat-client.service';
+import { ChatExecutedActionCard } from './chat-executed-action-card';
 
 let messageCounter = 0;
 
@@ -186,78 +183,12 @@ export function ChatClient() {
                           Executed Actions
                         </div>
                         <div className="grid grid-cols-1 gap-2">
-                          {message.actions.map((act) => {
-                            const actionKey = `${act.type}-${act.entity.id}`;
-                            if (act.type === 'create_project') {
-                              return (
-                                <div
-                                  key={actionKey}
-                                  className="dark:text-emerald-350 flex items-center justify-between rounded border border-emerald-500/20 bg-emerald-500/5 p-2.5 text-emerald-950"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <FolderKanban className="h-4 w-4 text-emerald-500" />
-                                    <span className="text-xs">
-                                      Project Created:{' '}
-                                      <strong>{act.entity.name}</strong> (
-                                      {act.entity.key})
-                                    </span>
-                                  </div>
-                                  <Link
-                                    href={`/projects`}
-                                    className="text-[11px] underline transition-colors hover:text-emerald-700"
-                                  >
-                                    View
-                                  </Link>
-                                </div>
-                              );
-                            }
-                            if (act.type === 'create_sprint') {
-                              return (
-                                <div
-                                  key={actionKey}
-                                  className="dark:text-blue-350 flex items-center justify-between rounded border border-blue-500/20 bg-blue-500/5 p-2.5 text-blue-950"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <Calendar className="h-4 w-4 text-blue-500" />
-                                    <span className="text-xs">
-                                      Sprint Created:{' '}
-                                      <strong>{act.entity.name}</strong>
-                                    </span>
-                                  </div>
-                                  <Link
-                                    href={`/sprints`}
-                                    className="text-[11px] underline transition-colors hover:text-blue-700"
-                                  >
-                                    View
-                                  </Link>
-                                </div>
-                              );
-                            }
-                            if (act.type === 'create_work_item') {
-                              return (
-                                <div
-                                  key={actionKey}
-                                  className="dark:text-indigo-350 flex items-center justify-between rounded border border-indigo-500/20 bg-indigo-500/5 p-2.5 text-indigo-950"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <Ticket className="h-4 w-4 text-indigo-500" />
-                                    <span className="text-xs">
-                                      Work Item Created:{' '}
-                                      <strong>{act.entity.key}</strong> -{' '}
-                                      {act.entity.title}
-                                    </span>
-                                  </div>
-                                  <Link
-                                    href={`/work-items/${act.entity.id}`}
-                                    className="text-[11px] underline transition-colors hover:text-indigo-700"
-                                  >
-                                    View Details
-                                  </Link>
-                                </div>
-                              );
-                            }
-                            return null;
-                          })}
+                          {message.actions.map((act) => (
+                            <ChatExecutedActionCard
+                              key={`${act.type}-${act.entity.id}`}
+                              action={act}
+                            />
+                          ))}
                         </div>
                       </div>
                     )}

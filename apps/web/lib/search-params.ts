@@ -1,5 +1,5 @@
 import type { WorkItemType } from '@repo/types';
-import { WORK_ITEM_TYPES } from '@repo/types';
+import { WORK_ITEM_TYPES, parseWorkItemLabelsFilterParam } from '@repo/types';
 import { ALL_PROJECTS_ID } from '@/app/board/_helpers/board-defaults-storage';
 
 export interface RawSearchParams {
@@ -12,6 +12,8 @@ export interface RawSearchParams {
   sprint?: string;
   type?: string;
   assignee?: string;
+  /** JSON array of exact label strings, e.g. `["Mobile","auth"]`. */
+  labels?: string;
   fromProject?: string;
   fromAssignee?: string;
   /** Work-items list layout: flat (default) or hierarchy (roots + expand). */
@@ -33,6 +35,8 @@ export interface ParsedWorkItemFilters {
   sprintId?: string;
   type?: WorkItemTypeFilter;
   assigneeId?: string;
+  /** Exact case-sensitive labels (OR containment). */
+  labels?: string[];
 }
 
 const WORK_ITEM_TYPE_FILTERS = new Set<WorkItemTypeFilter>(WORK_ITEM_TYPES);
@@ -72,8 +76,9 @@ export function parseWorkItemFilters(
     WORK_ITEM_TYPE_FILTERS.has(rawType as WorkItemTypeFilter)
       ? (rawType as WorkItemTypeFilter)
       : undefined;
+  const labels = parseWorkItemLabelsFilterParam(resolvedParams.labels);
 
-  return { projectId, sprintId, type, assigneeId };
+  return { projectId, sprintId, type, assigneeId, labels };
 }
 
 /** Work-items list view mode. Default is flat (all matching rows). */

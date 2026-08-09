@@ -52,7 +52,7 @@ export async function WorkItemsData({
   const listView = parseWorkItemListView(resolvedSearchParams.view);
   const projectId = lockedProjectId ?? filters.projectId;
   const assigneeId = lockedAssigneeId ?? filters.assigneeId;
-  const { type, sprintId } = filters;
+  const { type, sprintId, labels } = filters;
   const dbUser = await getDbUser();
   const resolvedUserId = currentUserId ?? dbUser?.id ?? null;
   const isProjectLocked = Boolean(lockedProjectId);
@@ -90,6 +90,7 @@ export async function WorkItemsData({
       type,
       assigneeId,
       sprintId,
+      labels,
       ...workItemHierarchyListFilter(listView),
     }),
     EMPTY_WORK_ITEMS,
@@ -111,6 +112,7 @@ export async function WorkItemsData({
       sprintFilter={sprintId ?? ''}
       typeFilter={type ?? ''}
       assigneeFilter={assigneeId ?? ''}
+      labelsFilter={labels ?? []}
       listView={listView}
       lockedProjectId={lockedProjectId}
       lockedAssigneeId={lockedAssigneeId}

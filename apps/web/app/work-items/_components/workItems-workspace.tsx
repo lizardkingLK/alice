@@ -21,6 +21,8 @@ export interface WorkItemWorkspaceProps {
   sprintFilter: string;
   typeFilter: string;
   assigneeFilter: string;
+  /** Exact labels currently applied (from URL). */
+  labelsFilter?: readonly string[];
   /** Flat (default) or hierarchy (roots + expand). */
   listView?: WorkItemListView;
   /** When set, list is scoped to this project and create/edit locks project. */
