@@ -1,7 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import {
+  getCoreRowModel,
+  useReactTable,
+  type VisibilityState,
+} from '@tanstack/react-table';
 import {
   Card,
   CardContent,
@@ -27,8 +31,17 @@ import {
 import { WorkItemsTableToolbar } from '@/app/work-items/_components/workItems-table-toolbar';
 import { WorkItemsSearchResultsPanel } from '@/app/work-items/_components/workItems-search-results-panel';
 import type { DisplayRow } from '@/app/work-items/_components/workItems-table-types';
-import { BoardDefaultsDialog } from '@/app/board/_components/board-defaults-dialog';
+import {
+  pickWorkspaceDefaultsDialogController,
+  WorkspaceDefaultsDialogHost,
+} from '@/app/board/_components/workspace-defaults-dialog-host';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
+import {
+  DEFAULT_WORK_ITEM_TABLE_COLUMN_VISIBILITY,
+  normalizeWorkItemTableColumnVisibility,
+  readWorkItemTableColumnVisibility,
+  writeWorkItemTableColumnVisibility,
+} from '@/app/work-items/_helpers/work-item-table-columns-storage';
 import { Pagination } from '@/components/pagination';
 import { DataTable } from '@/components/data-table';
 import { DismissibleError } from '@/components/dismissible-error';
@@ -65,6 +78,8 @@ export default function WorkItemsTable({
   currentUserId,
   suggestedDefaults = null,
   needsClientBootstrap = false,
+  initialColumnVisibility,
+  columnVisibilityHasCookie = true,
 }: Readonly<WorkItemsTableProps>) {
   const { handlePageChange, handleLimitChange, router } =
     usePaginationNavigation(totalPages, limit);
@@ -85,23 +100,59 @@ export default function WorkItemsTable({
   const isProjectLocked = Boolean(lockedProjectId);
   const isAssigneeLocked = Boolean(lockedAssigneeId);
   const isHierarchy = listView === 'hierarchy';
+  // Prefer server cookie bootstrap so the first paint matches saved prefs.
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
+    () =>
+      normalizeWorkItemTableColumnVisibility({
+        ...(initialColumnVisibility ??
+          DEFAULT_WORK_ITEM_TABLE_COLUMN_VISIBILITY),
+        ...(lockedProjectId ? { project: false } : {}),
+      })
+  );
+  // Cookie present → ready immediately. Missing cookie → migrate from LS once.
+  // Suspense (`RegistryPageSkeleton`) covers the server wait; we do not blank
+  // the table body for column hydration (that flash was effectively invisible).
+  const [columnsHydrated, setColumnsHydrated] = useState(
+    columnVisibilityHasCookie
+  );
+
+  useEffect(() => {
+    if (columnVisibilityHasCookie) {
+      // Cookie already drove SSR — mirror it into localStorage and stay ready.
+      writeWorkItemTableColumnVisibility(currentUserId, columnVisibility);
+      setColumnsHydrated(true);
+      return;
+    }
+
+    const fromLs = normalizeWorkItemTableColumnVisibility({
+      ...readWorkItemTableColumnVisibility(currentUserId),
+      ...(isProjectLocked ? { project: false } : {}),
+    });
+    setColumnVisibility(fromLs);
+    writeWorkItemTableColumnVisibility(currentUserId, fromLs);
+    setColumnsHydrated(true);
+    // Intentionally omit columnVisibility — bootstrap / identity only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot bootstrap
+  }, [columnVisibilityHasCookie, currentUserId, isProjectLocked]);
+
+  const handleApplyColumnVisibility = useCallback(
+    (next: VisibilityState) => {
+      const normalized = normalizeWorkItemTableColumnVisibility({
+        ...next,
+        ...(isProjectLocked ? { project: false } : {}),
+      });
+      setColumnVisibility(normalized);
+      writeWorkItemTableColumnVisibility(currentUserId, normalized);
+    },
+    [currentUserId, isProjectLocked]
+  );
+
   // Workspace defaults belong on /work-items (and board/backlog), not My Work
   // (/member) or project-embedded lists — bootstrap would rewrite the URL.
   const showWorkspaceDefaults =
     Boolean(currentUserId) && !isProjectLocked && !isAssigneeLocked;
 
-  const {
-    defaultsDialogOpen,
-    setDefaultsDialogOpen,
-    allowSkipInDialog,
-    dialogInitialPreference,
-    savedDefaultsApplied,
-    urlFiltersActive,
-    openDefaultsDialog,
-    handleSaveDefaults,
-    handleSkipDefaults,
-    resetUrlFilters,
-  } = useBoardDefaultsBootstrap({
+  const boardDefaults = useBoardDefaultsBootstrap({
     userId: showWorkspaceDefaults ? (currentUserId ?? null) : null,
     basePath: '/work-items',
     needsClientBootstrap: showWorkspaceDefaults && needsClientBootstrap,
@@ -111,6 +162,12 @@ export default function WorkItemsTable({
     sprints,
     suggestedDefaults,
   });
+  const {
+    savedDefaultsApplied,
+    urlFiltersActive,
+    openDefaultsDialog,
+    resetUrlFilters,
+  } = boardDefaults;
 
   const listDescription = resolveWorkItemsListDescription({
     isAssigneeLocked,
@@ -193,6 +250,18 @@ export default function WorkItemsTable({
     const query = next.toString();
     router.push(query ? `${pathname}?${query}` : pathname);
   };
+
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('');
+    const params = new URLSearchParams(searchParams.toString());
+    if (!params.has('search')) {
+      return;
+    }
+    params.delete('search');
+    params.set('page', '1');
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
+  }, [pathname, router, searchParams, setSearchQuery]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<DbWorkItem | null>(null);
@@ -290,6 +359,8 @@ export default function WorkItemsTable({
         lockedAssigneeId,
         isHierarchy,
         currentUserId,
+        projects,
+        sprints,
         onToggleExpand: handleToggleExpand,
         openEditDialog,
       }),
@@ -300,12 +371,16 @@ export default function WorkItemsTable({
       lockedAssigneeId,
       lockedProjectId,
       openEditDialog,
+      projects,
+      sprints,
     ]
   );
 
   const table = useReactTable({
     data: displayRows,
     columns,
+    state: { columnVisibility },
+    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.workItem.id,
   });
@@ -317,6 +392,7 @@ export default function WorkItemsTable({
       <WorkItemsTableToolbar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        onClearSearch={handleClearSearch}
         isProjectLocked={isProjectLocked}
         isAssigneeLocked={isAssigneeLocked}
         isHierarchy={isHierarchy}
@@ -330,6 +406,9 @@ export default function WorkItemsTable({
         labelsQuery={labelsQuery}
         onApplyFilters={handleApplyFilters}
         onListViewChange={setListView}
+        columnVisibility={columnVisibility}
+        onApplyColumnVisibility={handleApplyColumnVisibility}
+        columnsHydrated={columnsHydrated}
         rootCount={initialWorkItems.length}
         isExpandingAll={isExpandingAll}
         expandedCount={expandedIds.size}
@@ -356,7 +435,7 @@ export default function WorkItemsTable({
         <CardContent>
           <DataTable
             table={table}
-            columnCount={columns.length}
+            columnCount={table.getVisibleLeafColumns().length}
             emptyState={
               <div className="flex flex-col items-center justify-center gap-2">
                 <ClipboardPenLine className="text-muted-foreground/50 size-8 stroke-1" />
@@ -395,18 +474,12 @@ export default function WorkItemsTable({
         onSuccess={() => handleUpdated()}
       />
 
-      {showWorkspaceDefaults ? (
-        <BoardDefaultsDialog
-          open={defaultsDialogOpen}
-          onOpenChange={setDefaultsDialogOpen}
-          projects={projects}
-          sprints={sprints}
-          initialPreference={dialogInitialPreference}
-          onSave={handleSaveDefaults}
-          onSkip={handleSkipDefaults}
-          allowSkip={allowSkipInDialog}
-        />
-      ) : null}
+      <WorkspaceDefaultsDialogHost
+        enabled={showWorkspaceDefaults}
+        projects={projects}
+        sprints={sprints}
+        defaults={pickWorkspaceDefaultsDialogController(boardDefaults)}
+      />
     </div>
   );
 }

@@ -9,6 +9,7 @@ import {
   type ChangeEvent,
 } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
+import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import {
@@ -67,12 +68,11 @@ function ProjectMembersList({
             key={m.user_id}
             className="hover:bg-accent/50 flex items-center gap-3 rounded px-2.5 py-1.5 transition-colors"
           >
-            <input
+            <Checkbox
               id={checkboxId}
-              type="checkbox"
               checked={isMember}
-              onChange={(e) => {
-                if (e.target.checked) {
+              onCheckedChange={(value) => {
+                if (value === true) {
                   setSelectedMemberIds([...selectedMemberIds, m.user_id]);
                 } else {
                   setSelectedMemberIds(
@@ -80,7 +80,7 @@ function ProjectMembersList({
                   );
                 }
               }}
-              className="accent-primary h-4 w-4 cursor-pointer rounded"
+              className="cursor-pointer"
             />
             <label
               htmlFor={checkboxId}

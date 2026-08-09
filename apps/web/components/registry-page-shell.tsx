@@ -34,6 +34,7 @@ export const REGISTRY_PAGES = {
   },
   workItems: {
     description: 'Manage Work Items.',
+    /** Default visible count (7); overridden from cookie at request time. */
     skeleton: { columnCount: 7, rowCount: 8 },
   },
 } as const satisfies Record<string, RegistryPageMeta>;

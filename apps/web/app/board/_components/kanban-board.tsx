@@ -51,7 +51,10 @@ import {
 } from '@repo/ui/components/ui/tooltip';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { formatLabelWithSpace, getInitials } from '@/app/_shared/utility';
-import { BoardDefaultsDialog } from '@/app/board/_components/board-defaults-dialog';
+import {
+  pickWorkspaceDefaultsDialogController,
+  WorkspaceDefaultsDialogHost,
+} from '@/app/board/_components/workspace-defaults-dialog-host';
 import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
 import {
@@ -137,18 +140,7 @@ export function KanbanBoard({
     setWorkItems(initialWorkItems);
   }, [initialWorkItems]);
 
-  const {
-    defaultsDialogOpen,
-    setDefaultsDialogOpen,
-    allowSkipInDialog,
-    dialogInitialPreference,
-    savedDefaultsApplied,
-    urlFiltersActive,
-    openDefaultsDialog,
-    handleSaveDefaults,
-    handleSkipDefaults,
-    resetUrlFilters,
-  } = useBoardDefaultsBootstrap({
+  const boardDefaults = useBoardDefaultsBootstrap({
     userId,
     needsClientBootstrap,
     projectFilter,
@@ -157,6 +149,12 @@ export function KanbanBoard({
     sprints,
     suggestedDefaults,
   });
+  const {
+    savedDefaultsApplied,
+    urlFiltersActive,
+    openDefaultsDialog,
+    resetUrlFilters,
+  } = boardDefaults;
 
   const projectQuery = useQueryFilter('project', projectFilter);
   const sprintQuery = useQueryFilter('sprint', sprintFilter);
@@ -822,18 +820,12 @@ export function KanbanBoard({
         </DialogContent>
       </Dialog>
 
-      {userId ? (
-        <BoardDefaultsDialog
-          open={defaultsDialogOpen}
-          onOpenChange={setDefaultsDialogOpen}
-          projects={projects}
-          sprints={sprints}
-          initialPreference={dialogInitialPreference}
-          onSave={handleSaveDefaults}
-          onSkip={handleSkipDefaults}
-          allowSkip={allowSkipInDialog}
-        />
-      ) : null}
+      <WorkspaceDefaultsDialogHost
+        enabled={Boolean(userId)}
+        projects={projects}
+        sprints={sprints}
+        defaults={pickWorkspaceDefaultsDialogController(boardDefaults)}
+      />
     </div>
   );
 }

@@ -1,8 +1,7 @@
-import {
-  REGISTRY_PAGES,
-  RegistryLoadingPage,
-} from '@/components/registry-page-shell';
+import { getWorkItemsRegistryPageMeta } from '@/app/work-items/_helpers/work-item-registry-skeleton.server';
+import { RegistryLoadingPage } from '@/components/registry-page-shell';
 
-export default function WorkItemsLoading() {
-  return <RegistryLoadingPage meta={REGISTRY_PAGES.workItems} />;
+export default async function WorkItemsLoading() {
+  const meta = await getWorkItemsRegistryPageMeta();
+  return <RegistryLoadingPage meta={meta} />;
 }
