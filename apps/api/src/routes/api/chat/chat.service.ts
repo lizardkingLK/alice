@@ -15,7 +15,17 @@ import type {
 } from './chat.route.types';
 
 function sanitizeLog(value: unknown): string {
-  const str = typeof value === 'string' ? value : String(value || '');
+  if (value instanceof Error) {
+    return value.message.replace(/[\r\n]/g, '_');
+  }
+  if (typeof value === 'object' && value !== null) {
+    try {
+      return JSON.stringify(value).replace(/[\r\n]/g, '_');
+    } catch {
+      // Fallback
+    }
+  }
+  const str = typeof value === 'string' ? value : String(value ?? '');
   return str.replace(/[\r\n]/g, '_');
 }
 
@@ -327,13 +337,13 @@ export async function callGeminiAPI(
 // 1. Uncomment the block below and comment out "const chatStorageClient = supabase;"
 // 2. Add CHAT_SUPABASE_URL and CHAT_SUPABASE_SERVICE_ROLE_KEY to your apps/api/.env
 
-// import { createClient } from '@supabase/supabase-js';
-// const chatStorageClient = createClient(
-//   process.env.CHAT_SUPABASE_URL || '',
-//   process.env.CHAT_SUPABASE_SERVICE_ROLE_KEY || ''
-// );
+import { createClient } from '@supabase/supabase-js';
+const chatStorageClient = createClient(
+  process.env.CHAT_SUPABASE_URL || '',
+  process.env.CHAT_SUPABASE_SERVICE_ROLE_KEY || ''
+);
 
-const chatStorageClient = supabase;
+// const chatStorageClient = supabase;
 
 /**
  * Ensures the chat history bucket exists in Supabase Storage.

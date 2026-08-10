@@ -28,7 +28,17 @@ import type {
 const chatRouter: Router = Router();
 
 function sanitizeLog(value: unknown): string {
-  const str = typeof value === 'string' ? value : String(value || '');
+  if (value instanceof Error) {
+    return value.message.replace(/[\r\n]/g, '_');
+  }
+  if (typeof value === 'object' && value !== null) {
+    try {
+      return JSON.stringify(value).replace(/[\r\n]/g, '_');
+    } catch {
+      // Fallback
+    }
+  }
+  const str = typeof value === 'string' ? value : String(value ?? '');
   return str.replace(/[\r\n]/g, '_');
 }
 
