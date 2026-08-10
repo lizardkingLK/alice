@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { cn } from '@repo/ui/lib/utils';
 import {
   Send,
   Bot,
@@ -25,7 +26,12 @@ import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 
 let messageCounter = 0;
 
-export function ChatClient() {
+interface ChatClientProps {
+  readonly variant?: 'page' | 'drawer';
+  readonly onClose?: () => void;
+}
+
+export function ChatClient({ variant = 'page', onClose }: Readonly<ChatClientProps>) {
   const router = useRouter();
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | undefined>(undefined);
@@ -225,17 +231,24 @@ export function ChatClient() {
       return (
         <div
           key={conv.id}
-          onClick={() => handleSelectConversation(conv.id)}
-          className={`group relative flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors text-xs ${
-            isActive
-              ? 'bg-primary/10 text-primary font-medium'
-              : 'hover:bg-muted text-muted-foreground'
-          }`}
+          className="group relative flex items-center justify-between rounded-lg overflow-hidden"
         >
-          <span className="truncate pr-4">{conv.title}</span>
           <button
+            type="button"
+            onClick={() => handleSelectConversation(conv.id)}
+            className={`flex-1 text-left px-3 py-2.5 rounded-lg cursor-pointer transition-colors text-xs truncate pr-10 ${
+              isActive
+                ? 'bg-primary/10 text-primary font-medium'
+                : 'hover:bg-muted text-muted-foreground'
+            }`}
+          >
+            <span className="truncate block">{conv.title}</span>
+          </button>
+          <button
+            type="button"
             onClick={(e) => handleDeleteConversationClick(e, conv)}
-            className="opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive p-1 rounded transition-all"
+            className="absolute right-2 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive p-1 rounded transition-all z-10"
+            aria-label={`Delete chat session ${conv.title}`}
           >
             <Trash2 className="h-3 w-3" />
           </button>
@@ -245,26 +258,36 @@ export function ChatClient() {
   };
 
   return (
-    <div className="border-sidebar-border bg-card flex h-[calc(100vh-140px)] overflow-hidden rounded-xl border shadow-sm">
+    <div
+      className={cn(
+        'bg-card flex overflow-hidden w-full',
+        variant === 'page'
+          ? 'border-sidebar-border h-[calc(100vh-140px)] rounded-xl border shadow-sm'
+          : 'h-full'
+      )}
+    >
       {/* Sidebar Panel */}
-      <div className="w-64 border-r border-sidebar-border bg-muted/20 flex flex-col shrink-0">
-        {/* Sidebar Header */}
-        <div className="p-4 border-b border-sidebar-border">
-          <button
-            onClick={handleNewChat}
-            disabled={isPending}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/95 transition-colors disabled:opacity-50"
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>New Chat</span>
-          </button>
+      {variant === 'page' && (
+        <div className="w-64 border-r border-sidebar-border bg-muted/20 flex flex-col shrink-0">
+          {/* Sidebar Header */}
+          <div className="p-4 border-b border-sidebar-border">
+            <button
+              type="button"
+              onClick={handleNewChat}
+              disabled={isPending}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/95 transition-colors disabled:opacity-50"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>New Chat</span>
+            </button>
+          </div>
+          
+          {/* Sidebar List */}
+          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+            {renderSidebarContent()}
+          </div>
         </div>
-        
-        {/* Sidebar List */}
-        <div className="flex-1 overflow-y-auto p-2 space-y-1">
-          {renderSidebarContent()}
-        </div>
-      </div>
+      )}
 
       {/* Main Chat Panel */}
       <div className="flex-1 flex flex-col overflow-hidden bg-background">
@@ -282,6 +305,18 @@ export function ChatClient() {
               </p>
             </div>
           </div>
+          {variant === 'drawer' && onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-muted-foreground hover:text-foreground hover:bg-muted p-1.5 rounded-lg transition-colors"
+            >
+              <span className="sr-only">Close</span>
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
 
         {/* Message list / Loading State */}
@@ -291,9 +326,19 @@ export function ChatClient() {
             <span className="text-sm text-muted-foreground">Loading chat history...</span>
           </div>
         ) : (
-          <div className="flex-1 space-y-6 overflow-y-auto p-6">
+          <div
+            className={cn(
+              'flex-1 space-y-6 overflow-y-auto',
+              variant === 'page' ? 'p-6' : 'p-4'
+            )}
+          >
             {messages.length === 0 ? (
-              <div className="mx-auto flex h-full max-w-xl flex-col items-center justify-center space-y-6 text-center">
+              <div
+                className={cn(
+                  'mx-auto flex h-full flex-col items-center justify-center space-y-6 text-center',
+                  variant === 'page' ? 'max-w-xl' : 'max-w-xs'
+                )}
+              >
                 <div className="bg-primary/5 text-primary flex h-16 w-16 items-center justify-center rounded-full">
                   <Sparkles className="h-8 w-8 animate-pulse" />
                 </div>

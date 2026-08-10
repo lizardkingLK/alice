@@ -6,6 +6,7 @@ import { getDbUser } from '@/lib/auth';
 import { DashboardHeader } from './dashboard-header';
 import { DashboardSidebar } from './dashboard-sidebar';
 import type { DashboardBreadcrumbOverride } from './dashboard-breadcrumb';
+import { FloatingChatWidget } from '@/app/chat/_components/floating-chat-widget';
 
 type DashboardShellProps = {
   description?: string;
@@ -72,6 +73,7 @@ export async function DashboardShell({
               {body}
             </div>
           )}
+          <FloatingChatWidget />
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>
