@@ -1,3 +1,5 @@
+import { ChatRole } from '@repo/types';
+
 export interface ContentPart {
   text?: string;
   functionCall?: {
@@ -44,10 +46,9 @@ export interface ToolAction {
     status?: string;
   };
 }
-
 export interface StoredChatMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: ChatRole;
   content: string;
   actions?: ToolAction[];
 }

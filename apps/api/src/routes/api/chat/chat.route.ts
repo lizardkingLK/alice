@@ -8,6 +8,7 @@ import {
   type ProjectRowWithOwner,
 } from '../projects/projects.repository';
 import { supabase } from '../../../lib/supabase';
+import { ChatRole } from '@repo/types';
 import {
   callGeminiAPI,
   processFunctionCalls,
@@ -130,7 +131,7 @@ Current Workspace State:
 
     const contents: ContentTurn[] = messages.map((msg: InputMessage) => {
       let role = msg.role;
-      if (role === 'assistant') {
+      if (role === ChatRole.ASSISTANT) {
         role = 'model';
       }
 
@@ -185,7 +186,7 @@ Current Workspace State:
 
     const newAssistantMessage: StoredChatMessage = {
       id: `msg-${Date.now()}`,
-      role: 'assistant' as const,
+      role: ChatRole.ASSISTANT,
       content: responseText,
       actions: toolActionsPerformed,
     };
@@ -193,7 +194,7 @@ Current Workspace State:
     const sanitizedInputMessages: StoredChatMessage[] = messages.map(
       (msg: InputMessage, index: number) => ({
         id: msg.id || `msg-${Date.now()}-${index}`,
-        role: msg.role === 'user' ? ('user' as const) : ('assistant' as const),
+        role: msg.role === 'user' ? ChatRole.USER : ChatRole.ASSISTANT,
         content: msg.content || msg.text || '',
         actions: msg.actions || [],
       })

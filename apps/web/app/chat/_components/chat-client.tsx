@@ -12,6 +12,7 @@ import {
   Trash2,
 } from '@repo/ui/lib/icons';
 import { useRouter } from 'next/navigation';
+import { ChatRole } from '@repo/types';
 import type { ChatMessage } from './chat-client.types';
 import { SUGGESTIONS } from './chat-client.data';
 import {
@@ -145,7 +146,7 @@ export function ChatClient({ variant = 'page', onClose }: Readonly<ChatClientPro
 
     const userMessage: ChatMessage = {
       id: `msg-${Date.now()}-${++messageCounter}`,
-      role: 'user',
+      role: ChatRole.USER,
       content: textToSend,
     };
 
@@ -380,7 +381,7 @@ export function ChatClient({ variant = 'page', onClose }: Readonly<ChatClientPro
             ) : (
               <div className="mx-auto max-w-3xl space-y-4">
                 {messages.map((message) => {
-                  const isUser = message.role === 'user';
+                  const isUser = message.role === ChatRole.USER;
                   return (
                     <div
                       key={message.id}
