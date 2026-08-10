@@ -14,6 +14,7 @@ import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.servi
 import { getDbUser } from '@/lib/auth';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
+import { readWorkItemTableColumnVisibilityBootstrap } from '@/app/work-items/_helpers/work-item-table-columns-cookie.server';
 import {
   parseStandardParams,
   parseWorkItemFilters,
@@ -51,7 +52,7 @@ export async function WorkItemsData({
   const listView = parseWorkItemListView(resolvedSearchParams.view);
   const projectId = lockedProjectId ?? filters.projectId;
   const assigneeId = lockedAssigneeId ?? filters.assigneeId;
-  const { type, sprintId } = filters;
+  const { type, sprintId, labels } = filters;
   const dbUser = await getDbUser();
   const resolvedUserId = currentUserId ?? dbUser?.id ?? null;
   const isProjectLocked = Boolean(lockedProjectId);
@@ -61,15 +62,17 @@ export async function WorkItemsData({
     !isAssigneeLocked &&
     needsWorkspaceProjectBootstrap(resolvedSearchParams.project);
 
-  const [projects, projectMembers, sprintsResult] = await Promise.all([
-    safeServerFetch(getProjectList(), [], 'fetch projects for work items'),
-    safeServerFetch(getUserList(), [], 'fetch users for work items'),
-    safeServerFetch(
-      getSprintsPaginatedServer('active', 1, 100),
-      EMPTY_ACTIVE_SPRINTS_PAGE,
-      'fetch sprints for work items'
-    ),
-  ]);
+  const [columnVisibilityBootstrap, projects, projectMembers, sprintsResult] =
+    await Promise.all([
+      readWorkItemTableColumnVisibilityBootstrap(),
+      safeServerFetch(getProjectList(), [], 'fetch projects for work items'),
+      safeServerFetch(getUserList(), [], 'fetch users for work items'),
+      safeServerFetch(
+        getSprintsPaginatedServer('active', 1, 100),
+        EMPTY_ACTIVE_SPRINTS_PAGE,
+        'fetch sprints for work items'
+      ),
+    ]);
 
   const activeProjects = filterActiveProjects(projects);
   const sprints = sprintsResult.sprints;
@@ -87,6 +90,7 @@ export async function WorkItemsData({
       type,
       assigneeId,
       sprintId,
+      labels,
       ...workItemHierarchyListFilter(listView),
     }),
     EMPTY_WORK_ITEMS,
@@ -108,12 +112,15 @@ export async function WorkItemsData({
       sprintFilter={sprintId ?? ''}
       typeFilter={type ?? ''}
       assigneeFilter={assigneeId ?? ''}
+      labelsFilter={labels ?? []}
       listView={listView}
       lockedProjectId={lockedProjectId}
       lockedAssigneeId={lockedAssigneeId}
       currentUserId={resolvedUserId}
       suggestedDefaults={suggestedDefaults}
       needsClientBootstrap={needsClientBootstrap}
+      initialColumnVisibility={columnVisibilityBootstrap.visibility}
+      columnVisibilityHasCookie={columnVisibilityBootstrap.hasCookie}
     />
   );
 }

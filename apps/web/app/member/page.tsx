@@ -13,6 +13,10 @@ import {
   MEMBER_PAGE_SKELETON,
 } from '@/app/member/_components/member-page-meta';
 
+/**
+ * Keep this page’s shell sync so Suspense can paint immediately. Cookie-accurate
+ * column counts are applied in `loading.tsx` for full route loads.
+ */
 export default async function MemberDashboard({
   searchParams,
 }: Readonly<{

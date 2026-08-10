@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import {
+  clearBoardDefaults,
   writeBoardDefaults,
   type BoardDefaultsPreference,
 } from '@/app/board/_helpers/board-defaults-storage';
@@ -53,6 +54,17 @@ export function useWorkspaceDefaultsDialog({
     setDefaultsDialogOpen(false);
   }, [userId]);
 
+  const handleClearDefaults = useCallback(() => {
+    if (!userId) {
+      return;
+    }
+
+    clearBoardDefaults(userId);
+    setSavedPreference(null);
+    setDialogInitialPreference(null);
+    setDefaultsDialogOpen(false);
+  }, [userId]);
+
   const handleDefaultsDialogOpenChange = useCallback(
     (open: boolean) => {
       if (!open && allowSkipInDialog) {
@@ -91,6 +103,7 @@ export function useWorkspaceDefaultsDialog({
     setSavedPreference,
     handleSaveDefaults,
     handleSkipDefaults,
+    handleClearDefaults,
     promptDefaultsDialog,
     openDefaultsDialog,
   };

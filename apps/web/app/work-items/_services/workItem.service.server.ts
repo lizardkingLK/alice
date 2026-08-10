@@ -6,6 +6,7 @@ import { throwIfError } from '@/lib/db/query';
 import {
   Enums,
   Tables,
+  buildWorkItemLabelsOrFilter,
   buildWorkItemSearchOrFilter,
   projectRelationSelect,
   userRelationSelect,
@@ -36,6 +37,8 @@ export type WorkItemListFilters = {
   parentId?: string | null;
   type?: Enums<'WorkItemType'>;
   assigneeId?: string;
+  /** Exact case-sensitive labels; match if the item contains any (OR). */
+  labels?: string[];
 };
 
 export type GetWorkItemsPaginatedResponse = {
@@ -50,11 +53,12 @@ const ASSIGNEE_SELECT = userRelationSelect('assignee', 'assignee_id');
 const REPORTER_SELECT = userRelationSelect('reporter', 'reporter_id');
 const PROJECT_SELECT = projectRelationSelect();
 
-// Structural shape of the Supabase builder's `.eq()` / `.is()`.
+// Structural shape of the Supabase builder's `.eq()` / `.is()` / `.or()`.
 /* eslint-disable no-unused-vars */
 interface WorkItemFilterable<Q> {
   eq(column: string, value: string): Q;
   is(column: string, value: null): Q;
+  or(filters: string): Q;
 }
 /* eslint-enable no-unused-vars */
 
@@ -93,6 +97,13 @@ export function applyWorkItemFilters<Q extends WorkItemFilterable<Q>>(
     next = next.eq('assignee_id', filters.assigneeId);
   }
 
+  const labelsOr = filters.labels?.length
+    ? buildWorkItemLabelsOrFilter(filters.labels)
+    : null;
+  if (labelsOr) {
+    next = next.or(labelsOr);
+  }
+
   return next;
 }
 
@@ -108,7 +119,9 @@ export async function getWorkItems(
   const supabase = await createClient();
 
   const query = applyWorkItemFilters(
-    supabase.from('work_items').select(`*, ${ASSIGNEE_SELECT}`),
+    supabase
+      .from('work_items')
+      .select(`*, ${ASSIGNEE_SELECT}, ${REPORTER_SELECT}`),
     filters
   );
 
@@ -133,7 +146,7 @@ export async function getWorkItemsPaginated(
   let query = applyWorkItemFilters(
     supabase
       .from('work_items')
-      .select(`*, ${ASSIGNEE_SELECT}`, { count: 'exact' }),
+      .select(`*, ${ASSIGNEE_SELECT}, ${REPORTER_SELECT}`, { count: 'exact' }),
     filters
   );
 
