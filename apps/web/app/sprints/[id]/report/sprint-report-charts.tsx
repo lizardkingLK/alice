@@ -1,5 +1,8 @@
 'use client';
 
+// useRef: stores mutable references without triggering re-renders.
+// useState: manages component state and triggers re-renders when updated.
+// useMemo: memoizes calculated values to avoid unnecessary recalculations.
 import * as React from 'react';
 import { TrendingUp, BarChart3 } from '@repo/ui/lib/icons';
 import {
