@@ -33,3 +33,4 @@ export * from './tiptap-node-attrs.js';
 export * from './comment-content.js';
 export * from './date-only.js';
 export * from './work-item-labels.js';
+export * from './saved-views.js';
