@@ -30,6 +30,8 @@ export interface InputMessage {
   content?: string;
   text?: string;
   parts?: ContentPart[];
+  id?: string;
+  actions?: ToolAction[];
 }
 
 export interface ToolAction {
@@ -41,4 +43,11 @@ export interface ToolAction {
     title?: string;
     status?: string;
   };
+}
+
+export interface StoredChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  actions?: ToolAction[];
 }

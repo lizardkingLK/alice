@@ -8,18 +8,84 @@ import {
   type ProjectRowWithOwner,
 } from '../projects/projects.repository';
 import { supabase } from '../../../lib/supabase';
-import { callGeminiAPI, processFunctionCalls } from './chat.service';
+import {
+  callGeminiAPI,
+  processFunctionCalls,
+  saveChatHistory,
+  loadChatHistory,
+  listConversations,
+  createConversation,
+  deleteConversation,
+} from './chat.service';
 import type {
   ContentPart,
   ContentTurn,
   InputMessage,
   ToolAction,
+  StoredChatMessage,
 } from './chat.route.types';
 
 const chatRouter: Router = Router();
 
+chatRouter.get('/', requireApiAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const list = (await listConversations(req.userId!)) as {
+      id: string;
+      title: string;
+    }[];
+    if (list.length > 0 && list[0]) {
+      const history = await loadChatHistory(list[0].id);
+      return res.json({ history, conversationId: list[0].id });
+    }
+    res.json({ history: [] });
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to load chat history';
+    console.error('error. loading chat history failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+chatRouter.get('/conversations', requireApiAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const list = await listConversations(req.userId!);
+    res.json({ conversations: list });
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to list conversations';
+    console.error('error. list conversations failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+chatRouter.get('/:conversationId', requireApiAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { conversationId } = req.params;
+    const history = await loadChatHistory(conversationId!);
+    res.json({ history });
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to load conversation history';
+    console.error('error. load conversation history failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+chatRouter.delete('/:conversationId', requireApiAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { conversationId } = req.params;
+    await deleteConversation(req.userId!, conversationId!);
+    res.json({ success: true });
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to delete conversation';
+    console.error('error. delete conversation failed:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
 chatRouter.post('/', requireApiAuth, async (req: AuthenticatedRequest, res) => {
-  const { messages } = req.body;
+  const { messages, conversationId: reqConversationId } = req.body;
 
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: 'messages array is required' });
@@ -116,22 +182,47 @@ Current Workspace State:
       loopCount++;
     }
 
+    const newAssistantMessage: StoredChatMessage = {
+      id: `msg-${Date.now()}`,
+      role: 'assistant' as const,
+      content: responseText,
+      actions: toolActionsPerformed,
+    };
+
+    const sanitizedInputMessages: StoredChatMessage[] = messages.map(
+      (msg: InputMessage, index: number) => ({
+        id: msg.id || `msg-${Date.now()}-${index}`,
+        role: msg.role === 'user' ? ('user' as const) : ('assistant' as const),
+        content: msg.content || msg.text || '',
+        actions: msg.actions || [],
+      })
+    );
+
+    const updatedMessages = [...sanitizedInputMessages, newAssistantMessage];
+
+    let conversationId = reqConversationId;
+    let title = 'New Chat';
+
+    if (!conversationId) {
+      const firstMsgText = messages[0]?.content || messages[0]?.text || 'New Chat';
+      title = firstMsgText.slice(0, 30);
+      if (firstMsgText.length > 30) title += '...';
+      conversationId = await createConversation(req.userId!, title);
+    }
+
+    await saveChatHistory(conversationId, updatedMessages);
+
     res.json({
       reply: responseText,
-      history: contents.map((c: ContentTurn) => {
-        const role = c.role === 'model' ? 'assistant' : c.role;
-        return {
-          role,
-          parts: c.parts,
-          content: c.parts?.[0]?.text || '',
-        };
-      }),
+      history: updatedMessages,
       actions: toolActionsPerformed,
+      conversationId,
+      title,
     });
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : 'Failed to process message';
-    console.error('error. chatbot processing failed');
+    console.error('error. chatbot processing failed:', message);
     res.status(500).json({ error: message });
   }
 });
