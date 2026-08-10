@@ -1,8 +1,20 @@
 import { describe, it, expect, vi } from 'vitest';
 
-vi.hoisted(() => {
+const { mockClient } = vi.hoisted(() => {
   process.env.GITHUB_ACTIONS = 'true';
+  const mockEq = () => Promise.resolve({ data: [], error: null });
+  const mockSelect = () => ({ eq: mockEq });
+  const mockFrom = () => ({ select: mockSelect });
+  return {
+    mockClient: {
+      from: mockFrom,
+    },
+  };
 });
+
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: () => mockClient,
+}));
 
 import {
   chatHistoryToMarkdown,
