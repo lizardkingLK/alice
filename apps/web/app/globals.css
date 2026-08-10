@@ -3,3 +3,144 @@
 
 @source './**/*.{ts,tsx}';
 @source '../../../packages/ui/src/**/*.{ts,tsx}';
+
+/* Print layout configurations */
+@page {
+  size: portrait !important;
+  margin: 10mm !important;
+}
+
+@media print {
+  /* Force browser to print colors and background graphics inside sprint report */
+  .print-container * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  
+  .print-container *::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  /* Prevent content truncation inside scroll containers */
+  .print-container .overflow-x-auto,
+  .print-container .overflow-y-auto {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  /* Global print rules: hide general layout headers/sidebars, notifications, and print-hidden components */
+  aside,
+  header,
+  [data-sidebar="sidebar"],
+  .no-print,
+  .print-hide {
+    display: none !important;
+  }
+
+  /* Local print rules: hide action buttons and links specifically inside the sprint report card */
+  .print-container button,
+  .print-container a {
+    display: none !important;
+  }
+
+  /* Reset page body background for physical print layouts */
+  body {
+    background: white !important;
+    color: #09090b !important;
+  }
+
+  .print-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    color: #09090b !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Ensure metrics grid prints as 3 columns */
+  .print-container .grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 16px !important;
+  }
+
+  .status-breakdown-grid {
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .progress-chart-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 24px !important;
+  }
+
+  /* Split goal and achievements block into 2 columns for print */
+  .print-container .md\:grid-cols-3 {
+    display: grid !important;
+    grid-template-columns: 1fr 2fr !important;
+    gap: 24px !important;
+  }
+
+  /* Force ink-friendly colors on text for physical paper (even from dark mode) */
+  .print-container h1,
+  .print-container h2,
+  .print-container h3,
+  .print-container h4,
+  .print-container p,
+  .print-container span,
+  .print-container td,
+  .print-container th {
+    color: #09090b !important;
+  }
+
+  .print-container .text-muted-foreground {
+    color: #71717a !important;
+  }
+
+  /* Ink-friendly card printing rules */
+  .print-container .card {
+    border: 1px solid #e4e4e7 !important;
+    background-color: #fcfcfc !important;
+    color: #09090b !important;
+    box-shadow: none !important;
+  }
+
+  /* Shipped items table layout prints beautifully */
+  .print-container table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    table-layout: auto !important;
+    border-color: #e4e4e7 !important;
+  }
+
+  .print-container th {
+    background-color: #f4f4f5 !important;
+    color: #27272a !important;
+    border-bottom: 2px solid #e4e4e7 !important;
+  }
+
+  /* Prevent title/assignee text from truncating inside printed cells */
+  .print-container td {
+    max-width: none !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+
+  .print-container tr {
+    border-bottom: 1px solid #e4e4e7 !important;
+    page-break-inside: avoid;
+  }
+
+  .print-container thead {
+    display: table-header-group;
+  }
+}

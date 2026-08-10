@@ -44,6 +44,8 @@ import {
   PieChart,
   type ChartConfig,
 } from '@repo/ui/components/ui/chart';
+import { Progress } from '@repo/ui/components/ui/progress';
+import { cn } from '@repo/ui/lib/utils';
 
 type SprintReportViewProps = {
   sprint: Sprint;
@@ -102,6 +104,14 @@ const STATUS_META: Record<string, StatusMeta> = {
     borderClass: 'border-emerald-500/20',
     icon: CheckCircle2,
   },
+};
+
+const STATUS_INDICATOR_BG: Record<string, string> = {
+  New: 'bg-blue-500',
+  ToDo: 'bg-slate-500',
+  InProgress: 'bg-amber-500',
+  Testing: 'bg-purple-500',
+  Done: 'bg-emerald-500',
 };
 
 const STATUS_ORDER = ['New', 'ToDo', 'InProgress', 'Testing', 'Done'] as const;
@@ -255,148 +265,6 @@ export function SprintReportView({
   const handleDownloadPDF = useReactToPrint({
     contentRef: printRef,
     documentTitle: `${sprint.name.toLowerCase().replace(/\s+/g, '_')}_summary_report`,
-    pageStyle: String.raw`
-      @page {
-        size: portrait !important;
-        margin: 10mm !important;
-      }
-      @media print {
-        /* Force browser to print colors and background graphics */
-        * {
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-
-        /* Hide scrollbars during print */
-        * {
-          scrollbar-width: none !important;
-          -ms-overflow-style: none !important;
-        }
-        *::-webkit-scrollbar {
-          display: none !important;
-        }
-
-        /* Prevent content truncation inside scroll containers */
-        .overflow-x-auto,
-        .overflow-y-auto {
-          overflow: visible !important;
-          height: auto !important;
-          max-height: none !important;
-        }
-
-        /* Hide sidebar layout, header panels, notifications, and action buttons */
-        aside,
-        header,
-        [data-sidebar="sidebar"],
-        .no-print,
-        .print-hide,
-        button,
-        a {
-          display: none !important;
-        }
-
-        /* Reset page body background for physical print layout */
-        body {
-          background: white !important;
-          color: #09090b !important;
-        }
-
-        main,
-        .print-container {
-          width: 100% !important;
-          max-width: 100% !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          background: white !important;
-          color: #09090b !important;
-          box-shadow: none !important;
-          border: none !important;
-        }
-
-        /* Ensure metrics grid prints as 3 columns */
-        .grid {
-          display: grid !important;
-          grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-          gap: 16px !important;
-        }
-
-        /* Status breakdown prints as 5-col grid */
-        .status-breakdown-grid {
-          display: grid !important;
-          grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-          gap: 12px !important;
-        }
-
-        /* Progress & chart section prints as 2-col */
-        .progress-chart-grid {
-          display: grid !important;
-          grid-template-columns: 1fr 1fr !important;
-          gap: 24px !important;
-        }
-
-        /* Split goal and achievements block into 2 columns for print */
-        .md\\:grid-cols-3 {
-          display: grid !important;
-          grid-template-columns: 1fr 2fr !important;
-          gap: 24px !important;
-        }
-
-        /* Force ink-friendly colors on text for physical paper (even from dark mode) */
-        .print-container h1,
-        .print-container h2,
-        .print-container h3,
-        .print-container h4,
-        .print-container p,
-        .print-container span,
-        .print-container td,
-        .print-container th {
-          color: #09090b !important;
-        }
-
-        .print-container .text-muted-foreground {
-          color: #71717a !important;
-        }
-
-        /* Ink-friendly card printing rules */
-        .print-container .card {
-          border: 1px solid #e4e4e7 !important;
-          background-color: #fcfcfc !important;
-          color: #09090b !important;
-          box-shadow: none !important;
-        }
-
-        /* Shipped items table layout prints beautifully */
-        .print-container table {
-          border-collapse: collapse !important;
-          width: 100% !important;
-          table-layout: auto !important;
-          border-color: #e4e4e7 !important;
-        }
-
-        .print-container th {
-          background-color: #f4f4f5 !important;
-          color: #27272a !important;
-          border-bottom: 2px solid #e4e4e7 !important;
-        }
-
-        /* Prevent title/assignee text from truncating inside printed cells */
-        .print-container td {
-          max-width: none !important;
-          white-space: normal !important;
-          overflow: visible !important;
-          text-overflow: clip !important;
-        }
-
-        .print-container tr {
-          border-bottom: 1px solid #e4e4e7 !important;
-          page-break-inside: avoid;
-        }
-
-        thead {
-          display: table-header-group;
-        }
-      }
-    `,
   });
 
   return (
@@ -550,11 +418,11 @@ export function SprintReportView({
           return (
             <Card
               key={status}
-              className={`border-border/60 bg-card/50 card cursor-pointer backdrop-blur-sm transition-all hover:scale-[1.02] ${
-                activeFilter === status
-                  ? `ring-2 ring-offset-1 ${meta.borderClass} ring-current ${meta.textClass}`
-                  : ''
-              }`}
+              className={cn(
+                "border-border/60 bg-card/50 card cursor-pointer",
+                "backdrop-blur-sm transition-all hover:scale-[1.02]",
+                activeFilter === status && `ring-2 ring-offset-1 ${meta.borderClass} ring-current ${meta.textClass}`
+              )}
               onClick={() =>
                 setActiveFilter((prev) => (prev === status ? null : status))
               }
@@ -608,14 +476,11 @@ export function SprintReportView({
                   {completedIssues} / {totalIssues}
                 </span>
               </div>
-              <div className="bg-muted relative h-3 w-full overflow-hidden rounded-full">
-                <div
-                  className="h-full rounded-full bg-emerald-500 transition-all duration-700 ease-out"
-                  style={{
-                    width: `${totalIssues > 0 ? (completedIssues / totalIssues) * 100 : 0}%`,
-                  }}
-                />
-              </div>
+              <Progress
+                value={totalIssues > 0 ? (completedIssues / totalIssues) * 100 : 0}
+                className="h-3"
+                indicatorClassName="bg-emerald-500"
+              />
               <p className="text-muted-foreground text-xs">
                 {completionRate}% complete
               </p>
@@ -631,14 +496,11 @@ export function SprintReportView({
                   {completedStoryPoints} / {totalPlannedStoryPoints}
                 </span>
               </div>
-              <div className="bg-muted relative h-3 w-full overflow-hidden rounded-full">
-                <div
-                  className="h-full rounded-full bg-indigo-500 transition-all duration-700 ease-out"
-                  style={{
-                    width: `${totalPlannedStoryPoints > 0 ? (completedStoryPoints / totalPlannedStoryPoints) * 100 : 0}%`,
-                  }}
-                />
-              </div>
+              <Progress
+                value={totalPlannedStoryPoints > 0 ? (completedStoryPoints / totalPlannedStoryPoints) * 100 : 0}
+                className="h-3"
+                indicatorClassName="bg-indigo-500"
+              />
               <p className="text-muted-foreground text-xs">
                 {totalPlannedStoryPoints > 0
                   ? (
@@ -672,15 +534,11 @@ export function SprintReportView({
                         {data.count} ({pct}%)
                       </span>
                     </div>
-                    <div className="bg-muted relative h-1.5 w-full overflow-hidden rounded-full">
-                      <div
-                        className="h-full rounded-full transition-all duration-500 ease-out"
-                        style={{
-                          width: `${pct}%`,
-                          backgroundColor: meta.color,
-                        }}
-                      />
-                    </div>
+                    <Progress
+                      value={Number(pct)}
+                      className="h-1.5"
+                      indicatorClassName={STATUS_INDICATOR_BG[status]}
+                    />
                   </div>
                 );
               })}
@@ -743,8 +601,7 @@ export function SprintReportView({
                 return (
                   <div key={status} className="flex items-center gap-1.5">
                     <div
-                      className="h-2.5 w-2.5 rounded-sm"
-                      style={{ backgroundColor: meta.color }}
+                      className={cn("h-2.5 w-2.5 rounded-sm", STATUS_INDICATOR_BG[status])}
                     />
                     <span className="text-muted-foreground text-xs font-medium">
                       {meta.label}{' '}
@@ -828,11 +685,12 @@ export function SprintReportView({
               <button
                 type="button"
                 onClick={() => setActiveFilter(null)}
-                className={`inline-flex cursor-pointer items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                className={cn(
+                  "inline-flex cursor-pointer items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors",
                   activeFilter === null
-                    ? 'bg-foreground text-background'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                }`}
+                    ? "bg-foreground text-background"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                )}
               >
                 All{' '}
                 <span className="ml-0.5 tabular-nums">{totalIssues}</span>
@@ -849,11 +707,12 @@ export function SprintReportView({
                         prev === status ? null : status
                       )
                     }
-                    className={`inline-flex cursor-pointer items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                    className={cn(
+                      "inline-flex cursor-pointer items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors",
                       activeFilter === status
                         ? `${meta.bgClass} ${meta.textClass}`
-                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                    }`}
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    )}
                   >
                     {meta.label}{' '}
                     <span className="ml-0.5 tabular-nums">{data.count}</span>
