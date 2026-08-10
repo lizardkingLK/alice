@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState, useMemo } from 'react';
 import { useReactToPrint } from 'react-to-print';
 
 import Image from 'next/image';
@@ -10,6 +10,10 @@ import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-prior
 import {
   Calendar,
   CheckCircle,
+  CheckCircle2,
+  Circle,
+  CircleDot,
+  Clock,
   FileText,
   Goal,
   Layers,
@@ -18,6 +22,9 @@ import {
   Download,
   FileDown,
   AlertCircle,
+  FlaskConical,
+  TrendingUp,
+  BarChart3,
 } from '@repo/ui/lib/icons';
 import {
   Card,
@@ -28,11 +35,78 @@ import {
 } from '@repo/ui/components/ui/card';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  Cell,
+  Pie,
+  PieChart,
+  type ChartConfig,
+} from '@repo/ui/components/ui/chart';
 
 type SprintReportViewProps = {
   sprint: Sprint;
   workItems: DbWorkItem[];
 };
+
+/* ---------- Status metadata ---------- */
+
+type StatusMeta = {
+  label: string;
+  color: string;
+  bgClass: string;
+  textClass: string;
+  borderClass: string;
+  icon: React.ComponentType<{ className?: string }>;
+};
+
+const STATUS_META: Record<string, StatusMeta> = {
+  New: {
+    label: 'New',
+    color: 'oklch(0.63 0.18 250)',
+    bgClass: 'bg-blue-500/10',
+    textClass: 'text-blue-600 dark:text-blue-400',
+    borderClass: 'border-blue-500/20',
+    icon: Circle,
+  },
+  ToDo: {
+    label: 'To Do',
+    color: 'oklch(0.55 0.03 264)',
+    bgClass: 'bg-slate-500/10',
+    textClass: 'text-slate-600 dark:text-slate-400',
+    borderClass: 'border-slate-500/20',
+    icon: CircleDot,
+  },
+  InProgress: {
+    label: 'In Progress',
+    color: 'oklch(0.75 0.15 85)',
+    bgClass: 'bg-amber-500/10',
+    textClass: 'text-amber-600 dark:text-amber-400',
+    borderClass: 'border-amber-500/20',
+    icon: Clock,
+  },
+  Testing: {
+    label: 'Testing',
+    color: 'oklch(0.62 0.19 295)',
+    bgClass: 'bg-purple-500/10',
+    textClass: 'text-purple-600 dark:text-purple-400',
+    borderClass: 'border-purple-500/20',
+    icon: FlaskConical,
+  },
+  Done: {
+    label: 'Done',
+    color: 'oklch(0.65 0.17 155)',
+    bgClass: 'bg-emerald-500/10',
+    textClass: 'text-emerald-600 dark:text-emerald-400',
+    borderClass: 'border-emerald-500/20',
+    icon: CheckCircle2,
+  },
+};
+
+const STATUS_ORDER = ['New', 'ToDo', 'InProgress', 'Testing', 'Done'] as const;
+
+/* ---------- Helpers ---------- */
 
 function formatDate(dateStr: string | null | Date): string {
   if (!dateStr) return 'No date';
@@ -45,10 +119,15 @@ function formatDate(dateStr: string | null | Date): string {
   return date.toLocaleDateString('en-US', options);
 }
 
+/* ---------- Component ---------- */
+
 export function SprintReportView({
   sprint,
   workItems,
 }: Readonly<SprintReportViewProps>) {
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+
+  /* ---- Derived metrics ---- */
   const totalIssues = workItems.length;
   const completedIssues = workItems.filter(
     (item) => item.status === 'Done'
@@ -64,7 +143,55 @@ export function SprintReportView({
   const completionRate =
     totalIssues > 0 ? ((completedIssues / totalIssues) * 100).toFixed(0) : '0';
 
-  // Action: Download Markdown Report
+  /* ---- Per-status counts ---- */
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, { count: number; points: number }> = {};
+    for (const status of STATUS_ORDER) {
+      counts[status] = { count: 0, points: 0 };
+    }
+    for (const item of workItems) {
+      const status = item.status;
+      if (counts[status]) {
+        counts[status].count += 1;
+        counts[status].points += item.story_points ?? 0;
+      }
+    }
+    return counts;
+  }, [workItems]);
+
+  /* ---- Chart data ---- */
+  const chartConfig = useMemo<ChartConfig>(() => {
+    const config: ChartConfig = {};
+    for (const status of STATUS_ORDER) {
+      const meta = STATUS_META[status];
+      if (meta) {
+        config[status] = {
+          label: meta.label,
+          color: meta.color,
+        };
+      }
+    }
+    return config;
+  }, []);
+
+  const chartData = useMemo(() => {
+    return STATUS_ORDER.filter((s) => statusCounts[s]!.count > 0).map(
+      (status) => ({
+        status,
+        label: STATUS_META[status]!.label,
+        count: statusCounts[status]!.count,
+        fill: `var(--color-${status})`,
+      })
+    );
+  }, [statusCounts]);
+
+  /* ---- Filtered work items ---- */
+  const filteredWorkItems = useMemo(() => {
+    if (!activeFilter) return workItems;
+    return workItems.filter((item) => item.status === activeFilter);
+  }, [workItems, activeFilter]);
+
+  /* ---- Export actions ---- */
   const handleDownloadMarkdown = () => {
     const formattedDateRange = `${formatDate(sprint.startDate)} – ${formatDate(sprint.endDate)}`;
 
@@ -77,6 +204,18 @@ export function SprintReportView({
     md += `* **Completion Scope**: ${completionRate}%\n`;
     md += `* **Work Items Done**: ${completedIssues} / ${totalIssues}\n`;
     md += `* **Velocity Delivered**: ${completedStoryPoints} of ${totalPlannedStoryPoints} planned story points\n\n`;
+
+    md += `## Status Breakdown\n\n`;
+    md += `| Status | Count | Story Points |\n`;
+    md += `| :--- | :---: | :---: |\n`;
+    for (const status of STATUS_ORDER) {
+      const meta = STATUS_META[status];
+      const data = statusCounts[status];
+      if (meta && data) {
+        md += `| ${meta.label} | ${data.count} | ${data.points} |\n`;
+      }
+    }
+    md += `\n`;
 
     md += `## Sprint Goal\n\n`;
     md += `${sprint.goal || 'No goal was defined for this sprint.'}\n\n`;
@@ -181,8 +320,22 @@ export function SprintReportView({
           gap: 16px !important;
         }
 
+        /* Status breakdown prints as 5-col grid */
+        .status-breakdown-grid {
+          display: grid !important;
+          grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+          gap: 12px !important;
+        }
+
+        /* Progress & chart section prints as 2-col */
+        .progress-chart-grid {
+          display: grid !important;
+          grid-template-columns: 1fr 1fr !important;
+          gap: 24px !important;
+        }
+
         /* Split goal and achievements block into 2 columns for print */
-        .md\:grid-cols-3 {
+        .md\\:grid-cols-3 {
           display: grid !important;
           grid-template-columns: 1fr 2fr !important;
           gap: 24px !important;
@@ -248,8 +401,6 @@ export function SprintReportView({
 
   return (
     <div ref={printRef} className="print-container space-y-6">
-      {/* CSS print overrides wrapper */}
-
       {/* Banner header */}
       <div className="relative overflow-hidden rounded-2xl border border-indigo-500/15 bg-linear-to-r from-indigo-500/5 via-transparent to-transparent p-6 md:p-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -318,7 +469,7 @@ export function SprintReportView({
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid (existing 3 cards) */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card className="border-border/60 bg-card/50 card backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -389,6 +540,226 @@ export function SprintReportView({
         </Card>
       </div>
 
+      {/* ====== NEW: Status Breakdown Tiles ====== */}
+      <div className="status-breakdown-grid grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {STATUS_ORDER.map((status) => {
+          const meta = STATUS_META[status]!;
+          const data = statusCounts[status]!;
+          const Icon = meta.icon;
+
+          return (
+            <Card
+              key={status}
+              className={`border-border/60 bg-card/50 card cursor-pointer backdrop-blur-sm transition-all hover:scale-[1.02] ${
+                activeFilter === status
+                  ? `ring-2 ring-offset-1 ${meta.borderClass} ring-current ${meta.textClass}`
+                  : ''
+              }`}
+              onClick={() =>
+                setActiveFilter((prev) => (prev === status ? null : status))
+              }
+            >
+              <CardContent className="flex items-center gap-3 p-4">
+                <div
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${meta.bgClass} ${meta.textClass}`}
+                >
+                  <Icon className="h-4.5 w-4.5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-muted-foreground text-xs font-medium">
+                    {meta.label}
+                  </p>
+                  <p className="text-foreground text-xl font-bold tabular-nums leading-tight">
+                    {data.count}
+                  </p>
+                  <p className="text-muted-foreground mt-0.5 text-[10px] font-medium">
+                    {data.points} pts
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* ====== NEW: Progress Bar + Donut Chart ====== */}
+      <div className="progress-chart-grid grid gap-6 md:grid-cols-2">
+        {/* Progress Card */}
+        <Card className="border-border/60 bg-card/50 card backdrop-blur-sm">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <TrendingUp className="text-muted-foreground h-5 w-5" />
+              <CardTitle className="text-base font-semibold">
+                Sprint Progress
+              </CardTitle>
+            </div>
+            <CardDescription>
+              Aggregated completion across all work items
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {/* Work items progress */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground font-medium">
+                  Work Items
+                </span>
+                <span className="text-foreground font-semibold tabular-nums">
+                  {completedIssues} / {totalIssues}
+                </span>
+              </div>
+              <div className="bg-muted relative h-3 w-full overflow-hidden rounded-full">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all duration-700 ease-out"
+                  style={{
+                    width: `${totalIssues > 0 ? (completedIssues / totalIssues) * 100 : 0}%`,
+                  }}
+                />
+              </div>
+              <p className="text-muted-foreground text-xs">
+                {completionRate}% complete
+              </p>
+            </div>
+
+            {/* Story points progress */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground font-medium">
+                  Story Points
+                </span>
+                <span className="text-foreground font-semibold tabular-nums">
+                  {completedStoryPoints} / {totalPlannedStoryPoints}
+                </span>
+              </div>
+              <div className="bg-muted relative h-3 w-full overflow-hidden rounded-full">
+                <div
+                  className="h-full rounded-full bg-indigo-500 transition-all duration-700 ease-out"
+                  style={{
+                    width: `${totalPlannedStoryPoints > 0 ? (completedStoryPoints / totalPlannedStoryPoints) * 100 : 0}%`,
+                  }}
+                />
+              </div>
+              <p className="text-muted-foreground text-xs">
+                {totalPlannedStoryPoints > 0
+                  ? (
+                      (completedStoryPoints / totalPlannedStoryPoints) *
+                      100
+                    ).toFixed(0)
+                  : '0'}
+                % velocity delivered
+              </p>
+            </div>
+
+            {/* Per-status mini bars */}
+            <div className="border-border/40 space-y-2.5 border-t pt-4">
+              <p className="text-muted-foreground mb-2 text-xs font-semibold uppercase tracking-wider">
+                By Status
+              </p>
+              {STATUS_ORDER.map((status) => {
+                const meta = STATUS_META[status]!;
+                const data = statusCounts[status]!;
+                const pct =
+                  totalIssues > 0
+                    ? ((data.count / totalIssues) * 100).toFixed(0)
+                    : '0';
+                return (
+                  <div key={status} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className={`font-medium ${meta.textClass}`}>
+                        {meta.label}
+                      </span>
+                      <span className="text-muted-foreground tabular-nums">
+                        {data.count} ({pct}%)
+                      </span>
+                    </div>
+                    <div className="bg-muted relative h-1.5 w-full overflow-hidden rounded-full">
+                      <div
+                        className="h-full rounded-full transition-all duration-500 ease-out"
+                        style={{
+                          width: `${pct}%`,
+                          backgroundColor: meta.color,
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Donut Chart Card */}
+        <Card className="border-border/60 bg-card/50 card backdrop-blur-sm">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <BarChart3 className="text-muted-foreground h-5 w-5" />
+              <CardTitle className="text-base font-semibold">
+                Status Distribution
+              </CardTitle>
+            </div>
+            <CardDescription>
+              Visual breakdown of work items by current status
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {chartData.length === 0 ? (
+              <div className="text-muted-foreground flex h-48 items-center justify-center text-sm">
+                No work items to display
+              </div>
+            ) : (
+              <ChartContainer
+                config={chartConfig}
+                className="mx-auto aspect-square max-h-70"
+              >
+                <PieChart>
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent nameKey="label" hideLabel />
+                    }
+                  />
+                  <Pie
+                    data={chartData}
+                    dataKey="count"
+                    nameKey="label"
+                    innerRadius={60}
+                    outerRadius={100}
+                    strokeWidth={3}
+                    paddingAngle={2}
+                  >
+                    {chartData.map((entry) => (
+                      <Cell key={entry.status} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ChartContainer>
+            )}
+
+            {/* Legend */}
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+              {STATUS_ORDER.map((status) => {
+                const meta = STATUS_META[status]!;
+                const data = statusCounts[status]!;
+                if (data.count === 0) return null;
+                return (
+                  <div key={status} className="flex items-center gap-1.5">
+                    <div
+                      className="h-2.5 w-2.5 rounded-sm"
+                      style={{ backgroundColor: meta.color }}
+                    />
+                    <span className="text-muted-foreground text-xs font-medium">
+                      {meta.label}{' '}
+                      <span className="text-foreground font-semibold">
+                        {data.count}
+                      </span>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Goal & Detailed overview */}
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="border-border/60 bg-card/50 card md:col-span-1">
@@ -434,25 +805,70 @@ export function SprintReportView({
         </Card>
       </div>
 
-      {/* Work items list */}
+      {/* ====== NEW: Filterable Deliverables Table ====== */}
       <Card className="border-border/60 bg-card/50 card">
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <FileText className="text-muted-foreground h-5 w-5" />
-            <div>
-              <CardTitle className="text-base font-semibold">
-                Deliverables List
-              </CardTitle>
-              <CardDescription>
-                Detailed list of deliverables in this sprint.
-              </CardDescription>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <FileText className="text-muted-foreground h-5 w-5" />
+              <div>
+                <CardTitle className="text-base font-semibold">
+                  Deliverables List
+                </CardTitle>
+                <CardDescription>
+                  {activeFilter
+                    ? `Showing ${filteredWorkItems.length} ${STATUS_META[activeFilter]?.label ?? activeFilter} items`
+                    : `Detailed list of all ${totalIssues} deliverables in this sprint.`}
+                </CardDescription>
+              </div>
+            </div>
+
+            {/* Filter tabs (hidden on print) */}
+            <div className="no-print flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setActiveFilter(null)}
+                className={`inline-flex cursor-pointer items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                  activeFilter === null
+                    ? 'bg-foreground text-background'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                All{' '}
+                <span className="ml-0.5 tabular-nums">{totalIssues}</span>
+              </button>
+              {STATUS_ORDER.map((status) => {
+                const meta = STATUS_META[status]!;
+                const data = statusCounts[status]!;
+                return (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() =>
+                      setActiveFilter((prev) =>
+                        prev === status ? null : status
+                      )
+                    }
+                    className={`inline-flex cursor-pointer items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                      activeFilter === status
+                        ? `${meta.bgClass} ${meta.textClass}`
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}
+                  >
+                    {meta.label}{' '}
+                    <span className="ml-0.5 tabular-nums">{data.count}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {workItems.length === 0 ? (
+          {filteredWorkItems.length === 0 ? (
             <div className="text-muted-foreground p-6 text-center text-sm">
-              No work items were assigned to this sprint.
+              {activeFilter
+                ? `No work items with status "${STATUS_META[activeFilter]?.label ?? activeFilter}".`
+                : 'No work items were assigned to this sprint.'}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -469,65 +885,68 @@ export function SprintReportView({
                   </tr>
                 </thead>
                 <tbody className="divide-border/30 divide-y">
-                  {workItems.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="hover:bg-muted/30 transition-colors"
-                    >
-                      <td className="p-4 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1 rounded-md bg-zinc-500/10 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                          {item.type}
-                        </span>
-                      </td>
-                      <td className="p-4 font-mono text-xs font-semibold whitespace-nowrap">
-                        {item.project
-                          ? `${item.project.key}-${item.id.slice(0, 4).toUpperCase()}`
-                          : item.id.slice(0, 8).toUpperCase()}
-                      </td>
-                      <td className="text-foreground max-w-xs truncate p-4 font-medium">
-                        {item.title}
-                      </td>
-                      <td className="p-4 whitespace-nowrap">
-                        <PriorityBadge priority={item.priority} />
-                      </td>
-                      <td className="p-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
-                            item.status === 'Done'
-                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                              : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                          }`}
-                        >
-                          {item.status}
-                        </span>
-                      </td>
-                      <td className="p-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          {item.assignee?.profile_picture ? (
-                            <Image
-                              src={item.assignee.profile_picture}
-                              alt={item.assignee.name || 'Assignee'}
-                              width={24}
-                              height={24}
-                              className="rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="bg-primary/10 text-primary flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold">
-                              {(item.assignee?.name || 'Unassigned')
-                                .slice(0, 2)
-                                .toUpperCase()}
-                            </div>
-                          )}
-                          <span className="text-xs">
-                            {item.assignee?.name || 'Unassigned'}
+                  {filteredWorkItems.map((item) => {
+                    const statusMeta = STATUS_META[item.status];
+                    return (
+                      <tr
+                        key={item.id}
+                        className="hover:bg-muted/30 transition-colors"
+                      >
+                        <td className="p-4 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-zinc-500/10 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                            {item.type}
                           </span>
-                        </div>
-                      </td>
-                      <td className="text-foreground p-4 text-right font-semibold whitespace-nowrap">
-                        {item.story_points ?? '–'}
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="p-4 font-mono text-xs font-semibold whitespace-nowrap">
+                          {item.project
+                            ? `${item.project.key}-${item.id.slice(0, 4).toUpperCase()}`
+                            : item.id.slice(0, 8).toUpperCase()}
+                        </td>
+                        <td className="text-foreground max-w-xs truncate p-4 font-medium">
+                          {item.title}
+                        </td>
+                        <td className="p-4 whitespace-nowrap">
+                          <PriorityBadge priority={item.priority} />
+                        </td>
+                        <td className="p-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                              statusMeta
+                                ? `${statusMeta.bgClass} ${statusMeta.textClass}`
+                                : 'bg-zinc-500/10 text-zinc-600 dark:text-zinc-400'
+                            }`}
+                          >
+                            {statusMeta?.label ?? item.status}
+                          </span>
+                        </td>
+                        <td className="p-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            {item.assignee?.profile_picture ? (
+                              <Image
+                                src={item.assignee.profile_picture}
+                                alt={item.assignee.name || 'Assignee'}
+                                width={24}
+                                height={24}
+                                className="rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="bg-primary/10 text-primary flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold">
+                                {(item.assignee?.name || 'Unassigned')
+                                  .slice(0, 2)
+                                  .toUpperCase()}
+                              </div>
+                            )}
+                            <span className="text-xs">
+                              {item.assignee?.name || 'Unassigned'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="text-foreground p-4 text-right font-semibold whitespace-nowrap">
+                          {item.story_points ?? '–'}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
