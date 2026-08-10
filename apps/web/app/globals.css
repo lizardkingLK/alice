@@ -142,6 +142,8 @@
 
   .print-container thead {
     display: table-header-group;
+  }
+}
 /* Work-item labels “train” — duration is overridden per strip for constant px/s. */
 @theme {
   --animate-labels-train: labels-train 8s linear infinite;
