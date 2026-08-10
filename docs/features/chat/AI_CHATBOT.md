@@ -67,11 +67,13 @@ ChatClient / FloatingChatWidget
 ```
 
 No Vercel AI SDK / OpenAI client — Gemini is called with `fetch` from
-`chat.service.ts`.
+`ChatService` (`chat.service.ts`).
 
 ### API routes
 
-All routes require `requireApiAuth`.
+All routes require `requireApiAuth`. Wired via composition root
+(`config/composition.ts` → `chat.router` mounted in `routing.ts`). See
+[DI.md](../../architecture/DI.md).
 
 | Method | Path | Purpose |
 | ------ | ---- | ------- |
@@ -91,25 +93,27 @@ Mounted in `apps/api/src/config/routing.ts` as `/api/chat`.
 | Client UI | `apps/web/app/chat/_components/chat-client.tsx` |
 | Client API | `apps/web/app/chat/_components/chat-client.service.ts` |
 | Widget | `apps/web/app/chat/_components/floating-chat-widget.tsx` |
-| Routes | `apps/api/src/routes/api/chat/chat.route.ts` |
-| Service | `apps/api/src/routes/api/chat/chat.service.ts` |
-| Repository | `apps/api/src/routes/api/chat/chat.repository.ts` |
+| Routes | `createChatRouter` in `chat.route.ts` (mounted as `chat.router`) |
+| Service | `ChatService` in `chat.service.ts` |
+| Repository | `ChatRepository` in `chat.repository.ts` (`db` injected) |
 | Prompt + tools | `apps/api/src/routes/api/chat/chat.route.data.ts` |
 | Types (API) | `apps/api/src/routes/api/chat/chat.route.types.ts` |
 | Shared roles | `packages/types/src/chat.ts` (`ChatRoles`, `GeminiRoles`, `getRoleName`) |
+| Composition | `apps/api/src/config/composition.ts` → `chat` |
 | Supabase client | `apps/api/src/lib/supabase.ts` (`supabase` + re-exported `createClient`) |
 
 ### Data access
 
-Layering: **route → service → repository**.
+Layering: **composition root → route factory → service → repository**.
 
+- `config/composition.ts` builds `ChatRepository(supabase)` → `ChatService` →
+  `createChatRouter({ chatService })` and injects `workItemService` /
+  `sprintsService` for tool mutations.
 - `chat.repository.ts` owns all Supabase table + Storage I/O for conversations
-  and history files, using the shared service-role client from
-  `apps/api/src/lib/supabase.ts` (`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`).
-- `chat.service.ts` owns Gemini calls, markdown serialize/deserialize, and
+  and history files via the injected `SupabaseClient`.
+- `ChatService` owns Gemini calls, markdown serialize/deserialize, and
   orchestration; it does not construct its own Supabase client.
-- Domain mutations still go through existing project / sprint / work-item
-  services.
+- Pure markdown helpers remain module-level exports for unit tests.
 
 There are **no** `CHAT_SUPABASE_*` env vars and no second `createClient` for
 chat. Import `createClient` / `supabase` only from `lib/supabase.ts` when

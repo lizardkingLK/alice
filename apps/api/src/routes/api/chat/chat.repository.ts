@@ -1,6 +1,6 @@
-import type { Tables } from '@repo/types';
+import type { Database, Tables } from '@repo/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { env } from '../../../config/env';
-import { supabase } from '../../../lib/supabase';
 import { sanitizeLog } from './chat.utils';
 
 export type ChatConversationRow = Tables<'chat_conversations'>;
@@ -32,18 +32,20 @@ function historyObjectPath(conversationId: string): string {
 export class ChatRepository {
   private isBucketVerified = false;
 
+  constructor(private readonly db: SupabaseClient<Database>) {}
+
   async ensureChatBucketExists(): Promise<string> {
     const bucketName = env.STORAGE_BUCKET_CHAT_HISTORY;
     if (this.isBucketVerified) return bucketName;
 
     try {
       const { data: buckets, error: listError } =
-        await supabase.storage.listBuckets();
+        await this.db.storage.listBuckets();
       if (listError) throw listError;
 
       const exists = buckets.some((b) => b.name === bucketName);
       if (!exists) {
-        const { error: createError } = await supabase.storage.createBucket(
+        const { error: createError } = await this.db.storage.createBucket(
           bucketName,
           { public: false }
         );
@@ -69,7 +71,7 @@ export class ChatRepository {
     const path = historyObjectPath(conversationId);
     const buffer = Buffer.from(mdContent, 'utf-8');
 
-    const { error } = await supabase.storage.from(bucket).upload(path, buffer, {
+    const { error } = await this.db.storage.from(bucket).upload(path, buffer, {
       contentType: 'text/markdown',
       upsert: true,
     });
@@ -83,7 +85,7 @@ export class ChatRepository {
     const bucket = await this.ensureChatBucketExists();
     const path = historyObjectPath(conversationId);
 
-    const { data, error } = await supabase.storage.from(bucket).download(path);
+    const { data, error } = await this.db.storage.from(bucket).download(path);
 
     if (error) {
       if ('status' in error && error.status === 404) {
@@ -102,11 +104,11 @@ export class ChatRepository {
   async removeHistoryMarkdown(conversationId: string): Promise<void> {
     const bucket = await this.ensureChatBucketExists();
     const path = historyObjectPath(conversationId);
-    await supabase.storage.from(bucket).remove([path]);
+    await this.db.storage.from(bucket).remove([path]);
   }
 
   async touchConversationUpdatedAt(conversationId: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await this.db
       .from('chat_conversations')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', conversationId);
@@ -115,7 +117,7 @@ export class ChatRepository {
   }
 
   async listConversations(userId: string): Promise<ChatConversationSummary[]> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('chat_conversations')
       .select('id, title, created_at, updated_at')
       .eq('user_id', userId)
@@ -136,7 +138,7 @@ export class ChatRepository {
     userId: string,
     title = 'New Chat'
   ): Promise<string> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('chat_conversations')
       .insert({
         user_id: userId,
@@ -161,7 +163,7 @@ export class ChatRepository {
     userId: string,
     conversationId: string
   ): Promise<void> {
-    const { error } = await supabase
+    const { error } = await this.db
       .from('chat_conversations')
       .delete()
       .eq('id', conversationId)
@@ -177,7 +179,7 @@ export class ChatRepository {
   }
 
   async listUsersSnapshot(): Promise<ChatUserSnapshot[]> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('users')
       .select('id, name, email');
 
@@ -188,7 +190,7 @@ export class ChatRepository {
   async listSprintsByProject(
     projectId: string
   ): Promise<ChatSprintSnapshot[]> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('sprints')
       .select('id, name, status, start_date, end_date, project_id')
       .eq('project_id', projectId);
@@ -198,7 +200,7 @@ export class ChatRepository {
   }
 
   async listActiveSprintsSnapshot(): Promise<ChatSprintSnapshot[]> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('sprints')
       .select('id, name, project_id, status')
       .eq('status', 'active');
@@ -207,5 +209,3 @@ export class ChatRepository {
     return (data || []) as ChatSprintSnapshot[];
   }
 }
-
-export const chatRepository = new ChatRepository();

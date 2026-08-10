@@ -11,7 +11,8 @@ and work items through natural language.
 Quick links:
 
 - Web UI: `apps/web/app/chat/`, floating widget via `dashboard-shell.tsx`
-- API: `apps/api/src/routes/api/chat/` (route → service → repository)
+- API: `apps/api/src/routes/api/chat/` (composition → route → service → repository)
+- DI: [architecture/DI.md](../../architecture/DI.md)
 - Schema: `chat_conversations` in `packages/db/prisma/schema.prisma`
 - Types: `packages/types/src/chat.ts` (`ChatRoles` / `ChatRole`)
 - Related: [Projects](../projects/), [Work items](../work-items/), [Sprints](../sprints/), [Dashboard](../dashboard/)
