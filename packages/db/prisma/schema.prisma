@@ -117,6 +117,7 @@ model users {
   updated_notifications   notifications[]   @relation("NotificationUpdatedBy")
   created_access_allowlist access_allowlist[] @relation("AccessAllowlistCreatedBy")
   updated_access_allowlist access_allowlist[] @relation("AccessAllowlistUpdatedBy")
+  chat_conversations      chat_conversations[]
   owned_saved_views       saved_views[]       @relation("SavedViewOwner")
   created_saved_views     saved_views[]       @relation("SavedViewCreatedBy")
   updated_saved_views     saved_views[]       @relation("SavedViewUpdatedBy")
@@ -381,6 +382,18 @@ model jira_settings {
   singleton  Boolean  @default(true) @unique
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @updatedAt @db.Timestamptz(6)
+}
+
+model chat_conversations {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  title      String   @default("New Chat")
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @updatedAt @db.Timestamptz(6)
+
+  user       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
 }
 
 /// Personal saved navigation snapshots (pathname + query); shareable via saved_view_shares.

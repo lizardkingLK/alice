@@ -42,6 +42,38 @@ export type Database = {
         };
         Relationships: [];
       };
+      chat_conversations: {
+        Row: {
+          created_at: string;
+          id: string;
+          title: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          title?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'chat_conversations_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       access_allowlist: {
         Row: {
           created_at: string;
@@ -1111,7 +1143,7 @@ export type Database = {
       WorkItemType: 'Epic' | 'Story' | 'Task' | 'Issue';
     };
     CompositeTypes: {
-      [_ in never]: never;
+      __dummy: never;
     };
   };
 };

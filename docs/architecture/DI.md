@@ -1,8 +1,8 @@
 # API dependency injection (composition root)
 
-**Status:** Plan (Living for the work-items slice)  
+**Status:** Plan (Living for work-items, sprints, and chat slices)  
 **Scope:** `apps/api` only — Express routers, services, repositories  
-**Last updated:** July 27, 2026
+**Last updated:** August 10, 2026
 
 ## 1. Why
 
@@ -67,9 +67,9 @@ flowchart TB
 | `config/routing.ts`     | Mount routers; export `routesConfig`   | Composed routers from composition |
 | `index.ts`              | Middleware + `app.use(routesConfig)`   | —                                 |
 
-## 4. Work-items slice (reference implementation)
+## 4. Migrated slices (reference)
 
-First migrated domain. Use it as the template for the next routes.
+### Work-items (first)
 
 | Piece            | Path                                                                             |
 | ---------------- | -------------------------------------------------------------------------------- |
@@ -81,6 +81,28 @@ First migrated domain. Use it as the template for the next routes.
 | Boot             | `apps/api/src/index.ts` → `app.use(routesConfig)`                                |
 
 Notifications stay on the existing module singleton for now; the work-items router **receives** it so assign side-effects remain testable without rewriting notifications.
+
+### Sprints
+
+| Piece            | Path                                                                      |
+| ---------------- | ------------------------------------------------------------------------- |
+| Repositories     | `sprints.repository.ts` (`SprintsRepository`, `SprintBurndownRepository`) |
+| Services         | `sprints.service.ts`                                                      |
+| Route factory    | `createSprintsRouter`                                                     |
+| Injection config | `composition.ts` → `sprints`                                              |
+| Route mount      | `routing.ts` → `sprints.router`                                           |
+
+### Chat
+
+| Piece            | Path                                                           |
+| ---------------- | -------------------------------------------------------------- |
+| Repository       | `apps/api/src/routes/api/chat/chat.repository.ts`              |
+| Service          | `apps/api/src/routes/api/chat/chat.service.ts` → `ChatService` |
+| Route factory    | `createChatRouter`                                             |
+| Injection config | `composition.ts` → `chat`                                      |
+| Route mount      | `routing.ts` → `chat.router`                                   |
+
+Chat receives `workItemService` and `sprintsService` from the composition root for tool mutations (avoids importing `composition.ts` from the service). Projects create/list still use the projects module singletons until that domain is migrated. Pure helpers (`chatHistoryToMarkdown`, `markdownToChatHistory`, `sanitizeLog`) stay module-level.
 
 ## 5. Migration checklist (next domain)
 

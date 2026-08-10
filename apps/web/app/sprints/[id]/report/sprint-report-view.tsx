@@ -352,7 +352,7 @@ export function SprintReportView({
                   <p className="text-muted-foreground text-xs font-medium">
                     {meta.label}
                   </p>
-                  <p className="text-foreground text-xl font-bold tabular-nums leading-tight">
+                  <p className="text-foreground text-xl leading-tight font-bold tabular-nums">
                     {data.count}
                   </p>
                   <p className="text-muted-foreground mt-0.5 text-[10px] font-medium">

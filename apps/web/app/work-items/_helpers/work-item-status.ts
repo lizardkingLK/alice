@@ -141,4 +141,10 @@ export const STATUS_INDICATOR_BG: Record<string, string> = {
   Done: 'bg-emerald-500',
 };
 
-export const STATUS_ORDER = ['New', 'ToDo', 'InProgress', 'Testing', 'Done'] as const;
+export const STATUS_ORDER = [
+  'New',
+  'ToDo',
+  'InProgress',
+  'Testing',
+  'Done',
+] as const;
