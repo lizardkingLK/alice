@@ -322,13 +322,13 @@ export async function callGeminiAPI(
 // 1. Uncomment the block below and comment out "const chatStorageClient = supabase;"
 // 2. Add CHAT_SUPABASE_URL and CHAT_SUPABASE_SERVICE_ROLE_KEY to your apps/api/.env
 
-import { createClient } from '@supabase/supabase-js';
-const chatStorageClient = createClient(
-  process.env.CHAT_SUPABASE_URL || '',
-  process.env.CHAT_SUPABASE_SERVICE_ROLE_KEY || ''
-);
+// import { createClient } from '@supabase/supabase-js';
+// const chatStorageClient = createClient(
+//   process.env.CHAT_SUPABASE_URL || '',
+//   process.env.CHAT_SUPABASE_SERVICE_ROLE_KEY || ''
+// );
 
-// const chatStorageClient = supabase;
+const chatStorageClient = supabase;
 
 /**
  * Ensures the chat history bucket exists in Supabase Storage.
