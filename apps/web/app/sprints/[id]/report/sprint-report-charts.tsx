@@ -49,7 +49,7 @@ export function SprintReportCharts({
   totalPlannedStoryPoints,
   statusCounts,
   chartData,
-}: SprintReportChartsProps) {
+}: Readonly<SprintReportChartsProps>) {
   const chartConfig = React.useMemo<ChartConfig>(() => {
     const config: ChartConfig = {};
     for (const status of STATUS_ORDER) {

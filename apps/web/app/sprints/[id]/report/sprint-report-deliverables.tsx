@@ -32,7 +32,7 @@ export function SprintReportDeliverables({
   setActiveFilter,
   filteredWorkItems,
   statusCounts,
-}: SprintReportDeliverablesProps) {
+}: Readonly<SprintReportDeliverablesProps>) {
   return (
     <Card className="border-border/60 bg-card/50 card">
       <CardHeader>
