@@ -27,6 +27,11 @@ import type {
 
 const chatRouter: Router = Router();
 
+function sanitizeLog(value: unknown): string {
+  const str = typeof value === 'string' ? value : String(value || '');
+  return str.replace(/[\r\n]/g, '_');
+}
+
 chatRouter.get('/', requireApiAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const list = (await listConversations(req.userId!)) as {
@@ -41,7 +46,7 @@ chatRouter.get('/', requireApiAuth, async (req: AuthenticatedRequest, res) => {
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : 'Failed to load chat history';
-    console.error('error. loading chat history failed:', message);
+    console.error('error. loading chat history failed:', sanitizeLog(message));
     res.status(500).json({ error: message });
   }
 });
@@ -53,7 +58,7 @@ chatRouter.get('/conversations', requireApiAuth, async (req: AuthenticatedReques
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : 'Failed to list conversations';
-    console.error('error. list conversations failed:', message);
+    console.error('error. list conversations failed:', sanitizeLog(message));
     res.status(500).json({ error: message });
   }
 });
@@ -66,7 +71,7 @@ chatRouter.get('/:conversationId', requireApiAuth, async (req: AuthenticatedRequ
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : 'Failed to load conversation history';
-    console.error('error. load conversation history failed:', message);
+    console.error('error. load conversation history failed:', sanitizeLog(message));
     res.status(500).json({ error: message });
   }
 });
@@ -79,7 +84,7 @@ chatRouter.delete('/:conversationId', requireApiAuth, async (req: AuthenticatedR
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : 'Failed to delete conversation';
-    console.error('error. delete conversation failed:', message);
+    console.error('error. delete conversation failed:', sanitizeLog(message));
     res.status(500).json({ error: message });
   }
 });
@@ -222,7 +227,7 @@ Current Workspace State:
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : 'Failed to process message';
-    console.error('error. chatbot processing failed:', message);
+    console.error('error. chatbot processing failed:', sanitizeLog(message));
     res.status(500).json({ error: message });
   }
 });

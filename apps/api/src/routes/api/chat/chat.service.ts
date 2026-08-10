@@ -14,6 +14,11 @@ import type {
   StoredChatMessage,
 } from './chat.route.types';
 
+function sanitizeLog(value: unknown): string {
+  const str = typeof value === 'string' ? value : String(value || '');
+  return str.replace(/[\r\n]/g, '_');
+}
+
 function textToProseMirrorJson(text: string | null | undefined) {
   if (!text) return null;
   return {
@@ -199,7 +204,7 @@ export async function processFunctionCalls(
         toolActionsPerformed
       );
     } catch (err: unknown) {
-      console.error(`Error executing tool ${name}`);
+      console.error(`Error executing tool ${sanitizeLog(name)}`);
       result = { error: err instanceof Error ? err.message : 'Unknown error' };
     }
 
@@ -230,7 +235,7 @@ function logGeminiError(errorDetails: {
     fs.appendFileSync(logFilePath, logMessage);
   } catch (err) {
     const errorName = err instanceof Error ? err.name : 'UnknownError';
-    console.error(`Failed to write to gemini-errors.log: ${errorName}`);
+    console.error(`Failed to write to gemini-errors.log: ${sanitizeLog(errorName)}`);
   }
 }
 
@@ -357,7 +362,7 @@ async function ensureChatBucketExists(): Promise<string> {
     isBucketVerified = true;
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error(`Error verifying/creating storage bucket "${bucketName}":`, msg);
+    console.error(`Error verifying/creating storage bucket "${sanitizeLog(bucketName)}":`, sanitizeLog(msg));
   }
 
   return bucketName;
@@ -408,7 +413,7 @@ export function markdownToChatHistory(md: string): StoredChatMessage[] {
   try {
     return JSON.parse(jsonStr);
   } catch (error) {
-    console.error('Failed to parse chat history JSON from markdown:', error);
+    console.error('Failed to parse chat history JSON from markdown:', sanitizeLog(error));
     return [];
   }
 }
@@ -444,7 +449,7 @@ export async function saveChatHistory(
       .eq('id', conversationId);
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error(`Failed to save chat history for conversation ${conversationId}:`, msg);
+    console.error(`Failed to save chat history for conversation ${sanitizeLog(conversationId)}:`, sanitizeLog(msg));
   }
 }
 
@@ -478,7 +483,7 @@ export async function loadChatHistory(
     return markdownToChatHistory(mdText);
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error(`Failed to load chat history for conversation ${conversationId}:`, msg);
+    console.error(`Failed to load chat history for conversation ${sanitizeLog(conversationId)}:`, sanitizeLog(msg));
     return [];
   }
 }
@@ -494,7 +499,7 @@ export async function listConversations(userId: string): Promise<unknown[]> {
     .order('updated_at', { ascending: false });
 
   if (error) {
-    console.error('Failed to list chat conversations:', error.message);
+    console.error('Failed to list chat conversations:', sanitizeLog(error.message));
     throw error;
   }
   return data || [];
@@ -514,7 +519,7 @@ export async function createConversation(
     .single();
 
   if (error) {
-    console.error('Failed to create chat conversation:', error.message);
+    console.error('Failed to create chat conversation:', sanitizeLog(error.message));
     throw error;
   }
   return data.id;
@@ -534,7 +539,7 @@ export async function deleteConversation(
     .eq('user_id', userId);
 
   if (error) {
-    console.error('Failed to delete chat conversation row:', error.message);
+    console.error('Failed to delete chat conversation row:', sanitizeLog(error.message));
     throw error;
   }
 
@@ -543,6 +548,6 @@ export async function deleteConversation(
     const path = `chat-history/${conversationId}.md`;
     await chatStorageClient.storage.from(bucket).remove([path]);
   } catch (err) {
-    console.warn(`Failed to remove chat history file for conversation ${conversationId}:`, err);
+    console.warn(`Failed to remove chat history file for conversation ${sanitizeLog(conversationId)}:`, sanitizeLog(err));
   }
 }
