@@ -14,7 +14,7 @@ import type {
   StoredChatMessage,
 } from './chat.route.types';
 
-function sanitizeLog(value: unknown): string {
+export function sanitizeLog(value: unknown): string {
   if (value instanceof Error) {
     return value.message.replace(/[\r\n]/g, '_');
   }

@@ -16,6 +16,7 @@ import {
   listConversations,
   createConversation,
   deleteConversation,
+  sanitizeLog,
 } from './chat.service';
 import type {
   ContentPart,
@@ -26,29 +27,6 @@ import type {
 } from './chat.route.types';
 
 const chatRouter: Router = Router();
-
-function sanitizeLog(value: unknown): string {
-  if (value instanceof Error) {
-    return value.message.replace(/[\r\n]/g, '_');
-  }
-  if (
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean' ||
-    typeof value === 'symbol' ||
-    typeof value === 'bigint'
-  ) {
-    return String(value).replace(/[\r\n]/g, '_');
-  }
-  if (typeof value === 'object' && value !== null) {
-    try {
-      return JSON.stringify(value).replace(/[\r\n]/g, '_');
-    } catch {
-      // Fallback
-    }
-  }
-  return '';
-}
 
 chatRouter.get('/', requireApiAuth, async (req: AuthenticatedRequest, res) => {
   try {
