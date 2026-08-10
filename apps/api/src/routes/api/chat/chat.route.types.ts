@@ -1,4 +1,4 @@
-import { ChatRole } from '@repo/types';
+import type { ChatRole, GeminiRole } from '@repo/types';
 
 export interface ContentPart {
   text?: string;
@@ -15,7 +15,7 @@ export interface ContentPart {
 }
 
 export interface ContentTurn {
-  role: 'user' | 'model';
+  role: GeminiRole;
   parts: ContentPart[];
 }
 

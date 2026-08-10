@@ -50,6 +50,7 @@ One folder per product area. Prefer a local `README.md` as the index.
 | Board      | [features/board/](./features/board/)                                                                     |
 | Projects   | [features/projects/](./features/projects/)                                                               |
 | Sprints    | [features/sprints/](./features/sprints/)                                                                 |
+| Chat / AI  | [features/chat/](./features/chat/) ([AI_CHATBOT.md](./features/chat/AI_CHATBOT.md)) — Gemini assistant (**Implemented**) |
 | Dashboard  | [features/dashboard/](./features/dashboard/)                                                             |
 | Views      | [features/views/](./features/views/) ([FAVORITES_AND_VIEWS.md](./features/views/FAVORITES_AND_VIEWS.md)) |
 | Profile    | [features/profile/](./features/profile/) ([EDIT_PROFILE.md](./features/profile/EDIT_PROFILE.md))         |

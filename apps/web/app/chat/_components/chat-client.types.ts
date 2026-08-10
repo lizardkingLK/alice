@@ -1,4 +1,4 @@
-import { ChatRole } from '@repo/types';
+import type { ChatRole } from '@repo/types';
 
 export type ActionItem = {
   type: 'create_project' | 'create_sprint' | 'create_work_item';

@@ -5,6 +5,7 @@ import { projectsRepository } from '../projects/projects.repository';
 import { workItems, sprints } from '../../../config/composition';
 import { supabase } from '../../../lib/supabase';
 import { env } from '../../../config/env';
+import { getRoleName } from '@repo/types';
 import { systemInstruction, geminiTools } from './chat.route.data';
 import type {
   ContentPart,
@@ -398,8 +399,7 @@ export function chatHistoryToMarkdown(
   md += `<!-- JSON_HISTORY_DATA_START\n${jsonStr}\nJSON_HISTORY_DATA_END -->\n\n`;
 
   for (const msg of messages) {
-    const roleName = msg.role === 'user' ? 'User' : 'Assistant';
-    md += `### ${roleName}\n\n${msg.content || ''}\n\n`;
+    md += `### ${getRoleName(msg.role)}\n\n${msg.content || ''}\n\n`;
     if (msg.actions?.length) {
       md += `*Executed Actions:*\n`;
       for (const act of msg.actions) {

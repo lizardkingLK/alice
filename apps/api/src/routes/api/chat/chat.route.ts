@@ -8,7 +8,7 @@ import {
   type ProjectRowWithOwner,
 } from '../projects/projects.repository';
 import { supabase } from '../../../lib/supabase';
-import { ChatRole } from '@repo/types';
+import { ChatRoles, parseChatRole, toGeminiRole, GeminiRoles } from '@repo/types';
 import {
   callGeminiAPI,
   processFunctionCalls,
@@ -130,10 +130,7 @@ Current Workspace State:
 `;
 
     const contents: ContentTurn[] = messages.map((msg: InputMessage) => {
-      let role = msg.role;
-      if (role === ChatRole.ASSISTANT) {
-        role = 'model';
-      }
+      const role = toGeminiRole(msg.role);
 
       let parts = msg.parts;
       if (!parts) {
@@ -141,7 +138,7 @@ Current Workspace State:
         parts = [{ text: textContent }];
       }
 
-      return { role: role as 'user' | 'model', parts };
+      return { role, parts };
     });
 
     let responseText = '';
@@ -177,7 +174,7 @@ Current Workspace State:
         toolActionsPerformed
       );
       contents.push({
-        role: 'user',
+        role: GeminiRoles.User,
         parts: functionResponseParts,
       });
 
@@ -186,7 +183,7 @@ Current Workspace State:
 
     const newAssistantMessage: StoredChatMessage = {
       id: `msg-${Date.now()}`,
-      role: ChatRole.ASSISTANT,
+      role: ChatRoles.Assistant,
       content: responseText,
       actions: toolActionsPerformed,
     };
@@ -194,7 +191,7 @@ Current Workspace State:
     const sanitizedInputMessages: StoredChatMessage[] = messages.map(
       (msg: InputMessage, index: number) => ({
         id: msg.id || `msg-${Date.now()}-${index}`,
-        role: msg.role === 'user' ? ChatRole.USER : ChatRole.ASSISTANT,
+        role: parseChatRole(msg.role),
         content: msg.content || msg.text || '',
         actions: msg.actions || [],
       })

@@ -16,7 +16,7 @@ vi.mock('@supabase/supabase-js', () => ({
   createClient: () => mockClient,
 }));
 
-import { ChatRole } from '@repo/types';
+import { ChatRoles } from '@repo/types';
 import {
   chatHistoryToMarkdown,
   markdownToChatHistory,
@@ -29,12 +29,12 @@ describe('Chat History Markdown Serialization', () => {
     const messages: StoredChatMessage[] = [
       {
         id: 'msg-1',
-        role: ChatRole.USER,
+        role: ChatRoles.User,
         content: 'Hello, bot!',
       },
       {
         id: 'msg-2',
-        role: ChatRole.ASSISTANT,
+        role: ChatRoles.Assistant,
         content: 'Hello user, how can I assist you?',
         actions: [
           {
