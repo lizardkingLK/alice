@@ -210,6 +210,83 @@ function ViewsActionsCell({
   );
 }
 
+type ViewsTableColumnsOptions = Omit<ViewsActionsCellProps, 'view'>;
+
+function renderViewsTitleCell({
+  row,
+}: {
+  readonly row: { readonly original: SavedView };
+}) {
+  return <ViewsTitleCell view={row.original} />;
+}
+
+function renderViewsDescriptionCell({
+  row,
+}: {
+  readonly row: { readonly original: SavedView };
+}) {
+  return <ViewsDescriptionCell view={row.original} />;
+}
+
+function renderViewsPathCell({
+  row,
+}: {
+  readonly row: { readonly original: SavedView };
+}) {
+  return <ViewsPathCell view={row.original} />;
+}
+
+function renderViewsUpdatedAtCell({
+  row,
+}: {
+  readonly row: { readonly original: SavedView };
+}) {
+  return <ViewsUpdatedAtCell view={row.original} />;
+}
+
+function createViewsTableColumns(
+  options: ViewsTableColumnsOptions
+): ColumnDef<SavedView>[] {
+  function renderViewsActionsCell({
+    row,
+  }: {
+    readonly row: { readonly original: SavedView };
+  }) {
+    return <ViewsActionsCell view={row.original} {...options} />;
+  }
+
+  return [
+    {
+      id: 'title',
+      accessorKey: 'title',
+      header: 'Title',
+      cell: renderViewsTitleCell,
+    },
+    {
+      id: 'description',
+      accessorKey: 'description',
+      header: 'Description',
+      cell: renderViewsDescriptionCell,
+    },
+    {
+      id: 'path',
+      header: 'Path',
+      cell: renderViewsPathCell,
+    },
+    {
+      id: 'updated_at',
+      accessorKey: 'updated_at',
+      header: 'Updated',
+      cell: renderViewsUpdatedAtCell,
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: renderViewsActionsCell,
+    },
+  ];
+}
+
 export function ViewsWorkspace({
   views,
   totalCount,
@@ -338,52 +415,21 @@ export function ViewsWorkspace({
     }
   }, [router, viewToDelete]);
 
-  const columns = useMemo<ColumnDef<SavedView>[]>(() => {
-    return [
-      {
-        id: 'title',
-        accessorKey: 'title',
-        header: 'Title',
-        cell: ({ row }) => <ViewsTitleCell view={row.original} />,
-      },
-      {
-        id: 'description',
-        accessorKey: 'description',
-        header: 'Description',
-        cell: ({ row }) => <ViewsDescriptionCell view={row.original} />,
-      },
-      {
-        id: 'path',
-        header: 'Path',
-        cell: ({ row }) => <ViewsPathCell view={row.original} />,
-      },
-      {
-        id: 'updated_at',
-        accessorKey: 'updated_at',
-        header: 'Updated',
-        cell: ({ row }) => <ViewsUpdatedAtCell view={row.original} />,
-      },
-      {
-        id: 'actions',
-        header: 'Actions',
-        cell: ({ row }) => (
-          <ViewsActionsCell
-            view={row.original}
-            tab={tab}
-            pendingId={pendingId}
-            onShare={(view) => {
-              setShareView(view);
-              setShareDialogOpen(true);
-            }}
-            onArchive={(view) => void handleArchive(view)}
-            onRestore={(view) => void handleRestore(view)}
-            onRequestDelete={setViewToDelete}
-          />
-        ),
-      },
-    ];
-  }, [handleArchive, handleRestore, pendingId, tab]);
-
+  const columns = useMemo(
+    () =>
+      createViewsTableColumns({
+        tab,
+        pendingId,
+        onShare: (view) => {
+          setShareView(view);
+          setShareDialogOpen(true);
+        },
+        onArchive: (view) => void handleArchive(view),
+        onRestore: (view) => void handleRestore(view),
+        onRequestDelete: setViewToDelete,
+      }),
+    [handleArchive, handleRestore, pendingId, tab]
+  );
   const table = useReactTable({
     data: views,
     columns,
