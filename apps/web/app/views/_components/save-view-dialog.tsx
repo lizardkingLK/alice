@@ -99,10 +99,12 @@ export function SaveViewDialog({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="save-view-description">
-                Description
+              <Label
+                htmlFor="save-view-description"
+                className="flex items-center gap-1"
+              >
+                <span>Description</span>
                 <span className="text-muted-foreground font-normal">
-                  {' '}
                   (optional)
                 </span>
               </Label>

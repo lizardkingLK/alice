@@ -97,6 +97,119 @@ type ViewsWorkspaceProps = {
   }>;
 };
 
+function ViewsTitleCell({ view }: Readonly<{ view: SavedView }>) {
+  const href = buildSavedViewHref(view.pathname, view.search);
+  return (
+    <RegistryTitleCell
+      href={href}
+      title={view.title}
+      subtitle={`Updated ${formatDate(view.updated_at)}`}
+    />
+  );
+}
+
+function ViewsDescriptionCell({ view }: Readonly<{ view: SavedView }>) {
+  return (
+    <TruncatedText className="text-muted-foreground max-w-xs">
+      {view.description || '—'}
+    </TruncatedText>
+  );
+}
+
+function ViewsPathCell({ view }: Readonly<{ view: SavedView }>) {
+  const href = buildSavedViewHref(view.pathname, view.search);
+  return (
+    <TruncatedText className="text-muted-foreground block max-w-xs min-w-0 font-mono text-xs">
+      {href}
+    </TruncatedText>
+  );
+}
+
+function ViewsUpdatedAtCell({ view }: Readonly<{ view: SavedView }>) {
+  return (
+    <span className="text-muted-foreground">
+      {formatDateTime(view.updated_at)}
+    </span>
+  );
+}
+
+type ViewsActionsCellProps = {
+  readonly view: SavedView;
+  readonly tab: ViewsListTab;
+  readonly pendingId: string | null;
+  // eslint-disable-next-line no-unused-vars -- share open callback
+  readonly onShare: (view: SavedView) => void;
+  // eslint-disable-next-line no-unused-vars -- archive callback
+  readonly onArchive: (view: SavedView) => void;
+  // eslint-disable-next-line no-unused-vars -- restore callback
+  readonly onRestore: (view: SavedView) => void;
+  // eslint-disable-next-line no-unused-vars -- delete target callback
+  readonly onRequestDelete: (target: DeleteTarget) => void;
+};
+
+function ViewsActionsCell({
+  view,
+  tab,
+  pendingId,
+  onShare,
+  onArchive,
+  onRestore,
+  onRequestDelete,
+}: Readonly<ViewsActionsCellProps>) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-8"
+          disabled={pendingId === view.id}
+          aria-label="Open row actions"
+        >
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {tab === 'mine' ? (
+          <DropdownMenuItem onClick={() => onShare(view)}>
+            <Share2 className="size-4" />
+            Share
+          </DropdownMenuItem>
+        ) : null}
+        {tab === 'mine' ? (
+          <DropdownMenuItem onClick={() => onArchive(view)}>
+            <Archive className="size-4" />
+            Archive
+          </DropdownMenuItem>
+        ) : null}
+        {tab === 'shared' ? (
+          <DropdownMenuItem
+            onClick={() => onRequestDelete({ kind: 'share', view })}
+          >
+            <Trash2 className="size-4" />
+            Delete
+          </DropdownMenuItem>
+        ) : null}
+        {tab === 'archived' ? (
+          <DropdownMenuItem onClick={() => onRestore(view)}>
+            <RefreshCw className="size-4" />
+            Restore
+          </DropdownMenuItem>
+        ) : null}
+        {tab === 'archived' ? (
+          <DropdownMenuItem
+            onClick={() => onRequestDelete({ kind: 'view', view })}
+          >
+            <Trash2 className="size-4" />
+            Delete
+          </DropdownMenuItem>
+        ) : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function ViewsWorkspace({
   views,
   totalCount,
@@ -231,116 +344,42 @@ export function ViewsWorkspace({
         id: 'title',
         accessorKey: 'title',
         header: 'Title',
-        cell: ({ row }) => {
-          const view = row.original;
-          const href = buildSavedViewHref(view.pathname, view.search);
-          return (
-            <RegistryTitleCell
-              href={href}
-              title={view.title}
-              subtitle={`Updated ${formatDate(view.updated_at)}`}
-            />
-          );
-        },
+        cell: ({ row }) => <ViewsTitleCell view={row.original} />,
       },
       {
         id: 'description',
         accessorKey: 'description',
         header: 'Description',
-        cell: ({ row }) => (
-          <TruncatedText className="text-muted-foreground max-w-xs">
-            {row.original.description || '—'}
-          </TruncatedText>
-        ),
+        cell: ({ row }) => <ViewsDescriptionCell view={row.original} />,
       },
       {
         id: 'path',
         header: 'Path',
-        cell: ({ row }) => {
-          const href = buildSavedViewHref(
-            row.original.pathname,
-            row.original.search
-          );
-          return (
-            <TruncatedText className="text-muted-foreground block max-w-xs min-w-0 font-mono text-xs">
-              {href}
-            </TruncatedText>
-          );
-        },
+        cell: ({ row }) => <ViewsPathCell view={row.original} />,
       },
       {
         id: 'updated_at',
         accessorKey: 'updated_at',
         header: 'Updated',
-        cell: ({ row }) => (
-          <span className="text-muted-foreground">
-            {formatDateTime(row.original.updated_at)}
-          </span>
-        ),
+        cell: ({ row }) => <ViewsUpdatedAtCell view={row.original} />,
       },
       {
         id: 'actions',
         header: 'Actions',
-        cell: ({ row }) => {
-          const view = row.original;
-          return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-8"
-                  disabled={pendingId === view.id}
-                  aria-label="Open row actions"
-                >
-                  <MoreHorizontal className="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {tab === 'mine' ? (
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setShareView(view);
-                      setShareDialogOpen(true);
-                    }}
-                  >
-                    <Share2 className="size-4" />
-                    Share
-                  </DropdownMenuItem>
-                ) : null}
-                {tab === 'mine' ? (
-                  <DropdownMenuItem onClick={() => void handleArchive(view)}>
-                    <Archive className="size-4" />
-                    Archive
-                  </DropdownMenuItem>
-                ) : null}
-                {tab === 'shared' ? (
-                  <DropdownMenuItem
-                    onClick={() => setViewToDelete({ kind: 'share', view })}
-                  >
-                    <Trash2 className="size-4" />
-                    Delete
-                  </DropdownMenuItem>
-                ) : null}
-                {tab === 'archived' ? (
-                  <DropdownMenuItem onClick={() => void handleRestore(view)}>
-                    <RefreshCw className="size-4" />
-                    Restore
-                  </DropdownMenuItem>
-                ) : null}
-                {tab === 'archived' ? (
-                  <DropdownMenuItem
-                    onClick={() => setViewToDelete({ kind: 'view', view })}
-                  >
-                    <Trash2 className="size-4" />
-                    Delete
-                  </DropdownMenuItem>
-                ) : null}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          );
-        },
+        cell: ({ row }) => (
+          <ViewsActionsCell
+            view={row.original}
+            tab={tab}
+            pendingId={pendingId}
+            onShare={(view) => {
+              setShareView(view);
+              setShareDialogOpen(true);
+            }}
+            onArchive={(view) => void handleArchive(view)}
+            onRestore={(view) => void handleRestore(view)}
+            onRequestDelete={setViewToDelete}
+          />
+        ),
       },
     ];
   }, [handleArchive, handleRestore, pendingId, tab]);

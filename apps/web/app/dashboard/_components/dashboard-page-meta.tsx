@@ -13,6 +13,7 @@ import { DashboardPageActions } from './dashboard-page-actions';
 import {
   DashboardBreadcrumb,
   resolveDashboardBreadcrumbItems,
+  resolveDashboardBreadcrumbTrail,
   type DashboardBreadcrumbOverride,
 } from './dashboard-breadcrumb';
 
@@ -39,11 +40,9 @@ export function DashboardPageMeta({
 }: Readonly<DashboardPageMetaProps>) {
   const pathname = usePathname();
   const breadcrumbLabel = useMemo(() => {
-    const items = resolveDashboardBreadcrumbItems(
-      pathname,
-      breadcrumbOverrides,
-      breadcrumbAsTrail
-    );
+    const items = breadcrumbAsTrail
+      ? resolveDashboardBreadcrumbTrail(breadcrumbOverrides)
+      : resolveDashboardBreadcrumbItems(pathname, breadcrumbOverrides);
     return items.at(-1)?.label ?? pathname;
   }, [breadcrumbAsTrail, breadcrumbOverrides, pathname]);
 

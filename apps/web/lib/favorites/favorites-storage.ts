@@ -122,9 +122,9 @@ export function toggleFavorite(
 ): FavoriteRecord[] {
   const normalized = normalizeFavoritePathname(pathname);
   const current = readFavorites(userId);
-  const existing = current.find((item) => item.pathname === normalized);
+  const exists = current.some((item) => item.pathname === normalized);
 
-  const next = existing
+  const next = exists
     ? current.filter((item) => item.pathname !== normalized)
     : [
         {

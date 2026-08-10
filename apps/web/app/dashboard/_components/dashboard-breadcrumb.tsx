@@ -97,13 +97,21 @@ function buildBreadcrumbItems(
   return items;
 }
 
-/** Resolve crumb trail for rendering or reading the current-page label. */
+/**
+ * Build crumbs from the URL path, applying optional per-segment label overrides.
+ */
 export function resolveDashboardBreadcrumbItems(
   pathname: string,
-  overrides: DashboardBreadcrumbOverride[] = DEFAULT_OVERRIDES,
-  asTrail = false
+  overrides: DashboardBreadcrumbOverride[] = DEFAULT_OVERRIDES
 ): DashboardBreadcrumbOverride[] {
-  return asTrail ? overrides : buildBreadcrumbItems(pathname, overrides);
+  return buildBreadcrumbItems(pathname, overrides);
+}
+
+/** Use an explicit crumb list as the trail (ignore path-derived crumbs). */
+export function resolveDashboardBreadcrumbTrail(
+  overrides: DashboardBreadcrumbOverride[] = DEFAULT_OVERRIDES
+): DashboardBreadcrumbOverride[] {
+  return overrides;
 }
 
 export function DashboardBreadcrumb({
@@ -111,7 +119,9 @@ export function DashboardBreadcrumb({
   asTrail = false,
 }: Readonly<DashboardBreadcrumbProps>) {
   const pathname = usePathname();
-  const items = resolveDashboardBreadcrumbItems(pathname, overrides, asTrail);
+  const items = asTrail
+    ? resolveDashboardBreadcrumbTrail(overrides)
+    : resolveDashboardBreadcrumbItems(pathname, overrides);
 
   return (
     <Breadcrumb>

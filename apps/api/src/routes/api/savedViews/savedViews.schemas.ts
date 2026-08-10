@@ -1,10 +1,9 @@
 import { z } from 'zod';
-import {
+
+export {
   createSavedViewSchema,
   shareSavedViewSchema,
   updateSavedViewSchema,
 } from '@repo/types';
-
-export { createSavedViewSchema, shareSavedViewSchema, updateSavedViewSchema };
 
 export const savedViewStatusQuerySchema = z.enum(['active', 'archived']);

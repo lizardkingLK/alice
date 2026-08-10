@@ -27,7 +27,7 @@ export function resolveNotificationHref(
   }
 
   if (notif.type === 'view_shared') {
-    if (sharedView && sharedView.status === 'active') {
+    if (sharedView?.status === 'active') {
       return buildSavedViewHref(sharedView.pathname, sharedView.search);
     }
     return VIEW_SHARED_FALLBACK_HREF;

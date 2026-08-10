@@ -1,9 +1,5 @@
 import { apiFetch } from '@/lib/api/api-client';
-import {
-  buildSavedViewHref,
-  normalizeSavedViewSearch,
-  type Tables,
-} from '@repo/types';
+import { normalizeSavedViewSearch, type Tables } from '@repo/types';
 
 export type SavedView = Tables<'saved_views'>;
 
@@ -15,7 +11,7 @@ export type CreateSavedViewClientInput = {
   readonly projectId?: string | null;
 };
 
-export { buildSavedViewHref, normalizeSavedViewSearch };
+export { buildSavedViewHref, normalizeSavedViewSearch } from '@repo/types';
 
 /** Mutations only — list reads use `saved-views.service.server.ts` (SSR). */
 export async function createSavedView(
