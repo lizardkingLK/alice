@@ -22,9 +22,17 @@ const { mockClient } = vi.hoisted(() => {
   };
 });
 
-vi.mock('../../../src/lib/supabase', () => ({
+vi.mock('../../src/lib/supabase', () => ({
   createClient: () => mockClient,
   supabase: mockClient,
+}));
+
+vi.mock('../../src/routes/api/projects/projects.service', () => ({
+  projectsService: {},
+}));
+
+vi.mock('../../src/routes/api/projects/projects.repository', () => ({
+  projectsRepository: {},
 }));
 
 import { ChatRoles } from '@repo/types';
