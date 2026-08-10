@@ -97,12 +97,21 @@ function buildBreadcrumbItems(
   return items;
 }
 
+/** Resolve crumb trail for rendering or reading the current-page label. */
+export function resolveDashboardBreadcrumbItems(
+  pathname: string,
+  overrides: DashboardBreadcrumbOverride[] = DEFAULT_OVERRIDES,
+  asTrail = false
+): DashboardBreadcrumbOverride[] {
+  return asTrail ? overrides : buildBreadcrumbItems(pathname, overrides);
+}
+
 export function DashboardBreadcrumb({
   overrides = DEFAULT_OVERRIDES,
   asTrail = false,
 }: Readonly<DashboardBreadcrumbProps>) {
   const pathname = usePathname();
-  const items = asTrail ? overrides : buildBreadcrumbItems(pathname, overrides);
+  const items = resolveDashboardBreadcrumbItems(pathname, overrides, asTrail);
 
   return (
     <Breadcrumb>

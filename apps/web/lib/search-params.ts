@@ -100,6 +100,16 @@ export function parseTabStatus(tab?: string): 'active' | 'archived' {
   return tab === 'archived' ? 'archived' : 'active';
 }
 
+/** Views workspace tabs (My / Shared with me / Archived). */
+export type ViewsListTab = 'mine' | 'shared' | 'archived';
+
+export function parseViewsListTab(tab?: string | null): ViewsListTab {
+  if (tab === 'shared' || tab === 'archived') {
+    return tab;
+  }
+  return 'mine';
+}
+
 export type ProjectDetailsTab = 'details' | 'members' | 'teams' | 'work-items';
 
 export function parseProjectDetailsTab(tab?: string | null): ProjectDetailsTab {

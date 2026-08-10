@@ -44,6 +44,13 @@ export class DueDateNotification extends NotificationType {
   }
 }
 
+export class ViewSharedNotification extends NotificationType {
+  constructor() {
+    super();
+    this.type = 'view_shared';
+  }
+}
+
 export class NotificationBuilder<T extends NotificationType> {
   private readonly instance: T;
 

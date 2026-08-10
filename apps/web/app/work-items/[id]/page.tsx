@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { WorkItemDetailsData } from '@/app/work-items/[id]/_components/work-item-details-data';
@@ -12,6 +13,11 @@ export default async function WorkItemPage({
 }>) {
   const { id } = await params;
   const workItem = await getWorkItem(id);
+
+  if (!workItem) {
+    redirect('/dashboard');
+  }
+
   const breadcrumbOverrides = buildWorkItemBreadcrumbOverrides(
     id,
     workItem.project_id
@@ -22,6 +28,8 @@ export default async function WorkItemPage({
       description="Work-Item Details"
       breadcrumbOverrides={breadcrumbOverrides}
       breadcrumbAsTrail
+      favoriteLabel={workItem.title}
+      projectId={workItem.project_id}
     >
       <Suspense fallback={<WorkItemDetailsSkeleton />}>
         <WorkItemDetailsData workItemId={id} />

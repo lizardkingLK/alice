@@ -6,6 +6,7 @@ import { useReactToPrint } from 'react-to-print';
 import Image from 'next/image';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import { formatDate } from '@/app/_shared/utility';
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
 import {
   Calendar,
@@ -33,17 +34,6 @@ type SprintReportViewProps = {
   sprint: Sprint;
   workItems: DbWorkItem[];
 };
-
-function formatDate(dateStr: string | null | Date): string {
-  if (!dateStr) return 'No date';
-  const date = new Date(dateStr);
-  const options: Intl.DateTimeFormatOptions = {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  };
-  return date.toLocaleDateString('en-US', options);
-}
 
 export function SprintReportView({
   sprint,

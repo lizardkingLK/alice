@@ -9,7 +9,6 @@ import {
   type ChangeEvent,
 } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
-import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import {
@@ -20,6 +19,7 @@ import {
   SelectValue,
 } from '@repo/ui/components/ui/select';
 import { SearchableSelect } from '@/components/searchable-select';
+import { MemberCheckboxList } from '@/components/member-checkbox-list';
 import {
   Card,
   CardContent,
@@ -32,73 +32,11 @@ import type { User } from '@/app/users/_services/users.service';
 import { createTeam, updateTeam } from '../_services/teams.service';
 import type {
   Project,
-  ProjectMemberWithUser,
   ProjectMembersByProjectId,
 } from '@/app/projects/_services/projects.service.base';
 import type { Team } from '../_services/teams.service';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
-
-interface ProjectMembersListProps {
-  projectMembers: ProjectMemberWithUser[];
-  selectedMemberIds: string[];
-  setSelectedMemberIds: React.Dispatch<React.SetStateAction<string[]>>;
-}
-
-function ProjectMembersList({
-  projectMembers,
-  selectedMemberIds,
-  setSelectedMemberIds,
-}: Readonly<ProjectMembersListProps>) {
-  if (projectMembers.length === 0) {
-    return (
-      <div className="text-muted-foreground bg-muted/30 border-border/50 rounded-lg border p-3 text-xs">
-        No active members found in this project.
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-background/50 border-input custom-scrollbar max-h-48 space-y-1 overflow-y-auto rounded-md border p-2">
-      {projectMembers.map((m) => {
-        const isMember = selectedMemberIds.includes(m.user_id);
-        const checkboxId = `member-checkbox-${m.user_id}`;
-        return (
-          <div
-            key={m.user_id}
-            className="hover:bg-accent/50 flex items-center gap-3 rounded px-2.5 py-1.5 transition-colors"
-          >
-            <Checkbox
-              id={checkboxId}
-              checked={isMember}
-              onCheckedChange={(value) => {
-                if (value === true) {
-                  setSelectedMemberIds([...selectedMemberIds, m.user_id]);
-                } else {
-                  setSelectedMemberIds(
-                    selectedMemberIds.filter((id: string) => id !== m.user_id)
-                  );
-                }
-              }}
-              className="cursor-pointer"
-            />
-            <label
-              htmlFor={checkboxId}
-              className="flex flex-1 cursor-pointer flex-col"
-            >
-              <span className="text-foreground text-xs font-semibold">
-                {m.user?.name}
-              </span>
-              <span className="text-muted-foreground text-[10px]">
-                {m.user?.email} • {m.user?.role}
-              </span>
-            </label>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 interface TeamFormProps {
   readonly onClose?: () => void;
@@ -202,6 +140,17 @@ export function TeamForm({
 
     return [...byUserId.values()];
   }, [selectedProjectId, projectMembersByProjectId, selectedMemberIds, users]);
+
+  const memberCheckboxOptions = useMemo(
+    () =>
+      projectMembers.map((member) => ({
+        userId: member.user_id,
+        name: member.user?.name ?? member.user_id,
+        email: member.user?.email ?? '',
+        role: member.user?.role ?? '',
+      })),
+    [projectMembers]
+  );
 
   const showMembersSection =
     Boolean(selectedProjectId) ||
@@ -499,10 +448,10 @@ export function TeamForm({
                 <Label className="text-sm font-medium">
                   Project Members to Add to Team
                 </Label>
-                <ProjectMembersList
-                  projectMembers={projectMembers}
-                  selectedMemberIds={selectedMemberIds}
-                  setSelectedMemberIds={setSelectedMemberIds}
+                <MemberCheckboxList
+                  members={memberCheckboxOptions}
+                  selectedUserIds={selectedMemberIds}
+                  onSelectedUserIdsChange={setSelectedMemberIds}
                 />
               </div>
             )}

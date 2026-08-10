@@ -26,6 +26,31 @@ const TIME_FORMAT: Intl.DateTimeFormatOptions = {
   timeZone: 'UTC',
 };
 
+const MONTH_YEAR_FORMAT: Intl.DateTimeFormatOptions = {
+  month: 'short',
+  year: 'numeric',
+  timeZone: 'UTC',
+};
+
+/**
+ * Formats a date for month/year display. Hydration-safe via `en-US` + UTC.
+ */
+export const formatMonthYear = (value: string | null): string => {
+  if (!value) {
+    return '—';
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month] = value.split('-').map(Number);
+    return new Date(Date.UTC(year!, month! - 1, 1)).toLocaleDateString(
+      'en-US',
+      MONTH_YEAR_FORMAT
+    );
+  }
+
+  return new Date(value).toLocaleDateString('en-US', MONTH_YEAR_FORMAT);
+};
+
 /**
  * Formats a date string for display. Always uses `en-US` + UTC so server
  * and client render the same text (hydration-safe).

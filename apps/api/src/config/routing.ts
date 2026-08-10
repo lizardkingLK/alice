@@ -9,6 +9,7 @@ import commentsRouter from '../routes/api/comments/comments.route';
 import profileRouter from '../routes/api/profile/profile.route';
 import accessAllowlistRouter from '../routes/api/accessAllowlist/accessAllowlist.route';
 import chatRouter from '../routes/api/chat/chat.route';
+import savedViewsRouter from '../routes/api/savedViews/savedViews.route';
 import { workItems, sprints } from './composition';
 
 const routesConfig: Router = Router();
@@ -25,5 +26,6 @@ routesConfig.use('/api/users', usersRouter);
 routesConfig.use('/api/workItems', workItems.router);
 routesConfig.use('/api/accessAllowlist', accessAllowlistRouter);
 routesConfig.use('/api/chat', chatRouter);
+routesConfig.use('/api/saved-views', savedViewsRouter);
 
 export default routesConfig;
