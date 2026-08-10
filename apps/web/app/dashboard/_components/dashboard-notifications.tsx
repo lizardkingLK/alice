@@ -15,6 +15,7 @@ import {
   CheckCheck,
   InboxIcon,
   X,
+  Layers,
 } from '@repo/ui/lib/icons';
 import {
   DropdownMenu,
@@ -23,6 +24,7 @@ import {
 } from '@repo/ui/components/ui/dropdown-menu';
 import { cn } from '@repo/ui/lib/utils';
 import { Button } from '@repo/ui/components/ui/button';
+import { resolveNotificationHref } from '@/lib/notifications/resolve-notification-href';
 
 export type Notification = Database['public']['Tables']['notifications']['Row'];
 
@@ -33,6 +35,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   assign: UserPlus,
   sprint: Calendar,
   due_date: AlertCircle,
+  view_shared: Layers,
   default: Bell,
 };
 
@@ -47,6 +50,8 @@ const iconColorMap: Record<string, string> = {
   sprint: 'text-pink-500 bg-pink-500/10 border-pink-500/20 dark:bg-pink-500/20',
   due_date:
     'text-rose-500 bg-rose-500/10 border-rose-500/20 dark:bg-rose-500/20',
+  view_shared:
+    'text-amber-500 bg-amber-500/10 border-amber-500/20 dark:bg-amber-500/20',
   default: 'text-muted-foreground bg-muted border-border',
 };
 
@@ -285,8 +290,29 @@ export function NotificationInbox({
     if (!notif.read_status) {
       await handleMarkAsRead(notif.id);
     }
-    if (notif.related_item_id) {
-      router.push(`/work-items/${notif.related_item_id}`);
+    if (!notif.related_item_id) {
+      return;
+    }
+
+    let sharedView: {
+      pathname: string;
+      search: string;
+      status: string;
+    } | null = null;
+
+    if (notif.type === 'view_shared') {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('saved_views')
+        .select('pathname, search, status')
+        .eq('id', notif.related_item_id)
+        .maybeSingle();
+      sharedView = data;
+    }
+
+    const href = resolveNotificationHref(notif, sharedView);
+    if (href) {
+      router.push(href);
     }
   };
 

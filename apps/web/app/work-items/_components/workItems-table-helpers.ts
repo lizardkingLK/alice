@@ -165,12 +165,7 @@ export function applyWorkItemsFilterDraftToSearchParams(
   }
 
   const labelsEncoded = serializeWorkItemLabelsFilter([...draft.labels]);
-  applyQueryFilterParam(
-    params,
-    'labels',
-    labelsEncoded || allValue,
-    allValue
-  );
+  applyQueryFilterParam(params, 'labels', labelsEncoded || allValue, allValue);
 
   applyWorkItemListViewParam(params, options.listView);
   params.set('page', '1');

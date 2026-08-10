@@ -37,6 +37,11 @@ export const REGISTRY_PAGES = {
     /** Default visible count (7); overridden from cookie at request time. */
     skeleton: { columnCount: 7, rowCount: 8 },
   },
+  views: {
+    description:
+      'Manage saved page snapshots, share them with teammates, and archive ones you no longer need.',
+    skeleton: { columnCount: 5, rowCount: 8, showTabs: true },
+  },
 } as const satisfies Record<string, RegistryPageMeta>;
 
 type RegistrySuspensePageProps = {

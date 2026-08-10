@@ -89,7 +89,7 @@ Independent server fetches now run concurrently instead of sequentially. Each ca
   ]);
 ```
 
-`safeServerFetch` (`apps/web/lib/safe-server-fetch.ts`) replaced a `try/catch` block that was copy-pasted into every page — the wrapped promise is created by the caller, so concurrency inside `Promise.all` is preserved. Applied to: `work-items`, `projects`, `manager`, `projects/[id]`, `users`, `sprints`, `backlog` (via `getBacklogWorkspace()`).
+`safeServerFetch` (`apps/web/lib/safe-server-fetch.ts`) replaced a `try/catch` block that was copy-pasted into every page — the wrapped promise is created by the caller, so concurrency inside `Promise.all` is preserved. Applied to: `work-items`, `projects`, `manager`, `projects/[id]`, `users`, `sprints`, `backlog` (via `getBacklogWorkspace()`), `views`.
 
 Paginated readers also share `pageRange` / `paginationMeta` (`apps/web/lib/db/pagination.ts`) for the range math and `{ totalCount, page, limit, totalPages }` shape, keeping the direct-read services free of duplicated pagination boilerplate.
 
@@ -396,23 +396,25 @@ Legend:
 
 ### Read routes — web usage audit
 
-| API route                       | Status              | Web caller today   | Notes                                                                                                         |
-| ------------------------------- | ------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `GET /api/users`                | **Unused (web)**    | —                  | `/users` uses `users.service.server.ts`                                                                       |
-| `GET /api/users/secure`         | **Unused (web)**    | —                  | Auth smoke test only                                                                                          |
-| `GET /api/projects`             | **Unused (web)**    | —                  | SSR + forms pass `getProjectList()` from `projects.service.server.ts` (since 2026-07-22)                      |
-| `GET /api/projects/:id`         | **Unused (web)**    | —                  | Edit form uses row data via `projectToEdit`; detail page uses server `getProjectDetails`                      |
-| `GET /api/projects/:id/members` | **Unused (web)**    | —                  | `team-form` uses server action `fetchProjectMembersForForm`; `/projects/[id]` uses server `getProjectMembers` |
-| `GET /api/teams`                | **Unused (web)**    | —                  | `/manager` uses `teams.service.server.ts` (since 2026-07-22)                                                  |
-| `GET /api/sprints`              | **Not implemented** | —                  | List reads are RSC-only (`sprints.service.server.ts`); `/dashboard` uses `getDashboardBurndownBootstrap()`    |
-| `GET /api/sprints/:id`          | **Not implemented** | —                  | Server mirror `getSprint()` in `sprints.service.server.ts`; forms use `sprintToEdit` from list state          |
-| `GET /api/sprints/:id/burndown` | **Unused (web)**    | —                  | Dashboard uses `sprint-burndown.server.ts` + server action; Express handler kept for non-web consumers        |
-| `GET /api/workItems`            | **Unused (web)**    | —                  | List/detail use `workItem.service.server.ts`                                                                  |
-| `GET /api/workItems/:id`        | **Unused (web)**    | —                  | `[id]/page` uses server `getWorkItem`                                                                         |
-| `GET /api/comments`             | **Client-only**     | Mutations + legacy | RSC reads use `listComments` / `getWorkItemDiscussion` in `comments.service.server.ts` (direct Supabase)      |
-| `GET /` (health)                | Active              | Deploy / probes    | Not a data read                                                                                               |
-| `POST /api/notifications/send`  | Active              | Server-side notify | No GET on this router                                                                                         |
-| `POST /api/attachments`         | Active              | `upload-form.tsx`  | Upload only (private bucket; signed URL)                                                                      |
+| API route                             | Status              | Web caller today   | Notes                                                                                                      |
+| ------------------------------------- | ------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `GET /api/users`                      | **Unused (web)**    | —                  | `/users` uses `users.service.server.ts`                                                                    |
+| `GET /api/users/secure`               | **Unused (web)**    | —                  | Auth smoke test only                                                                                       |
+| `GET /api/projects`                   | **Unused (web)**    | —                  | SSR + forms pass `getProjectList()` from `projects.service.server.ts` (incl. `/views` Share)               |
+| `GET /api/projects/:id`               | **Unused (web)**    | —                  | Edit form uses row data via `projectToEdit`; detail page uses server `getProjectDetails`                   |
+| `GET /api/projects/:id/members`       | **Unused (web)**    | —                  | Share dialog uses `fetchShareViewProjectScope`; detail uses server `getProjectMembers`                     |
+| `GET /api/teams`                      | **Unused (web)**    | —                  | `/manager` uses `teams.service.server.ts`; Share uses `fetchShareViewProjectScope`                         |
+| `GET /api/sprints`                    | **Not implemented** | —                  | List reads are RSC-only (`sprints.service.server.ts`); `/dashboard` uses `getDashboardBurndownBootstrap()` |
+| `GET /api/sprints/:id`                | **Not implemented** | —                  | Server mirror `getSprint()` in `sprints.service.server.ts`; forms use `sprintToEdit` from list state       |
+| `GET /api/sprints/:id/burndown`       | **Unused (web)**    | —                  | Dashboard uses `sprint-burndown.server.ts` + server action; Express handler kept for non-web consumers     |
+| `GET /api/workItems`                  | **Unused (web)**    | —                  | List/detail use `workItem.service.server.ts`                                                               |
+| `GET /api/workItems/:id`              | **Unused (web)**    | —                  | `[id]/page` uses server `getWorkItem`                                                                      |
+| `GET /api/comments`                   | **Client-only**     | Mutations + legacy | RSC reads use `listComments` / `getWorkItemDiscussion` in `comments.service.server.ts` (direct Supabase)   |
+| `GET /api/saved-views`                | **Unused (web)**    | —                  | `/views` uses `getSavedViewsPaginated` in `saved-views.service.server.ts`                                  |
+| `GET /api/saved-views/shared-with-me` | **Unused (web)**    | —                  | Same SSR reader (`tab=shared`)                                                                             |
+| `GET /` (health)                      | Active              | Deploy / probes    | Not a data read                                                                                            |
+| `POST /api/notifications/send`        | Active              | Server-side notify | No GET on this router                                                                                      |
+| `POST /api/attachments`               | Active              | `upload-form.tsx`  | Upload only (private bucket; signed URL)                                                                   |
 
 There is **no** `/api/team-members` or `/api/project-members` router. Membership is nested:
 
@@ -423,14 +425,15 @@ There is **no** `/api/team-members` or `/api/project-members` router. Membership
 
 These were removed from `*.service.ts` after client forms stopped refetching (2026-07-22). Client modules now export **mutations only** plus shared types:
 
-| Module                | Removed GET helpers                                                                                 |
-| --------------------- | --------------------------------------------------------------------------------------------------- |
-| `users.service.ts`    | `getUsersList`, `getUsersListPaginated`, `getUserList`                                              |
-| `projects.service.ts` | `getProjectList`, `getProjectListPaginated`, `getProjectDetails`, `getProject`, `getProjectMembers` |
-| `teams.service.ts`    | `getTeamList`, `getTeamListPaginated`                                                               |
-| `sprints.service.ts`  | `listSprints`, `getSprint`                                                                          |
+| Module                  | Removed GET helpers                                                                                 |
+| ----------------------- | --------------------------------------------------------------------------------------------------- |
+| `users.service.ts`      | `getUsersList`, `getUsersListPaginated`, `getUserList`                                              |
+| `projects.service.ts`   | `getProjectList`, `getProjectListPaginated`, `getProjectDetails`, `getProject`, `getProjectMembers` |
+| `teams.service.ts`      | `getTeamList`, `getTeamListPaginated`                                                               |
+| `sprints.service.ts`    | `listSprints`, `getSprint`                                                                          |
+| `saved-views.client.ts` | `listMySavedViews`, `listSharedWithMeSavedViews`                                                    |
 
-Dynamic form reads that still need a round trip (e.g. project members on project select in `team-form`) use the server action `fetchProjectMembersForForm` in `apps/web/lib/form-read-actions.ts` — direct Supabase, not Express.
+Dynamic form reads that still need a round trip (e.g. project members on project select in share-view / team forms) use server actions in `apps/web/lib/form-read-actions.ts` — direct Supabase, not Express.
 
 ### Cleanup order (remaining)
 

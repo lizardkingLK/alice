@@ -18,8 +18,6 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
-import { cn } from '@repo/ui/lib/utils';
-import Link from 'next/link';
 import { formatDate } from '@/app/_shared/utility';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
@@ -35,6 +33,7 @@ import type { WorkItemWorkspaceProps } from '@/app/work-items/_components/workIt
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { isWorkItemOverdue } from '@/app/work-items/_helpers/work-item-due-date';
 import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
+import { RegistryTitleCell } from '@/components/registry-title-cell';
 import { UserAvatar } from '@/components/user-avatar';
 
 const TITLE_INDENT_CLASS = ['pl-0', 'pl-4', 'pl-8', 'pl-12'] as const;
@@ -71,57 +70,45 @@ const titleRenderer = ({
     'pl-12';
 
   return (
-    <div className={cn('flex min-w-48 items-center gap-2', indentClass)}>
-      {isHierarchy ? (
-        <div className="flex size-7 shrink-0 items-center justify-center">
-          {canExpand ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              className="size-7 cursor-pointer"
-              aria-label={isExpanded ? 'Collapse subtasks' : 'Expand subtasks'}
-              aria-expanded={isExpanded}
-              disabled={isLoading}
-              onClick={(event) => {
-                event.preventDefault();
-                onToggleExpand?.(workItem.id);
-              }}
-            >
-              <HierarchyExpandIcon
-                isLoading={isLoading}
-                isExpanded={isExpanded}
-              />
-            </Button>
-          ) : (
-            <span className="size-7" aria-hidden />
-          )}
-        </div>
-      ) : null}
-      <Link
-        className="flex min-w-0 flex-1 items-center gap-3"
-        href={workItemDetailHref(workItem.id, {
-          fromProjectId,
-          fromAssigneeId,
-        })}
-      >
-        <div
-          className={cn(
-            'bg-primary/10 text-primary border-primary/20',
-            'flex size-8 shrink-0 items-center justify-center',
-            'rounded-lg border text-xs font-bold'
-          )}
-        >
-          {workItem.title.slice(0, 1).toUpperCase()}
-        </div>
-        <div className="space-y-1 font-medium">
-          {workItem.title}
-          <p className="text-muted-foreground text-xs">
-            Created {formatDate(workItem.created_at)}
-          </p>
-        </div>
-      </Link>
-    </div>
+    <RegistryTitleCell
+      className={indentClass}
+      href={workItemDetailHref(workItem.id, {
+        fromProjectId,
+        fromAssigneeId,
+      })}
+      title={workItem.title}
+      subtitle={`Created ${formatDate(workItem.created_at)}`}
+      leading={
+        isHierarchy ? (
+          <div className="flex size-7 shrink-0 items-center justify-center">
+            {canExpand ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="size-7 cursor-pointer"
+                aria-label={
+                  isExpanded ? 'Collapse subtasks' : 'Expand subtasks'
+                }
+                aria-expanded={isExpanded}
+                disabled={isLoading}
+                onClick={(event) => {
+                  event.preventDefault();
+                  onToggleExpand?.(workItem.id);
+                }}
+              >
+                <HierarchyExpandIcon
+                  isLoading={isLoading}
+                  isExpanded={isExpanded}
+                />
+              </Button>
+            ) : (
+              <span className="size-7" aria-hidden />
+            )}
+          </div>
+        ) : null
+      }
+    />
   );
 };
 

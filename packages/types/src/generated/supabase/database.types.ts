@@ -521,6 +521,142 @@ export type Database = {
           },
         ];
       };
+      saved_view_shares: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          status: Database['public']['Enums']['RecordStatus'];
+          updated_at: string;
+          updated_by: string | null;
+          user_id: string;
+          view_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          status?: Database['public']['Enums']['RecordStatus'];
+          updated_at: string;
+          updated_by?: string | null;
+          user_id: string;
+          view_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          status?: Database['public']['Enums']['RecordStatus'];
+          updated_at?: string;
+          updated_by?: string | null;
+          user_id?: string;
+          view_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'saved_view_shares_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'saved_view_shares_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'saved_view_shares_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'saved_view_shares_view_id_fkey';
+            columns: ['view_id'];
+            isOneToOne: false;
+            referencedRelation: 'saved_views';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      saved_views: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          description: string | null;
+          id: string;
+          owner_id: string;
+          pathname: string;
+          project_id: string | null;
+          search: string;
+          status: Database['public']['Enums']['RecordStatus'];
+          title: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          description?: string | null;
+          id?: string;
+          owner_id: string;
+          pathname: string;
+          project_id?: string | null;
+          search?: string;
+          status?: Database['public']['Enums']['RecordStatus'];
+          title: string;
+          updated_at: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          description?: string | null;
+          id?: string;
+          owner_id?: string;
+          pathname?: string;
+          project_id?: string | null;
+          search?: string;
+          status?: Database['public']['Enums']['RecordStatus'];
+          title?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'saved_views_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'saved_views_owner_id_fkey';
+            columns: ['owner_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'saved_views_project_id_fkey';
+            columns: ['project_id'];
+            isOneToOne: false;
+            referencedRelation: 'projects';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'saved_views_updated_by_fkey';
+            columns: ['updated_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       sprints: {
         Row: {
           created_at: string;
@@ -995,7 +1131,8 @@ export type Database = {
         | 'comment'
         | 'mention'
         | 'sprint'
-        | 'due_date';
+        | 'due_date'
+        | 'view_shared';
       ProjectStatus: 'active' | 'archived';
       RecordStatus: 'active' | 'inactive' | 'archived' | 'deleted';
       SprintStatus: 'planned' | 'active' | 'closed' | 'archived';
@@ -1139,6 +1276,7 @@ export const Constants = {
         'mention',
         'sprint',
         'due_date',
+        'view_shared',
       ],
       ProjectStatus: ['active', 'archived'],
       RecordStatus: ['active', 'inactive', 'archived', 'deleted'],

@@ -1,25 +1,15 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  LayoutDashboard,
-  FolderKanban,
-  CircleDot,
-  Settings,
-  Users,
-  Timer,
-  ClipboardPenIcon,
-  Kanban,
-  ListTodo,
-  User,
-  CircleHelp,
-  BookOpen,
-  Map,
-  MessageSquare,
-  type LucideIcon,
-} from '@repo/ui/lib/icons';
+import { Settings, User, ChevronRight } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@repo/ui/components/ui/collapsible';
 import {
   Sidebar,
   SidebarContent,
@@ -35,42 +25,23 @@ import {
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import { useWorkspaceDefaultsNavPreference } from '@/app/board/_hooks/use-workspace-defaults-nav-preference';
 import { buildWorkspaceNavHref } from '@/app/board/_services/board-defaults';
+import { useFavorites } from '@/lib/favorites/use-favorites';
+import {
+  readFavoritesSidebarOpen,
+  writeFavoritesSidebarOpen,
+} from '@/lib/favorites/favorites-sidebar-storage';
+import { resolveFavoriteNavIcon } from '@/lib/favorites/favorite-nav-icon';
+import {
+  HELP_NAV,
+  PLATFORM_NAV,
+  PROJECTS_NAV,
+  SPRINTS_NAV,
+  SYSTEM_NAV,
+  type DashboardNavItem,
+} from '@/lib/dashboard/nav-registry';
 import { canAccessNavGroup, canAccessPath } from '@/lib/rbac/route-policy';
 import type { AppRole } from '@/lib/rbac/roles';
-
-type NavItem = {
-  /** Pathname used for active matching (no query). */
-  readonly path: string;
-  readonly label: string;
-  readonly icon: LucideIcon;
-};
-
-const PLATFORM_NAV: readonly NavItem[] = [
-  { path: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { path: '/backlog', label: 'Backlog', icon: ListTodo },
-  { path: '/board', label: 'Board', icon: Kanban },
-  { path: '/work-items', label: 'Work Items', icon: ClipboardPenIcon },
-  { path: '/member', label: 'My Work', icon: CircleDot },
-  { path: '/chat', label: 'Chatbot', icon: MessageSquare },
-];
-
-const SYSTEM_NAV: readonly NavItem[] = [
-  { path: '/users', label: 'Users', icon: Users },
-];
-
-const PROJECTS_NAV: readonly NavItem[] = [
-  { path: '/projects', label: 'Projects', icon: FolderKanban },
-];
-
-const SPRINTS_NAV: readonly NavItem[] = [
-  { path: '/sprints', label: 'Sprints', icon: Timer },
-];
-
-const HELP_NAV: readonly NavItem[] = [
-  { path: '/help', label: 'Help', icon: CircleHelp },
-  { path: '/docs', label: 'Docs', icon: BookOpen },
-  { path: '/roadmap', label: 'Roadmap', icon: Map },
-];
+import { SidebarNavLink } from '@/app/dashboard/_components/sidebar-nav-link';
 
 function isNavActive(pathname: string, path: string): boolean {
   return pathname === path || pathname.startsWith(`${path}/`);
@@ -81,25 +52,20 @@ function SidebarNavItems({
   pathname,
   preference,
 }: Readonly<{
-  items: readonly NavItem[];
+  items: readonly DashboardNavItem[];
   pathname: string;
   preference: BoardDefaultsPreference | null;
 }>) {
   return (
     <SidebarMenu>
-      {items.map(({ path, label, icon: Icon }) => (
-        <SidebarMenuItem key={path}>
-          <SidebarMenuButton
-            asChild
-            isActive={isNavActive(pathname, path)}
-            tooltip={label}
-          >
-            <Link href={buildWorkspaceNavHref(path, preference)}>
-              <Icon />
-              <span>{label}</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
+      {items.map(({ path, label, icon }) => (
+        <SidebarNavLink
+          key={path}
+          href={buildWorkspaceNavHref(path, preference)}
+          label={label}
+          icon={icon}
+          isActive={isNavActive(pathname, path)}
+        />
       ))}
     </SidebarMenu>
   );
@@ -112,7 +78,7 @@ function SidebarNavGroup({
   preference,
 }: Readonly<{
   label: string;
-  items: readonly NavItem[];
+  items: readonly DashboardNavItem[];
   pathname: string;
   preference: BoardDefaultsPreference | null;
 }>) {
@@ -126,6 +92,64 @@ function SidebarNavGroup({
           preference={preference}
         />
       </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
+
+function FavoritesSidebarGroup({
+  favorites,
+  pathname,
+  userId,
+}: Readonly<{
+  favorites: ReturnType<typeof useFavorites>['favorites'];
+  pathname: string;
+  userId: string | null | undefined;
+}>) {
+  const [open, setOpen] = useState(true);
+
+  useEffect(() => {
+    setOpen(readFavoritesSidebarOpen(userId));
+  }, [userId]);
+
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    writeFavoritesSidebarOpen(userId, next);
+  };
+
+  return (
+    <SidebarGroup>
+      <Collapsible open={open} onOpenChange={handleOpenChange}>
+        <SidebarGroupLabel asChild>
+          <CollapsibleTrigger
+            className="hover:bg-sidebar-accent flex w-full cursor-pointer items-center justify-between gap-2 rounded-md"
+            aria-label={open ? 'Collapse Favorites' : 'Expand Favorites'}
+          >
+            <span>Favorites</span>
+            <ChevronRight
+              className={cn(
+                'size-3.5 shrink-0 transition-transform duration-200',
+                open && 'rotate-90'
+              )}
+            />
+          </CollapsibleTrigger>
+        </SidebarGroupLabel>
+        <CollapsibleContent>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {favorites.map((favorite) => (
+                <SidebarNavLink
+                  key={favorite.id}
+                  href={favorite.pathname}
+                  label={favorite.label}
+                  icon={resolveFavoriteNavIcon(favorite.pathname)}
+                  isActive={isNavActive(pathname, favorite.pathname)}
+                  truncateLabel
+                />
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </CollapsibleContent>
+      </Collapsible>
     </SidebarGroup>
   );
 }
@@ -144,6 +168,7 @@ export function DashboardSidebar({
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
   const preference = useWorkspaceDefaultsNavPreference(userId);
+  const { favorites } = useFavorites(userId);
   const showSystem = canAccessNavGroup(role, 'system');
   const showProjects = canAccessNavGroup(role, 'projects');
   const showSprints = canAccessPath(role, '/sprints');
@@ -173,6 +198,15 @@ export function DashboardSidebar({
           pathname={pathname}
           preference={preference}
         />
+
+        {favorites.length > 0 ? (
+          <FavoritesSidebarGroup
+            favorites={favorites}
+            pathname={pathname}
+            userId={userId}
+          />
+        ) : null}
+
         {showSystem ? (
           <SidebarNavGroup
             label="System"

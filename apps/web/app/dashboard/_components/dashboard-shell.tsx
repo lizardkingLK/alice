@@ -13,6 +13,10 @@ type DashboardShellProps = {
   breadcrumbOverrides?: DashboardBreadcrumbOverride[];
   /** When true, `breadcrumbOverrides` is rendered as the full crumb trail. */
   breadcrumbAsTrail?: boolean;
+  /** Sidebar favorite label override (e.g. work-item title). */
+  favoriteLabel?: string;
+  /** Optional project scope for Save View share modes. */
+  projectId?: string | null;
   children: ReactNode;
   /** When false, sidebar starts collapsed (icon rail). */
   sidebarDefaultOpen?: boolean;
@@ -28,6 +32,8 @@ export async function DashboardShell({
   description,
   breadcrumbOverrides,
   breadcrumbAsTrail,
+  favoriteLabel,
+  projectId,
   children,
   sidebarDefaultOpen = true,
   stickyHeader = false,
@@ -40,6 +46,8 @@ export async function DashboardShell({
       description={description}
       breadcrumbOverrides={breadcrumbOverrides}
       breadcrumbAsTrail={breadcrumbAsTrail}
+      favoriteLabel={favoriteLabel}
+      projectId={projectId}
     />
   );
 

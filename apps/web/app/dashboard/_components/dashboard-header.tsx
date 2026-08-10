@@ -19,12 +19,16 @@ type DashboardHeaderProps = {
   description?: string;
   breadcrumbOverrides?: DashboardBreadcrumbOverride[];
   breadcrumbAsTrail?: boolean;
+  favoriteLabel?: string;
+  projectId?: string | null;
 };
 
 export async function DashboardHeader({
   description,
   breadcrumbOverrides,
   breadcrumbAsTrail,
+  favoriteLabel,
+  projectId,
 }: Readonly<DashboardHeaderProps>) {
   const user = await getUser();
   const dbUser = await getDbUser();
@@ -70,6 +74,9 @@ export async function DashboardHeader({
         description={description}
         breadcrumbOverrides={breadcrumbOverrides}
         breadcrumbAsTrail={breadcrumbAsTrail}
+        userId={user.id}
+        favoriteLabel={favoriteLabel}
+        projectId={projectId}
       />
       <section>
         <NotificationInbox

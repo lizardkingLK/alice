@@ -58,6 +58,7 @@ enum NotificationType {
   mention
   sprint
   due_date
+  view_shared
 }
 
 enum AccessAllowlistKind {
@@ -117,6 +118,12 @@ model users {
   created_access_allowlist access_allowlist[] @relation("AccessAllowlistCreatedBy")
   updated_access_allowlist access_allowlist[] @relation("AccessAllowlistUpdatedBy")
   chat_conversations      chat_conversations[]
+  owned_saved_views       saved_views[]       @relation("SavedViewOwner")
+  created_saved_views     saved_views[]       @relation("SavedViewCreatedBy")
+  updated_saved_views     saved_views[]       @relation("SavedViewUpdatedBy")
+  saved_view_shares       saved_view_shares[] @relation("SavedViewShareRecipient")
+  created_saved_view_shares saved_view_shares[] @relation("SavedViewShareCreatedBy")
+  updated_saved_view_shares saved_view_shares[] @relation("SavedViewShareUpdatedBy")
 }
 
 model projects {
@@ -147,6 +154,7 @@ model projects {
   teams           teams[]
   sprints         sprints[]
   work_items      work_items[]
+  saved_views     saved_views[]
 }
 
 model project_members {
@@ -386,4 +394,51 @@ model chat_conversations {
   user       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id])
+}
+
+/// Personal saved navigation snapshots (pathname + query); shareable via saved_view_shares.
+model saved_views {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  owner_id    String       @db.Uuid
+  title       String
+  description String?
+  pathname    String
+  /// Query string without leading `?`.
+  search      String       @default("")
+  project_id  String?      @db.Uuid
+  status      RecordStatus @default(active)
+  created_by  String?      @db.Uuid
+  created_at  DateTime     @default(now()) @db.Timestamptz(6)
+  updated_by  String?      @db.Uuid
+  updated_at  DateTime     @updatedAt @db.Timestamptz(6)
+
+  owner           users               @relation("SavedViewOwner", fields: [owner_id], references: [id], onDelete: Cascade)
+  project         projects?           @relation(fields: [project_id], references: [id], onDelete: SetNull)
+  created_by_user users?              @relation("SavedViewCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users?              @relation("SavedViewUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+  shares          saved_view_shares[]
+
+  @@index([owner_id, status])
+  @@index([project_id])
+  /// Partial unique index `saved_views_owner_path_active_key` enforces one active row
+  /// per (owner_id, pathname, search) — see migration add_saved_views_owner_path_unique.
+}
+
+model saved_view_shares {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  view_id    String       @db.Uuid
+  user_id    String       @db.Uuid
+  status     RecordStatus @default(active)
+  created_by String?      @db.Uuid
+  created_at DateTime     @default(now()) @db.Timestamptz(6)
+  updated_by String?      @db.Uuid
+  updated_at DateTime     @updatedAt @db.Timestamptz(6)
+
+  view            saved_views @relation(fields: [view_id], references: [id], onDelete: Cascade)
+  user            users       @relation("SavedViewShareRecipient", fields: [user_id], references: [id], onDelete: Cascade)
+  created_by_user users?      @relation("SavedViewShareCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users?      @relation("SavedViewShareUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+
+  @@unique([view_id, user_id])
+  @@index([user_id, status])
 }
