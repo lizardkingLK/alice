@@ -3,10 +3,10 @@ import * as path from 'node:path';
 import { projectsService } from '../projects/projects.service';
 import { projectsRepository } from '../projects/projects.repository';
 import { workItems, sprints } from '../../../config/composition';
-import { supabase } from '../../../lib/supabase';
-import { env } from '../../../config/env';
 import { getRoleName } from '@repo/types';
 import { systemInstruction, geminiTools } from './chat.route.data';
+import { chatRepository } from './chat.repository';
+import { sanitizeLog } from './chat.utils';
 import type {
   ContentPart,
   ContentTurn,
@@ -15,28 +15,7 @@ import type {
   StoredChatMessage,
 } from './chat.route.types';
 
-export function sanitizeLog(value: unknown): string {
-  if (value instanceof Error) {
-    return value.message.replace(/[\r\n]/g, '_');
-  }
-  if (
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean' ||
-    typeof value === 'symbol' ||
-    typeof value === 'bigint'
-  ) {
-    return String(value).replace(/[\r\n]/g, '_');
-  }
-  if (typeof value === 'object' && value !== null) {
-    try {
-      return JSON.stringify(value).replace(/[\r\n]/g, '_');
-    } catch {
-      // Fallback
-    }
-  }
-  return '';
-}
+export { sanitizeLog } from './chat.utils';
 
 function textToProseMirrorJson(text: string | null | undefined) {
   if (!text) return null;
@@ -92,12 +71,14 @@ async function handleListSprints(
   args: Record<string, unknown>
 ): Promise<unknown> {
   const projectId = typeof args.projectId === 'string' ? args.projectId : '';
-  const { data: sprints, error } = await supabase
-    .from('sprints')
-    .select('id, name, status, start_date, end_date')
-    .eq('project_id', projectId);
-  if (error) throw error;
-  return sprints || [];
+  const rows = await chatRepository.listSprintsByProject(projectId);
+  return rows.map((s) => ({
+    id: s.id,
+    name: s.name,
+    status: s.status,
+    start_date: s.start_date,
+    end_date: s.end_date,
+  }));
 }
 
 async function handleCreateSprint(
@@ -130,11 +111,7 @@ async function handleCreateSprint(
 }
 
 async function handleListUsers(): Promise<unknown> {
-  const { data: users, error } = await supabase
-    .from('users')
-    .select('id, name, email');
-  if (error) throw error;
-  return users || [];
+  return chatRepository.listUsersSnapshot();
 }
 
 async function handleCreateWorkItem(
@@ -254,7 +231,9 @@ function logGeminiError(errorDetails: {
     fs.appendFileSync(logFilePath, logMessage);
   } catch (err) {
     const errorName = err instanceof Error ? err.name : 'UnknownError';
-    console.error(`Failed to write to gemini-errors.log: ${sanitizeLog(errorName)}`);
+    console.error(
+      `Failed to write to gemini-errors.log: ${sanitizeLog(errorName)}`
+    );
   }
 }
 
@@ -341,52 +320,6 @@ export async function callGeminiAPI(
   throw new Error('Failed to contact Gemini API due to repeated rate limits.');
 }
 
-// Dedicated client for storage operations (can be pointed to a separate test Supabase project)
-// To use a different Supabase project for testing chat history files storage:
-// 1. Uncomment the block below and comment out "const chatStorageClient = supabase;"
-// 2. Add CHAT_SUPABASE_URL and CHAT_SUPABASE_SERVICE_ROLE_KEY to your apps/api/.env
-
-import { createClient } from '@supabase/supabase-js';
-const chatStorageClient = createClient(
-  process.env.CHAT_SUPABASE_URL || '',
-  process.env.CHAT_SUPABASE_SERVICE_ROLE_KEY || ''
-);
-
-// const chatStorageClient = supabase;
-
-/**
- * Ensures the chat history bucket exists in Supabase Storage.
- */
-let isBucketVerified = false;
-
-async function ensureChatBucketExists(): Promise<string> {
-  const bucketName = env.STORAGE_BUCKET_CHAT_HISTORY;
-  if (isBucketVerified) return bucketName;
-
-  try {
-    const { data: buckets, error: listError } =
-      await chatStorageClient.storage.listBuckets();
-    if (listError) throw listError;
-
-    const exists = buckets.some((b) => b.name === bucketName);
-    if (!exists) {
-      const { error: createError } = await chatStorageClient.storage.createBucket(
-        bucketName,
-        {
-          public: false,
-        }
-      );
-      if (createError) throw createError;
-    }
-    isBucketVerified = true;
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : String(error);
-    console.error(`Error verifying/creating storage bucket "${sanitizeLog(bucketName)}":`, sanitizeLog(msg));
-  }
-
-  return bucketName;
-}
-
 /**
  * Converts messages array to a Markdown string with JSON metadata embedded.
  */
@@ -431,7 +364,10 @@ export function markdownToChatHistory(md: string): StoredChatMessage[] {
   try {
     return JSON.parse(jsonStr);
   } catch (error) {
-    console.error('Failed to parse chat history JSON from markdown:', sanitizeLog(error));
+    console.error(
+      'Failed to parse chat history JSON from markdown:',
+      sanitizeLog(error)
+    );
     return [];
   }
 }
@@ -444,30 +380,15 @@ export async function saveChatHistory(
   messages: StoredChatMessage[]
 ): Promise<void> {
   try {
-    const bucket = await ensureChatBucketExists();
     const mdContent = chatHistoryToMarkdown(conversationId, messages);
-    const buffer = Buffer.from(mdContent, 'utf-8');
-    const path = `chat-history/${conversationId}.md`;
-
-    const { error } = await chatStorageClient.storage
-      .from(bucket)
-      .upload(path, buffer, {
-        contentType: 'text/markdown',
-        upsert: true,
-      });
-
-    if (error) {
-      throw error;
-    }
-
-    // Update database timestamp
-    await supabase
-      .from('chat_conversations')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', conversationId);
+    await chatRepository.uploadHistoryMarkdown(conversationId, mdContent);
+    await chatRepository.touchConversationUpdatedAt(conversationId);
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error(`Failed to save chat history for conversation ${sanitizeLog(conversationId)}:`, sanitizeLog(msg));
+    console.error(
+      `Failed to save chat history for conversation ${sanitizeLog(conversationId)}:`,
+      sanitizeLog(msg)
+    );
   }
 }
 
@@ -478,30 +399,15 @@ export async function loadChatHistory(
   conversationId: string
 ): Promise<StoredChatMessage[]> {
   try {
-    const bucket = await ensureChatBucketExists();
-    const path = `chat-history/${conversationId}.md`;
-
-    const { data, error } = await chatStorageClient.storage
-      .from(bucket)
-      .download(path);
-
-    if (error) {
-      // If object doesn't exist, return empty array
-      if ('status' in error && error.status === 404) {
-        return [];
-      }
-      if (error.message?.includes('Object not found')) {
-        return [];
-      }
-      throw error;
-    }
-
-    if (!data) return [];
-    const mdText = await data.text();
+    const mdText = await chatRepository.downloadHistoryMarkdown(conversationId);
+    if (!mdText) return [];
     return markdownToChatHistory(mdText);
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error(`Failed to load chat history for conversation ${sanitizeLog(conversationId)}:`, sanitizeLog(msg));
+    console.error(
+      `Failed to load chat history for conversation ${sanitizeLog(conversationId)}:`,
+      sanitizeLog(msg)
+    );
     return [];
   }
 }
@@ -509,18 +415,8 @@ export async function loadChatHistory(
 /**
  * Lists all conversations for a user.
  */
-export async function listConversations(userId: string): Promise<unknown[]> {
-  const { data, error } = await supabase
-    .from('chat_conversations')
-    .select('id, title, created_at, updated_at')
-    .eq('user_id', userId)
-    .order('updated_at', { ascending: false });
-
-  if (error) {
-    console.error('Failed to list chat conversations:', sanitizeLog(error.message));
-    throw error;
-  }
-  return data || [];
+export async function listConversations(userId: string) {
+  return chatRepository.listConversations(userId);
 }
 
 /**
@@ -530,17 +426,7 @@ export async function createConversation(
   userId: string,
   title = 'New Chat'
 ): Promise<string> {
-  const { data, error } = await supabase
-    .from('chat_conversations')
-    .insert({ user_id: userId, title, updated_at: new Date().toISOString() })
-    .select('id')
-    .single();
-
-  if (error) {
-    console.error('Failed to create chat conversation:', sanitizeLog(error.message));
-    throw error;
-  }
-  return data.id;
+  return chatRepository.createConversation(userId, title);
 }
 
 /**
@@ -550,22 +436,23 @@ export async function deleteConversation(
   userId: string,
   conversationId: string
 ): Promise<void> {
-  const { error } = await supabase
-    .from('chat_conversations')
-    .delete()
-    .eq('id', conversationId)
-    .eq('user_id', userId);
-
-  if (error) {
-    console.error('Failed to delete chat conversation row:', sanitizeLog(error.message));
-    throw error;
-  }
+  await chatRepository.deleteConversation(userId, conversationId);
 
   try {
-    const bucket = await ensureChatBucketExists();
-    const path = `chat-history/${conversationId}.md`;
-    await chatStorageClient.storage.from(bucket).remove([path]);
+    await chatRepository.removeHistoryMarkdown(conversationId);
   } catch (err) {
-    console.warn(`Failed to remove chat history file for conversation ${sanitizeLog(conversationId)}:`, sanitizeLog(err));
+    console.warn(
+      `Failed to remove chat history file for conversation ${sanitizeLog(conversationId)}:`,
+      sanitizeLog(err)
+    );
   }
+}
+
+/** Workspace snapshot helpers for the chat route system prompt. */
+export async function loadWorkspaceContext() {
+  const [users, activeSprints] = await Promise.all([
+    chatRepository.listUsersSnapshot(),
+    chatRepository.listActiveSprintsSnapshot(),
+  ]);
+  return { users, activeSprints };
 }

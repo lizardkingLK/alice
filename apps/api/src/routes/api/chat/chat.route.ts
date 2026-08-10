@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import {
   requireApiAuth,
   type AuthenticatedRequest,
@@ -7,7 +7,6 @@ import {
   projectsRepository,
   type ProjectRowWithOwner,
 } from '../projects/projects.repository';
-import { supabase } from '../../../lib/supabase';
 import { ChatRoles, parseChatRole, toGeminiRole, GeminiRoles } from '@repo/types';
 import {
   callGeminiAPI,
@@ -17,6 +16,7 @@ import {
   listConversations,
   createConversation,
   deleteConversation,
+  loadWorkspaceContext,
   sanitizeLog,
 } from './chat.service';
 import type {
@@ -29,22 +29,32 @@ import type {
 
 const chatRouter: Router = Router();
 
+function sendChatError(
+  res: Response,
+  error: unknown,
+  fallback: string,
+  logLabel: string
+) {
+  const message = error instanceof Error ? error.message : fallback;
+  console.error(`${logLabel}:`, sanitizeLog(message));
+  res.status(500).json({ error: message });
+}
+
 chatRouter.get('/', requireApiAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const list = (await listConversations(req.userId!)) as {
-      id: string;
-      title: string;
-    }[];
+    const list = await listConversations(req.userId!);
     if (list.length > 0 && list[0]) {
       const history = await loadChatHistory(list[0].id);
       return res.json({ history, conversationId: list[0].id });
     }
     res.json({ history: [] });
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : 'Failed to load chat history';
-    console.error('error. loading chat history failed:', sanitizeLog(message));
-    res.status(500).json({ error: message });
+    sendChatError(
+      res,
+      error,
+      'Failed to load chat history',
+      'error. loading chat history failed'
+    );
   }
 });
 
@@ -53,10 +63,12 @@ chatRouter.get('/conversations', requireApiAuth, async (req: AuthenticatedReques
     const list = await listConversations(req.userId!);
     res.json({ conversations: list });
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : 'Failed to list conversations';
-    console.error('error. list conversations failed:', sanitizeLog(message));
-    res.status(500).json({ error: message });
+    sendChatError(
+      res,
+      error,
+      'Failed to list conversations',
+      'error. list conversations failed'
+    );
   }
 });
 
@@ -66,10 +78,12 @@ chatRouter.get('/:conversationId', requireApiAuth, async (req: AuthenticatedRequ
     const history = await loadChatHistory(conversationId!);
     res.json({ history });
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : 'Failed to load conversation history';
-    console.error('error. load conversation history failed:', sanitizeLog(message));
-    res.status(500).json({ error: message });
+    sendChatError(
+      res,
+      error,
+      'Failed to load conversation history',
+      'error. load conversation history failed'
+    );
   }
 });
 
@@ -79,10 +93,12 @@ chatRouter.delete('/:conversationId', requireApiAuth, async (req: AuthenticatedR
     await deleteConversation(req.userId!, conversationId!);
     res.json({ success: true });
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : 'Failed to delete conversation';
-    console.error('error. delete conversation failed:', sanitizeLog(message));
-    res.status(500).json({ error: message });
+    sendChatError(
+      res,
+      error,
+      'Failed to delete conversation',
+      'error. delete conversation failed'
+    );
   }
 });
 
@@ -101,26 +117,13 @@ chatRouter.post('/', requireApiAuth, async (req: AuthenticatedRequest, res) => {
   }
 
   try {
-    const [projectsRaw, usersRaw, sprintsRaw] = await Promise.all([
+    const [projectsRaw, workspace] = await Promise.all([
       projectsRepository.listAll().catch(() => []),
-      supabase.from('users').select('id, name, email'),
-      supabase
-        .from('sprints')
-        .select('id, name, project_id, status')
-        .eq('status', 'active'),
+      loadWorkspaceContext(),
     ]);
 
     const projects = (projectsRaw || []) as ProjectRowWithOwner[];
-    const users = (usersRaw.data || []) as {
-      id: string;
-      name: string;
-      email: string;
-    }[];
-    const sprints = (sprintsRaw.data || []) as {
-      id: string;
-      name: string;
-      project_id: string;
-    }[];
+    const { users, activeSprints: sprints } = workspace;
 
     const contextInstruction = `
 Current Workspace State:
@@ -219,10 +222,12 @@ Current Workspace State:
       title,
     });
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : 'Failed to process message';
-    console.error('error. chatbot processing failed:', sanitizeLog(message));
-    res.status(500).json({ error: message });
+    sendChatError(
+      res,
+      error,
+      'Failed to process message',
+      'error. chatbot processing failed'
+    );
   }
 });
 

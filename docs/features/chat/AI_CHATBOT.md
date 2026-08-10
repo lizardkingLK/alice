@@ -93,9 +93,27 @@ Mounted in `apps/api/src/config/routing.ts` as `/api/chat`.
 | Widget | `apps/web/app/chat/_components/floating-chat-widget.tsx` |
 | Routes | `apps/api/src/routes/api/chat/chat.route.ts` |
 | Service | `apps/api/src/routes/api/chat/chat.service.ts` |
+| Repository | `apps/api/src/routes/api/chat/chat.repository.ts` |
 | Prompt + tools | `apps/api/src/routes/api/chat/chat.route.data.ts` |
 | Types (API) | `apps/api/src/routes/api/chat/chat.route.types.ts` |
 | Shared roles | `packages/types/src/chat.ts` (`ChatRoles`, `GeminiRoles`, `getRoleName`) |
+| Supabase client | `apps/api/src/lib/supabase.ts` (`supabase` + re-exported `createClient`) |
+
+### Data access
+
+Layering: **route → service → repository**.
+
+- `chat.repository.ts` owns all Supabase table + Storage I/O for conversations
+  and history files, using the shared service-role client from
+  `apps/api/src/lib/supabase.ts` (`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`).
+- `chat.service.ts` owns Gemini calls, markdown serialize/deserialize, and
+  orchestration; it does not construct its own Supabase client.
+- Domain mutations still go through existing project / sprint / work-item
+  services.
+
+There are **no** `CHAT_SUPABASE_*` env vars and no second `createClient` for
+chat. Import `createClient` / `supabase` only from `lib/supabase.ts` when
+needed elsewhere in the API.
 
 ---
 
@@ -151,10 +169,11 @@ Migrations: `add_chat_conversations`, `add_chat_conversations_rls`,
   `JSON_HISTORY_DATA_START` / `JSON_HISTORY_DATA_END` markers for round-trip
   load
 
-Optional separate Supabase project via `CHAT_SUPABASE_URL` +
-`CHAT_SUPABASE_SERVICE_ROLE_KEY` (used by `createClient` in `chat.service.ts`).
-If unset, history operations depend on how that client is configured in the
-environment.
+History Storage and `chat_conversations` table access both go through
+`chat.repository.ts`, which uses the shared API service-role client in
+`apps/api/src/lib/supabase.ts` (same helper other repositories use:
+`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`). There is **no** separate chat
+Supabase project or `CHAT_SUPABASE_*` credentials.
 
 There is **no** `chat_messages` table — threads are DB rows; turns are Storage
 files.
@@ -181,11 +200,16 @@ approval step before tool mutations run.
 | -------- | ----- | ------- |
 | `GEMINI_API_KEY` | `apps/api/.env` (see `sample.env`) | Required for chat |
 | `GEMINI_API_URL` | Optional override | Default points at Gemini `generateContent` for the configured model id |
-| `STORAGE_BUCKET_CHAT_HISTORY` | Zod `env.ts` + sample | Chat history bucket name |
-| `CHAT_SUPABASE_URL` / `CHAT_SUPABASE_SERVICE_ROLE_KEY` | Optional | Alternate Supabase project for chat Storage |
+| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Zod `env.ts` + sample | Shared service-role client (`lib/supabase.ts`) used by `chat.repository.ts` |
+| `STORAGE_BUCKET_CHAT_HISTORY` | Zod `env.ts` + sample | Chat history bucket name (same pattern as attachments / profile pictures) |
 
 `GEMINI_*` are runtime `process.env` reads (also listed in root `turbo.json`
 `globalEnv`); they are not part of the Zod `env.ts` schema today.
+
+Do **not** introduce `CHAT_SUPABASE_URL` / `CHAT_SUPABASE_SERVICE_ROLE_KEY` —
+chat must not maintain a second Supabase client or project. Prefer importing
+`createClient` from `apps/api/src/lib/supabase` rather than
+`@supabase/supabase-js` directly in API modules.
 
 Missing `GEMINI_API_KEY` → `POST /api/chat` returns **400** with a config
 message.

@@ -8,12 +8,22 @@ const { mockClient } = vi.hoisted(() => {
   return {
     mockClient: {
       from: mockFrom,
+      storage: {
+        listBuckets: () => Promise.resolve({ data: [], error: null }),
+        createBucket: () => Promise.resolve({ data: null, error: null }),
+        from: () => ({
+          upload: () => Promise.resolve({ error: null }),
+          download: () => Promise.resolve({ data: null, error: { status: 404 } }),
+          remove: () => Promise.resolve({ error: null }),
+        }),
+      },
     },
   };
 });
 
-vi.mock('@supabase/supabase-js', () => ({
+vi.mock('../../../src/lib/supabase', () => ({
   createClient: () => mockClient,
+  supabase: mockClient,
 }));
 
 import { ChatRoles } from '@repo/types';
