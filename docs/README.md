@@ -42,19 +42,19 @@ How the monorepo fits together (apps, auth, deployment).
 
 One folder per product area. Prefer a local `README.md` as the index.
 
-| Area       | Index                                                                                                    |
-| ---------- | -------------------------------------------------------------------------------------------------------- |
-| Users      | [features/users/](./features/users/)                                                                     |
-| Access     | [features/access/](./features/access/) ([ACCESS_ALLOWLIST.md](./features/access/ACCESS_ALLOWLIST.md))    |
-| Work items | [features/work-items/](./features/work-items/)                                                           |
-| Board      | [features/board/](./features/board/)                                                                     |
-| Projects   | [features/projects/](./features/projects/)                                                               |
-| Sprints    | [features/sprints/](./features/sprints/)                                                                 |
+| Area       | Index                                                                                                                    |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Users      | [features/users/](./features/users/)                                                                                     |
+| Access     | [features/access/](./features/access/) ([ACCESS_ALLOWLIST.md](./features/access/ACCESS_ALLOWLIST.md))                    |
+| Work items | [features/work-items/](./features/work-items/)                                                                           |
+| Board      | [features/board/](./features/board/)                                                                                     |
+| Projects   | [features/projects/](./features/projects/)                                                                               |
+| Sprints    | [features/sprints/](./features/sprints/)                                                                                 |
 | Chat / AI  | [features/chat/](./features/chat/) ([AI_CHATBOT.md](./features/chat/AI_CHATBOT.md)) — Gemini assistant (**Implemented**) |
-| Dashboard  | [features/dashboard/](./features/dashboard/)                                                             |
-| Views      | [features/views/](./features/views/) ([FAVORITES_AND_VIEWS.md](./features/views/FAVORITES_AND_VIEWS.md)) |
-| Profile    | [features/profile/](./features/profile/) ([EDIT_PROFILE.md](./features/profile/EDIT_PROFILE.md))         |
-| Docs (app) | [features/docs/](./features/docs/) — in-app `/docs` browser (**Living**)                                 |
+| Dashboard  | [features/dashboard/](./features/dashboard/)                                                                             |
+| Views      | [features/views/](./features/views/) ([FAVORITES_AND_VIEWS.md](./features/views/FAVORITES_AND_VIEWS.md))                 |
+| Profile    | [features/profile/](./features/profile/) ([EDIT_PROFILE.md](./features/profile/EDIT_PROFILE.md))                         |
+| Docs (app) | [features/docs/](./features/docs/) — in-app `/docs` browser (**Living**)                                                 |
 
 ### Database
 

@@ -32,17 +32,23 @@ interface ChatClientProps {
   readonly onClose?: () => void;
 }
 
-export function ChatClient({ variant = 'page', onClose }: Readonly<ChatClientProps>) {
+export function ChatClient({
+  variant = 'page',
+  onClose,
+}: Readonly<ChatClientProps>) {
   const router = useRouter();
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
-  const [activeConversationId, setActiveConversationId] = useState<string | undefined>(undefined);
+  const [activeConversationId, setActiveConversationId] = useState<
+    string | undefined
+  >(undefined);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
-  const [conversationToDelete, setConversationToDelete] = useState<ChatConversation | null>(null);
+  const [conversationToDelete, setConversationToDelete] =
+    useState<ChatConversation | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -58,8 +64,11 @@ export function ChatClient({ variant = 'page', onClose }: Readonly<ChatClientPro
         const listResponse = await listConversations();
         if (listResponse.conversations) {
           setConversations(listResponse.conversations);
-          
-          if (listResponse.conversations.length > 0 && listResponse.conversations[0]) {
+
+          if (
+            listResponse.conversations.length > 0 &&
+            listResponse.conversations[0]
+          ) {
             const latestId = listResponse.conversations[0].id;
             setActiveConversationId(latestId);
             setIsLoadingHistory(true);
@@ -85,7 +94,7 @@ export function ChatClient({ variant = 'page', onClose }: Readonly<ChatClientPro
 
   const handleSelectConversation = async (id: string) => {
     if (id === activeConversationId || isPending) return;
-    
+
     setIsLoadingHistory(true);
     setActiveConversationId(id);
     setError(null);
@@ -111,7 +120,10 @@ export function ChatClient({ variant = 'page', onClose }: Readonly<ChatClientPro
     setError(null);
   };
 
-  const handleDeleteConversationClick = (e: React.MouseEvent, conv: ChatConversation) => {
+  const handleDeleteConversationClick = (
+    e: React.MouseEvent,
+    conv: ChatConversation
+  ) => {
     e.stopPropagation();
     if (isPending) return;
     setConversationToDelete(conv);
@@ -125,7 +137,9 @@ export function ChatClient({ variant = 'page', onClose }: Readonly<ChatClientPro
     try {
       const response = await deleteConversation(conversationToDelete.id);
       if (response.success) {
-        setConversations((prev) => prev.filter((c) => c.id !== conversationToDelete.id));
+        setConversations((prev) =>
+          prev.filter((c) => c.id !== conversationToDelete.id)
+        );
         if (activeConversationId === conversationToDelete.id) {
           handleNewChat();
         }
@@ -166,7 +180,7 @@ export function ChatClient({ variant = 'page', onClose }: Readonly<ChatClientPro
         if (response.history) {
           setMessages(response.history);
         }
-        
+
         if (!activeConversationId && response.conversationId) {
           setActiveConversationId(response.conversationId);
           setConversations((prev) => [
@@ -214,14 +228,14 @@ export function ChatClient({ variant = 'page', onClose }: Readonly<ChatClientPro
     if (isLoadingConversations) {
       return (
         <div className="flex justify-center p-4">
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
         </div>
       );
     }
 
     if (conversations.length === 0) {
       return (
-        <div className="text-center p-4 text-xs text-muted-foreground">
+        <div className="text-muted-foreground p-4 text-center text-xs">
           No past sessions
         </div>
       );
@@ -232,23 +246,23 @@ export function ChatClient({ variant = 'page', onClose }: Readonly<ChatClientPro
       return (
         <div
           key={conv.id}
-          className="group relative flex items-center justify-between rounded-lg overflow-hidden"
+          className="group relative flex items-center justify-between overflow-hidden rounded-lg"
         >
           <button
             type="button"
             onClick={() => handleSelectConversation(conv.id)}
-            className={`flex-1 text-left px-3 py-2.5 rounded-lg cursor-pointer transition-colors text-xs truncate pr-10 ${
+            className={`flex-1 cursor-pointer truncate rounded-lg px-3 py-2.5 pr-10 text-left text-xs transition-colors ${
               isActive
                 ? 'bg-primary/10 text-primary font-medium'
                 : 'hover:bg-muted text-muted-foreground'
             }`}
           >
-            <span className="truncate block">{conv.title}</span>
+            <span className="block truncate">{conv.title}</span>
           </button>
           <button
             type="button"
             onClick={(e) => handleDeleteConversationClick(e, conv)}
-            className="absolute right-2 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive p-1 rounded transition-all z-10"
+            className="hover:bg-destructive/10 text-muted-foreground hover:text-destructive absolute right-2 z-10 rounded p-1 opacity-0 transition-all group-hover:opacity-100"
             aria-label={`Delete chat session ${conv.title}`}
           >
             <Trash2 className="h-3 w-3" />
@@ -261,7 +275,7 @@ export function ChatClient({ variant = 'page', onClose }: Readonly<ChatClientPro
   return (
     <div
       className={cn(
-        'bg-card flex overflow-hidden w-full',
+        'bg-card flex w-full overflow-hidden',
         variant === 'page'
           ? 'border-sidebar-border h-[calc(100vh-140px)] rounded-xl border shadow-sm'
           : 'h-full'
@@ -269,29 +283,29 @@ export function ChatClient({ variant = 'page', onClose }: Readonly<ChatClientPro
     >
       {/* Sidebar Panel */}
       {variant === 'page' && (
-        <div className="w-64 border-r border-sidebar-border bg-muted/20 flex flex-col shrink-0">
+        <div className="border-sidebar-border bg-muted/20 flex w-64 shrink-0 flex-col border-r">
           {/* Sidebar Header */}
-          <div className="p-4 border-b border-sidebar-border">
+          <div className="border-sidebar-border border-b p-4">
             <button
               type="button"
               onClick={handleNewChat}
               disabled={isPending}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/95 transition-colors disabled:opacity-50"
+              className="bg-primary text-primary-foreground hover:bg-primary/95 flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-colors disabled:opacity-50"
             >
               <Sparkles className="h-3.5 w-3.5" />
               <span>New Chat</span>
             </button>
           </div>
-          
+
           {/* Sidebar List */}
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          <div className="flex-1 space-y-1 overflow-y-auto p-2">
             {renderSidebarContent()}
           </div>
         </div>
       )}
 
       {/* Main Chat Panel */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-background">
+      <div className="bg-background flex flex-1 flex-col overflow-hidden">
         {/* Header */}
         <div className="border-sidebar-border bg-muted/40 flex items-center justify-between border-b px-6 py-4">
           <div className="flex items-center gap-3">
@@ -310,11 +324,21 @@ export function ChatClient({ variant = 'page', onClose }: Readonly<ChatClientPro
             <button
               type="button"
               onClick={onClose}
-              className="text-muted-foreground hover:text-foreground hover:bg-muted p-1.5 rounded-lg transition-colors"
+              className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg p-1.5 transition-colors"
             >
               <span className="sr-only">Close</span>
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           )}
@@ -322,9 +346,11 @@ export function ChatClient({ variant = 'page', onClose }: Readonly<ChatClientPro
 
         {/* Message list / Loading State */}
         {isLoadingHistory ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-2">
+          <div className="flex flex-1 flex-col items-center justify-center gap-2">
             <Loader2 className="text-primary h-8 w-8 animate-spin" />
-            <span className="text-sm text-muted-foreground">Loading chat history...</span>
+            <span className="text-muted-foreground text-sm">
+              Loading chat history...
+            </span>
           </div>
         ) : (
           <div
@@ -348,8 +374,9 @@ export function ChatClient({ variant = 'page', onClose }: Readonly<ChatClientPro
                     How can I help you today?
                   </h3>
                   <p className="text-muted-foreground text-sm">
-                    Ask me to create a project, manage sprints, assign tasks to team
-                    members, or handle complete workflow creation conversations.
+                    Ask me to create a project, manage sprints, assign tasks to
+                    team members, or handle complete workflow creation
+                    conversations.
                   </p>
                 </div>
 

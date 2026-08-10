@@ -94,13 +94,13 @@ Notifications stay on the existing module singleton for now; the work-items rout
 
 ### Chat
 
-| Piece            | Path                                                         |
-| ---------------- | ------------------------------------------------------------ |
-| Repository       | `apps/api/src/routes/api/chat/chat.repository.ts`            |
+| Piece            | Path                                                           |
+| ---------------- | -------------------------------------------------------------- |
+| Repository       | `apps/api/src/routes/api/chat/chat.repository.ts`              |
 | Service          | `apps/api/src/routes/api/chat/chat.service.ts` → `ChatService` |
-| Route factory    | `createChatRouter`                                           |
-| Injection config | `composition.ts` → `chat`                                    |
-| Route mount      | `routing.ts` → `chat.router`                                 |
+| Route factory    | `createChatRouter`                                             |
+| Injection config | `composition.ts` → `chat`                                      |
+| Route mount      | `routing.ts` → `chat.router`                                   |
 
 Chat receives `workItemService` and `sprintsService` from the composition root for tool mutations (avoids importing `composition.ts` from the service). Projects create/list still use the projects module singletons until that domain is migrated. Pure helpers (`chatHistoryToMarkdown`, `markdownToChatHistory`, `sanitizeLog`) stay module-level.
 

@@ -71,7 +71,7 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'users';
             referencedColumns: ['id'];
-          }
+          },
         ];
       };
       access_allowlist: {

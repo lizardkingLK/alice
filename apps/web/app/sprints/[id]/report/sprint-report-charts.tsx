@@ -91,7 +91,9 @@ export function SprintReportCharts({
               </span>
             </div>
             <Progress
-              value={totalIssues > 0 ? (completedIssues / totalIssues) * 100 : 0}
+              value={
+                totalIssues > 0 ? (completedIssues / totalIssues) * 100 : 0
+              }
               className="h-3"
               indicatorClassName="bg-emerald-500"
             />
@@ -121,14 +123,17 @@ export function SprintReportCharts({
             />
             <p className="text-muted-foreground text-xs">
               {totalPlannedStoryPoints > 0
-                ? ((completedStoryPoints / totalPlannedStoryPoints) * 100).toFixed(0)
+                ? (
+                    (completedStoryPoints / totalPlannedStoryPoints) *
+                    100
+                  ).toFixed(0)
                 : '0'}
               % velocity delivered
             </p>
           </div>
 
           {/* Mini status bars list */}
-          <div className="border-t border-border/30 pt-4 space-y-3">
+          <div className="border-border/30 space-y-3 border-t pt-4">
             {STATUS_ORDER.map((status) => {
               const meta = STATUS_META[status]!;
               const data = statusCounts[status]!;
@@ -184,9 +189,7 @@ export function SprintReportCharts({
               <PieChart>
                 <ChartTooltip
                   cursor={false}
-                  content={
-                    <ChartTooltipContent nameKey="label" hideLabel />
-                  }
+                  content={<ChartTooltipContent nameKey="label" hideLabel />}
                 />
                 <Pie
                   data={chartData}

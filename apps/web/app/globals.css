@@ -18,7 +18,7 @@
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
   }
-  
+
   .print-container *::-webkit-scrollbar {
     display: none !important;
   }
@@ -34,7 +34,7 @@
   /* Global print rules: hide general layout headers/sidebars, notifications, and print-hidden components */
   aside,
   header,
-  [data-sidebar="sidebar"],
+  [data-sidebar='sidebar'],
   .no-print,
   .print-hide {
     display: none !important;

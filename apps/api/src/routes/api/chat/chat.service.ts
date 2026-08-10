@@ -102,7 +102,19 @@ function logGeminiError(errorDetails: {
   attempt: number;
   messagesCount: number;
 }) {
-  const logMessage = `[${errorDetails.timestamp}] Attempt ${errorDetails.attempt} failed with Status ${errorDetails.status} (${errorDetails.statusText}). Body: ${errorDetails.errorBody}. Messages in history: ${errorDetails.messagesCount}\n`;
+  const logMessage: string = [
+    `[${errorDetails.timestamp}]`,
+    'Attempt',
+    errorDetails.attempt,
+    'failed with Status',
+    errorDetails.status,
+    `${errorDetails.statusText}.`,
+    'Body:',
+    `${errorDetails.errorBody}.`,
+    'Messages in history:',
+    `${errorDetails.messagesCount}\n`,
+  ].join(' ');
+
   console.error(
     `Gemini Error: Request failed with status ${errorDetails.status}. See gemini-errors.log for details.`
   );
@@ -290,11 +302,7 @@ export class ChatService {
       assignee_id: assigneeId,
       type: typeValue as 'Task' | 'Story' | 'Epic' | 'Issue',
       priority: priorityValue as
-        | 'low'
-        | 'medium'
-        | 'high'
-        | 'highest'
-        | 'lowest',
+        'low' | 'medium' | 'high' | 'highest' | 'lowest',
       description: textToProseMirrorJson(description),
       due_date: null,
     });
@@ -386,7 +394,9 @@ export class ChatService {
       return response.json() as Promise<GeminiResponse>;
     }
 
-    throw new Error('Failed to contact Gemini API due to repeated rate limits.');
+    throw new Error(
+      'Failed to contact Gemini API due to repeated rate limits.'
+    );
   }
 
   async saveChatHistory(
@@ -406,9 +416,7 @@ export class ChatService {
     }
   }
 
-  async loadChatHistory(
-    conversationId: string
-  ): Promise<StoredChatMessage[]> {
+  async loadChatHistory(conversationId: string): Promise<StoredChatMessage[]> {
     try {
       const mdText = await this.chat.downloadHistoryMarkdown(conversationId);
       if (!mdText) return [];

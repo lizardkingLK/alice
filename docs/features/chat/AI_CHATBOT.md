@@ -40,11 +40,11 @@ Related:
 
 ## UX surfaces
 
-| Surface | Location | Behavior |
-| ------- | -------- | -------- |
-| Full page | `/chat` | Conversation list, New Chat, delete, suggestions, action cards |
+| Surface         | Location                                  | Behavior                                                                             |
+| --------------- | ----------------------------------------- | ------------------------------------------------------------------------------------ |
+| Full page       | `/chat`                                   | Conversation list, New Chat, delete, suggestions, action cards                       |
 | Floating widget | All `DashboardShell` pages except `/chat` | FAB → right drawer; same `ChatClient` (`variant="drawer"`) — no conversation sidebar |
-| Nav | Platform → **Chatbot** | Links to `/chat` |
+| Nav             | Platform → **Chatbot**                    | Links to `/chat`                                                                     |
 
 Empty-state suggestions cover common flows (e.g. create a bug, list projects).
 Successful mutations can render **executed action** cards with deep links to
@@ -75,31 +75,31 @@ All routes require `requireApiAuth`. Wired via composition root
 (`config/composition.ts` → `chat.router` mounted in `routing.ts`). See
 [DI.md](../../architecture/DI.md).
 
-| Method | Path | Purpose |
-| ------ | ---- | ------- |
-| `GET` | `/api/chat` | Latest conversation history (or empty) |
-| `GET` | `/api/chat/conversations` | List conversations for the current user |
-| `GET` | `/api/chat/:conversationId` | Load one conversation’s history from Storage |
+| Method   | Path                        | Purpose                                                |
+| -------- | --------------------------- | ------------------------------------------------------ |
+| `GET`    | `/api/chat`                 | Latest conversation history (or empty)                 |
+| `GET`    | `/api/chat/conversations`   | List conversations for the current user                |
+| `GET`    | `/api/chat/:conversationId` | Load one conversation’s history from Storage           |
 | `DELETE` | `/api/chat/:conversationId` | Delete conversation row (+ best-effort Storage remove) |
-| `POST` | `/api/chat` | Send messages; run agent loop; return assistant reply |
+| `POST`   | `/api/chat`                 | Send messages; run agent loop; return assistant reply  |
 
 Mounted in `apps/api/src/config/routing.ts` as `/api/chat`.
 
 ### Key files
 
-| Layer | Path |
-| ----- | ---- |
-| Page | `apps/web/app/chat/page.tsx` |
-| Client UI | `apps/web/app/chat/_components/chat-client.tsx` |
-| Client API | `apps/web/app/chat/_components/chat-client.service.ts` |
-| Widget | `apps/web/app/chat/_components/floating-chat-widget.tsx` |
-| Routes | `createChatRouter` in `chat.route.ts` (mounted as `chat.router`) |
-| Service | `ChatService` in `chat.service.ts` |
-| Repository | `ChatRepository` in `chat.repository.ts` (`db` injected) |
-| Prompt + tools | `apps/api/src/routes/api/chat/chat.route.data.ts` |
-| Types (API) | `apps/api/src/routes/api/chat/chat.route.types.ts` |
-| Shared roles | `packages/types/src/chat.ts` (`ChatRoles`, `GeminiRoles`, `getRoleName`) |
-| Composition | `apps/api/src/config/composition.ts` → `chat` |
+| Layer           | Path                                                                     |
+| --------------- | ------------------------------------------------------------------------ |
+| Page            | `apps/web/app/chat/page.tsx`                                             |
+| Client UI       | `apps/web/app/chat/_components/chat-client.tsx`                          |
+| Client API      | `apps/web/app/chat/_components/chat-client.service.ts`                   |
+| Widget          | `apps/web/app/chat/_components/floating-chat-widget.tsx`                 |
+| Routes          | `createChatRouter` in `chat.route.ts` (mounted as `chat.router`)         |
+| Service         | `ChatService` in `chat.service.ts`                                       |
+| Repository      | `ChatRepository` in `chat.repository.ts` (`db` injected)                 |
+| Prompt + tools  | `apps/api/src/routes/api/chat/chat.route.data.ts`                        |
+| Types (API)     | `apps/api/src/routes/api/chat/chat.route.types.ts`                       |
+| Shared roles    | `packages/types/src/chat.ts` (`ChatRoles`, `GeminiRoles`, `getRoleName`) |
+| Composition     | `apps/api/src/config/composition.ts` → `chat`                            |
 | Supabase client | `apps/api/src/lib/supabase.ts` (`supabase` + re-exported `createClient`) |
 
 ### Data access
@@ -125,13 +125,13 @@ needed elsewhere in the API.
 
 Declared in `chat.route.data.ts` and executed server-side:
 
-| Tool | Effect |
-| ---- | ------ |
-| `list_projects` | List projects (id, name, key) |
-| `create_project` | Create project via projects service |
-| `list_sprints` | List sprints for a `projectId` |
-| `create_sprint` | Create sprint via sprints service |
-| `list_users` | List users (id, name, email) for assignee matching |
+| Tool               | Effect                                                                      |
+| ------------------ | --------------------------------------------------------------------------- |
+| `list_projects`    | List projects (id, name, key)                                               |
+| `create_project`   | Create project via projects service                                         |
+| `list_sprints`     | List sprints for a `projectId`                                              |
+| `create_sprint`    | Create sprint via sprints service                                           |
+| `list_users`       | List users (id, name, email) for assignee matching                          |
 | `create_work_item` | Create work item; maps chat types (bug → Issue, task → Task, story → Story) |
 
 **Protocol (system prompt):** resolve project (list / optionally create) →
@@ -152,12 +152,12 @@ pipeline.
 
 ### Postgres — `chat_conversations`
 
-| Column | Notes |
-| ------ | ----- |
-| `id` | UUID PK |
-| `user_id` | FK → `users` (`ON DELETE CASCADE`) |
-| `title` | Default `"New Chat"` |
-| `created_at` / `updated_at` | Timestamps |
+| Column                      | Notes                              |
+| --------------------------- | ---------------------------------- |
+| `id`                        | UUID PK                            |
+| `user_id`                   | FK → `users` (`ON DELETE CASCADE`) |
+| `title`                     | Default `"New Chat"`               |
+| `created_at` / `updated_at` | Timestamps                         |
 
 Index on `user_id`. RLS policies exist for owner access; the API uses the
 **service-role** client, so ownership checks must stay in application code.
@@ -186,11 +186,11 @@ files.
 
 ## Auth and access
 
-| Layer | Behavior |
-| ----- | -------- |
-| Web | `/chat` is not a public path; normal session + allowlist apply |
-| API | JWT via `requireApiAuth` only — **no** chat-specific role gate |
-| Nav | Platform item; no `/chat` minimum role in route policy → any authenticated role |
+| Layer     | Behavior                                                                                           |
+| --------- | -------------------------------------------------------------------------------------------------- |
+| Web       | `/chat` is not a public path; normal session + allowlist apply                                     |
+| API       | JWT via `requireApiAuth` only — **no** chat-specific role gate                                     |
+| Nav       | Platform item; no `/chat` minimum role in route policy → any authenticated role                    |
 | Mutations | Domain services still enforce their own rules (e.g. create project/sprint typically manager/admin) |
 
 Confirm-before-create is **prompt-only**; the UI does not show a separate
@@ -200,12 +200,12 @@ approval step before tool mutations run.
 
 ## Configuration
 
-| Variable | Where | Purpose |
-| -------- | ----- | ------- |
-| `GEMINI_API_KEY` | `apps/api/.env` (see `sample.env`) | Required for chat |
-| `GEMINI_API_URL` | Optional override | Default points at Gemini `generateContent` for the configured model id |
-| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Zod `env.ts` + sample | Shared service-role client (`lib/supabase.ts`) used by `chat.repository.ts` |
-| `STORAGE_BUCKET_CHAT_HISTORY` | Zod `env.ts` + sample | Chat history bucket name (same pattern as attachments / profile pictures) |
+| Variable                                     | Where                              | Purpose                                                                     |
+| -------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------- |
+| `GEMINI_API_KEY`                             | `apps/api/.env` (see `sample.env`) | Required for chat                                                           |
+| `GEMINI_API_URL`                             | Optional override                  | Default points at Gemini `generateContent` for the configured model id      |
+| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Zod `env.ts` + sample              | Shared service-role client (`lib/supabase.ts`) used by `chat.repository.ts` |
+| `STORAGE_BUCKET_CHAT_HISTORY`                | Zod `env.ts` + sample              | Chat history bucket name (same pattern as attachments / profile pictures)   |
 
 `GEMINI_*` are runtime `process.env` reads (also listed in root `turbo.json`
 `globalEnv`); they are not part of the Zod `env.ts` schema today.
@@ -222,24 +222,24 @@ message.
 
 ## Reliability
 
-| Topic | Behavior |
-| ----- | -------- |
-| Streaming | None — full JSON response; UI shows a “Thinking…” state |
-| Gemini 429 / 5xx | Up to 3 retries with exponential backoff; errors appended to `gemini-errors.log` (gitignored) |
-| Tool errors | Returned as function-response `{ error }`; loop may continue |
-| Rate limiting | No app-level chat quota beyond Gemini retries |
-| Request validation | Manual `messages` checks; no Zod body schema on the chat router yet |
+| Topic              | Behavior                                                                                      |
+| ------------------ | --------------------------------------------------------------------------------------------- |
+| Streaming          | None — full JSON response; UI shows a “Thinking…” state                                       |
+| Gemini 429 / 5xx   | Up to 3 retries with exponential backoff; errors appended to `gemini-errors.log` (gitignored) |
+| Tool errors        | Returned as function-response `{ error }`; loop may continue                                  |
+| Rate limiting      | No app-level chat quota beyond Gemini retries                                                 |
+| Request validation | Manual `messages` checks; no Zod body schema on the chat router yet                           |
 
 ---
 
 ## Testing
 
-| Area | Status |
-| ---- | ------ |
+| Area                                   | Status                                     |
+| -------------------------------------- | ------------------------------------------ |
 | Markdown history serialize/deserialize | `apps/api/tests/chat/chat.service.test.ts` |
-| Route / tools / Gemini mocks | Not covered |
-| Web `ChatClient` / widget | Not covered |
-| Cypress E2E | Not covered |
+| Route / tools / Gemini mocks           | Not covered                                |
+| Web `ChatClient` / widget              | Not covered                                |
+| Cypress E2E                            | Not covered                                |
 
 ---
 

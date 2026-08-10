@@ -12,7 +12,7 @@
     "JIRA_EMAIL",
     "CRON_SECRET",
     "GEMINI_API_KEY",
-    "GEMINI_API_URL",
+    "GEMINI_API_URL"
   ],
   "tasks": {
     "build": {

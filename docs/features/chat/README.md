@@ -4,8 +4,8 @@ In-app **AI Assistant** (“Chatbot” in the sidebar) backed by **Google Gemini
 function-calling. Helps authenticated users list and create projects, sprints,
 and work items through natural language.
 
-| Document                         | Description                                      | Status      |
-| -------------------------------- | ------------------------------------------------ | ----------- |
+| Document                         | Description                                       | Status      |
+| -------------------------------- | ------------------------------------------------- | ----------- |
 | [AI_CHATBOT.md](./AI_CHATBOT.md) | Architecture, tools, storage, auth, configuration | Implemented |
 
 Quick links:

@@ -187,9 +187,7 @@ export class ChatRepository {
     return (data || []) as ChatUserSnapshot[];
   }
 
-  async listSprintsByProject(
-    projectId: string
-  ): Promise<ChatSprintSnapshot[]> {
+  async listSprintsByProject(projectId: string): Promise<ChatSprintSnapshot[]> {
     const { data, error } = await this.db
       .from('sprints')
       .select('id, name, status, start_date, end_date, project_id')

@@ -13,7 +13,8 @@ const { mockClient } = vi.hoisted(() => {
         createBucket: () => Promise.resolve({ data: null, error: null }),
         from: () => ({
           upload: () => Promise.resolve({ error: null }),
-          download: () => Promise.resolve({ data: null, error: { status: 404 } }),
+          download: () =>
+            Promise.resolve({ data: null, error: { status: 404 } }),
           remove: () => Promise.resolve({ error: null }),
         }),
       },
@@ -56,7 +57,9 @@ describe('Chat History Markdown Serialization', () => {
     ];
 
     const md = chatHistoryToMarkdown(conversationId, messages);
-    expect(md).toContain('# Chat History for Conversation: test-conversation-id');
+    expect(md).toContain(
+      '# Chat History for Conversation: test-conversation-id'
+    );
     expect(md).toContain('<!-- JSON_HISTORY_DATA_START');
     expect(md).toContain('JSON_HISTORY_DATA_END -->');
 
