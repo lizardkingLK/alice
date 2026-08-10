@@ -1,5 +1,8 @@
 'use client';
 
+// useRef: stores mutable references without triggering re-renders.
+// useState: manages component state and triggers re-renders when updated.
+// useMemo: memoizes calculated values to avoid unnecessary recalculations.
 import { useRef, useState, useMemo } from 'react';
 import { useReactToPrint } from 'react-to-print';
 
