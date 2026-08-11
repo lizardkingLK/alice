@@ -63,6 +63,9 @@ function createGitHubConfig() {
   return {
     githubRepository,
     githubService,
+    router,
+  };
+}
 function createChatConfig(
   workItemService: WorkItemService,
   sprintsService: SprintsService
