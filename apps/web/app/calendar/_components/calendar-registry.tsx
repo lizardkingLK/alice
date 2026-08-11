@@ -194,6 +194,9 @@ export function CalendarRegistry({
   const itemsByDate = useMemo(() => {
     const map: Record<string, DbWorkItem[]> = {};
     filteredWorkItems.forEach((item) => {
+      if (item.due_date === null) {
+        return; 
+      }
       const dateStr = item.due_date.split('T')[0] ?? '';
       if (!map[dateStr]) {
         map[dateStr] = [];
