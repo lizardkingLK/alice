@@ -24,6 +24,7 @@ import type { Project } from '@/app/projects/_services/projects.service';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import type { User } from '@/app/users/_services/users.service';
 import { toNameCase } from '@repo/types';
+import { ALL_OPTION } from '@/app/_shared/values';
 import { type CalendarActionItem, CalendarWorkItemTypes } from './calendar-client.types';
 import { MONTHS, DAYS_OF_WEEK } from './calendar-constants';
 
@@ -48,9 +49,9 @@ export function CalendarRegistry({
   users,
 }: Readonly<CalendarRegistryProps>) {
   const [currentDate, setCurrentDate] = useState(() => new Date());
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
-  const [selectedAssigneeId, setSelectedAssigneeId] = useState<string>('all');
-  const [selectedType, setSelectedType] = useState<string>('all');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(ALL_OPTION);
+  const [selectedAssigneeId, setSelectedAssigneeId] = useState<string>(ALL_OPTION);
+  const [selectedType, setSelectedType] = useState<string>(ALL_OPTION);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -86,7 +87,7 @@ export function CalendarRegistry({
     setSelectedType(val);
     logAction({
       type: 'filter_type',
-      entity: { id: val, value: val, label: val === 'all' ? 'All Types' : toNameCase(val) },
+      entity: { id: val, value: val, label: val === ALL_OPTION ? 'All Types' : toNameCase(val) },
     });
   };
 
@@ -175,15 +176,15 @@ export function CalendarRegistry({
 
   // Filtered work items
   const filteredWorkItems = useMemo(() => {
-    return workItems.filter((item) => {
+    return workItems.filter((item): item is DbWorkItem & { due_date: string } => {
       if (!item.due_date) return false;
 
       const matchesProject =
-        selectedProjectId === 'all' || item.project_id === selectedProjectId;
+        selectedProjectId === ALL_OPTION || item.project_id === selectedProjectId;
       const matchesAssignee =
-        selectedAssigneeId === 'all' || item.assignee_id === selectedAssigneeId;
+        selectedAssigneeId === ALL_OPTION || item.assignee_id === selectedAssigneeId;
       const matchesType =
-        selectedType === 'all' || item.type === selectedType;
+        selectedType === ALL_OPTION || item.type === selectedType;
 
       return matchesProject && matchesAssignee && matchesType;
     });
@@ -193,13 +194,11 @@ export function CalendarRegistry({
   const itemsByDate = useMemo(() => {
     const map: Record<string, DbWorkItem[]> = {};
     filteredWorkItems.forEach((item) => {
-      if (item.due_date) {
-        const dateStr = item.due_date.split('T')[0] ?? '';
-        if (!map[dateStr]) {
-          map[dateStr] = [];
-        }
-        map[dateStr].push(item);
+      const dateStr = item.due_date.split('T')[0] ?? '';
+      if (!map[dateStr]) {
+        map[dateStr] = [];
       }
+      map[dateStr].push(item);
     });
     return map;
   }, [filteredWorkItems]);
@@ -227,7 +226,7 @@ export function CalendarRegistry({
                   <SelectValue placeholder="Filter Project" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Projects</SelectItem>
+                  <SelectItem value={ALL_OPTION}>All Projects</SelectItem>
                   {projects.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.name}
@@ -244,7 +243,7 @@ export function CalendarRegistry({
                   <SelectValue placeholder="Filter Assignee" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Assignees</SelectItem>
+                  <SelectItem value={ALL_OPTION}>All Assignees</SelectItem>
                   {users.map((u) => (
                     <SelectItem key={u.id} value={u.id}>
                       {u.name}
@@ -261,7 +260,7 @@ export function CalendarRegistry({
                   <SelectValue placeholder="Filter Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value={ALL_OPTION}>All Types</SelectItem>
                   <SelectItem value={CalendarWorkItemTypes.Epic}>Epic</SelectItem>
                   <SelectItem value={CalendarWorkItemTypes.Story}>Story</SelectItem>
                   <SelectItem value={CalendarWorkItemTypes.Task}>Task</SelectItem>
