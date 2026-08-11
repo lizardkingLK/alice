@@ -31,6 +31,7 @@ import type { Team } from '@/app/manager/_services/teams.service';
 import type { User } from '@/app/users/_services/users.service';
 import WorkItemsWorkspace from '@/app/work-items/_components/workItems-workspace';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import { formatDate } from '@/app/_shared/utility';
 import {
   parseProjectDetailsTab,
   type ProjectDetailsTab,
@@ -375,25 +376,11 @@ export function ProjectDetailsWorkspace({
                       {project.start_date || project.end_date ? (
                         <>
                           {project.start_date
-                            ? new Date(project.start_date).toLocaleDateString(
-                                undefined,
-                                {
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric',
-                                }
-                              )
+                            ? formatDate(project.start_date)
                             : 'Start Date'}
                           {' — '}
                           {project.end_date
-                            ? new Date(project.end_date).toLocaleDateString(
-                                undefined,
-                                {
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric',
-                                }
-                              )
+                            ? formatDate(project.end_date)
                             : 'End Date'}
                         </>
                       ) : (

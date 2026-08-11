@@ -5,6 +5,14 @@ export {
 } from '@repo/types';
 
 import { BOARD_WORK_ITEM_STATUSES, type WorkItemStatus } from '@repo/types';
+import * as React from 'react';
+import {
+  Circle,
+  CircleDot,
+  Clock,
+  FlaskConical,
+  CheckCircle2,
+} from '@repo/ui/lib/icons';
 
 export const WORK_ITEM_STATUS_BADGE_STYLES: Record<WorkItemStatus, string> = {
   Draft: 'border-muted-foreground/20 bg-muted text-muted-foreground',
@@ -72,3 +80,71 @@ export const BOARD_STATUS_COLUMNS = BOARD_WORK_ITEM_STATUSES.map((id) => ({
   id,
   accentClassName: BOARD_STATUS_COLUMN_ACCENTS[id],
 }));
+
+export type StatusMeta = {
+  label: string;
+  color: string;
+  bgClass: string;
+  textClass: string;
+  borderClass: string;
+  icon: React.ComponentType<{ className?: string }>;
+};
+
+export const STATUS_META: Record<string, StatusMeta> = {
+  New: {
+    label: 'New',
+    color: 'oklch(0.63 0.18 250)',
+    bgClass: 'bg-blue-500/10',
+    textClass: 'text-blue-600 dark:text-blue-400',
+    borderClass: 'border-blue-500/20',
+    icon: Circle,
+  },
+  ToDo: {
+    label: 'To Do',
+    color: 'oklch(0.55 0.03 264)',
+    bgClass: 'bg-slate-500/10',
+    textClass: 'text-slate-600 dark:text-slate-400',
+    borderClass: 'border-slate-500/20',
+    icon: CircleDot,
+  },
+  InProgress: {
+    label: 'In Progress',
+    color: 'oklch(0.75 0.15 85)',
+    bgClass: 'bg-amber-500/10',
+    textClass: 'text-amber-600 dark:text-amber-400',
+    borderClass: 'border-amber-500/20',
+    icon: Clock,
+  },
+  Testing: {
+    label: 'Testing',
+    color: 'oklch(0.62 0.19 295)',
+    bgClass: 'bg-purple-500/10',
+    textClass: 'text-purple-600 dark:text-purple-400',
+    borderClass: 'border-purple-500/20',
+    icon: FlaskConical,
+  },
+  Done: {
+    label: 'Done',
+    color: 'oklch(0.65 0.17 155)',
+    bgClass: 'bg-emerald-500/10',
+    textClass: 'text-emerald-600 dark:text-emerald-400',
+    borderClass: 'border-emerald-500/20',
+    icon: CheckCircle2,
+  },
+};
+
+export const STATUS_INDICATOR_BG: Record<string, string> = {
+  New: 'bg-blue-500',
+  ToDo: 'bg-slate-500',
+  InProgress: 'bg-amber-500',
+  Testing: 'bg-purple-500',
+  Done: 'bg-emerald-500',
+};
+
+export const STATUS_ORDER = [
+  'New',
+  'ToDo',
+  'InProgress',
+  'Testing',
+  'Done',
+] as const;

@@ -1,3 +1,5 @@
+import type { ChatRole } from '@repo/types';
+
 export type ActionItem = {
   type: 'create_project' | 'create_sprint' | 'create_work_item';
   entity: {
@@ -11,7 +13,7 @@ export type ActionItem = {
 
 export type ChatMessage = {
   id: string;
-  role: 'user' | 'assistant';
+  role: ChatRole;
   content: string;
   actions?: ActionItem[];
 };

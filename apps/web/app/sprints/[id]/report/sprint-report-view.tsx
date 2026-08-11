@@ -1,16 +1,16 @@
 'use client';
 
-import { useRef } from 'react';
+// useRef: stores mutable references without triggering re-renders.
+// useState: manages component state and triggers re-renders when updated.
+// useMemo: memoizes calculated values to avoid unnecessary recalculations.
+import { useRef, useState, useMemo } from 'react';
 import { useReactToPrint } from 'react-to-print';
 
-import Image from 'next/image';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
-import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
 import {
   Calendar,
   CheckCircle,
-  FileText,
   Goal,
   Layers,
   Sparkles,
@@ -22,17 +22,25 @@ import {
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
+import { cn } from '@repo/ui/lib/utils';
+import {
+  STATUS_META,
+  STATUS_ORDER,
+} from '@/app/work-items/_helpers/work-item-status';
+import { SprintReportCharts } from './sprint-report-charts';
+import { SprintReportDeliverables } from './sprint-report-deliverables';
 
 type SprintReportViewProps = {
   sprint: Sprint;
   workItems: DbWorkItem[];
 };
+
+/* ---------- Helpers ---------- */
 
 function formatDate(dateStr: string | null | Date): string {
   if (!dateStr) return 'No date';
@@ -45,10 +53,15 @@ function formatDate(dateStr: string | null | Date): string {
   return date.toLocaleDateString('en-US', options);
 }
 
+/* ---------- Component ---------- */
+
 export function SprintReportView({
   sprint,
   workItems,
 }: Readonly<SprintReportViewProps>) {
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+
+  /* ---- Derived metrics ---- */
   const totalIssues = workItems.length;
   const completedIssues = workItems.filter(
     (item) => item.status === 'Done'
@@ -64,7 +77,41 @@ export function SprintReportView({
   const completionRate =
     totalIssues > 0 ? ((completedIssues / totalIssues) * 100).toFixed(0) : '0';
 
-  // Action: Download Markdown Report
+  /* ---- Per-status counts ---- */
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, { count: number; points: number }> = {};
+    for (const status of STATUS_ORDER) {
+      counts[status] = { count: 0, points: 0 };
+    }
+    for (const item of workItems) {
+      const status = item.status;
+      if (counts[status]) {
+        counts[status].count += 1;
+        counts[status].points += item.story_points ?? 0;
+      }
+    }
+    return counts;
+  }, [workItems]);
+
+  /* ---- Chart data ---- */
+  const chartData = useMemo(() => {
+    return STATUS_ORDER.filter((s) => statusCounts[s]!.count > 0).map(
+      (status) => ({
+        status,
+        label: STATUS_META[status]!.label,
+        count: statusCounts[status]!.count,
+        fill: `var(--color-${status})`,
+      })
+    );
+  }, [statusCounts]);
+
+  /* ---- Filtered work items ---- */
+  const filteredWorkItems = useMemo(() => {
+    if (!activeFilter) return workItems;
+    return workItems.filter((item) => item.status === activeFilter);
+  }, [workItems, activeFilter]);
+
+  /* ---- Export actions ---- */
   const handleDownloadMarkdown = () => {
     const formattedDateRange = `${formatDate(sprint.startDate)} – ${formatDate(sprint.endDate)}`;
 
@@ -77,6 +124,18 @@ export function SprintReportView({
     md += `* **Completion Scope**: ${completionRate}%\n`;
     md += `* **Work Items Done**: ${completedIssues} / ${totalIssues}\n`;
     md += `* **Velocity Delivered**: ${completedStoryPoints} of ${totalPlannedStoryPoints} planned story points\n\n`;
+
+    md += `## Status Breakdown\n\n`;
+    md += `| Status | Count | Story Points |\n`;
+    md += `| :--- | :---: | :---: |\n`;
+    for (const status of STATUS_ORDER) {
+      const meta = STATUS_META[status];
+      const data = statusCounts[status];
+      if (meta && data) {
+        md += `| ${meta.label} | ${data.count} | ${data.points} |\n`;
+      }
+    }
+    md += `\n`;
 
     md += `## Sprint Goal\n\n`;
     md += `${sprint.goal || 'No goal was defined for this sprint.'}\n\n`;
@@ -116,140 +175,10 @@ export function SprintReportView({
   const handleDownloadPDF = useReactToPrint({
     contentRef: printRef,
     documentTitle: `${sprint.name.toLowerCase().replace(/\s+/g, '_')}_summary_report`,
-    pageStyle: String.raw`
-      @page {
-        size: portrait !important;
-        margin: 10mm !important;
-      }
-      @media print {
-        /* Force browser to print colors and background graphics */
-        * {
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-
-        /* Hide scrollbars during print */
-        * {
-          scrollbar-width: none !important;
-          -ms-overflow-style: none !important;
-        }
-        *::-webkit-scrollbar {
-          display: none !important;
-        }
-
-        /* Prevent content truncation inside scroll containers */
-        .overflow-x-auto,
-        .overflow-y-auto {
-          overflow: visible !important;
-          height: auto !important;
-          max-height: none !important;
-        }
-
-        /* Hide sidebar layout, header panels, notifications, and action buttons */
-        aside,
-        header,
-        [data-sidebar="sidebar"],
-        .no-print,
-        .print-hide,
-        button,
-        a {
-          display: none !important;
-        }
-
-        /* Reset page body background for physical print layout */
-        body {
-          background: white !important;
-          color: #09090b !important;
-        }
-
-        main,
-        .print-container {
-          width: 100% !important;
-          max-width: 100% !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          background: white !important;
-          color: #09090b !important;
-          box-shadow: none !important;
-          border: none !important;
-        }
-
-        /* Ensure metrics grid prints as 3 columns */
-        .grid {
-          display: grid !important;
-          grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-          gap: 16px !important;
-        }
-
-        /* Split goal and achievements block into 2 columns for print */
-        .md\:grid-cols-3 {
-          display: grid !important;
-          grid-template-columns: 1fr 2fr !important;
-          gap: 24px !important;
-        }
-
-        /* Force ink-friendly colors on text for physical paper (even from dark mode) */
-        .print-container h1,
-        .print-container h2,
-        .print-container h3,
-        .print-container h4,
-        .print-container p,
-        .print-container span,
-        .print-container td,
-        .print-container th {
-          color: #09090b !important;
-        }
-
-        .print-container .text-muted-foreground {
-          color: #71717a !important;
-        }
-
-        /* Ink-friendly card printing rules */
-        .print-container .card {
-          border: 1px solid #e4e4e7 !important;
-          background-color: #fcfcfc !important;
-          color: #09090b !important;
-          box-shadow: none !important;
-        }
-
-        /* Shipped items table layout prints beautifully */
-        .print-container table {
-          border-collapse: collapse !important;
-          width: 100% !important;
-          table-layout: auto !important;
-          border-color: #e4e4e7 !important;
-        }
-
-        .print-container th {
-          background-color: #f4f4f5 !important;
-          color: #27272a !important;
-          border-bottom: 2px solid #e4e4e7 !important;
-        }
-
-        /* Prevent title/assignee text from truncating inside printed cells */
-        .print-container td {
-          max-width: none !important;
-          white-space: normal !important;
-          overflow: visible !important;
-          text-overflow: clip !important;
-        }
-
-        .print-container tr {
-          border-bottom: 1px solid #e4e4e7 !important;
-          page-break-inside: avoid;
-        }
-
-        thead {
-          display: table-header-group;
-        }
-      }
-    `,
   });
 
   return (
     <div ref={printRef} className="print-container space-y-6">
-      {/* CSS print overrides wrapper */}
-
       {/* Banner header */}
       <div className="relative overflow-hidden rounded-2xl border border-indigo-500/15 bg-linear-to-r from-indigo-500/5 via-transparent to-transparent p-6 md:p-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -318,7 +247,7 @@ export function SprintReportView({
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid (existing 3 cards) */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card className="border-border/60 bg-card/50 card backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -389,7 +318,65 @@ export function SprintReportView({
         </Card>
       </div>
 
-      {/* Goal & Detailed overview */}
+      {/* ====== Status Breakdown Tiles ====== */}
+      <div className="status-breakdown-grid grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {STATUS_ORDER.map((status) => {
+          const meta = STATUS_META[status]!;
+          const data = statusCounts[status]!;
+          const Icon = meta.icon;
+
+          return (
+            <Card
+              key={status}
+              className={cn(
+                'border-border/60 bg-card/50 card cursor-pointer',
+                'backdrop-blur-sm transition-all hover:scale-[1.02]',
+                activeFilter === status &&
+                  `ring-2 ring-offset-1 ${meta.borderClass} ring-current ${meta.textClass}`
+              )}
+              onClick={() =>
+                setActiveFilter((prev) => (prev === status ? null : status))
+              }
+            >
+              <CardContent className="flex items-center gap-3 p-4">
+                <div
+                  className={cn(
+                    'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
+                    meta.bgClass,
+                    meta.textClass
+                  )}
+                >
+                  <Icon className="h-4.5 w-4.5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-muted-foreground text-xs font-medium">
+                    {meta.label}
+                  </p>
+                  <p className="text-foreground text-xl leading-tight font-bold tabular-nums">
+                    {data.count}
+                  </p>
+                  <p className="text-muted-foreground mt-0.5 text-[10px] font-medium">
+                    {data.points} pts
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* ====== Sprint Progress + Donut Chart ====== */}
+      <SprintReportCharts
+        completedIssues={completedIssues}
+        totalIssues={totalIssues}
+        completionRate={completionRate}
+        completedStoryPoints={completedStoryPoints}
+        totalPlannedStoryPoints={totalPlannedStoryPoints}
+        statusCounts={statusCounts}
+        chartData={chartData}
+      />
+
+      {/* Goal & Achievements overview */}
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="border-border/60 bg-card/50 card md:col-span-1">
           <CardHeader>
@@ -434,106 +421,14 @@ export function SprintReportView({
         </Card>
       </div>
 
-      {/* Work items list */}
-      <Card className="border-border/60 bg-card/50 card">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <FileText className="text-muted-foreground h-5 w-5" />
-            <div>
-              <CardTitle className="text-base font-semibold">
-                Deliverables List
-              </CardTitle>
-              <CardDescription>
-                Detailed list of deliverables in this sprint.
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {workItems.length === 0 ? (
-            <div className="text-muted-foreground p-6 text-center text-sm">
-              No work items were assigned to this sprint.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left text-sm">
-                <thead>
-                  <tr className="border-border/40 text-muted-foreground bg-muted/20 border-b px-4 text-xs font-semibold tracking-wider uppercase">
-                    <th className="w-28 p-4">Type</th>
-                    <th className="w-32 p-4">Key</th>
-                    <th className="p-4">Title</th>
-                    <th className="w-32 p-4">Priority</th>
-                    <th className="w-28 p-4">Status</th>
-                    <th className="w-48 p-4">Assignee</th>
-                    <th className="w-24 p-4 text-right">Points</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-border/30 divide-y">
-                  {workItems.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="hover:bg-muted/30 transition-colors"
-                    >
-                      <td className="p-4 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1 rounded-md bg-zinc-500/10 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                          {item.type}
-                        </span>
-                      </td>
-                      <td className="p-4 font-mono text-xs font-semibold whitespace-nowrap">
-                        {item.project
-                          ? `${item.project.key}-${item.id.slice(0, 4).toUpperCase()}`
-                          : item.id.slice(0, 8).toUpperCase()}
-                      </td>
-                      <td className="text-foreground max-w-xs truncate p-4 font-medium">
-                        {item.title}
-                      </td>
-                      <td className="p-4 whitespace-nowrap">
-                        <PriorityBadge priority={item.priority} />
-                      </td>
-                      <td className="p-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
-                            item.status === 'Done'
-                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                              : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                          }`}
-                        >
-                          {item.status}
-                        </span>
-                      </td>
-                      <td className="p-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          {item.assignee?.profile_picture ? (
-                            <Image
-                              src={item.assignee.profile_picture}
-                              alt={item.assignee.name || 'Assignee'}
-                              width={24}
-                              height={24}
-                              className="rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="bg-primary/10 text-primary flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold">
-                              {(item.assignee?.name || 'Unassigned')
-                                .slice(0, 2)
-                                .toUpperCase()}
-                            </div>
-                          )}
-                          <span className="text-xs">
-                            {item.assignee?.name || 'Unassigned'}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="text-foreground p-4 text-right font-semibold whitespace-nowrap">
-                        {item.story_points ?? '–'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* ====== Deliverables Table ====== */}
+      <SprintReportDeliverables
+        totalIssues={totalIssues}
+        activeFilter={activeFilter}
+        setActiveFilter={setActiveFilter}
+        filteredWorkItems={filteredWorkItems}
+        statusCounts={statusCounts}
+      />
     </div>
   );
 }

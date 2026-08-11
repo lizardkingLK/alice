@@ -97,12 +97,31 @@ function buildBreadcrumbItems(
   return items;
 }
 
+/**
+ * Build crumbs from the URL path, applying optional per-segment label overrides.
+ */
+export function resolveDashboardBreadcrumbItems(
+  pathname: string,
+  overrides: DashboardBreadcrumbOverride[] = DEFAULT_OVERRIDES
+): DashboardBreadcrumbOverride[] {
+  return buildBreadcrumbItems(pathname, overrides);
+}
+
+/** Use an explicit crumb list as the trail (ignore path-derived crumbs). */
+export function resolveDashboardBreadcrumbTrail(
+  overrides: DashboardBreadcrumbOverride[] = DEFAULT_OVERRIDES
+): DashboardBreadcrumbOverride[] {
+  return overrides;
+}
+
 export function DashboardBreadcrumb({
   overrides = DEFAULT_OVERRIDES,
   asTrail = false,
 }: Readonly<DashboardBreadcrumbProps>) {
   const pathname = usePathname();
-  const items = asTrail ? overrides : buildBreadcrumbItems(pathname, overrides);
+  const items = asTrail
+    ? resolveDashboardBreadcrumbTrail(overrides)
+    : resolveDashboardBreadcrumbItems(pathname, overrides);
 
   return (
     <Breadcrumb>

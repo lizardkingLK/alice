@@ -62,6 +62,7 @@ import {
 import type { Project } from '../_services/projects.service';
 import type { User } from '@/app/users/_services/users.service';
 import { cn } from '@repo/ui/lib/utils';
+import { formatMonthYear } from '@/app/_shared/utility';
 
 type ProjectTab = 'active' | 'archived';
 
@@ -80,18 +81,8 @@ interface ProjectRegistryProps {
 
 function formatTimeline(startDate?: string | null, endDate?: string | null) {
   if (!startDate && !endDate) return 'No timeline';
-  const startStr = startDate
-    ? new Date(startDate).toLocaleDateString(undefined, {
-        month: 'short',
-        year: 'numeric',
-      })
-    : 'Start';
-  const endStr = endDate
-    ? new Date(endDate).toLocaleDateString(undefined, {
-        month: 'short',
-        year: 'numeric',
-      })
-    : 'End';
+  const startStr = startDate ? formatMonthYear(startDate) : 'Start';
+  const endStr = endDate ? formatMonthYear(endDate) : 'End';
   return `${startStr} - ${endStr}`;
 }
 

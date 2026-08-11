@@ -171,7 +171,7 @@ export async function getWorkItemsPaginated(
 }
 
 export const getWorkItem = cache(
-  async (workItemId: string): Promise<DbWorkItem> => {
+  async (workItemId: string): Promise<DbWorkItem | null> => {
     const supabase = await createClient();
 
     const { data, error } = await supabase
@@ -184,7 +184,7 @@ export const getWorkItem = cache(
 
     throwIfError(error, 'failed to get work-item', 'Failed to get work-item');
 
-    return data as unknown as DbWorkItem;
+    return (data as unknown as DbWorkItem | null) ?? null;
   }
 );
 

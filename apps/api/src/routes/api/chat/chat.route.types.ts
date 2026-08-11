@@ -1,3 +1,5 @@
+import type { ChatRole, GeminiRole } from '@repo/types';
+
 export interface ContentPart {
   text?: string;
   functionCall?: {
@@ -13,7 +15,7 @@ export interface ContentPart {
 }
 
 export interface ContentTurn {
-  role: 'user' | 'model';
+  role: GeminiRole;
   parts: ContentPart[];
 }
 
@@ -30,6 +32,8 @@ export interface InputMessage {
   content?: string;
   text?: string;
   parts?: ContentPart[];
+  id?: string;
+  actions?: ToolAction[];
 }
 
 export interface ToolAction {
@@ -41,4 +45,10 @@ export interface ToolAction {
     title?: string;
     status?: string;
   };
+}
+export interface StoredChatMessage {
+  id: string;
+  role: ChatRole;
+  content: string;
+  actions?: ToolAction[];
 }

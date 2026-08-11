@@ -15,6 +15,9 @@ import { createSprintsRouter } from '../routes/api/sprints/sprints.route';
 import { GitHubRepository } from '../routes/api/github/github.repository';
 import { GitHubService } from '../routes/api/github/github.service';
 import { createGitHubRouter } from '../routes/api/github/github.route';
+import { ChatRepository } from '../routes/api/chat/chat.repository';
+import { ChatService } from '../routes/api/chat/chat.service';
+import { createChatRouter } from '../routes/api/chat/chat.route';
 
 function createWorkItemsConfig() {
   const workItemRepository = new WorkItemRepository(supabase);
@@ -60,6 +63,21 @@ function createGitHubConfig() {
   return {
     githubRepository,
     githubService,
+function createChatConfig(
+  workItemService: WorkItemService,
+  sprintsService: SprintsService
+) {
+  const chatRepository = new ChatRepository(supabase);
+  const chatService = new ChatService({
+    chat: chatRepository,
+    workItemService,
+    sprintsService,
+  });
+  const router = createChatRouter({ chatService });
+
+  return {
+    chatRepository,
+    chatService,
     router,
   };
 }
@@ -72,3 +90,8 @@ export const sprints = createSprintsConfig();
 
 /** Production github graph (repo → service → router). */
 export const github = createGitHubConfig();
+/** Production chat graph (repo → service → router); receives work-items + sprints. */
+export const chat = createChatConfig(
+  workItems.workItemService,
+  sprints.sprintsService
+);

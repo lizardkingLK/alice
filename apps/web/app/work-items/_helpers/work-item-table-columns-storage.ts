@@ -1,5 +1,5 @@
 import type { VisibilityState } from '@tanstack/react-table';
-import { getLocalStorageJson, setLocalStorageJson } from '@/lib/local-storage';
+import { createLocalColumnStorage } from '@/lib/table-columns/create-local-column-storage';
 
 export const WORK_ITEM_TABLE_COLUMN_IDS = [
   'title',
@@ -27,19 +27,10 @@ const WORK_ITEM_TABLE_COLUMN_ID_SET: ReadonlySet<string> = new Set(
   WORK_ITEM_TABLE_COLUMN_IDS
 );
 
-const REQUIRED_WORK_ITEM_TABLE_COLUMN_ID_SET: ReadonlySet<WorkItemTableColumnId> =
-  new Set(REQUIRED_WORK_ITEM_TABLE_COLUMN_IDS);
-
 export function isWorkItemTableColumnId(
   value: string
 ): value is WorkItemTableColumnId {
   return WORK_ITEM_TABLE_COLUMN_ID_SET.has(value);
-}
-
-export function isRequiredWorkItemTableColumnId(
-  id: WorkItemTableColumnId
-): boolean {
-  return REQUIRED_WORK_ITEM_TABLE_COLUMN_ID_SET.has(id);
 }
 
 export const WORK_ITEM_TABLE_COLUMN_LABELS: Record<
@@ -79,41 +70,20 @@ export const DEFAULT_WORK_ITEM_TABLE_COLUMN_VISIBILITY: VisibilityState = {
 /** Readable by the server so SSR can paint preferred columns in one shot. */
 export const WORK_ITEM_TABLE_COLUMNS_COOKIE = 'alice_wi_cols_v1';
 
-const STORAGE_KEY_PREFIX = 'alice:work-item-table-columns:v1:';
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 
-function storageKey(userId: string): string {
-  return `${STORAGE_KEY_PREFIX}${userId}`;
-}
+const workItemColumnStorage = createLocalColumnStorage<WorkItemTableColumnId>({
+  columnIds: WORK_ITEM_TABLE_COLUMN_IDS,
+  defaultVisibility: DEFAULT_WORK_ITEM_TABLE_COLUMN_VISIBILITY,
+  requiredIds: REQUIRED_WORK_ITEM_TABLE_COLUMN_IDS,
+  storagePrefix: 'alice:work-item-table-columns:v1:',
+  isColumnId: isWorkItemTableColumnId,
+});
 
-/**
- * Merge stored (or partial) visibility with defaults and force required columns
- * on. Unknown keys are dropped.
- */
-export function normalizeWorkItemTableColumnVisibility(
-  raw: unknown
-): VisibilityState {
-  const next: VisibilityState = {
-    ...DEFAULT_WORK_ITEM_TABLE_COLUMN_VISIBILITY,
-  };
-
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-    return next;
-  }
-
-  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
-    if (!isWorkItemTableColumnId(key) || typeof value !== 'boolean') {
-      continue;
-    }
-    next[key] = isRequiredWorkItemTableColumnId(key) ? true : value;
-  }
-
-  for (const requiredId of REQUIRED_WORK_ITEM_TABLE_COLUMN_IDS) {
-    next[requiredId] = true;
-  }
-
-  return next;
-}
+export const normalizeWorkItemTableColumnVisibility =
+  workItemColumnStorage.normalize;
+export const isRequiredWorkItemTableColumnId = workItemColumnStorage.isRequired;
+export const readWorkItemTableColumnVisibility = workItemColumnStorage.read;
 
 export function encodeWorkItemTableColumnVisibilityCookie(
   visibility: VisibilityState
@@ -155,25 +125,12 @@ function writeWorkItemTableColumnVisibilityCookie(
   ].join('; ');
 }
 
-export function readWorkItemTableColumnVisibility(
-  userId: string | null | undefined
-): VisibilityState {
-  if (!userId) {
-    return { ...DEFAULT_WORK_ITEM_TABLE_COLUMN_VISIBILITY };
-  }
-
-  const parsed = getLocalStorageJson<unknown>(storageKey(userId));
-  return normalizeWorkItemTableColumnVisibility(parsed);
-}
-
 export function writeWorkItemTableColumnVisibility(
   userId: string | null | undefined,
   visibility: VisibilityState
 ): void {
   const normalized = normalizeWorkItemTableColumnVisibility(visibility);
-  if (userId) {
-    setLocalStorageJson(storageKey(userId), normalized);
-  }
+  workItemColumnStorage.write(userId, normalized);
   writeWorkItemTableColumnVisibilityCookie(normalized);
 }
 

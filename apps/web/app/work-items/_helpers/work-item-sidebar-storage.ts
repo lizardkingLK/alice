@@ -1,27 +1,9 @@
-import { getLocalStorageJson, setLocalStorageJson } from '@/lib/local-storage';
+import { createBooleanLocalPreference } from '@/lib/local-preference/create-boolean-local-preference';
 
-const MORE_FIELDS_STORAGE_PREFIX = 'alice:work-item-more-fields:';
-const DEFAULT_MORE_FIELDS_OPEN = false;
+const moreFieldsPreference = createBooleanLocalPreference({
+  storagePrefix: 'alice:work-item-more-fields:',
+  defaultValue: false,
+});
 
-function moreFieldsStorageKey(userId: string) {
-  return `${MORE_FIELDS_STORAGE_PREFIX}${userId}`;
-}
-
-export function readMoreFieldsOpen(userId: string | null | undefined): boolean {
-  if (!userId) {
-    return DEFAULT_MORE_FIELDS_OPEN;
-  }
-
-  const parsed = getLocalStorageJson<unknown>(moreFieldsStorageKey(userId));
-  return typeof parsed === 'boolean' ? parsed : DEFAULT_MORE_FIELDS_OPEN;
-}
-
-export function writeMoreFieldsOpen(
-  userId: string | null | undefined,
-  open: boolean
-): void {
-  if (!userId) {
-    return;
-  }
-  setLocalStorageJson(moreFieldsStorageKey(userId), open);
-}
+export const readMoreFieldsOpen = moreFieldsPreference.read;
+export const writeMoreFieldsOpen = moreFieldsPreference.write;

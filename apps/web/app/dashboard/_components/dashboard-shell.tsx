@@ -6,12 +6,17 @@ import { getDbUser } from '@/lib/auth';
 import { DashboardHeader } from './dashboard-header';
 import { DashboardSidebar } from './dashboard-sidebar';
 import type { DashboardBreadcrumbOverride } from './dashboard-breadcrumb';
+import { FloatingChatWidget } from '@/app/chat/_components/floating-chat-widget';
 
 type DashboardShellProps = {
   description?: string;
   breadcrumbOverrides?: DashboardBreadcrumbOverride[];
   /** When true, `breadcrumbOverrides` is rendered as the full crumb trail. */
   breadcrumbAsTrail?: boolean;
+  /** Sidebar favorite label override (e.g. work-item title). */
+  favoriteLabel?: string;
+  /** Optional project scope for Save View share modes. */
+  projectId?: string | null;
   children: ReactNode;
   /** When false, sidebar starts collapsed (icon rail). */
   sidebarDefaultOpen?: boolean;
@@ -27,6 +32,8 @@ export async function DashboardShell({
   description,
   breadcrumbOverrides,
   breadcrumbAsTrail,
+  favoriteLabel,
+  projectId,
   children,
   sidebarDefaultOpen = true,
   stickyHeader = false,
@@ -39,6 +46,8 @@ export async function DashboardShell({
       description={description}
       breadcrumbOverrides={breadcrumbOverrides}
       breadcrumbAsTrail={breadcrumbAsTrail}
+      favoriteLabel={favoriteLabel}
+      projectId={projectId}
     />
   );
 
@@ -72,6 +81,7 @@ export async function DashboardShell({
               {body}
             </div>
           )}
+          <FloatingChatWidget />
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

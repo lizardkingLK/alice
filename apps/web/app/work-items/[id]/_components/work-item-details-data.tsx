@@ -1,4 +1,5 @@
 import { getAllowedChildType, type WorkItemType } from '@repo/types';
+import { redirect } from 'next/navigation';
 import WorkItemDetails from '@/app/work-items/_components/workItem-details';
 import {
   getWorkItem,
@@ -34,6 +35,10 @@ export async function WorkItemDetailsData({
       getWorkItemAttachments(workItemId),
       getDbUser(),
     ]);
+
+  if (!workItem) {
+    redirect('/dashboard');
+  }
 
   const allowedChildType = getAllowedChildType(workItem.type as WorkItemType);
 

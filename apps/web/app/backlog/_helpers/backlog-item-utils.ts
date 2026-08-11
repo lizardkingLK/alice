@@ -1,4 +1,5 @@
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import { formatDate } from '@/app/_shared/utility';
 import {
   mapPriorityToBacklogPriority,
   type BacklogPriority,
@@ -23,14 +24,9 @@ export function formatDateRange(
   end: string | null | Date
 ): string {
   if (!start || !end) return 'No dates set';
-  const startDate = new Date(start);
-  const endDate = new Date(end);
-  const options: Intl.DateTimeFormatOptions = {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  };
-  return `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
+  const startValue = start instanceof Date ? start.toISOString() : start;
+  const endValue = end instanceof Date ? end.toISOString() : end;
+  return `${formatDate(startValue)} - ${formatDate(endValue)}`;
 }
 
 export function projectDisplayKey(
