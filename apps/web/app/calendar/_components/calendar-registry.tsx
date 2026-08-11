@@ -198,6 +198,9 @@ export function CalendarRegistry({
         return; 
       }
       const dateStr = item.due_date.split('T')[0] ?? '';
+      if (!dateStr) {
+        return;
+      }
       if (!map[dateStr]) {
         map[dateStr] = [];
       }
