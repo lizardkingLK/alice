@@ -27,6 +27,8 @@ import {
   createProject,
   updateProject,
   type Project,
+  type CreateProjectInput,
+  type UpdateProjectInput,
 } from '../_services/projects.service';
 import { apiFetch } from '@/lib/api/api-client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
@@ -98,6 +100,13 @@ export function ProjectForm({
   };
   const [jiraUrl, setJiraUrl] = useState('');
   const [jiraProjectKey, setJiraProjectKey] = useState('');
+  const [githubOwner, setGithubOwner] = useState(
+    projectToEdit?.github_owner ?? ''
+  );
+  const [githubRepo, setGithubRepo] = useState(
+    projectToEdit?.github_repo ?? ''
+  );
+  const [githubToken, setGithubToken] = useState('');
   const [isTestingJira, setIsTestingJira] = useState(false);
   const [jiraTestMessage, setJiraTestMessage] = useState<string | null>(null);
   const [jiraTestError, setJiraTestError] = useState(false);
@@ -156,12 +165,18 @@ export function ProjectForm({
     setStatus(projectToEdit.status);
     setStartDate(formatDateForInput(projectToEdit.start_date));
     setEndDate(formatDateForInput(projectToEdit.end_date));
+    setGithubOwner(projectToEdit.github_owner ?? '');
+    setGithubRepo(projectToEdit.github_repo ?? '');
+    setGithubToken('');
   }, [projectToEdit]);
 
   // Default start date to today in create mode
   useEffect(() => {
     if (!isEditMode) {
       setStartDate(getTodayDateString());
+      setGithubOwner('');
+      setGithubRepo('');
+      setGithubToken('');
     }
   }, [isEditMode]);
 
@@ -207,7 +222,7 @@ export function ProjectForm({
     }
 
     try {
-      const projectData = {
+      const projectData: CreateProjectInput = {
         name: name.trim(),
         key: key.toUpperCase().trim(),
         description: description.trim() || null,
@@ -219,12 +234,15 @@ export function ProjectForm({
         workflow_config: null,
         jira_url: jiraUrl.trim() || null,
         jira_project_key: jiraProjectKey.toUpperCase().trim() || null,
+        github_owner: githubOwner.trim() || null,
+        github_repo: githubRepo.trim() || null,
+        github_token: githubToken.trim() || null,
       };
 
       let result;
       if (projectToEdit) {
         const expectedUpdatedAt = projectToEdit.updated_at;
-        const pendingFields = {
+        const pendingFields: UpdateProjectInput = {
           name: projectData.name,
           key: projectData.key,
           description: projectData.description,
@@ -236,6 +254,9 @@ export function ProjectForm({
           workflow_config: projectData.workflow_config,
           jira_url: projectData.jira_url,
           jira_project_key: projectData.jira_project_key,
+          github_owner: projectData.github_owner,
+          github_repo: projectData.github_repo,
+          github_token: githubToken.trim() || undefined,
         };
         result = await runLockedMutationOrThrow({
           mutate: () =>
@@ -385,6 +406,56 @@ export function ProjectForm({
                     setDescription(e.target.value)
                   }
                   placeholder="e.g. Core platform squad for JIRA clone"
+                  className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="github_owner" className="text-sm font-medium">
+                    GitHub Owner / Org
+                  </Label>
+                  <Input
+                    id="github_owner"
+                    name="github_owner"
+                    value={githubOwner}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      setGithubOwner(e.target.value)
+                    }
+                    placeholder="e.g. facebook"
+                    className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="github_repo" className="text-sm font-medium">
+                    GitHub Repository
+                  </Label>
+                  <Input
+                    id="github_repo"
+                    name="github_repo"
+                    value={githubRepo}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      setGithubRepo(e.target.value)
+                    }
+                    placeholder="e.g. react"
+                    className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="github_token" className="text-sm font-medium">
+                  GitHub Personal Access Token (PAT)
+                </Label>
+                <Input
+                  id="github_token"
+                  name="github_token"
+                  type="password"
+                  value={githubToken}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setGithubToken(e.target.value)
+                  }
+                  placeholder={projectToEdit?.github_owner ? "•••••••••••• (Leave empty to keep existing)" : "ghp_..."}
                   className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
                 />
               </div>

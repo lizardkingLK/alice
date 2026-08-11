@@ -23,6 +23,9 @@ export type ProjectRow = {
   jira_email: string | null;
   jira_token: string | null;
   jira_project_key: string | null;
+  github_owner: string | null;
+  github_repo: string | null;
+  github_token: string | null;
 };
 
 export type ProjectRowWithOwner = ProjectRow & {
@@ -33,14 +36,17 @@ export type ProjectRowWithOwner = ProjectRow & {
   } | null;
 };
 
-/** Strip Jira API token before serializing project DTOs to clients. */
-export function withoutJiraToken<T extends { jira_token?: string | null }>(
+/** Strip sensitive API tokens before serializing project DTOs to clients. */
+export function withoutJiraToken<T extends { jira_token?: string | null; github_token?: string | null }>(
   project: T
-): Omit<T, 'jira_token'> {
+): Omit<T, 'jira_token' | 'github_token'> {
   const safe = { ...project };
   delete safe.jira_token;
+  delete safe.github_token;
   return safe;
 }
+
+export const withoutTokens = withoutJiraToken;
 
 export type ProjectMemberWithUser = {
   project_id: string;

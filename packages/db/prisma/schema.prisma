@@ -138,6 +138,9 @@ model projects {
   jira_email        String?
   jira_token        String?
   jira_project_key  String?
+  github_owner      String?
+  github_repo       String?
+  github_token      String?
 
   owner           users             @relation("ProjectOwner", fields: [owner_id], references: [id])
   created_by_user users?            @relation("ProjectCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
@@ -252,6 +255,7 @@ model work_items {
   updated_by   String?          @db.Uuid
   updated_at   DateTime         @updatedAt @db.Timestamptz(6)
   jira_issue_key String?        @db.VarChar(255)
+  github_prs     Json?
 
   project         projects      @relation(fields: [project_id], references: [id], onDelete: Cascade)
   sprint          sprints?      @relation(fields: [sprint_id], references: [id], onDelete: SetNull)

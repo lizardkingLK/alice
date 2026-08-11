@@ -55,7 +55,23 @@ import {
   Database,
   RefreshCw,
   Edit,
+  ExternalLink,
 } from '@repo/ui/lib/icons';
+
+const Github = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+    <path d="M9 18c-4.51 2-5-2-7-2" />
+  </svg>
+);
 
 const REPORT_CARD_CLASS = 'border-border/60 bg-card/50 backdrop-blur-sm';
 
@@ -94,6 +110,7 @@ interface ProjectDetailsWorkspaceProps {
   readonly columnVisibilityHasCookie?: boolean;
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export function ProjectDetailsWorkspace({
   project,
   members,
@@ -120,6 +137,14 @@ export function ProjectDetailsWorkspace({
   const [jiraMessage, setJiraMessage] = useState<string | null>(null);
   const [isJiraError, setIsJiraError] = useState(false);
 
+  const [isEditingGitHub, setIsEditingGitHub] = useState(!project.github_repo);
+  const [githubOwner, setGithubOwner] = useState(project.github_owner || '');
+  const [githubRepo, setGithubRepo] = useState(project.github_repo || '');
+  const [githubToken, setGithubToken] = useState('');
+  const [isSavingGitHub, setIsSavingGitHub] = useState(false);
+  const [githubMessage, setGithubMessage] = useState<string | null>(null);
+  const [isGitHubError, setIsGitHubError] = useState(false);
+
   const handleSaveJira = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingJira(true);
@@ -132,6 +157,7 @@ export function ProjectDetailsWorkspace({
         body: JSON.stringify({
           jira_url: jiraUrl.trim() || null,
           jira_project_key: jiraProjectKey.toUpperCase().trim() || null,
+          expectedUpdatedAt: project.updated_at,
         }),
       });
       setJiraMessage('Jira integration settings saved successfully!');
@@ -145,6 +171,45 @@ export function ProjectDetailsWorkspace({
       setIsJiraError(true);
     } finally {
       setIsSavingJira(false);
+    }
+  };
+
+  const handleSaveGitHub = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingGitHub(true);
+    setGithubMessage(null);
+    setIsGitHubError(false);
+
+    try {
+      const body: {
+        github_owner: string | null;
+        github_repo: string | null;
+        github_token?: string;
+        expectedUpdatedAt: string;
+      } = {
+        github_owner: githubOwner.trim() || null,
+        github_repo: githubRepo.trim() || null,
+        expectedUpdatedAt: project.updated_at,
+      };
+      if (githubToken.trim()) {
+        body.github_token = githubToken.trim();
+      }
+
+      await apiFetch(`/api/projects/${project.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(body),
+      });
+      setGithubMessage('GitHub integration settings saved successfully!');
+      setIsEditingGitHub(false);
+      router.refresh();
+    } catch (err) {
+      console.error('Failed to save GitHub integration:', err);
+      setGithubMessage(
+        err instanceof Error ? err.message : 'Failed to save configuration'
+      );
+      setIsGitHubError(true);
+    } finally {
+      setIsSavingGitHub(false);
     }
   };
 
@@ -512,6 +577,164 @@ export function ProjectDetailsWorkspace({
                           <RefreshCw className="mr-2 h-4 w-4" />
                         )}
                         Sync / Import Tasks
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className={`${REPORT_CARD_CLASS} md:col-span-3`}>
+              <CardHeader>
+                <CardTitle className="text-primary flex items-center gap-2 text-base font-semibold">
+                  <Github className="h-5 w-5" />
+                  GitHub Integration
+                </CardTitle>
+                <CardDescription className="text-muted-foreground text-sm">
+                  Configure your GitHub repository to fetch and display Pull Requests and Issues in Work Item details.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {githubMessage && (
+                  <div
+                    className={`rounded p-3 text-sm ${
+                      isGitHubError
+                        ? 'bg-destructive/10 text-destructive'
+                        : 'bg-emerald-500/10 text-emerald-600'
+                    }`}
+                  >
+                    {githubMessage}
+                  </div>
+                )}
+
+                {isEditingGitHub ? (
+                  <form onSubmit={handleSaveGitHub} className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="githubOwner"
+                          className="text-xs font-semibold"
+                        >
+                          Repository Owner / Org
+                        </Label>
+                        <Input
+                          id="githubOwner"
+                          value={githubOwner}
+                          onChange={(e) => setGithubOwner(e.target.value)}
+                          placeholder="e.g. facebook"
+                          className="bg-background/50 h-9 text-sm"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="githubRepo"
+                          className="text-xs font-semibold"
+                        >
+                          Repository Name
+                        </Label>
+                        <Input
+                          id="githubRepo"
+                          value={githubRepo}
+                          onChange={(e) => setGithubRepo(e.target.value)}
+                          placeholder="e.g. react"
+                          className="bg-background/50 h-9 text-sm"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="githubToken"
+                        className="text-xs font-semibold"
+                      >
+                        Personal Access Token (PAT)
+                      </Label>
+                      <Input
+                        id="githubToken"
+                        type="password"
+                        value={githubToken}
+                        onChange={(e) => setGithubToken(e.target.value)}
+                        placeholder={project.github_owner && project.github_repo ? "•••••••••••• (Leave empty to keep existing)" : "ghp_..."}
+                        className="bg-background/50 h-9 text-sm"
+                      />
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2">
+                      {(project.github_owner || project.github_repo) && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setGithubOwner(project.github_owner || '');
+                            setGithubRepo(project.github_repo || '');
+                            setGithubToken('');
+                            setIsEditingGitHub(false);
+                            setGithubMessage(null);
+                          }}
+                          disabled={isSavingGitHub}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                      <Button type="submit" size="sm" disabled={isSavingGitHub}>
+                        {isSavingGitHub && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        Save Connection
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="bg-muted/20 border-border/40 grid gap-4 rounded-lg border p-4 text-sm sm:grid-cols-2">
+                      <div>
+                        <span className="text-muted-foreground block text-xs font-semibold tracking-wider uppercase">
+                          GitHub Repository
+                        </span>
+                        <span className="text-foreground font-medium">
+                          {project.github_owner && project.github_repo ? (
+                            <a
+                              href={`https://github.com/${project.github_owner}/${project.github_repo}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline inline-flex items-center gap-1"
+                            >
+                              {project.github_owner}/{project.github_repo}
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          ) : (
+                            'Not configured'
+                          )}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-xs font-semibold tracking-wider uppercase">
+                          Token Status
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className={
+                            project.github_owner
+                              ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                              : 'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                          }
+                        >
+                          {project.github_owner ? 'Connected' : 'Not Connected'}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsEditingGitHub(true)}
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        Modify Connection
                       </Button>
                     </div>
                   </div>

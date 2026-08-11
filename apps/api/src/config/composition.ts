@@ -12,6 +12,9 @@ import {
   SprintBurndownService,
 } from '../routes/api/sprints/sprints.service';
 import { createSprintsRouter } from '../routes/api/sprints/sprints.route';
+import { GitHubRepository } from '../routes/api/github/github.repository';
+import { GitHubService } from '../routes/api/github/github.service';
+import { createGitHubRouter } from '../routes/api/github/github.route';
 
 function createWorkItemsConfig() {
   const workItemRepository = new WorkItemRepository(supabase);
@@ -49,8 +52,23 @@ function createSprintsConfig() {
   };
 }
 
+function createGitHubConfig() {
+  const githubRepository = new GitHubRepository();
+  const githubService = new GitHubService(githubRepository);
+  const router = createGitHubRouter({ githubService });
+
+  return {
+    githubRepository,
+    githubService,
+    router,
+  };
+}
+
 /** Production work-items graph (repo → service → router). */
 export const workItems = createWorkItemsConfig();
 
 /** Production sprints graph (repo → service → router). */
 export const sprints = createSprintsConfig();
+
+/** Production github graph (repo → service → router). */
+export const github = createGitHubConfig();

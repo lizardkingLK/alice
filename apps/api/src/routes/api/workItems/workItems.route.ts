@@ -99,6 +99,10 @@ function buildWorkItemPayload(
       parsedData.jira_issue_key,
       existingWorkItem.jira_issue_key
     ),
+    github_prs: coalescePatchField(
+      parsedData.github_prs,
+      existingWorkItem.github_prs
+    ),
     expectedUpdatedAt: parsedData.expectedUpdatedAt,
   };
 }

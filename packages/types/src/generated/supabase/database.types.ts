@@ -409,6 +409,9 @@ export type Database = {
           deleted_at: string | null;
           description: string | null;
           end_date: string | null;
+          github_owner: string | null;
+          github_repo: string | null;
+          github_token: string | null;
           id: string;
           jira_email: string | null;
           jira_project_key: string | null;
@@ -430,6 +433,9 @@ export type Database = {
           deleted_at?: string | null;
           description?: string | null;
           end_date?: string | null;
+          github_owner?: string | null;
+          github_repo?: string | null;
+          github_token?: string | null;
           id?: string;
           jira_email?: string | null;
           jira_project_key?: string | null;
@@ -451,6 +457,9 @@ export type Database = {
           deleted_at?: string | null;
           description?: string | null;
           end_date?: string | null;
+          github_owner?: string | null;
+          github_repo?: string | null;
+          github_token?: string | null;
           id?: string;
           jira_email?: string | null;
           jira_project_key?: string | null;
@@ -832,6 +841,7 @@ export type Database = {
           due_date: string | null;
           id: string;
           jira_issue_key: string | null;
+          github_prs: Json | null;
           labels: Json;
           parent_id: string | null;
           priority: Database['public']['Enums']['WorkItemPriority'];
@@ -854,6 +864,7 @@ export type Database = {
           due_date?: string | null;
           id?: string;
           jira_issue_key?: string | null;
+          github_prs?: Json | null;
           labels?: Json;
           parent_id?: string | null;
           priority?: Database['public']['Enums']['WorkItemPriority'];
@@ -876,6 +887,7 @@ export type Database = {
           due_date?: string | null;
           id?: string;
           jira_issue_key?: string | null;
+          github_prs?: Json | null;
           labels?: Json;
           parent_id?: string | null;
           priority?: Database['public']['Enums']['WorkItemPriority'];
@@ -1066,11 +1078,10 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     keyof DefaultSchema['Enums'] | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
-    : never) = never,
+  EnumName extends keyof DatabaseWithoutInternals[Extract<
+    DefaultSchemaEnumNameOrOptions,
+    { schema: keyof DatabaseWithoutInternals }
+  >['schema']]['Enums'] = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -1080,14 +1091,13 @@ export type Enums<
     : never;
 
 export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema['CompositeTypes']
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
-    : never) = never,
+  PublicCompositeTypeNameOrOptions extends [keyof DefaultSchema['CompositeTypes']] extends [never]
+    ? { schema: keyof DatabaseWithoutInternals }
+    : keyof DefaultSchema['CompositeTypes'] | { schema: keyof DatabaseWithoutInternals }, // NOSONAR
+  CompositeTypeName extends keyof DatabaseWithoutInternals[Extract<
+    PublicCompositeTypeNameOrOptions,
+    { schema: keyof DatabaseWithoutInternals }
+  >['schema']]['CompositeTypes'] = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }

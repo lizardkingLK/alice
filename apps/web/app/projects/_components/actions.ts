@@ -68,6 +68,9 @@ export async function createProject(
       status: parsed.data.status,
       attributes_config: null,
       workflow_config: null,
+      github_owner: null,
+      github_repo: null,
+      github_token: null,
     });
 
     revalidateProjects();

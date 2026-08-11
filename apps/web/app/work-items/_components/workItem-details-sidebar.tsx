@@ -15,6 +15,7 @@ import {
 import { IncompleteSubtasksDoneBlockedDialog } from '@/app/work-items/_components/incomplete-subtasks-done-blocked-dialog';
 import { hasIncompleteStatuses } from '@/app/work-items/_helpers/work-item-status';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import { GitHubDevelopmentSection } from './github-development-section';
 import {
   parseWorkItemLabels,
   type WorkItemStatus,
@@ -50,12 +51,6 @@ import {
 } from '@repo/ui/components/ui/dropdown-menu';
 import {
   ChevronDown,
-  GitBranch,
-  GitCommit,
-  GitPullRequest,
-  Rocket,
-  CheckCircle2,
-  Cloud,
   PencilIcon,
   Settings,
 } from '@repo/ui/lib/icons';
@@ -453,62 +448,12 @@ export default function WorkItemSidebar({
         onOpenChange={setDevelopmentOpen}
         collapsedHint="Branches, PRs, builds, releases…"
       >
-        {/* Mock until GitHub / GitLab / Bitbucket integration */}
-        <div className="py-2.5">
-          <ul className="space-y-2 text-sm">
-            <li className="flex items-center gap-2">
-              <GitBranch className="text-muted-foreground size-3.5" />
-              <span>1 branch</span>
-            </li>
-            <li className="flex items-center justify-between gap-2">
-              <span className="inline-flex items-center gap-2">
-                <GitCommit className="text-muted-foreground size-3.5" />
-                <span>1 commit</span>
-              </span>
-              <span className="text-muted-foreground text-xs">yesterday</span>
-            </li>
-            <li className="flex items-center justify-between gap-2">
-              <span className="inline-flex items-center gap-2">
-                <GitPullRequest className="text-muted-foreground size-3.5" />
-                <span>1 pull request</span>
-              </span>
-              <Badge variant="secondary">OPEN</Badge>
-            </li>
-            <li className="flex items-center justify-between gap-2">
-              <span className="inline-flex items-center gap-2">
-                <Rocket className="text-muted-foreground size-3.5" />
-                <span>1 build</span>
-              </span>
-              <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
-            </li>
-          </ul>
-        </div>
-
-        <DetailRow label="Releases">
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center justify-between gap-2">
-              <span className="inline-flex items-center gap-2">
-                <Cloud className="text-muted-foreground size-3.5" />
-                Production
-              </span>
-              <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <Button
-              variant="link"
-              size="sm"
-              className="h-auto cursor-pointer px-0"
-            >
-              + Add feature flag
-            </Button>
-            <Button
-              variant="link"
-              size="sm"
-              className="text-muted-foreground h-auto cursor-pointer px-0"
-            >
-              See all deployments
-            </Button>
-          </div>
-        </DetailRow>
+        <GitHubDevelopmentSection
+          projectId={workItem.project_id!}
+          workItemId={workItem.id}
+          workItem={workItem}
+          onWorkItemPatched={onWorkItemPatched}
+        />
       </SidebarCollapsibleSection>
 
       <SidebarCollapsibleSection

@@ -144,6 +144,7 @@ export const workItemCoreObject = z.object({
     .max(255, { message: 'Jira issue key must be at most 255 characters' })
     .nullable()
     .optional(),
+  github_prs: z.any().nullable().optional(),
   parent_id: z
     .preprocess(
       emptyStringToNull,

@@ -214,6 +214,7 @@ export class WorkItemRepository {
         description: input.description ?? null,
         labels: input.labels ?? [],
         parent_id: input.parent_id ?? null,
+        github_prs: input.github_prs ?? null,
         ...auditCreateWithoutStatus(input.createdBy),
       })
       .select(WORK_ITEM_WITH_ASSIGNEE)
@@ -258,6 +259,9 @@ export class WorkItemRepository {
         parent_id: input.parent_id ?? null,
         ...(input.jira_issue_key !== undefined
           ? { jira_issue_key: input.jira_issue_key }
+          : {}),
+        ...(input.github_prs !== undefined
+          ? { github_prs: input.github_prs }
           : {}),
         ...(doneAtUpdate !== undefined ? { done_at: doneAtUpdate } : {}),
         updated_by: input.updatedBy,

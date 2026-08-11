@@ -115,6 +115,17 @@ export async function updateWorkItemStatus(
   });
 }
 
+export async function updateWorkItemGitHubPRs(
+  id: string,
+  githubPrs: number[],
+  expectedUpdatedAt: string
+): Promise<ResponseDTO<DbWorkItem>> {
+  return await apiFetch<ResponseDTO<DbWorkItem>>(`${workItemsPath}/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ github_prs: githubPrs, expectedUpdatedAt }),
+  });
+}
+
 /** Force-apply pending fields after a user confirms Keep mine / merge. */
 export async function forceUpdateWorkItemFields(
   id: string,
