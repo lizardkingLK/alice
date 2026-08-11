@@ -35,6 +35,8 @@ export const createProjectSchema = z.object({
   jira_email: z.string().nullable().optional(),
   jira_token: z.string().nullable().optional(),
   jira_project_key: z.string().nullable().optional(),
+  github_repo: z.string().nullable().optional(),
+  github_token: z.string().nullable().optional(),
 });
 
 export const updateProjectSchema = createProjectSchema.partial();

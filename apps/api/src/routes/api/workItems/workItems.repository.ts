@@ -16,6 +16,20 @@ import { WorkItemBody, WorkItemUpdateBody } from './workItems.schemas';
 
 export type DbWorkItem = Tables<'work_items'>;
 
+export interface DbGithubPullRequest {
+  id: string;
+  work_item_id: string;
+  pr_number: number;
+  repo_owner: string;
+  repo_name: string;
+  pr_title: string;
+  pr_url: string;
+  branch_name: string | null;
+  status: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export type CreateWorkItemRecord = WorkItemBody & {
   createdBy: string;
 };
@@ -57,7 +71,7 @@ function applySprintIdFilter<Q extends SprintFilterableQuery>(
 export class WorkItemRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
-  private async requireProjectMember(
+  async requireProjectMember(
     workItemId: string,
     actorId: string
   ): Promise<{ projectId: string }> {
@@ -82,6 +96,17 @@ export class WorkItemRepository {
 
     if (!workItem) {
       throw new Error('Work item not found');
+    }
+
+    // System administrators (role: 'admin') bypass project membership checks
+    const { data: systemUser } = await this.db
+      .from('users')
+      .select('role')
+      .eq('id', actorId)
+      .maybeSingle();
+
+    if (systemUser?.role === 'manager' || systemUser?.role === 'admin') {
+      return { projectId: workItem.project_id };
     }
 
     const { data: member, error: memberError } = await db
@@ -337,5 +362,104 @@ export class WorkItemRepository {
     }
 
     return normalizeWorkLogRow(data as unknown as WorkItemWorkLogRowRaw);
+  }
+
+  async listLinkedPRs(workItemId: string): Promise<DbGithubPullRequest[]> {
+    const db = this.db as unknown as SupabaseClient<Database>;
+
+    const { data, error } = await db
+      .from('github_pull_requests')
+      .select('*')
+      .eq('work_item_id', workItemId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('error. failed to list linked github PRs:', error.message);
+      throw new Error('Failed to list linked PRs');
+    }
+
+    return data ?? [];
+  }
+
+  async linkPR(
+    workItemId: string,
+    payload: {
+      prNumber: number;
+      repoOwner: string;
+      repoName: string;
+      prTitle: string;
+      prUrl: string;
+      branchName?: string | null;
+      status?: string | null;
+    }
+  ): Promise<DbGithubPullRequest> {
+    const db = this.db as unknown as SupabaseClient<Database>;
+
+    const { data, error } = await db
+      .from('github_pull_requests')
+      .upsert({
+        work_item_id: workItemId,
+        pr_number: payload.prNumber,
+        repo_owner: payload.repoOwner,
+        repo_name: payload.repoName,
+        pr_title: payload.prTitle,
+        pr_url: payload.prUrl,
+        branch_name: payload.branchName ?? null,
+        status: payload.status ?? 'open',
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'work_item_id,repo_owner,repo_name,pr_number',
+      })
+      .select('*')
+      .single();
+
+    if (error) {
+      console.error('error. failed to link GitHub PR:', error.message);
+      throw new Error('Failed to link GitHub PR');
+    }
+
+    return data;
+  }
+
+  async unlinkPR(workItemId: string, prId: string): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = this.db as unknown as SupabaseClient<any>;
+
+    const { error } = await db
+      .from('github_pull_requests')
+      .delete()
+      .eq('id', prId)
+      .eq('work_item_id', workItemId);
+
+    if (error) {
+      console.error('error. failed to unlink GitHub PR:', error.message);
+      throw new Error('Failed to unlink GitHub PR');
+    }
+  }
+
+  async getProjectGithubSettingsByWorkItem(
+    workItemId: string
+  ): Promise<{ github_repo: string | null; github_token: string | null } | null> {
+    const { data: workItem, error: workItemError } = await this.db
+      .from('work_items')
+      .select('project_id')
+      .eq('id', workItemId)
+      .maybeSingle();
+
+    if (workItemError || !workItem) {
+      return null;
+    }
+
+    const { data: project, error: projectError } = await this.db
+      .from('projects')
+      .select('github_repo, github_token')
+      .eq('id', workItem.project_id)
+      .maybeSingle();
+
+    if (projectError || !project) {
+      return null;
+    }
+
+    return project;
   }
 }

@@ -222,6 +222,70 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
   );
 
   workItemsRouter.get(
+    '/:id/github',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const prs = await workItemService.listLinkedPRs(
+          req.userId!,
+          req.params.id!
+        );
+        res.json({ prs });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to get GitHub PRs';
+        res.status(500).json({ error: message });
+      }
+    }
+  );
+
+  workItemsRouter.post(
+    '/:id/github',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const { prUrl } = req.body;
+      if (typeof prUrl !== 'string' || !prUrl.trim()) {
+        return res.status(400).json({ error: 'prUrl is required and must be a string' });
+      }
+
+      try {
+        const linked = await workItemService.linkPR(
+          req.userId!,
+          req.params.id!,
+          prUrl.trim()
+        );
+        res.status(201).json({ data: linked, error: null });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to link GitHub PR';
+        if (error instanceof WorkItemValidationError) {
+          return res.status(400).json({ data: null, error: message });
+        }
+        res.status(500).json({ data: null, error: message });
+      }
+    }
+  );
+
+  workItemsRouter.delete(
+    '/:id/github/:prId',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        await workItemService.unlinkPR(
+          req.userId!,
+          req.params.id!,
+          req.params.prId!
+        );
+        res.json({ success: true });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to unlink GitHub PR';
+        res.status(500).json({ error: message });
+      }
+    }
+  );
+
+  workItemsRouter.get(
     '/:id/worklogs',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {

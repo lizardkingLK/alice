@@ -96,6 +96,8 @@ const mockProject = {
   jira_email: null,
   jira_token: null,
   jira_project_key: null,
+  github_repo: null,
+  github_token: null,
   owner: {
     id: 'user-mgr-1',
     name: 'Manager One',
@@ -177,6 +179,8 @@ describe('ProjectForm Component', () => {
         workflow_config: null,
         jira_url: null,
         jira_project_key: null,
+        github_repo: null,
+        github_token: null,
       });
     });
 
@@ -237,6 +241,8 @@ describe('ProjectForm Component', () => {
           workflow_config: null,
           jira_url: null,
           jira_project_key: null,
+          github_repo: null,
+          github_token: null,
         },
         '2026-07-09T10:00:00Z'
       );

@@ -131,6 +131,8 @@ const mockProjects: Project[] = [
     updated_by: null,
     attributes_config: null,
     workflow_config: null,
+    github_repo: null,
+    github_token: null,
     owner: {
       id: 'user-1',
       name: 'Bob Manager',
@@ -154,6 +156,8 @@ const mockProjects: Project[] = [
     updated_by: null,
     attributes_config: null,
     workflow_config: null,
+    github_repo: null,
+    github_token: null,
     owner: {
       id: 'user-1',
       name: 'Bob Manager',

@@ -18,6 +18,8 @@ export const projectFactory = {
       deleted_at: null,
       attributes_config: null,
       workflow_config: null,
+      github_repo: null,
+      github_token: null,
       ...overrides,
     };
   },

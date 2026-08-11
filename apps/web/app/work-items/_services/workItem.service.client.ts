@@ -127,3 +127,38 @@ export async function forceUpdateWorkItemFields(
     { pendingFields, expectedUpdatedAt, method: 'PATCH' }
   );
 }
+
+export interface GithubCommit {
+  sha: string;
+  message: string;
+  author: string;
+  date: string;
+}
+
+export interface LinkedGithubPR {
+  id: string;
+  pr_number: number;
+  pr_title: string;
+  pr_url: string;
+  status: 'open' | 'merged' | 'closed';
+  branch_name: string | null;
+  commits: GithubCommit[];
+}
+
+export async function getLinkedPRs(workItemId: string): Promise<LinkedGithubPR[]> {
+  const res = await apiFetch<{ prs: LinkedGithubPR[] }>(`${workItemsPath}/${workItemId}/github`);
+  return res.prs || [];
+}
+
+export async function linkPR(workItemId: string, prUrl: string): Promise<LinkedGithubPR> {
+  return await apiFetch<LinkedGithubPR>(`${workItemsPath}/${workItemId}/github`, {
+    method: 'POST',
+    body: JSON.stringify({ prUrl }),
+  });
+}
+
+export async function unlinkPR(workItemId: string, prId: string): Promise<void> {
+  await apiFetch<void>(`${workItemsPath}/${workItemId}/github/${prId}`, {
+    method: 'DELETE',
+  });
+}
