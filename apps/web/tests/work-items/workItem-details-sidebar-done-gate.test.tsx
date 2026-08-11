@@ -150,12 +150,12 @@ describe('WorkItemSidebar sections', () => {
     expect(
       screen.getByText((content, element) => {
         return element?.textContent?.includes('1 branch') ?? false;
-      })
+      }, { selector: '*' })
     ).toBeInTheDocument();
     expect(
       screen.getByText((content, element) => {
         return element?.textContent?.includes('1 pull request') ?? false;
-      })
+      }, { selector: '*' })
     ).toBeInTheDocument();
     expect(screen.getByText('Production')).toBeInTheDocument();
   });
