@@ -1,18 +1,47 @@
-import React from 'react';
+import { Suspense } from 'react';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
+import { safeServerFetch } from '@/lib/safe-server-fetch';
+import { getDbUser } from '@/lib/auth';
 import { ChatClient } from './_components/chat-client';
+import { getChatPageBootstrap } from './_services/chat.service.server';
+import { ChatPageSkeleton } from './_components/chat-page-skeleton';
 
 export const metadata = {
-  title: 'AI Chatbot',
+  title: 'Alice',
 };
+
+async function ChatPageData() {
+  const [bootstrap, dbUser] = await Promise.all([
+    safeServerFetch(
+      getChatPageBootstrap(),
+      { conversations: [], messages: [] },
+      'fetch chat page bootstrap'
+    ),
+    getDbUser(),
+  ]);
+
+  return (
+    <ChatClient
+      initialConversations={bootstrap.conversations}
+      initialConversationId={bootstrap.activeConversationId}
+      initialMessages={bootstrap.messages}
+      currentUserName={dbUser?.name}
+      currentUserImageUrl={dbUser?.profile_picture}
+    />
+  );
+}
 
 export default function ChatPage() {
   return (
     <DashboardShell
       description="Chat with the Jira Teams AI assistant to create projects, sprints, and work items."
-      stickyHeader={true}
+      stickyHeader
+      contentScrollable={false}
+      contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
-      <ChatClient />
+      <Suspense fallback={<ChatPageSkeleton />}>
+        <ChatPageData />
+      </Suspense>
     </DashboardShell>
   );
 }

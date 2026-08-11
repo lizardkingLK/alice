@@ -1,9 +1,9 @@
-# AI Chatbot (Jira Teams Assistant)
+# Alice (Jira Teams Assistant)
 
 Status: **Implemented**
 
 Conversational assistant for creating and inspecting projects, sprints, and
-work items. UI labels: **AI Assistant** / sidebar **Chatbot**. System prompt
+work items. UI labels: **Alice** / sidebar **Alice**. System prompt
 name: **Jira Teams Assistant**. Provider: **Google Gemini** (REST
 `generateContent` + function calling).
 
@@ -40,15 +40,43 @@ Related:
 
 ## UX surfaces
 
-| Surface         | Location                                  | Behavior                                                                             |
-| --------------- | ----------------------------------------- | ------------------------------------------------------------------------------------ |
-| Full page       | `/chat`                                   | Conversation list, New Chat, delete, suggestions, action cards                       |
-| Floating widget | All `DashboardShell` pages except `/chat` | FAB → right drawer; same `ChatClient` (`variant="drawer"`) — no conversation sidebar |
-| Nav             | Platform → **Chatbot**                    | Links to `/chat`                                                                     |
+| Surface         | Location                                  | Behavior                                                                                                                      |
+| --------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Full page       | `/chat`                                   | Edge-to-edge in the dashboard shell (no card chrome); toggleable history sidebar; New Chat, delete, suggestions, action cards |
+| Floating widget | All `DashboardShell` pages except `/chat` | FAB → right drawer; same `ChatClient` (`variant="drawer"`) — no conversation sidebar                                          |
+| Nav             | Platform → **Alice**                      | Links to `/chat`                                                                                                              |
 
 Empty-state suggestions cover common flows (e.g. create a bug, list projects).
 Successful mutations can render **executed action** cards with deep links to
-the created entity. Footer copy: “Powered by Google Gemini”.
+the created entity. Header model: “Gemini 3.6” (dropdown).
+
+### Composer
+
+- Shared `@repo/ui` `Textarea` (page + drawer).
+- **Enter** sends the message; **Shift+Enter** inserts a new line.
+- Message bubbles use `whitespace-pre-wrap` so line breaks render in history.
+
+### Message layout
+
+- **Alice** messages stay **left** (bot avatar + label + muted card).
+- **You** messages stay **right** (label + primary card + user profile avatar).
+- User avatar uses `public.users.profile_picture` via shared `UserAvatar`
+  (SSR props on `/chat`; dashboard shell passes the same into the drawer).
+
+### Panel headers
+
+Main **Alice** toolbar has a fixed `h-14` height.
+
+### Data loading (PERFORMANCE.md)
+
+| Surface         | Initial conversations                          | Initial message history                        | Interactions after mount                     |
+| --------------- | ---------------------------------------------- | ---------------------------------------------- | -------------------------------------------- |
+| `/chat` page    | RSC direct Supabase (`chat.service.server.ts`) | RSC `apiFetch` → API (Storage is service-role) | Client `apiFetch` for send / switch / delete |
+| Floating drawer | Client `apiFetch` on open                      | Client `apiFetch` on open                      | Same                                         |
+
+`/chat` uses `Suspense` + `safeServerFetch(getChatPageBootstrap())` so the
+shell streams first; the client receives bootstrap props and **does not**
+`useEffect`-fetch the same data again.
 
 ---
 
@@ -87,20 +115,22 @@ Mounted in `apps/api/src/config/routing.ts` as `/api/chat`.
 
 ### Key files
 
-| Layer           | Path                                                                     |
-| --------------- | ------------------------------------------------------------------------ |
-| Page            | `apps/web/app/chat/page.tsx`                                             |
-| Client UI       | `apps/web/app/chat/_components/chat-client.tsx`                          |
-| Client API      | `apps/web/app/chat/_components/chat-client.service.ts`                   |
-| Widget          | `apps/web/app/chat/_components/floating-chat-widget.tsx`                 |
-| Routes          | `createChatRouter` in `chat.route.ts` (mounted as `chat.router`)         |
-| Service         | `ChatService` in `chat.service.ts`                                       |
-| Repository      | `ChatRepository` in `chat.repository.ts` (`db` injected)                 |
-| Prompt + tools  | `apps/api/src/routes/api/chat/chat.route.data.ts`                        |
-| Types (API)     | `apps/api/src/routes/api/chat/chat.route.types.ts`                       |
-| Shared roles    | `packages/types/src/chat.ts` (`ChatRoles`, `GeminiRoles`, `getRoleName`) |
-| Composition     | `apps/api/src/config/composition.ts` → `chat`                            |
-| Supabase client | `apps/api/src/lib/supabase.ts` (`supabase` + re-exported `createClient`) |
+| Layer           | Path                                                                           |
+| --------------- | ------------------------------------------------------------------------------ |
+| Page            | `apps/web/app/chat/page.tsx` (RSC bootstrap + Suspense)                        |
+| Client UI       | `apps/web/app/chat/_components/chat-client.tsx`                                |
+| Client API      | `apps/web/app/chat/_components/chat-client.service.ts` (mutations + drawer)    |
+| Server reads    | `apps/web/app/chat/_services/chat.service.server.ts`                           |
+| Widget          | `apps/web/app/chat/_components/floating-chat-widget.tsx`                       |
+| Routes          | `createChatRouter` in `chat.route.ts` (mounted as `chat.router`)               |
+| Service         | `ChatService` in `chat.service.ts`                                             |
+| Repository      | `ChatRepository` in `chat.repository.ts` (`db` injected)                       |
+| Prompt + tools  | `apps/api/src/routes/api/chat/chat.route.data.ts`                              |
+| Types (API)     | `apps/api/src/routes/api/chat/chat.route.types.ts`                             |
+| Shared roles    | `packages/types/src/chat.ts` (`ChatRoles`, `GeminiRoles`, `getRoleName`)       |
+| Chat models     | `packages/types/src/chat-models.ts` (shared model dropdown + backend defaults) |
+| Composition     | `apps/api/src/config/composition.ts` → `chat`                                  |
+| Supabase client | `apps/api/src/lib/supabase.ts` (`supabase` + re-exported `createClient`)       |
 
 ### Data access
 

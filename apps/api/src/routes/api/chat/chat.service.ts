@@ -1,6 +1,11 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { getRoleName } from '@repo/types';
+import {
+  getRoleName,
+  DEFAULT_CHAT_MODEL_VALUE,
+  resolveChatModel,
+  type ChatModelValue,
+} from '@repo/types';
 import { projectsService } from '../projects/projects.service';
 import { projectsRepository } from '../projects/projects.repository';
 import type { WorkItemService } from '../workItems/workItems.service';
@@ -134,6 +139,10 @@ export class ChatService {
 
   private get chat() {
     return this.deps.chat;
+  }
+
+  private resolveGeminiBaseUrl(modelValue: ChatModelValue): string {
+    return resolveChatModel(modelValue).apiUrl;
   }
 
   async processFunctionCalls(
@@ -316,7 +325,8 @@ export class ChatService {
 
   async callGeminiAPI(
     contents: ContentTurn[],
-    contextInstruction: string
+    contextInstruction: string,
+    modelValue: ChatModelValue = DEFAULT_CHAT_MODEL_VALUE
   ): Promise<GeminiResponse> {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -326,8 +336,7 @@ export class ChatService {
     }
 
     const baseUrl =
-      process.env.GEMINI_API_URL ||
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent';
+      process.env.GEMINI_API_URL || this.resolveGeminiBaseUrl(modelValue);
     const url = baseUrl.includes('key=')
       ? `${baseUrl}${apiKey}`
       : `${baseUrl}?key=${apiKey}`;

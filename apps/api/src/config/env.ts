@@ -8,10 +8,7 @@ const serverSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   STORAGE_BUCKET_ATTACHMENTS: z.string().min(1),
   STORAGE_BUCKET_PROFILE_PICTURES: z.string().min(1),
-  STORAGE_BUCKET_CHAT_HISTORY: z
-    .string()
-    .min(1)
-    .default('alice_storage_chat_history'),
+  STORAGE_BUCKET_CHAT_HISTORY: z.string().min(1),
   JIRA_API_TOKEN: z.string().optional(),
   JIRA_EMAIL: z.string().optional(),
   /** Optional; when set, `/notifications/check-due-dates` requires `Authorization: Bearer <CRON_SECRET>`. */

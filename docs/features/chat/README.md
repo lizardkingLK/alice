@@ -1,6 +1,6 @@
-# Chat / AI Assistant feature documentation
+# Chat / Alice feature documentation
 
-In-app **AI Assistant** (“Chatbot” in the sidebar) backed by **Google Gemini**
+In-app **Alice** (sidebar label: **Alice**) backed by **Google Gemini**
 function-calling. Helps authenticated users list and create projects, sprints,
 and work items through natural language.
 

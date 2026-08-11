@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import {
   Calendar,
   FolderKanban,
-  Ticket,
+  ClipboardPenIcon,
   type LucideIcon,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
@@ -128,7 +128,7 @@ export function ChatExecutedActionCard({
       return (
         <ActionCardFrame
           tone="indigo"
-          icon={Ticket}
+          icon={ClipboardPenIcon}
           href={`/work-items/${action.entity.id}`}
           linkLabel="View Details"
         >
