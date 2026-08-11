@@ -1,4 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+vi.mock('@/app/projects/_services/github.service.client', () => ({
+  fetchWorkItemDevelopment: vi.fn().mockResolvedValue({
+    github_owner: 'owner',
+    github_repo: 'repo',
+    branchesCount: 1,
+    commitsCount: 1,
+    pullRequestsCount: 1,
+    pullRequestLatestState: 'open',
+    buildsStatus: 'success',
+    releasesStatus: 'success',
+    linkedPRs: [],
+  }),
+}));
+
 import { render, screen, fireEvent } from '@testing-library/react';
 import WorkItemSidebar from '@/app/work-items/_components/workItem-details-sidebar';
 import { workItemFactory } from '../factories/workItem.factory';
@@ -129,7 +144,7 @@ describe('WorkItemSidebar Done gate', () => {
 });
 
 describe('WorkItemSidebar sections', () => {
-  it('renders Development between Details and More fields with mock criteria', () => {
+  it('renders Development between Details and More fields with mock criteria', async () => {
     // Arrange
     renderSidebar();
 
@@ -148,14 +163,27 @@ describe('WorkItemSidebar sections', () => {
     ).toBeTruthy();
 
     expect(
-      screen.getByText((content, element) => {
-        return element?.textContent?.includes('1 branch') ?? false;
-      }, { selector: '*' })
+      await screen.findByText((content, element) => {
+        const hasText = (node: Element | null) =>
+          node?.textContent?.replace(/\s+/g, ' ').trim() === '1 branch';
+        const nodeHasText = hasText(element);
+        const childrenWithoutText = Array.from(element?.children || []).every(
+          (child) => !hasText(child)
+        );
+        return nodeHasText && childrenWithoutText;
+      })
     ).toBeInTheDocument();
+
     expect(
-      screen.getByText((content, element) => {
-        return element?.textContent?.includes('1 pull request') ?? false;
-      }, { selector: '*' })
+      await screen.findByText((content, element) => {
+        const hasText = (node: Element | null) =>
+          node?.textContent?.replace(/\s+/g, ' ').trim() === '1 pull request';
+        const nodeHasText = hasText(element);
+        const childrenWithoutText = Array.from(element?.children || []).every(
+          (child) => !hasText(child)
+        );
+        return nodeHasText && childrenWithoutText;
+      })
     ).toBeInTheDocument();
     expect(screen.getByText('Production')).toBeInTheDocument();
   });
