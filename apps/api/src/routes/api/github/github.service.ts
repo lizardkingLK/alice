@@ -148,9 +148,15 @@ export class GitHubService {
     const prCommitShas = new Set<string>();
     await Promise.all(
       prsResult.matched.map(async (pr) => {
+        const prNum = parseInt(String(pr.number), 10);
+        if (isNaN(prNum) || prNum <= 0) {
+          console.error('Invalid PR number');
+          return;
+        }
+        const safePrNumber = prNum.toString();
         try {
           const response = await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/pulls/${pr.number}/commits`,
+            `https://api.github.com/repos/${owner}/${repo}/pulls/${safePrNumber}/commits`,
             { headers }
           );
           const prCommits = response.ok ? await response.json() : [];
@@ -346,7 +352,7 @@ export class GitHubService {
     headers: HeadersInit
   ): Promise<GitHubBuildsStatus> {
     if (!/^[a-fA-F0-9]{40,64}$/.test(sha)) {
-      console.warn(`Invalid commit SHA format for check-runs: ${sha}`);
+      console.warn('Invalid commit SHA format for check-runs');
       return 'none';
     }
     const safeSha = encodeURIComponent(sha);
@@ -376,7 +382,7 @@ export class GitHubService {
     headers: HeadersInit
   ): Promise<GitHubBuildsStatus> {
     if (!/^[a-fA-F0-9]{40,64}$/.test(sha)) {
-      console.warn(`Invalid commit SHA format for status: ${sha}`);
+      console.warn('Invalid commit SHA format for status');
       return 'none';
     }
     const safeSha = encodeURIComponent(sha);
