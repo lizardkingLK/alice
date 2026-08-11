@@ -148,14 +148,9 @@ export class GitHubService {
     const prCommitShas = new Set<string>();
     await Promise.all(
       prsResult.matched.map(async (pr) => {
-        if (!/^[1-9]\d*$/.test(String(pr.number))) {
-          console.error(`Skipping invalid PR number: ${pr.number}`);
-          return;
-        }
-        const safePrNumber = encodeURIComponent(String(pr.number));
         try {
           const response = await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/pulls/${safePrNumber}/commits`,
+            `https://api.github.com/repos/${owner}/${repo}/pulls/${pr.number}/commits`,
             { headers }
           );
           const prCommits = response.ok ? await response.json() : [];
@@ -350,12 +345,8 @@ export class GitHubService {
     sha: string,
     headers: HeadersInit
   ): Promise<GitHubBuildsStatus> {
-    if (!/^[a-fA-F0-9]{40,64}$/.test(sha)) {
-      throw new Error('Invalid commit SHA for check runs');
-    }
-    const safeSha = encodeURIComponent(sha);
     const checksResponse = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/commits/${safeSha}/check-runs`,
+      `https://api.github.com/repos/${owner}/${repo}/commits/${sha}/check-runs`,
       { headers }
     );
     const checks = checksResponse.ok ? await checksResponse.json() : null;
@@ -379,12 +370,8 @@ export class GitHubService {
     sha: string,
     headers: HeadersInit
   ): Promise<GitHubBuildsStatus> {
-    if (!/^[a-fA-F0-9]{40,64}$/.test(sha)) {
-      throw new Error('Invalid commit SHA for status');
-    }
-    const safeSha = encodeURIComponent(sha);
     const statusResponse = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/commits/${safeSha}/status`,
+      `https://api.github.com/repos/${owner}/${repo}/commits/${sha}/status`,
       { headers }
     );
     const statusData = statusResponse.ok
