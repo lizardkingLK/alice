@@ -345,8 +345,13 @@ export class GitHubService {
     sha: string,
     headers: HeadersInit
   ): Promise<GitHubBuildsStatus> {
+    if (!/^[a-fA-F0-9]{40,64}$/.test(sha)) {
+      console.warn(`Invalid commit SHA format for check-runs: ${sha}`);
+      return 'none';
+    }
+    const safeSha = encodeURIComponent(sha);
     const checksResponse = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/commits/${sha}/check-runs`,
+      `https://api.github.com/repos/${owner}/${repo}/commits/${safeSha}/check-runs`,
       { headers }
     );
     const checks = checksResponse.ok ? await checksResponse.json() : null;
@@ -370,8 +375,13 @@ export class GitHubService {
     sha: string,
     headers: HeadersInit
   ): Promise<GitHubBuildsStatus> {
+    if (!/^[a-fA-F0-9]{40,64}$/.test(sha)) {
+      console.warn(`Invalid commit SHA format for status: ${sha}`);
+      return 'none';
+    }
+    const safeSha = encodeURIComponent(sha);
     const statusResponse = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/commits/${sha}/status`,
+      `https://api.github.com/repos/${owner}/${repo}/commits/${safeSha}/status`,
       { headers }
     );
     const statusData = statusResponse.ok
