@@ -10,7 +10,6 @@ import profileRouter from '../routes/api/profile/profile.route';
 import accessAllowlistRouter from '../routes/api/accessAllowlist/accessAllowlist.route';
 import savedViewsRouter from '../routes/api/savedViews/savedViews.route';
 import { workItems, sprints, chat, github } from './composition';
-import {chatRouter} from '../routes/api/chat/chat.route';
 
 const routesConfig: Router = Router();
 

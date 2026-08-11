@@ -42,40 +42,6 @@ function textToProseMirrorJson(text: string | null | undefined) {
   };
 }
 
-async function handleListProjects(): Promise<unknown> {
-  const projects = await projectsRepository.listAll();
-  return projects.map((p) => ({ id: p.id, name: p.name, key: p.key }));
-}
-
-async function handleCreateProject(
-  userId: string,
-  args: Record<string, unknown>,
-  toolActionsPerformed: ToolAction[]
-): Promise<unknown> {
-  const projName = typeof args.name === 'string' ? args.name : '';
-  const projKey = typeof args.key === 'string' ? args.key : '';
-  const description =
-    typeof args.description === 'string' ? args.description : null;
-  const project = await projectsService.createProject(userId, {
-    name: projName,
-    key: projKey.toUpperCase(),
-    description,
-    status: 'active',
-    start_date: null,
-    end_date: null,
-    owner_id: userId,
-    jira_url: null,
-    jira_email: null,
-    jira_token: null,
-    jira_project_key: null,
-    github_owner: null,
-    github_repo: null,
-    github_token: null,
-  });
-  const result = { id: project.id, name: project.name, key: project.key };
-  toolActionsPerformed.push({ type: 'create_project', entity: result });
-  return result;
-}
 /**
  * Converts messages array to a Markdown string with JSON metadata embedded.
  */
@@ -258,6 +224,9 @@ export class ChatService {
       jira_email: null,
       jira_token: null,
       jira_project_key: null,
+      github_owner: null,
+      github_repo: null,
+      github_token: null,
     });
     const result = { id: project.id, name: project.name, key: project.key };
     toolActionsPerformed.push({ type: 'create_project', entity: result });
