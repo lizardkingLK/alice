@@ -1,4 +1,4 @@
-import { Sparkles, FolderKanban, Ticket } from '@repo/ui/lib/icons';
+import { Sparkles, FolderKanban, ClipboardPenIcon } from '@repo/ui/lib/icons';
 
 export const SUGGESTIONS = [
   {
@@ -16,6 +16,6 @@ export const SUGGESTIONS = [
     title: 'Create a new bug task',
     prompt:
       'Create a new bug task titled "Fix registration login failure" with high priority.',
-    icon: Ticket,
+    icon: ClipboardPenIcon,
   },
 ];

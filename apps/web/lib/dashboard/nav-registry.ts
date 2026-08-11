@@ -36,7 +36,7 @@ export const PLATFORM_NAV: readonly DashboardNavItem[] = [
   { path: '/board', label: 'Board', icon: Kanban },
   { path: '/work-items', label: 'Work Items', icon: ClipboardPenIcon },
   { path: '/member', label: 'My Work', icon: CircleDot },
-  { path: '/chat', label: 'Chatbot', icon: MessageSquare },
+  { path: '/chat', label: 'Alice', icon: MessageSquare },
   { path: '/views', label: 'Views', icon: Layers },
 ];
 

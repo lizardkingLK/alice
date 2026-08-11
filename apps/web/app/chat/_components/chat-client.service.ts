@@ -1,16 +1,17 @@
 import { apiFetch } from '@/lib/api/api-client';
-import type { ActionItem, ChatMessage } from './chat-client.types';
+import type {
+  ActionItem,
+  ChatConversation,
+  ChatMessage,
+} from './chat-client.types';
+import type { ChatModelValue } from '@repo/types';
 
-export interface ChatConversation {
-  id: string;
-  title: string;
-  created_at: string;
-  updated_at: string;
-}
+export type { ChatConversation };
 
 export async function sendChatMessage(
   history: ChatMessage[],
-  conversationId?: string
+  conversationId: string | undefined,
+  modelId: ChatModelValue
 ) {
   return apiFetch<{
     reply: string;
@@ -24,7 +25,7 @@ export async function sendChatMessage(
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ messages: history, conversationId }),
+    body: JSON.stringify({ messages: history, conversationId, modelId }),
   });
 }
 

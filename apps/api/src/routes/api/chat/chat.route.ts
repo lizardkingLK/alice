@@ -12,6 +12,8 @@ import {
   parseChatRole,
   toGeminiRole,
   GeminiRoles,
+  DEFAULT_CHAT_MODEL_VALUE,
+  resolveChatModel,
 } from '@repo/types';
 import { type ChatService, sanitizeLog } from './chat.service';
 import type {
@@ -123,7 +125,11 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
     '/',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
-      const { messages, conversationId: reqConversationId } = req.body;
+      const { messages, conversationId: reqConversationId, modelId } = req.body;
+
+      const resolvedModelValue = resolveChatModel(
+        typeof modelId === 'string' ? modelId : DEFAULT_CHAT_MODEL_VALUE
+      ).value;
 
       if (!messages || !Array.isArray(messages)) {
         return res.status(400).json({ error: 'messages array is required' });
@@ -172,7 +178,8 @@ Current Workspace State:
         while (loopCount < maxLoops) {
           const geminiResponse = await chatService.callGeminiAPI(
             contents,
-            contextInstruction
+            contextInstruction,
+            resolvedModelValue
           );
           const candidate = geminiResponse.candidates?.[0];
           const modelContent = candidate?.content;

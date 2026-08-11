@@ -25,6 +25,11 @@ type DashboardShellProps = {
    * Default false: header scrolls away with the page.
    */
   stickyHeader?: boolean;
+  /**
+   * When false, the shell content region does not scroll — the child owns
+   * overflow (e.g. chat `ScrollArea`). Default true.
+   */
+  contentScrollable?: boolean;
   contentClassName?: string;
 };
 
@@ -37,6 +42,7 @@ export async function DashboardShell({
   children,
   sidebarDefaultOpen = true,
   stickyHeader = false,
+  contentScrollable = true,
   contentClassName,
 }: Readonly<DashboardShellProps>) {
   const dbUser = await getDbUser();
@@ -57,6 +63,11 @@ export async function DashboardShell({
     </div>
   );
 
+  const scrollRegionClass = cn(
+    'flex min-h-0 flex-1 flex-col',
+    contentScrollable ? 'overflow-y-auto' : 'overflow-hidden'
+  );
+
   return (
     <TooltipProvider>
       <SidebarProvider
@@ -71,17 +82,18 @@ export async function DashboardShell({
           {stickyHeader ? (
             <>
               {header}
-              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-                {body}
-              </div>
+              <div className={scrollRegionClass}>{body}</div>
             </>
           ) : (
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+            <div className={scrollRegionClass}>
               {header}
               {body}
             </div>
           )}
-          <FloatingChatWidget />
+          <FloatingChatWidget
+            currentUserName={dbUser?.name}
+            currentUserImageUrl={dbUser?.profile_picture}
+          />
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

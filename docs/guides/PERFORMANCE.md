@@ -396,25 +396,27 @@ Legend:
 
 ### Read routes — web usage audit
 
-| API route                             | Status              | Web caller today   | Notes                                                                                                      |
-| ------------------------------------- | ------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------- |
-| `GET /api/users`                      | **Unused (web)**    | —                  | `/users` uses `users.service.server.ts`                                                                    |
-| `GET /api/users/secure`               | **Unused (web)**    | —                  | Auth smoke test only                                                                                       |
-| `GET /api/projects`                   | **Unused (web)**    | —                  | SSR + forms pass `getProjectList()` from `projects.service.server.ts` (incl. `/views` Share)               |
-| `GET /api/projects/:id`               | **Unused (web)**    | —                  | Edit form uses row data via `projectToEdit`; detail page uses server `getProjectDetails`                   |
-| `GET /api/projects/:id/members`       | **Unused (web)**    | —                  | Share dialog uses `fetchShareViewProjectScope`; detail uses server `getProjectMembers`                     |
-| `GET /api/teams`                      | **Unused (web)**    | —                  | `/manager` uses `teams.service.server.ts`; Share uses `fetchShareViewProjectScope`                         |
-| `GET /api/sprints`                    | **Not implemented** | —                  | List reads are RSC-only (`sprints.service.server.ts`); `/dashboard` uses `getDashboardBurndownBootstrap()` |
-| `GET /api/sprints/:id`                | **Not implemented** | —                  | Server mirror `getSprint()` in `sprints.service.server.ts`; forms use `sprintToEdit` from list state       |
-| `GET /api/sprints/:id/burndown`       | **Unused (web)**    | —                  | Dashboard uses `sprint-burndown.server.ts` + server action; Express handler kept for non-web consumers     |
-| `GET /api/workItems`                  | **Unused (web)**    | —                  | List/detail use `workItem.service.server.ts`                                                               |
-| `GET /api/workItems/:id`              | **Unused (web)**    | —                  | `[id]/page` uses server `getWorkItem`                                                                      |
-| `GET /api/comments`                   | **Client-only**     | Mutations + legacy | RSC reads use `listComments` / `getWorkItemDiscussion` in `comments.service.server.ts` (direct Supabase)   |
-| `GET /api/saved-views`                | **Unused (web)**    | —                  | `/views` uses `getSavedViewsPaginated` in `saved-views.service.server.ts`                                  |
-| `GET /api/saved-views/shared-with-me` | **Unused (web)**    | —                  | Same SSR reader (`tab=shared`)                                                                             |
-| `GET /` (health)                      | Active              | Deploy / probes    | Not a data read                                                                                            |
-| `POST /api/notifications/send`        | Active              | Server-side notify | No GET on this router                                                                                      |
-| `POST /api/attachments`               | Active              | `upload-form.tsx`  | Upload only (private bucket; signed URL)                                                                   |
+| API route                             | Status              | Web caller today     | Notes                                                                                                      |
+| ------------------------------------- | ------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `GET /api/users`                      | **Unused (web)**    | —                    | `/users` uses `users.service.server.ts`                                                                    |
+| `GET /api/users/secure`               | **Unused (web)**    | —                    | Auth smoke test only                                                                                       |
+| `GET /api/projects`                   | **Unused (web)**    | —                    | SSR + forms pass `getProjectList()` from `projects.service.server.ts` (incl. `/views` Share)               |
+| `GET /api/projects/:id`               | **Unused (web)**    | —                    | Edit form uses row data via `projectToEdit`; detail page uses server `getProjectDetails`                   |
+| `GET /api/projects/:id/members`       | **Unused (web)**    | —                    | Share dialog uses `fetchShareViewProjectScope`; detail uses server `getProjectMembers`                     |
+| `GET /api/teams`                      | **Unused (web)**    | —                    | `/manager` uses `teams.service.server.ts`; Share uses `fetchShareViewProjectScope`                         |
+| `GET /api/sprints`                    | **Not implemented** | —                    | List reads are RSC-only (`sprints.service.server.ts`); `/dashboard` uses `getDashboardBurndownBootstrap()` |
+| `GET /api/sprints/:id`                | **Not implemented** | —                    | Server mirror `getSprint()` in `sprints.service.server.ts`; forms use `sprintToEdit` from list state       |
+| `GET /api/sprints/:id/burndown`       | **Unused (web)**    | —                    | Dashboard uses `sprint-burndown.server.ts` + server action; Express handler kept for non-web consumers     |
+| `GET /api/workItems`                  | **Unused (web)**    | —                    | List/detail use `workItem.service.server.ts`                                                               |
+| `GET /api/workItems/:id`              | **Unused (web)**    | —                    | `[id]/page` uses server `getWorkItem`                                                                      |
+| `GET /api/comments`                   | **Client-only**     | Mutations + legacy   | RSC reads use `listComments` / `getWorkItemDiscussion` in `comments.service.server.ts` (direct Supabase)   |
+| `GET /api/saved-views`                | **Unused (web)**    | —                    | `/views` uses `getSavedViewsPaginated` in `saved-views.service.server.ts`                                  |
+| `GET /api/saved-views/shared-with-me` | **Unused (web)**    | —                    | Same SSR reader (`tab=shared`)                                                                             |
+| `GET /api/chat/conversations`         | **SSR + Client**    | `/chat` RSC + drawer | Page lists via direct Supabase (`chat.service.server.ts`); drawer still client `apiFetch`                  |
+| `GET /api/chat`, `GET /api/chat/:id`  | **SSR + Client**    | `/chat` RSC + drawer | History is Storage (service-role); RSC uses server `apiFetch`; drawer client `apiFetch`                    |
+| `GET /` (health)                      | Active              | Deploy / probes      | Not a data read                                                                                            |
+| `POST /api/notifications/send`        | Active              | Server-side notify   | No GET on this router                                                                                      |
+| `POST /api/attachments`               | Active              | `upload-form.tsx`    | Upload only (private bucket; signed URL)                                                                   |
 
 There is **no** `/api/team-members` or `/api/project-members` router. Membership is nested:
 
