@@ -148,8 +148,8 @@ export class GitHubService {
     const prCommitShas = new Set<string>();
     await Promise.all(
       prsResult.matched.map(async (pr) => {
-        const prNum = parseInt(String(pr.number), 10);
-        if (isNaN(prNum) || prNum <= 0) {
+        const prNum = Number.parseInt(String(pr.number), 10);
+        if (Number.isNaN(prNum) || prNum <= 0) {
           console.error('Invalid PR number');
           return;
         }

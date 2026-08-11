@@ -116,6 +116,10 @@ const mockProjects: Project[] = [
     github_owner: null,
     github_repo: null,
     github_token: null,
+    jira_url: null,
+    jira_email: null,
+    jira_token: null,
+    jira_project_key: null,
     attributes_config: null,
     workflow_config: null,
     owner: {
@@ -141,6 +145,10 @@ const mockProjects: Project[] = [
     github_owner: null,
     github_repo: null,
     github_token: null,
+    jira_url: null,
+    jira_email: null,
+    jira_token: null,
+    jira_project_key: null,
     attributes_config: null,
     workflow_config: null,
     owner: {
