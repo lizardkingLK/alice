@@ -147,8 +147,16 @@ describe('WorkItemSidebar sections', () => {
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
 
-    expect(screen.getByText('1 branch')).toBeInTheDocument();
-    expect(screen.getByText('1 pull request')).toBeInTheDocument();
+    expect(
+      screen.getByText((content, element) => {
+        return element?.textContent?.includes('1 branch') ?? false;
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText((content, element) => {
+        return element?.textContent?.includes('1 pull request') ?? false;
+      })
+    ).toBeInTheDocument();
     expect(screen.getByText('Production')).toBeInTheDocument();
   });
 

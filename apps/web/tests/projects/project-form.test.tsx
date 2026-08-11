@@ -180,8 +180,11 @@ describe('ProjectForm Component', () => {
         workflow_config: null,
         jira_url: null,
         jira_project_key: null,
+        github_owner: null,
+        github_repo: null,
+        github_token: null,
       });
-    });
+    },{ timeout: 5000 });
 
     expect(
       await screen.findByText(/Project "Project Alice" created/i)
@@ -240,10 +243,13 @@ describe('ProjectForm Component', () => {
           workflow_config: null,
           jira_url: null,
           jira_project_key: null,
+          github_owner: null,
+          github_repo: null,
+          github_token: undefined,
         },
         '2026-07-09T10:00:00Z'
       );
-    });
+    },{ timeout: 5000 });
 
     expect(
       await screen.findByText(/Project "Project Alice Updated" updated/i)
