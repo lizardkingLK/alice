@@ -24,6 +24,10 @@ export const REGISTRY_PAGES = {
     description: 'Organize project administration.',
     skeleton: { columnCount: 6, rowCount: 8, showTabs: true },
   },
+  calendar: {
+    description: 'Track and plan work items on a visual timeline calendar.',
+    skeleton: { columnCount: 7, rowCount: 6, showTabs: false },
+  },
   sprints: {
     description: 'Plan and track team sprints.',
     skeleton: { columnCount: 5, rowCount: 6, showTabs: true },
