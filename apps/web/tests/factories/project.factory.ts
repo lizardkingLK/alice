@@ -11,7 +11,6 @@ export const projectFactory = {
       github_token: null,
       jira_url: null,
       jira_email: null,
-      jira_token: null,
       jira_project_key: null,
       description: null,
       owner_id: 'user-1',
