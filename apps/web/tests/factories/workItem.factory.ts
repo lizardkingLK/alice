@@ -31,6 +31,7 @@ export const workItemFactory = {
       labels: [],
       assignee: defaultAssignee,
       reporter: null,
+      github_prs: null,
       ...overrides,
     };
   },
