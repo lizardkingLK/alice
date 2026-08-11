@@ -24,7 +24,7 @@ import type { Project } from '@/app/projects/_services/projects.service';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import type { User } from '@/app/users/_services/users.service';
 import { toNameCase } from '@repo/types';
-import type { CalendarActionItem } from './calendar-client.types';
+import { type CalendarActionItem, CalendarWorkItemTypes } from './calendar-client.types';
 import { MONTHS, DAYS_OF_WEEK } from './calendar-constants';
 
 interface CalendarRegistryProps {
@@ -178,16 +178,14 @@ export function CalendarRegistry({
     return workItems.filter((item) => {
       if (!item.due_date) return false;
 
-      if (selectedProjectId !== 'all' && item.project_id !== selectedProjectId) {
-        return false;
-      }
-      if (selectedAssigneeId !== 'all' && item.assignee_id !== selectedAssigneeId) {
-        return false;
-      }
-      if (selectedType !== 'all' && item.type !== selectedType) {
-        return false;
-      }
-      return true;
+      const matchesProject =
+        selectedProjectId === 'all' || item.project_id === selectedProjectId;
+      const matchesAssignee =
+        selectedAssigneeId === 'all' || item.assignee_id === selectedAssigneeId;
+      const matchesType =
+        selectedType === 'all' || item.type === selectedType;
+
+      return matchesProject && matchesAssignee && matchesType;
     });
   }, [workItems, selectedProjectId, selectedAssigneeId, selectedType]);
 
@@ -264,9 +262,10 @@ export function CalendarRegistry({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="task">Task</SelectItem>
-                  <SelectItem value="story">Story</SelectItem>
-                  <SelectItem value="bug">Bug</SelectItem>
+                  <SelectItem value={CalendarWorkItemTypes.Epic}>Epic</SelectItem>
+                  <SelectItem value={CalendarWorkItemTypes.Story}>Story</SelectItem>
+                  <SelectItem value={CalendarWorkItemTypes.Task}>Task</SelectItem>
+                  <SelectItem value={CalendarWorkItemTypes.Issue}>Issue</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -333,11 +332,11 @@ export function CalendarRegistry({
 
                   <div className="flex-1 flex flex-col gap-1 overflow-y-auto max-h-20 scrollbar-thin">
                     {dayItems.map((item) => {
-                      const isBug = item.type.toLowerCase() === 'bug';
-                      const isStory = item.type.toLowerCase() === 'story';
+                      const isIssue = item.type === CalendarWorkItemTypes.Issue;
+                      const isStory = item.type === CalendarWorkItemTypes.Story;
 
                       let itemIcon = <CheckSquare className="h-3 w-3 shrink-0" />;
-                      if (isBug) {
+                      if (isIssue) {
                         itemIcon = <AlertCircle className="h-3 w-3 shrink-0" />;
                       } else if (isStory) {
                         itemIcon = <BookOpen className="h-3 w-3 shrink-0" />;
@@ -354,9 +353,9 @@ export function CalendarRegistry({
                           className={cn(
                             "flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-medium transition-all duration-150 border",
                             "hover:translate-x-0.5 hover:shadow-xs",
-                            isBug && "bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-400 hover:bg-red-500/20",
+                            isIssue && "bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-400 hover:bg-red-500/20",
                             isStory && "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20",
-                            !isBug && !isStory && "bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-400 hover:bg-blue-500/20"
+                            !isIssue && !isStory && "bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-400 hover:bg-blue-500/20"
                           )}
                           title={`${toNameCase(item.type)} - ${item.title}`}
                         >

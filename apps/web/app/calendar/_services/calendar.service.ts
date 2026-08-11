@@ -1,5 +1,5 @@
 import { createCalendarService } from './calendar.service.base';
 
-const service = createCalendarService();
+const calendarService = createCalendarService();
 
-export const getCalendarConfig = service.getCalendarConfig;
+export const getCalendarConfig = calendarService.getCalendarConfig;
