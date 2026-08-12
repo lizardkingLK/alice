@@ -745,7 +745,9 @@ function GithubSettingsCard({ project }: GithubSettingsCardProps) {
   const initialRepoName = project.github_repo ? project.github_repo.split('/')[1] ?? '' : '';
 
   const [isEditingGithub, setIsEditingGithub] = useState(!project.github_repo);
-  // useState stores a value and update the UI when that value changes
+// useState is a React Hook used to store and update component state.
+// It returns the current value and a function to update that value.
+// When the state changes, React re-renders the component.
   const [githubOwner, setGithubOwner] = useState(initialOwner);
   const [githubRepoName, setGithubRepoName] = useState(initialRepoName);
   const [githubToken, setGithubToken] = useState(project.github_token || '');
