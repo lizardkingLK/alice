@@ -112,6 +112,8 @@ describe('ProjectsService backend tests', () => {
         jira_email: null,
         jira_token: null,
         jira_project_key: null,
+        github_repo: null,
+        github_token: null,
       };
 
       const result = await service.createProject('user-manager', input);
@@ -136,6 +138,8 @@ describe('ProjectsService backend tests', () => {
         jira_email: null,
         jira_token: null,
         jira_project_key: null,
+        github_repo: null,
+        github_token: null,
       };
 
       await expect(
@@ -161,6 +165,8 @@ describe('ProjectsService backend tests', () => {
         jira_email: null,
         jira_token: null,
         jira_project_key: null,
+        github_repo: null,
+        github_token: null,
       };
 
       await expect(

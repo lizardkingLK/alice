@@ -23,6 +23,8 @@ export type ProjectRow = {
   jira_email: string | null;
   jira_token: string | null;
   jira_project_key: string | null;
+  github_repo: string | null;
+  github_token: string | null;
 };
 
 export type ProjectRowWithOwner = ProjectRow & {

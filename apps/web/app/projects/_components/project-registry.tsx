@@ -455,7 +455,7 @@ export function ProjectRegistry({
           <div
             className={cn(
               'animate-in fade-in zoom-in-95 no-scrollbar max-h-[calc(100vh-2rem)] w-full overflow-y-auto transition-all duration-300',
-              isAddWide ? 'max-w-4xl' : 'max-w-lg'
+              isAddWide ? 'max-w-2xl' : 'max-w-xl'
             )}
           >
             <ProjectForm
@@ -479,7 +479,7 @@ export function ProjectRegistry({
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
           <div
             className={cn(
-              'animate-in fade-in zoom-in-95 no-scrollbar max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto duration-200'
+              'animate-in fade-in zoom-in-95 no-scrollbar max-h-[calc(100vh-2rem)] w-full max-w-xl overflow-y-auto duration-200'
             )}
           >
             <ProjectForm

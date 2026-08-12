@@ -429,6 +429,8 @@ projectsRouter.post(
         jira_email: parsed.data.jira_email ?? null,
         jira_token: parsed.data.jira_token ?? null,
         jira_project_key: parsed.data.jira_project_key ?? null,
+        github_repo: parsed.data.github_repo ?? null,
+        github_token: parsed.data.github_token ?? null,
       });
       res.status(201).json({ project: withoutJiraToken(project) });
     } catch (error) {
