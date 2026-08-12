@@ -152,7 +152,7 @@ function Step1BasicDetails({
   users,
   isEditMode,
   getTodayDateString,
-}: Step1Props) {
+}: Readonly<Step1Props>) {
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-left-2 duration-300">
       <div className="grid gap-4 sm:grid-cols-2">
@@ -306,7 +306,7 @@ function Step2JiraIntegration({
   jiraTestMessage,
   jiraTestError,
   previewIssues,
-}: Step2Props) {
+}: Readonly<Step2Props>) {
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-left-2 duration-300">
       <div className="flex items-center space-x-2 rounded-lg border border-border bg-muted/20 p-4">
@@ -436,7 +436,7 @@ function Step3GitHubIntegration({
   setGithubRepoName,
   githubToken,
   setGithubToken,
-}: Step3Props) {
+}: Readonly<Step3Props>) {
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-left-2 duration-300">
       <div className="flex items-center space-x-2 rounded-lg border border-border bg-muted/20 p-4">
