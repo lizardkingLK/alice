@@ -233,6 +233,8 @@ export class ChatService {
       jira_email: null,
       jira_token: null,
       jira_project_key: null,
+      github_repo: null,
+      github_token: null,
     });
     const result = { id: project.id, name: project.name, key: project.key };
     toolActionsPerformed.push({ type: 'create_project', entity: result });

@@ -741,8 +741,15 @@ interface GithubSettingsCardProps {
 
 function GithubSettingsCard({ project }: GithubSettingsCardProps) {
   const router = useRouter();
+  const initialOwner = project.github_repo ? project.github_repo.split('/')[0] ?? '' : '';
+  const initialRepoName = project.github_repo ? project.github_repo.split('/')[1] ?? '' : '';
+
   const [isEditingGithub, setIsEditingGithub] = useState(!project.github_repo);
-  const [githubRepo, setGithubRepo] = useState(project.github_repo || '');
+// useState is a React Hook used to store and update component state.
+// It returns the current value and a function to update that value.
+// When the state changes, React re-renders the component.
+  const [githubOwner, setGithubOwner] = useState(initialOwner);
+  const [githubRepoName, setGithubRepoName] = useState(initialRepoName);
   const [githubToken, setGithubToken] = useState(project.github_token || '');
   const [isSavingGithub, setIsSavingGithub] = useState(false);
   const [githubMessage, setGithubMessage] = useState<string | null>(null);
@@ -755,10 +762,15 @@ function GithubSettingsCard({ project }: GithubSettingsCardProps) {
     setIsGithubError(false);
 
     try {
+      //trim used to remove unnecessary spaces at the beginning and end.
+      const repoPath = (githubOwner.trim() && githubRepoName.trim())
+        ? `${githubOwner.trim()}/${githubRepoName.trim()}`
+        : null;
+
       await apiFetch(`/api/projects/${project.id}`, {
         method: 'PUT',
         body: JSON.stringify({
-          github_repo: githubRepo.trim() || null,
+          github_repo: repoPath,
           github_token: githubToken.trim() || null,
           expectedUpdatedAt: project.updated_at,
         }),
@@ -801,35 +813,48 @@ function GithubSettingsCard({ project }: GithubSettingsCardProps) {
           </div>
         )}
 
-        {isEditingGithub ? (
+         {isEditingGithub ? (
           <form onSubmit={handleSaveGithub} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="githubRepo" className="text-xs font-semibold">
-                  GitHub Repository (owner/repo)
+                <Label htmlFor="githubOwner" className="text-xs font-semibold">
+                  GitHub Owner / Organization
                 </Label>
                 <Input
-                  id="githubRepo"
-                  value={githubRepo}
-                  onChange={(e) => setGithubRepo(e.target.value)}
-                  placeholder="e.g. facebook/react"
+                  id="githubOwner"
+                  value={githubOwner}
+                  onChange={(e) => setGithubOwner(e.target.value)}
+                  placeholder="e.g. facebook"
                   className="bg-background/50 h-9 text-sm"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="githubToken" className="text-xs font-semibold">
-                  Personal Access Token (optional)
+                <Label htmlFor="githubRepoName" className="text-xs font-semibold">
+                  GitHub Repository Name
                 </Label>
                 <Input
-                  id="githubToken"
-                  type="password"
-                  value={githubToken}
-                  onChange={(e) => setGithubToken(e.target.value)}
-                  placeholder="e.g. ghp_xxxxxxxxxxxx"
+                  id="githubRepoName"
+                  value={githubRepoName}
+                  onChange={(e) => setGithubRepoName(e.target.value)}
+                  placeholder="e.g. react"
                   className="bg-background/50 h-9 text-sm"
+                  required
                 />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="githubToken" className="text-xs font-semibold">
+                Personal Access Token (optional)
+              </Label>
+              <Input
+                id="githubToken"
+                type="password"
+                value={githubToken}
+                onChange={(e) => setGithubToken(e.target.value)}
+                placeholder="e.g. ghp_xxxxxxxxxxxx"
+                className="bg-background/50 h-9 text-sm"
+              />
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
@@ -839,7 +864,9 @@ function GithubSettingsCard({ project }: GithubSettingsCardProps) {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    setGithubRepo(project.github_repo || '');
+                    const parts = (project.github_repo || '').split('/');
+                    setGithubOwner(parts[0] ?? '');
+                    setGithubRepoName(parts[1] ?? '');
                     setGithubToken(project.github_token || '');
                     setIsEditingGithub(false);
                     setGithubMessage(null);
