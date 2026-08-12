@@ -745,6 +745,7 @@ function GithubSettingsCard({ project }: GithubSettingsCardProps) {
   const initialRepoName = project.github_repo ? project.github_repo.split('/')[1] ?? '' : '';
 
   const [isEditingGithub, setIsEditingGithub] = useState(!project.github_repo);
+  // useState stores a value and update the UI when that value changes
   const [githubOwner, setGithubOwner] = useState(initialOwner);
   const [githubRepoName, setGithubRepoName] = useState(initialRepoName);
   const [githubToken, setGithubToken] = useState(project.github_token || '');
@@ -759,6 +760,7 @@ function GithubSettingsCard({ project }: GithubSettingsCardProps) {
     setIsGithubError(false);
 
     try {
+      //trim used to remove unnecessary spaces at the beginning and end.
       const repoPath = (githubOwner.trim() && githubRepoName.trim())
         ? `${githubOwner.trim()}/${githubRepoName.trim()}`
         : null;
