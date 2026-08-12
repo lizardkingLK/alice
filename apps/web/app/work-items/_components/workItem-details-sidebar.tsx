@@ -58,15 +58,40 @@ import {
   Cloud,
   PencilIcon,
   Settings,
+  Plus,
+  Trash,
+  Copy,
+  Check,
+  ExternalLink,
+  Loader2,
 } from '@repo/ui/lib/icons';
 import { WorkItemTimeTracking } from '@/app/work-items/_components/work-item-time-tracking';
 import { cn } from '@repo/ui/lib/utils';
 import {
   useState,
+  useEffect,
+  useCallback,
   type Dispatch,
   type ReactNode,
   type SetStateAction,
 } from 'react';
+import {
+  getLinkedPRs,
+  linkPR,
+  unlinkPR,
+  type LinkedGithubPR,
+  type GithubCommit,
+} from '@/app/work-items/_services/workItem.service.client';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@repo/ui/components/ui/dialog';
+import { Input } from '@repo/ui/components/ui/input';
+import { toast } from '@repo/ui/components/ui/sonner';
 
 function StatusDropdown({
   workItemId,
@@ -453,36 +478,7 @@ export default function WorkItemSidebar({
         onOpenChange={setDevelopmentOpen}
         collapsedHint="Branches, PRs, builds, releases…"
       >
-        {/* Mock until GitHub / GitLab / Bitbucket integration */}
-        <div className="py-2.5">
-          <ul className="space-y-2 text-sm">
-            <li className="flex items-center gap-2">
-              <GitBranch className="text-muted-foreground size-3.5" />
-              <span>1 branch</span>
-            </li>
-            <li className="flex items-center justify-between gap-2">
-              <span className="inline-flex items-center gap-2">
-                <GitCommit className="text-muted-foreground size-3.5" />
-                <span>1 commit</span>
-              </span>
-              <span className="text-muted-foreground text-xs">yesterday</span>
-            </li>
-            <li className="flex items-center justify-between gap-2">
-              <span className="inline-flex items-center gap-2">
-                <GitPullRequest className="text-muted-foreground size-3.5" />
-                <span>1 pull request</span>
-              </span>
-              <Badge variant="secondary">OPEN</Badge>
-            </li>
-            <li className="flex items-center justify-between gap-2">
-              <span className="inline-flex items-center gap-2">
-                <Rocket className="text-muted-foreground size-3.5" />
-                <span>1 build</span>
-              </span>
-              <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
-            </li>
-          </ul>
-        </div>
+        <DevelopmentSection workItem={workItem} readOnly={readOnly} />
 
         <DetailRow label="Releases">
           <div className="space-y-2 text-sm">
@@ -494,6 +490,7 @@ export default function WorkItemSidebar({
               <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
             </div>
             <Button
+              type="button"
               variant="link"
               size="sm"
               className="h-auto cursor-pointer px-0"
@@ -501,6 +498,7 @@ export default function WorkItemSidebar({
               + Add feature flag
             </Button>
             <Button
+              type="button"
               variant="link"
               size="sm"
               className="text-muted-foreground h-auto cursor-pointer px-0"
@@ -568,5 +566,440 @@ export default function WorkItemSidebar({
         />
       ) : null}
     </aside>
+  );
+}
+
+
+
+function getPrStatusColors(status: string) {
+  if (status === 'merged') {
+    return 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20';
+  }
+  if (status === 'closed') {
+    return 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20';
+  }
+  return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+}
+
+/* eslint-disable no-unused-vars */
+interface BranchesRowProps {
+  branches: string[];
+  branchesExpanded: boolean;
+  setBranchesExpanded: (_expanded: boolean) => void;
+  copiedBranchId: string | null;
+  copyToClipboard: (_text: string, _id: string) => void;
+}
+/* eslint-enable no-unused-vars */
+
+function BranchesRow({
+  branches,
+  branchesExpanded,
+  setBranchesExpanded,
+  copiedBranchId,
+  copyToClipboard,
+}: Readonly<BranchesRowProps>) {
+  const branchCount = branches.length;
+  return (
+    <li className="space-y-2">
+      <button
+        type="button"
+        onClick={() => setBranchesExpanded(!branchesExpanded)}
+        className="flex w-full items-center justify-between gap-2 text-left hover:text-primary transition-colors cursor-pointer"
+      >
+        <span className="inline-flex items-center gap-2">
+          <GitBranch className="text-muted-foreground size-3.5 shrink-0" />
+          <span>{branchCount} {branchCount === 1 ? 'branch' : 'branches'}</span>
+        </span>
+        <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform shrink-0", branchesExpanded && "rotate-180")} />
+      </button>
+      {branchesExpanded && (
+        <div className="pl-5.5 space-y-2 pt-0.5">
+          {branches.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No branches linked. Link a pull request to sync branches.</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {branches.map((b) => (
+                <li key={b} className="flex items-center justify-between gap-2 text-xs bg-muted/40 rounded px-2.5 py-1">
+                  <span className="font-mono truncate">{b}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyToClipboard(b, b);
+                    }}
+                    className="text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+                  >
+                    {copiedBranchId === b ? (
+                      <Check className="h-3 w-3 text-emerald-500" />
+                    ) : (
+                      <Copy className="h-3 w-3" />
+                    )}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </li>
+  );
+}
+
+/* eslint-disable no-unused-vars */
+interface CommitsRowProps {
+  commits: (GithubCommit & { prId: string; prNumber: number })[];
+  commitsExpanded: boolean;
+  setCommitsExpanded: (_expanded: boolean) => void;
+}
+/* eslint-enable no-unused-vars */
+
+function CommitsRow({
+  commits,
+  commitsExpanded,
+  setCommitsExpanded,
+}: Readonly<CommitsRowProps>) {
+  const commitCount = commits.length;
+  return (
+    <li className="space-y-2">
+      <button
+        type="button"
+        onClick={() => setCommitsExpanded(!commitsExpanded)}
+        className="flex w-full items-center justify-between gap-2 text-left hover:text-primary transition-colors cursor-pointer"
+      >
+        <span className="inline-flex items-center gap-2">
+          <GitCommit className="text-muted-foreground size-3.5 shrink-0" />
+          <span>{commitCount} {commitCount === 1 ? 'commit' : 'commits'}</span>
+        </span>
+        <span className="inline-flex items-center gap-1.5 text-muted-foreground text-xs shrink-0">
+          <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", commitsExpanded && "rotate-180")} />
+        </span>
+      </button>
+      {commitsExpanded && (
+        <div className="pl-5.5 space-y-2 pt-0.5 max-h-48 overflow-y-auto custom-scrollbar">
+          {commits.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No commits found.</p>
+          ) : (
+            <ul className="space-y-2 pl-2.5 border-l">
+              {commits.map((c) => (
+                <li key={c.sha} className="text-[11px] leading-tight space-y-0.5 font-sans">
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span className="font-semibold truncate">{c.author}</span>
+                    <span className="font-mono text-[9px] shrink-0 bg-muted/60 px-1 rounded">{c.sha}</span>
+                  </div>
+                  <p className="text-foreground font-medium line-clamp-1">{c.message}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </li>
+  );
+}
+
+/* eslint-disable no-unused-vars */
+interface PRsRowProps {
+  prs: LinkedGithubPR[];
+  prsExpanded: boolean;
+  setPrsExpanded: (_expanded: boolean) => void;
+  readOnly: boolean;
+  onUnlink: (_prId: string) => void;
+  onOpenLinkDialog: () => void;
+}
+/* eslint-enable no-unused-vars */
+
+function PRsRow({
+  prs,
+  prsExpanded,
+  setPrsExpanded,
+  readOnly,
+  onUnlink,
+  onOpenLinkDialog,
+}: Readonly<PRsRowProps>) {
+  const prCount = prs.length;
+  return (
+    <li className="space-y-2">
+      <button
+        type="button"
+        onClick={() => setPrsExpanded(!prsExpanded)}
+        className="flex w-full items-center justify-between gap-2 text-left hover:text-primary transition-colors cursor-pointer"
+      >
+        <span className="inline-flex items-center gap-2">
+          <GitPullRequest className="text-muted-foreground size-3.5 shrink-0" />
+          <span>{prCount} {prCount === 1 ? 'pull request' : 'pull requests'}</span>
+        </span>
+        <span className="inline-flex items-center gap-1.5 shrink-0">
+          <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform", prsExpanded && "rotate-180")} />
+        </span>
+      </button>
+      {prsExpanded && (
+        <div className="pl-5.5 space-y-2.5 pt-0.5">
+          {prs.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No pull requests linked.</p>
+          ) : (
+            <ul className="space-y-2">
+              {prs.map((pr) => {
+                return (
+                  <li key={pr.id} className="border rounded-md p-2 space-y-1 bg-muted/10">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-semibold text-muted-foreground">
+                        #{pr.pr_number}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant="outline" className={cn("text-[8px] px-1 py-0 uppercase font-bold", getPrStatusColors(pr.status))}>
+                          {pr.status || 'open'}
+                        </Badge>
+                        {!readOnly && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onUnlink(pr.id);
+                            }}
+                            className="text-muted-foreground hover:text-destructive shrink-0 cursor-pointer"
+                            title="Unlink PR"
+                          >
+                            <Trash className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <a
+                        href={pr.pr_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-medium hover:text-primary transition-colors line-clamp-1 inline-flex items-center gap-1 group"
+                      >
+                        {pr.pr_title}
+                        <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                      </a>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          {!readOnly && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onOpenLinkDialog}
+              className="w-full text-xs py-1 h-7"
+            >
+              <Plus className="mr-1 h-3 w-3" />
+              Link Pull Request
+            </Button>
+          )}
+        </div>
+      )}
+    </li>
+  );
+}
+
+function DevelopmentSection({
+  workItem,
+  readOnly = false,
+}: Readonly<{
+  workItem: DbWorkItem;
+  readOnly?: boolean;
+}>) {
+  const [githubLinks, setGithubLinks] = useState<LinkedGithubPR[]>([]);
+  const [githubRepo, setGithubRepo] = useState<string | null>(null);
+  const [loadingGithub, setLoadingGithub] = useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [prUrlInput, setPrUrlInput] = useState('');
+  const [isLinking, setIsLinking] = useState(false);
+  const [copiedBranchId, setCopiedBranchId] = useState<string | null>(null);
+  const [branchesExpanded, setBranchesExpanded] = useState(false);
+  const [commitsExpanded, setCommitsExpanded] = useState(false);
+  const [prsExpanded, setPrsExpanded] = useState(false);
+
+  const fetchGithubLinks = useCallback(async () => {
+    setLoadingGithub(true);
+    try {
+      const data = await getLinkedPRs(workItem.id);
+      setGithubLinks(data.prs);
+      setGithubRepo(data.githubRepo);
+    } catch (e) {
+      console.error('Failed to load GitHub PRs:', e);
+    } finally {
+      setLoadingGithub(false);
+    }
+  }, [workItem.id]);
+
+  useEffect(() => {
+    fetchGithubLinks();
+  }, [fetchGithubLinks]);
+
+  const handleLinkPRSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!prUrlInput.trim()) return;
+
+    setIsLinking(true);
+    try {
+      await linkPR(workItem.id, prUrlInput.trim());
+      setPrUrlInput('');
+      setLinkDialogOpen(false);
+      fetchGithubLinks();
+    } catch (err) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : 'Failed to link pull request');
+    } finally {
+      setIsLinking(false);
+    }
+  };
+
+  const handleUnlinkPR = async (prId: string) => {
+    try {
+      await unlinkPR(workItem.id, prId);
+      fetchGithubLinks();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to unlink pull request');
+    }
+  };
+
+  const copyToClipboard = async (text: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedBranchId(id);
+      setTimeout(() => setCopiedBranchId(null), 2000);
+      toast.success('Branch name copied to clipboard');
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  };
+
+  const branches = Array.from(
+    new Set(githubLinks.map((l) => l.branch_name).filter(Boolean) as string[])
+  );
+
+  const allCommits = githubLinks.flatMap((pr) =>
+    (pr.commits || []).map((c) => ({
+      ...c,
+      prId: pr.id,
+      prNumber: pr.pr_number,
+    }))
+  );
+
+  let content: React.ReactNode;
+
+  if (loadingGithub) {
+    content = (
+      <div className="flex justify-center py-4">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  } else if (!githubRepo) {
+    content = (
+      <div className="flex flex-col items-center justify-center border border-dashed rounded-md bg-muted/5 p-4 text-center space-y-2.5 my-1">
+        <p className="text-xs text-muted-foreground font-medium">
+          GitHub Integration is not configured for this project.
+        </p>
+        {!readOnly && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              window.location.href = `/projects/${workItem.project_id}?tab=settings`;
+            }}
+            className="text-xs h-8 px-4 cursor-pointer"
+          >
+            Configure the GitHub Repository
+          </Button>
+        )}
+      </div>
+    );
+  } else {
+    content = (
+      <ul className="space-y-3.5 text-sm">
+        <BranchesRow
+          branches={branches}
+          branchesExpanded={branchesExpanded}
+          setBranchesExpanded={setBranchesExpanded}
+          copiedBranchId={copiedBranchId}
+          copyToClipboard={copyToClipboard}
+        />
+        <CommitsRow
+          commits={allCommits}
+          commitsExpanded={commitsExpanded}
+          setCommitsExpanded={setCommitsExpanded}
+        />
+        <PRsRow
+          prs={githubLinks}
+          prsExpanded={prsExpanded}
+          setPrsExpanded={setPrsExpanded}
+          readOnly={readOnly}
+          onUnlink={handleUnlinkPR}
+          onOpenLinkDialog={() => setLinkDialogOpen(true)}
+        />
+        {/* Builds Row */}
+        <li className="flex items-center justify-between gap-2 text-sm">
+          <span className="inline-flex items-center gap-2">
+            <Rocket className="text-muted-foreground size-3.5 shrink-0" />
+            <span>{githubLinks.length > 0 ? '1 build' : '0 builds'}</span>
+          </span>
+          {githubLinks.length > 0 ? (
+            <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          ) : (
+            <span className="text-muted-foreground text-xs shrink-0">—</span>
+          )}
+        </li>
+      </ul>
+    );
+  }
+
+  return (
+    <div className="py-2.5">
+      {content}
+
+      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <form onSubmit={handleLinkPRSubmit}>
+            <DialogHeader>
+              <DialogTitle>Link GitHub Pull Request</DialogTitle>
+              <DialogDescription>
+                Paste the GitHub Pull Request URL to link it to this work item.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Input
+                  placeholder="https://github.com/owner/repo/pull/123"
+                  value={prUrlInput}
+                  onChange={(e) => setPrUrlInput(e.target.value)}
+                  disabled={isLinking}
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setPrUrlInput('');
+                  setLinkDialogOpen(false);
+                }}
+                disabled={isLinking}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isLinking}>
+                {isLinking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Link Pull Request
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

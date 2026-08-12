@@ -35,11 +35,15 @@ export type CreateProjectInput = Omit<
   | 'jira_email'
   | 'jira_token'
   | 'jira_project_key'
+  | 'github_repo'
+  | 'github_token'
 > & {
   jira_url?: string | null;
   jira_email?: string | null;
   jira_token?: string | null;
   jira_project_key?: string | null;
+  github_repo?: string | null;
+  github_token?: string | null;
 };
 
 export type UpdateProjectInput = Partial<CreateProjectInput>;

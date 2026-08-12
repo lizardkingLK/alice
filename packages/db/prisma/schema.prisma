@@ -146,6 +146,8 @@ model projects {
   jira_email        String?
   jira_token        String?
   jira_project_key  String?
+  github_repo       String?
+  github_token      String?
 
   owner           users             @relation("ProjectOwner", fields: [owner_id], references: [id])
   created_by_user users?            @relation("ProjectCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
@@ -270,9 +272,10 @@ model work_items {
   reporter        users?        @relation("WorkItemReporter", fields: [reporter_id], references: [id], onDelete: SetNull)
   created_by_user users?        @relation("WorkItemCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
   updated_by_user users?        @relation("WorkItemUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
-  comments        comments[]
-  attachments     attachments[]
-  worklogs        work_item_worklogs[]
+  comments             comments[]
+  attachments          attachments[]
+  worklogs             work_item_worklogs[]
+  github_pull_requests github_pull_requests[]
 
   @@unique([project_id, jira_issue_key])
 }
@@ -442,3 +445,22 @@ model saved_view_shares {
   @@unique([view_id, user_id])
   @@index([user_id, status])
 }
+
+model github_pull_requests {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  work_item_id   String     @db.Uuid
+  pr_number      Int
+  repo_owner     String
+  repo_name      String
+  pr_title       String
+  pr_url         String
+  branch_name    String?
+  status         String?    
+  created_at     DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime   @updatedAt @db.Timestamptz(6)
+
+  work_item      work_items @relation(fields: [work_item_id], references: [id], onDelete: Cascade)
+
+  @@unique([work_item_id, repo_owner, repo_name, pr_number])
+}
+

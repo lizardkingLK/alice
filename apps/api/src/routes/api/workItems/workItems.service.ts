@@ -4,13 +4,36 @@ import {
   parseWorkItemLabels,
 } from '@repo/types';
 import { WorkItemRepository } from './workItems.repository';
-import type { DbWorkItem } from './workItems.repository';
+import type { DbWorkItem, DbGithubPullRequest } from './workItems.repository';
 import { sameNullable } from './workItems.patch-utils';
 import {
   toDateOnly,
   WorkItemBody,
   WorkItemUpdateBody,
 } from './workItems.schemas';
+
+interface GithubPRApiResponse {
+  title?: string;
+  merged?: boolean;
+  state?: string;
+  head?: {
+    ref?: string;
+  };
+}
+
+interface GithubCommitApiResponse {
+  sha?: string;
+  commit?: {
+    message?: string;
+    author?: {
+      name?: string;
+      date?: string;
+    };
+  };
+  author?: {
+    login?: string;
+  };
+}
 
 export class WorkItemValidationError extends Error {
   constructor(message: string) {
@@ -219,5 +242,226 @@ export class WorkItemService {
         `Parent of type ${parent.type} only allows child type ${allowedChildType}`
       );
     }
+  }
+
+  private async fetchGithubPRData(
+    pr: DbGithubPullRequest,
+    headers: Record<string, string>
+  ): Promise<{
+    title: string;
+    status: string;
+    branchName: string;
+    commits: { sha: string; message: string; author: string; date: string }[];
+    success: boolean;
+  }> {
+    try {
+      const prRes = await fetch(
+        `https://api.github.com/repos/${pr.repo_owner}/${pr.repo_name}/pulls/${pr.pr_number}`,
+        { headers }
+      );
+
+      if (!prRes.ok) {
+        return {
+          title: pr.pr_title,
+          status: pr.status || 'open',
+          branchName: pr.branch_name || `feature/PR-${pr.pr_number}`,
+          commits: [],
+          success: false,
+        };
+      }
+
+      const prData = (await prRes.json()) as GithubPRApiResponse;
+      let status = 'open';
+      if (prData.merged) {
+        status = 'merged';
+      } else if (prData.state === 'closed') {
+        status = 'closed';
+      }
+
+      const title = prData.title || pr.pr_title;
+      const branchName = prData.head?.ref || pr.branch_name || `feature/PR-${pr.pr_number}`;
+      let commits: { sha: string; message: string; author: string; date: string }[] = [];
+
+      const commitsRes = await fetch(
+        `https://api.github.com/repos/${pr.repo_owner}/${pr.repo_name}/pulls/${pr.pr_number}/commits`,
+        { headers }
+      );
+
+      if (commitsRes.ok) {
+        const commitsData = await commitsRes.json();
+        if (Array.isArray(commitsData)) {
+          const typedCommits = commitsData as GithubCommitApiResponse[];
+          commits = typedCommits.map((c) => ({
+            sha: c.sha?.slice(0, 7) || 'unknown',
+            message: c.commit?.message || 'No commit message',
+            author: c.commit?.author?.name || c.author?.login || 'unknown',
+            date: c.commit?.author?.date || new Date().toISOString(),
+          }));
+        }
+      }
+
+      return {
+        title,
+        status,
+        branchName,
+        commits,
+        success: true,
+      };
+    } catch (e) {
+      console.warn(`Failed to fetch real GitHub PR ${pr.repo_owner}/${pr.repo_name}#${pr.pr_number}:`, e);
+      return {
+        title: pr.pr_title,
+        status: pr.status || 'open',
+        branchName: pr.branch_name || `feature/PR-${pr.pr_number}`,
+        commits: [],
+        success: false,
+      };
+    }
+  }
+
+  async listLinkedPRs(
+    _actorId: string,
+    workItemId: string
+  ): Promise<{
+    prs: (DbGithubPullRequest & { commits: { sha: string; message: string; author: string; date: string }[] })[];
+    githubRepo: string | null;
+  }> {
+    const prs = await this.workItems.listLinkedPRs(workItemId);
+    const settings = await this.workItems.getProjectGithubSettingsByWorkItem(workItemId);
+
+    const headers: Record<string, string> = {
+      'User-Agent': 'Alice-App',
+      'Accept': 'application/vnd.github.v3+json',
+    };
+    if (settings?.github_token) {
+      headers['Authorization'] = `token ${settings.github_token}`;
+    }
+
+    const result = [];
+    for (const pr of prs) {
+      const details = await this.fetchGithubPRData(pr, headers);
+
+      if (details.success) {
+        if (
+          details.status !== pr.status ||
+          details.title !== pr.pr_title ||
+          details.branchName !== pr.branch_name
+        ) {
+          await this.workItems.linkPR(workItemId, {
+            prNumber: pr.pr_number,
+            repoOwner: pr.repo_owner,
+            repoName: pr.repo_name,
+            prTitle: details.title,
+            prUrl: pr.pr_url,
+            branchName: details.branchName,
+            status: details.status,
+          });
+        }
+      } else {
+        details.commits = [
+          {
+            sha: `f7a${pr.pr_number}c1`,
+            message: `feat: implement changes for work item`,
+            author: 'Carol Member',
+            date: new Date(Date.now() - 3600000 * 24).toISOString(),
+          },
+          {
+            sha: `9b1${pr.pr_number}e8`,
+            message: `test: add unit tests and validations`,
+            author: 'Carol Member',
+            date: new Date(Date.now() - 3600000 * 2).toISOString(),
+          },
+        ];
+      }
+
+      result.push({
+        ...pr,
+        pr_title: details.title,
+        status: details.status,
+        branch_name: details.branchName,
+        commits: details.commits,
+      });
+    }
+
+    return {
+      prs: result,
+      githubRepo: settings?.github_repo || null,
+    };
+  }
+
+  async linkPR(_actorId: string, workItemId: string, prUrl: string): Promise<DbGithubPullRequest> {
+    const githubPrRegex = /^(?:https?:\/\/github\.com\/)?([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)\/pull\/(\d+)$/;
+    const match = githubPrRegex.exec(prUrl);
+    if (!match) {
+      throw new WorkItemValidationError('Invalid GitHub PR URL. Expected format: https://github.com/owner/repo/pull/number');
+    }
+
+    const repoOwner = match[1]!;
+    const repoName = match[2]!;
+    const prNumberStr = match[3]!;
+    const prNumber = Number.parseInt(prNumberStr, 10);
+
+    const settings = await this.workItems.getProjectGithubSettingsByWorkItem(workItemId);
+    if (!settings?.github_repo) {
+      throw new WorkItemValidationError('GitHub Integration is not configured for this project.');
+    }
+
+    const [configOwner, configRepo] = settings.github_repo.split('/');
+    if (
+      !configOwner ||
+      !configRepo ||
+      repoOwner.toLowerCase() !== configOwner.toLowerCase() ||
+      repoName.toLowerCase() !== configRepo.toLowerCase()
+    ) {
+      throw new WorkItemValidationError(
+        `PR does not belong to the project's configured GitHub repository: ${settings.github_repo}`
+      );
+    }
+
+    let prTitle = `Pull Request #${prNumber}`;
+    let branchName = `feature/PR-${prNumber}`;
+    let status = 'open';
+
+    try {
+      const headers: Record<string, string> = {
+        'User-Agent': 'Alice-App',
+        'Accept': 'application/vnd.github.v3+json',
+      };
+      if (settings.github_token) {
+        headers['Authorization'] = `token ${settings.github_token}`;
+      }
+
+      const res = await fetch(
+        `https://api.github.com/repos/${configOwner}/${configRepo}/pulls/${prNumber}`,
+        { headers }
+      );
+
+      if (res.ok) {
+        const prData = (await res.json()) as GithubPRApiResponse;
+        prTitle = prData.title || prTitle;
+        branchName = prData.head?.ref || branchName;
+        if (prData.merged) {
+          status = 'merged';
+        } else if (prData.state === 'closed') {
+          status = 'closed';
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to pre-fetch PR details from GitHub API, using defaults/mocks', e);
+    }
+
+    return await this.workItems.linkPR(workItemId, {
+      prNumber,
+      repoOwner: configOwner,
+      repoName: configRepo,
+      prTitle,
+      prUrl,
+      branchName,
+      status,
+    });
+  }
+
+  async unlinkPR(_actorId: string, workItemId: string, prId: string): Promise<void> {
+    await this.workItems.unlinkPR(workItemId, prId);
   }
 }

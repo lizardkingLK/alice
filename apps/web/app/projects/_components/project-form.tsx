@@ -219,6 +219,8 @@ export function ProjectForm({
         workflow_config: null,
         jira_url: jiraUrl.trim() || null,
         jira_project_key: jiraProjectKey.toUpperCase().trim() || null,
+        github_repo: null,
+        github_token: null,
       };
 
       let result;
@@ -236,6 +238,8 @@ export function ProjectForm({
           workflow_config: projectData.workflow_config,
           jira_url: projectData.jira_url,
           jira_project_key: projectData.jira_project_key,
+          github_repo: null,
+          github_token: null,
         };
         result = await runLockedMutationOrThrow({
           mutate: () =>

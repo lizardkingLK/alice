@@ -43,6 +43,27 @@ vi.mock('@/app/work-items/_components/work-item-time-tracking', () => ({
   WorkItemTimeTracking: () => <div data-testid="time-tracking" />,
 }));
 
+vi.mock('@/app/work-items/_services/workItem.service.client', () => ({
+  getLinkedPRs: vi.fn().mockResolvedValue({
+    prs: [
+      {
+        id: 'pr-1',
+        pr_number: 1,
+        pr_title: 'PR Title',
+        pr_url: 'https://github.com/owner/repo/pull/1',
+        status: 'open',
+        branch_name: 'feature/branch',
+        commits: [
+          { sha: 'sha-1', message: 'commit msg', author: 'Carol', date: 'yesterday' }
+        ]
+      }
+    ],
+    githubRepo: 'owner/repo'
+  }),
+  linkPR: vi.fn(),
+  unlinkPR: vi.fn(),
+}));
+
 type RenderSidebarOptions = {
   readonly workItem?: DbWorkItem;
   readonly childStatuses?: readonly WorkItemStatus[];
@@ -129,7 +150,7 @@ describe('WorkItemSidebar Done gate', () => {
 });
 
 describe('WorkItemSidebar sections', () => {
-  it('renders Development between Details and More fields with mock criteria', () => {
+  it('renders Development between Details and More fields with mock criteria', async () => {
     // Arrange
     renderSidebar();
 
@@ -147,7 +168,7 @@ describe('WorkItemSidebar sections', () => {
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
 
-    expect(screen.getByText('1 branch')).toBeInTheDocument();
+    expect(await screen.findByText('1 branch')).toBeInTheDocument();
     expect(screen.getByText('1 pull request')).toBeInTheDocument();
     expect(screen.getByText('Production')).toBeInTheDocument();
   });

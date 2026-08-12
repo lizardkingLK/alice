@@ -42,6 +42,56 @@ export type Database = {
         };
         Relationships: [];
       };
+      github_pull_requests: {
+        Row: {
+          id: string;
+          work_item_id: string;
+          pr_number: number;
+          repo_owner: string;
+          repo_name: string;
+          pr_title: string;
+          pr_url: string;
+          branch_name: string | null;
+          status: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          work_item_id: string;
+          pr_number: number;
+          repo_owner: string;
+          repo_name: string;
+          pr_title: string;
+          pr_url: string;
+          branch_name?: string | null;
+          status?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          work_item_id?: string;
+          pr_number?: number;
+          repo_owner?: string;
+          repo_name?: string;
+          pr_title?: string;
+          pr_url?: string;
+          branch_name?: string | null;
+          status?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "github_pull_requests_work_item_id_fkey";
+            columns: ["work_item_id"];
+            isOneToOne: false;
+            referencedRelation: "work_items";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       chat_conversations: {
         Row: {
           created_at: string;
@@ -446,6 +496,8 @@ export type Database = {
           jira_project_key: string | null;
           jira_token: string | null;
           jira_url: string | null;
+          github_repo: string | null;
+          github_token: string | null;
           key: string;
           name: string;
           owner_id: string;
@@ -467,6 +519,8 @@ export type Database = {
           jira_project_key?: string | null;
           jira_token?: string | null;
           jira_url?: string | null;
+          github_repo?: string | null;
+          github_token?: string | null;
           key: string;
           name: string;
           owner_id: string;
@@ -488,6 +542,8 @@ export type Database = {
           jira_project_key?: string | null;
           jira_token?: string | null;
           jira_url?: string | null;
+          github_repo?: string | null;
+          github_token?: string | null;
           key?: string;
           name?: string;
           owner_id?: string;
