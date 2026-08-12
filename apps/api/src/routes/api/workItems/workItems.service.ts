@@ -384,17 +384,33 @@ export class WorkItemService {
   }
 
   async linkPR(_actorId: string, workItemId: string, prUrl: string): Promise<DbGithubPullRequest> {
-
     const githubPrRegex = /^(?:https?:\/\/github\.com\/)?([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)\/pull\/(\d+)$/;
     const match = githubPrRegex.exec(prUrl);
     if (!match) {
       throw new WorkItemValidationError('Invalid GitHub PR URL. Expected format: https://github.com/owner/repo/pull/number');
     }
 
-    const [, repoOwner, repoName, prNumberStr] = match;
-    const prNumber = Number.parseInt(prNumberStr!, 10);
+    const repoOwner = match[1]!;
+    const repoName = match[2]!;
+    const prNumberStr = match[3]!;
+    const prNumber = Number.parseInt(prNumberStr, 10);
 
     const settings = await this.workItems.getProjectGithubSettingsByWorkItem(workItemId);
+    if (!settings?.github_repo) {
+      throw new WorkItemValidationError('GitHub Integration is not configured for this project.');
+    }
+
+    const [configOwner, configRepo] = settings.github_repo.split('/');
+    if (
+      !configOwner ||
+      !configRepo ||
+      repoOwner.toLowerCase() !== configOwner.toLowerCase() ||
+      repoName.toLowerCase() !== configRepo.toLowerCase()
+    ) {
+      throw new WorkItemValidationError(
+        `PR does not belong to the project's configured GitHub repository: ${settings.github_repo}`
+      );
+    }
 
     let prTitle = `Pull Request #${prNumber}`;
     let branchName = `feature/PR-${prNumber}`;
@@ -405,12 +421,12 @@ export class WorkItemService {
         'User-Agent': 'Alice-App',
         'Accept': 'application/vnd.github.v3+json',
       };
-      if (settings?.github_token) {
+      if (settings.github_token) {
         headers['Authorization'] = `token ${settings.github_token}`;
       }
 
       const res = await fetch(
-        `https://api.github.com/repos/${repoOwner}/${repoName}/pulls/${prNumber}`,
+        `https://api.github.com/repos/${configOwner}/${configRepo}/pulls/${prNumber}`,
         { headers }
       );
 
@@ -430,8 +446,8 @@ export class WorkItemService {
 
     return await this.workItems.linkPR(workItemId, {
       prNumber,
-      repoOwner: repoOwner!,
-      repoName: repoName!,
+      repoOwner: configOwner,
+      repoName: configRepo,
       prTitle,
       prUrl,
       branchName,
