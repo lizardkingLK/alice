@@ -226,11 +226,11 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const prs = await workItemService.listLinkedPRs(
+        const result = await workItemService.listLinkedPRs(
           req.userId!,
           req.params.id!
         );
-        res.json({ prs });
+        res.json(result);
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Failed to get GitHub PRs';

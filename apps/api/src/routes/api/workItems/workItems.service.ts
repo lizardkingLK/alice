@@ -322,7 +322,10 @@ export class WorkItemService {
   async listLinkedPRs(
     _actorId: string,
     workItemId: string
-  ): Promise<(DbGithubPullRequest & { commits: { sha: string; message: string; author: string; date: string }[] })[]> {
+  ): Promise<{
+    prs: (DbGithubPullRequest & { commits: { sha: string; message: string; author: string; date: string }[] })[];
+    githubRepo: string | null;
+  }> {
     const prs = await this.workItems.listLinkedPRs(workItemId);
     const settings = await this.workItems.getProjectGithubSettingsByWorkItem(workItemId);
 
@@ -380,7 +383,10 @@ export class WorkItemService {
       });
     }
 
-    return result;
+    return {
+      prs: result,
+      githubRepo: settings?.github_repo || null,
+    };
   }
 
   async linkPR(_actorId: string, workItemId: string, prUrl: string): Promise<DbGithubPullRequest> {

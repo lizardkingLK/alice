@@ -810,6 +810,7 @@ function DevelopmentSection({
   readOnly?: boolean;
 }>) {
   const [githubLinks, setGithubLinks] = useState<LinkedGithubPR[]>([]);
+  const [githubRepo, setGithubRepo] = useState<string | null>(null);
   const [loadingGithub, setLoadingGithub] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [prUrlInput, setPrUrlInput] = useState('');
@@ -823,7 +824,8 @@ function DevelopmentSection({
     setLoadingGithub(true);
     try {
       const data = await getLinkedPRs(workItem.id);
-      setGithubLinks(data as LinkedGithubPR[]);
+      setGithubLinks(data.prs);
+      setGithubRepo(data.githubRepo);
     } catch (e) {
       console.error('Failed to load GitHub PRs:', e);
     } finally {
@@ -886,48 +888,77 @@ function DevelopmentSection({
     }))
   );
 
+  let content: React.ReactNode;
+
+  if (loadingGithub) {
+    content = (
+      <div className="flex justify-center py-4">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  } else if (!githubRepo) {
+    content = (
+      <div className="flex flex-col items-center justify-center border border-dashed rounded-md bg-muted/5 p-4 text-center space-y-2.5 my-1">
+        <p className="text-xs text-muted-foreground font-medium">
+          GitHub Integration is not configured for this project.
+        </p>
+        {!readOnly && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              window.location.href = `/projects/${workItem.project_id}?tab=settings`;
+            }}
+            className="text-xs h-8 px-4 cursor-pointer"
+          >
+            Configure the GitHub Repository
+          </Button>
+        )}
+      </div>
+    );
+  } else {
+    content = (
+      <ul className="space-y-3.5 text-sm">
+        <BranchesRow
+          branches={branches}
+          branchesExpanded={branchesExpanded}
+          setBranchesExpanded={setBranchesExpanded}
+          copiedBranchId={copiedBranchId}
+          copyToClipboard={copyToClipboard}
+        />
+        <CommitsRow
+          commits={allCommits}
+          commitsExpanded={commitsExpanded}
+          setCommitsExpanded={setCommitsExpanded}
+        />
+        <PRsRow
+          prs={githubLinks}
+          prsExpanded={prsExpanded}
+          setPrsExpanded={setPrsExpanded}
+          readOnly={readOnly}
+          onUnlink={handleUnlinkPR}
+          onOpenLinkDialog={() => setLinkDialogOpen(true)}
+        />
+        {/* Builds Row */}
+        <li className="flex items-center justify-between gap-2 text-sm">
+          <span className="inline-flex items-center gap-2">
+            <Rocket className="text-muted-foreground size-3.5 shrink-0" />
+            <span>{githubLinks.length > 0 ? '1 build' : '0 builds'}</span>
+          </span>
+          {githubLinks.length > 0 ? (
+            <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          ) : (
+            <span className="text-muted-foreground text-xs shrink-0">—</span>
+          )}
+        </li>
+      </ul>
+    );
+  }
+
   return (
     <div className="py-2.5">
-      {loadingGithub ? (
-        <div className="flex justify-center py-4">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </div>
-      ) : (
-        <ul className="space-y-3.5 text-sm">
-          <BranchesRow
-            branches={branches}
-            branchesExpanded={branchesExpanded}
-            setBranchesExpanded={setBranchesExpanded}
-            copiedBranchId={copiedBranchId}
-            copyToClipboard={copyToClipboard}
-          />
-          <CommitsRow
-            commits={allCommits}
-            commitsExpanded={commitsExpanded}
-            setCommitsExpanded={setCommitsExpanded}
-          />
-          <PRsRow
-            prs={githubLinks}
-            prsExpanded={prsExpanded}
-            setPrsExpanded={setPrsExpanded}
-            readOnly={readOnly}
-            onUnlink={handleUnlinkPR}
-            onOpenLinkDialog={() => setLinkDialogOpen(true)}
-          />
-          {/* Builds Row */}
-          <li className="flex items-center justify-between gap-2 text-sm">
-            <span className="inline-flex items-center gap-2">
-              <Rocket className="text-muted-foreground size-3.5 shrink-0" />
-              <span>{githubLinks.length > 0 ? '1 build' : '0 builds'}</span>
-            </span>
-            {githubLinks.length > 0 ? (
-              <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            ) : (
-              <span className="text-muted-foreground text-xs shrink-0">—</span>
-            )}
-          </li>
-        </ul>
-      )}
+      {content}
 
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
         <DialogContent className="sm:max-w-md">

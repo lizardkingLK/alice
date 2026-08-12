@@ -44,19 +44,22 @@ vi.mock('@/app/work-items/_components/work-item-time-tracking', () => ({
 }));
 
 vi.mock('@/app/work-items/_services/workItem.service.client', () => ({
-  getLinkedPRs: vi.fn().mockResolvedValue([
-    {
-      id: 'pr-1',
-      pr_number: 1,
-      pr_title: 'PR Title',
-      pr_url: 'https://github.com/owner/repo/pull/1',
-      status: 'open',
-      branch_name: 'feature/branch',
-      commits: [
-        { sha: 'sha-1', message: 'commit msg', author: 'Carol', date: 'yesterday' }
-      ]
-    }
-  ]),
+  getLinkedPRs: vi.fn().mockResolvedValue({
+    prs: [
+      {
+        id: 'pr-1',
+        pr_number: 1,
+        pr_title: 'PR Title',
+        pr_url: 'https://github.com/owner/repo/pull/1',
+        status: 'open',
+        branch_name: 'feature/branch',
+        commits: [
+          { sha: 'sha-1', message: 'commit msg', author: 'Carol', date: 'yesterday' }
+        ]
+      }
+    ],
+    githubRepo: 'owner/repo'
+  }),
   linkPR: vi.fn(),
   unlinkPR: vi.fn(),
 }));

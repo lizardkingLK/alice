@@ -145,9 +145,9 @@ export interface LinkedGithubPR {
   commits: GithubCommit[];
 }
 
-export async function getLinkedPRs(workItemId: string): Promise<LinkedGithubPR[]> {
-  const res = await apiFetch<{ prs: LinkedGithubPR[] }>(`${workItemsPath}/${workItemId}/github`);
-  return res.prs || [];
+export async function getLinkedPRs(workItemId: string): Promise<{ prs: LinkedGithubPR[]; githubRepo: string | null }> {
+  const res = await apiFetch<{ prs: LinkedGithubPR[]; githubRepo: string | null }>(`${workItemsPath}/${workItemId}/github`);
+  return { prs: res.prs || [], githubRepo: res.githubRepo || null };
 }
 
 export async function linkPR(workItemId: string, prUrl: string): Promise<LinkedGithubPR> {

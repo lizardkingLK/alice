@@ -760,6 +760,7 @@ function GithubSettingsCard({ project }: GithubSettingsCardProps) {
         body: JSON.stringify({
           github_repo: githubRepo.trim() || null,
           github_token: githubToken.trim() || null,
+          expectedUpdatedAt: project.updated_at,
         }),
       });
       setGithubMessage('GitHub integration settings saved successfully!');
