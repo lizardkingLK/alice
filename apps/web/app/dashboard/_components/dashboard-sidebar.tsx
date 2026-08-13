@@ -187,7 +187,7 @@ export function DashboardSidebar({
             isCollapsed && 'pointer-events-none max-w-0 opacity-0'
           )}
         >
-          Jira Teams
+          Alice
         </Link>
       </SidebarHeader>
 

@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-This document defines the development management flow and testing architecture for **Alice** (branded as **Jira Teams**). It outlines how features are specified, developed, linted, tested, and validated across the monorepo using **Vitest** for unit/component testing and **Cypress** for end-to-end integration testing.
+This document defines the development management flow and testing architecture for **Alice**. It outlines how features are specified, developed, linted, tested, and validated across the monorepo using **Vitest** for unit/component testing and **Cypress** for end-to-end integration testing.
 
 ---
 

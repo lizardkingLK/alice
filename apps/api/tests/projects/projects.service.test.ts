@@ -59,7 +59,10 @@ vi.mock('../../src/routes/api/projects/projects.repository', () => ({
   },
 }));
 
-import { CreateProjectInput, ProjectsService } from '../../src/routes/api/projects/projects.service';
+import {
+  CreateProjectInput,
+  ProjectsService,
+} from '../../src/routes/api/projects/projects.service';
 
 const mockProject = {
   id: 'project-1',
@@ -88,7 +91,10 @@ describe('ProjectsService backend tests', () => {
 
   function mockActorRole(role: 'admin' | 'manager' | 'member' | null) {
     if (!role) {
-      selectSingleMock.mockResolvedValue({ data: null, error: new Error('User not found') });
+      selectSingleMock.mockResolvedValue({
+        data: null,
+        error: new Error('User not found'),
+      });
     } else {
       selectSingleMock.mockResolvedValue({ data: { role }, error: null });
     }
@@ -142,9 +148,9 @@ describe('ProjectsService backend tests', () => {
         github_token: null,
       };
 
-      await expect(
-        service.createProject('user-member', input)
-      ).rejects.toThrow('Unauthorized. Only admins and managers can manage projects.');
+      await expect(service.createProject('user-member', input)).rejects.toThrow(
+        'Unauthorized. Only admins and managers can manage projects.'
+      );
 
       expect(createMock).not.toHaveBeenCalled();
     });
@@ -193,7 +199,12 @@ describe('ProjectsService backend tests', () => {
       );
 
       expect(findByKeyMock).toHaveBeenCalledWith('ALICE', 'project-1');
-      expect(updateMock).toHaveBeenCalledWith('project-1', input, 'user-manager', mockProject.updated_at);
+      expect(updateMock).toHaveBeenCalledWith(
+        'project-1',
+        input,
+        'user-manager',
+        mockProject.updated_at
+      );
       expect(result.name).toBe('Updated name');
     });
 
@@ -226,7 +237,9 @@ describe('ProjectsService backend tests', () => {
           { name: 'Updated' },
           mockProject.updated_at
         )
-      ).rejects.toThrow('Unauthorized. Only admins and managers can manage projects.');
+      ).rejects.toThrow(
+        'Unauthorized. Only admins and managers can manage projects.'
+      );
 
       expect(updateMock).not.toHaveBeenCalled();
     });
@@ -264,8 +277,14 @@ describe('ProjectsService backend tests', () => {
       mockActorRole('member');
 
       await expect(
-        service.softDeleteProject('user-member', 'project-1', mockProject.updated_at)
-      ).rejects.toThrow('Unauthorized. Only admins and managers can manage projects.');
+        service.softDeleteProject(
+          'user-member',
+          'project-1',
+          mockProject.updated_at
+        )
+      ).rejects.toThrow(
+        'Unauthorized. Only admins and managers can manage projects.'
+      );
 
       expect(updateMock).not.toHaveBeenCalled();
     });
@@ -303,8 +322,14 @@ describe('ProjectsService backend tests', () => {
       mockActorRole('member');
 
       await expect(
-        service.restoreProject('user-member', 'project-1', mockProject.updated_at)
-      ).rejects.toThrow('Unauthorized. Only admins and managers can manage projects.');
+        service.restoreProject(
+          'user-member',
+          'project-1',
+          mockProject.updated_at
+        )
+      ).rejects.toThrow(
+        'Unauthorized. Only admins and managers can manage projects.'
+      );
 
       expect(updateMock).not.toHaveBeenCalled();
     });
@@ -325,7 +350,9 @@ describe('ProjectsService backend tests', () => {
 
       await expect(
         service.hardDeleteProject('user-manager', 'project-1')
-      ).rejects.toThrow('Unauthorized. Only administrators can permanently delete projects.');
+      ).rejects.toThrow(
+        'Unauthorized. Only administrators can permanently delete projects.'
+      );
 
       expect(deleteMock).not.toHaveBeenCalled();
     });

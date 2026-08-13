@@ -11,7 +11,7 @@ export const DOCS_ROBOTS: NonNullable<Metadata['robots']> = {
 };
 
 const DOCS_SHELL_DESCRIPTION =
-  'Product and engineering documentation for Jira Teams.';
+  'Product and engineering documentation for Alice.';
 
 type DocsPageFrameProps = {
   readonly children: ReactNode;

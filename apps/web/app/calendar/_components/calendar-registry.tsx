@@ -11,7 +11,13 @@ import {
   AlertCircle,
 } from '@repo/ui/lib/icons';
 import { Button } from '@repo/ui/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@repo/ui/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@repo/ui/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -25,7 +31,10 @@ import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.ser
 import type { User } from '@/app/users/_services/users.service';
 import { toNameCase } from '@repo/types';
 import { ALL_OPTION } from '@/app/_shared/values';
-import { type CalendarActionItem, CalendarWorkItemTypes } from './calendar-client.types';
+import {
+  type CalendarActionItem,
+  CalendarWorkItemTypes,
+} from './calendar-client.types';
 import { MONTHS, DAYS_OF_WEEK } from './calendar-constants';
 
 interface CalendarRegistryProps {
@@ -49,17 +58,20 @@ export function CalendarRegistry({
   users,
 }: Readonly<CalendarRegistryProps>) {
   const [currentDate, setCurrentDate] = useState(() => new Date());
-  const [selectedProjectId, setSelectedProjectId] = useState<string>(ALL_OPTION);
-  const [selectedAssigneeId, setSelectedAssigneeId] = useState<string>(ALL_OPTION);
+  const [selectedProjectId, setSelectedProjectId] =
+    useState<string>(ALL_OPTION);
+  const [selectedAssigneeId, setSelectedAssigneeId] =
+    useState<string>(ALL_OPTION);
   const [selectedType, setSelectedType] = useState<string>(ALL_OPTION);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
   const logAction = (action: CalendarActionItem) => {
-    const id = typeof crypto !== 'undefined' && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `action-${Date.now()}-${++actionCounter}`;
+    const id =
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `action-${Date.now()}-${++actionCounter}`;
     console.log('[Calendar Action Log]', {
       id,
       action,
@@ -71,7 +83,11 @@ export function CalendarRegistry({
     setSelectedProjectId(val);
     logAction({
       type: 'filter_project',
-      entity: { id: val, value: val, label: projects.find((p) => p.id === val)?.name ?? 'All Projects' },
+      entity: {
+        id: val,
+        value: val,
+        label: projects.find((p) => p.id === val)?.name ?? 'All Projects',
+      },
     });
   };
 
@@ -79,7 +95,11 @@ export function CalendarRegistry({
     setSelectedAssigneeId(val);
     logAction({
       type: 'filter_assignee',
-      entity: { id: val, value: val, label: users.find((u) => u.id === val)?.name ?? 'All Assignees' },
+      entity: {
+        id: val,
+        value: val,
+        label: users.find((u) => u.id === val)?.name ?? 'All Assignees',
+      },
     });
   };
 
@@ -87,7 +107,11 @@ export function CalendarRegistry({
     setSelectedType(val);
     logAction({
       type: 'filter_type',
-      entity: { id: val, value: val, label: val === ALL_OPTION ? 'All Types' : toNameCase(val) },
+      entity: {
+        id: val,
+        value: val,
+        label: val === ALL_OPTION ? 'All Types' : toNameCase(val),
+      },
     });
   };
 
@@ -176,18 +200,22 @@ export function CalendarRegistry({
 
   // Filtered work items
   const filteredWorkItems = useMemo(() => {
-    return workItems.filter((item): item is DbWorkItem & { due_date: string } => {
-      if (!item.due_date) return false;
+    return workItems.filter(
+      (item): item is DbWorkItem & { due_date: string } => {
+        if (!item.due_date) return false;
 
-      const matchesProject =
-        selectedProjectId === ALL_OPTION || item.project_id === selectedProjectId;
-      const matchesAssignee =
-        selectedAssigneeId === ALL_OPTION || item.assignee_id === selectedAssigneeId;
-      const matchesType =
-        selectedType === ALL_OPTION || item.type === selectedType;
+        const matchesProject =
+          selectedProjectId === ALL_OPTION ||
+          item.project_id === selectedProjectId;
+        const matchesAssignee =
+          selectedAssigneeId === ALL_OPTION ||
+          item.assignee_id === selectedAssigneeId;
+        const matchesType =
+          selectedType === ALL_OPTION || item.type === selectedType;
 
-      return matchesProject && matchesAssignee && matchesType;
-    });
+        return matchesProject && matchesAssignee && matchesType;
+      }
+    );
   }, [workItems, selectedProjectId, selectedAssigneeId, selectedType]);
 
   // Group work items by due date string ("YYYY-MM-DD")
@@ -195,7 +223,7 @@ export function CalendarRegistry({
     const map: Record<string, DbWorkItem[]> = {};
     filteredWorkItems.forEach((item) => {
       if (item.due_date === null) {
-        return; 
+        return;
       }
       const dateStr = item.due_date.split('T')[0] ?? '';
       if (!dateStr) {
@@ -212,22 +240,28 @@ export function CalendarRegistry({
   return (
     <div className="space-y-6 p-6">
       {/* Filters & Header Bar */}
-      <Card className="shadow-md border-border bg-card">
-        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 pb-4 border-b">
+      <Card className="border-border bg-card shadow-md">
+        <CardHeader className="flex flex-col space-y-4 border-b pb-4 md:flex-row md:items-center md:justify-between md:space-y-0">
           <div>
             <div className="flex items-center gap-2">
-              <CalendarIcon className="h-6 w-6 text-primary" />
-              <CardTitle className="text-2xl font-bold tracking-tight">Calendar</CardTitle>
+              <CalendarIcon className="text-primary h-6 w-6" />
+              <CardTitle className="text-2xl font-bold tracking-tight">
+                Calendar
+              </CardTitle>
             </div>
             <CardDescription className="text-muted-foreground mt-1">
-              Visualize schedules and track upcoming milestones for tasks, stories, and bugs.
+              Visualize schedules and track upcoming milestones for tasks,
+              stories, and bugs.
             </CardDescription>
           </div>
 
-           <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {/* Project Filter */}
             <div className="w-40">
-              <Select value={selectedProjectId} onValueChange={handleProjectChange}>
+              <Select
+                value={selectedProjectId}
+                onValueChange={handleProjectChange}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Filter Project" />
                 </SelectTrigger>
@@ -244,7 +278,10 @@ export function CalendarRegistry({
 
             {/* Assignee Filter */}
             <div className="w-40">
-              <Select value={selectedAssigneeId} onValueChange={handleAssigneeChange}>
+              <Select
+                value={selectedAssigneeId}
+                onValueChange={handleAssigneeChange}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Filter Assignee" />
                 </SelectTrigger>
@@ -267,10 +304,18 @@ export function CalendarRegistry({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={ALL_OPTION}>All Types</SelectItem>
-                  <SelectItem value={CalendarWorkItemTypes.Epic}>Epic</SelectItem>
-                  <SelectItem value={CalendarWorkItemTypes.Story}>Story</SelectItem>
-                  <SelectItem value={CalendarWorkItemTypes.Task}>Task</SelectItem>
-                  <SelectItem value={CalendarWorkItemTypes.Issue}>Issue</SelectItem>
+                  <SelectItem value={CalendarWorkItemTypes.Epic}>
+                    Epic
+                  </SelectItem>
+                  <SelectItem value={CalendarWorkItemTypes.Story}>
+                    Story
+                  </SelectItem>
+                  <SelectItem value={CalendarWorkItemTypes.Task}>
+                    Task
+                  </SelectItem>
+                  <SelectItem value={CalendarWorkItemTypes.Issue}>
+                    Issue
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -279,32 +324,47 @@ export function CalendarRegistry({
 
         <CardContent className="pt-6">
           {/* Calendar Controller */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={handlePrevMonth} className="h-9 w-9">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handlePrevMonth}
+                className="h-9 w-9"
+              >
                 <ChevronLeft className="h-4 w-4" />
                 <span className="sr-only">Previous Month</span>
               </Button>
-              <h2 className="text-xl font-semibold min-w-35 text-center">
+              <h2 className="min-w-35 text-center text-xl font-semibold">
                 {MONTHS[month]} {year}
               </h2>
-              <Button variant="outline" size="icon" onClick={handleNextMonth} className="h-9 w-9">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleNextMonth}
+                className="h-9 w-9"
+              >
                 <ChevronRight className="h-4 w-4" />
                 <span className="sr-only">Next Month</span>
               </Button>
             </div>
 
-            <Button variant="outline" size="sm" onClick={handleToday} className="px-3 py-1 text-sm font-medium">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleToday}
+              className="px-3 py-1 text-sm font-medium"
+            >
               Today
             </Button>
           </div>
 
           {/* Days of Week Header */}
-          <div className="grid grid-cols-7 gap-px bg-border rounded-t-lg overflow-hidden border-x border-t">
+          <div className="bg-border grid grid-cols-7 gap-px overflow-hidden rounded-t-lg border-x border-t">
             {DAYS_OF_WEEK.map((day) => (
               <div
                 key={day}
-                className="bg-muted py-2 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                className="bg-muted text-muted-foreground py-2 text-center text-xs font-semibold tracking-wider uppercase"
               >
                 {day}
               </div>
@@ -312,35 +372,40 @@ export function CalendarRegistry({
           </div>
 
           {/* Days Grid */}
-          <div className="grid grid-cols-7 gap-px bg-border border rounded-b-lg overflow-hidden">
+          <div className="bg-border grid grid-cols-7 gap-px overflow-hidden rounded-b-lg border">
             {calendarDays.map((dayCell) => {
               const dayItems = itemsByDate[dayCell.dateString] || [];
               return (
                 <div
                   key={dayCell.dateString}
                   className={cn(
-                    "min-h-30 bg-card p-2 flex flex-col justify-between transition-colors duration-150 group hover:bg-accent/10",
-                    !dayCell.isCurrentMonth && "bg-muted/30 text-muted-foreground/50"
+                    'bg-card group hover:bg-accent/10 flex min-h-30 flex-col justify-between p-2 transition-colors duration-150',
+                    !dayCell.isCurrentMonth &&
+                      'bg-muted/30 text-muted-foreground/50'
                   )}
                 >
-                  <div className="flex justify-between items-center mb-1">
+                  <div className="mb-1 flex items-center justify-between">
                     <span
                       className={cn(
-                        "text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full select-none",
-                        dayCell.isToday && "bg-primary text-primary-foreground font-extrabold shadow-sm",
-                        !dayCell.isToday && "text-foreground/80 group-hover:text-foreground"
+                        'flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold select-none',
+                        dayCell.isToday &&
+                          'bg-primary text-primary-foreground font-extrabold shadow-sm',
+                        !dayCell.isToday &&
+                          'text-foreground/80 group-hover:text-foreground'
                       )}
                     >
                       {dayCell.dayNum}
                     </span>
                   </div>
 
-                  <div className="flex-1 flex flex-col gap-1 overflow-y-auto max-h-20 scrollbar-thin">
+                  <div className="flex max-h-20 flex-1 scrollbar-thin flex-col gap-1 overflow-y-auto">
                     {dayItems.map((item) => {
                       const isIssue = item.type === CalendarWorkItemTypes.Issue;
                       const isStory = item.type === CalendarWorkItemTypes.Story;
 
-                      let itemIcon = <CheckSquare className="h-3 w-3 shrink-0" />;
+                      let itemIcon = (
+                        <CheckSquare className="h-3 w-3 shrink-0" />
+                      );
                       if (isIssue) {
                         itemIcon = <AlertCircle className="h-3 w-3 shrink-0" />;
                       } else if (isStory) {
@@ -351,16 +416,22 @@ export function CalendarRegistry({
                         <Link
                           key={item.id}
                           href={`/calendar/${item.id}`}
-                          onClick={() => logAction({
-                            type: 'view_item_details',
-                            entity: { id: item.id, label: item.title },
-                          })}
+                          onClick={() =>
+                            logAction({
+                              type: 'view_item_details',
+                              entity: { id: item.id, label: item.title },
+                            })
+                          }
                           className={cn(
-                            "flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-medium transition-all duration-150 border",
-                            "hover:translate-x-0.5 hover:shadow-xs",
-                            isIssue && "bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-400 hover:bg-red-500/20",
-                            isStory && "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20",
-                            !isIssue && !isStory && "bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-400 hover:bg-blue-500/20"
+                            'flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] font-medium transition-all duration-150',
+                            'hover:translate-x-0.5 hover:shadow-xs',
+                            isIssue &&
+                              'border-red-500/30 bg-red-500/10 text-red-700 hover:bg-red-500/20 dark:text-red-400',
+                            isStory &&
+                              'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-400',
+                            !isIssue &&
+                              !isStory &&
+                              'border-blue-500/30 bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 dark:text-blue-400'
                           )}
                           title={`${toNameCase(item.type)} - ${item.title}`}
                         >

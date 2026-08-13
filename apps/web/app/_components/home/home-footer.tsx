@@ -33,6 +33,7 @@ const footerColumns = [
   {
     title: 'Company',
     links: [
+      { href: '/#pricing', label: 'Pricing' },
       { href: '/about', label: 'About' },
       { href: '/contact', label: 'Contact' },
     ],
@@ -44,10 +45,13 @@ const APP_ONLY_COLUMN_TITLES = new Set(['Workspace', 'People']);
 type HomeFooterProps = {
   /** Show Workspace / People links (allowlisted signed-in users). */
   showAppLinks?: boolean;
+  /** `snap` fills a home scroll panel; `inline` sizes to content for other pages. */
+  variant?: 'snap' | 'inline';
 };
 
 export function HomeFooter({
   showAppLinks = false,
+  variant = 'snap',
 }: Readonly<HomeFooterProps>) {
   const columns = showAppLinks
     ? footerColumns
@@ -56,8 +60,18 @@ export function HomeFooter({
       );
 
   return (
-    <footer className="border-border/60 bg-muted/20 flex min-h-dvh snap-start snap-always flex-col border-t px-6 pt-12 pb-8">
-      <div className="mx-auto mt-auto w-full max-w-6xl">
+    <footer
+      className={cn(
+        'border-border/60 bg-muted/20 flex flex-col border-t px-6 pt-12 pb-8',
+        variant === 'snap' ? 'h-dvh shrink-0 snap-start' : 'min-h-0'
+      )}
+    >
+      <div
+        className={cn(
+          'mx-auto w-full max-w-6xl',
+          variant === 'snap' ? 'mt-auto' : null
+        )}
+      >
         <div
           className={cn(
             'grid gap-10 sm:grid-cols-2 lg:gap-8',
@@ -67,7 +81,7 @@ export function HomeFooter({
           )}
         >
           <div className="max-w-xs">
-            <p className="text-base font-semibold tracking-tight">Jira Teams</p>
+            <p className="text-base font-semibold tracking-tight">Alice</p>
             <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
               A focused workspace for boards, backlogs, and delivery.
             </p>
@@ -97,7 +111,7 @@ export function HomeFooter({
         <Separator className="mt-10" />
 
         <div className="text-muted-foreground mt-6 flex flex-col gap-2 text-xs sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} Jira Teams</p>
+          <p>© {new Date().getFullYear()} Alice</p>
           <p>Built for planning, delivery, and team visibility.</p>
         </div>
       </div>

@@ -1,15 +1,15 @@
 # Technical Requirements Document (TRD)
 
-## Jira Teams — Project Management Platform
+## Alice — Project Management Platform
 
-**Project:** Alice (Jira Teams)  
+**Project:** Alice  
 **Version:** 1.5  
 **Last Updated:** July 20, 2026  
 **Status:** In development (Living)
 
 ## 1. Purpose
 
-This document describes the technical architecture and implementation of Alice (branded as Jira Teams) based on the current codebase. The API is described in `apps/api/package.json` as a Jira clone.
+This document describes the technical architecture and implementation of Alice based on the current codebase. The API is described in `apps/api/package.json` as a Jira clone.
 
 ## 2. System Overview
 
@@ -325,7 +325,7 @@ One Supabase project serves both development and production. Migrations must be 
 
 **Routes**
 
-- `/` — home page ("Jira Teams") with Sign In / Sign Up controls
+- `/` — home page ("Alice") with Sign In / Sign Up controls
 - `/about`, `/contact` — public marketing pages
 - `/login` — email/password sign-in (Server Action)
 - `/signup` — registration (Server Action)

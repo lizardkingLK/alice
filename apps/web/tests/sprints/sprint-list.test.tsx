@@ -1,15 +1,9 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-  within,
-} from '@testing-library/react';
-import { ReactNode } from 'react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { SprintList } from '@/app/sprints/_components/sprint-list';
 import { SprintsWorkspace } from '@/app/sprints/_components/sprints-workspace';
 import { Sprint } from '@/app/sprints/_services/sprints.service';
+import { assertDebouncedSearchRedirect } from '../helpers/assert-debounced-search';
 
 const mockPush = vi.fn();
 const mockRefresh = vi.fn();
@@ -50,42 +44,10 @@ vi.mock('@/app/sprints/_components/sprint-form', () => ({
   ),
 }));
 
-// Mock Dropdown Menu to avoid testing Radix internals in happy-dom environment
-vi.mock('@repo/ui/components/ui/dropdown-menu', () => {
-  return {
-    DropdownMenu: ({ children }: { children: ReactNode }) => (
-      <div data-testid="dropdown-menu">{children}</div>
-    ),
-    DropdownMenuTrigger: ({ children }: { children: ReactNode }) => (
-      <div data-testid="dropdown-menu-trigger">{children}</div>
-    ),
-    DropdownMenuContent: ({ children }: { children: ReactNode }) => (
-      <div data-testid="dropdown-menu-content">{children}</div>
-    ),
-    DropdownMenuItem: ({
-      children,
-      onClick,
-      ...props
-    }: {
-      children: ReactNode;
-      onClick?: () => void;
-      [key: string]: unknown;
-    }) => {
-      // Extract main status name from children when children is an array [status, indicator]
-      const text = Array.isArray(children) ? children[0] : children;
-      return (
-        <button
-          type="button"
-          data-testid={`dropdown-item-${text}`}
-          onClick={onClick}
-          {...props}
-        >
-          {children}
-        </button>
-      );
-    },
-  };
-});
+vi.mock(
+  '@repo/ui/components/ui/dropdown-menu',
+  () => import('../mocks/dropdown-menu')
+);
 
 const mockSprints: Sprint[] = [
   {
@@ -249,15 +211,14 @@ describe('SprintList Component', () => {
       />
     );
 
-    const searchInput = screen.getByPlaceholderText(/Search sprints/i);
-    fireEvent.change(searchInput, { target: { value: 'Alpha' } });
+    await assertDebouncedSearchRedirect({
+      searchInput: screen.getByPlaceholderText(/Search sprints/i),
+      value: 'Alpha',
+      expectedPath: '/sprints?search=Alpha&page=1',
+      mockPush,
+    });
 
-    await waitFor(
-      () => {
-        expect(mockPush).toHaveBeenCalledWith('/sprints?search=Alpha&page=1');
-      },
-      { timeout: 500 }
-    );
+    expect(mockPush).toHaveBeenCalledWith('/sprints?search=Alpha&page=1');
   });
 
   it('opens sprint form on Add Sprint button click', () => {

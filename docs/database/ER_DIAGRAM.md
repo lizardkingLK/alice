@@ -4,7 +4,7 @@
 
 | Field        | Value                                                                     |
 | ------------ | ------------------------------------------------------------------------- |
-| Project      | Alice (1BT Project Management System / Jira Teams)                        |
+| Project      | Alice                                                                     |
 | Source       | `1BT-JIRA Task Breakdown with Team Assignments.xlsx` (MVP 1–4)            |
 | Status       | Implemented — `init_jira_domain` + audit migrations + project JSON config |
 | Last updated | 2026-07-31                                                                |

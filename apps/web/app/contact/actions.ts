@@ -8,13 +8,18 @@ export async function submitContact(formData: FormData) {
   const emailEntry = formData.get('email');
   const nameEntry = formData.get('name');
   const titleEntry = formData.get('title');
+  const subjectOtherEntry = formData.get('subjectOther');
   const messageEntry = formData.get('message');
+
+  const titleFromSelect =
+    typeof titleEntry === 'string' ? titleEntry.trim() : '';
+  const titleFromOther =
+    typeof subjectOtherEntry === 'string' ? subjectOtherEntry.trim() : '';
 
   const input = {
     email: typeof emailEntry === 'string' ? emailEntry : '',
     name: typeof nameEntry === 'string' && nameEntry ? nameEntry : undefined,
-    title:
-      typeof titleEntry === 'string' && titleEntry ? titleEntry : undefined,
+    title: titleFromSelect || titleFromOther || undefined,
     message: typeof messageEntry === 'string' ? messageEntry : '',
   };
 

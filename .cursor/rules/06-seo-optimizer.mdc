@@ -76,7 +76,7 @@ export const metadata: Metadata = {
 
 ## Page metadata conventions
 
-- Use the root `title.template` (`%s | Jira Teams`) — set only the segment in child pages: `title: 'About'`.
+- Use the root `title.template` (`%s | Alice`) — set only the segment in child pages: `title: 'About'`.
 - Public pages may add `description`, `openGraph`, and `twitter` overrides when the default root description is insufficient.
 - Do not set `robots: { index: true }` on forbidden routes.
 - Do not use `noindex` on public marketing pages unless there is an explicit product reason.

@@ -20,7 +20,7 @@ const defaultWorkItem: CommentWorkItem = {
   type: 'Story',
   project: {
     id: 'proj-1',
-    name: 'Jira Teams Core',
+    name: 'Alice Core',
     key: 'ALICE',
   },
 };
