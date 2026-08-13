@@ -248,7 +248,7 @@ export function SprintReportView({
       </div>
 
       {/* Stats Grid (existing 3 cards) */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="sprint-report-stats-grid grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card className="border-border/60 bg-card/50 card backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="space-y-1">
@@ -377,7 +377,7 @@ export function SprintReportView({
       />
 
       {/* Goal & Achievements overview */}
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="sprint-report-goals-grid grid gap-6 md:grid-cols-3">
         <Card className="border-border/60 bg-card/50 card md:col-span-1">
           <CardHeader>
             <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
