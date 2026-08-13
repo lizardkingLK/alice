@@ -10,10 +10,15 @@ import { userFactory } from '../factories/user.factory';
 import { projectFactory } from '../factories/project.factory';
 import { workItemFactory } from '../factories/workItem.factory';
 import { pickComboboxOption } from '../helpers/pick-combobox-option';
+import { getProjectMembers } from '@/app/projects/_services/projects.service';
 
 vi.mock('@/app/work-items/_services/workItem.service.client', () => ({
   createWorkItem: vi.fn(),
   updateWorkItem: vi.fn(),
+}));
+
+vi.mock('@/app/projects/_services/projects.service', () => ({
+  getProjectMembers: vi.fn(),
 }));
 
 vi.mock('@/app/_shared/utility', async (importOriginal) => {
@@ -48,11 +53,27 @@ vi.mock('@repo/ui/components/ui/dropdown-menu', () => ({
 }));
 
 describe('WorkItemForm', () => {
-  const projects = projectFactory.buildList(2);
   const projectMembers = userFactory.buildList(2);
+  const projects = projectFactory.buildList(2).map((proj, idx) => ({
+    ...proj,
+    owner: {
+      id: projectMembers[idx]!.id,
+      name: projectMembers[idx]!.name,
+      email: projectMembers[idx]!.email,
+    },
+  }));
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getProjectMembers).mockResolvedValue(
+      projectMembers.map((member) => ({
+        project_id: projects[0]!.id,
+        user_id: member.id,
+        status: 'active',
+        created_at: new Date().toISOString(),
+        user: member,
+      }))
+    );
   });
 
   it('renders fields and lists projects and members in selects', async () => {
