@@ -1,11 +1,20 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { submitContact } from './actions';
+import { ContactSubjectField } from './_components/contact-subject-field';
 import { FormAlertMessage } from '@/components/form-alert-message';
 import { getDbUser, getUser } from '@/lib/auth';
+import { MarketingShell } from '@/app/_components/home/marketing-shell';
+import { appTitle } from '@/app/_shared/values';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { Textarea } from '@repo/ui/components/ui/textarea';
+
+export const metadata: Metadata = {
+  title: 'Contact',
+  description: `Reach the ${appTitle} team for access requests, questions, or feedback.`,
+};
 
 type ContactPageProps = {
   searchParams: Promise<{ sent?: string; error?: string }>;
@@ -26,83 +35,97 @@ export default async function ContactPage({
     alertMessage = error;
     alertIsError = true;
   } else if (sent) {
-    alertMessage = "Thanks — we've sent your message to the admins.";
+    alertMessage = "Thanks — we've sent your message to the team.";
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
-      <div className="border-border w-full max-w-xl space-y-6 rounded-xl border p-6">
-        <div className="space-y-1 text-center">
-          <h1 className="text-2xl font-semibold">Contact admin</h1>
-          <p className="text-muted-foreground text-sm">
-            Send an access request or message. We&apos;ll notify admins in-app.
-          </p>
-        </div>
-
-        <form action={submitContact} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                defaultValue={defaultEmail}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="name">Name (optional)</Label>
-              <Input
-                id="name"
-                name="name"
-                type="text"
-                autoComplete="name"
-                defaultValue={defaultName}
-              />
-            </div>
+    <MarketingShell>
+      <div className="flex flex-col">
+        <section className="flex min-h-[42vh] flex-col justify-center px-6 py-16 sm:min-h-[48vh] sm:py-24">
+          <div className="mx-auto w-full max-w-xl">
+            <p className="text-primary text-sm font-medium tracking-wide">
+              Contact
+            </p>
+            <h1 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl">
+              Talk to the team
+            </h1>
+            <p className="text-muted-foreground mt-5 text-base leading-relaxed text-pretty sm:text-lg">
+              Ask about access, share feedback, or get help getting started.
+              Messages are delivered to admins in-app.
+            </p>
           </div>
+        </section>
 
-          <div className="space-y-2">
-            <Label htmlFor="title">Subject (optional)</Label>
-            <Input
-              id="title"
-              name="title"
-              type="text"
-              placeholder="e.g. Access request"
-              defaultValue=""
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="message">Message</Label>
-            <Textarea
-              id="message"
-              name="message"
-              required
-              placeholder="Tell us who you are and what access you need."
-              rows={6}
-            />
-          </div>
-
-          <FormAlertMessage message={alertMessage} isError={alertIsError} />
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <Button type="submit" className="w-full cursor-pointer sm:w-auto">
-              Send message
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              className="w-full cursor-pointer sm:w-auto"
+        <section className="border-border/60 flex min-h-[58vh] flex-col justify-center border-t px-6 py-16 sm:min-h-[62vh] sm:py-24">
+          <div className="mx-auto w-full max-w-xl">
+            <form
+              action={submitContact}
+              className="border-border/70 bg-card/50 space-y-8 rounded-2xl border p-6 sm:p-8"
             >
-              <Link href="/">Back to home</Link>
-            </Button>
+              <div className="grid gap-8 sm:grid-cols-2 sm:gap-6">
+                <div className="space-y-3">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    defaultValue={defaultEmail}
+                    className="h-11"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <Label htmlFor="name">Name (optional)</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    type="text"
+                    autoComplete="name"
+                    defaultValue={defaultName}
+                    className="h-11"
+                  />
+                </div>
+              </div>
+
+              <ContactSubjectField />
+
+              <div className="space-y-3">
+                <Label htmlFor="message">Message</Label>
+                <Textarea
+                  id="message"
+                  name="message"
+                  required
+                  placeholder="Tell us how we can help."
+                  rows={10}
+                  className="min-h-40"
+                />
+              </div>
+
+              <FormAlertMessage message={alertMessage} isError={alertIsError} />
+
+              <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full cursor-pointer sm:w-auto"
+                >
+                  Send message
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="w-full cursor-pointer sm:w-auto"
+                >
+                  <Link href="/">Back to home</Link>
+                </Button>
+              </div>
+            </form>
           </div>
-        </form>
+        </section>
       </div>
-    </main>
+    </MarketingShell>
   );
 }

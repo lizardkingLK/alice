@@ -1,6 +1,6 @@
 # Authentication
 
-Living guide to how identity works in **Alice** (Jira Teams): email/password, Google OAuth, session handling, admin invites, password reset, and how emails relate across accounts.
+Living guide to how identity works in **Alice**: email/password, Google OAuth, session handling, admin invites, password reset, and how emails relate across accounts.
 
 | Field             | Value                  |
 | ----------------- | ---------------------- |

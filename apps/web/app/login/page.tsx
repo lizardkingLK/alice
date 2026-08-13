@@ -23,7 +23,7 @@ export default async function LoginPage({
         <div className="space-y-1 text-center">
           <h1 className="text-2xl font-semibold">Sign in</h1>
           <p className="text-muted-foreground text-sm">
-            Access your Jira Teams workspace
+            Access your Alice workspace
           </p>
         </div>
 

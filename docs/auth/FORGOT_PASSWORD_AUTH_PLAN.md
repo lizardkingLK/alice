@@ -2,7 +2,7 @@
 
 ## Document Metadata
 
-- Project: Alice (Jira Teams)
+- Project: Alice
 - Area: Web Authentication (`apps/web`)
 - Version: 0.1 (Draft)
 - Status: Plan — **as-built flows live in [AUTHENTICATION.md](./AUTHENTICATION.md) §7**

@@ -34,7 +34,7 @@ async function ChatPageData() {
 export default function ChatPage() {
   return (
     <DashboardShell
-      description="Chat with the Jira Teams AI assistant to create projects, sprints, and work items."
+      description="Chat with the Alice AI assistant to create projects, sprints, and work items."
       stickyHeader
       contentScrollable={false}
       contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"

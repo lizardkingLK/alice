@@ -26,7 +26,12 @@ describe('createProjectsService frontend tests', () => {
     const apiFetch = vi.fn().mockResolvedValue(response);
     const service = createProjectsService(apiFetch);
 
-    const result = await service.getProjectListPaginated(1, 10, 'active', 'test-query');
+    const result = await service.getProjectListPaginated(
+      1,
+      10,
+      'active',
+      'test-query'
+    );
 
     expect(apiFetch).toHaveBeenCalledWith(
       '/api/projects?page=1&limit=10&status=active&search=test-query'
@@ -65,7 +70,11 @@ describe('createProjectsService frontend tests', () => {
     const service = createProjectsService(apiFetch);
     const input = { name: 'Updated name' };
 
-    const result = await service.updateProject('proj-1', input, '2026-07-09T10:00:00Z');
+    const result = await service.updateProject(
+      'proj-1',
+      input,
+      '2026-07-09T10:00:00Z'
+    );
 
     expect(apiFetch).toHaveBeenCalledWith('/api/projects/proj-1', {
       method: 'PUT',
@@ -85,7 +94,10 @@ describe('createProjectsService frontend tests', () => {
     const apiFetch = vi.fn().mockResolvedValue({ project });
     const service = createProjectsService(apiFetch);
 
-    const result = await service.softDeleteProject('proj-1', '2026-07-09T10:00:00Z');
+    const result = await service.softDeleteProject(
+      'proj-1',
+      '2026-07-09T10:00:00Z'
+    );
 
     expect(apiFetch).toHaveBeenCalledWith('/api/projects/proj-1/soft-delete', {
       method: 'PATCH',
@@ -97,11 +109,17 @@ describe('createProjectsService frontend tests', () => {
   });
 
   it('restores project via PATCH', async () => {
-    const project = projectFactory.build({ status: 'active', deleted_at: null });
+    const project = projectFactory.build({
+      status: 'active',
+      deleted_at: null,
+    });
     const apiFetch = vi.fn().mockResolvedValue({ project });
     const service = createProjectsService(apiFetch);
 
-    const result = await service.restoreProject('proj-1', '2026-07-09T10:00:00Z');
+    const result = await service.restoreProject(
+      'proj-1',
+      '2026-07-09T10:00:00Z'
+    );
 
     expect(apiFetch).toHaveBeenCalledWith('/api/projects/proj-1/restore', {
       method: 'PATCH',

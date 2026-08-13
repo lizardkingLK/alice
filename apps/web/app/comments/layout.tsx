@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import React from 'react';
 
 export const metadata: Metadata = {
-  title: 'Comments - Jira Teams',
+  title: 'Comments',
   description:
     'View, search, and join discussions across all project work items.',
   robots: {

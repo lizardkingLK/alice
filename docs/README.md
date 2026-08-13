@@ -1,6 +1,6 @@
 # Documentation
 
-Central docs for **Alice** (branded as **Jira Teams**).
+Central docs for **Alice**.
 
 | Status        | Meaning                                                       |
 | ------------- | ------------------------------------------------------------- |
@@ -26,7 +26,7 @@ Central docs for **Alice** (branded as **Jira Teams**).
 
 ### Product
 
-Requirements and scope for Jira Teams.
+Requirements and scope for Alice.
 
 - [ARD.md](./product/ARD.md) — Agile requirements, roles, stories, NFRs
 - [ROADMAP.md](./product/ROADMAP.md) — planned AI, integrations, and differentiation (**Plan**)

@@ -20,7 +20,7 @@ export default async function SignUpPage({
         <div className="space-y-1 text-center">
           <h1 className="text-2xl font-semibold">Create account</h1>
           <p className="text-muted-foreground text-sm">
-            Get started with Jira Teams
+            Get started with Alice
           </p>
         </div>
 

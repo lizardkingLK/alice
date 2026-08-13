@@ -383,7 +383,7 @@ export class ChatService {
           continue;
         }
         throw new Error(
-          `Jira Teams AI service is temporarily unavailable due to Gemini error ${response.status}: ${errorText}`
+          `Alice AI service is temporarily unavailable due to Gemini error ${response.status}: ${errorText}`
         );
       }
 

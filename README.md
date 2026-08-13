@@ -1,14 +1,14 @@
-# Jira Teams
+# Alice
 
 A cost-effective, feature-rich Jira alternative for planning and delivering software work.
 
-Jira Teams helps teams manage projects, sprints, boards, backlogs, and work items in one place — with auth, files, dashboards, and shared UI primitives built for a real product workflow.
+Alice helps teams manage projects, sprints, boards, backlogs, and work items in one place — with auth, files, dashboards, and shared UI primitives built for a real product workflow.
 
 ---
 
 ## Overview
 
-This repository is an **Alice** monorepo that powers **Jira Teams**. It is organized as:
+This repository is the **Alice** monorepo. It is organized as:
 
 | Area     | Path                                                   | Role                                                                              |
 | -------- | ------------------------------------------------------ | --------------------------------------------------------------------------------- |

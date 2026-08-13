@@ -1,15 +1,15 @@
 # Agile Requirements Document (ARD)
 
-## Jira Teams — Project Management Platform
+## Alice — Project Management Platform
 
-**Project:** Alice (Jira Teams)  
+**Project:** Alice  
 **Version:** 1.5  
 **Last Updated:** July 20, 2026  
 **Status:** In development (Living)
 
 ## 1. Executive Summary
 
-Jira Teams is a Jira-inspired project management application described in the README as a cost-effective alternative to Jira. Teams will use it to organize work into projects and track issues such as tasks, bugs, and stories.
+Alice is a Jira-inspired project management application described in the README as a cost-effective alternative to Jira. Teams will use it to organize work into projects and track issues such as tasks, bugs, and stories.
 
 The project is a Turborepo monorepo with a Next.js frontend (`apps/web`), an Express API backend (`apps/api`), and a shared UI package (`packages/ui`). Authentication is handled by Supabase Auth. Supabase (PostgreSQL) is the database for application data.
 
@@ -31,7 +31,7 @@ The project is a Turborepo monorepo with a Next.js frontend (`apps/web`), an Exp
 - Monorepo setup with Turborepo and pnpm workspaces.
 - Supabase Auth integration on the web app (SSR clients, session cookies, middleware session refresh, and auth actions).
 - Supabase Auth on the API (`requireApiAuth` middleware validating Bearer access tokens).
-- Home page at `/` with "Jira Teams" branding and email/password authentication (sign-in, sign-up, sign-out).
+- Home page at `/` with "Alice" branding and email/password authentication (sign-in, sign-up, sign-out).
 - Password recovery pages (`/forgot-password`, `/reset-password`) and auth confirm flow.
 - Dashboard workspace shell (`/dashboard`) with customizable overview widgets.
 - Sprints management workspace (`/sprints`) supporting active/archived sprint lists, creation, and status transitions.

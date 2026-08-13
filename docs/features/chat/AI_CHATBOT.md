@@ -1,10 +1,10 @@
-# Alice (Jira Teams Assistant)
+# Alice Assistant
 
 Status: **Implemented**
 
 Conversational assistant for creating and inspecting projects, sprints, and
 work items. UI labels: **Alice** / sidebar **Alice**. System prompt
-name: **Jira Teams Assistant**. Provider: **Google Gemini** (REST
+name: **Alice Assistant**. Provider: **Google Gemini** (REST
 `generateContent` + function calling).
 
 Related:

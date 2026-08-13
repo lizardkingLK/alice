@@ -6,6 +6,10 @@ type ChildrenProps = {
 
 type ItemProps = ChildrenProps & {
   onClick?: () => void;
+  onSelect?: () => void;
+  'aria-label'?: string;
+  className?: string;
+  role?: string;
 };
 
 type RadioGroupProps = ChildrenProps & {
@@ -31,12 +35,32 @@ export function DropdownMenuTrigger({ children }: Readonly<ChildrenProps>) {
 }
 
 export function DropdownMenuContent({ children }: Readonly<ChildrenProps>) {
-  return <div data-testid="dropdown-menu-content">{children}</div>;
+  return (
+    <div data-testid="dropdown-menu-content" role="menu">
+      {children}
+    </div>
+  );
 }
 
-export function DropdownMenuItem({ children, onClick }: ItemProps) {
+export function DropdownMenuItem({
+  children,
+  onClick,
+  onSelect,
+  role,
+  ...props
+}: Readonly<ItemProps>) {
+  const handleClick = () => {
+    onClick?.();
+    onSelect?.();
+  };
+
   return (
-    <button type="button" onClick={onClick}>
+    <button
+      type="button"
+      role={role ?? (onSelect ? 'menuitem' : undefined)}
+      onClick={handleClick}
+      {...props}
+    >
       {children}
     </button>
   );

@@ -1,6 +1,6 @@
 # Auth documentation
 
-Identity and access docs for Alice (Jira Teams). Start with the living authentication guide.
+Identity and access docs for Alice. Start with the living authentication guide.
 
 | Document                                                           | Description                                                                                       | Status                                                        |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |

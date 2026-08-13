@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
 import { CommentsFeed } from '@/app/comments/_components/comments-feed';
 import type {
   CommentItem,
@@ -56,65 +55,16 @@ vi.mock('@/app/comments/_components/comment-editor', async () => {
   return { CommentEditor: MockCommentEditor };
 });
 
-vi.mock('@repo/ui/components/ui/dropdown-menu', () => {
-  return {
-    DropdownMenu: ({ children }: { children: ReactNode }) => (
-      <div data-testid="dropdown-menu">{children}</div>
-    ),
-    DropdownMenuTrigger: ({ children }: { children: ReactNode }) => (
-      <div data-testid="dropdown-menu-trigger">{children}</div>
-    ),
-    DropdownMenuContent: ({ children }: { children: ReactNode }) => (
-      <div data-testid="dropdown-menu-content">{children}</div>
-    ),
-    DropdownMenuItem: ({
-      children,
-      onClick,
-    }: {
-      children: ReactNode;
-      onClick?: () => void;
-    }) => (
-      <button type="button" onClick={onClick}>
-        {children}
-      </button>
-    ),
-  };
-});
+vi.mock(
+  '@repo/ui/components/ui/dropdown-menu',
+  () => import('../mocks/dropdown-menu')
+);
 
-vi.mock('@repo/ui/components/ui/select', () => {
-  return {
-    Select: ({
-      children,
-      value,
-      onValueChange,
-    }: {
-      children: ReactNode;
-      value: string;
-      // eslint-disable-next-line no-unused-vars
-      onValueChange: (val: string) => void;
-    }) => (
-      <select
-        value={value}
-        onChange={(e) => onValueChange(e.target.value)}
-        data-testid="status-select"
-      >
-        {children}
-      </select>
-    ),
-    SelectTrigger: ({ children }: { children: ReactNode }) => <>{children}</>,
-    SelectValue: ({ placeholder }: { placeholder: string }) => (
-      <>{placeholder}</>
-    ),
-    SelectContent: ({ children }: { children: ReactNode }) => <>{children}</>,
-    SelectItem: ({
-      children,
-      value,
-    }: {
-      children: ReactNode;
-      value: string;
-    }) => <option value={value}>{children}</option>,
-  };
-});
+vi.mock('@repo/ui/components/ui/select', () =>
+  import('../mocks/select').then((module) =>
+    module.createSelectMock('status-select')
+  )
+);
 
 const aliceAdmin = userFactory.build({
   id: 'user-admin-1',
@@ -132,7 +82,7 @@ const bobDev = userFactory.build({
 
 const proj1 = projectFactory.build({
   id: 'proj-1',
-  name: 'Jira Teams Core',
+  name: 'Alice Core',
   key: 'ALICE',
 });
 

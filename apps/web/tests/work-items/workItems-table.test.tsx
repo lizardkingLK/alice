@@ -13,6 +13,7 @@ import {
 import { userFactory } from '../factories/user.factory';
 import { projectFactory } from '../factories/project.factory';
 import { workItemFactory } from '../factories/workItem.factory';
+import { assertDebouncedSearchRedirect } from '../helpers/assert-debounced-search';
 import { paginationFactory } from '../factories/pagination.factory';
 
 async function ensureFilterDialogOpen() {
@@ -353,20 +354,13 @@ describe('WorkItemsTable', () => {
     // Arrange
     await renderTable();
 
-    // Act
-    fireEvent.change(screen.getByPlaceholderText(/Search work items/i), {
-      target: { value: 'filters' },
+    // Act / Assert
+    await assertDebouncedSearchRedirect({
+      searchInput: screen.getByPlaceholderText(/Search work items/i),
+      value: 'filters',
+      expectedPath: '/work-items?search=filters&page=1',
+      mockPush,
     });
-
-    // Assert
-    await waitFor(
-      () => {
-        expect(mockPush).toHaveBeenCalledWith(
-          '/work-items?search=filters&page=1'
-        );
-      },
-      { timeout: 500 }
-    );
   });
 
   it('navigates when pagination page or limit changes', async () => {
