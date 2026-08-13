@@ -4,6 +4,7 @@ import WorkItemSidebar from '@/app/work-items/_components/workItem-details-sideb
 import { workItemFactory } from '../factories/workItem.factory';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import type { WorkItemStatus } from '@repo/types';
+import { linkPR } from '@/app/work-items/_services/workItem.service.client';
 
 vi.mock(
   '@repo/ui/components/ui/dropdown-menu',
@@ -186,5 +187,90 @@ describe('WorkItemSidebar sections', () => {
 
     // Assert
     expect(setMoreFieldsOpen).toHaveBeenCalledWith(true);
+  });
+});
+
+describe('WorkItemSidebar Link PR', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('shows validation error when linking PR from a mismatched repository', async () => {
+    renderSidebar();
+    await screen.findByText('1 pull request');
+
+    // Expand PRs section
+    const prToggle = await screen.findByText(/1 pull request/i);
+    fireEvent.click(prToggle);
+
+    // Open the dialog
+    const linkButton = await screen.findByRole('button', { name: /link pull request/i });
+    fireEvent.click(linkButton);
+
+    // Verify dialog is open
+    const input = screen.getByPlaceholderText('https://github.com/owner/repo/pull/123');
+    expect(input).toBeInTheDocument();
+
+    // Enter a mismatched PR URL
+    fireEvent.change(input, { target: { value: 'https://github.com/mismatch-owner/mismatch-repo/pull/123' } });
+
+    // Submit form
+    const form = input.closest('form');
+    fireEvent.submit(form!);
+
+    // Assert validation error message is shown
+    expect(
+      await screen.findByText(/PR does not belong to the project's configured GitHub repository/i)
+    ).toBeInTheDocument();
+
+    // Verify linkPR was not called
+    expect(linkPR).not.toHaveBeenCalled();
+  });
+
+  it('shows validation error when linking an invalid PR URL format', async () => {
+    renderSidebar();
+    await screen.findByText('1 pull request');
+
+    // Expand PRs section
+    const prToggle = await screen.findByText(/1 pull request/i);
+    fireEvent.click(prToggle);
+
+    // Open the dialog
+    const linkButton = await screen.findByRole('button', { name: /link pull request/i });
+    fireEvent.click(linkButton);
+
+    const input = screen.getByPlaceholderText('https://github.com/owner/repo/pull/123');
+    fireEvent.change(input, { target: { value: 'https://github.com/invalid-url' } });
+
+    const form = input.closest('form');
+    fireEvent.submit(form!);
+
+    expect(
+      await screen.findByText(/Invalid GitHub PR URL/i)
+    ).toBeInTheDocument();
+
+    expect(linkPR).not.toHaveBeenCalled();
+  });
+
+  it('successfully calls linkPR and closes dialog on valid PR URL', async () => {
+    renderSidebar();
+    await screen.findByText('1 pull request');
+
+    // Expand PRs section
+    const prToggle = await screen.findByText(/1 pull request/i);
+    fireEvent.click(prToggle);
+
+    // Open the dialog
+    const linkButton = await screen.findByRole('button', { name: /link pull request/i });
+    fireEvent.click(linkButton);
+
+    const input = screen.getByPlaceholderText('https://github.com/owner/repo/pull/123');
+    // Set to match 'owner/repo' which is mocked
+    fireEvent.change(input, { target: { value: 'https://github.com/owner/repo/pull/123' } });
+
+    const form = input.closest('form');
+    fireEvent.submit(form!);
+
+    expect(linkPR).toHaveBeenCalledWith(expect.any(String), 'https://github.com/owner/repo/pull/123');
   });
 });

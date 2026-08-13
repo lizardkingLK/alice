@@ -150,8 +150,8 @@ export async function getLinkedPRs(workItemId: string): Promise<{ prs: LinkedGit
   return { prs: res.prs || [], githubRepo: res.githubRepo || null };
 }
 
-export async function linkPR(workItemId: string, prUrl: string): Promise<LinkedGithubPR> {
-  return await apiFetch<LinkedGithubPR>(`${workItemsPath}/${workItemId}/github`, {
+export async function linkPR(workItemId: string, prUrl: string): Promise<ResponseDTO<LinkedGithubPR>> {
+  return await apiFetch<ResponseDTO<LinkedGithubPR>>(`${workItemsPath}/${workItemId}/github`, {
     method: 'POST',
     body: JSON.stringify({ prUrl }),
   });
