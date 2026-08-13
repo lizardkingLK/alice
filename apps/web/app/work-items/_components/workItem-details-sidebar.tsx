@@ -92,6 +92,7 @@ import {
 } from '@repo/ui/components/ui/dialog';
 import { Input } from '@repo/ui/components/ui/input';
 import { toast } from '@repo/ui/components/ui/sonner';
+import { FormStatusAlerts } from '@/app/work-items/_components/workItem-form-alerts';
 
 function StatusDropdown({
   workItemId,
@@ -819,6 +820,7 @@ function DevelopmentSection({
   const [branchesExpanded, setBranchesExpanded] = useState(false);
   const [commitsExpanded, setCommitsExpanded] = useState(false);
   const [prsExpanded, setPrsExpanded] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   const fetchGithubLinks = useCallback(async () => {
     setLoadingGithub(true);
@@ -839,17 +841,45 @@ function DevelopmentSection({
 
   const handleLinkPRSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!prUrlInput.trim()) return;
+    const url = prUrlInput.trim();
+    if (!url) return;
+
+    setLinkError(null);
+
+    const githubPrRegex = /^(?:https?:\/\/github\.com\/)?([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)\/pull\/(\d+)$/;
+    const match = githubPrRegex.exec(url);
+    if (!match) {
+      setLinkError('Invalid GitHub PR URL. Expected format: https://github.com/owner/repo/pull/number');
+      return;
+    }
+
+    const repoOwner = match[1]!;
+    const repoName = match[2]!;
+
+    if (githubRepo) {
+      const [configOwner, configRepo] = githubRepo.split('/');
+      if (
+        !configOwner ||
+        !configRepo ||
+        repoOwner.toLowerCase() !== configOwner.toLowerCase() ||
+        repoName.toLowerCase() !== configRepo.toLowerCase()
+      ) {
+        setLinkError(`PR does not belong to the project's configured GitHub repository: ${githubRepo}`);
+        return;
+      }
+    }
 
     setIsLinking(true);
     try {
-      await linkPR(workItem.id, prUrlInput.trim());
+      await linkPR(workItem.id, url);
       setPrUrlInput('');
       setLinkDialogOpen(false);
       fetchGithubLinks();
     } catch (err) {
       console.error(err);
-      toast.error(err instanceof Error ? err.message : 'Failed to link pull request');
+      const message = err instanceof Error ? err.message : 'Failed to link pull request';
+      setLinkError(message);
+      toast.error(message);
     } finally {
       setIsLinking(false);
     }
@@ -960,7 +990,16 @@ function DevelopmentSection({
     <div className="py-2.5">
       {content}
 
-      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+      <Dialog
+        open={linkDialogOpen}
+        onOpenChange={(open) => {
+          setLinkDialogOpen(open);
+          if (!open) {
+            setLinkError(null);
+            setPrUrlInput('');
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <form onSubmit={handleLinkPRSubmit}>
             <DialogHeader>
@@ -970,11 +1009,15 @@ function DevelopmentSection({
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
+              {linkError && <FormStatusAlerts error={linkError} />}
               <div className="space-y-2">
                 <Input
                   placeholder="https://github.com/owner/repo/pull/123"
                   value={prUrlInput}
-                  onChange={(e) => setPrUrlInput(e.target.value)}
+                  onChange={(e) => {
+                    setPrUrlInput(e.target.value);
+                    if (linkError) setLinkError(null);
+                  }}
                   disabled={isLinking}
                   required
                 />
@@ -987,6 +1030,7 @@ function DevelopmentSection({
                 onClick={() => {
                   setPrUrlInput('');
                   setLinkDialogOpen(false);
+                  setLinkError(null);
                 }}
                 disabled={isLinking}
               >
