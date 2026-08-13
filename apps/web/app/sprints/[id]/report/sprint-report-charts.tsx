@@ -185,6 +185,8 @@ export function SprintReportCharts({
             <ChartContainer
               config={chartConfig}
               className="mx-auto aspect-square max-h-70"
+              width={280}
+              height={280}
             >
               <PieChart>
                 <ChartTooltip
@@ -199,6 +201,7 @@ export function SprintReportCharts({
                   outerRadius={100}
                   strokeWidth={3}
                   paddingAngle={2}
+                  isAnimationActive={false}
                 >
                   {chartData.map((entry) => (
                     <Cell key={entry.status} fill={entry.fill} />

@@ -17,6 +17,8 @@
     print-color-adjust: exact !important;
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
+    transition: none !important;
+    animation: none !important;
   }
 
   .print-container *::-webkit-scrollbar {
@@ -64,29 +66,33 @@
   }
 
   /* Ensure metrics grid prints as 3 columns */
-  .print-container .grid {
+  .print-container .sprint-report-stats-grid {
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 16px !important;
   }
 
-  .status-breakdown-grid {
+  .print-container .status-breakdown-grid {
     display: grid !important;
     grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
     gap: 12px !important;
   }
 
-  .progress-chart-grid {
+  .print-container .progress-chart-grid {
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
     gap: 24px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   /* Split goal and achievements block into 2 columns for print */
-  .print-container .md\:grid-cols-3 {
+  .print-container .sprint-report-goals-grid {
     display: grid !important;
     grid-template-columns: 1fr 2fr !important;
     gap: 24px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   /* Force ink-friendly colors on text for physical paper (even from dark mode) */
@@ -111,6 +117,14 @@
     background-color: #fcfcfc !important;
     color: #09090b !important;
     box-shadow: none !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Deliverables card is allowed to break across pages if it is long */
+  .print-container .card.deliverables-card {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
   }
 
   /* Shipped items table layout prints beautifully */

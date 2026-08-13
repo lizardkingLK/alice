@@ -34,7 +34,7 @@ export function SprintReportDeliverables({
   statusCounts,
 }: Readonly<SprintReportDeliverablesProps>) {
   return (
-    <Card className="border-border/60 bg-card/50 card">
+    <Card className="border-border/60 bg-card/50 card deliverables-card">
       <CardHeader>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">

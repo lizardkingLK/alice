@@ -64,7 +64,10 @@ export default async function SprintReportPage({ params }: ReportPageProps) {
     );
   }
 
-  const workItems = await getWorkItems({ sprintId: id });
+  const workItems = await getWorkItems({
+    sprintId: id,
+    projectId: sprint.project?.id,
+  });
 
   const breadcrumbOverrides = [
     { label: 'Dashboard', url: '/dashboard' },
