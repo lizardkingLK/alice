@@ -69,27 +69,6 @@ export function createProjectsService(
   const apiProjects = '/api/projects';
 
   return {
-    async getProjectList(): Promise<Project[]> {
-      const data = await apiFetch<{ projects: Project[] }>(apiProjects);
-      return data.projects;
-    },
-
-    async getProjectListPaginated(
-      page: number,
-      limit: number,
-      status?: 'active' | 'archived',
-      search?: string
-    ): Promise<GetProjectsPaginatedResponse> {
-      let url = `${apiProjects}?page=${page}&limit=${limit}`;
-      if (status) {
-        url += `&status=${status}`;
-      }
-      if (search) {
-        url += `&search=${encodeURIComponent(search)}`;
-      }
-      return apiFetch<GetProjectsPaginatedResponse>(url);
-    },
-
     async createProject(
       input: CreateProjectInput
     ): Promise<Tables<'projects'>> {
@@ -164,25 +143,6 @@ export function createProjectsService(
       await apiFetch<void>(`${apiProjects}/${id}`, {
         method: 'DELETE',
       });
-    },
-
-    async getProjectDetails(id: string): Promise<Project> {
-      const data = await apiFetch<{ project: Project }>(`${apiProjects}/${id}`);
-      return data.project;
-    },
-
-    async getProject(id: string): Promise<Project> {
-      const data = await apiFetch<{ project: Project }>(`${apiProjects}/${id}`);
-      return data.project;
-    },
-
-    async getProjectMembers(
-      projectId: string
-    ): Promise<ProjectMemberWithUser[]> {
-      const data = await apiFetch<{ members: ProjectMemberWithUser[] }>(
-        `${apiProjects}/${projectId}/members`
-      );
-      return data.members;
     },
 
     async addProjectMember(projectId: string, userId: string): Promise<void> {

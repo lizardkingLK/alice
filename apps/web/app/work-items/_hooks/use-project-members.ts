@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { getProjectMembers } from '@/app/projects/_services/projects.service';
+import { fetchProjectMembersForForm } from '@/lib/form-read-actions';
 import type { WorkItemMemberLike } from '@/app/work-items/_helpers/work-item-member';
 
 export type UseProjectMembersArgs = {
@@ -18,7 +18,9 @@ export function useProjectMembers({
   lockAssignee = false,
   onAssigneeChange,
 }: UseProjectMembersArgs) {
-  const [currentMembers, setCurrentMembers] = useState<readonly WorkItemMemberLike[]>(() => {
+  const [currentMembers, setCurrentMembers] = useState<
+    readonly WorkItemMemberLike[]
+  >(() => {
     if (!projectId) {
       return projectMembers;
     }
@@ -44,22 +46,17 @@ export function useProjectMembers({
   useEffect(() => {
     let isMounted = true;
     if (projectId) {
-      getProjectMembers(projectId)
-        .then((members) => {
+      fetchProjectMembersForForm(projectId)
+        .then((mapped) => {
           if (!isMounted) return;
-          const mapped = members
-            .map((m) => m.user)
-            .filter((u): u is NonNullable<typeof u> => u !== null)
-            .map((u) => ({
-              id: u.id,
-              name: u.name,
-              email: u.email,
-              profile_picture: u.profile_picture ?? null,
-            }));
           setCurrentMembers(mapped);
 
           const latestAssigneeId = assigneeIdRef.current;
-          if (latestAssigneeId && !lockAssignee && !mapped.some((m) => m.id === latestAssigneeId)) {
+          if (
+            latestAssigneeId &&
+            !lockAssignee &&
+            !mapped.some((m) => m.id === latestAssigneeId)
+          ) {
             onAssigneeChangeRef.current(null);
           }
         })
@@ -70,7 +67,11 @@ export function useProjectMembers({
       setCurrentMembers(projectMembers);
 
       const latestAssigneeId = assigneeIdRef.current;
-      if (latestAssigneeId && !lockAssignee && !projectMembers.some((m) => m.id === latestAssigneeId)) {
+      if (
+        latestAssigneeId &&
+        !lockAssignee &&
+        !projectMembers.some((m) => m.id === latestAssigneeId)
+      ) {
         onAssigneeChangeRef.current(null);
       }
     }

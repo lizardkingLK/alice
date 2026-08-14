@@ -287,18 +287,19 @@ One Supabase project serves both development and production. Migrations must be 
   - `GET /api/health` — public. Returns `{ "status": "ok", "runtime": "express" }`.
 
 - **Users**
-  - `GET /api/users` — protected. Returns a list of users (supports pagination `page` and `limit`).
-  - `GET /api/users/api/secure` — protected. Returns secure welcome message.
-  - `POST /api/users/invite` — protected. Invites a new user via Supabase.
-  - `PATCH /api/users/:id/active` — protected. Admin-only active/inactive status toggle.
+  - `POST /api/users` — protected. Invites / creates a user via Supabase.
+  - `PUT /api/users/:id` — protected. Updates a user.
+  - `PATCH /api/users/:id/toggle-active` — protected. Admin (or self) active/inactive status toggle.
+  - User **list reads** are not Express GETs — `/users` uses direct Supabase RSC readers (`users.service.server.ts`).
 
 - **Projects**
-  - `GET /api/projects` — protected. Returns list of projects (supports pagination `page` and `limit`, filter `status`, and search query `search`).
   - `POST /api/projects` — protected. Creates a new project (validates request body via `createProjectSchema` Zod validator).
   - `PUT /api/projects/:id` — protected. Updates a project (validates body via `updateProjectSchema`).
   - `PATCH /api/projects/:id/soft-delete` — protected. Soft deletes a project by marking it `archived`.
   - `PATCH /api/projects/:id/restore` — protected. Restores an archived project back to `active`.
   - `DELETE /api/projects/:id` — protected. Hard deletes a project from database.
+  - `POST /api/projects/:id/members` / `DELETE /api/projects/:id/members/:userId` — protected. Membership mutations.
+  - Project **list/detail/member reads** are not Express GETs — dashboard pages and the work-item form use direct Supabase RSC readers / server actions (`projects.service.server.ts`, `form-read-actions.ts`).
 
 - **Sprints**
   - `POST /api/sprints` — protected. Creates a sprint (validates request body via `createSprintBodySchema`).

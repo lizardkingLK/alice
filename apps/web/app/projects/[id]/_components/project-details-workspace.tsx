@@ -112,8 +112,6 @@ export function ProjectDetailsWorkspace({
   const searchParams = useSearchParams();
   const activeTab = parseProjectDetailsTab(searchParams.get('tab'));
 
-
-
   const [error, setError] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -607,8 +605,8 @@ function JiraSettingsCard({ project }: JiraSettingsCardProps) {
           Jira Cloud Integration
         </CardTitle>
         <CardDescription className="text-muted-foreground text-sm">
-          Configure your Jira Cloud connection to import issues and keep
-          tasks synced.
+          Configure your Jira Cloud connection to import issues and keep tasks
+          synced.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -641,7 +639,10 @@ function JiraSettingsCard({ project }: JiraSettingsCardProps) {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="jiraProjectKey" className="text-xs font-semibold">
+                <Label
+                  htmlFor="jiraProjectKey"
+                  className="text-xs font-semibold"
+                >
                   Jira Project Key
                 </Label>
                 <Input
@@ -741,13 +742,17 @@ interface GithubSettingsCardProps {
 
 function GithubSettingsCard({ project }: GithubSettingsCardProps) {
   const router = useRouter();
-  const initialOwner = project.github_repo ? project.github_repo.split('/')[0] ?? '' : '';
-  const initialRepoName = project.github_repo ? project.github_repo.split('/')[1] ?? '' : '';
+  const initialOwner = project.github_repo
+    ? (project.github_repo.split('/')[0] ?? '')
+    : '';
+  const initialRepoName = project.github_repo
+    ? (project.github_repo.split('/')[1] ?? '')
+    : '';
 
   const [isEditingGithub, setIsEditingGithub] = useState(!project.github_repo);
-// useState is a React Hook used to store and update component state.
-// It returns the current value and a function to update that value.
-// When the state changes, React re-renders the component.
+  // useState is a React Hook used to store and update component state.
+  // It returns the current value and a function to update that value.
+  // When the state changes, React re-renders the component.
   const [githubOwner, setGithubOwner] = useState(initialOwner);
   const [githubRepoName, setGithubRepoName] = useState(initialRepoName);
   const [githubToken, setGithubToken] = useState(project.github_token || '');
@@ -763,9 +768,10 @@ function GithubSettingsCard({ project }: GithubSettingsCardProps) {
 
     try {
       //trim used to remove unnecessary spaces at the beginning and end.
-      const repoPath = (githubOwner.trim() && githubRepoName.trim())
-        ? `${githubOwner.trim()}/${githubRepoName.trim()}`
-        : null;
+      const repoPath =
+        githubOwner.trim() && githubRepoName.trim()
+          ? `${githubOwner.trim()}/${githubRepoName.trim()}`
+          : null;
 
       await apiFetch(`/api/projects/${project.id}`, {
         method: 'PUT',
@@ -797,7 +803,8 @@ function GithubSettingsCard({ project }: GithubSettingsCardProps) {
           GitHub Integration
         </CardTitle>
         <CardDescription className="text-muted-foreground text-sm">
-          Configure your GitHub repository to link Pull Requests, view commits, and track branches.
+          Configure your GitHub repository to link Pull Requests, view commits,
+          and track branches.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -813,7 +820,7 @@ function GithubSettingsCard({ project }: GithubSettingsCardProps) {
           </div>
         )}
 
-         {isEditingGithub ? (
+        {isEditingGithub ? (
           <form onSubmit={handleSaveGithub} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
@@ -830,7 +837,10 @@ function GithubSettingsCard({ project }: GithubSettingsCardProps) {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="githubRepoName" className="text-xs font-semibold">
+                <Label
+                  htmlFor="githubRepoName"
+                  className="text-xs font-semibold"
+                >
                   GitHub Repository Name
                 </Label>
                 <Input
@@ -900,7 +910,9 @@ function GithubSettingsCard({ project }: GithubSettingsCardProps) {
                   Access Token
                 </span>
                 <span className="text-foreground font-mono font-medium">
-                  {project.github_token ? '••••••••••••••••' : 'Not configured (Public repos only)'}
+                  {project.github_token
+                    ? '••••••••••••••••'
+                    : 'Not configured (Public repos only)'}
                 </span>
               </div>
             </div>

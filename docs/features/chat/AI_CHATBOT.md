@@ -72,7 +72,7 @@ Main **Alice** toolbar has a fixed `h-14` height.
 | Surface         | Initial conversations                          | Initial message history                        | Interactions after mount                     |
 | --------------- | ---------------------------------------------- | ---------------------------------------------- | -------------------------------------------- |
 | `/chat` page    | RSC direct Supabase (`chat.service.server.ts`) | RSC `apiFetch` → API (Storage is service-role) | Client `apiFetch` for send / switch / delete |
-| Floating drawer | Client `apiFetch` on open                      | Client `apiFetch` on open                      | Same                                         |
+| Floating drawer | Server action `listChatConversationsAction`    | Client `apiFetch` on open (Storage)            | Same                                         |
 
 `/chat` uses `Suspense` + `safeServerFetch(getChatPageBootstrap())` so the
 shell streams first; the client receives bootstrap props and **does not**
@@ -105,8 +105,7 @@ All routes require `requireApiAuth`. Wired via composition root
 
 | Method   | Path                        | Purpose                                                |
 | -------- | --------------------------- | ------------------------------------------------------ |
-| `GET`    | `/api/chat`                 | Latest conversation history (or empty)                 |
-| `GET`    | `/api/chat/conversations`   | List conversations for the current user                |
+| `GET`    | `/api/chat`                 | Latest conversation history from Storage (or empty)    |
 | `GET`    | `/api/chat/:conversationId` | Load one conversation’s history from Storage           |
 | `DELETE` | `/api/chat/:conversationId` | Delete conversation row (+ best-effort Storage remove) |
 | `POST`   | `/api/chat`                 | Send messages; run agent loop; return assistant reply  |
@@ -115,22 +114,23 @@ Mounted in `apps/api/src/config/routing.ts` as `/api/chat`.
 
 ### Key files
 
-| Layer           | Path                                                                           |
-| --------------- | ------------------------------------------------------------------------------ |
-| Page            | `apps/web/app/chat/page.tsx` (RSC bootstrap + Suspense)                        |
-| Client UI       | `apps/web/app/chat/_components/chat-client.tsx`                                |
-| Client API      | `apps/web/app/chat/_components/chat-client.service.ts` (mutations + drawer)    |
-| Server reads    | `apps/web/app/chat/_services/chat.service.server.ts`                           |
-| Widget          | `apps/web/app/chat/_components/floating-chat-widget.tsx`                       |
-| Routes          | `createChatRouter` in `chat.route.ts` (mounted as `chat.router`)               |
-| Service         | `ChatService` in `chat.service.ts`                                             |
-| Repository      | `ChatRepository` in `chat.repository.ts` (`db` injected)                       |
-| Prompt + tools  | `apps/api/src/routes/api/chat/chat.route.data.ts`                              |
-| Types (API)     | `apps/api/src/routes/api/chat/chat.route.types.ts`                             |
-| Shared roles    | `packages/types/src/chat.ts` (`ChatRoles`, `GeminiRoles`, `getRoleName`)       |
-| Chat models     | `packages/types/src/chat-models.ts` (shared model dropdown + backend defaults) |
-| Composition     | `apps/api/src/config/composition.ts` → `chat`                                  |
-| Supabase client | `apps/api/src/lib/supabase.ts` (`supabase` + re-exported `createClient`)       |
+| Layer           | Path                                                                                 |
+| --------------- | ------------------------------------------------------------------------------------ |
+| Page            | `apps/web/app/chat/page.tsx` (RSC bootstrap + Suspense)                              |
+| Client UI       | `apps/web/app/chat/_components/chat-client.tsx`                                      |
+| Client API      | `apps/web/app/chat/_components/chat-client.service.ts` (mutations + Storage history) |
+| Server reads    | `apps/web/app/chat/_services/chat.service.server.ts`                                 |
+| Client list     | `apps/web/app/chat/_services/chat-read-actions.ts` (`listChatConversationsAction`)   |
+| Widget          | `apps/web/app/chat/_components/floating-chat-widget.tsx`                             |
+| Routes          | `createChatRouter` in `chat.route.ts` (mounted as `chat.router`)                     |
+| Service         | `ChatService` in `chat.service.ts`                                                   |
+| Repository      | `ChatRepository` in `chat.repository.ts` (`db` injected)                             |
+| Prompt + tools  | `apps/api/src/routes/api/chat/chat.route.data.ts`                                    |
+| Types (API)     | `apps/api/src/routes/api/chat/chat.route.types.ts`                                   |
+| Shared roles    | `packages/types/src/chat.ts` (`ChatRoles`, `GeminiRoles`, `getRoleName`)             |
+| Chat models     | `packages/types/src/chat-models.ts` (shared model dropdown + backend defaults)       |
+| Composition     | `apps/api/src/config/composition.ts` → `chat`                                        |
+| Supabase client | `apps/api/src/lib/supabase.ts` (`supabase` + re-exported `createClient`)             |
 
 ### Data access
 

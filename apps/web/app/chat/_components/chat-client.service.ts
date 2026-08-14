@@ -40,15 +40,6 @@ export async function getChatHistory(conversationId?: string) {
   });
 }
 
-export async function listConversations() {
-  return apiFetch<{
-    conversations: ChatConversation[];
-    error?: string;
-  }>('/api/chat/conversations', {
-    method: 'GET',
-  });
-}
-
 export async function deleteConversation(conversationId: string) {
   return apiFetch<{
     success: boolean;

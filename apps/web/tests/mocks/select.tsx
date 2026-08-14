@@ -59,15 +59,11 @@ export function SelectTrigger({
   );
 }
 
-export function SelectValue({
-  placeholder,
-}: Readonly<SelectValueProps>) {
+export function SelectValue({ placeholder }: Readonly<SelectValueProps>) {
   return <>{placeholder}</>;
 }
 
-export function SelectContent({
-  children,
-}: Readonly<SelectContentProps>) {
+export function SelectContent({ children }: Readonly<SelectContentProps>) {
   return <>{children}</>;
 }
 

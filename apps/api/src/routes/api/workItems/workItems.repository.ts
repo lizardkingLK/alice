@@ -397,19 +397,22 @@ export class WorkItemRepository {
 
     const { data, error } = await db
       .from('github_pull_requests')
-      .upsert({
-        work_item_id: workItemId,
-        pr_number: payload.prNumber,
-        repo_owner: payload.repoOwner,
-        repo_name: payload.repoName,
-        pr_title: payload.prTitle,
-        pr_url: payload.prUrl,
-        branch_name: payload.branchName ?? null,
-        status: payload.status ?? 'open',
-        updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'work_item_id,repo_owner,repo_name,pr_number',
-      })
+      .upsert(
+        {
+          work_item_id: workItemId,
+          pr_number: payload.prNumber,
+          repo_owner: payload.repoOwner,
+          repo_name: payload.repoName,
+          pr_title: payload.prTitle,
+          pr_url: payload.prUrl,
+          branch_name: payload.branchName ?? null,
+          status: payload.status ?? 'open',
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'work_item_id,repo_owner,repo_name,pr_number',
+        }
+      )
       .select('*')
       .single();
 
@@ -439,7 +442,10 @@ export class WorkItemRepository {
 
   async getProjectGithubSettingsByWorkItem(
     workItemId: string
-  ): Promise<{ github_repo: string | null; github_token: string | null } | null> {
+  ): Promise<{
+    github_repo: string | null;
+    github_token: string | null;
+  } | null> {
     const { data: workItem, error: workItemError } = await this.db
       .from('work_items')
       .select('project_id')

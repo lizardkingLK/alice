@@ -84,12 +84,12 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: "github_pull_requests_work_item_id_fkey";
-            columns: ["work_item_id"];
+            foreignKeyName: 'github_pull_requests_work_item_id_fkey';
+            columns: ['work_item_id'];
             isOneToOne: false;
-            referencedRelation: "work_items";
-            referencedColumns: ["id"];
-          }
+            referencedRelation: 'work_items';
+            referencedColumns: ['id'];
+          },
         ];
       };
       chat_conversations: {

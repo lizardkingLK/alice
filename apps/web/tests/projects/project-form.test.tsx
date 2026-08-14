@@ -302,7 +302,9 @@ describe('ProjectForm Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
 
     // Toggle Checkbox
-    const checkbox = screen.getByLabelText(/Enable Jira Integration & Task Import/i);
+    const checkbox = screen.getByLabelText(
+      /Enable Jira Integration & Task Import/i
+    );
     fireEvent.click(checkbox);
 
     // Verify Jira input fields are rendered
@@ -363,7 +365,9 @@ describe('ProjectForm Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
 
     // Toggle Jira checkbox
-    fireEvent.click(screen.getByLabelText(/Enable Jira Integration & Task Import/i));
+    fireEvent.click(
+      screen.getByLabelText(/Enable Jira Integration & Task Import/i)
+    );
 
     // Fill integration details
     fireEvent.change(screen.getByLabelText(/Jira Cloud URL \/ Domain/i), {
@@ -427,18 +431,23 @@ describe('ProjectForm Component', () => {
     fireEvent.change(screen.getByLabelText(/GitHub Repository Name/i), {
       target: { value: 'react' },
     });
-    fireEvent.change(screen.getByLabelText(/Personal Access Token \(optional\)/i), {
-      target: { value: 'ghp_secret_token_123' },
-    });
+    fireEvent.change(
+      screen.getByLabelText(/Personal Access Token \(optional\)/i),
+      {
+        target: { value: 'ghp_secret_token_123' },
+      }
+    );
 
     // Submit
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     await waitFor(() => {
-      expect(createProject).toHaveBeenCalledWith(expect.objectContaining({
-        github_repo: 'facebook/react',
-        github_token: 'ghp_secret_token_123',
-      }));
+      expect(createProject).toHaveBeenCalledWith(
+        expect.objectContaining({
+          github_repo: 'facebook/react',
+          github_token: 'ghp_secret_token_123',
+        })
+      );
     });
   });
 });

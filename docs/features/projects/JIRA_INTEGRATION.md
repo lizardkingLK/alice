@@ -28,15 +28,15 @@ Non-goals for v1 of this plan:
 
 Interim design from the colleague Jira work (API email + token):
 
-| Piece                 | Location                                                                           |
-| --------------------- | ---------------------------------------------------------------------------------- |
-| Global settings table | `jira_settings` (+ singleton migration)                                            |
-| Project columns       | `projects.jira_url`, `jira_email`, `jira_token`, `jira_project_key`                |
-| Env fallback          | `JIRA_API_TOKEN`, `JIRA_EMAIL` in `apps/api` `env.ts`                              |
-| Routes                | `POST /api/projects/jira/preview`, `POST …/jira/import`, `GET/PUT …/jira/settings` |
-| Client UI             | Project form / project details “Jira” fields + sync                                |
-| Types                 | `jira_*` on create schemas; client `Project` may omit token in responses           |
-| Work items            | `work_items.jira_issue_key` (**keep**)                                             |
+| Piece                 | Location                                                                       |
+| --------------------- | ------------------------------------------------------------------------------ |
+| Global settings table | `jira_settings` (+ singleton migration)                                        |
+| Project columns       | `projects.jira_url`, `jira_email`, `jira_token`, `jira_project_key`            |
+| Env fallback          | `JIRA_API_TOKEN`, `JIRA_EMAIL` in `apps/api` `env.ts`                          |
+| Routes                | `POST /api/projects/jira/preview`, `POST …/jira/import`, `PUT …/jira/settings` |
+| Client UI             | Project form / project details “Jira” fields + sync                            |
+| Types                 | `jira_*` on create schemas; client `Project` may omit token in responses       |
+| Work items            | `work_items.jira_issue_key` (**keep**)                                         |
 
 Credential resolution today: request body → project row → `jira_settings` → env. Hosts restricted to `*.atlassian.net`.
 
