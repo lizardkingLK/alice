@@ -1,5 +1,5 @@
 import type { ChatConversation, ChatMessage } from './chat-client.types';
-import { getChatHistory } from './chat-client.service';
+import { getChatHistory } from '../_services/chat-client.service';
 import { listChatConversationsAction } from '../_services/chat-read-actions';
 
 export type HistoryLoadResult = {

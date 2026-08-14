@@ -7,6 +7,7 @@ import {
   OptimisticLockError,
   isOptimisticLockError,
   resolveOptimisticUpdate,
+  resolveOptimisticPrismaUpdate,
   sendRouteMutationError,
   trySendOptimisticLockError,
 } from '../../src/lib/optimistic-lock.js';
@@ -47,6 +48,34 @@ describe('resolveOptimisticUpdate', () => {
         notFoundMessage: 'Work item not found',
       })
     ).rejects.toThrow('Work item not found');
+  });
+});
+
+describe('resolveOptimisticPrismaUpdate', () => {
+  it('returns the updated row when updateMany count is greater than zero', async () => {
+    const row = { id: '1', updated_at: '2024-01-02T00:00:00.000Z' };
+    await expect(
+      resolveOptimisticPrismaUpdate({
+        count: 1,
+        fetchUpdated: async () => row,
+        fetchCurrent: async () => null,
+      })
+    ).resolves.toEqual(row);
+  });
+
+  it('throws OptimisticLockError when count is zero and the row still exists', async () => {
+    const current = { id: '1', updated_at: '2024-01-03T00:00:00.000Z' };
+    await expect(
+      resolveOptimisticPrismaUpdate({
+        count: 0,
+        fetchUpdated: async () => null,
+        fetchCurrent: async () => current,
+      })
+    ).rejects.toMatchObject({
+      code: OPTIMISTIC_LOCK_ERROR_CODE,
+      httpStatus: OPTIMISTIC_LOCK_HTTP_STATUS,
+      serverEntity: current,
+    });
   });
 });
 

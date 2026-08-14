@@ -1,8 +1,13 @@
 import { supabase } from '../../../lib/supabase';
-import { auditCreate, auditUpdate } from '../../../lib/audit';
+import { prisma } from '../../../lib/prisma';
+import {
+  prismaAuditCreate,
+  prismaAuditUpdate,
+  prismaLockTimestamp,
+} from '../../../lib/prisma-audit';
 import {
   OptimisticLockError,
-  resolveOptimisticUpdate,
+  resolveOptimisticPrismaUpdate,
 } from '../../../lib/optimistic-lock';
 
 export type UserRow = {
@@ -152,25 +157,19 @@ export class UsersRepository {
     data: Pick<UserRow, 'id' | 'name' | 'email' | 'role'>,
     actorId: string
   ): Promise<UserRow> {
-    const { data: created, error } = await supabase
-      .from('users')
-      .insert({
+    const created = await prisma.users.create({
+      data: {
         ...data,
         active: true,
-        ...auditCreate(actorId),
-      })
-      .select()
-      .single();
+        ...prismaAuditCreate(actorId),
+      },
+    });
 
-    if (error) {
-      console.error(
-        'error. failed to create user registry row:',
-        error.message
-      );
-      throw new Error(`Database registration failed: ${error.message}`);
+    const row = await this.findById(created.id);
+    if (!row) {
+      throw new Error('Database registration failed');
     }
-
-    return created as UserRow;
+    return row;
   }
 
   async update(
@@ -181,32 +180,24 @@ export class UsersRepository {
     actorId: string,
     expectedUpdatedAt: string
   ): Promise<UserRow> {
-    const { data: updated, error } = await supabase
-      .from('users')
-      .update({
+    const { count } = await prisma.users.updateMany({
+      where: { id, updated_at: prismaLockTimestamp(expectedUpdatedAt) },
+      data: {
         ...data,
-        ...auditUpdate(actorId),
-      })
-      .eq('id', id)
-      .eq('updated_at', expectedUpdatedAt)
-      .select()
-      .maybeSingle();
+        ...prismaAuditUpdate(actorId),
+      },
+    });
 
-    return (await resolveOptimisticUpdate({
-      data: updated as UserRow | null,
-      error,
+    return resolveOptimisticPrismaUpdate({
+      count,
+      fetchUpdated: () => this.findById(id),
       fetchCurrent: () => this.findById(id),
       notFoundMessage: 'User not found',
-    })) as UserRow;
+    });
   }
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase.from('users').delete().eq('id', id);
-
-    if (error) {
-      console.error('error. failed to delete user:', error.message);
-      throw new Error(`Database delete failed: ${error.message}`);
-    }
+    await prisma.users.deleteMany({ where: { id } });
   }
 }
 

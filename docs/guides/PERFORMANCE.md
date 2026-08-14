@@ -350,7 +350,7 @@ Targeting sub-1.5s. Ordered by impact-to-effort.
 | **M6** | Infra alignment — same Vercel region for web/api/Supabase, verify prod API URL path, warm cold starts if needed.              | S      | Low     | Medium (spiky)                            | ✅ Shipped (§2.10)           |
 | **M7** | Evaluate Prisma Client (or `pg`) vs PostgREST for hot queries — protocol win is real; full-app swap is not the default.       | L      | High    | High on _some_ queries; mixed for Alice   | 📋 Evaluated (§8)            |
 
-**Roadmap complete for existing features (2026-07-24).** Unused Express GET reads were removed 2026-08-14 (§6), including the work-item members hook and chat drawer list. Remaining optional hygiene: shared paginated-list helper. New surfaces should adopt §3 patterns as they land. **Do not start a wholesale Prisma Client migration** until a measured hot query justifies it (§8).
+**Roadmap complete for existing features (2026-07-24).** Unused Express GET reads were removed 2026-08-14 (§6). API table mutations use Prisma Client (2026-08-14). Remaining optional hygiene: shared paginated-list helper. New surfaces should adopt §3 patterns as they land. **Do not move RSC page reads onto Prisma** until a measured hot query justifies it (§8).
 
 **RLS reminder:** M1 reads run with the `authenticated` role and RLS unenforced. Before enabling RLS, add SELECT policies for `work_items`, `projects`, `users`, `sprints`, `project_members`, `teams`, and `team_members`. Dropdown cache (§2.7) uses the **service-role** client inside `unstable_cache` only.
 
@@ -466,7 +466,7 @@ Dynamic form reads that still need a round trip (project members on project sele
 
 ## 8. PostgREST (`supabase-js`) vs Prisma Client (M7)
 
-Prisma already owns **schema and migrations** in `@repo/db`. Runtime queries in `apps/web` and `apps/api` use **`supabase-js` → PostgREST → Postgres`**. That split is intentional ([DATABASE.md](./DATABASE.md), [TRD.md](../architecture/TRD.md)).
+Prisma already owns **schema and migrations** in `@repo/db`. Runtime **reads** in `apps/web` (and remaining API list/detail) use **`supabase-js` → PostgREST → Postgres`**. Express **table mutations** use Prisma Client over pooled `DATABASE_URL` (`apps/api/src/lib/prisma.ts`). That split is intentional ([DATABASE.md](./DATABASE.md), [TRD.md](../architecture/TRD.md)).
 
 ### What the manager is describing (true)
 
@@ -521,4 +521,4 @@ Prefer in this order:
 
 ### Decision (2026-08-14)
 
-**Do not migrate the whole app to Prisma Client for performance.** Keep PostgREST for CRUD list/detail reads. If a page is still slow after §3 patterns, profile that query and add an RPC or an API-side Prisma/`pg` reader for that path only. Revisit a broader Prisma runtime only after a measured win on a real route.
+**Do not migrate RSC / page reads to Prisma Client.** Keep PostgREST for CRUD list/detail reads. Express mutations use Prisma Client with pooled `DATABASE_URL`; Auth, Storage, and guarded RPCs stay on supabase-js. If a page is still slow after §3 patterns, profile that query and add an RPC or an API-side Prisma/`pg` reader for that path only.

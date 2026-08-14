@@ -8,7 +8,7 @@ import type {
   ChatMessage,
 } from '../_components/chat-client.types';
 
-export type { ChatConversation };
+export type { ChatConversation } from '../_components/chat-client.types';
 
 export type ChatPageBootstrap = {
   conversations: ChatConversation[];

@@ -7,7 +7,7 @@ import { ResponseDTO } from '@repo/types/connection';
 
 const workItemsPath = '/api/workItems';
 
-export type { WorkItemWorkLog };
+export type { WorkItemWorkLog } from '@repo/types';
 
 export async function createWorkItemWorkLog(
   workItemId: string,

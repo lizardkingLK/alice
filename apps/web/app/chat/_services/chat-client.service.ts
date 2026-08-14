@@ -1,12 +1,8 @@
 import { apiFetch } from '@/lib/api/api-client';
-import type {
-  ActionItem,
-  ChatConversation,
-  ChatMessage,
-} from './chat-client.types';
+import type { ActionItem, ChatMessage } from '../_components/chat-client.types';
 import type { ChatModelValue } from '@repo/types';
 
-export type { ChatConversation };
+export type { ChatConversation } from '../_components/chat-client.types';
 
 export async function sendChatMessage(
   history: ChatMessage[],

@@ -1,6 +1,11 @@
 import { supabase } from '../../../lib/supabase';
-import { auditCreateWithoutStatus, auditUpdate } from '../../../lib/audit';
-import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
+import { prisma } from '../../../lib/prisma';
+import {
+  prismaAuditCreateWithoutStatus,
+  prismaAuditUpdate,
+  prismaLockTimestamp,
+} from '../../../lib/prisma-audit';
+import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
 import type { Tables } from '@repo/types';
 
 export type TeamMemberRow = Tables<'team_members'>;
@@ -42,22 +47,20 @@ async function insertTeamMembers(
     return;
   }
 
-  const teamMembersPayload = memberIds.map((memberId) => ({
-    team_id: teamId,
-    user_id: memberId,
-    status: 'active' as const,
-    created_by: userId,
-    updated_by: userId,
-    updated_at: new Date().toISOString(),
-  }));
-
-  const { error } = await supabase
-    .from('team_members')
-    .insert(teamMembersPayload);
-
-  if (error) {
-    console.error(failureMessage, error.message);
-    throw new Error(`${failureMessage}: ${error.message}`);
+  try {
+    await prisma.team_members.createMany({
+      data: memberIds.map((memberId) => ({
+        team_id: teamId,
+        user_id: memberId,
+        status: 'active' as const,
+        created_by: userId,
+        updated_by: userId,
+      })),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(failureMessage, message);
+    throw new Error(`${failureMessage}: ${message}`);
   }
 }
 
@@ -164,22 +167,12 @@ export class TeamsRepository {
     userId: string
   ): Promise<TeamRow> {
     const { member_ids, ...teamData } = teamInput;
-    const payload = {
-      ...teamData,
-      ...auditCreateWithoutStatus(userId),
-    };
-    const response = await supabase
-      .from('teams')
-      .insert(payload)
-      .select()
-      .single();
-
-    if (response.error) {
-      console.error('database failure creating team:', response.error.message);
-      throw new Error(`Create team DB error: ${response.error.message}`);
-    }
-
-    const createdTeam = response.data;
+    const createdTeam = await prisma.teams.create({
+      data: {
+        ...teamData,
+        ...prismaAuditCreateWithoutStatus(userId),
+      },
+    });
 
     if (member_ids && member_ids.length > 0) {
       try {
@@ -190,12 +183,16 @@ export class TeamsRepository {
           'Failed to add team members'
         );
       } catch (error) {
-        await supabase.from('teams').delete().eq('id', createdTeam.id);
+        await prisma.teams.delete({ where: { id: createdTeam.id } });
         throw error;
       }
     }
 
-    return createdTeam;
+    const row = await this.findById(createdTeam.id);
+    if (!row) {
+      throw new Error('Create team DB error');
+    }
+    return row;
   }
 
   async update(
@@ -210,42 +207,24 @@ export class TeamsRepository {
     expectedUpdatedAt: string
   ): Promise<TeamRow> {
     const { member_ids, ...teamData } = teamInput;
-    const payload = {
-      ...teamData,
-      ...auditUpdate(userId),
-    };
-    const response = await supabase
-      .from('teams')
-      .update(payload)
-      .eq('id', teamId)
-      .eq('updated_at', expectedUpdatedAt)
-      .select()
-      .maybeSingle();
+    const { count } = await prisma.teams.updateMany({
+      where: { id: teamId, updated_at: prismaLockTimestamp(expectedUpdatedAt) },
+      data: {
+        ...teamData,
+        ...prismaAuditUpdate(userId),
+      },
+    });
 
-    const updatedTeam = await resolveOptimisticUpdate({
-      data: response.data,
-      error: response.error,
+    const updatedTeam = await resolveOptimisticPrismaUpdate({
+      count,
+      fetchUpdated: () => this.findById(teamId),
       fetchCurrent: () => this.findById(teamId),
       notFoundMessage: 'Team not found',
     });
 
     if (member_ids) {
-      const deleteResponse = await supabase
-        .from('team_members')
-        .delete()
-        .eq('team_id', teamId);
-
-      if (deleteResponse.error) {
-        console.error(
-          'error. database failure deleting team members:',
-          deleteResponse.error.message
-        );
-        throw new Error(
-          `Failed to update team members after the team row was updated. Reload the team and retry: ${deleteResponse.error.message}`
-        );
-      }
-
       try {
+        await prisma.team_members.deleteMany({ where: { team_id: teamId } });
         await insertTeamMembers(
           teamId,
           member_ids,
@@ -292,34 +271,29 @@ export class TeamsRepository {
     actorId: string,
     expectedUpdatedAt: string
   ): Promise<void> {
-    const { data, error } = await supabase
-      .from('team_members')
-      .update({
+    const { count } = await prisma.team_members.updateMany({
+      where: {
+        team_id: teamId,
+        user_id: userId,
+        updated_at: prismaLockTimestamp(expectedUpdatedAt),
+      },
+      data: {
         ...patch,
         updated_by: actorId,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('team_id', teamId)
-      .eq('user_id', userId)
-      .eq('updated_at', expectedUpdatedAt)
-      .select('team_id')
-      .maybeSingle();
+        updated_at: new Date(),
+      },
+    });
 
-    await resolveOptimisticUpdate({
-      data,
-      error,
+    await resolveOptimisticPrismaUpdate({
+      count,
+      fetchUpdated: () => this.findMember(teamId, userId),
       fetchCurrent: () => this.findMember(teamId, userId),
       notFoundMessage: 'Team member not found',
     });
   }
 
   async delete(teamId: string): Promise<void> {
-    const response = await supabase.from('teams').delete().eq('id', teamId);
-
-    if (response.error) {
-      console.error('database failure deleting team:', response.error.message);
-      throw new Error(`Delete team DB error: ${response.error.message}`);
-    }
+    await prisma.teams.deleteMany({ where: { id: teamId } });
   }
 }
 

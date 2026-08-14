@@ -1,6 +1,7 @@
 import type { Database, Tables } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { env } from '../../../config/env';
+import { prisma } from '../../../lib/prisma';
 import { sanitizeLog } from './chat.utils';
 
 export type ChatConversationRow = Tables<'chat_conversations'>;
@@ -108,12 +109,10 @@ export class ChatRepository {
   }
 
   async touchConversationUpdatedAt(conversationId: string): Promise<void> {
-    const { error } = await this.db
-      .from('chat_conversations')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', conversationId);
-
-    if (error) throw error;
+    await prisma.chat_conversations.update({
+      where: { id: conversationId },
+      data: { updated_at: new Date() },
+    });
   }
 
   async listConversations(userId: string): Promise<ChatConversationSummary[]> {
@@ -138,44 +137,19 @@ export class ChatRepository {
     userId: string,
     title = 'New Chat'
   ): Promise<string> {
-    const { data, error } = await this.db
-      .from('chat_conversations')
-      .insert({
-        user_id: userId,
-        title,
-        updated_at: new Date().toISOString(),
-      })
-      .select('id')
-      .single();
-
-    if (error) {
-      console.error(
-        'Failed to create chat conversation:',
-        sanitizeLog(error.message)
-      );
-      throw error;
-    }
-
-    return data.id;
+    const created = await prisma.chat_conversations.create({
+      data: { user_id: userId, title },
+    });
+    return created.id;
   }
 
   async deleteConversation(
     userId: string,
     conversationId: string
   ): Promise<void> {
-    const { error } = await this.db
-      .from('chat_conversations')
-      .delete()
-      .eq('id', conversationId)
-      .eq('user_id', userId);
-
-    if (error) {
-      console.error(
-        'Failed to delete chat conversation row:',
-        sanitizeLog(error.message)
-      );
-      throw error;
-    }
+    await prisma.chat_conversations.deleteMany({
+      where: { id: conversationId, user_id: userId },
+    });
   }
 
   async listUsersSnapshot(): Promise<ChatUserSnapshot[]> {

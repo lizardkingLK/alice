@@ -4,7 +4,14 @@ import {
   type SprintRowWithProject,
   type Tables,
 } from '@repo/types';
-import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
+import { prisma } from '../../../lib/prisma';
+import {
+  prismaAuditCreateWithoutStatus,
+  prismaAuditUpdate,
+  prismaLockTimestamp,
+  prismaOptionalDate,
+} from '../../../lib/prisma-audit';
+import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type SprintRow = Tables<'sprints'>;
@@ -24,26 +31,22 @@ export class SprintsRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
   async create(input: CreateSprintRecord): Promise<SprintRowWithProject> {
-    const { data, error } = await this.db
-      .from('sprints')
-      .insert({
+    const created = await prisma.sprints.create({
+      data: {
         name: input.name,
         goal: input.goal,
-        start_date: input.startDate,
-        end_date: input.endDate,
-        created_by: input.createdBy,
+        start_date: prismaOptionalDate(input.startDate)!,
+        end_date: prismaOptionalDate(input.endDate)!,
         project_id: input.projectId,
-        updated_at: new Date().toISOString(),
-      })
-      .select(SPRINT_WITH_PROJECT)
-      .single();
+        ...prismaAuditCreateWithoutStatus(input.createdBy),
+      },
+    });
 
-    if (error) {
-      console.error('error. failed to create sprint:', error.message);
+    const row = await this.findById(created.id);
+    if (!row) {
       throw new Error('Failed to create sprint');
     }
-
-    return data as unknown as SprintRowWithProject;
+    return row;
   }
 
   async updateStatus(
@@ -52,24 +55,23 @@ export class SprintsRepository {
     status: SprintRow['status'],
     expectedUpdatedAt: string
   ): Promise<SprintRowWithProject> {
-    const { data, error } = await this.db
-      .from('sprints')
-      .update({
+    const { count } = await prisma.sprints.updateMany({
+      where: {
+        id: sprintId,
+        updated_at: prismaLockTimestamp(expectedUpdatedAt),
+      },
+      data: {
         status,
-        updated_by: userId,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', sprintId)
-      .eq('updated_at', expectedUpdatedAt)
-      .select(SPRINT_WITH_PROJECT)
-      .maybeSingle();
+        ...prismaAuditUpdate(userId),
+      },
+    });
 
-    return (await resolveOptimisticUpdate({
-      data: data as unknown as SprintRowWithProject | null,
-      error,
+    return resolveOptimisticPrismaUpdate({
+      count,
+      fetchUpdated: () => this.findById(sprintId),
       fetchCurrent: () => this.findById(sprintId),
       notFoundMessage: 'Sprint not found',
-    })) as SprintRowWithProject;
+    });
   }
 
   async getWorkItemCount(sprintId: string): Promise<number> {
@@ -131,28 +133,27 @@ export class SprintsRepository {
     },
     expectedUpdatedAt: string
   ): Promise<SprintRowWithProject> {
-    const { data, error } = await this.db
-      .from('sprints')
-      .update({
+    const { count } = await prisma.sprints.updateMany({
+      where: {
+        id: sprintId,
+        updated_at: prismaLockTimestamp(expectedUpdatedAt),
+      },
+      data: {
         name: input.name,
         goal: input.goal,
-        start_date: input.startDate,
-        end_date: input.endDate,
+        start_date: prismaOptionalDate(input.startDate)!,
+        end_date: prismaOptionalDate(input.endDate)!,
         project_id: input.projectId,
-        updated_by: userId,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', sprintId)
-      .eq('updated_at', expectedUpdatedAt)
-      .select(SPRINT_WITH_PROJECT)
-      .maybeSingle();
+        ...prismaAuditUpdate(userId),
+      },
+    });
 
-    return (await resolveOptimisticUpdate({
-      data: data as unknown as SprintRowWithProject | null,
-      error,
+    return resolveOptimisticPrismaUpdate({
+      count,
+      fetchUpdated: () => this.findById(sprintId),
       fetchCurrent: () => this.findById(sprintId),
       notFoundMessage: 'Sprint not found',
-    })) as SprintRowWithProject;
+    });
   }
 }
 

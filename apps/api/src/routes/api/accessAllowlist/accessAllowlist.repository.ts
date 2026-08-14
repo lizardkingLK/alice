@@ -1,10 +1,13 @@
 import { supabase } from '../../../lib/supabase';
+import { type RecordStatus } from '../../../lib/audit';
+import { prisma } from '../../../lib/prisma';
 import {
-  auditCreateWithoutStatus,
-  auditUpdate,
-  type RecordStatus,
-} from '../../../lib/audit';
-import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
+  prismaAuditCreateWithoutStatus,
+  prismaAuditUpdate,
+  prismaLockTimestamp,
+  prismaOptionalDate,
+} from '../../../lib/prisma-audit';
+import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
 import {
   isValidAccessAllowlistDomain,
   normalizeAccessAllowlistDomain,
@@ -179,28 +182,22 @@ export class AccessAllowlistRepository {
         ? null
         : new Date(params.expires_at).toISOString();
 
-    const { data, error } = await supabase
-      .from('access_allowlist')
-      .insert({
+    const created = await prisma.access_allowlist.create({
+      data: {
         kind,
         value: normalizedValue,
         label: params.label ?? null,
-        expires_at,
+        expires_at: prismaOptionalDate(expires_at) ?? null,
         status: params.status,
-        ...auditCreateWithoutStatus(actorId),
-      })
-      .select('*')
-      .single();
+        ...prismaAuditCreateWithoutStatus(actorId),
+      },
+    });
 
-    if (error) {
-      console.error(
-        'error. failed to create access_allowlist entry:',
-        error.message
-      );
+    const row = await this.findById(created.id);
+    if (!row) {
       throw new Error('Failed to create access allowlist entry');
     }
-
-    return data as AccessAllowlistRow;
+    return row;
   }
 
   async update(params: {
@@ -224,22 +221,24 @@ export class AccessAllowlistRepository {
       }
     }
 
-    const { data, error } = await supabase
-      .from('access_allowlist')
-      .update({
+    const { count } = await prisma.access_allowlist.updateMany({
+      where: {
+        id: params.id,
+        updated_at: prismaLockTimestamp(params.expectedUpdatedAt),
+      },
+      data: {
         ...(params.label !== undefined ? { label: params.label ?? null } : {}),
-        ...(expires_at !== undefined ? { expires_at } : {}),
+        ...(expires_at !== undefined
+          ? { expires_at: prismaOptionalDate(expires_at) }
+          : {}),
         ...(params.status !== undefined ? { status: params.status } : {}),
-        ...auditUpdate(params.actorId),
-      })
-      .eq('id', params.id)
-      .eq('updated_at', params.expectedUpdatedAt)
-      .select('*')
-      .maybeSingle();
+        ...prismaAuditUpdate(params.actorId),
+      },
+    });
 
-    return await resolveOptimisticUpdate({
-      data: data as AccessAllowlistRow | null,
-      error,
+    return resolveOptimisticPrismaUpdate({
+      count,
+      fetchUpdated: () => this.findById(params.id),
       fetchCurrent: () => this.findById(params.id),
       notFoundMessage: 'Access allowlist entry not found',
     });
@@ -250,20 +249,20 @@ export class AccessAllowlistRepository {
     id: string;
     expectedUpdatedAt: string;
   }) {
-    const { data, error } = await supabase
-      .from('access_allowlist')
-      .update({
+    const { count } = await prisma.access_allowlist.updateMany({
+      where: {
+        id: params.id,
+        updated_at: prismaLockTimestamp(params.expectedUpdatedAt),
+      },
+      data: {
         status: 'deleted',
-        ...auditUpdate(params.actorId),
-      })
-      .eq('id', params.id)
-      .eq('updated_at', params.expectedUpdatedAt)
-      .select('*')
-      .maybeSingle();
+        ...prismaAuditUpdate(params.actorId),
+      },
+    });
 
-    await resolveOptimisticUpdate({
-      data: data as AccessAllowlistRow | null,
-      error,
+    await resolveOptimisticPrismaUpdate({
+      count,
+      fetchUpdated: () => this.findById(params.id),
       fetchCurrent: () => this.findById(params.id),
       notFoundMessage: 'Access allowlist entry not found',
     });

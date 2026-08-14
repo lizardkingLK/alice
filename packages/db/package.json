@@ -3,24 +3,40 @@
   "version": "0.0.0",
   "type": "module",
   "private": true,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "lint": "eslint . --max-warnings 0",
     "check:env": "tsx src/env.ts",
     "checktypes": "pnpm run check:env && tsc --noEmit",
+    "build": "tsc",
     "validate": "prisma validate",
     "create:migrate": "bash ./script_create_migrate.sh",
     "create:migrate:win": "powershell -NoProfile -ExecutionPolicy Bypass -File ./script_create_migrate.ps1",
     "rollback:migrate": "bash ./script_rollback_migrate.sh",
     "seed": "tsx src/seed.ts",
     "generate": "bash ./script_generate_types.sh",
+    "generate:client": "prisma generate",
     "generate:win": "powershell -NoProfile -ExecutionPolicy Bypass -File ./script_generate_types.ps1",
     "migrate:deploy": "prisma migrate deploy",
     "migrate:reset": "prisma migrate reset --force",
     "migrate:status": "prisma migrate status"
   },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
+    "@repo/types": "workspace:*",
+    "pg": "^8.22.0"
+  },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
-    "@repo/types": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@supabase/supabase-js": "^2.108.2",
     "@types/node": "^20.19.43",
@@ -28,7 +44,6 @@
     "dotenv": "^17.4.2",
     "eslint": "^9.39.1",
     "globals": "^16.5.0",
-    "pg": "^8.22.0",
     "prisma": "^7.9.1",
     "supabase": "^2.76.7",
     "tsx": "^4.22.4",

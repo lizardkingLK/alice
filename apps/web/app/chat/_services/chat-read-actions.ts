@@ -3,7 +3,7 @@
 import { listChatConversationsLive } from './chat.service.server';
 import type { ChatConversation } from '../_components/chat-client.types';
 
-export type { ChatConversation };
+export type { ChatConversation } from '../_components/chat-client.types';
 
 /**
  * Client-callable conversation list. Direct Supabase (session user), not Express.

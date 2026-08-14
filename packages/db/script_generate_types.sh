@@ -29,3 +29,6 @@ pnpm exec supabase gen types typescript \
   > "${output}"
 
 echo "info. wrote ${output}"
+
+pnpm exec prisma generate
+echo "info. wrote ../types/src/generated/prisma"

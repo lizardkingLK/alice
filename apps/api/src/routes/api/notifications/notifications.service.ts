@@ -1,4 +1,6 @@
 import { supabase } from '../../../lib/supabase';
+import { prisma } from '../../../lib/prisma';
+import { prismaNotificationCreate } from '../../../lib/prisma-audit';
 import {
   NotificationBuilder,
   AssignNotification,
@@ -18,17 +20,15 @@ export class NotificationsService {
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (uuidRegex.test(params.subscriberId)) {
       try {
-        const { error } = await supabase.from('notifications').insert({
-          user_id: params.subscriberId,
-          type: 'mention',
-          message: params.message,
-          read_status: false,
-          status: 'active',
-          updated_at: new Date().toISOString(),
+        await prisma.notifications.create({
+          data: {
+            user_id: params.subscriberId,
+            type: 'mention',
+            message: params.message,
+            read_status: false,
+            status: 'active',
+          },
         });
-        if (error) {
-          console.error('Failed to insert notification to Supabase:', error);
-        }
       } catch (err) {
         console.error('Error inserting notification to Supabase:', err);
       }
@@ -65,22 +65,15 @@ export class NotificationsService {
     const titlePrefix = params.title ? `${params.title}\n\n` : '';
     const fullMessage = `${titlePrefix}From: ${params.fromEmail}${fromNamePart}\n\n${params.message}`;
 
-    const { error: insertError } = await supabase.from('notifications').insert(
-      adminIds.map((adminId) => ({
+    await prisma.notifications.createMany({
+      data: adminIds.map((adminId) => ({
         user_id: adminId,
         type: 'comment',
         message: fullMessage,
         read_status: false,
         status: 'active',
-        updated_at: new Date().toISOString(),
-      }))
-    );
-
-    if (insertError) {
-      throw new Error(
-        `Failed to insert admin contact notifications: ${insertError.message}`
-      );
-    }
+      })),
+    });
   }
 
   async createAssignNotification(params: {
@@ -112,16 +105,9 @@ export class NotificationsService {
         .WithUpdatedBy(params.actorId)
         .Build();
 
-      const { error } = await supabase
-        .from('notifications')
-        .insert(notification);
-
-      if (error) {
-        console.error(
-          'Failed to insert assign notification to Supabase:',
-          error
-        );
-      }
+      await prisma.notifications.create({
+        data: prismaNotificationCreate(notification),
+      });
     } catch (err) {
       console.error('Error creating assign notification:', err);
     }
@@ -156,16 +142,9 @@ export class NotificationsService {
         .WithUpdatedBy(params.actorId)
         .Build();
 
-      const { error } = await supabase
-        .from('notifications')
-        .insert(notification);
-
-      if (error) {
-        console.error(
-          'Failed to insert mention notification to Supabase:',
-          error
-        );
-      }
+      await prisma.notifications.create({
+        data: prismaNotificationCreate(notification),
+      });
     } catch (err) {
       console.error('Error creating mention notification:', err);
     }
@@ -262,15 +241,9 @@ export class NotificationsService {
     }
 
     if (notificationsToInsert.length > 0) {
-      const { error: insertError } = await supabase
-        .from('notifications')
-        .insert(notificationsToInsert);
-      if (insertError) {
-        console.error('Failed to insert due_date notifications:', insertError);
-        throw new Error(
-          `Failed to insert notifications: ${insertError.message}`
-        );
-      }
+      await prisma.notifications.createMany({
+        data: notificationsToInsert.map(prismaNotificationCreate),
+      });
     }
     return {
       checkedCount: workItems.length,
