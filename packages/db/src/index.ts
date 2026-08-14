@@ -1,4 +1,5 @@
 export {
+  connectionStringForPgAdapter,
   createPrismaClient,
   getPrismaClient,
   type PrismaClient,
