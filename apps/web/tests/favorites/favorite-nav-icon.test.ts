@@ -3,9 +3,10 @@ import {
   ClipboardPenIcon,
   FolderKanban,
   Kanban,
-  ListTodo,
-  LayoutDashboard,
   Layers,
+  LayoutDashboard,
+  ListTodo,
+  Sparkles,
 } from '@repo/ui/lib/icons';
 import {
   DEFAULT_FAVORITE_NAV_ICON,
@@ -22,6 +23,7 @@ describe('resolveFavoriteNavIcon', () => {
     expect(resolveFavoriteNavIcon('/board')).toBe(Kanban);
     expect(resolveFavoriteNavIcon('/dashboard')).toBe(LayoutDashboard);
     expect(resolveFavoriteNavIcon('/views')).toBe(Layers);
+    expect(resolveFavoriteNavIcon('/chat')).toBe(Sparkles);
   });
 
   it('strips query before matching and falls back for unknown paths', () => {

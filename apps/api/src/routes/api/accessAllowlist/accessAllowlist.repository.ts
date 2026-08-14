@@ -8,7 +8,10 @@ import {
   prismaOptionalDate,
 } from '../../../lib/prisma-audit';
 import { isPrismaUniqueConflict } from '../../../lib/prisma-errors';
-import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
+import {
+  OptimisticLockError,
+  resolveOptimisticPrismaUpdate,
+} from '../../../lib/optimistic-lock';
 import {
   isValidAccessAllowlistDomain,
   normalizeAccessAllowlistDomain,
@@ -165,28 +168,26 @@ export class AccessAllowlistRepository {
     });
   }
 
-  async softDelete(params: {
-    actorId: string;
+  async hardDelete(params: {
     id: string;
     expectedUpdatedAt: string;
-  }) {
-    const { count } = await prisma.access_allowlist.updateMany({
+  }): Promise<void> {
+    const { count } = await prisma.access_allowlist.deleteMany({
       where: {
         id: params.id,
         updated_at: prismaLockTimestamp(params.expectedUpdatedAt),
       },
-      data: {
-        status: 'deleted',
-        ...prismaAuditUpdate(params.actorId),
-      },
     });
 
-    await resolveOptimisticPrismaUpdate({
-      count,
-      fetchUpdated: () => this.findById(params.id),
-      fetchCurrent: () => this.findById(params.id),
-      notFoundMessage: 'Access allowlist entry not found',
-    });
+    if (count > 0) {
+      return;
+    }
+
+    const current = await this.findById(params.id);
+    if (!current) {
+      throw new Error('Access allowlist entry not found');
+    }
+    throw new OptimisticLockError(current);
   }
 }
 

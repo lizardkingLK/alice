@@ -6,7 +6,7 @@ import { getDbUser } from '@/lib/auth';
 import { DashboardHeader } from './dashboard-header';
 import { DashboardSidebar } from './dashboard-sidebar';
 import type { DashboardBreadcrumbOverride } from './dashboard-breadcrumb';
-import { FloatingChatWidget } from '@/app/chat/_components/floating-chat-widget';
+import { ChatLauncherProvider } from '@/app/chat/_components/chat-launcher';
 
 type DashboardShellProps = {
   description?: string;
@@ -79,21 +79,22 @@ export async function DashboardShell({
           role={dbUser?.role ?? null}
         />
         <SidebarInset className="min-h-0 overflow-hidden">
-          {stickyHeader ? (
-            <>
-              {header}
-              <div className={scrollRegionClass}>{body}</div>
-            </>
-          ) : (
-            <div className={scrollRegionClass}>
-              {header}
-              {body}
-            </div>
-          )}
-          <FloatingChatWidget
+          <ChatLauncherProvider
             currentUserName={dbUser?.name}
             currentUserImageUrl={dbUser?.profile_picture}
-          />
+          >
+            {stickyHeader ? (
+              <>
+                {header}
+                <div className={scrollRegionClass}>{body}</div>
+              </>
+            ) : (
+              <div className={scrollRegionClass}>
+                {header}
+                {body}
+              </div>
+            )}
+          </ChatLauncherProvider>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

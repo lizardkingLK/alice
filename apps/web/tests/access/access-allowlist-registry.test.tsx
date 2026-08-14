@@ -180,12 +180,12 @@ describe('AccessAllowlistRegistry', () => {
     );
 
     // Act — dropdown mock keeps row actions visible
-    fireEvent.click(screen.getAllByRole('button', { name: /^Remove$/i })[0]!);
+    fireEvent.click(screen.getAllByRole('button', { name: /^Delete$/i })[0]!);
     expect(
-      await screen.findByText(/Remove allowlist entry/i)
+      await screen.findByText(/Delete allowlist entry/i)
     ).toBeInTheDocument();
-    const removeButtons = screen.getAllByRole('button', { name: /^Remove$/i });
-    fireEvent.click(removeButtons.at(-1)!);
+    const deleteButtons = screen.getAllByRole('button', { name: /^Delete$/i });
+    fireEvent.click(deleteButtons.at(-1)!);
 
     // Assert
     await waitFor(() => {

@@ -199,7 +199,9 @@ export function AccessAllowlistForm({
           {isEdit ? 'Edit allowlist entry' : 'Add allowlist entry'}
         </CardTitle>
         <CardDescription>
-          Approve a company domain or a specific email for app admission.
+          Approve a company domain or a specific email for app admission. Adding
+          an email sends that person an invite (or a sign-in link if they
+          already have an account). Domain rows do not send mail.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -237,7 +239,6 @@ export function AccessAllowlistForm({
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>
                   <SelectItem value="archived">Archived</SelectItem>
-                  <SelectItem value="deleted">Deleted</SelectItem>
                 </SelectContent>
               </Select>
             </div>

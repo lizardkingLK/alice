@@ -96,14 +96,17 @@ sequenceDiagram
   Signup->>Actions: Server Action
   Actions->>Auth: signUp(email, password, emailRedirectTo=/auth/callback?next=/dashboard)
   Auth-->>Actions: user (+ session if confirm disabled)
-  alt User returned
+  alt Duplicate email (empty identities or already registered)
+    Actions->>Auth: resetPasswordForEmail (quiet; same as forgot-password)
+    Actions-->>U: Redirect /signup?checkEmail=1 (generic copy)
+  else User returned and new
     Actions->>DB: ensurePublicUser(user)
   end
   alt Email confirmation required (no session)
     Auth->>Mail: Confirmation email
     Actions-->>U: Redirect /signup?checkEmail=1
-    U->>Mail: Open confirm link
-    Mail->>CB: ?token_hash=…&type=signup&next=/dashboard
+    U->>Mail: Open confirm or recovery link
+    Mail->>CB: ?token_hash=…&type=signup|recovery&next=…
     CB->>Auth: verifyOtp({ type: 'signup', token_hash })
     CB->>DB: ensurePublicUser(user)
     CB-->>U: Redirect /dashboard
@@ -117,6 +120,7 @@ sequenceDiagram
 - `emailRedirectTo` is built from the request origin / `NEXT_PUBLIC_SITE_URL` via `buildAuthCallbackUrl`.
 - Default role for self-signup profiles is **`member`** (`ensurePublicUser` → `resolveRole`).
 - Confirmation depends on the Supabase project setting “Confirm email”. When enabled, the **Confirm signup** email template must use the `token_hash` link (see §12).
+- A **second sign-up with the same email** must not insert `public.users` again, and must not tell the browser the address is taken. With “Confirm email” on, GoTrue often returns **200 + a user with empty `identities`**. Treat that (and Auth “already registered”) as an existing account: skip `ensurePublicUser`, send a **recovery email** (same `resetPasswordForEmail` path as forgot-password), and redirect `/signup?checkEmail=1` with the generic copy _If this email is valid, we sent a message with the next steps._ New sign-ups that need confirmation use that same page copy. `ensurePublicUser` is also idempotent on `id` / `email` unique violations.
 
 ---
 
@@ -255,7 +259,7 @@ Supabase supports (when enabled in project Auth settings):
 | Existing account         | New attempt                     | Typical result                                                                                         |
 | ------------------------ | ------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | Email/password, verified | Google, **same** verified email | Automatic link → one user                                                                              |
-| Email/password           | Sign up again, same email       | Auth rejects / “already registered”                                                                    |
+| Email/password           | Sign up again, same email       | Same generic check-email UI as a new sign-up; recovery email sent; no second `public.users` insert     |
 | Google-only              | Email signup, same email        | Depends on confirm + linking settings; often blocked or linked after verify                            |
 | Two different emails     | User wants one login            | Needs **manual** linking (not in app today)                                                            |
 | Admin invite pending     | Self-signup same email          | Duplicate risk — admins should invite first; registry checks `public.users` email uniqueness on invite |

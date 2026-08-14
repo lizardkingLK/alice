@@ -9,6 +9,10 @@ import {
   resolveSafeRedirectPath,
 } from '@/lib/auth-redirect';
 import { getAuthOrigin } from '@/lib/auth-redirect.server';
+import {
+  isExistingAccountAuthError,
+  isObfuscatedDuplicateSignup,
+} from '@/lib/auth-existing-account';
 import { ensurePublicUser } from '@/lib/ensure-public-user';
 import { isEmailAllowed } from '@/lib/access-allowlist';
 import { createClient } from '@/lib/supabase/server';
@@ -87,6 +91,15 @@ export async function signUp(formData: FormData) {
     options: { emailRedirectTo },
   });
 
+  const isDuplicateSignup =
+    (error && isExistingAccountAuthError(error.message)) ||
+    (!error && data.user && isObfuscatedDuplicateSignup(data.user));
+
+  if (isDuplicateSignup) {
+    await sendRecoveryEmailQuietly(supabase, email, origin);
+    redirect('/signup?checkEmail=1');
+  }
+
   if (error) {
     redirect(`/signup?error=${encodeURIComponent(error.message)}`);
   }
@@ -126,11 +139,20 @@ export async function requestPasswordReset(formData: FormData) {
   }
 
   const origin = await getAuthOrigin();
-  const redirectTo = buildAuthCallbackUrl(origin, '/reset-password');
-
   const supabase = await createClient();
+  await sendRecoveryEmailQuietly(supabase, validation.data.email, origin);
+
+  redirect('/forgot-password?sent=1');
+}
+
+async function sendRecoveryEmailQuietly(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  email: string,
+  origin: string
+) {
+  const redirectTo = buildAuthCallbackUrl(origin, '/reset-password');
   const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-    validation.data.email,
+    email,
     { redirectTo }
   );
 
@@ -140,6 +162,4 @@ export async function requestPasswordReset(formData: FormData) {
       resetError.message
     );
   }
-
-  redirect('/forgot-password?sent=1');
 }
