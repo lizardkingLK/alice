@@ -4,6 +4,12 @@ const jiti = createJiti(import.meta.url);
 
 await jiti.import('./lib/env/env');
 
+const apiOrigin = (
+  process.env.INTERNAL_API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  'http://localhost:5000'
+).replace(/\/$/, '');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['@repo/ui', '@repo/types'],
@@ -19,6 +25,17 @@ const nextConfig = {
     ],
   },
   output: 'standalone',
+  async rewrites() {
+    if (process.env.NODE_ENV === 'production') {
+      return [];
+    }
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${apiOrigin}/api/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -38,6 +38,15 @@ type TreeifiedError = {
 };
 
 export function getAPIUrl() {
+  // In the browser during `next dev`, call the Next origin so mutations are
+  // rewritten to Express. Direct `localhost:5000` fails in a devcontainer
+  // when only port 3000 is forwarded (Save view never reaches the API).
+  if (
+    globalThis.window !== undefined &&
+    process.env.NODE_ENV === 'development'
+  ) {
+    return '';
+  }
   return process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL;
 }
 
@@ -114,13 +123,28 @@ function isNetworkConnectivityError(error: unknown): boolean {
   );
 }
 
+const FETCH_TIMEOUT_MS = 20_000;
+
+function mergeAbortSignals(
+  timeoutMs: number,
+  external?: AbortSignal | null
+): AbortSignal {
+  const timeout = AbortSignal.timeout(timeoutMs);
+  if (!external) {
+    return timeout;
+  }
+  return AbortSignal.any([timeout, external]);
+}
+
 export async function getResponse<T>(
   path: string,
   token: string,
   init?: RequestInit
 ): Promise<T> {
   const apiUrl = getAPIUrl();
-  if (!apiUrl) {
+  // `''` is same-origin in `next dev` (rewritten to Express). Do not treat it
+  // as missing — `!''` is true and was aborting Save view immediately.
+  if (apiUrl == null) {
     throw new BackendUnreachableError();
   }
 
@@ -143,6 +167,7 @@ export async function getResponse<T>(
       cache: 'no-store',
       ...init,
       headers,
+      signal: mergeAbortSignals(FETCH_TIMEOUT_MS, init?.signal),
     });
   } catch (error) {
     if (isNetworkConnectivityError(error)) {

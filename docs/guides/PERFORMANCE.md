@@ -500,7 +500,7 @@ A wholesale Prisma Client rollout would:
 
 | Cost                       | Why it matters here                                                                                                                                                                              |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Serverless connections** | Vercel functions + Prisma need transaction-mode pooling (`DATABASE_URL` / Supavisor). Misconfigured pooling causes exhausted connections or prepared-statement errors.                           |
+| **Serverless connections** | Prisma Client uses `@prisma/adapter-pg`, which needs Supavisor **session** mode (`DATABASE_URL` on the pooler host, port 5432). Transaction mode (6543) can stall mutations indefinitely.        |
 | **RLS / identity**         | RSC reads today use the **user JWT + anon key**. Prisma typically uses a DB role (often bypassing RLS unless you set `SET LOCAL` / `request.jwt.claim`). Auth stays on `supabase-js` either way. |
 | **Two type systems**       | Apps consume `@repo/types` `Database` / `Tables<>`. Prisma generates a second client. Dual sources of truth unless we drop generated Supabase types.                                             |
 | **Still need supabase-js** | Auth, Storage (chat history, attachments), Realtime if we add it. Prisma does not replace those products.                                                                                        |

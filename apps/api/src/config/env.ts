@@ -13,7 +13,7 @@ const serverSchema = z.object({
   JIRA_EMAIL: z.string().optional(),
   /** Optional; when set, `/notifications/check-due-dates` requires `Authorization: Bearer <CRON_SECRET>`. */
   CRON_SECRET: z.string().min(1).optional(),
-  /** Pooled Postgres URL for Prisma Client (Supavisor transaction mode). */
+  /** Pooled Postgres URL for Prisma Client (Supavisor session mode, port 5432). */
   DATABASE_URL: z.string().min(1),
 });
 

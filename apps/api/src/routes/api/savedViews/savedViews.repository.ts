@@ -16,6 +16,36 @@ import {
 export type SavedViewRow = Tables<'saved_views'>;
 export type SavedViewShareRow = Tables<'saved_view_shares'>;
 
+function toSavedViewRow(row: {
+  id: string;
+  owner_id: string;
+  title: string;
+  description: string | null;
+  pathname: string;
+  search: string;
+  project_id: string | null;
+  status: SavedViewRow['status'];
+  created_by: string | null;
+  created_at: Date;
+  updated_by: string | null;
+  updated_at: Date;
+}): SavedViewRow {
+  return {
+    id: row.id,
+    owner_id: row.owner_id,
+    title: row.title,
+    description: row.description,
+    pathname: row.pathname,
+    search: row.search,
+    project_id: row.project_id,
+    status: row.status,
+    created_by: row.created_by,
+    created_at: row.created_at.toISOString(),
+    updated_by: row.updated_by,
+    updated_at: row.updated_at.toISOString(),
+  };
+}
+
 export class SavedViewsRepository {
   async create(
     ownerId: string,
@@ -77,7 +107,7 @@ export class SavedViewsRepository {
     search: string,
     options: { readonly restore?: boolean } = {}
   ): Promise<SavedViewRow> {
-    await prisma.saved_views.update({
+    const updated = await prisma.saved_views.update({
       where: { id },
       data: {
         ...(options.restore ? { status: RecordStatus.active } : {}),
@@ -89,15 +119,7 @@ export class SavedViewsRepository {
       },
     });
 
-    const row = await this.getById(id);
-    if (!row) {
-      throw new Error(
-        options.restore
-          ? 'Failed to restore saved view'
-          : 'Failed to update saved view'
-      );
-    }
-    return row;
+    return toSavedViewRow(updated);
   }
 
   private async insertNew(
@@ -117,11 +139,7 @@ export class SavedViewsRepository {
       },
     });
 
-    const row = await this.getById(created.id);
-    if (!row) {
-      throw new Error('Failed to create saved view');
-    }
-    return row;
+    return toSavedViewRow(created);
   }
 
   async listOwned(
@@ -194,7 +212,7 @@ export class SavedViewsRepository {
     actorId: string,
     input: UpdateSavedViewInput
   ): Promise<SavedViewRow> {
-    await prisma.saved_views.update({
+    const updated = await prisma.saved_views.update({
       where: { id },
       data: {
         ...(input.title !== undefined ? { title: input.title } : {}),
@@ -205,11 +223,7 @@ export class SavedViewsRepository {
       },
     });
 
-    const row = await this.getById(id);
-    if (!row) {
-      throw new Error('Failed to update saved view');
-    }
-    return row;
+    return toSavedViewRow(updated);
   }
 
   async setStatus(
@@ -217,7 +231,7 @@ export class SavedViewsRepository {
     actorId: string,
     status: 'active' | 'archived'
   ): Promise<SavedViewRow> {
-    await prisma.saved_views.update({
+    const updated = await prisma.saved_views.update({
       where: { id },
       data: {
         status,
@@ -225,11 +239,7 @@ export class SavedViewsRepository {
       },
     });
 
-    const row = await this.getById(id);
-    if (!row) {
-      throw new Error('Failed to update saved view status');
-    }
-    return row;
+    return toSavedViewRow(updated);
   }
 
   async listProjectMemberIds(projectId: string): Promise<string[]> {
