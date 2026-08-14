@@ -17,12 +17,89 @@ type BurndownWorkLog = {
   logged_hours: number;
 };
 
+type BurndownSprintEmbed = Pick<
+  Tables<'sprints'>,
+  'id' | 'name' | 'start_date' | 'end_date' | 'status'
+> & {
+  work_items?: Array<
+    BurndownWorkItem & {
+      work_item_worklogs?: BurndownWorkLog[] | null;
+    }
+  > | null;
+};
+
+function toBurndownPayload(
+  sprintRow: Pick<
+    Tables<'sprints'>,
+    'id' | 'name' | 'start_date' | 'end_date' | 'status'
+  >,
+  workItems: BurndownWorkItem[],
+  workLogs: BurndownWorkLog[]
+): SprintBurndownPayload {
+  const { estimatedTotal, series } = computeBurndown(
+    sprintRow,
+    workItems,
+    workLogs
+  );
+
+  return {
+    sprint: {
+      id: sprintRow.id,
+      name: sprintRow.name,
+      startDate: sprintRow.start_date,
+      endDate: sprintRow.end_date,
+      status: sprintRow.status,
+    },
+    estimatedTotal,
+    series,
+  };
+}
+
+const BURNDOWN_EMBED_SELECT =
+  'id, name, start_date, end_date, status, work_items(id, story_points, done_at, work_item_worklogs(logged_at, logged_hours))';
+
 /**
  * RSC burndown reader — Supabase direct, no `web → api` hop.
- * Mirrors `GET /api/sprints/:id/burndown` for dashboard SSR.
- * Series math lives in `@repo/types` (`computeBurndown`) so API and web stay in sync.
+ * One PostgREST call (sprint + items + logs embed) instead of three sequential
+ * round trips. Series math stays in `@repo/types` (`computeBurndown`).
  */
 export async function getSprintBurndownServer(
+  sprintId: string
+): Promise<SprintBurndownPayload | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('sprints')
+    .select(BURNDOWN_EMBED_SELECT)
+    .eq('id', sprintId)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingRelationError(error)) {
+      console.warn(
+        'warn. burndown embed unavailable; falling back to split reads.'
+      );
+      return getSprintBurndownServerSplit(sprintId);
+    }
+    throwIfError(
+      error,
+      'failed to fetch sprint for burndown',
+      'Failed to fetch sprint'
+    );
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  const sprintRow = data as unknown as BurndownSprintEmbed;
+  const workItems = sprintRow.work_items ?? [];
+  const workLogs = workItems.flatMap((item) => item.work_item_worklogs ?? []);
+
+  return toBurndownPayload(sprintRow, workItems, workLogs);
+}
+
+async function getSprintBurndownServerSplit(
   sprintId: string
 ): Promise<SprintBurndownPayload | null> {
   const supabase = await createClient();
@@ -85,21 +162,5 @@ export async function getSprintBurndownServer(
     Tables<'sprints'>,
     'id' | 'name' | 'start_date' | 'end_date' | 'status'
   >;
-  const { estimatedTotal, series } = computeBurndown(
-    sprintRow,
-    workItems,
-    workLogs
-  );
-
-  return {
-    sprint: {
-      id: sprintRow.id,
-      name: sprintRow.name,
-      startDate: sprintRow.start_date,
-      endDate: sprintRow.end_date,
-      status: sprintRow.status,
-    },
-    estimatedTotal,
-    series,
-  };
+  return toBurndownPayload(sprintRow, workItems, workLogs);
 }
