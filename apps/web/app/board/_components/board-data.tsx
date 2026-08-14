@@ -26,12 +26,23 @@ export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
   const role = dbUser?.role ?? 'member';
   const isAdmin = role === 'admin';
 
-  const [projects, sprintsResult] = await Promise.all([
+  const [projects, sprintsResult, workItems] = await Promise.all([
     safeServerFetch(getProjectList(), [], 'fetch projects for board'),
     safeServerFetch(
       getSprintsPaginatedServer('active', 1, 100),
       EMPTY_ACTIVE_SPRINTS_PAGE,
       'fetch sprints for board'
+    ),
+    safeServerFetch(
+      getWorkItems(
+        {
+          projectId,
+          sprintId,
+        },
+        { includeDescription: true }
+      ),
+      [],
+      'fetch work items for board'
     ),
   ]);
 
@@ -44,16 +55,6 @@ export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
 
   const needsClientBootstrap = needsWorkspaceProjectBootstrap(
     resolvedSearchParams.project
-  );
-  // Always fetch: missing/all projectId means unfiltered board data.
-  // needsClientBootstrap only drives client-side URL seeding from localStorage.
-  const workItems = await safeServerFetch(
-    getWorkItems({
-      projectId,
-      sprintId,
-    }),
-    [],
-    'fetch work items for board'
   );
   const boardItems = workItems.filter((item) => item.status !== 'Draft');
 

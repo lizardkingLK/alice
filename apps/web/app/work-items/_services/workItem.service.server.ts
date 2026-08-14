@@ -3,12 +3,16 @@ import { User as DbUser } from '@/app/users/_services/users.service';
 import { createClient } from '@/lib/supabase/server';
 import { runPaginatedSelect, throwIfError } from '@/lib/db/query';
 import {
+  ASSIGNEE_SELECT,
+  REPORTER_SELECT,
+  workItemListSelect,
+} from '@/app/work-items/_helpers/work-item-list-select';
+import {
   Enums,
   Tables,
   buildWorkItemLabelsOrFilter,
   buildWorkItemSearchOrFilter,
   projectRelationSelect,
-  userRelationSelect,
 } from '@repo/types';
 
 type DbUserEssentials = Pick<DbUser, 'id' | 'name' | 'email'> & {
@@ -48,9 +52,11 @@ export type GetWorkItemsPaginatedResponse = {
   totalPages: number;
 };
 
-const ASSIGNEE_SELECT = userRelationSelect('assignee', 'assignee_id');
-const REPORTER_SELECT = userRelationSelect('reporter', 'reporter_id');
 const PROJECT_SELECT = projectRelationSelect();
+
+export type GetWorkItemsOptions = {
+  readonly includeDescription?: boolean;
+};
 
 // Structural shape of the Supabase builder's `.eq()` / `.is()` / `.or()`.
 /* eslint-disable no-unused-vars */
@@ -113,14 +119,14 @@ export function applyWorkItemFilters<Q extends WorkItemFilterable<Q>>(
  */
 
 export async function getWorkItems(
-  filters?: WorkItemListFilters
+  filters?: WorkItemListFilters,
+  options?: GetWorkItemsOptions
 ): Promise<DbWorkItem[]> {
   const supabase = await createClient();
+  const includeDescription = options?.includeDescription ?? false;
 
   const query = applyWorkItemFilters(
-    supabase
-      .from('work_items')
-      .select(`*, ${ASSIGNEE_SELECT}, ${REPORTER_SELECT}`),
+    supabase.from('work_items').select(workItemListSelect(includeDescription)),
     filters
   );
 
@@ -144,7 +150,7 @@ export async function getWorkItemsPaginated(
   let query = applyWorkItemFilters(
     supabase
       .from('work_items')
-      .select(`*, ${ASSIGNEE_SELECT}, ${REPORTER_SELECT}`, { count: 'exact' }),
+      .select(workItemListSelect(false), { count: 'exact' }),
     filters
   );
 

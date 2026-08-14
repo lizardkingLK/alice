@@ -62,17 +62,34 @@ export async function WorkItemsData({
     !isAssigneeLocked &&
     needsWorkspaceProjectBootstrap(resolvedSearchParams.project);
 
-  const [columnVisibilityBootstrap, projects, projectMembers, sprintsResult] =
-    await Promise.all([
-      readWorkItemTableColumnVisibilityBootstrap(),
-      safeServerFetch(getProjectList(), [], 'fetch projects for work items'),
-      safeServerFetch(getUserList(), [], 'fetch users for work items'),
-      safeServerFetch(
-        getSprintsPaginatedServer('active', 1, 100),
-        EMPTY_ACTIVE_SPRINTS_PAGE,
-        'fetch sprints for work items'
-      ),
-    ]);
+  const [
+    columnVisibilityBootstrap,
+    projects,
+    projectMembers,
+    sprintsResult,
+    workItemsResult,
+  ] = await Promise.all([
+    readWorkItemTableColumnVisibilityBootstrap(),
+    safeServerFetch(getProjectList(), [], 'fetch projects for work items'),
+    safeServerFetch(getUserList(), [], 'fetch users for work items'),
+    safeServerFetch(
+      getSprintsPaginatedServer('active', 1, 100),
+      EMPTY_ACTIVE_SPRINTS_PAGE,
+      'fetch sprints for work items'
+    ),
+    safeServerFetch(
+      getWorkItemsPaginated(page, limit, search, {
+        projectId,
+        type,
+        assigneeId,
+        sprintId,
+        labels,
+        ...workItemHierarchyListFilter(listView),
+      }),
+      EMPTY_WORK_ITEMS,
+      'fetch work items list'
+    ),
+  ]);
 
   const activeProjects = filterActiveProjects(projects);
   const sprints = sprintsResult.sprints;
@@ -80,22 +97,6 @@ export async function WorkItemsData({
     !isProjectLocked && !isAssigneeLocked && dbUser
       ? await getSuggestedBoardDefaults(dbUser, activeProjects, sprints)
       : null;
-
-  // Always fetch: missing projectId means "All projects", not an empty list.
-  // needsClientBootstrap only drives client-side URL seeding from localStorage.
-  // Hierarchy mode lists roots only; children load on expand.
-  const workItemsResult = await safeServerFetch(
-    getWorkItemsPaginated(page, limit, search, {
-      projectId,
-      type,
-      assigneeId,
-      sprintId,
-      labels,
-      ...workItemHierarchyListFilter(listView),
-    }),
-    EMPTY_WORK_ITEMS,
-    'fetch work items list'
-  );
 
   return (
     <WorkItemsWorkspace

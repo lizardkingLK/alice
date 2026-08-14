@@ -2,11 +2,11 @@
 
 How Alice keeps dashboard pages fast, what has already been optimized, and the roadmap for further wins.
 
-| Field        | Value                                                          |
-| ------------ | -------------------------------------------------------------- |
-| Status       | **Living**                                                     |
-| Last updated | 2026-08-14 (M1 table-list hops complete; paginated RSC helper) |
-| Scope        | `apps/web` RSC data loading, `apps/api` auth                   |
+| Field        | Value                                                      |
+| ------------ | ---------------------------------------------------------- |
+| Status       | **Living**                                                 |
+| Last updated | 2026-08-14 (M8 first slice: list payload + burndown embed) |
+| Scope        | `apps/web` RSC data loading, `apps/api` auth               |
 
 Related:
 
@@ -349,8 +349,9 @@ Targeting sub-1.5s. Ordered by impact-to-effort.
 | **M5** | Short-TTL caching for stable dropdown data (`getUserList`, `getProjectList`) via `unstable_cache` + `updateTag` on mutations. | S–M    | Low–Med | Medium                                    | ✅ Shipped (§2.7)            |
 | **M6** | Infra alignment — same Vercel region for web/api/Supabase, verify prod API URL path, warm cold starts if needed.              | S      | Low     | Medium (spiky)                            | ✅ Shipped (§2.10)           |
 | **M7** | Evaluate Prisma Client (or `pg`) vs PostgREST for hot queries — protocol win is real; full-app swap is not the default.       | L      | High    | High on _some_ queries; mixed for Alice   | 📋 Evaluated (§8)            |
+| **M8** | Inventory **critical hit areas** where Prisma Client (or `pg` / RPC) would beat PostgREST — measure first, swap one path.     | M      | Medium  | High only on named hot queries            | 🔄 First slice (§8.1)        |
 
-**Roadmap complete for existing features (2026-07-24).** Unused Express GET reads were removed 2026-08-14 (§6), including the allowlist table list. API table mutations use Prisma Client (2026-08-14). Paginated RSC lists share `runPaginatedSelect` (2026-08-14). New surfaces should adopt §3 patterns as they land. **Do not move RSC page reads onto Prisma** until a measured hot query justifies it (§8).
+**Shipped for existing features (2026-07-24 / 2026-08-14).** Unused Express GET reads were removed, including the allowlist table list. API table mutations use Prisma Client. Paginated RSC lists share `runPaginatedSelect`. New surfaces should adopt §3 patterns as they land. **Do not move RSC page reads onto Prisma by default.** The next performance goal is M8: find the few reads that still hurt, then rewrite only those (§8.1).
 
 **RLS reminder:** M1 reads run with the `authenticated` role and RLS unenforced. Before enabling RLS, add SELECT policies for `work_items`, `projects`, `users`, `sprints`, `project_members`, `teams`, and `team_members`. Dropdown cache (§2.7) uses the **service-role** client inside `unstable_cache` only.
 
@@ -462,7 +463,7 @@ Dynamic form reads that still need a round trip (project members on project sele
 
 - **Chrome DevTools → Network:** `document` timing = server RSC time; split TTFB vs download. Watch for multiple sequential calls to `NEXT_PUBLIC_API_URL`.
 - **Vercel logs:** compare `web` vs `api` function durations for one navigation; look for 1–3s cold starts on API invocations.
-- **Before any Prisma / `pg` swap:** pick 2–3 slow pages, record TTFB + query count. Re-measure the same navigation after a _single_ hot path is rewritten. Do not treat “PostgREST is HTTP” as proof of a whole-app win.
+- **Before any Prisma / `pg` swap:** pick 2–3 slow pages, record TTFB + query count. Re-measure the same navigation after a _single_ hot path is rewritten. Do not treat “PostgREST is HTTP” as proof of a whole-app win. Candidate list and done-when: **M8** (§8.1).
 
 ---
 
@@ -523,4 +524,60 @@ Prefer in this order:
 
 ### Decision (2026-08-14)
 
-**Do not migrate RSC / page reads to Prisma Client.** Keep PostgREST for CRUD list/detail reads. Express mutations use Prisma Client with pooled `DATABASE_URL`; Auth, Storage, and guarded RPCs stay on supabase-js. If a page is still slow after §3 patterns, profile that query and add an RPC or an API-side Prisma/`pg` reader for that path only.
+**Do not migrate RSC / page reads to Prisma Client by default.** Keep PostgREST for CRUD list/detail reads. Express mutations use Prisma Client with pooled `DATABASE_URL`; Auth, Storage, and guarded RPCs stay on supabase-js. If a page is still slow after §3 patterns, profile that query and add an RPC or an API-side Prisma/`pg` reader for that path only — that selection work is **M8**.
+
+### 8.1 Prisma hot-path inventory (M8)
+
+Mutations already use Prisma in `apps/api`. Remaining latency on dashboard **reads** is still mostly PostgREST HTTP + how many round trips a navigation fires (Singapore → Sydney). The next step is **not** “put Prisma in every `*.service.server.ts`.” It is to **name the queries where a TCP/SQL client would actually win**, prove it with timings, then change one path.
+
+#### Inventory (2026-08-14) — `/backlog`, `/dashboard`, `/work-items`
+
+Counted from RSC loaders (each `supabase.from().select()` ≈ one `rest/v1` call), not production TTFB. Auth `getDbUser()` is `cache()`d and omitted from the counts below.
+
+| Surface               | REST calls before                       | Bottleneck                                                                                      | Prisma in RSC?                        | What we did (first slice)                                                                                       |
+| --------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `/work-items`         | 4 parallel, **then** paginated items    | List waited on dropdowns/sprints. `select(*)` pulled TipTap `description` JSON for every row.   | No — paginated list + embeds is fine. | Fetch items **in the same** `Promise.all`. List select omits `description` (`workItemListSelect(false)`).       |
+| `/backlog`            | 4 parallel unbounded `getWorkItems()`   | `select(*)` + assignee/reporter embeds for **all** items (description JSON is the payload hog). | Not yet — payload, not protocol.      | Default `getWorkItems()` omits `description`. Four lists stay parallel PostgREST (workspace SQL would be M8.2). |
+| `/dashboard` burndown | 1 sprint list + **3 sequential** series | Sprint → items → worklogs waterfall. Math is already in `computeBurndown` (JS).                 | No — would add a hop or need RPC.     | One nested PostgREST embed: sprint + `work_items` + `work_item_worklogs` (`sprint-burndown.server.ts`).         |
+| `/board` (same pass)  | projects + sprints, **then** all items  | Same unbounded list as backlog, plus description for card preview.                              | No                                    | Items fetched in parallel with projects/sprints. Board still opts into `includeDescription: true`.              |
+
+**Rank (latency × traffic, qualitative):** `/work-items` and `/backlog` first (every session); `/dashboard` burndown next (3 sequential REST → 1 embed); `/projects/[id]` not in this slice.
+
+Prisma Client was **not** the right first rewrite: `apps/web` must not import `@repo/db`, and an API-side Prisma reader would reintroduce the M1 `web → api` hop. Prefer fewer round trips and narrower `select`s (this slice), then `rpc` if a single SQL workspace query is still needed.
+
+#### How to qualify a hit area
+
+A path is a candidate only if **all** of these hold:
+
+1. **User-visible** — the navigation is on the authenticated hot path (dashboard, board, backlog, work-item list/detail), not a rare admin screen.
+2. **Measured** — TTFB + query count recorded for that URL **before** any rewrite (§7). Guessing from “PostgREST is HTTP” is not enough.
+3. **Protocol-bound, not hop-bound** — M1 already removed `web → Express → Supabase`. If the page is still slow, the leftover cost should be nested embeds, N+1-style `.in()` follow-ups, or aggregations PostgREST expresses poorly — not a missing `Promise.all`.
+4. **One SQL shape** — Prisma/`pg` (or `supabase.rpc`) can replace **several** PostgREST calls or a heavy embed with **one** known query plan.
+
+If a page is slow because it fires four independent simple `select`s, fix fan-out first (workspace loader, narrower columns, indexes). Prisma will not magically merge those without a new query.
+
+#### Remaining candidates
+
+| Surface                      | Status after first slice                                    | Next if still slow                                                                     | Where to look                                |
+| ---------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `/backlog`                   | Description dropped; still 4 REST lists + unbounded rows    | Cap/filter items, or one `rpc` workspace query                                         | `getBacklogWorkspace()`                      |
+| `/work-items` list           | Parallelized; no description JSON                           | Re-measure TTFB; indexes on filter columns                                             | `work-items-data.tsx`                        |
+| `/dashboard` burndown        | Series is 1 embed call (+ sprint list for the dropdown)     | Confirm embed in Network; otherwise keep split fallback                                | `sprint-burndown.server.ts`                  |
+| `/board`                     | Parallelized; still ships description JSON for card preview | Plain-text preview column / omit description until sheet open                          | `board-data.tsx`                             |
+| `/work-items/[id]`           | Unchanged                                                   | Ancestor walk is up to 3 sequential `maybeSingle`s — candidate for one recursive query | `getWorkItemAncestors`                       |
+| `/projects/[id]`             | Unchanged                                                   | Same fan-out pattern as backlog                                                        | `getProjectWorkspace(id)`                    |
+| API joined reads still on JS | Unchanged                                                   | Return Prisma rows instead of supabase `getById` after writes                          | Repositories that `getById` after `prisma.*` |
+
+**Out of scope for M8:** Auth, Storage (chat history, attachment signed URLs), cron, GitHub proxy. Prisma does not replace those. Also out of scope: swapping Prisma into RSC **just** to share a client with API mutations.
+
+#### How to run the next measurement
+
+1. Record **document TTFB** and **`rest/v1` call count** on `/work-items`, `/backlog`, `/dashboard` after this slice (§7).
+2. Rank leftover cost by **(latency × traffic)**.
+3. Next rewrite should be **one** of: index, `supabase.rpc` workspace query for `/backlog`, or an **API-side** Prisma/`pg` reader. Do not put Prisma in RSC until pooling/RLS is solved.
+
+#### Done when
+
+- Production TTFB is recorded against the table above (replace qualitative rank with numbers).
+- At most **one** further read path is rewritten to Prisma/`pg`/RPC as a proof — or the inventory closes with “PostgREST + this slice is enough.”
+- `DATABASE.md` / TRD stay aligned: RSC default remains supabase-js; Prisma stays the Express mutation client unless a named exception is documented here.
