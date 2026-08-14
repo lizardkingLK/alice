@@ -4,7 +4,7 @@ import {
   userRelationSelect,
   type Json,
 } from '@repo/types';
-import { Prisma } from '@repo/types/prisma';
+import { Prisma, RecordStatus } from '@repo/types/prisma';
 import { supabase } from '../../../lib/supabase';
 import { prisma } from '../../../lib/prisma';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
@@ -70,25 +70,6 @@ export class CommentsRepository {
     return data;
   }
 
-  async listAll(workItemId?: string): Promise<CommentRow[]> {
-    let query = supabase.from('comments').select(COMMENT_WITH_RELATIONS);
-
-    if (workItemId) {
-      query = query.eq('work_item_id', workItemId);
-    }
-
-    const { data, error } = await query.order('created_at', {
-      ascending: false,
-    });
-
-    if (error) {
-      console.error('database error list all comments:', error.message);
-      throw new Error('Failed to retrieve comments list');
-    }
-
-    return (data || []) as unknown as CommentRow[];
-  }
-
   async create(input: {
     work_item_id: string;
     content: Json;
@@ -101,7 +82,7 @@ export class CommentsRepository {
         content: input.content as Prisma.InputJsonValue,
         author_id: input.author_id,
         parent_id: input.parent_id || null,
-        status: 'active',
+        status: RecordStatus.active,
       },
     });
 

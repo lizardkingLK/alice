@@ -4,7 +4,11 @@ export {
   type WorkItemStatus,
 } from '@repo/types';
 
-import { BOARD_WORK_ITEM_STATUSES, type WorkItemStatus } from '@repo/types';
+import {
+  BOARD_WORK_ITEM_STATUSES,
+  WorkItemStatusEnum,
+  type WorkItemStatus,
+} from '@repo/types';
 import * as React from 'react';
 import {
   Circle,
@@ -45,7 +49,7 @@ export function statusCompletionPercent(status: WorkItemStatus): number {
 export function hasIncompleteStatuses(
   statuses: readonly WorkItemStatus[]
 ): boolean {
-  return statuses.some((status) => status !== 'Done');
+  return statuses.some((status) => status !== WorkItemStatusEnum.Done);
 }
 
 /**
@@ -141,10 +145,4 @@ export const STATUS_INDICATOR_BG: Record<string, string> = {
   Done: 'bg-emerald-500',
 };
 
-export const STATUS_ORDER = [
-  'New',
-  'ToDo',
-  'InProgress',
-  'Testing',
-  'Done',
-] as const;
+export const STATUS_ORDER = BOARD_WORK_ITEM_STATUSES;

@@ -7,7 +7,13 @@ import {
   MentionNotification,
   DueDateNotification,
   todayDateString,
+  UserRoleEnum,
+  WorkItemStatusEnum,
 } from '@repo/types';
+import {
+  NotificationType as NotificationTypeEnum,
+  RecordStatus,
+} from '@repo/types/prisma';
 
 export class NotificationsService {
   async sendInAppNotification(params: {
@@ -23,10 +29,10 @@ export class NotificationsService {
         await prisma.notifications.create({
           data: {
             user_id: params.subscriberId,
-            type: 'mention',
+            type: NotificationTypeEnum.mention,
             message: params.message,
             read_status: false,
-            status: 'active',
+            status: RecordStatus.active,
           },
         });
       } catch (err) {
@@ -49,7 +55,7 @@ export class NotificationsService {
     const { data: admins, error: adminsError } = await supabase
       .from('users')
       .select('id')
-      .eq('role', 'admin')
+      .eq('role', UserRoleEnum.admin)
       .eq('active', true);
 
     if (adminsError) {
@@ -68,10 +74,10 @@ export class NotificationsService {
     await prisma.notifications.createMany({
       data: adminIds.map((adminId) => ({
         user_id: adminId,
-        type: 'comment',
+        type: NotificationTypeEnum.comment,
         message: fullMessage,
         read_status: false,
-        status: 'active',
+        status: RecordStatus.active,
       })),
     });
   }
@@ -178,7 +184,7 @@ export class NotificationsService {
       .from('work_items')
       .select('id, title, assignee_id, due_date')
       .not('assignee_id', 'is', null)
-      .neq('status', 'Done')
+      .neq('status', WorkItemStatusEnum.Done)
       .or(`due_date.eq.${todayStr},due_date.eq.${tomorrowStr}`);
 
     if (fetchError) {

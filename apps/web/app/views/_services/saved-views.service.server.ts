@@ -5,8 +5,12 @@ import {
 } from '@repo/types';
 import { getUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
-import { pageRange, paginationMeta } from '@/lib/db/pagination';
-import { applyListSearch, throwIfError } from '@/lib/db/query';
+import { paginationMeta } from '@/lib/db/pagination';
+import {
+  applyListSearch,
+  runPaginatedSelect,
+  throwIfError,
+} from '@/lib/db/query';
 import type { ViewsListTab } from '@/lib/search-params';
 
 export type SavedView = Tables<'saved_views'>;
@@ -39,7 +43,6 @@ export async function getSavedViewsPaginated(
   }
 
   const supabase = await createClient();
-  const { from, to } = pageRange(page, limit);
 
   if (tab === 'shared') {
     const { data: shares, error: sharesError } = await supabase
@@ -67,20 +70,18 @@ export async function getSavedViewsPaginated(
 
     query = applyListSearch(query, search, [...SAVED_VIEW_LIST_SEARCH_FIELDS]);
 
-    const { data, error, count } = await query
-      .order('updated_at', { ascending: false })
-      .range(from, to);
-
-    throwIfError(
-      error,
-      'failed to list shared saved views',
-      'Failed to list shared views'
+    const { rows: views, ...meta } = await runPaginatedSelect<SavedView>(
+      query,
+      page,
+      limit,
+      {
+        orderBy: 'updated_at',
+        logLabel: 'failed to list shared saved views',
+        errorMessage: 'Failed to list shared views',
+      }
     );
 
-    return {
-      views: (data ?? []) as SavedView[],
-      ...paginationMeta(count ?? 0, page, limit),
-    };
+    return { views, ...meta };
   }
 
   const status = tab === 'archived' ? 'archived' : 'active';
@@ -92,18 +93,16 @@ export async function getSavedViewsPaginated(
 
   query = applyListSearch(query, search, [...SAVED_VIEW_LIST_SEARCH_FIELDS]);
 
-  const { data, error, count } = await query
-    .order('updated_at', { ascending: false })
-    .range(from, to);
-
-  throwIfError(
-    error,
-    'failed to list owned saved views',
-    'Failed to list saved views'
+  const { rows: views, ...meta } = await runPaginatedSelect<SavedView>(
+    query,
+    page,
+    limit,
+    {
+      orderBy: 'updated_at',
+      logLabel: 'failed to list owned saved views',
+      errorMessage: 'Failed to list saved views',
+    }
   );
 
-  return {
-    views: (data ?? []) as SavedView[],
-    ...paginationMeta(count ?? 0, page, limit),
-  };
+  return { views, ...meta };
 }

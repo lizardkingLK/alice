@@ -1,7 +1,6 @@
 import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { requireActorId } from '../../../lib/audit';
-import { parsePagination } from '../../../lib/pagination';
 import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
 import {
   requireApiAuth,
@@ -15,14 +14,6 @@ import {
 } from './accessAllowlist.schemas';
 
 const accessAllowlistRouter: Router = Router();
-
-const statusFilterSchema = z.enum([
-  'active',
-  'inactive',
-  'archived',
-  'deleted',
-  'all',
-]);
 
 function routeError(
   res: Response,
@@ -45,71 +36,6 @@ function readRouteId(req: AuthenticatedRequest): string | null {
   const id = req.params.id;
   return id && typeof id === 'string' ? id : null;
 }
-
-function parseStatusFilter(
-  statusParam: string | undefined
-): 'active' | 'inactive' | 'archived' | 'deleted' | undefined | 'invalid' {
-  if (!statusParam) {
-    return undefined;
-  }
-
-  const parsed = statusFilterSchema.safeParse(statusParam);
-  if (!parsed.success) {
-    return 'invalid';
-  }
-
-  return parsed.data === 'all' ? undefined : parsed.data;
-}
-
-accessAllowlistRouter.get(
-  '/',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    try {
-      const actorId = requireActorId(req);
-
-      const statusParam =
-        typeof req.query.status === 'string' ? req.query.status : undefined;
-      const status = parseStatusFilter(statusParam);
-      if (status === 'invalid') {
-        return res.status(400).json({ error: 'Invalid status filter' });
-      }
-
-      const searchQuery =
-        typeof req.query.search === 'string' ? req.query.search : undefined;
-
-      const pagination = parsePagination(req);
-      if (pagination) {
-        const { page, limit } = pagination;
-        const result =
-          await accessAllowlistService.listAccessAllowlistPaginated(
-            actorId,
-            page,
-            limit,
-            status,
-            searchQuery
-          );
-        const totalPages = Math.max(1, Math.ceil(result.totalCount / limit));
-        return res.json({
-          items: result.items,
-          totalCount: result.totalCount,
-          page,
-          limit,
-          totalPages,
-        });
-      }
-
-      const items = await accessAllowlistService.listAccessAllowlist(
-        actorId,
-        status
-      );
-
-      res.json({ items });
-    } catch (error) {
-      routeError(res, error, 'Failed to retrieve access allowlist');
-    }
-  }
-);
 
 accessAllowlistRouter.post(
   '/',

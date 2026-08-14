@@ -2,11 +2,11 @@
 
 How Alice keeps dashboard pages fast, what has already been optimized, and the roadmap for further wins.
 
-| Field        | Value                                                                               |
-| ------------ | ----------------------------------------------------------------------------------- |
-| Status       | **Living**                                                                          |
-| Last updated | 2026-08-14 (removed unused Express GET reads; PostgREST vs Prisma eval stays in §8) |
-| Scope        | `apps/web` RSC data loading, `apps/api` auth                                        |
+| Field        | Value                                                          |
+| ------------ | -------------------------------------------------------------- |
+| Status       | **Living**                                                     |
+| Last updated | 2026-08-14 (M1 table-list hops complete; paginated RSC helper) |
+| Scope        | `apps/web` RSC data loading, `apps/api` auth                   |
 
 Related:
 
@@ -91,18 +91,18 @@ Independent server fetches now run concurrently instead of sequentially. Each ca
 
 `safeServerFetch` (`apps/web/lib/safe-server-fetch.ts`) replaced a `try/catch` block that was copy-pasted into every page — the wrapped promise is created by the caller, so concurrency inside `Promise.all` is preserved. Applied to: `work-items`, `projects`, `manager`, `projects/[id]`, `users`, `sprints`, `backlog` (via `getBacklogWorkspace()`), `views`.
 
-Paginated readers also share `pageRange` / `paginationMeta` (`apps/web/lib/db/pagination.ts`) for the range math and `{ totalCount, page, limit, totalPages }` shape, keeping the direct-read services free of duplicated pagination boilerplate.
+Paginated readers share `pageRange` / `paginationMeta` (`apps/web/lib/db/pagination.ts`) and `runPaginatedSelect` (`apps/web/lib/db/query.ts`) for order + range + `{ rows, totalCount, page, limit, totalPages }`. Feature services keep table filters and map `rows` to their DTO key (`users`, `workItems`, …).
 
 ### 2.4 Direct Supabase reads in RSC
 
 GET/list pages now read **straight from Supabase in the server component** instead of hopping through the Express API. This removes one full network round trip (`web → api → Supabase`) per read, plus the `requireApiAuth` JWT verify + `public.users` touch that came with it.
 
-- **Reads (direct):** work items, users, projects (list/detail/members), sprints (list + `getSprint` + burndown series), teams — implemented in each feature's `_services/*.server.ts` using the SSR Supabase client (`@/lib/supabase/server`).
+- **Reads (direct):** work items, users, projects (list/detail/members), sprints (list + `getSprint` + burndown series), teams, access allowlist — implemented in each feature's `_services/*.server.ts` using the SSR Supabase client (`@/lib/supabase/server`).
 - **Mutations (unchanged):** create / update / delete / toggle still go through the API, which keeps Zod validation, audit columns, and the service-role client.
 
 Each server reader mirrors the query in the matching API repository (same `select`, filters, ordering, and pagination) so results are identical.
 
-**Security note:** the API uses the Supabase **service-role** key (bypasses RLS); the web SSR client uses the **anon key + user session**. Reads rely on default table grants for the `authenticated` role with RLS unenforced. If RLS is ever enforced, list/detail policies must be added for `work_items`, `projects`, `users`, `sprints`, `project_members`, `teams`, and `team_members` before these reads keep working.
+**Security note:** the API uses the Supabase **service-role** key (bypasses RLS); the web SSR client uses the **anon key + user session**. Reads rely on default table grants for the `authenticated` role with RLS unenforced. If RLS is ever enforced, list/detail policies must be added for `work_items`, `projects`, `users`, `sprints`, `project_members`, `teams`, `team_members`, and `access_allowlist` before these reads keep working. Allowlist list is also **admin-gated in RSC** (`isAdmin`); do not treat table grants as the only control.
 
 ```1:10:apps/web/app/work-items/_services/workItem.service.server.ts
 import { User as DbUser } from '@/app/users/_services/users.service';
@@ -350,7 +350,7 @@ Targeting sub-1.5s. Ordered by impact-to-effort.
 | **M6** | Infra alignment — same Vercel region for web/api/Supabase, verify prod API URL path, warm cold starts if needed.              | S      | Low     | Medium (spiky)                            | ✅ Shipped (§2.10)           |
 | **M7** | Evaluate Prisma Client (or `pg`) vs PostgREST for hot queries — protocol win is real; full-app swap is not the default.       | L      | High    | High on _some_ queries; mixed for Alice   | 📋 Evaluated (§8)            |
 
-**Roadmap complete for existing features (2026-07-24).** Unused Express GET reads were removed 2026-08-14 (§6). API table mutations use Prisma Client (2026-08-14). Remaining optional hygiene: shared paginated-list helper. New surfaces should adopt §3 patterns as they land. **Do not move RSC page reads onto Prisma** until a measured hot query justifies it (§8).
+**Roadmap complete for existing features (2026-07-24).** Unused Express GET reads were removed 2026-08-14 (§6), including the allowlist table list. API table mutations use Prisma Client (2026-08-14). Paginated RSC lists share `runPaginatedSelect` (2026-08-14). New surfaces should adopt §3 patterns as they land. **Do not move RSC page reads onto Prisma** until a measured hot query justifies it (§8).
 
 **RLS reminder:** M1 reads run with the `authenticated` role and RLS unenforced. Before enabling RLS, add SELECT policies for `work_items`, `projects`, `users`, `sprints`, `project_members`, `teams`, and `team_members`. Dropdown cache (§2.7) uses the **service-role** client inside `unstable_cache` only.
 
@@ -384,47 +384,47 @@ Classic M4 (“one Express workspace GET”) was superseded by named RSC loaders
 
 ## 6. Unused API read paths (post-M1)
 
-After M1, dashboard **RSC pages** read from Supabase directly. The Express API remains the write path (Zod, audit, service-role). Unused list/detail **GET** handlers were removed (2026-08-14). Remaining GETs are either still called, Storage/signed-URL, probes, or explicitly kept for non-web consumers.
+After M1, dashboard **RSC pages** read from Supabase directly. The Express API remains the write path (Zod, audit, service-role). Unused list/detail **GET** handlers were removed (2026-08-14), including `GET /api/accessAllowlist`. Remaining GETs are capability-kept (Storage, signed URLs, GitHub proxy, cron, health) or non-web — not leftover page table reads.
 
 Legend:
 
-| Status                 | Meaning                                                                            |
-| ---------------------- | ---------------------------------------------------------------------------------- |
-| **Removed**            | Express GET deleted; web reads via RSC Supabase                                    |
-| **Not implemented**    | Never had an Express GET; web reads via RSC                                        |
-| **Client-only**        | Still hit from client components (`*.service.ts` / `apiFetch`) — do not delete yet |
-| **Kept**               | Still required (Storage, signed URLs, cron, probes, or non-web)                    |
-| **Active (mutations)** | POST/PUT/PATCH/DELETE still used — keep                                            |
+| Status                 | Meaning                                                                                |
+| ---------------------- | -------------------------------------------------------------------------------------- |
+| **Removed**            | Express GET deleted; web reads via RSC Supabase                                        |
+| **Not implemented**    | Never had an Express GET; web reads via RSC                                            |
+| **Client-only**        | Still hit from client components (`*.service.ts` / `apiFetch`) — do not delete yet     |
+| **Kept**               | Capability-required (Storage, signed URLs, cron, probes, non-web) — not an M1 leftover |
+| **Active (mutations)** | POST/PUT/PATCH/DELETE still used — keep                                                |
 
 ### Read routes — web usage audit
 
-| API route                                | Status              | Web caller today     | Notes                                                                                                      |
-| ---------------------------------------- | ------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `GET /api/users`                         | **Removed**         | —                    | `/users` uses `users.service.server.ts`                                                                    |
-| `GET /api/users/secure`                  | **Removed**         | —                    | Auth smoke test only                                                                                       |
-| `GET /api/projects`                      | **Removed**         | —                    | SSR + forms pass `getProjectList()` from `projects.service.server.ts` (incl. `/views` Share)               |
-| `GET /api/projects/:id`                  | **Removed**         | —                    | Edit form uses row data via `projectToEdit`; detail page uses server `getProjectDetails`                   |
-| `GET /api/projects/:id/members`          | **Removed**         | —                    | Work-item form uses `fetchProjectMembersForForm`; share/team forms already RSC                             |
-| `GET /api/projects/jira/settings`        | **Removed**         | —                    | Preview/import resolve credentials internally; `PUT /jira/settings` kept                                   |
-| `GET /api/teams`                         | **Removed**         | —                    | `/manager` + project workspace use `teams.service.server.ts` (direct Supabase, 2026-08-14)                 |
-| `GET /api/sprints`                       | **Not implemented** | —                    | List reads are RSC-only (`sprints.service.server.ts`); `/dashboard` uses `getDashboardBurndownBootstrap()` |
-| `GET /api/sprints/:id`                   | **Not implemented** | —                    | Server mirror `getSprint()` in `sprints.service.server.ts`; forms use `sprintToEdit` from list state       |
-| `GET /api/sprints/:id/burndown`          | **Kept**            | —                    | Dashboard uses `sprint-burndown.server.ts` + server action; Express handler kept for non-web consumers     |
-| `GET /api/workItems`                     | **Removed**         | —                    | List/detail use `workItem.service.server.ts`                                                               |
-| `GET /api/workItems/:id`                 | **Removed**         | —                    | `[id]/page` uses server `getWorkItem`                                                                      |
-| `GET /api/workItems/:id/github`          | **Client-only**     | Work-item sidebar    | `getLinkedPRs()` — GitHub API via service-role on Express                                                  |
-| `GET /api/workItems/:id/worklogs`        | **Removed**         | —                    | Detail uses `workItem-worklogs.service.server.ts`; client only **POST**s worklogs                          |
-| `GET /api/comments`                      | **Removed**         | —                    | RSC reads use `listComments` / `getWorkItemDiscussion`; client GET helper had no callers                   |
-| `GET /api/saved-views`                   | **Removed**         | —                    | `/views` uses `getSavedViewsPaginated` in `saved-views.service.server.ts`                                  |
-| `GET /api/saved-views/shared-with-me`    | **Removed**         | —                    | Same SSR reader (`tab=shared`)                                                                             |
-| `GET /api/chat/conversations`            | **Removed**         | —                    | Page + drawer use `listChatConversations` / `listChatConversationsAction` (direct Supabase)                |
-| `GET /api/chat`, `GET /api/chat/:id`     | **Kept**            | `/chat` RSC + drawer | History is Storage (service-role); RSC uses server `apiFetch`; drawer client `apiFetch`                    |
-| `GET /api/attachments/:id`               | **Kept**            | Attachments UI       | Mints signed preview/download URLs (private bucket)                                                        |
-| `GET /api/accessAllowlist`               | **Kept**            | `/users` allowlist   | Admin registry still loads via Express                                                                     |
-| `GET /api/notifications/check-due-dates` | **Kept**            | Vercel cron          | Not a page read                                                                                            |
-| `GET /` (health)                         | **Kept**            | Deploy / probes      | Not a data read                                                                                            |
-| `POST /api/notifications/send`           | Active              | Server-side notify   | No GET on this router                                                                                      |
-| `POST /api/attachments`                  | Active              | `upload-form.tsx`    | Upload only (private bucket; signed URL)                                                                   |
+| API route                                | Status              | Web caller today     | Notes                                                                                                            |
+| ---------------------------------------- | ------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `GET /api/users`                         | **Removed**         | —                    | `/users` uses `users.service.server.ts`                                                                          |
+| `GET /api/users/secure`                  | **Removed**         | —                    | Auth smoke test only                                                                                             |
+| `GET /api/projects`                      | **Removed**         | —                    | SSR + forms pass `getProjectList()` from `projects.service.server.ts` (incl. `/views` Share)                     |
+| `GET /api/projects/:id`                  | **Removed**         | —                    | Edit form uses row data via `projectToEdit`; detail page uses server `getProjectDetails`                         |
+| `GET /api/projects/:id/members`          | **Removed**         | —                    | Work-item form uses `fetchProjectMembersForForm`; share/team forms already RSC                                   |
+| `GET /api/projects/jira/settings`        | **Removed**         | —                    | Preview/import resolve credentials internally; `PUT /jira/settings` kept                                         |
+| `GET /api/teams`                         | **Removed**         | —                    | `/manager` + project workspace use `teams.service.server.ts` (direct Supabase, 2026-08-14)                       |
+| `GET /api/sprints`                       | **Not implemented** | —                    | List reads are RSC-only (`sprints.service.server.ts`); `/dashboard` uses `getDashboardBurndownBootstrap()`       |
+| `GET /api/sprints/:id`                   | **Not implemented** | —                    | Server mirror `getSprint()` in `sprints.service.server.ts`; forms use `sprintToEdit` from list state             |
+| `GET /api/sprints/:id/burndown`          | **Kept**            | —                    | Dashboard uses `sprint-burndown.server.ts` + server action; Express handler kept for non-web consumers           |
+| `GET /api/workItems`                     | **Removed**         | —                    | List/detail use `workItem.service.server.ts`                                                                     |
+| `GET /api/workItems/:id`                 | **Removed**         | —                    | `[id]/page` uses server `getWorkItem`                                                                            |
+| `GET /api/workItems/:id/github`          | **Client-only**     | Work-item sidebar    | `getLinkedPRs()` — GitHub API via service-role on Express                                                        |
+| `GET /api/workItems/:id/worklogs`        | **Removed**         | —                    | Detail uses `workItem-worklogs.service.server.ts`; client only **POST**s worklogs                                |
+| `GET /api/comments`                      | **Removed**         | —                    | RSC reads use `listComments` / `getWorkItemDiscussion`; client GET helper had no callers                         |
+| `GET /api/saved-views`                   | **Removed**         | —                    | `/views` uses `getSavedViewsPaginated` in `saved-views.service.server.ts`                                        |
+| `GET /api/saved-views/shared-with-me`    | **Removed**         | —                    | Same SSR reader (`tab=shared`)                                                                                   |
+| `GET /api/chat/conversations`            | **Removed**         | —                    | Page + drawer use `listChatConversations` / `listChatConversationsAction` (direct Supabase)                      |
+| `GET /api/chat`, `GET /api/chat/:id`     | **Kept**            | `/chat` RSC + drawer | History is Storage (service-role); RSC uses server `apiFetch`; drawer client `apiFetch`                          |
+| `GET /api/attachments/:id`               | **Kept**            | Attachments UI       | Mints signed preview/download URLs (private bucket)                                                              |
+| `GET /api/accessAllowlist`               | **Removed**         | —                    | `/users` uses `listAccessAllowlist` in `accessAllowlist.service.server.ts` (admin-gated); mutations stay Express |
+| `GET /api/notifications/check-due-dates` | **Kept**            | Vercel cron          | Not a page read                                                                                                  |
+| `GET /` (health)                         | **Kept**            | Deploy / probes      | Not a data read                                                                                                  |
+| `POST /api/notifications/send`           | Active              | Server-side notify   | No GET on this router                                                                                            |
+| `POST /api/attachments`                  | Active              | `upload-form.tsx`    | Upload only (private bucket; signed URL)                                                                         |
 
 There is **no** `/api/team-members` or `/api/project-members` router. Membership is nested:
 
@@ -435,14 +435,15 @@ There is **no** `/api/team-members` or `/api/project-members` router. Membership
 
 These were removed from `*.service.ts` after client forms stopped refetching (2026-07-22). Client modules now export **mutations only** plus shared types:
 
-| Module                  | Removed GET helpers                                                                                 |
-| ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `users.service.ts`      | `getUsersList`, `getUsersListPaginated`, `getUserList`                                              |
-| `projects.service.ts`   | `getProjectList`, `getProjectListPaginated`, `getProjectDetails`, `getProject`, `getProjectMembers` |
-| `teams.service.ts`      | `getTeamList`, `getTeamListPaginated`                                                               |
-| `sprints.service.ts`    | `listSprints`, `getSprint`                                                                          |
-| `saved-views.client.ts` | `listMySavedViews`, `listSharedWithMeSavedViews`                                                    |
-| `comments.service.ts`   | `getCommentsList` (2026-08-14)                                                                      |
+| Module                       | Removed GET helpers                                                                                 |
+| ---------------------------- | --------------------------------------------------------------------------------------------------- |
+| `users.service.ts`           | `getUsersList`, `getUsersListPaginated`, `getUserList`                                              |
+| `projects.service.ts`        | `getProjectList`, `getProjectListPaginated`, `getProjectDetails`, `getProject`, `getProjectMembers` |
+| `teams.service.ts`           | `getTeamList`, `getTeamListPaginated`                                                               |
+| `sprints.service.ts`         | `listSprints`, `getSprint`                                                                          |
+| `saved-views.client.ts`      | `listMySavedViews`, `listSharedWithMeSavedViews`                                                    |
+| `comments.service.ts`        | `getCommentsList` (2026-08-14)                                                                      |
+| `accessAllowlist.service.ts` | `listAccessAllowlist` (2026-08-14)                                                                  |
 
 Dynamic form reads that still need a round trip (project members on project select in share-view / team / work-item forms) use server actions in `apps/web/lib/form-read-actions.ts` — direct Supabase, not Express.
 
@@ -450,9 +451,10 @@ Dynamic form reads that still need a round trip (project members on project sele
 
 1. ~~**Client forms** — stop read refetch via `projects.service.ts` / `sprints.service.ts`~~ ✅ Done (2026-07-22).
 2. ~~**Add `getSprint` server reader**~~ ✅ Done — `sprints.service.server.ts` mirrors `sprintsRepository.findById`.
-3. ~~**Remove unused Express GET handlers**~~ ✅ Done (2026-08-14). Kept: chat Storage history, attachment signed URLs, GitHub PR list, burndown (non-web), allowlist, cron, health.
+3. ~~**Remove unused Express GET handlers**~~ ✅ Done (2026-08-14). Remaining GETs: chat Storage history, attachment signed URLs, GitHub PR list, burndown (non-web), cron, health. Leftover **repository** list/paginated methods with no HTTP GET were removed; `projectsRepository.listAll` stays for chat tools. `GET /api/accessAllowlist` removed with the RSC reader.
 4. ~~**Work-item members hook + chat drawer list**~~ ✅ Done (2026-08-14) — `fetchProjectMembersForForm` + `listChatConversationsAction`.
-5. **Dedup refactor (deferred):** shared paginated-list helper for `*.service.server.ts` files.
+5. ~~**Dedup paginated RSC lists**~~ ✅ Done (2026-08-14) — `runPaginatedSelect` in `apps/web/lib/db/query.ts` (allowlist list uses it).
+6. ~~**Move `GET /api/accessAllowlist` to RSC**~~ ✅ Done (2026-08-14) — `listAccessAllowlist` in `accessAllowlist.service.server.ts`.
 
 ---
 

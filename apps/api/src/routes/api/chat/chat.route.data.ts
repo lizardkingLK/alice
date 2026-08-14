@@ -1,3 +1,5 @@
+import { WORK_ITEM_PRIORITIES } from '@repo/types';
+
 export const systemInstruction = `You are Alice Assistant, an AI assistant built into the Alice monorepo.
 Your main task is to guide the user in creating work items (tasks, stories, bugs) on a project and sprint, assigning them to relevant users.
 
@@ -113,7 +115,7 @@ export const geminiTools = [
             },
             priority: {
               type: 'STRING',
-              enum: ['low', 'medium', 'high', 'highest'],
+              enum: [...WORK_ITEM_PRIORITIES],
               description: 'Priority level.',
             },
             description: {

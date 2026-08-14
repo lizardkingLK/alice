@@ -7,6 +7,7 @@ import {
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
 import type { Tables } from '@repo/types';
+import { RecordStatus } from '@repo/types/prisma';
 
 export type TeamMemberRow = Tables<'team_members'>;
 
@@ -24,19 +25,6 @@ export type TeamRow = {
   updated_by: string | null;
 };
 
-export type TeamRowWithManager = TeamRow & {
-  manager?: {
-    id: string;
-    name: string;
-    email: string;
-  } | null;
-  members?: { team_id: string; user_id: string; status: string }[];
-};
-
-function unsafeCast<T>(val: unknown): T {
-  return val as T;
-}
-
 async function insertTeamMembers(
   teamId: string,
   memberIds: string[],
@@ -52,7 +40,7 @@ async function insertTeamMembers(
       data: memberIds.map((memberId) => ({
         team_id: teamId,
         user_id: memberId,
-        status: 'active' as const,
+        status: RecordStatus.active,
         created_by: userId,
         updated_by: userId,
       })),
@@ -65,74 +53,6 @@ async function insertTeamMembers(
 }
 
 export class TeamsRepository {
-  async listAll(): Promise<TeamRowWithManager[]> {
-    const { data, error } = await supabase
-      .from('teams')
-      .select(
-        '*, manager:users!teams_manager_id_fkey(id, name, email), members:team_members(*)'
-      )
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('database error list all teams:', error.message);
-      throw new Error('Failed to retrieve teams list');
-    }
-
-    return unsafeCast<TeamRowWithManager[]>(data);
-  }
-
-  async listPaginated(
-    pageNumber: number,
-    pageSize: number,
-    teamStatus?: 'active' | 'inactive' | 'archived' | 'deleted',
-    searchKeyword?: string,
-    projectId?: string
-  ): Promise<{ teams: TeamRowWithManager[]; totalCount: number }> {
-    const rangeStart = (pageNumber - 1) * pageSize;
-    const rangeEnd = rangeStart + pageSize - 1;
-
-    let dbQuery = supabase
-      .from('teams')
-      .select(
-        '*, manager:users!teams_manager_id_fkey(id, name, email), members:team_members(*)',
-        {
-          count: 'exact',
-        }
-      );
-
-    if (teamStatus) {
-      dbQuery = dbQuery.eq('status', teamStatus);
-    }
-
-    if (searchKeyword) {
-      const likeExpr = `%${searchKeyword}%`;
-      dbQuery = dbQuery.or(
-        `name.ilike.${likeExpr},description.ilike.${likeExpr},tech_stack.ilike.${likeExpr}`
-      );
-    }
-
-    if (projectId) {
-      dbQuery = dbQuery.eq('project_id', projectId);
-    }
-
-    const result = await dbQuery
-      .order('created_at', { ascending: false })
-      .range(rangeStart, rangeEnd);
-
-    if (result.error) {
-      console.error(
-        'database error list paginated teams:',
-        result.error.message
-      );
-      throw new Error(`Failed to list teams: ${result.error.message}`);
-    }
-
-    return {
-      teams: unsafeCast<TeamRowWithManager[]>(result.data ?? []),
-      totalCount: result.count ?? 0,
-    };
-  }
-
   async findByName(name: string, excludeId?: string): Promise<TeamRow | null> {
     let query = supabase.from('teams').select('*').eq('name', name);
     if (excludeId) {

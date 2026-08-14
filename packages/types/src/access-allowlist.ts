@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { Constants } from './generated/supabase/database.types.js';
+import { AccessAllowlistKind } from './generated/prisma/enums.js';
 
 /** Trim, lowercase, and strip a leading `@` from a domain string. */
 export function normalizeAccessAllowlistDomain(value: string): string {
@@ -29,12 +31,7 @@ export const accessAllowlistEmailValueSchema = z
   .pipe(z.email({ message: 'Please enter a valid email address.' }))
   .transform((value) => value.toLowerCase());
 
-const accessAllowlistStatusSchema = z.enum([
-  'active',
-  'inactive',
-  'archived',
-  'deleted',
-]);
+const accessAllowlistStatusSchema = z.enum(Constants.public.Enums.RecordStatus);
 
 const accessAllowlistMetaFields = {
   label: z.string().max(200).optional().nullable(),
@@ -44,12 +41,12 @@ const accessAllowlistMetaFields = {
 
 export const accessAllowlistCreateSchema = z.discriminatedUnion('kind', [
   z.object({
-    kind: z.literal('domain'),
+    kind: z.literal(AccessAllowlistKind.domain),
     value: accessAllowlistDomainValueSchema,
     ...accessAllowlistMetaFields,
   }),
   z.object({
-    kind: z.literal('email'),
+    kind: z.literal(AccessAllowlistKind.email),
     value: accessAllowlistEmailValueSchema,
     ...accessAllowlistMetaFields,
   }),

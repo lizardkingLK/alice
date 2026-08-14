@@ -45,25 +45,6 @@ export class WorkItemValidationError extends Error {
 export class WorkItemService {
   constructor(private readonly workItems: WorkItemRepository) {}
 
-  async getWorkItems(filters?: {
-    sprint_id?: string | null;
-  }): Promise<DbWorkItem[]> {
-    return await this.workItems.get(filters);
-  }
-
-  async listWorkItems(
-    page?: number,
-    limit?: number,
-    search?: string,
-    filters?: { sprint_id?: string | null }
-  ): Promise<{ workItems: DbWorkItem[]; totalCount: number } | DbWorkItem[]> {
-    if (page !== undefined && limit !== undefined) {
-      return await this.workItems.listPaginated(page, limit, search, filters);
-    }
-
-    return await this.workItems.get(filters);
-  }
-
   async getWorkItem(workItemId: string): Promise<DbWorkItem> {
     return await this.workItems.getById(workItemId);
   }

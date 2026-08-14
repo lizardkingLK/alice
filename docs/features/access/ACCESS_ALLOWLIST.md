@@ -369,6 +369,8 @@ Seed at least one company domain for prod.
 
 ## API / security notes
 
+- Admin registry list on `/users` is RSC (`listAccessAllowlist`, admin-gated);
+  mutations stay `POST/PUT/DELETE /api/accessAllowlist`.
 - Allowlist reads for the gate may use service-role or a tight RLS policy
   (authenticated read of active rows is OK; writes admin-only).
 - Never trust client-only checks; middleware + callback are mandatory.
@@ -410,8 +412,9 @@ Seed at least one company domain for prod.
    `POST /api/notifications/contact`; API inserts in-app notifications for
    all active admins.
 9. ~~Admin CRUD for allowlist (can follow in a second PR).~~
-   **Done:** Express endpoints under `GET/POST/PUT/DELETE /api/accessAllowlist`
-   plus web service wrappers in `apps/web/app/access-allowlist/_services/`.
+   **Done:** mutations under `POST/PUT/DELETE /api/accessAllowlist`;
+   list/detail reads are RSC (`accessAllowlist.service.server.ts`).
+   Web mutation wrappers in `apps/web/app/access-allowlist/_services/`.
    Admin UI: `/users?tab=allowlist` tabbed panel (`UsersWorkspace` +
    `AccessAllowlistRegistry`).
 10. ~~Docs → **Living**; link from auth README + users README.~~
@@ -427,16 +430,16 @@ Seed at least one company domain for prod.
 Coverage lives under `apps/web/tests/access/` (see also
 [TESTING_DEVELOPMENT_FLOW.md](../../guides/TESTING_DEVELOPMENT_FLOW.md)):
 
-| Spec                                 | SUT                                                                                | Focus                                                                                 |
-| ------------------------------------ | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `access-allowlist.test.ts`           | `isPublicAccessPath`, `normalizeEmail`, `extractEmailDomain`, `isAllowlistExpired` | Public path set, email normalize/reject, domain extract, expiry edge cases            |
-| `access-allowlist-gate.test.ts`      | `isEmailAllowed`                                                                   | Email/domain hits, expiry deny, invalid email short-circuit, DB error                 |
-| `access-allowlist-schema.test.ts`    | `@repo/types` allowlist Zod                                                        | Domain requires TLD (`fff` reject / `fff.com` accept); email shape                    |
-| `accessAllowlist.service.test.ts`    | `createAccessAllowlistService`                                                     | List/create/update/delete paths via fake `apiFetch` (incl. search + pagination query) |
-| `access-allowlist-form.test.tsx`     | `AccessAllowlistForm`                                                              | Zod domain/email alerts, create/edit submit, no HTML `required`                       |
-| `access-allowlist-registry.test.tsx` | `AccessAllowlistRegistry`                                                          | Debounced search, pagination, add dialog, delete confirm                              |
-| `home-footer.test.tsx`               | `HomeFooter`                                                                       | Hide/show Workspace + Team when `showAppLinks`                                        |
-| `contact-request-schema.test.ts`     | `contactRequestSchema`                                                             | Shared Zod contact payload validation                                                 |
+| Spec                                 | SUT                                                                                | Focus                                                                      |
+| ------------------------------------ | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `access-allowlist.test.ts`           | `isPublicAccessPath`, `normalizeEmail`, `extractEmailDomain`, `isAllowlistExpired` | Public path set, email normalize/reject, domain extract, expiry edge cases |
+| `access-allowlist-gate.test.ts`      | `isEmailAllowed`                                                                   | Email/domain hits, expiry deny, invalid email short-circuit, DB error      |
+| `access-allowlist-schema.test.ts`    | `@repo/types` allowlist Zod                                                        | Domain requires TLD (`fff` reject / `fff.com` accept); email shape         |
+| `accessAllowlist.service.test.ts`    | `createAccessAllowlistService`                                                     | Create/update/delete paths via fake `apiFetch`                             |
+| `access-allowlist-form.test.tsx`     | `AccessAllowlistForm`                                                              | Zod domain/email alerts, create/edit submit, no HTML `required`            |
+| `access-allowlist-registry.test.tsx` | `AccessAllowlistRegistry`                                                          | Debounced search, pagination, add dialog, delete confirm                   |
+| `home-footer.test.tsx`               | `HomeFooter`                                                                       | Hide/show Workspace + Team when `showAppLinks`                             |
+| `contact-request-schema.test.ts`     | `contactRequestSchema`                                                             | Shared Zod contact payload validation                                      |
 
 Shared factory / mocks:
 

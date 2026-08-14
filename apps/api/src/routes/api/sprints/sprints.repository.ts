@@ -1,5 +1,6 @@
 import {
   projectRelationSelect,
+  WorkItemStatusEnum,
   type Database,
   type SprintRowWithProject,
   type Tables,
@@ -93,7 +94,7 @@ export class SprintsRepository {
       .from('work_items')
       .select('*', { count: 'exact', head: true })
       .eq('sprint_id', sprintId)
-      .neq('status', 'Done');
+      .neq('status', WorkItemStatusEnum.Done);
 
     if (error) {
       console.error(

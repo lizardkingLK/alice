@@ -4,7 +4,7 @@ import {
   WORK_ITEM_WORKLOG_SELECT,
   normalizeWorkLogRow,
   DEFAULT_WORK_ITEM_PRIORITY,
-  buildWorkItemSearchOrFilter,
+  WorkItemStatusEnum,
   type Database,
   type WorkItemWorkLog,
   type WorkItemWorkLogRowRaw,
@@ -50,31 +50,7 @@ export type UpdateWorkItemRecord = WorkItemUpdateBody & {
 
 const ASSIGNEE_SELECT = userRelationSelect('assignee', 'assignee_id');
 const REPORTER_SELECT = userRelationSelect('reporter', 'reporter_id');
-const WORK_ITEM_WITH_ASSIGNEE = `*, ${ASSIGNEE_SELECT}`;
 const WORK_ITEM_WITH_PEOPLE = `*, ${ASSIGNEE_SELECT}, ${REPORTER_SELECT}`;
-
-type SprintIdFilters = { sprint_id?: string | null };
-
-type SprintFilterableQuery = {
-  is: (column: 'sprint_id', value: null) => SprintFilterableQuery;
-  eq: (column: 'sprint_id', value: string) => SprintFilterableQuery;
-};
-
-function applySprintIdFilter<Q extends SprintFilterableQuery>(
-  query: Q,
-  filters?: SprintIdFilters
-): Q {
-  if (!filters) {
-    return query;
-  }
-  if (filters.sprint_id === null) {
-    return query.is('sprint_id', null) as Q;
-  }
-  if (filters.sprint_id) {
-    return query.eq('sprint_id', filters.sprint_id) as Q;
-  }
-  return query;
-}
 
 export class WorkItemRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
@@ -140,61 +116,6 @@ export class WorkItemRepository {
     return { projectId: workItem.project_id };
   }
 
-  async get(filters?: SprintIdFilters): Promise<DbWorkItem[]> {
-    const query = applySprintIdFilter(
-      this.db.from('work_items').select(WORK_ITEM_WITH_ASSIGNEE),
-      filters
-    );
-
-    const { data, error } = await query.order('created_at', {
-      ascending: false,
-    });
-
-    if (error) {
-      console.error('error. failed to list work-items:', error.message);
-      throw new Error('Failed to list work-items');
-    }
-
-    return data as unknown as DbWorkItem[];
-  }
-
-  async listPaginated(
-    page: number,
-    limit: number,
-    search?: string,
-    filters?: SprintIdFilters
-  ): Promise<{ workItems: DbWorkItem[]; totalCount: number }> {
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
-
-    let query = this.db.from('work_items').select(WORK_ITEM_WITH_ASSIGNEE, {
-      count: 'exact',
-    });
-
-    if (search?.trim()) {
-      query = query.or(buildWorkItemSearchOrFilter(search));
-    }
-
-    query = applySprintIdFilter(query, filters);
-
-    const { data, error, count } = await query
-      .order('created_at', { ascending: false })
-      .range(from, to);
-
-    if (error) {
-      console.error(
-        'error. failed to list work-items paginated:',
-        error.message
-      );
-      throw new Error('Failed to list work-items');
-    }
-
-    return {
-      workItems: (data ?? []) as unknown as DbWorkItem[],
-      totalCount: count ?? 0,
-    };
-  }
-
   async getById(workItemId: string): Promise<DbWorkItem> {
     const { data, error } = await this.db
       .from('work_items')
@@ -216,7 +137,7 @@ export class WorkItemRepository {
       .from('work_items')
       .select('id', { count: 'exact', head: true })
       .eq('parent_id', parentId)
-      .neq('status', 'Done');
+      .neq('status', WorkItemStatusEnum.Done);
 
     if (error) {
       console.error(
@@ -240,7 +161,7 @@ export class WorkItemRepository {
         due_date: prismaOptionalDate(input.due_date) ?? null,
         sprint_id: input.sprint_id,
         reporter_id: input.createdBy,
-        status: 'New',
+        status: WorkItemStatusEnum.New,
         story_points: input.story_points,
         jira_issue_key: input.jira_issue_key,
         description:
@@ -263,8 +184,12 @@ export class WorkItemRepository {
   async update(input: UpdateWorkItemRecord): Promise<DbWorkItem> {
     const current = await this.getById(input.id);
 
-    const becomingDone = input.status === 'Done' && current?.status !== 'Done';
-    const leavingDone = input.status !== 'Done' && current?.status === 'Done';
+    const becomingDone =
+      input.status === WorkItemStatusEnum.Done &&
+      current?.status !== WorkItemStatusEnum.Done;
+    const leavingDone =
+      input.status !== WorkItemStatusEnum.Done &&
+      current?.status === WorkItemStatusEnum.Done;
 
     let doneAtUpdate: Date | null | undefined;
     if (becomingDone) {

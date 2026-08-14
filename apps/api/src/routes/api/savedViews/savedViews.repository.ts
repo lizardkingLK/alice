@@ -5,6 +5,7 @@ import {
   type Tables,
   type UpdateSavedViewInput,
 } from '@repo/types';
+import { RecordStatus } from '@repo/types/prisma';
 import { supabase } from '../../../lib/supabase';
 import { prisma } from '../../../lib/prisma';
 import {
@@ -79,7 +80,7 @@ export class SavedViewsRepository {
     await prisma.saved_views.update({
       where: { id },
       data: {
-        ...(options.restore ? { status: 'active' as const } : {}),
+        ...(options.restore ? { status: RecordStatus.active } : {}),
         title: input.title,
         description: input.description ?? null,
         search,

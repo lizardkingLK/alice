@@ -19,6 +19,7 @@ import { type ProjectRow, withoutJiraToken } from './projects.repository';
 import { workItems } from '../../../config/composition';
 import { type WorkItemBody } from '../workItems/workItems.schemas';
 import { supabase } from '../../../lib/supabase';
+import { WorkItemTypeEnum } from '@repo/types';
 
 const projectsRouter: Router = Router();
 
@@ -258,7 +259,10 @@ interface ParsedJiraIssue {
   key: string;
   title: string;
   description: string;
-  type: 'Task' | 'Story' | 'Epic';
+  type:
+    | typeof WorkItemTypeEnum.Task
+    | typeof WorkItemTypeEnum.Story
+    | typeof WorkItemTypeEnum.Epic;
 }
 
 function extractText(node: JiraNode | null | undefined): string {
@@ -346,12 +350,15 @@ async function fetchAndParseJiraIssues(
   }
 
   return data.issues.map((issue) => {
-    let type: 'Task' | 'Story' | 'Epic' = 'Task';
+    let type:
+      | typeof WorkItemTypeEnum.Task
+      | typeof WorkItemTypeEnum.Story
+      | typeof WorkItemTypeEnum.Epic = WorkItemTypeEnum.Task;
     const jiraType = (issue.fields?.issuetype?.name || '').toLowerCase();
     if (jiraType === 'story') {
-      type = 'Story';
+      type = WorkItemTypeEnum.Story;
     } else if (jiraType === 'epic') {
-      type = 'Epic';
+      type = WorkItemTypeEnum.Epic;
     }
 
     return {

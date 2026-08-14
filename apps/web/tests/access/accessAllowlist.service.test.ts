@@ -3,53 +3,6 @@ import { createAccessAllowlistService } from '@/app/access-allowlist/_services/a
 import { accessAllowlistFactory } from '../factories/accessAllowlist.factory';
 
 describe('createAccessAllowlistService', () => {
-  it('lists with page, limit, and default active status', async () => {
-    // Arrange
-    const entry = accessAllowlistFactory.build();
-    const apiFetch = vi.fn().mockResolvedValue({
-      items: [entry],
-      totalCount: 1,
-      page: 1,
-      limit: 10,
-      totalPages: 1,
-    });
-    const service = createAccessAllowlistService(apiFetch);
-
-    // Act
-    const result = await service.listAccessAllowlist();
-
-    // Assert
-    expect(apiFetch).toHaveBeenCalledWith(
-      '/api/accessAllowlist?page=1&limit=10'
-    );
-    expect(result.items).toEqual([entry]);
-  });
-
-  it('lists with status, search, and pagination query params', async () => {
-    // Arrange
-    const apiFetch = vi.fn().mockResolvedValue({
-      items: [],
-      totalCount: 0,
-      page: 2,
-      limit: 5,
-      totalPages: 1,
-    });
-    const service = createAccessAllowlistService(apiFetch);
-
-    // Act
-    await service.listAccessAllowlist({
-      status: 'all',
-      page: 2,
-      limit: 5,
-      search: 'acme',
-    });
-
-    // Assert
-    expect(apiFetch).toHaveBeenCalledWith(
-      '/api/accessAllowlist?page=2&limit=5&status=all&search=acme'
-    );
-  });
-
   it('creates an allowlist entry via POST', async () => {
     // Arrange
     const entry = accessAllowlistFactory.build();

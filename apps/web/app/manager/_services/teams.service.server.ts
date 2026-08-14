@@ -1,7 +1,6 @@
 import { apiFetch } from '@/lib/api/api-client.server';
 import { createClient } from '@/lib/supabase/server';
-import { pageRange, paginationMeta } from '@/lib/db/pagination';
-import { applyListSearch, throwIfError } from '@/lib/db/query';
+import { applyListSearch, runPaginatedSelect } from '@/lib/db/query';
 import { createTeamsService } from './teams.service.base';
 import type { GetTeamsPaginatedResponse, Team } from './teams.service.base';
 
@@ -25,7 +24,6 @@ export async function getTeamListPaginated(
   projectId?: string
 ): Promise<GetTeamsPaginatedResponse> {
   const supabase = await createClient();
-  const { from, to } = pageRange(page, limit);
 
   let query = supabase
     .from('teams')
@@ -41,20 +39,18 @@ export async function getTeamListPaginated(
     query = query.eq('project_id', projectId);
   }
 
-  const { data, error, count } = await query
-    .order('created_at', { ascending: false })
-    .range(from, to);
-
-  throwIfError(
-    error,
-    'failed to list teams paginated',
-    'Failed to retrieve teams list'
+  const { rows: teams, ...meta } = await runPaginatedSelect<Team>(
+    query,
+    page,
+    limit,
+    {
+      orderBy: 'created_at',
+      logLabel: 'failed to list teams paginated',
+      errorMessage: 'Failed to retrieve teams list',
+    }
   );
 
-  return {
-    teams: (data ?? []) as unknown as Team[],
-    ...paginationMeta(count ?? 0, page, limit),
-  };
+  return { teams, ...meta };
 }
 
 export const createTeam = service.createTeam;

@@ -9,6 +9,7 @@ import {
   OptimisticLockError,
   resolveOptimisticPrismaUpdate,
 } from '../../../lib/optimistic-lock';
+import { UserRoleEnum } from '@repo/types';
 
 export type UserRow = {
   id: string;
@@ -23,44 +24,6 @@ export type UserRow = {
 };
 
 export class UsersRepository {
-  async listAll(): Promise<UserRow[]> {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('error. failed to list users:', error.message);
-      throw new Error('Failed to list users');
-    }
-
-    return data as UserRow[];
-  }
-
-  async listPaginated(
-    page: number,
-    limit: number
-  ): Promise<{ users: UserRow[]; totalCount: number }> {
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
-
-    const { data, error, count } = await supabase
-      .from('users')
-      .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(from, to);
-
-    if (error) {
-      console.error('error. failed to list users paginated:', error.message);
-      throw new Error('Failed to list users');
-    }
-
-    return {
-      users: (data as UserRow[]) ?? [],
-      totalCount: count ?? 0,
-    };
-  }
-
   async findById(id: string): Promise<UserRow | null> {
     const { data, error } = await supabase
       .from('users')
@@ -81,7 +44,7 @@ export class UsersRepository {
     const { count, error } = await supabase
       .from('users')
       .select('id', { count: 'exact', head: true })
-      .eq('role', 'admin')
+      .eq('role', UserRoleEnum.admin)
       .eq('active', true)
       .neq('id', excludeUserId);
 

@@ -1,10 +1,10 @@
 import type { NotificationType } from '@repo/types';
-import { Prisma } from '@repo/types/prisma';
+import { Prisma, RecordStatus } from '@repo/types/prisma';
 
 /** Audit columns for Prisma INSERT on tables that use `RecordStatus`. */
 export function prismaAuditCreate(actorId: string) {
   return {
-    status: 'active' as const,
+    status: RecordStatus.active,
     created_by: actorId,
     updated_by: actorId,
   };

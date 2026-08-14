@@ -1,4 +1,5 @@
 import { requireUserWithRole } from '../../../lib/auth-helpers';
+import { UserRoleEnum, RecordStatusEnum } from '@repo/types';
 import {
   accessAllowlistRepository,
   type AccessAllowlistKind,
@@ -9,7 +10,7 @@ import {
 async function requireAdmin(actorId: string) {
   return await requireUserWithRole(
     actorId,
-    ['admin'],
+    [UserRoleEnum.admin],
     'Unauthorized. Only administrators can manage the access allowlist.'
   );
 }
@@ -30,27 +31,6 @@ export type UpdateAccessAllowlistInput = {
 };
 
 export class AccessAllowlistService {
-  async listAccessAllowlist(actorId: string, status?: AccessAllowlistStatus) {
-    await requireAdmin(actorId);
-    return await accessAllowlistRepository.listAll(status);
-  }
-
-  async listAccessAllowlistPaginated(
-    actorId: string,
-    page: number,
-    limit: number,
-    status?: AccessAllowlistStatus,
-    search?: string
-  ): Promise<{ items: AccessAllowlistRow[]; totalCount: number }> {
-    await requireAdmin(actorId);
-    return await accessAllowlistRepository.listPaginated(
-      page,
-      limit,
-      status,
-      search
-    );
-  }
-
   async createAccessAllowlist(
     actorId: string,
     input: CreateAccessAllowlistInput
@@ -63,7 +43,7 @@ export class AccessAllowlistService {
       value: input.value,
       label: input.label,
       expires_at: input.expires_at,
-      status: input.status ?? 'active',
+      status: input.status ?? RecordStatusEnum.active,
     });
   }
 

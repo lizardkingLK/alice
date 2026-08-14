@@ -70,6 +70,7 @@ import { DescriptionView } from '@/app/work-items/_components/workItem-descripti
 import { descriptionToPlainText } from '@/app/work-items/_helpers/work-item-description';
 import { BOARD_STATUS_COLUMNS } from '@/app/work-items/_helpers/work-item-status';
 import { PRIORITY_BORDER_STYLES } from '@/app/work-items/_helpers/work-item-priority-ui';
+import { WORK_ITEM_PRIORITIES } from '@repo/types';
 import { updateWorkItemStatus } from '@/app/work-items/_services/workItem.service.client';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { ListFilterSelect } from '@/components/list-filter-select';
@@ -85,13 +86,7 @@ const COLUMNS = BOARD_STATUS_COLUMNS;
 
 const MAX_VISIBLE_ASSIGNEES = 3;
 
-const PRIORITIES: BoardPriority[] = [
-  'highest',
-  'high',
-  'medium',
-  'low',
-  'lowest',
-];
+const PRIORITIES: BoardPriority[] = [...WORK_ITEM_PRIORITIES].reverse();
 
 function shortId(id: string) {
   return id.slice(0, 8).toUpperCase();

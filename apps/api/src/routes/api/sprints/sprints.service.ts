@@ -2,6 +2,7 @@ import {
   computeBurndown,
   mapSprintRowToResponse,
   SprintStatusEnum,
+  UserRoleEnum,
   type SprintBurndownPayload,
   type SprintResponse,
 } from '@repo/types';
@@ -21,7 +22,7 @@ export type {
 async function requireManagerOrAdmin(actorId: string) {
   return await requireUserWithRole(
     actorId,
-    ['admin', 'manager'],
+    [UserRoleEnum.admin, UserRoleEnum.manager],
     'Unauthorized. Only admins and managers can perform this action on sprints.'
   );
 }

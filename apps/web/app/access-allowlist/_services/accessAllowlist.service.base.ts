@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import { type Tables } from '@repo/types';
+import { type RecordStatus, type Tables } from '@repo/types';
 import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
 
 export type AccessAllowlistEntry = Tables<'access_allowlist'>;
@@ -21,8 +21,7 @@ export type AccessAllowlistUpdateInput = {
   status?: AccessAllowlistStatus;
 };
 
-export type AccessAllowlistListStatus =
-  'active' | 'inactive' | 'archived' | 'deleted' | 'all';
+export type AccessAllowlistListStatus = RecordStatus | 'all';
 
 export type AccessAllowlistListParams = {
   status?: AccessAllowlistListStatus;
@@ -43,26 +42,6 @@ export function createAccessAllowlistService(
   apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>
 ) {
   const apiAccessAllowlist = '/api/accessAllowlist';
-
-  async function listAccessAllowlist(
-    params: AccessAllowlistListParams = {}
-  ): Promise<AccessAllowlistListResult> {
-    const { status = 'active', page = 1, limit = 10, search = '' } = params;
-
-    const query = new URLSearchParams();
-    query.set('page', String(page));
-    query.set('limit', String(limit));
-    if (status && status !== 'active') {
-      query.set('status', status);
-    }
-    if (search) {
-      query.set('search', search);
-    }
-
-    return await apiFetch<AccessAllowlistListResult>(
-      `${apiAccessAllowlist}?${query.toString()}`
-    );
-  }
 
   async function createAccessAllowlistEntry(
     input: AccessAllowlistCreateInput
@@ -119,7 +98,6 @@ export function createAccessAllowlistService(
   }
 
   return {
-    listAccessAllowlist,
     createAccessAllowlistEntry,
     updateAccessAllowlistEntry,
     forceUpdateAccessAllowlistEntry,
