@@ -1,9 +1,15 @@
 import { supabase } from '../../../lib/supabase';
-import { auditCreate, auditUpdate } from '../../../lib/audit';
+import { prisma } from '../../../lib/prisma';
+import {
+  prismaAuditCreate,
+  prismaAuditUpdate,
+  prismaLockTimestamp,
+} from '../../../lib/prisma-audit';
 import {
   OptimisticLockError,
-  resolveOptimisticUpdate,
+  resolveOptimisticPrismaUpdate,
 } from '../../../lib/optimistic-lock';
+import { UserRoleEnum } from '@repo/types';
 
 export type UserRow = {
   id: string;
@@ -18,44 +24,6 @@ export type UserRow = {
 };
 
 export class UsersRepository {
-  async listAll(): Promise<UserRow[]> {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('error. failed to list users:', error.message);
-      throw new Error('Failed to list users');
-    }
-
-    return data as UserRow[];
-  }
-
-  async listPaginated(
-    page: number,
-    limit: number
-  ): Promise<{ users: UserRow[]; totalCount: number }> {
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
-
-    const { data, error, count } = await supabase
-      .from('users')
-      .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(from, to);
-
-    if (error) {
-      console.error('error. failed to list users paginated:', error.message);
-      throw new Error('Failed to list users');
-    }
-
-    return {
-      users: (data as UserRow[]) ?? [],
-      totalCount: count ?? 0,
-    };
-  }
-
   async findById(id: string): Promise<UserRow | null> {
     const { data, error } = await supabase
       .from('users')
@@ -76,7 +44,7 @@ export class UsersRepository {
     const { count, error } = await supabase
       .from('users')
       .select('id', { count: 'exact', head: true })
-      .eq('role', 'admin')
+      .eq('role', UserRoleEnum.admin)
       .eq('active', true)
       .neq('id', excludeUserId);
 
@@ -152,25 +120,19 @@ export class UsersRepository {
     data: Pick<UserRow, 'id' | 'name' | 'email' | 'role'>,
     actorId: string
   ): Promise<UserRow> {
-    const { data: created, error } = await supabase
-      .from('users')
-      .insert({
+    const created = await prisma.users.create({
+      data: {
         ...data,
         active: true,
-        ...auditCreate(actorId),
-      })
-      .select()
-      .single();
+        ...prismaAuditCreate(actorId),
+      },
+    });
 
-    if (error) {
-      console.error(
-        'error. failed to create user registry row:',
-        error.message
-      );
-      throw new Error(`Database registration failed: ${error.message}`);
+    const row = await this.findById(created.id);
+    if (!row) {
+      throw new Error('Database registration failed');
     }
-
-    return created as UserRow;
+    return row;
   }
 
   async update(
@@ -181,32 +143,24 @@ export class UsersRepository {
     actorId: string,
     expectedUpdatedAt: string
   ): Promise<UserRow> {
-    const { data: updated, error } = await supabase
-      .from('users')
-      .update({
+    const { count } = await prisma.users.updateMany({
+      where: { id, updated_at: prismaLockTimestamp(expectedUpdatedAt) },
+      data: {
         ...data,
-        ...auditUpdate(actorId),
-      })
-      .eq('id', id)
-      .eq('updated_at', expectedUpdatedAt)
-      .select()
-      .maybeSingle();
+        ...prismaAuditUpdate(actorId),
+      },
+    });
 
-    return (await resolveOptimisticUpdate({
-      data: updated as UserRow | null,
-      error,
+    return resolveOptimisticPrismaUpdate({
+      count,
+      fetchUpdated: () => this.findById(id),
       fetchCurrent: () => this.findById(id),
       notFoundMessage: 'User not found',
-    })) as UserRow;
+    });
   }
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase.from('users').delete().eq('id', id);
-
-    if (error) {
-      console.error('error. failed to delete user:', error.message);
-      throw new Error(`Database delete failed: ${error.message}`);
-    }
+    await prisma.users.deleteMany({ where: { id } });
   }
 }
 

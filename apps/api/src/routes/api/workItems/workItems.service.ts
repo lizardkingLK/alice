@@ -45,25 +45,6 @@ export class WorkItemValidationError extends Error {
 export class WorkItemService {
   constructor(private readonly workItems: WorkItemRepository) {}
 
-  async getWorkItems(filters?: {
-    sprint_id?: string | null;
-  }): Promise<DbWorkItem[]> {
-    return await this.workItems.get(filters);
-  }
-
-  async listWorkItems(
-    page?: number,
-    limit?: number,
-    search?: string,
-    filters?: { sprint_id?: string | null }
-  ): Promise<{ workItems: DbWorkItem[]; totalCount: number } | DbWorkItem[]> {
-    if (page !== undefined && limit !== undefined) {
-      return await this.workItems.listPaginated(page, limit, search, filters);
-    }
-
-    return await this.workItems.get(filters);
-  }
-
   async getWorkItem(workItemId: string): Promise<DbWorkItem> {
     return await this.workItems.getById(workItemId);
   }
@@ -279,8 +260,14 @@ export class WorkItemService {
       }
 
       const title = prData.title || pr.pr_title;
-      const branchName = prData.head?.ref || pr.branch_name || `feature/PR-${pr.pr_number}`;
-      let commits: { sha: string; message: string; author: string; date: string }[] = [];
+      const branchName =
+        prData.head?.ref || pr.branch_name || `feature/PR-${pr.pr_number}`;
+      let commits: {
+        sha: string;
+        message: string;
+        author: string;
+        date: string;
+      }[] = [];
 
       const commitsRes = await fetch(
         `https://api.github.com/repos/${pr.repo_owner}/${pr.repo_name}/pulls/${pr.pr_number}/commits`,
@@ -308,7 +295,10 @@ export class WorkItemService {
         success: true,
       };
     } catch (e) {
-      console.warn(`Failed to fetch real GitHub PR ${pr.repo_owner}/${pr.repo_name}#${pr.pr_number}:`, e);
+      console.warn(
+        `Failed to fetch real GitHub PR ${pr.repo_owner}/${pr.repo_name}#${pr.pr_number}:`,
+        e
+      );
       return {
         title: pr.pr_title,
         status: pr.status || 'open',
@@ -323,15 +313,18 @@ export class WorkItemService {
     _actorId: string,
     workItemId: string
   ): Promise<{
-    prs: (DbGithubPullRequest & { commits: { sha: string; message: string; author: string; date: string }[] })[];
+    prs: (DbGithubPullRequest & {
+      commits: { sha: string; message: string; author: string; date: string }[];
+    })[];
     githubRepo: string | null;
   }> {
     const prs = await this.workItems.listLinkedPRs(workItemId);
-    const settings = await this.workItems.getProjectGithubSettingsByWorkItem(workItemId);
+    const settings =
+      await this.workItems.getProjectGithubSettingsByWorkItem(workItemId);
 
     const headers: Record<string, string> = {
       'User-Agent': 'Alice-App',
-      'Accept': 'application/vnd.github.v3+json',
+      Accept: 'application/vnd.github.v3+json',
     };
     if (settings?.github_token) {
       headers['Authorization'] = `token ${settings.github_token}`;
@@ -389,11 +382,18 @@ export class WorkItemService {
     };
   }
 
-  async linkPR(_actorId: string, workItemId: string, prUrl: string): Promise<DbGithubPullRequest> {
-    const githubPrRegex = /^(?:https?:\/\/github\.com\/)?([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)\/pull\/(\d+)$/;
+  async linkPR(
+    _actorId: string,
+    workItemId: string,
+    prUrl: string
+  ): Promise<DbGithubPullRequest> {
+    const githubPrRegex =
+      /^(?:https?:\/\/github\.com\/)?([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)\/pull\/(\d+)$/;
     const match = githubPrRegex.exec(prUrl);
     if (!match) {
-      throw new WorkItemValidationError('Invalid GitHub PR URL. Expected format: https://github.com/owner/repo/pull/number');
+      throw new WorkItemValidationError(
+        'Invalid GitHub PR URL. Expected format: https://github.com/owner/repo/pull/number'
+      );
     }
 
     const repoOwner = match[1]!;
@@ -401,9 +401,12 @@ export class WorkItemService {
     const prNumberStr = match[3]!;
     const prNumber = Number.parseInt(prNumberStr, 10);
 
-    const settings = await this.workItems.getProjectGithubSettingsByWorkItem(workItemId);
+    const settings =
+      await this.workItems.getProjectGithubSettingsByWorkItem(workItemId);
     if (!settings?.github_repo) {
-      throw new WorkItemValidationError('GitHub Integration is not configured for this project.');
+      throw new WorkItemValidationError(
+        'GitHub Integration is not configured for this project.'
+      );
     }
 
     const [configOwner, configRepo] = settings.github_repo.split('/');
@@ -425,7 +428,7 @@ export class WorkItemService {
     try {
       const headers: Record<string, string> = {
         'User-Agent': 'Alice-App',
-        'Accept': 'application/vnd.github.v3+json',
+        Accept: 'application/vnd.github.v3+json',
       };
       if (settings.github_token) {
         headers['Authorization'] = `token ${settings.github_token}`;
@@ -447,7 +450,10 @@ export class WorkItemService {
         }
       }
     } catch (e) {
-      console.warn('Failed to pre-fetch PR details from GitHub API, using defaults/mocks', e);
+      console.warn(
+        'Failed to pre-fetch PR details from GitHub API, using defaults/mocks',
+        e
+      );
     }
 
     return await this.workItems.linkPR(workItemId, {
@@ -461,7 +467,11 @@ export class WorkItemService {
     });
   }
 
-  async unlinkPR(_actorId: string, workItemId: string, prId: string): Promise<void> {
+  async unlinkPR(
+    _actorId: string,
+    workItemId: string,
+    prId: string
+  ): Promise<void> {
     await this.workItems.unlinkPR(workItemId, prId);
   }
 }

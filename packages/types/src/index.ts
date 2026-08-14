@@ -1,3 +1,4 @@
+export { Constants } from './generated/supabase/database.types.js';
 export type {
   Database,
   Enums,
@@ -12,6 +13,7 @@ export {
   auditCreateWithoutStatus,
   auditUpdate,
   userActiveAuditUpdate,
+  RecordStatusEnum,
   type RecordStatus,
 } from './audit.js';
 

@@ -4,14 +4,22 @@ import {
   WORK_ITEM_WORKLOG_SELECT,
   normalizeWorkLogRow,
   DEFAULT_WORK_ITEM_PRIORITY,
-  buildWorkItemSearchOrFilter,
+  WorkItemStatusEnum,
   type Database,
   type WorkItemWorkLog,
   type WorkItemWorkLogRowRaw,
 } from '@repo/types';
+import { Prisma } from '@repo/types/prisma';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { auditCreate, auditCreateWithoutStatus } from '../../../lib/audit';
-import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
+import { prisma } from '../../../lib/prisma';
+import {
+  prismaAuditCreate,
+  prismaAuditCreateWithoutStatus,
+  prismaAuditUpdate,
+  prismaLockTimestamp,
+  prismaOptionalDate,
+} from '../../../lib/prisma-audit';
+import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
 import { WorkItemBody, WorkItemUpdateBody } from './workItems.schemas';
 
 export type DbWorkItem = Tables<'work_items'>;
@@ -42,31 +50,7 @@ export type UpdateWorkItemRecord = WorkItemUpdateBody & {
 
 const ASSIGNEE_SELECT = userRelationSelect('assignee', 'assignee_id');
 const REPORTER_SELECT = userRelationSelect('reporter', 'reporter_id');
-const WORK_ITEM_WITH_ASSIGNEE = `*, ${ASSIGNEE_SELECT}`;
 const WORK_ITEM_WITH_PEOPLE = `*, ${ASSIGNEE_SELECT}, ${REPORTER_SELECT}`;
-
-type SprintIdFilters = { sprint_id?: string | null };
-
-type SprintFilterableQuery = {
-  is: (column: 'sprint_id', value: null) => SprintFilterableQuery;
-  eq: (column: 'sprint_id', value: string) => SprintFilterableQuery;
-};
-
-function applySprintIdFilter<Q extends SprintFilterableQuery>(
-  query: Q,
-  filters?: SprintIdFilters
-): Q {
-  if (!filters) {
-    return query;
-  }
-  if (filters.sprint_id === null) {
-    return query.is('sprint_id', null) as Q;
-  }
-  if (filters.sprint_id) {
-    return query.eq('sprint_id', filters.sprint_id) as Q;
-  }
-  return query;
-}
 
 export class WorkItemRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
@@ -132,61 +116,6 @@ export class WorkItemRepository {
     return { projectId: workItem.project_id };
   }
 
-  async get(filters?: SprintIdFilters): Promise<DbWorkItem[]> {
-    const query = applySprintIdFilter(
-      this.db.from('work_items').select(WORK_ITEM_WITH_ASSIGNEE),
-      filters
-    );
-
-    const { data, error } = await query.order('created_at', {
-      ascending: false,
-    });
-
-    if (error) {
-      console.error('error. failed to list work-items:', error.message);
-      throw new Error('Failed to list work-items');
-    }
-
-    return data as unknown as DbWorkItem[];
-  }
-
-  async listPaginated(
-    page: number,
-    limit: number,
-    search?: string,
-    filters?: SprintIdFilters
-  ): Promise<{ workItems: DbWorkItem[]; totalCount: number }> {
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
-
-    let query = this.db.from('work_items').select(WORK_ITEM_WITH_ASSIGNEE, {
-      count: 'exact',
-    });
-
-    if (search?.trim()) {
-      query = query.or(buildWorkItemSearchOrFilter(search));
-    }
-
-    query = applySprintIdFilter(query, filters);
-
-    const { data, error, count } = await query
-      .order('created_at', { ascending: false })
-      .range(from, to);
-
-    if (error) {
-      console.error(
-        'error. failed to list work-items paginated:',
-        error.message
-      );
-      throw new Error('Failed to list work-items');
-    }
-
-    return {
-      workItems: (data ?? []) as unknown as DbWorkItem[],
-      totalCount: count ?? 0,
-    };
-  }
-
   async getById(workItemId: string): Promise<DbWorkItem> {
     const { data, error } = await this.db
       .from('work_items')
@@ -208,7 +137,7 @@ export class WorkItemRepository {
       .from('work_items')
       .select('id', { count: 'exact', head: true })
       .eq('parent_id', parentId)
-      .neq('status', 'Done');
+      .neq('status', WorkItemStatusEnum.Done);
 
     if (error) {
       console.error(
@@ -222,61 +151,77 @@ export class WorkItemRepository {
   }
 
   async create(input: CreateWorkItemRecord): Promise<DbWorkItem> {
-    const { data, error } = await this.db
-      .from('work_items')
-      .insert({
+    const created = await prisma.work_items.create({
+      data: {
         title: input.title,
         project_id: input.project_id,
         type: input.type,
         priority: input.priority ?? DEFAULT_WORK_ITEM_PRIORITY,
         assignee_id: input.assignee_id,
-        due_date: input.due_date,
+        due_date: prismaOptionalDate(input.due_date) ?? null,
         sprint_id: input.sprint_id,
         reporter_id: input.createdBy,
-        status: 'New',
+        status: WorkItemStatusEnum.New,
         story_points: input.story_points,
         jira_issue_key: input.jira_issue_key,
-        description: input.description ?? null,
-        labels: input.labels ?? [],
+        description:
+          input.description == null
+            ? Prisma.DbNull
+            : (input.description as Prisma.InputJsonValue),
+        labels: (input.labels ?? []) as Prisma.InputJsonValue,
         parent_id: input.parent_id ?? null,
-        ...auditCreateWithoutStatus(input.createdBy),
-      })
-      .select(WORK_ITEM_WITH_ASSIGNEE)
-      .single();
+        ...prismaAuditCreateWithoutStatus(input.createdBy),
+      },
+    });
 
-    if (error) {
-      console.error('error. failed to create work-item:', error.message);
+    const row = await this.getById(created.id);
+    if (!row) {
       throw new Error('Failed to create work-item');
     }
-
-    return data as unknown as DbWorkItem;
+    return row;
   }
 
   async update(input: UpdateWorkItemRecord): Promise<DbWorkItem> {
     const current = await this.getById(input.id);
 
-    const becomingDone = input.status === 'Done' && current?.status !== 'Done';
-    const leavingDone = input.status !== 'Done' && current?.status === 'Done';
+    const becomingDone =
+      input.status === WorkItemStatusEnum.Done &&
+      current?.status !== WorkItemStatusEnum.Done;
+    const leavingDone =
+      input.status !== WorkItemStatusEnum.Done &&
+      current?.status === WorkItemStatusEnum.Done;
 
-    let doneAtUpdate: string | null | undefined;
+    let doneAtUpdate: Date | null | undefined;
     if (becomingDone) {
-      doneAtUpdate = new Date().toISOString();
+      doneAtUpdate = new Date();
     } else if (leavingDone) {
       doneAtUpdate = null;
     }
 
-    const { data, error } = await this.db
-      .from('work_items')
-      .update({
+    let descriptionUpdate:
+      Prisma.InputJsonValue | typeof Prisma.DbNull | undefined;
+    if (input.description !== undefined) {
+      descriptionUpdate =
+        input.description == null
+          ? Prisma.DbNull
+          : (input.description as Prisma.InputJsonValue);
+    }
+
+    const { count } = await prisma.work_items.updateMany({
+      where: {
+        id: input.id,
+        updated_at: prismaLockTimestamp(input.expectedUpdatedAt),
+      },
+      data: {
         title: input.title,
         project_id: input.project_id,
         type: input.type,
         priority: input.priority ?? DEFAULT_WORK_ITEM_PRIORITY,
         assignee_id: input.assignee_id,
         reporter_id: input.reporter_id,
-        due_date: input.due_date,
-        description: input.description,
-        labels: input.labels ?? [],
+        due_date: prismaOptionalDate(input.due_date) ?? null,
+        description: descriptionUpdate,
+        labels: (input.labels ?? []) as Prisma.InputJsonValue,
         status: input.status,
         sprint_id: input.sprint_id,
         story_points: input.story_points,
@@ -285,20 +230,16 @@ export class WorkItemRepository {
           ? { jira_issue_key: input.jira_issue_key }
           : {}),
         ...(doneAtUpdate !== undefined ? { done_at: doneAtUpdate } : {}),
-        updated_by: input.updatedBy,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', input.id)
-      .eq('updated_at', input.expectedUpdatedAt)
-      .select(WORK_ITEM_WITH_PEOPLE)
-      .maybeSingle();
+        ...prismaAuditUpdate(input.updatedBy),
+      },
+    });
 
-    return (await resolveOptimisticUpdate({
-      data: data as unknown as DbWorkItem | null,
-      error,
+    return resolveOptimisticPrismaUpdate({
+      count,
+      fetchUpdated: () => this.getById(input.id),
       fetchCurrent: () => this.getById(input.id),
       notFoundMessage: 'Work item not found',
-    })) as DbWorkItem;
+    });
   }
 
   async listWorkItemWorkLogs(
@@ -337,20 +278,24 @@ export class WorkItemRepository {
   }): Promise<WorkItemWorkLog> {
     await this.requireProjectMember(input.workItemId, input.actorId);
 
+    const created = await prisma.work_item_worklogs.create({
+      data: {
+        work_item_id: input.workItemId,
+        user_id: input.actorId,
+        logged_hours: input.loggedHours,
+        logged_at: prismaOptionalDate(input.loggedAtIso)!,
+        comment: input.comment,
+        ...prismaAuditCreate(input.actorId),
+      },
+    });
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = this.db as unknown as SupabaseClient<any>;
 
     const { data, error } = await db
       .from('work_item_worklogs')
-      .insert({
-        work_item_id: input.workItemId,
-        user_id: input.actorId,
-        logged_hours: input.loggedHours,
-        logged_at: input.loggedAtIso,
-        comment: input.comment,
-        ...auditCreate(input.actorId),
-      })
       .select(WORK_ITEM_WORKLOG_SELECT)
+      .eq('id', created.id)
       .single();
 
     if (error || !data) {
@@ -393,11 +338,16 @@ export class WorkItemRepository {
       status?: string | null;
     }
   ): Promise<DbGithubPullRequest> {
-    const db = this.db as unknown as SupabaseClient<Database>;
-
-    const { data, error } = await db
-      .from('github_pull_requests')
-      .upsert({
+    const upserted = await prisma.github_pull_requests.upsert({
+      where: {
+        work_item_id_repo_owner_repo_name_pr_number: {
+          work_item_id: workItemId,
+          repo_owner: payload.repoOwner,
+          repo_name: payload.repoName,
+          pr_number: payload.prNumber,
+        },
+      },
+      create: {
         work_item_id: workItemId,
         pr_number: payload.prNumber,
         repo_owner: payload.repoOwner,
@@ -406,11 +356,21 @@ export class WorkItemRepository {
         pr_url: payload.prUrl,
         branch_name: payload.branchName ?? null,
         status: payload.status ?? 'open',
-        updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'work_item_id,repo_owner,repo_name,pr_number',
-      })
+      },
+      update: {
+        pr_title: payload.prTitle,
+        pr_url: payload.prUrl,
+        branch_name: payload.branchName ?? null,
+        status: payload.status ?? 'open',
+        updated_at: new Date(),
+      },
+    });
+
+    const db = this.db as unknown as SupabaseClient<Database>;
+    const { data, error } = await db
+      .from('github_pull_requests')
       .select('*')
+      .eq('id', upserted.id)
       .single();
 
     if (error) {
@@ -422,24 +382,15 @@ export class WorkItemRepository {
   }
 
   async unlinkPR(workItemId: string, prId: string): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = this.db as unknown as SupabaseClient<any>;
-
-    const { error } = await db
-      .from('github_pull_requests')
-      .delete()
-      .eq('id', prId)
-      .eq('work_item_id', workItemId);
-
-    if (error) {
-      console.error('error. failed to unlink GitHub PR:', error.message);
-      throw new Error('Failed to unlink GitHub PR');
-    }
+    await prisma.github_pull_requests.deleteMany({
+      where: { id: prId, work_item_id: workItemId },
+    });
   }
 
-  async getProjectGithubSettingsByWorkItem(
-    workItemId: string
-  ): Promise<{ github_repo: string | null; github_token: string | null } | null> {
+  async getProjectGithubSettingsByWorkItem(workItemId: string): Promise<{
+    github_repo: string | null;
+    github_token: string | null;
+  } | null> {
     const { data: workItem, error: workItemError } = await this.db
       .from('work_items')
       .select('project_id')

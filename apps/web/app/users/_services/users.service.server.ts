@@ -1,6 +1,10 @@
 import { apiFetch } from '@/lib/api/api-client.server';
 import { createClient } from '@/lib/supabase/server';
-import { pageRange, paginationMeta } from '@/lib/db/pagination';
+import {
+  applyListSearch,
+  runPaginatedSelect,
+  throwIfError,
+} from '@/lib/db/query';
 import { getCachedUserList } from '@/lib/cache/dropdown-cache';
 import { createUsersService } from './users.service.base';
 import type { GetUsersPaginatedResponse, User } from './users.service.base';
@@ -20,10 +24,7 @@ export async function getUsersList(): Promise<User[]> {
     .select('*')
     .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('error. failed to list users:', error.message);
-    throw new Error('Failed to list users');
-  }
+  throwIfError(error, 'failed to list users', 'Failed to list users');
 
   return (data ?? []) as User[];
 }
@@ -34,29 +35,25 @@ export async function getUsersListPaginated(
   search = ''
 ): Promise<GetUsersPaginatedResponse> {
   const supabase = await createClient();
-  const { from, to } = pageRange(page, limit);
 
-  let query = supabase
-    .from('users')
-    .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false });
+  const query = applyListSearch(
+    supabase.from('users').select('*', { count: 'exact' }),
+    search,
+    ['name', 'email']
+  );
 
-  const term = search.trim().replace(/[,()]/g, '');
-  if (term) {
-    query = query.or(`name.ilike.%${term}%,email.ilike.%${term}%`);
-  }
+  const { rows: users, ...meta } = await runPaginatedSelect<User>(
+    query,
+    page,
+    limit,
+    {
+      orderBy: 'created_at',
+      logLabel: 'failed to list users paginated',
+      errorMessage: 'Failed to list users',
+    }
+  );
 
-  const { data, error, count } = await query.range(from, to);
-
-  if (error) {
-    console.error('error. failed to list users paginated:', error.message);
-    throw new Error('Failed to list users');
-  }
-
-  return {
-    users: (data ?? []) as User[],
-    ...paginationMeta(count ?? 0, page, limit),
-  };
+  return { users, ...meta };
 }
 
 /**

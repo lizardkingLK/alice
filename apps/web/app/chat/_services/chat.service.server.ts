@@ -8,7 +8,7 @@ import type {
   ChatMessage,
 } from '../_components/chat-client.types';
 
-export type { ChatConversation };
+export type { ChatConversation } from '../_components/chat-client.types';
 
 export type ChatPageBootstrap = {
   conversations: ChatConversation[];
@@ -21,12 +21,26 @@ export type ChatPageBootstrap = {
  * Mirrors API `listConversations` filters/order.
  */
 export async function listChatConversations(): Promise<ChatConversation[]> {
+  return listChatConversationsWith((userId) =>
+    getCachedChatConversationsForUser(userId)
+  );
+}
+
+/** Uncached list for client refreshes (drawer / after send or delete). */
+export async function listChatConversationsLive(): Promise<ChatConversation[]> {
+  return listChatConversationsWith(fetchChatConversationsForUser);
+}
+
+async function listChatConversationsWith(
+  // eslint-disable-next-line no-unused-vars
+  loader: (userId: string) => Promise<ChatConversation[]>
+): Promise<ChatConversation[]> {
   const user = await getUser();
   if (!user) {
     return [];
   }
 
-  return getCachedChatConversationsForUser(user.id);
+  return loader(user.id);
 }
 
 async function fetchChatConversationsForUser(

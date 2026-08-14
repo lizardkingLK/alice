@@ -1,9 +1,6 @@
-import type { ChatMessage } from './chat-client.types';
-import {
-  getChatHistory,
-  listConversations,
-  type ChatConversation,
-} from './chat-client.service';
+import type { ChatConversation, ChatMessage } from './chat-client.types';
+import { getChatHistory } from '../_services/chat-client.service';
+import { listChatConversationsAction } from '../_services/chat-read-actions';
 
 export type HistoryLoadResult = {
   messages: ChatMessage[];
@@ -40,8 +37,7 @@ export async function loadConversationHistory(
  * Shared by `/chat` client init and the floating drawer bootstrap.
  */
 export async function bootstrapLatestChat(): Promise<LatestChatBootstrap> {
-  const listResponse = await listConversations();
-  const conversations = listResponse.conversations ?? [];
+  const conversations = await listChatConversationsAction();
   const latest = conversations[0];
 
   if (!latest) {

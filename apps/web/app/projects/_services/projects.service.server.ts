@@ -3,10 +3,11 @@ import { apiFetch } from '@/lib/api/api-client.server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getDbUser, getUser } from '@/lib/auth';
-import { pageRange, paginationMeta } from '@/lib/db/pagination';
+import { paginationMeta } from '@/lib/db/pagination';
 import {
   applyListSearch,
   aggregateCountsByKey,
+  runPaginatedSelect,
   throwIfError,
   zeroCountsById,
 } from '@/lib/db/query';
@@ -62,8 +63,6 @@ export async function getProjectListPaginated(
     };
   }
 
-  const { from, to } = pageRange(page, limit);
-
   let query = supabase
     .from('projects')
     .select(`*, ${OWNER_SELECT}`, { count: 'exact' });
@@ -80,17 +79,17 @@ export async function getProjectListPaginated(
 
   query = applyListSearch(query, search, ['name', 'key', 'description']);
 
-  const { data, error, count } = await query
-    .order('created_at', { ascending: false })
-    .range(from, to);
-
-  throwIfError(
-    error,
-    'failed to list projects paginated',
-    'Failed to list projects'
+  const { rows: projects, ...meta } = await runPaginatedSelect<Project>(
+    query,
+    page,
+    limit,
+    {
+      orderBy: 'created_at',
+      logLabel: 'failed to list projects paginated',
+      errorMessage: 'Failed to list projects',
+    }
   );
 
-  const projects = (data ?? []) as unknown as Project[];
   const teamCounts = await getTeamCountsByProjectIds(projects.map((p) => p.id));
 
   return {
@@ -98,7 +97,7 @@ export async function getProjectListPaginated(
       ...project,
       team_count: teamCounts[project.id] ?? 0,
     })),
-    ...paginationMeta(count ?? 0, page, limit),
+    ...meta,
   };
 }
 

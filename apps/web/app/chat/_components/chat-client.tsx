@@ -22,7 +22,7 @@ import {
   sendChatMessage,
   deleteConversation,
   type ChatConversation,
-} from './chat-client.service';
+} from '../_services/chat-client.service';
 import {
   bootstrapLatestChat,
   loadConversationHistory,

@@ -14,7 +14,7 @@ if [[ -f .env ]]; then
 fi
 
 if [[ -z "${DIRECT_URL:-}" ]]; then
-  echo "error. DIRECT_URL is not set. Copy sample.env to .env and fill in values."
+  echo "error. DIRECT_URL is not set. Copy sample.env to .env and fill in values." >&2
   exit 1
 fi
 
@@ -29,3 +29,6 @@ pnpm exec supabase gen types typescript \
   > "${output}"
 
 echo "info. wrote ${output}"
+
+pnpm exec prisma generate
+echo "info. wrote ../types/src/generated/prisma"

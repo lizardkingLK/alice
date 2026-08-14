@@ -58,27 +58,45 @@ function getTodayDateString() {
   return `${year}-${month}-${day}`;
 }
 
-function validateStep1(name: string, key: string, selectedOwnerId: string): string | null {
+function validateStep1(
+  name: string,
+  key: string,
+  selectedOwnerId: string
+): string | null {
   if (!name.trim()) return 'Project Name is required.';
   if (!key.trim()) return 'Project Key is required.';
-  if (!/^[A-Z0-9]+$/i.test(key)) return 'Project Key must contain only letters and numbers.';
-  if (key.length < 2 || key.length > 10) return 'Project Key must be between 2 and 10 characters.';
+  if (!/^[A-Z0-9]+$/i.test(key))
+    return 'Project Key must contain only letters and numbers.';
+  if (key.length < 2 || key.length > 10)
+    return 'Project Key must be between 2 and 10 characters.';
   if (!selectedOwnerId) return 'Project Owner is required.';
   return null;
 }
 
-function validateStep2(importFromJira: boolean, jiraUrl: string, jiraProjectKey: string): string | null {
+function validateStep2(
+  importFromJira: boolean,
+  jiraUrl: string,
+  jiraProjectKey: string
+): string | null {
   if (importFromJira) {
-    if (!jiraUrl.trim()) return 'Jira URL is required when Jira integration is enabled.';
-    if (!jiraProjectKey.trim()) return 'Jira Project Key is required when Jira integration is enabled.';
+    if (!jiraUrl.trim())
+      return 'Jira URL is required when Jira integration is enabled.';
+    if (!jiraProjectKey.trim())
+      return 'Jira Project Key is required when Jira integration is enabled.';
   }
   return null;
 }
 
-function validateStep3(enableGithub: boolean, githubOwner: string, githubRepoName: string): string | null {
+function validateStep3(
+  enableGithub: boolean,
+  githubOwner: string,
+  githubRepoName: string
+): string | null {
   if (enableGithub) {
-    if (!githubOwner.trim()) return 'GitHub Owner / Organization is required when GitHub integration is enabled.';
-    if (!githubRepoName.trim()) return 'GitHub Repository Name is required when GitHub integration is enabled.';
+    if (!githubOwner.trim())
+      return 'GitHub Owner / Organization is required when GitHub integration is enabled.';
+    if (!githubRepoName.trim())
+      return 'GitHub Repository Name is required when GitHub integration is enabled.';
     if (githubOwner.includes('/') || githubRepoName.includes('/')) {
       return 'GitHub Owner and Repository Name must not contain slashes.';
     }
@@ -104,10 +122,18 @@ function getStepError(
     return validateStep1(fields.name, fields.key, fields.selectedOwnerId);
   }
   if (currentStep === 2) {
-    return validateStep2(fields.importFromJira, fields.jiraUrl, fields.jiraProjectKey);
+    return validateStep2(
+      fields.importFromJira,
+      fields.jiraUrl,
+      fields.jiraProjectKey
+    );
   }
   if (currentStep === 3) {
-    return validateStep3(fields.enableGithub, fields.githubOwner, fields.githubRepoName);
+    return validateStep3(
+      fields.enableGithub,
+      fields.githubOwner,
+      fields.githubRepoName
+    );
   }
   return null;
 }
@@ -154,7 +180,7 @@ function Step1BasicDetails({
   getTodayDateString,
 }: Readonly<Step1Props>) {
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-left-2 duration-300">
+    <div className="animate-in fade-in slide-in-from-left-2 space-y-4 duration-300">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="name" className="text-sm font-medium">
@@ -164,7 +190,9 @@ function Step1BasicDetails({
             id="name"
             name="name"
             value={name}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              setName(e.target.value)
+            }
             placeholder="e.g. Alice Platform"
             required
             className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
@@ -179,7 +207,9 @@ function Step1BasicDetails({
             id="key"
             name="key"
             value={keyString}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setKeyString(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              setKeyString(e.target.value)
+            }
             placeholder="e.g. ALICE"
             required
             maxLength={10}
@@ -196,7 +226,9 @@ function Step1BasicDetails({
           id="description"
           name="description"
           value={description}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => setDescription(e.target.value)}
+          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+            setDescription(e.target.value)
+          }
           placeholder="e.g. Core platform squad for JIRA clone"
           className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
         />
@@ -254,7 +286,9 @@ function Step1BasicDetails({
             name="start_date"
             type="date"
             value={startDate}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              setStartDate(e.target.value)
+            }
             min={isEditMode ? undefined : getTodayDateString()}
             className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
           />
@@ -269,7 +303,9 @@ function Step1BasicDetails({
             name="end_date"
             type="date"
             value={endDate}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              setEndDate(e.target.value)
+            }
             className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
           />
         </div>
@@ -308,8 +344,8 @@ function Step2JiraIntegration({
   previewIssues,
 }: Readonly<Step2Props>) {
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-left-2 duration-300">
-      <div className="flex items-center space-x-2 rounded-lg border border-border bg-muted/20 p-4">
+    <div className="animate-in fade-in slide-in-from-left-2 space-y-4 duration-300">
+      <div className="border-border bg-muted/20 flex items-center space-x-2 rounded-lg border p-4">
         <Checkbox
           id="importFromJira"
           checked={importFromJira}
@@ -324,7 +360,8 @@ function Step2JiraIntegration({
             Enable Jira Integration & Task Import
           </Label>
           <p className="text-muted-foreground text-xs">
-            Automatically import active issues and configure tracking from Atlassian Jira.
+            Automatically import active issues and configure tracking from
+            Atlassian Jira.
           </p>
         </div>
       </div>
@@ -392,9 +429,16 @@ function Step2JiraIntegration({
               </Label>
               <div className="border-border/40 bg-background/50 divide-border/20 max-h-48 flex-1 divide-y overflow-y-auto rounded border p-2 text-xs">
                 {previewIssues.slice(0, 10).map((issue) => (
-                  <div key={issue.key} className="flex justify-between gap-4 py-1.5">
-                    <span className="text-muted-foreground shrink-0 font-mono">{issue.key}</span>
-                    <span className="flex-1 truncate font-medium">{issue.title}</span>
+                  <div
+                    key={issue.key}
+                    className="flex justify-between gap-4 py-1.5"
+                  >
+                    <span className="text-muted-foreground shrink-0 font-mono">
+                      {issue.key}
+                    </span>
+                    <span className="flex-1 truncate font-medium">
+                      {issue.title}
+                    </span>
                     <span className="text-muted-foreground bg-secondary/80 shrink-0 rounded px-1">
                       {issue.type}
                     </span>
@@ -438,8 +482,8 @@ function Step3GitHubIntegration({
   setGithubToken,
 }: Readonly<Step3Props>) {
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-left-2 duration-300">
-      <div className="flex items-center space-x-2 rounded-lg border border-border bg-muted/20 p-4">
+    <div className="animate-in fade-in slide-in-from-left-2 space-y-4 duration-300">
+      <div className="border-border bg-muted/20 flex items-center space-x-2 rounded-lg border p-4">
         <Checkbox
           id="enableGithub"
           checked={enableGithub}
@@ -454,7 +498,8 @@ function Step3GitHubIntegration({
             Enable GitHub Integration
           </Label>
           <p className="text-muted-foreground text-xs">
-            Link pull requests, view commits, and track branches inside your tasks.
+            Link pull requests, view commits, and track branches inside your
+            tasks.
           </p>
         </div>
       </div>
@@ -660,8 +705,6 @@ export function ProjectForm({
     setGithubToken(projectToEdit.github_token ?? '');
   }, [projectToEdit]);
 
-
-
   const handleJiraImport = async (projectId: string, projectName: string) => {
     try {
       const importRes = await apiFetch<{ importedCount: number }>(
@@ -766,10 +809,14 @@ export function ProjectForm({
         status: status,
         attributes_config: null,
         workflow_config: null,
-        jira_url: importFromJira ? (jiraUrl.trim() || null) : null,
-        jira_project_key: importFromJira ? (jiraProjectKey.toUpperCase().trim() || null) : null,
-        github_repo: enableGithub ? (`${githubOwner.trim()}/${githubRepoName.trim()}`) : null,
-        github_token: enableGithub ? (githubToken.trim() || null) : null,
+        jira_url: importFromJira ? jiraUrl.trim() || null : null,
+        jira_project_key: importFromJira
+          ? jiraProjectKey.toUpperCase().trim() || null
+          : null,
+        github_repo: enableGithub
+          ? `${githubOwner.trim()}/${githubRepoName.trim()}`
+          : null,
+        github_token: enableGithub ? githubToken.trim() || null : null,
       };
 
       if (projectToEdit) {
@@ -885,7 +932,8 @@ export function ProjectForm({
             const isCompleted = step > s.number;
             let stepIconClass = 'bg-muted text-muted-foreground';
             if (isActive) {
-              stepIconClass = 'bg-primary text-primary-foreground ring-4 ring-primary/20 scale-105';
+              stepIconClass =
+                'bg-primary text-primary-foreground ring-4 ring-primary/20 scale-105';
             } else if (isCompleted) {
               stepIconClass = 'bg-emerald-500 text-white';
             }
@@ -897,7 +945,10 @@ export function ProjectForm({
             const lineClass = isCompleted ? 'bg-emerald-500' : 'bg-muted';
 
             return (
-              <div key={s.number} className="flex flex-1 items-center last:flex-initial">
+              <div
+                key={s.number}
+                className="flex flex-1 items-center last:flex-initial"
+              >
                 <div className="flex flex-col items-center gap-1">
                   <div
                     className={cn(
@@ -909,7 +960,7 @@ export function ProjectForm({
                   </div>
                   <span
                     className={cn(
-                      'text-[10px] font-medium tracking-tight whitespace-nowrap transition-colors duration-300 hidden sm:block',
+                      'hidden text-[10px] font-medium tracking-tight whitespace-nowrap transition-colors duration-300 sm:block',
                       stepTextClass
                     )}
                   >

@@ -1,6 +1,11 @@
-import { auditCreate, auditUpdate } from '../../../lib/audit';
+import { prisma } from '../../../lib/prisma';
 import { supabase } from '../../../lib/supabase';
-import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
+import {
+  prismaAuditCreate,
+  prismaAuditUpdate,
+  prismaLockTimestamp,
+} from '../../../lib/prisma-audit';
+import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
 import { ATTACHMENT_SELECT, type AttachmentWithUploader } from '@repo/types';
 
 export type CreateAttachmentInput = {
@@ -29,26 +34,23 @@ export class AttachmentsRepository {
   }
 
   async create(input: CreateAttachmentInput): Promise<AttachmentWithUploader> {
-    const { data, error } = await supabase
-      .from('attachments')
-      .insert({
+    const created = await prisma.attachments.create({
+      data: {
         work_item_id: input.work_item_id,
         uploader_id: input.uploader_id,
         file_name: input.file_name,
         storage_path: input.storage_path,
         file_size: input.file_size,
         mime_type: input.mime_type,
-        ...auditCreate(input.uploader_id),
-      })
-      .select(ATTACHMENT_SELECT)
-      .single();
+        ...prismaAuditCreate(input.uploader_id),
+      },
+    });
 
-    if (error) {
-      console.error('database error create attachment:', error.message);
-      throw new Error(`Failed to create attachment: ${error.message}`);
+    const row = await this.getById(created.id);
+    if (!row) {
+      throw new Error('Failed to create attachment');
     }
-
-    return data as unknown as AttachmentWithUploader;
+    return row;
   }
 
   async archive(
@@ -56,20 +58,17 @@ export class AttachmentsRepository {
     actorId: string,
     expectedUpdatedAt: string
   ): Promise<void> {
-    const { data, error } = await supabase
-      .from('attachments')
-      .update({
+    const { count } = await prisma.attachments.updateMany({
+      where: { id, updated_at: prismaLockTimestamp(expectedUpdatedAt) },
+      data: {
         status: 'archived',
-        ...auditUpdate(actorId),
-      })
-      .eq('id', id)
-      .eq('updated_at', expectedUpdatedAt)
-      .select('id')
-      .maybeSingle();
+        ...prismaAuditUpdate(actorId),
+      },
+    });
 
-    await resolveOptimisticUpdate({
-      data,
-      error,
+    await resolveOptimisticPrismaUpdate({
+      count,
+      fetchUpdated: () => this.getById(id),
       fetchCurrent: () => this.getById(id),
       notFoundMessage: 'Attachment not found',
     });

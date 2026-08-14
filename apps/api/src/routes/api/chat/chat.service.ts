@@ -5,6 +5,11 @@ import {
   DEFAULT_CHAT_MODEL_VALUE,
   resolveChatModel,
   type ChatModelValue,
+  WorkItemTypeEnum,
+  DEFAULT_WORK_ITEM_PRIORITY,
+  WORK_ITEM_PRIORITIES,
+  ProjectStatusEnum,
+  type WorkItemType,
 } from '@repo/types';
 import { projectsService } from '../projects/projects.service';
 import { projectsRepository } from '../projects/projects.repository';
@@ -225,7 +230,7 @@ export class ChatService {
       name: projName,
       key: projKey.toUpperCase(),
       description,
-      status: 'active',
+      status: ProjectStatusEnum.active,
       start_date: null,
       end_date: null,
       owner_id: userId,
@@ -295,14 +300,23 @@ export class ChatService {
     const assigneeId =
       typeof args.assigneeId === 'string' ? args.assigneeId : null;
 
-    let typeValue = typeof args.type === 'string' ? args.type : 'task';
-    if (typeValue.toLowerCase() === 'task') typeValue = 'Task';
-    else if (typeValue.toLowerCase() === 'story') typeValue = 'Story';
-    else if (typeValue.toLowerCase() === 'bug') typeValue = 'Issue';
-    else typeValue = 'Task';
+    let typeValue: WorkItemType = WorkItemTypeEnum.Task;
+    if (typeof args.type === 'string') {
+      const normalized = args.type.toLowerCase();
+      if (normalized === 'story') typeValue = WorkItemTypeEnum.Story;
+      else if (normalized === 'bug' || normalized === 'issue')
+        typeValue = WorkItemTypeEnum.Issue;
+    }
 
-    const priorityValue =
-      typeof args.priority === 'string' ? args.priority : 'medium';
+    const rawPriority =
+      typeof args.priority === 'string'
+        ? args.priority
+        : DEFAULT_WORK_ITEM_PRIORITY;
+    const priorityValue = (WORK_ITEM_PRIORITIES as readonly string[]).includes(
+      rawPriority
+    )
+      ? (rawPriority as (typeof WORK_ITEM_PRIORITIES)[number])
+      : DEFAULT_WORK_ITEM_PRIORITY;
     const description =
       typeof args.description === 'string' ? args.description : null;
 
@@ -311,9 +325,8 @@ export class ChatService {
       project_id: projectId,
       sprint_id: sprintId,
       assignee_id: assigneeId,
-      type: typeValue as 'Task' | 'Story' | 'Epic' | 'Issue',
-      priority: priorityValue as
-        'low' | 'medium' | 'high' | 'highest' | 'lowest',
+      type: typeValue,
+      priority: priorityValue,
       description: textToProseMirrorJson(description),
       due_date: null,
     });

@@ -1,14 +1,15 @@
 import { Constants } from './generated/supabase/database.types.js';
+import { SprintStatus as PrismaSprintStatus } from './generated/prisma/enums.js';
 
 /** Canonical ordered sprint statuses (matches DB enum). */
 export const SPRINT_STATUSES = Constants.public.Enums.SprintStatus;
 
 export type SprintStatus = (typeof SPRINT_STATUSES)[number];
 
-/** Enum-like object for sprint status values. */
+/** PascalCase aliases over generated Prisma enum members. */
 export const SprintStatusEnum = {
-  Planned: 'planned',
-  Active: 'active',
-  Closed: 'closed',
-  Archived: 'archived',
-} as const satisfies Record<string, SprintStatus>;
+  Planned: PrismaSprintStatus.planned,
+  Active: PrismaSprintStatus.active,
+  Closed: PrismaSprintStatus.closed,
+  Archived: PrismaSprintStatus.archived,
+} as const;

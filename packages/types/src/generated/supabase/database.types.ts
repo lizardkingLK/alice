@@ -42,88 +42,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      github_pull_requests: {
-        Row: {
-          id: string;
-          work_item_id: string;
-          pr_number: number;
-          repo_owner: string;
-          repo_name: string;
-          pr_title: string;
-          pr_url: string;
-          branch_name: string | null;
-          status: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          work_item_id: string;
-          pr_number: number;
-          repo_owner: string;
-          repo_name: string;
-          pr_title: string;
-          pr_url: string;
-          branch_name?: string | null;
-          status?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          work_item_id?: string;
-          pr_number?: number;
-          repo_owner?: string;
-          repo_name?: string;
-          pr_title?: string;
-          pr_url?: string;
-          branch_name?: string | null;
-          status?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "github_pull_requests_work_item_id_fkey";
-            columns: ["work_item_id"];
-            isOneToOne: false;
-            referencedRelation: "work_items";
-            referencedColumns: ["id"];
-          }
-        ];
-      };
-      chat_conversations: {
-        Row: {
-          created_at: string;
-          id: string;
-          title: string;
-          updated_at: string;
-          user_id: string;
-        };
-        Insert: {
-          created_at?: string;
-          id?: string;
-          title?: string;
-          updated_at?: string;
-          user_id: string;
-        };
-        Update: {
-          created_at?: string;
-          id?: string;
-          title?: string;
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'chat_conversations_user_id_fkey';
-            columns: ['user_id'];
-            isOneToOne: false;
-            referencedRelation: 'users';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
       access_allowlist: {
         Row: {
           created_at: string;
@@ -252,6 +170,38 @@ export type Database = {
           },
         ];
       };
+      chat_conversations: {
+        Row: {
+          created_at: string;
+          id: string;
+          title: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          title?: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'chat_conversations_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       comments: {
         Row: {
           author_id: string;
@@ -323,6 +273,56 @@ export type Database = {
           },
           {
             foreignKeyName: 'comments_work_item_id_fkey';
+            columns: ['work_item_id'];
+            isOneToOne: false;
+            referencedRelation: 'work_items';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      github_pull_requests: {
+        Row: {
+          branch_name: string | null;
+          created_at: string;
+          id: string;
+          pr_number: number;
+          pr_title: string;
+          pr_url: string;
+          repo_name: string;
+          repo_owner: string;
+          status: string | null;
+          updated_at: string;
+          work_item_id: string;
+        };
+        Insert: {
+          branch_name?: string | null;
+          created_at?: string;
+          id?: string;
+          pr_number: number;
+          pr_title: string;
+          pr_url: string;
+          repo_name: string;
+          repo_owner: string;
+          status?: string | null;
+          updated_at: string;
+          work_item_id: string;
+        };
+        Update: {
+          branch_name?: string | null;
+          created_at?: string;
+          id?: string;
+          pr_number?: number;
+          pr_title?: string;
+          pr_url?: string;
+          repo_name?: string;
+          repo_owner?: string;
+          status?: string | null;
+          updated_at?: string;
+          work_item_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'github_pull_requests_work_item_id_fkey';
             columns: ['work_item_id'];
             isOneToOne: false;
             referencedRelation: 'work_items';
@@ -491,13 +491,13 @@ export type Database = {
           deleted_at: string | null;
           description: string | null;
           end_date: string | null;
+          github_repo: string | null;
+          github_token: string | null;
           id: string;
           jira_email: string | null;
           jira_project_key: string | null;
           jira_token: string | null;
           jira_url: string | null;
-          github_repo: string | null;
-          github_token: string | null;
           key: string;
           name: string;
           owner_id: string;
@@ -514,13 +514,13 @@ export type Database = {
           deleted_at?: string | null;
           description?: string | null;
           end_date?: string | null;
+          github_repo?: string | null;
+          github_token?: string | null;
           id?: string;
           jira_email?: string | null;
           jira_project_key?: string | null;
           jira_token?: string | null;
           jira_url?: string | null;
-          github_repo?: string | null;
-          github_token?: string | null;
           key: string;
           name: string;
           owner_id: string;
@@ -537,13 +537,13 @@ export type Database = {
           deleted_at?: string | null;
           description?: string | null;
           end_date?: string | null;
+          github_repo?: string | null;
+          github_token?: string | null;
           id?: string;
           jira_email?: string | null;
           jira_project_key?: string | null;
           jira_token?: string | null;
           jira_url?: string | null;
-          github_repo?: string | null;
-          github_token?: string | null;
           key?: string;
           name?: string;
           owner_id?: string;
@@ -1172,11 +1172,29 @@ export type Database = {
     Functions: {
       deactivate_user_guarded: {
         Args: {
-          p_user_id: string;
           p_actor_id: string;
           p_expected_updated_at: string;
+          p_user_id: string;
         };
-        Returns: Database['public']['Tables']['users']['Row'][];
+        Returns: {
+          active: boolean;
+          created_at: string;
+          created_by: string | null;
+          email: string;
+          id: string;
+          name: string;
+          profile_picture: string | null;
+          role: Database['public']['Enums']['UserRole'];
+          status: Database['public']['Enums']['RecordStatus'];
+          updated_at: string;
+          updated_by: string | null;
+        }[];
+        SetofOptions: {
+          from: '*';
+          to: 'users';
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
       };
     };
     Enums: {
@@ -1199,7 +1217,7 @@ export type Database = {
       WorkItemType: 'Epic' | 'Story' | 'Task' | 'Issue';
     };
     CompositeTypes: {
-      __dummy: never;
+      [_ in never]: never;
     };
   };
 };

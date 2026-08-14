@@ -1,13 +1,17 @@
 import {
-  auditCreate,
-  auditUpdate,
   normalizeSavedViewSearch,
   uniqueSavedViewIdsFromShares,
   type CreateSavedViewInput,
   type Tables,
   type UpdateSavedViewInput,
 } from '@repo/types';
+import { RecordStatus } from '@repo/types/prisma';
 import { supabase } from '../../../lib/supabase';
+import { prisma } from '../../../lib/prisma';
+import {
+  prismaAuditCreate,
+  prismaAuditUpdate,
+} from '../../../lib/prisma-audit';
 
 export type SavedViewRow = Tables<'saved_views'>;
 export type SavedViewShareRow = Tables<'saved_view_shares'>;
@@ -73,29 +77,27 @@ export class SavedViewsRepository {
     search: string,
     options: { readonly restore?: boolean } = {}
   ): Promise<SavedViewRow> {
-    const { data, error } = await supabase
-      .from('saved_views')
-      .update({
-        ...(options.restore ? { status: 'active' as const } : {}),
+    await prisma.saved_views.update({
+      where: { id },
+      data: {
+        ...(options.restore ? { status: RecordStatus.active } : {}),
         title: input.title,
         description: input.description ?? null,
         search,
         project_id: input.projectId ?? null,
-        ...auditUpdate(ownerId),
-      })
-      .eq('id', id)
-      .select('*')
-      .single();
+        ...prismaAuditUpdate(ownerId),
+      },
+    });
 
-    if (error || !data) {
+    const row = await this.getById(id);
+    if (!row) {
       throw new Error(
-        error?.message ??
-          (options.restore
-            ? 'Failed to restore saved view'
-            : 'Failed to update saved view')
+        options.restore
+          ? 'Failed to restore saved view'
+          : 'Failed to update saved view'
       );
     }
-    return data;
+    return row;
   }
 
   private async insertNew(
@@ -103,24 +105,23 @@ export class SavedViewsRepository {
     input: CreateSavedViewInput,
     search: string
   ): Promise<SavedViewRow> {
-    const { data, error } = await supabase
-      .from('saved_views')
-      .insert({
+    const created = await prisma.saved_views.create({
+      data: {
         owner_id: ownerId,
         title: input.title,
         description: input.description ?? null,
         pathname: input.pathname,
         search,
         project_id: input.projectId ?? null,
-        ...auditCreate(ownerId),
-      })
-      .select('*')
-      .single();
+        ...prismaAuditCreate(ownerId),
+      },
+    });
 
-    if (error || !data) {
-      throw new Error(error?.message ?? 'Failed to create saved view');
+    const row = await this.getById(created.id);
+    if (!row) {
+      throw new Error('Failed to create saved view');
     }
-    return data;
+    return row;
   }
 
   async listOwned(
@@ -193,23 +194,22 @@ export class SavedViewsRepository {
     actorId: string,
     input: UpdateSavedViewInput
   ): Promise<SavedViewRow> {
-    const { data, error } = await supabase
-      .from('saved_views')
-      .update({
+    await prisma.saved_views.update({
+      where: { id },
+      data: {
         ...(input.title !== undefined ? { title: input.title } : {}),
         ...(input.description !== undefined
           ? { description: input.description }
           : {}),
-        ...auditUpdate(actorId),
-      })
-      .eq('id', id)
-      .select('*')
-      .single();
+        ...prismaAuditUpdate(actorId),
+      },
+    });
 
-    if (error || !data) {
-      throw new Error(error?.message ?? 'Failed to update saved view');
+    const row = await this.getById(id);
+    if (!row) {
+      throw new Error('Failed to update saved view');
     }
-    return data;
+    return row;
   }
 
   async setStatus(
@@ -217,20 +217,19 @@ export class SavedViewsRepository {
     actorId: string,
     status: 'active' | 'archived'
   ): Promise<SavedViewRow> {
-    const { data, error } = await supabase
-      .from('saved_views')
-      .update({
+    await prisma.saved_views.update({
+      where: { id },
+      data: {
         status,
-        ...auditUpdate(actorId),
-      })
-      .eq('id', id)
-      .select('*')
-      .single();
+        ...prismaAuditUpdate(actorId),
+      },
+    });
 
-    if (error || !data) {
-      throw new Error(error?.message ?? 'Failed to update saved view status');
+    const row = await this.getById(id);
+    if (!row) {
+      throw new Error('Failed to update saved view status');
     }
-    return data;
+    return row;
   }
 
   async listProjectMemberIds(projectId: string): Promise<string[]> {
@@ -284,11 +283,7 @@ export class SavedViewsRepository {
   }
 
   async hardDelete(id: string): Promise<void> {
-    const { error } = await supabase.from('saved_views').delete().eq('id', id);
-
-    if (error) {
-      throw new Error(error.message);
-    }
+    await prisma.saved_views.delete({ where: { id } });
   }
 
   async listActiveShareUserIds(viewId: string): Promise<string[]> {
@@ -308,18 +303,10 @@ export class SavedViewsRepository {
     readonly viewId: string;
     readonly userId: string;
   }): Promise<void> {
-    const { data, error } = await supabase
-      .from('saved_view_shares')
-      .delete()
-      .eq('view_id', params.viewId)
-      .eq('user_id', params.userId)
-      .select('id')
-      .maybeSingle();
-
-    if (error) {
-      throw new Error(error.message);
-    }
-    if (!data) {
+    const deleted = await prisma.saved_view_shares.deleteMany({
+      where: { view_id: params.viewId, user_id: params.userId },
+    });
+    if (deleted.count === 0) {
       throw new Error('Shared view not found');
     }
   }
@@ -333,21 +320,22 @@ export class SavedViewsRepository {
       return 0;
     }
 
-    const rows = params.userIds.map((userId) => ({
-      view_id: params.viewId,
-      user_id: userId,
-      ...auditCreate(params.actorId),
-    }));
-
-    const { data, error } = await supabase
-      .from('saved_view_shares')
-      .upsert(rows, { onConflict: 'view_id,user_id' })
-      .select('id');
-
-    if (error) {
-      throw new Error(error.message);
-    }
-    return data?.length ?? 0;
+    const results = await prisma.$transaction(
+      params.userIds.map((userId) =>
+        prisma.saved_view_shares.upsert({
+          where: {
+            view_id_user_id: { view_id: params.viewId, user_id: userId },
+          },
+          create: {
+            view_id: params.viewId,
+            user_id: userId,
+            ...prismaAuditCreate(params.actorId),
+          },
+          update: prismaAuditCreate(params.actorId),
+        })
+      )
+    );
+    return results.length;
   }
 }
 

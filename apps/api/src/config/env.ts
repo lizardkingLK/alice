@@ -13,6 +13,8 @@ const serverSchema = z.object({
   JIRA_EMAIL: z.string().optional(),
   /** Optional; when set, `/notifications/check-due-dates` requires `Authorization: Bearer <CRON_SECRET>`. */
   CRON_SECRET: z.string().min(1).optional(),
+  /** Pooled Postgres URL for Prisma Client (Supavisor transaction mode). */
+  DATABASE_URL: z.string().min(1),
 });
 
 type EnvSchemaType = z.infer<typeof serverSchema>;
@@ -29,6 +31,7 @@ const mock: EnvSchemaType = {
   JIRA_API_TOKEN: 'mock',
   JIRA_EMAIL: 'mock@atlassian.net',
   CRON_SECRET: 'mock-cron-secret',
+  DATABASE_URL: 'postgresql://localhost:5432/postgres',
 };
 
 const processEnv = {
@@ -43,6 +46,7 @@ const processEnv = {
   JIRA_API_TOKEN: process.env.JIRA_API_TOKEN,
   JIRA_EMAIL: process.env.JIRA_EMAIL,
   CRON_SECRET: process.env.CRON_SECRET,
+  DATABASE_URL: process.env.DATABASE_URL,
 };
 
 let data: EnvSchemaType;

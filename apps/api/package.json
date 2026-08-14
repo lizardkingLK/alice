@@ -8,13 +8,14 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "vercel-build": "pnpm --filter @repo/types build",
+    "vercel-build": "pnpm --filter @repo/types build && pnpm --filter @repo/db build",
     "start": "node dist/index.js",
     "lint": "eslint --max-warnings 0",
     "checktypes": "tsc --noEmit -p tsconfig.eslint.json",
     "test": "vitest run"
   },
   "dependencies": {
+    "@repo/db": "workspace:*",
     "@repo/types": "workspace:*",
     "@supabase/supabase-js": "^2.108.2",
     "cors": "^2.8.5",

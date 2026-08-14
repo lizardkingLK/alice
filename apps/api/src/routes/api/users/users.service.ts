@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabase';
 import { usersRepository, type UserRow } from './users.repository';
+import { UserRoleEnum } from '@repo/types';
 
 export class UsersServiceError extends Error {
   constructor(
@@ -28,7 +29,7 @@ async function requireAdmin(actorId: string) {
     throw new UsersServiceError('Not authenticated.', 401);
   }
 
-  if (user.role !== 'admin') {
+  if (user.role !== UserRoleEnum.admin) {
     throw new UsersServiceError(
       'Unauthorized. Only administrators can perform this action.',
       403
@@ -57,24 +58,6 @@ export type DeactivateActor =
 const AUTH_BAN_DURATION = '87600h';
 
 export class UsersService {
-  async listUsers(actorId: string): Promise<UserRow[]>;
-  async listUsers(
-    actorId: string,
-    page: number,
-    limit: number
-  ): Promise<{ users: UserRow[]; totalCount: number }>;
-  async listUsers(
-    _actorId: string,
-    page?: number,
-    limit?: number
-  ): Promise<{ users: UserRow[]; totalCount: number } | UserRow[]> {
-    // Any authenticated user can view the registry
-    if (page !== undefined && limit !== undefined) {
-      return await usersRepository.listPaginated(page, limit);
-    }
-    return await usersRepository.listAll();
-  }
-
   async createUser(actorId: string, input: CreateUserInput): Promise<UserRow> {
     await requireAdmin(actorId);
 

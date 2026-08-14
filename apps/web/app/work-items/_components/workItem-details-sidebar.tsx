@@ -570,8 +570,6 @@ export default function WorkItemSidebar({
   );
 }
 
-
-
 function getPrStatusColors(status: string) {
   if (status === 'merged') {
     return 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20';
@@ -605,23 +603,35 @@ function BranchesRow({
       <button
         type="button"
         onClick={() => setBranchesExpanded(!branchesExpanded)}
-        className="flex w-full items-center justify-between gap-2 text-left hover:text-primary transition-colors cursor-pointer"
+        className="hover:text-primary flex w-full cursor-pointer items-center justify-between gap-2 text-left transition-colors"
       >
         <span className="inline-flex items-center gap-2">
           <GitBranch className="text-muted-foreground size-3.5 shrink-0" />
-          <span>{branchCount} {branchCount === 1 ? 'branch' : 'branches'}</span>
+          <span>
+            {branchCount} {branchCount === 1 ? 'branch' : 'branches'}
+          </span>
         </span>
-        <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform shrink-0", branchesExpanded && "rotate-180")} />
+        <ChevronDown
+          className={cn(
+            'text-muted-foreground h-3.5 w-3.5 shrink-0 transition-transform',
+            branchesExpanded && 'rotate-180'
+          )}
+        />
       </button>
       {branchesExpanded && (
-        <div className="pl-5.5 space-y-2 pt-0.5">
+        <div className="space-y-2 pt-0.5 pl-5.5">
           {branches.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No branches linked. Link a pull request to sync branches.</p>
+            <p className="text-muted-foreground text-xs">
+              No branches linked. Link a pull request to sync branches.
+            </p>
           ) : (
             <ul className="space-y-1.5">
               {branches.map((b) => (
-                <li key={b} className="flex items-center justify-between gap-2 text-xs bg-muted/40 rounded px-2.5 py-1">
-                  <span className="font-mono truncate">{b}</span>
+                <li
+                  key={b}
+                  className="bg-muted/40 flex items-center justify-between gap-2 rounded px-2.5 py-1 text-xs"
+                >
+                  <span className="truncate font-mono">{b}</span>
                   <Button
                     type="button"
                     variant="ghost"
@@ -667,29 +677,43 @@ function CommitsRow({
       <button
         type="button"
         onClick={() => setCommitsExpanded(!commitsExpanded)}
-        className="flex w-full items-center justify-between gap-2 text-left hover:text-primary transition-colors cursor-pointer"
+        className="hover:text-primary flex w-full cursor-pointer items-center justify-between gap-2 text-left transition-colors"
       >
         <span className="inline-flex items-center gap-2">
           <GitCommit className="text-muted-foreground size-3.5 shrink-0" />
-          <span>{commitCount} {commitCount === 1 ? 'commit' : 'commits'}</span>
+          <span>
+            {commitCount} {commitCount === 1 ? 'commit' : 'commits'}
+          </span>
         </span>
-        <span className="inline-flex items-center gap-1.5 text-muted-foreground text-xs shrink-0">
-          <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", commitsExpanded && "rotate-180")} />
+        <span className="text-muted-foreground inline-flex shrink-0 items-center gap-1.5 text-xs">
+          <ChevronDown
+            className={cn(
+              'h-3.5 w-3.5 transition-transform',
+              commitsExpanded && 'rotate-180'
+            )}
+          />
         </span>
       </button>
       {commitsExpanded && (
-        <div className="pl-5.5 space-y-2 pt-0.5 max-h-48 overflow-y-auto custom-scrollbar">
+        <div className="custom-scrollbar max-h-48 space-y-2 overflow-y-auto pt-0.5 pl-5.5">
           {commits.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No commits found.</p>
+            <p className="text-muted-foreground text-xs">No commits found.</p>
           ) : (
-            <ul className="space-y-2 pl-2.5 border-l">
+            <ul className="space-y-2 border-l pl-2.5">
               {commits.map((c) => (
-                <li key={c.sha} className="text-[11px] leading-tight space-y-0.5 font-sans">
-                  <div className="flex items-center justify-between text-muted-foreground">
-                    <span className="font-semibold truncate">{c.author}</span>
-                    <span className="font-mono text-[9px] shrink-0 bg-muted/60 px-1 rounded">{c.sha}</span>
+                <li
+                  key={c.sha}
+                  className="space-y-0.5 font-sans text-[11px] leading-tight"
+                >
+                  <div className="text-muted-foreground flex items-center justify-between">
+                    <span className="truncate font-semibold">{c.author}</span>
+                    <span className="bg-muted/60 shrink-0 rounded px-1 font-mono text-[9px]">
+                      {c.sha}
+                    </span>
                   </div>
-                  <p className="text-foreground font-medium line-clamp-1">{c.message}</p>
+                  <p className="text-foreground line-clamp-1 font-medium">
+                    {c.message}
+                  </p>
                 </li>
               ))}
             </ul>
@@ -725,31 +749,49 @@ function PRsRow({
       <button
         type="button"
         onClick={() => setPrsExpanded(!prsExpanded)}
-        className="flex w-full items-center justify-between gap-2 text-left hover:text-primary transition-colors cursor-pointer"
+        className="hover:text-primary flex w-full cursor-pointer items-center justify-between gap-2 text-left transition-colors"
       >
         <span className="inline-flex items-center gap-2">
           <GitPullRequest className="text-muted-foreground size-3.5 shrink-0" />
-          <span>{prCount} {prCount === 1 ? 'pull request' : 'pull requests'}</span>
+          <span>
+            {prCount} {prCount === 1 ? 'pull request' : 'pull requests'}
+          </span>
         </span>
-        <span className="inline-flex items-center gap-1.5 shrink-0">
-          <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform", prsExpanded && "rotate-180")} />
+        <span className="inline-flex shrink-0 items-center gap-1.5">
+          <ChevronDown
+            className={cn(
+              'text-muted-foreground h-3.5 w-3.5 transition-transform',
+              prsExpanded && 'rotate-180'
+            )}
+          />
         </span>
       </button>
       {prsExpanded && (
-        <div className="pl-5.5 space-y-2.5 pt-0.5">
+        <div className="space-y-2.5 pt-0.5 pl-5.5">
           {prs.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No pull requests linked.</p>
+            <p className="text-muted-foreground text-xs">
+              No pull requests linked.
+            </p>
           ) : (
             <ul className="space-y-2">
               {prs.map((pr) => {
                 return (
-                  <li key={pr.id} className="border rounded-md p-2 space-y-1 bg-muted/10">
+                  <li
+                    key={pr.id}
+                    className="bg-muted/10 space-y-1 rounded-md border p-2"
+                  >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-semibold text-muted-foreground">
+                      <span className="text-muted-foreground text-[10px] font-semibold">
                         #{pr.pr_number}
                       </span>
                       <div className="flex items-center gap-1.5">
-                        <Badge variant="outline" className={cn("text-[8px] px-1 py-0 uppercase font-bold", getPrStatusColors(pr.status))}>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'px-1 py-0 text-[8px] font-bold uppercase',
+                            getPrStatusColors(pr.status)
+                          )}
+                        >
                           {pr.status || 'open'}
                         </Badge>
                         {!readOnly && (
@@ -774,10 +816,10 @@ function PRsRow({
                         href={pr.pr_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs font-medium hover:text-primary transition-colors line-clamp-1 inline-flex items-center gap-1 group"
+                        className="hover:text-primary group line-clamp-1 inline-flex items-center gap-1 text-xs font-medium transition-colors"
                       >
                         {pr.pr_title}
-                        <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                        <ExternalLink className="h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
                       </a>
                     </div>
                   </li>
@@ -791,7 +833,7 @@ function PRsRow({
               variant="outline"
               size="sm"
               onClick={onOpenLinkDialog}
-              className="w-full text-xs py-1 h-7"
+              className="h-7 w-full py-1 text-xs"
             >
               <Plus className="mr-1 h-3 w-3" />
               Link Pull Request
@@ -846,10 +888,13 @@ function DevelopmentSection({
 
     setLinkError(null);
 
-    const githubPrRegex = /^(?:https?:\/\/github\.com\/)?([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)\/pull\/(\d+)$/;
+    const githubPrRegex =
+      /^(?:https?:\/\/github\.com\/)?([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)\/pull\/(\d+)$/;
     const match = githubPrRegex.exec(url);
     if (!match) {
-      setLinkError('Invalid GitHub PR URL. Expected format: https://github.com/owner/repo/pull/number');
+      setLinkError(
+        'Invalid GitHub PR URL. Expected format: https://github.com/owner/repo/pull/number'
+      );
       return;
     }
 
@@ -864,7 +909,9 @@ function DevelopmentSection({
         repoOwner.toLowerCase() !== configOwner.toLowerCase() ||
         repoName.toLowerCase() !== configRepo.toLowerCase()
       ) {
-        setLinkError(`PR does not belong to the project's configured GitHub repository: ${githubRepo}`);
+        setLinkError(
+          `PR does not belong to the project's configured GitHub repository: ${githubRepo}`
+        );
         return;
       }
     }
@@ -877,7 +924,8 @@ function DevelopmentSection({
       fetchGithubLinks();
     } catch (err) {
       console.error(err);
-      const message = err instanceof Error ? err.message : 'Failed to link pull request';
+      const message =
+        err instanceof Error ? err.message : 'Failed to link pull request';
       setLinkError(message);
       toast.error(message);
     } finally {
@@ -923,13 +971,13 @@ function DevelopmentSection({
   if (loadingGithub) {
     content = (
       <div className="flex justify-center py-4">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
       </div>
     );
   } else if (!githubRepo) {
     content = (
-      <div className="flex flex-col items-center justify-center border border-dashed rounded-md bg-muted/5 p-4 text-center space-y-2.5 my-1">
-        <p className="text-xs text-muted-foreground font-medium">
+      <div className="bg-muted/5 my-1 flex flex-col items-center justify-center space-y-2.5 rounded-md border border-dashed p-4 text-center">
+        <p className="text-muted-foreground text-xs font-medium">
           GitHub Integration is not configured for this project.
         </p>
         {!readOnly && (
@@ -940,7 +988,7 @@ function DevelopmentSection({
             onClick={() => {
               window.location.href = `/projects/${workItem.project_id}?tab=settings`;
             }}
-            className="text-xs h-8 px-4 cursor-pointer"
+            className="h-8 cursor-pointer px-4 text-xs"
           >
             Configure the GitHub Repository
           </Button>
@@ -977,9 +1025,9 @@ function DevelopmentSection({
             <span>{githubLinks.length > 0 ? '1 build' : '0 builds'}</span>
           </span>
           {githubLinks.length > 0 ? (
-            <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <CheckCircle2 className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
           ) : (
-            <span className="text-muted-foreground text-xs shrink-0">—</span>
+            <span className="text-muted-foreground shrink-0 text-xs">—</span>
           )}
         </li>
       </ul>

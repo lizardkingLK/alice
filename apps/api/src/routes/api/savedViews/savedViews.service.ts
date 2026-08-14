@@ -7,6 +7,8 @@ import {
   type UpdateSavedViewInput,
 } from '@repo/types';
 import { supabase } from '../../../lib/supabase';
+import { prisma } from '../../../lib/prisma';
+import { prismaNotificationCreate } from '../../../lib/prisma-audit';
 import {
   savedViewsRepository,
   type SavedViewRow,
@@ -143,10 +145,9 @@ export class SavedViewsService {
         .Build()
     );
 
-    const { error } = await supabase.from('notifications').insert(rows);
-    if (error) {
-      throw new Error(`Failed to notify recipients: ${error.message}`);
-    }
+    await prisma.notifications.createMany({
+      data: rows.map(prismaNotificationCreate),
+    });
   }
 }
 

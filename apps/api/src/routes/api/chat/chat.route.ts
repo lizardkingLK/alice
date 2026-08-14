@@ -66,24 +66,6 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
   );
 
   chatRouter.get(
-    '/conversations',
-    requireApiAuth,
-    async (req: AuthenticatedRequest, res) => {
-      try {
-        const list = await chatService.listConversations(req.userId!);
-        res.json({ conversations: list });
-      } catch (error: unknown) {
-        sendChatError(
-          res,
-          error,
-          'Failed to list conversations',
-          'error. list conversations failed'
-        );
-      }
-    }
-  );
-
-  chatRouter.get(
     '/:conversationId',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {

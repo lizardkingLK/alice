@@ -12,7 +12,8 @@
     "JIRA_EMAIL",
     "CRON_SECRET",
     "GEMINI_API_KEY",
-    "GEMINI_API_URL"
+    "GEMINI_API_URL",
+    "DATABASE_URL"
   ],
   "tasks": {
     "build": {
@@ -29,7 +30,8 @@
         "STORAGE_BUCKET_PROFILE_PICTURES",
         "STORAGE_BUCKET_CHAT_HISTORY",
         "SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET",
-        "INTERNAL_API_URL"
+        "INTERNAL_API_URL",
+        "DATABASE_URL"
       ]
     },
     "dev": {
@@ -40,7 +42,8 @@
         "SUPABASE_URL",
         "SUPABASE_SERVICE_ROLE_KEY",
         "SUPABASE_ANON_KEY",
-        "FRONTEND_URL"
+        "FRONTEND_URL",
+        "DATABASE_URL"
       ]
     },
     "lint": {

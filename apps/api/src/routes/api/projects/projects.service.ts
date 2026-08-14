@@ -1,4 +1,5 @@
 import { requireUserWithRole } from '../../../lib/auth-helpers';
+import { ProjectStatusEnum, UserRoleEnum } from '@repo/types';
 import {
   projectsRepository,
   type ProjectRow,
@@ -9,7 +10,7 @@ import {
 async function requireProjectManager(actorId: string) {
   return await requireUserWithRole(
     actorId,
-    ['admin', 'manager'],
+    [UserRoleEnum.admin, UserRoleEnum.manager],
     'Unauthorized. Only admins and managers can manage projects.'
   );
 }
@@ -17,7 +18,7 @@ async function requireProjectManager(actorId: string) {
 async function requireAdmin(actorId: string) {
   return await requireUserWithRole(
     actorId,
-    ['admin'],
+    [UserRoleEnum.admin],
     'Unauthorized. Only administrators can permanently delete projects.'
   );
 }
@@ -30,26 +31,6 @@ export type CreateProjectInput = Omit<
 export type UpdateProjectInput = Partial<CreateProjectInput>;
 
 export class ProjectsService {
-  async listProjects(
-    page?: number,
-    limit?: number,
-    status?: 'active' | 'archived',
-    search?: string
-  ): Promise<
-    | { projects: ProjectRowWithOwner[]; totalCount: number }
-    | ProjectRowWithOwner[]
-  > {
-    if (page !== undefined && limit !== undefined) {
-      return await projectsRepository.listPaginated(
-        page,
-        limit,
-        status,
-        search
-      );
-    }
-    return await projectsRepository.listAll();
-  }
-
   async getProjectById(projectId: string): Promise<ProjectRowWithOwner> {
     const project = await projectsRepository.findById(projectId);
     if (!project) {
@@ -158,7 +139,7 @@ export class ProjectsService {
       projectId,
       {
         deleted_at: null,
-        status: 'active',
+        status: ProjectStatusEnum.active,
       },
       actorId,
       expectedUpdatedAt

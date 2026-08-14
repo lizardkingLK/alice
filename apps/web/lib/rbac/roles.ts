@@ -1,19 +1,15 @@
-import type { Enums } from '@repo/types';
+import { Constants, UserRoleEnum, type Enums } from '@repo/types';
 
 /** Application RBAC role from `public.users.role`. */
 export type AppRole = Enums<'UserRole'>;
 
-export const APP_ROLES = [
-  'admin',
-  'manager',
-  'member',
-] as const satisfies readonly AppRole[];
+export const APP_ROLES = Constants.public.Enums.UserRole;
 
 /** Higher index = more privilege (member < manager < admin). */
 const ROLE_RANK: Record<AppRole, number> = {
-  member: 0,
-  manager: 1,
-  admin: 2,
+  [UserRoleEnum.member]: 0,
+  [UserRoleEnum.manager]: 1,
+  [UserRoleEnum.admin]: 2,
 };
 
 export function isAppRole(value: unknown): value is AppRole {
@@ -35,9 +31,9 @@ export function roleAtLeast(
 }
 
 export function isAdmin(role: AppRole | null | undefined): boolean {
-  return role === 'admin';
+  return role === UserRoleEnum.admin;
 }
 
 export function isManagerOrAdmin(role: AppRole | null | undefined): boolean {
-  return roleAtLeast(role, 'manager');
+  return roleAtLeast(role, UserRoleEnum.manager);
 }

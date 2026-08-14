@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
-import { pageRange, paginationMeta } from '@/lib/db/pagination';
-import { applyListSearch, throwIfError } from '@/lib/db/query';
+import {
+  runPaginatedSelect,
+  applyListSearch,
+  throwIfError,
+} from '@/lib/db/query';
 import { projectRelationSelect } from '@repo/types';
 import {
   mapDbSprintToSprint,
@@ -22,7 +25,6 @@ export async function getSprintsPaginatedServer(
   search?: string
 ): Promise<PaginatedSprints> {
   const supabase = await createClient();
-  const { from, to } = pageRange(page, limit);
 
   let query = supabase
     .from('sprints')
@@ -36,17 +38,20 @@ export async function getSprintsPaginatedServer(
 
   query = applyListSearch(query, search, ['name', 'goal']);
 
-  const { data, error, count } = await query
-    .order('start_date', { ascending: false })
-    .range(from, to);
-
-  throwIfError(error, 'failed to list sprints', 'Failed to list sprints');
-
-  const rows = (data ?? []) as unknown as DbSprintRelation[];
+  const { rows, ...meta } = await runPaginatedSelect<DbSprintRelation>(
+    query,
+    page,
+    limit,
+    {
+      orderBy: 'start_date',
+      logLabel: 'failed to list sprints',
+      errorMessage: 'Failed to list sprints',
+    }
+  );
 
   return {
-    sprints: rows.map(mapDbSprintToSprint),
-    pagination: paginationMeta(count ?? 0, page, limit),
+    sprints: rows.map((row) => mapDbSprintToSprint(row)),
+    pagination: meta,
   };
 }
 

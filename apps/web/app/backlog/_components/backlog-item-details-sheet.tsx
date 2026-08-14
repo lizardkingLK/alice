@@ -68,13 +68,15 @@ export function BacklogItemDetailsSheet({
   }, [item?.id]);
 
   const projectId = draft.project_id ?? item?.project_id ?? '';
-  const assigneeId = draft.assignee_id !== undefined ? draft.assignee_id : item?.assignee_id;
+  const assigneeId =
+    draft.assignee_id !== undefined ? draft.assignee_id : item?.assignee_id;
 
   const currentMembers = useProjectMembers({
     projectId,
     projectMembers,
     assigneeId,
-    onAssigneeChange: (val) => setDraft((prev) => ({ ...prev, assignee_id: val })),
+    onAssigneeChange: (val) =>
+      setDraft((prev) => ({ ...prev, assignee_id: val })),
   });
 
   const handleSave = () => {

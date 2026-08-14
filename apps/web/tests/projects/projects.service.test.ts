@@ -4,41 +4,6 @@ import { projectFactory } from '../factories/project.factory';
 import type { CreateProjectInput } from '@/app/projects/_services/projects.service';
 
 describe('createProjectsService frontend tests', () => {
-  it('gets projects list via GET', async () => {
-    const project = projectFactory.build();
-    const apiFetch = vi.fn().mockResolvedValue({ projects: [project] });
-    const service = createProjectsService(apiFetch);
-
-    const result = await service.getProjectList();
-
-    expect(apiFetch).toHaveBeenCalledWith('/api/projects');
-    expect(result).toEqual([project]);
-  });
-
-  it('gets projects list paginated via GET', async () => {
-    const response = {
-      projects: projectFactory.buildList(2),
-      totalCount: 2,
-      page: 1,
-      limit: 10,
-      totalPages: 1,
-    };
-    const apiFetch = vi.fn().mockResolvedValue(response);
-    const service = createProjectsService(apiFetch);
-
-    const result = await service.getProjectListPaginated(
-      1,
-      10,
-      'active',
-      'test-query'
-    );
-
-    expect(apiFetch).toHaveBeenCalledWith(
-      '/api/projects?page=1&limit=10&status=active&search=test-query'
-    );
-    expect(result).toEqual(response);
-  });
-
   it('creates project via POST', async () => {
     const project = projectFactory.build();
     const apiFetch = vi.fn().mockResolvedValue({ project });

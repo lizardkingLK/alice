@@ -4,8 +4,11 @@ import {
   userRelationSelect,
   type Json,
 } from '@repo/types';
+import { Prisma, RecordStatus } from '@repo/types/prisma';
 import { supabase } from '../../../lib/supabase';
-import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
+import { prisma } from '../../../lib/prisma';
+import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
+import { prismaLockTimestamp } from '../../../lib/prisma-audit';
 
 export type CommentRow = {
   id: string;
@@ -67,50 +70,27 @@ export class CommentsRepository {
     return data;
   }
 
-  async listAll(workItemId?: string): Promise<CommentRow[]> {
-    let query = supabase.from('comments').select(COMMENT_WITH_RELATIONS);
-
-    if (workItemId) {
-      query = query.eq('work_item_id', workItemId);
-    }
-
-    const { data, error } = await query.order('created_at', {
-      ascending: false,
-    });
-
-    if (error) {
-      console.error('database error list all comments:', error.message);
-      throw new Error('Failed to retrieve comments list');
-    }
-
-    return (data || []) as unknown as CommentRow[];
-  }
-
   async create(input: {
     work_item_id: string;
     content: Json;
     author_id: string;
     parent_id?: string | null;
   }): Promise<CommentRow> {
-    const { data, error } = await supabase
-      .from('comments')
-      .insert({
+    const created = await prisma.comments.create({
+      data: {
         work_item_id: input.work_item_id,
-        content: input.content,
+        content: input.content as Prisma.InputJsonValue,
         author_id: input.author_id,
         parent_id: input.parent_id || null,
-        status: 'active',
-        updated_at: new Date().toISOString(),
-      })
-      .select(COMMENT_WITH_RELATIONS)
-      .single();
+        status: RecordStatus.active,
+      },
+    });
 
-    if (error) {
-      console.error('database error create comment:', error.message);
-      throw new Error(`Failed to create comment: ${error.message}`);
+    const row = await this.getById(created.id);
+    if (!row) {
+      throw new Error('Failed to create comment');
     }
-
-    return data as unknown as CommentRow;
+    return row;
   }
 
   async update(
@@ -118,24 +98,21 @@ export class CommentsRepository {
     content: Json,
     expectedUpdatedAt: string
   ): Promise<CommentRow> {
-    const { data, error } = await supabase
-      .from('comments')
-      .update({
-        content,
+    const { count } = await prisma.comments.updateMany({
+      where: { id, updated_at: prismaLockTimestamp(expectedUpdatedAt) },
+      data: {
+        content: content as Prisma.InputJsonValue,
         edited: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .eq('updated_at', expectedUpdatedAt)
-      .select(COMMENT_WITH_RELATIONS)
-      .maybeSingle();
+        updated_at: new Date(),
+      },
+    });
 
-    return (await resolveOptimisticUpdate({
-      data: data as unknown as CommentRow | null,
-      error,
+    return resolveOptimisticPrismaUpdate({
+      count,
+      fetchUpdated: () => this.getById(id),
       fetchCurrent: () => this.getById(id),
       notFoundMessage: 'Comment not found',
-    })) as CommentRow;
+    });
   }
 
   async archive(id: string, expectedUpdatedAt: string): Promise<void> {
@@ -151,32 +128,21 @@ export class CommentsRepository {
     status: 'archived' | 'active',
     expectedUpdatedAt: string
   ): Promise<void> {
-    const { data, error } = await supabase
-      .from('comments')
-      .update({
-        status,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .eq('updated_at', expectedUpdatedAt)
-      .select('id')
-      .maybeSingle();
+    const { count } = await prisma.comments.updateMany({
+      where: { id, updated_at: prismaLockTimestamp(expectedUpdatedAt) },
+      data: { status, updated_at: new Date() },
+    });
 
-    await resolveOptimisticUpdate({
-      data,
-      error,
+    await resolveOptimisticPrismaUpdate({
+      count,
+      fetchUpdated: () => this.getLockSnapshotById(id),
       fetchCurrent: () => this.getLockSnapshotById(id),
       notFoundMessage: 'Comment not found',
     });
   }
 
   async hardDelete(id: string): Promise<void> {
-    const { error } = await supabase.from('comments').delete().eq('id', id);
-
-    if (error) {
-      console.error('database error hard delete comment:', error.message);
-      throw new Error(`Failed to delete comment: ${error.message}`);
-    }
+    await prisma.comments.deleteMany({ where: { id } });
   }
 }
 

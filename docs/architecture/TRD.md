@@ -113,8 +113,9 @@ Both apps deploy to Vercel. The API runs as Vercel Serverless Functions. Protect
 **packages/types** (`@repo/types`)
 
 - `src/generated/supabase/database.types.ts` — generated Supabase client types (committed, overwritten on `pnpm db generate`)
+- `src/generated/prisma/` — generated Prisma Client (committed; import as `@repo/types/prisma`)
 - `src/index.ts` — re-exports `Database`, `Tables`, `TablesInsert`, `TablesUpdate`, `Enums`
-- Consumed by `apps/web` and `apps/api` for typed Supabase SDK clients; apps do not import `@repo/db`
+- Consumed by `apps/web` and `apps/api` for typed Supabase SDK clients. `apps/api` also imports Prisma Client types from `@repo/types/prisma` and the runtime factory from `@repo/db`. `apps/web` must not import `@repo/db`.
 
 **packages/eslint-config** — shared ESLint configs  
 **packages/typescript-config** — shared TypeScript configs
@@ -143,7 +144,8 @@ See also: `docs/guides/DATABASE.md` (operational runbook), `docs/guides/DEBUGGIN
 **Backend (`apps/api`)**
 
 - Express.js 4.22
-- `@supabase/supabase-js` (JWT verification in `requireApiAuth`)
+- `@supabase/supabase-js` (JWT verification in `requireApiAuth`; Storage; joined PostgREST reads after mutations)
+- Prisma Client via `@repo/db` for table mutations (pooled `DATABASE_URL`)
 - cors, express.json middleware
 - Vitest for tests
 
@@ -152,7 +154,9 @@ See also: `docs/guides/DATABASE.md` (operational runbook), `docs/guides/DEBUGGIN
 - Supabase (PostgreSQL) for application data and auth
 - Prisma 7 for schema management and SQL migrations (`@repo/db`)
 - Supabase CLI for client type generation (`@repo/types`)
-- Runtime data access via `@supabase/ssr` (web) and `@supabase/supabase-js` (api) — not Prisma Client in apps
+- Runtime reads: `@supabase/ssr` (web) and `@supabase/supabase-js` (api list/detail and Storage)
+- Runtime mutations in `apps/api`: Prisma Client (`getPrismaClient`) over pooled `DATABASE_URL`
+- Auth, Storage, and `deactivate_user_guarded` RPC stay on supabase-js
 
 **Hosting and CI**
 
@@ -212,17 +216,18 @@ Custom RBAC will be stored in Supabase application tables, not in Supabase Auth 
 
 ## 7. Database — Supabase and `@repo/db`
 
-Supabase (PostgreSQL) stores application data. Identity uses Supabase Auth. Structural changes are owned by `@repo/db`; compile-time contracts live in `@repo/types`; runtime queries use the Supabase SDK in apps.
+Supabase (PostgreSQL) stores application data. Identity uses Supabase Auth. Structural changes are owned by `@repo/db`; compile-time contracts live in `@repo/types`; RSC reads use the Supabase SDK; Express table mutations use Prisma Client.
 
 ### Package responsibilities
 
-| Package                | Role                                                                          |
-| ---------------------- | ----------------------------------------------------------------------------- |
-| `@repo/db`             | Prisma schema, SQL migrations, seeds, type-generation scripts, env validation |
-| `@repo/types`          | Generated Supabase `Database` types only (no Prisma client types)             |
-| `apps/web`, `apps/api` | Supabase SDK for reads/writes; import `@repo/types` for typing only           |
+| Package       | Role                                                                             |
+| ------------- | -------------------------------------------------------------------------------- |
+| `@repo/db`    | Prisma schema, SQL migrations, seeds, type-generation scripts, `getPrismaClient` |
+| `@repo/types` | Generated Supabase `Database` types and generated Prisma Client                  |
+| `apps/web`    | supabase-js for reads / Auth / Storage; import `@repo/types` for DTO typing      |
+| `apps/api`    | Prisma for mutations; supabase-js for Auth, Storage, RPC, and joined reads       |
 
-Apps must not import `@repo/db`. Prisma is a migration and data-engineering tool, not the application ORM.
+`apps/web` must not import `@repo/db`. `apps/api` imports the Prisma factory from `@repo/db` and client types from `@repo/types/prisma`. Do not ship `prisma/migrations` into Vercel functions — generate the client at build (`prisma generate`) and run `migrate deploy` in CI/release.
 
 ### Schema and migrations
 
@@ -287,18 +292,19 @@ One Supabase project serves both development and production. Migrations must be 
   - `GET /api/health` — public. Returns `{ "status": "ok", "runtime": "express" }`.
 
 - **Users**
-  - `GET /api/users` — protected. Returns a list of users (supports pagination `page` and `limit`).
-  - `GET /api/users/api/secure` — protected. Returns secure welcome message.
-  - `POST /api/users/invite` — protected. Invites a new user via Supabase.
-  - `PATCH /api/users/:id/active` — protected. Admin-only active/inactive status toggle.
+  - `POST /api/users` — protected. Invites / creates a user via Supabase.
+  - `PUT /api/users/:id` — protected. Updates a user.
+  - `PATCH /api/users/:id/toggle-active` — protected. Admin (or self) active/inactive status toggle.
+  - User **list reads** are not Express GETs — `/users` uses direct Supabase RSC readers (`users.service.server.ts`).
 
 - **Projects**
-  - `GET /api/projects` — protected. Returns list of projects (supports pagination `page` and `limit`, filter `status`, and search query `search`).
   - `POST /api/projects` — protected. Creates a new project (validates request body via `createProjectSchema` Zod validator).
   - `PUT /api/projects/:id` — protected. Updates a project (validates body via `updateProjectSchema`).
   - `PATCH /api/projects/:id/soft-delete` — protected. Soft deletes a project by marking it `archived`.
   - `PATCH /api/projects/:id/restore` — protected. Restores an archived project back to `active`.
   - `DELETE /api/projects/:id` — protected. Hard deletes a project from database.
+  - `POST /api/projects/:id/members` / `DELETE /api/projects/:id/members/:userId` — protected. Membership mutations.
+  - Project **list/detail/member reads** are not Express GETs — dashboard pages and the work-item form use direct Supabase RSC readers / server actions (`projects.service.server.ts`, `form-read-actions.ts`).
 
 - **Sprints**
   - `POST /api/sprints` — protected. Creates a sprint (validates request body via `createSprintBodySchema`).

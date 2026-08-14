@@ -4,7 +4,6 @@ import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
-import { parsePagination } from '../../../lib/pagination';
 import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
 import {
   WorkItemValidationError,
@@ -154,74 +153,6 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
   const workItemsRouter: Router = Router();
 
   workItemsRouter.get(
-    '/',
-    requireApiAuth,
-    async (req: AuthenticatedRequest, res) => {
-      try {
-        const searchQuery =
-          typeof req.query.search === 'string' ? req.query.search : undefined;
-        const pagination = parsePagination(req);
-
-        // Parse filters
-        let sprint_id: string | null | undefined = undefined;
-        if (req.query.sprint_id === 'null' || req.query.backlog === 'true') {
-          sprint_id = null;
-        } else if (typeof req.query.sprint_id === 'string') {
-          sprint_id = req.query.sprint_id;
-        }
-        const filters = { sprint_id };
-
-        if (pagination) {
-          const { page, limit } = pagination;
-          const result = (await workItemService.listWorkItems(
-            page,
-            limit,
-            searchQuery,
-            filters
-          )) as { workItems: DbWorkItem[]; totalCount: number };
-          const totalPages = Math.max(1, Math.ceil(result.totalCount / limit));
-
-          return res.json({
-            workItems: result.workItems,
-            totalCount: result.totalCount,
-            page,
-            limit,
-            totalPages,
-          });
-        }
-
-        const workItems = await workItemService.getWorkItems(filters);
-        res.json({ data: workItems, error: null });
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to list work-items';
-        res.status(500).json({ error: message });
-      }
-    }
-  );
-
-  workItemsRouter.get(
-    '/:id',
-    requireApiAuth,
-    async (req: AuthenticatedRequest, res) => {
-      try {
-        const workItem = await workItemService.getWorkItem(req.params.id!);
-        if (!workItem) {
-          return res
-            .status(404)
-            .json({ data: null, error: 'Work-Item not found' });
-        }
-
-        res.json({ data: workItem, error: null });
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to get work-item';
-        res.status(500).json({ data: null, error: message });
-      }
-    }
-  );
-
-  workItemsRouter.get(
     '/:id/github',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
@@ -245,7 +176,9 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
     async (req: AuthenticatedRequest, res) => {
       const { prUrl } = req.body;
       if (typeof prUrl !== 'string' || !prUrl.trim()) {
-        return res.status(400).json({ error: 'prUrl is required and must be a string' });
+        return res
+          .status(400)
+          .json({ error: 'prUrl is required and must be a string' });
       }
 
       try {
@@ -280,24 +213,6 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Failed to unlink GitHub PR';
-        res.status(500).json({ error: message });
-      }
-    }
-  );
-
-  workItemsRouter.get(
-    '/:id/worklogs',
-    requireApiAuth,
-    async (req: AuthenticatedRequest, res) => {
-      try {
-        const worklogs = await workItemService.listWorkItemWorkLogs(
-          req.userId!,
-          req.params.id!
-        );
-        res.json({ worklogs });
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to get work logs';
         res.status(500).json({ error: message });
       }
     }

@@ -1,8 +1,7 @@
 import { cache } from 'react';
 import { User as DbUser } from '@/app/users/_services/users.service';
 import { createClient } from '@/lib/supabase/server';
-import { pageRange, paginationMeta } from '@/lib/db/pagination';
-import { throwIfError } from '@/lib/db/query';
+import { runPaginatedSelect, throwIfError } from '@/lib/db/query';
 import {
   Enums,
   Tables,
@@ -141,7 +140,6 @@ export async function getWorkItemsPaginated(
   filters?: WorkItemListFilters
 ): Promise<GetWorkItemsPaginatedResponse> {
   const supabase = await createClient();
-  const { from, to } = pageRange(page, limit);
 
   let query = applyWorkItemFilters(
     supabase
@@ -154,20 +152,18 @@ export async function getWorkItemsPaginated(
     query = query.or(buildWorkItemSearchOrFilter(search));
   }
 
-  const { data, error, count } = await query
-    .order('created_at', { ascending: false })
-    .range(from, to);
-
-  throwIfError(
-    error,
-    'failed to list work-items paginated',
-    'Failed to list work-items'
+  const { rows: workItems, ...meta } = await runPaginatedSelect<DbWorkItem>(
+    query,
+    page,
+    limit,
+    {
+      orderBy: 'created_at',
+      logLabel: 'failed to list work-items paginated',
+      errorMessage: 'Failed to list work-items',
+    }
   );
 
-  return {
-    workItems: (data ?? []) as unknown as DbWorkItem[],
-    ...paginationMeta(count ?? 0, page, limit),
-  };
+  return { workItems, ...meta };
 }
 
 export const getWorkItem = cache(

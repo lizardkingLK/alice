@@ -35,32 +35,6 @@ export function createTeamsService(
   const apiTeams = '/api/teams';
 
   return {
-    async getTeamList(): Promise<Team[]> {
-      const data = await apiFetch<{ teams: Team[] }>(apiTeams);
-      return data.teams;
-    },
-
-    async getTeamListPaginated(
-      page: number,
-      limit: number,
-      status?: 'active' | 'inactive' | 'archived',
-      search?: string,
-      projectId?: string
-    ): Promise<GetTeamsPaginatedResponse> {
-      let url = `${apiTeams}?page=${page}&limit=${limit}`;
-      if (status) {
-        url += `&status=${status}`;
-      }
-      if (search) {
-        url += `&search=${encodeURIComponent(search)}`;
-      }
-      if (projectId) {
-        url += `&project_id=${encodeURIComponent(projectId)}`;
-      }
-
-      return apiFetch<GetTeamsPaginatedResponse>(url);
-    },
-
     async createTeam(input: CreateTeamInput): Promise<Tables<'teams'>> {
       const data = await apiFetch<{ team: Tables<'teams'> }>(apiTeams, {
         method: 'POST',

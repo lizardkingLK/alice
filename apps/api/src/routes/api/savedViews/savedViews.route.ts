@@ -6,7 +6,6 @@ import {
 } from '../../../middlewares/auth';
 import {
   createSavedViewSchema,
-  savedViewStatusQuerySchema,
   shareSavedViewSchema,
   updateSavedViewSchema,
 } from './savedViews.schemas';
@@ -46,41 +45,6 @@ function postOwnedViewStatusAction(
     }
   };
 }
-
-savedViewsRouter.get(
-  '/',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    try {
-      const statusParse = savedViewStatusQuerySchema.safeParse(
-        req.query.status ?? 'active'
-      );
-      if (!statusParse.success) {
-        return res.status(400).json({ error: 'Invalid status' });
-      }
-      const views = await savedViewsService.listOwned(
-        req.userId!,
-        statusParse.data
-      );
-      res.json({ data: views });
-    } catch (error) {
-      sendError(res, error, 'Failed to list saved views');
-    }
-  }
-);
-
-savedViewsRouter.get(
-  '/shared-with-me',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    try {
-      const views = await savedViewsService.listSharedWithMe(req.userId!);
-      res.json({ data: views });
-    } catch (error) {
-      sendError(res, error, 'Failed to list shared views');
-    }
-  }
-);
 
 savedViewsRouter.post(
   '/',

@@ -76,15 +76,6 @@ export function createCommentsService(
   const apiComments = '/api/comments';
 
   return {
-    async getCommentsList(workItemId?: string): Promise<CommentItem[]> {
-      let url = apiComments;
-      if (workItemId) {
-        url += `?work_item_id=${encodeURIComponent(workItemId)}`;
-      }
-      const data = await apiFetch<{ comments: CommentItem[] }>(url);
-      return data.comments;
-    },
-
     async createComment(input: CreateCommentInput): Promise<CommentItem> {
       const data = await apiFetch<{ comment: CommentItem }>(apiComments, {
         method: 'POST',

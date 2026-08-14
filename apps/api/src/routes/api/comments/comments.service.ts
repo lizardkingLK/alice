@@ -7,10 +7,6 @@ import {
 } from './comments.utils';
 
 export class CommentsService {
-  async listComments(workItemId?: string): Promise<CommentRow[]> {
-    return await commentsRepository.listAll(workItemId);
-  }
-
   private async notifyMentionedUsers(
     actorId: string,
     comment: CommentRow

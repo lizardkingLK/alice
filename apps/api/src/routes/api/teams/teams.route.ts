@@ -15,7 +15,6 @@ import {
   sendRouteMutationError,
   runLockedStatusRoute,
 } from '../../../lib/optimistic-lock';
-import { parsePagination } from '../../../lib/pagination';
 
 const teamsRouter: Router = Router();
 
@@ -43,42 +42,6 @@ async function handleTeamLockAction(
     failureMessage,
   });
 }
-
-teamsRouter.get('/', requireApiAuth, async (req: AuthenticatedRequest, res) => {
-  try {
-    const statusValue = req.query.status as
-      'active' | 'inactive' | 'archived' | 'deleted' | undefined;
-    const searchStr = req.query.search as string | undefined;
-    const projectId = req.query.project_id as string | undefined;
-
-    const paginationInfo = parsePagination(req);
-    if (paginationInfo) {
-      const { page: targetPage, limit: targetLimit } = paginationInfo;
-      const listResult = await teamsService.listTeams(
-        targetPage,
-        targetLimit,
-        statusValue,
-        searchStr,
-        projectId
-      );
-      const pagesCount = Math.ceil(listResult.totalCount / targetLimit);
-      return res.json({
-        teams: listResult.teams,
-        totalCount: listResult.totalCount,
-        page: targetPage,
-        limit: targetLimit,
-        totalPages: pagesCount,
-      });
-    }
-
-    const allTeams = await teamsService.listTeams();
-    res.json({ teams: allTeams });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Failed to retrieve teams';
-    res.status(500).json({ error: message });
-  }
-});
 
 teamsRouter.post(
   '/',

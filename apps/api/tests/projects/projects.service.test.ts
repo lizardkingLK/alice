@@ -2,8 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   selectSingleMock,
-  listAllMock,
-  listPaginatedMock,
   findByIdMock,
   findByKeyMock,
   listMembersMock,
@@ -16,8 +14,6 @@ const {
   saveJiraSettingsMock,
 } = vi.hoisted(() => ({
   selectSingleMock: vi.fn(),
-  listAllMock: vi.fn(),
-  listPaginatedMock: vi.fn(),
   findByIdMock: vi.fn(),
   findByKeyMock: vi.fn(),
   listMembersMock: vi.fn(),
@@ -44,8 +40,6 @@ vi.mock('../../src/lib/supabase', () => ({
 
 vi.mock('../../src/routes/api/projects/projects.repository', () => ({
   projectsRepository: {
-    listAll: listAllMock,
-    listPaginated: listPaginatedMock,
     findById: findByIdMock,
     findByKey: findByKeyMock,
     listMembers: listMembersMock,

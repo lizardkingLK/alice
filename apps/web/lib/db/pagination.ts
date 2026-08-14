@@ -1,3 +1,10 @@
+export type PaginationMeta = {
+  totalCount: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
+
 /** Zero-based Supabase range (`from`/`to`) for a 1-based page + limit. */
 export function pageRange(
   page: number,
@@ -12,7 +19,7 @@ export function paginationMeta(
   totalCount: number,
   page: number,
   limit: number
-): { totalCount: number; page: number; limit: number; totalPages: number } {
+): PaginationMeta {
   return {
     totalCount,
     page,

@@ -1,4 +1,5 @@
 import { getDbUser } from '@/lib/auth';
+import { isAdmin } from '@/lib/rbac/roles';
 import { UsersWorkspace } from '@/app/users/_components/users-workspace';
 import {
   getUsersListPaginated,
@@ -35,7 +36,7 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
 
   const dbUser = await getDbUser();
   const currentUserRole = dbUser?.role ?? 'member';
-  const isAdmin = currentUserRole === 'admin';
+  const allowlistEnabled = isAdmin(currentUserRole);
 
   const [usersData, allowlistData] = await Promise.all([
     safeServerFetch(
@@ -43,7 +44,7 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
       EMPTY_USERS,
       'fetch users list'
     ),
-    isAdmin
+    allowlistEnabled
       ? safeServerFetch(
           listAccessAllowlist({
             status: 'all',

@@ -7,7 +7,7 @@ import { ResponseDTO } from '@repo/types/connection';
 
 const workItemsPath = '/api/workItems';
 
-export type { WorkItemWorkLog };
+export type { WorkItemWorkLog } from '@repo/types';
 
 export async function createWorkItemWorkLog(
   workItemId: string,
@@ -145,19 +145,33 @@ export interface LinkedGithubPR {
   commits: GithubCommit[];
 }
 
-export async function getLinkedPRs(workItemId: string): Promise<{ prs: LinkedGithubPR[]; githubRepo: string | null }> {
-  const res = await apiFetch<{ prs: LinkedGithubPR[]; githubRepo: string | null }>(`${workItemsPath}/${workItemId}/github`);
+export async function getLinkedPRs(
+  workItemId: string
+): Promise<{ prs: LinkedGithubPR[]; githubRepo: string | null }> {
+  const res = await apiFetch<{
+    prs: LinkedGithubPR[];
+    githubRepo: string | null;
+  }>(`${workItemsPath}/${workItemId}/github`);
   return { prs: res.prs || [], githubRepo: res.githubRepo || null };
 }
 
-export async function linkPR(workItemId: string, prUrl: string): Promise<ResponseDTO<LinkedGithubPR>> {
-  return await apiFetch<ResponseDTO<LinkedGithubPR>>(`${workItemsPath}/${workItemId}/github`, {
-    method: 'POST',
-    body: JSON.stringify({ prUrl }),
-  });
+export async function linkPR(
+  workItemId: string,
+  prUrl: string
+): Promise<ResponseDTO<LinkedGithubPR>> {
+  return await apiFetch<ResponseDTO<LinkedGithubPR>>(
+    `${workItemsPath}/${workItemId}/github`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ prUrl }),
+    }
+  );
 }
 
-export async function unlinkPR(workItemId: string, prId: string): Promise<void> {
+export async function unlinkPR(
+  workItemId: string,
+  prId: string
+): Promise<void> {
   await apiFetch<void>(`${workItemsPath}/${workItemId}/github/${prId}`, {
     method: 'DELETE',
   });

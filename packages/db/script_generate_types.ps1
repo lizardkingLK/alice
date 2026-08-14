@@ -38,3 +38,6 @@ pnpm exec supabase gen types typescript `
   Out-File -FilePath $output -Encoding utf8
 
 Write-Host "info. wrote $output"
+
+pnpm exec prisma generate
+Write-Host "info. wrote ../types/src/generated/prisma"
