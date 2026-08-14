@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { Constants } from './generated/supabase/database.types.js';
-import { UserRole as UserRoleEnum } from './generated/prisma/enums.js';
+
+export { UserRole as UserRoleEnum } from './generated/prisma/enums.js';
 
 export const USER_ROLES = Constants.public.Enums.UserRole;
-export { UserRoleEnum };
 export type UserRole = (typeof USER_ROLES)[number];
 
 /** Shared Supabase user column list for embeds / selects that need avatar. */

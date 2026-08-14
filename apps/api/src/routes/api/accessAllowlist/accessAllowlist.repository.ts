@@ -7,12 +7,14 @@ import {
   prismaLockTimestamp,
   prismaOptionalDate,
 } from '../../../lib/prisma-audit';
+import { isPrismaUniqueConflict } from '../../../lib/prisma-errors';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
 import {
   isValidAccessAllowlistDomain,
   normalizeAccessAllowlistDomain,
   type Tables,
 } from '@repo/types';
+import { AccessAllowlistKind as AccessAllowlistKindEnum } from '@repo/types/prisma';
 
 export type AccessAllowlistRow = Tables<'access_allowlist'>;
 export type AccessAllowlistKind = Tables<'access_allowlist'>['kind'];
@@ -23,9 +25,35 @@ function normalizeEmail(value: string): string {
 }
 
 function normalizeValue(kind: AccessAllowlistKind, value: string): string {
-  return kind === 'domain'
+  return kind === AccessAllowlistKindEnum.domain
     ? normalizeAccessAllowlistDomain(value)
     : normalizeEmail(value);
+}
+
+function toAccessAllowlistRow(row: {
+  id: string;
+  kind: AccessAllowlistKind;
+  value: string;
+  label: string | null;
+  expires_at: Date | null;
+  status: AccessAllowlistStatus;
+  created_by: string | null;
+  created_at: Date;
+  updated_by: string | null;
+  updated_at: Date;
+}): AccessAllowlistRow {
+  return {
+    id: row.id,
+    kind: row.kind,
+    value: row.value,
+    label: row.label,
+    expires_at: row.expires_at?.toISOString() ?? null,
+    status: row.status,
+    created_by: row.created_by,
+    created_at: row.created_at.toISOString(),
+    updated_by: row.updated_by,
+    updated_at: row.updated_at.toISOString(),
+  };
 }
 
 export class AccessAllowlistRepository {
@@ -47,26 +75,6 @@ export class AccessAllowlistRepository {
     return data as AccessAllowlistRow | null;
   }
 
-  async findByKindAndValue(kind: AccessAllowlistKind, value: string) {
-    const normalized = normalizeValue(kind, value);
-    const { data, error } = await supabase
-      .from('access_allowlist')
-      .select('id')
-      .eq('kind', kind)
-      .eq('value', normalized)
-      .maybeSingle();
-
-    if (error) {
-      console.error(
-        'error. failed to find access_allowlist entry by kind/value:',
-        error.message
-      );
-      throw new Error('Failed to validate access allowlist entry');
-    }
-
-    return data as { id: string } | null;
-  }
-
   async create(params: {
     actorId: string;
     kind: AccessAllowlistKind;
@@ -78,13 +86,11 @@ export class AccessAllowlistRepository {
     const { actorId, kind } = params;
     const normalizedValue = normalizeValue(kind, params.value);
 
-    if (kind === 'domain' && !isValidAccessAllowlistDomain(normalizedValue)) {
+    if (
+      kind === AccessAllowlistKindEnum.domain &&
+      !isValidAccessAllowlistDomain(normalizedValue)
+    ) {
       throw new Error('Invalid domain value');
-    }
-
-    const existing = await this.findByKindAndValue(kind, params.value);
-    if (existing) {
-      throw new Error('This allowlist entry already exists');
     }
 
     const expires_at =
@@ -92,22 +98,27 @@ export class AccessAllowlistRepository {
         ? null
         : new Date(params.expires_at).toISOString();
 
-    const created = await prisma.access_allowlist.create({
-      data: {
-        kind,
-        value: normalizedValue,
-        label: params.label ?? null,
-        expires_at: prismaOptionalDate(expires_at) ?? null,
-        status: params.status,
-        ...prismaAuditCreateWithoutStatus(actorId),
-      },
-    });
+    try {
+      const created = await prisma.access_allowlist.create({
+        data: {
+          kind,
+          value: normalizedValue,
+          label: params.label ?? null,
+          expires_at: prismaOptionalDate(expires_at) ?? null,
+          status: params.status,
+          ...prismaAuditCreateWithoutStatus(actorId),
+        },
+      });
 
-    const row = await this.findById(created.id);
-    if (!row) {
+      return toAccessAllowlistRow(created);
+    } catch (error) {
+      if (isPrismaUniqueConflict(error)) {
+        throw new Error('This allowlist entry already exists');
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to create access_allowlist:', message);
       throw new Error('Failed to create access allowlist entry');
     }
-    return row;
   }
 
   async update(params: {

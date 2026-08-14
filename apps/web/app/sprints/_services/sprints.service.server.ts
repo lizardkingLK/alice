@@ -50,7 +50,7 @@ export async function getSprintsPaginatedServer(
   );
 
   return {
-    sprints: rows.map(mapDbSprintToSprint),
+    sprints: rows.map((row) => mapDbSprintToSprint(row)),
     pagination: meta,
   };
 }

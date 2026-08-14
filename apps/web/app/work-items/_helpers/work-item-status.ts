@@ -1,5 +1,6 @@
 export {
   BOARD_WORK_ITEM_STATUSES,
+  BOARD_WORK_ITEM_STATUSES as STATUS_ORDER,
   WORK_ITEM_STATUSES,
   type WorkItemStatus,
 } from '@repo/types';
@@ -144,5 +145,3 @@ export const STATUS_INDICATOR_BG: Record<string, string> = {
   Testing: 'bg-purple-500',
   Done: 'bg-emerald-500',
 };
-
-export const STATUS_ORDER = BOARD_WORK_ITEM_STATUSES;
