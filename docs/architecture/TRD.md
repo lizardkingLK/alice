@@ -249,8 +249,7 @@ Supabase (PostgreSQL) stores application data. Identity uses Supabase Auth. Stru
 ### Seeding
 
 - Script: `packages/db/src/seed.ts` (registered in `prisma.config.ts`)
-- Command: `pnpm db seed`
-- Pattern: idempotent check-before-insert (safe on the shared dev/prod database)
+- Command: `pnpm db seed` (idempotent). `pnpm db seed:reset` wipes public rows, Auth, and storage then seeds.
 - Auth: `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` from `packages/db/.env`
 
 ### Validation and status checks
@@ -275,7 +274,7 @@ Application-level Supabase vars remain in `apps/web/sample.env` and `apps/api/sa
 
 ### Single-database constraint
 
-One Supabase project serves both development and production. Migrations must be additive. Seeds must remain idempotent. Avoid destructive `db push` or truncate-and-reload patterns.
+One Supabase project serves both development and production. Migrations must be additive. Default seeds remain idempotent. `pnpm db seed:reset` is the explicit truncate-and-reload path — do not run it against data you need to keep.
 
 ## 8. API
 
@@ -435,6 +434,7 @@ pnpm db migrate:deploy    # apply pending migrations
 pnpm db migrate:status    # check migration sync with database
 pnpm db generate          # regenerate Supabase types into @repo/types
 pnpm db seed              # run idempotent seeds
+pnpm db seed:reset        # wipe public + Auth + storage, then seed
 pnpm db create:migrate <name>  # create + deploy migration, generate types, seed
 pnpm commit               # conventional commit (interactive)
 ```

@@ -33,6 +33,7 @@ pnpm db migrate:status    # Check DB matches migrations (needs DIRECT_URL)
 pnpm db generate          # Regenerates Supabase types + Prisma Client into @repo/types
 pnpm db generate:client   # Prisma Client only (`packages/types/src/generated/prisma`)
 pnpm db seed              # Idempotent seed data (see below)
+pnpm db seed:reset        # Wipe public rows, auth.users, and storage, then seed
 pnpm db create:migrate <name>  # Create migration → deploy → generate → seed
 ```
 
@@ -55,19 +56,31 @@ Prisma creates objects as `postgres`. The Supabase Data API (`anon`, `authentica
 
 Idempotent dev sample data in `packages/db/src/seed.ts`:
 
-| Entity     | Sample                                                                                                                                  |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Users      | `admin@alice.dev`, `manager@alice.dev`, `member@alice.dev` (+ matching Supabase Auth accounts)                                          |
-| Allowlist  | Domain `alice.dev` (`access_allowlist`) so seed emails pass admission                                                                   |
-| Project    | `ALICE` — Alice Platform                                                                                                                |
-| Team       | Platform Team (manager + member)                                                                                                        |
-| Sprints    | Sprint 1 (active), Sprint 2 (planned)                                                                                                   |
-| Work items | Epic → Story → Task → Issue via `parent_id`; one backlog story — each with TipTap JSON descriptions (headings, lists, bold/italic/code) |
-| Other      | Comments (threaded), attachment, notifications                                                                                          |
+| Entity     | Sample                                                                                                                                                             |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Users      | Core: `admin@alice.dev`, `manager@alice.dev`, `member@alice.dev`. Plus 18 squad members (`firstname.lastinitial@alice.dev`, ASCII-folded). All have Auth accounts. |
+| Allowlist  | Domain `alice.dev` (`access_allowlist`) so seed emails pass admission                                                                                              |
+| Project    | `ALICE` — Alice Platform                                                                                                                                           |
+| Team       | Platform Team (manager + member)                                                                                                                                   |
+| Sprints    | Sprint 1 (active), Sprint 2 (planned)                                                                                                                              |
+| Work items | Epic → Story → Task → Issue via `parent_id`; one backlog story — each with TipTap JSON descriptions (headings, lists, bold/italic/code)                            |
+| Other      | Comments (threaded), attachment, notifications                                                                                                                     |
 
 Re-running seed refreshes work item descriptions on existing seed titles. Format: [`WORK_ITEM_DESCRIPTION.md`](../database/WORK_ITEM_DESCRIPTION.md).
 
 Dev password: set `SEED_USER_PASSWORD` in `packages/db/.env` (see `sample.env`).
+
+### Fresh start (`pnpm db seed:reset`)
+
+Destructive and opt-in. Truncates every `public` table except `_prisma_migrations`, `TRUNCATE`s `auth.users` (sessions/identities go with it), and empties:
+
+- `alice_storage_attachments`
+- `alice_storage_profile_pictures`
+- `alice_storage_chat_history`
+
+Then runs the same seed as `pnpm db seed`. Equivalent: `SEED_RESET=1 pnpm db seed`.
+
+This project uses one Supabase database for shared environments. Do not run `seed:reset` unless you intend to drop **all** app rows, Auth users, and files in those buckets.
 
 ## Using types in apps
 
@@ -101,4 +114,4 @@ await prisma.teams.create({
 
 ## Single-database warning
 
-This project uses one Supabase database for dev and production. Migrations must be additive. Seeds must be idempotent (check-before-insert). Never run destructive seeds against shared data.
+This project uses one Supabase database for dev and production. Migrations must be additive. Default `pnpm db seed` stays idempotent (check-before-insert). Use `pnpm db seed:reset` only when you intentionally want a wipe-and-reload.

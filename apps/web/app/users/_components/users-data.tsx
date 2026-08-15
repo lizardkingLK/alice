@@ -8,7 +8,12 @@ import {
 import { listAccessAllowlist } from '@/app/access-allowlist/_services/accessAllowlist.service.server';
 import type { AccessAllowlistListResult } from '@/app/access-allowlist/_services/accessAllowlist.service.base';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
-import { parseStandardParams, type RawSearchParams } from '@/lib/search-params';
+import {
+  listParamsForUsersPageTab,
+  parseStandardParams,
+  parseUsersPageTab,
+  type RawSearchParams,
+} from '@/lib/search-params';
 
 const EMPTY_USERS = {
   users: [] as User[],
@@ -32,7 +37,14 @@ type UsersDataProps = {
 
 export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
   const resolvedSearchParams = await searchParams;
-  const { page, limit, search } = parseStandardParams(resolvedSearchParams, 10);
+  const parsed = parseStandardParams(resolvedSearchParams, 10);
+  const activeTab = parseUsersPageTab(resolvedSearchParams.tab);
+  const usersParams = listParamsForUsersPageTab(parsed, activeTab, 'users');
+  const allowlistParams = listParamsForUsersPageTab(
+    parsed,
+    activeTab,
+    'allowlist'
+  );
 
   const dbUser = await getDbUser();
   const currentUserRole = dbUser?.role ?? 'member';
@@ -40,7 +52,11 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
 
   const [usersData, allowlistData] = await Promise.all([
     safeServerFetch(
-      getUsersListPaginated(page, limit, search),
+      getUsersListPaginated(
+        usersParams.page,
+        usersParams.limit,
+        usersParams.search
+      ),
       EMPTY_USERS,
       'fetch users list'
     ),
@@ -48,9 +64,9 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
       ? safeServerFetch(
           listAccessAllowlist({
             status: 'all',
-            page,
-            limit,
-            search,
+            page: allowlistParams.page,
+            limit: allowlistParams.limit,
+            search: allowlistParams.search,
           }),
           EMPTY_ALLOWLIST,
           'fetch access allowlist'
@@ -65,7 +81,7 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
       page={usersData.page}
       limit={usersData.limit}
       totalPages={usersData.totalPages}
-      search={search}
+      search={parsed.search}
       currentUserId={dbUser?.id}
       currentUserRole={currentUserRole}
       allowlistEntries={allowlistData.items}
