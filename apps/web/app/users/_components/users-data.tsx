@@ -89,6 +89,7 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
       allowlistPage={allowlistData.page}
       allowlistLimit={allowlistData.limit}
       allowlistTotalPages={allowlistData.totalPages}
+      currentUserEmail={dbUser?.email}
     />
   );
 }

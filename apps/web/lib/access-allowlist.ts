@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin';
+import { emailDomainFromAddress } from '@repo/types';
 
 /**
  * Paths that do not require an allowlisted identity.
@@ -51,12 +52,7 @@ export function normalizeEmail(email: string): string | null {
  * Strips a leading `@` if present on bare domain inputs.
  */
 export function extractEmailDomain(email: string): string | null {
-  const normalized = normalizeEmail(email);
-  if (!normalized) {
-    return null;
-  }
-
-  return normalized.slice(normalized.indexOf('@') + 1);
+  return emailDomainFromAddress(email);
 }
 
 /** True when `expires_at` is set and not after `now`. */

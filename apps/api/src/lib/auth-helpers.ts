@@ -8,7 +8,7 @@ export async function requireUserWithRole(
 ) {
   const { data: user, error } = await supabase
     .from('users')
-    .select('role')
+    .select('role, email')
     .eq('id', actorId)
     .single();
 

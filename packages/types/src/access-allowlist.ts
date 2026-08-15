@@ -64,3 +64,62 @@ export type AccessAllowlistUpdateInput = z.infer<
 export function isValidAccessAllowlistDomain(domain: string): boolean {
   return accessAllowlistDomainValueSchema.safeParse(domain).success;
 }
+
+export const OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE =
+  'You cannot delete or deactivate the domain that matches your email.';
+
+/** Domain part of an email (`User@Acme.COM` → `acme.com`). */
+export function emailDomainFromAddress(email: string): string | null {
+  const normalized = email.trim().toLowerCase();
+  const parts = normalized.split('@');
+  if (parts.length !== 2) {
+    return null;
+  }
+
+  const local = parts[0];
+  const domain = parts[1];
+  if (!local || !domain) {
+    return null;
+  }
+
+  return domain;
+}
+
+/** True when the row is a domain rule for the actor's own email domain. */
+export function isActorOwnAllowlistDomain(
+  entry: { kind: string; value: string },
+  actorEmail: string | null | undefined
+): boolean {
+  if (entry.kind !== 'domain' || !actorEmail) {
+    return false;
+  }
+
+  const actorDomain = emailDomainFromAddress(actorEmail);
+  if (!actorDomain) {
+    return false;
+  }
+
+  return normalizeAccessAllowlistDomain(entry.value) === actorDomain;
+}
+
+/** True when deleting or setting a non-active status on the actor's own domain. */
+export function isOwnAllowlistDomainLockout(params: {
+  readonly entry: { kind: string; value: string };
+  readonly actorEmail?: string | null;
+  readonly deleting?: boolean;
+  readonly nextStatus?: string | null;
+}): boolean {
+  if (!isActorOwnAllowlistDomain(params.entry, params.actorEmail)) {
+    return false;
+  }
+
+  if (params.deleting) {
+    return true;
+  }
+
+  return (
+    params.nextStatus != null &&
+    params.nextStatus !== '' &&
+    params.nextStatus !== 'active'
+  );
+}

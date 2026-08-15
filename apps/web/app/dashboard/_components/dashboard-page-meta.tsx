@@ -2,13 +2,7 @@
 
 import { useMemo } from 'react';
 import { usePathname } from 'next/navigation';
-import { Info } from '@repo/ui/lib/icons';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@repo/ui/components/ui/tooltip';
-import { Button } from '@repo/ui/components/ui/button';
+import { InfoTooltip } from '@repo/ui/components/ui/info-tooltip';
 import { DashboardPageActions } from './dashboard-page-actions';
 import {
   DashboardBreadcrumb,
@@ -61,22 +55,9 @@ export function DashboardPageMeta({
       />
 
       {description ? (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground hover:text-foreground size-7 shrink-0"
-              aria-label="Page description"
-            >
-              <Info className="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="max-w-xs">
-            {description}
-          </TooltipContent>
-        </Tooltip>
+        <InfoTooltip ariaLabel="Page description" side="bottom" size="icon-sm">
+          {description}
+        </InfoTooltip>
       ) : null}
     </div>
   );

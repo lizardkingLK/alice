@@ -1,13 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { createMock, updateMock, findByIdMock, notifyMock, selectSingleMock } =
-  vi.hoisted(() => ({
-    createMock: vi.fn(),
-    updateMock: vi.fn(),
-    findByIdMock: vi.fn(),
-    notifyMock: vi.fn(),
-    selectSingleMock: vi.fn(),
-  }));
+const {
+  createMock,
+  updateMock,
+  findByIdMock,
+  hardDeleteMock,
+  notifyMock,
+  selectSingleMock,
+} = vi.hoisted(() => ({
+  createMock: vi.fn(),
+  updateMock: vi.fn(),
+  findByIdMock: vi.fn(),
+  hardDeleteMock: vi.fn(),
+  notifyMock: vi.fn(),
+  selectSingleMock: vi.fn(),
+}));
 
 vi.mock('../../src/lib/supabase', () => ({
   supabase: {
@@ -28,6 +35,7 @@ vi.mock(
       create: createMock,
       update: updateMock,
       findById: findByIdMock,
+      hardDelete: hardDeleteMock,
     },
   })
 );
@@ -60,7 +68,7 @@ describe('AccessAllowlistService admission email', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     selectSingleMock.mockResolvedValue({
-      data: { role: 'admin' },
+      data: { role: 'admin', email: 'admin@alice.dev' },
       error: null,
     });
     notifyMock.mockResolvedValue(undefined);
@@ -115,5 +123,98 @@ describe('AccessAllowlistService admission email', () => {
     });
 
     expect(notifyMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('AccessAllowlistService delete own domain', () => {
+  const service = new AccessAllowlistService();
+  const domainEntry = {
+    ...emailEntry,
+    kind: 'domain' as const,
+    value: 'alice.dev',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    selectSingleMock.mockResolvedValue({
+      data: { role: 'admin', email: 'admin@alice.dev' },
+      error: null,
+    });
+  });
+
+  it('rejects deleting the domain that matches the actor email', async () => {
+    findByIdMock.mockResolvedValue(domainEntry);
+
+    await expect(
+      service.deleteAccessAllowlist(
+        'admin-1',
+        domainEntry.id,
+        domainEntry.updated_at
+      )
+    ).rejects.toThrow(
+      'You cannot delete or deactivate the domain that matches your email.'
+    );
+
+    expect(hardDeleteMock).not.toHaveBeenCalled();
+  });
+
+  it('deletes a domain that is not the actor email domain', async () => {
+    findByIdMock.mockResolvedValue({ ...domainEntry, value: 'partner.com' });
+    hardDeleteMock.mockResolvedValue(undefined);
+
+    await service.deleteAccessAllowlist(
+      'admin-1',
+      domainEntry.id,
+      domainEntry.updated_at
+    );
+
+    expect(hardDeleteMock).toHaveBeenCalledWith({
+      id: domainEntry.id,
+      expectedUpdatedAt: domainEntry.updated_at,
+    });
+  });
+
+  it('deletes an email row even when the domain matches', async () => {
+    findByIdMock.mockResolvedValue({
+      ...emailEntry,
+      value: 'admin@alice.dev',
+    });
+    hardDeleteMock.mockResolvedValue(undefined);
+
+    await service.deleteAccessAllowlist(
+      'admin-1',
+      emailEntry.id,
+      emailEntry.updated_at
+    );
+
+    expect(hardDeleteMock).toHaveBeenCalled();
+  });
+
+  it('rejects deactivating the domain that matches the actor email', async () => {
+    findByIdMock.mockResolvedValue(domainEntry);
+
+    await expect(
+      service.updateAccessAllowlist('admin-1', domainEntry.id, {
+        status: 'inactive',
+        expectedUpdatedAt: domainEntry.updated_at,
+      })
+    ).rejects.toThrow(
+      'You cannot delete or deactivate the domain that matches your email.'
+    );
+
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it('allows label edits on the actor own domain while status stays active', async () => {
+    findByIdMock.mockResolvedValue(domainEntry);
+    updateMock.mockResolvedValue({ ...domainEntry, label: 'Company' });
+
+    await service.updateAccessAllowlist('admin-1', domainEntry.id, {
+      label: 'Company',
+      status: 'active',
+      expectedUpdatedAt: domainEntry.updated_at,
+    });
+
+    expect(updateMock).toHaveBeenCalled();
   });
 });

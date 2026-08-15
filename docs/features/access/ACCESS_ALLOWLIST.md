@@ -363,8 +363,10 @@ sequenceDiagram
 Admin tooling: **`/users?tab=allowlist`** (admins only) — create / edit / **hard-delete**
 `access_allowlist` rows (domain or email, optional label + expiry, status
 active / inactive / archived). Context menu **Delete** (not Remove) permanently
-removes the row, matching other registries’ destructive action. The form does
-not offer a `deleted` status. Seed at least one company domain for prod.
+removes the row, matching other registries’ destructive action. An admin **cannot delete or deactivate a domain row that matches their own
+email** (API returns 403; Delete and status are disabled in the UI) so they
+cannot lock themselves out. The form does not offer a `deleted` status. Seed
+at least one company domain for prod.
 
 ### Admission email (email rows)
 
