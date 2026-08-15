@@ -3,7 +3,7 @@ import { runPaginatedSelect } from '@/lib/db/query';
 
 function mockPaginatedQuery(result: {
   data: unknown;
-  error: { message: string } | null;
+  error: { message: string; code?: string } | null;
   count: number | null;
 }) {
   return {
@@ -77,6 +77,34 @@ describe('runPaginatedSelect', () => {
       'error. failed to list widgets:',
       'boom'
     );
+    errorSpy.mockRestore();
+  });
+
+  it('returns an empty page when PostgREST range is past the last row', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const query = mockPaginatedQuery({
+      data: null,
+      error: {
+        message: 'Requested range not satisfiable',
+        code: 'PGRST103',
+      },
+      count: 1,
+    });
+
+    const result = await runPaginatedSelect(query, 2, 10, {
+      orderBy: 'created_at',
+      logLabel: 'failed to list',
+      errorMessage: 'Failed to list',
+    });
+
+    expect(result).toEqual({
+      rows: [],
+      totalCount: 1,
+      page: 2,
+      limit: 10,
+      totalPages: 1,
+    });
+    expect(errorSpy).not.toHaveBeenCalled();
     errorSpy.mockRestore();
   });
 });

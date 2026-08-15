@@ -59,7 +59,7 @@ interface PaginatedSelectBuilder {
       to: number
     ): PromiseLike<{
       data: unknown;
-      error: { message: string } | null;
+      error: { message: string; code?: string } | null;
       count: number | null;
     }>;
   };
@@ -80,6 +80,13 @@ export async function runPaginatedSelect<TRow>(
   const { data, error, count } = await query
     .order(options.orderBy, { ascending: options.ascending ?? false })
     .range(from, to);
+
+  if (error && isUnsatisfiableRangeError(error)) {
+    return {
+      rows: [] as TRow[],
+      ...paginationMeta(count ?? 0, page, limit),
+    };
+  }
 
   throwIfError(error, options.logLabel, options.errorMessage);
 
@@ -136,5 +143,17 @@ export function isMissingRelationError(error: {
     message.includes('schema cache') ||
     message.includes('could not find the table') ||
     (message.includes('relation') && message.includes('does not exist'))
+  );
+}
+
+/** True when `.range(from, to)` starts past the last row (HTTP 416 / PGRST103). */
+export function isUnsatisfiableRangeError(error: {
+  message?: string;
+  code?: string;
+}): boolean {
+  const code = error.code ?? '';
+  const message = error.message?.toLowerCase() ?? '';
+  return (
+    code === 'PGRST103' || message.includes('requested range not satisfiable')
   );
 }

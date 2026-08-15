@@ -23,6 +23,8 @@
     "create:migrate:win": "powershell -NoProfile -ExecutionPolicy Bypass -File ./script_create_migrate.ps1",
     "rollback:migrate": "bash ./script_rollback_migrate.sh",
     "seed": "tsx src/seed.ts",
+    "seed:reset": "tsx src/seed.ts --reset",
+    "test": "vitest run",
     "generate": "bash ./script_generate_types.sh",
     "generate:client": "prisma generate",
     "generate:win": "powershell -NoProfile -ExecutionPolicy Bypass -File ./script_generate_types.ps1",
@@ -49,6 +51,7 @@
     "supabase": "^2.76.7",
     "tsx": "^4.22.4",
     "typescript": "5.9.2",
+    "vitest": "^4.1.9",
     "zod": "^4.4.3"
   }
 }

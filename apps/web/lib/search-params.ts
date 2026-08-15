@@ -140,3 +140,19 @@ export type UsersPageTab = 'users' | 'allowlist';
 export function parseUsersPageTab(tab?: string | null): UsersPageTab {
   return tab === 'allowlist' ? 'allowlist' : 'users';
 }
+
+/**
+ * Users and allowlist share `/users` query params. Only the active tab
+ * should consume `page` / `search`; the other list stays on page 1.
+ */
+export function listParamsForUsersPageTab(
+  parsed: ParsedStandardParams,
+  activeTab: UsersPageTab,
+  targetTab: UsersPageTab
+): ParsedStandardParams {
+  if (activeTab === targetTab) {
+    return parsed;
+  }
+
+  return { page: 1, limit: parsed.limit, search: '' };
+}

@@ -97,6 +97,7 @@ export type WorkItemPatchMemberOption = {
 };
 
 const UNASSIGNED_VALUE = 'unassigned';
+const EMPTY_PATCH_LABELS: readonly string[] = [];
 
 /* eslint-disable no-unused-vars */
 type WorkItemFieldPatchDialogProps = {
@@ -153,7 +154,7 @@ export function WorkItemFieldPatchDialog({
   fieldConfig,
   options = [],
   currentValue,
-  currentLabels = [],
+  currentLabels = EMPTY_PATCH_LABELS,
   onPatched,
 }: Readonly<WorkItemFieldPatchDialogProps>) {
   const { handleMutationError } = useOptimisticLock();
@@ -180,7 +181,10 @@ export function WorkItemFieldPatchDialog({
     setLabelsValue([...currentLabels]);
     setAlert(null);
     setIsPending(false);
-  }, [open, currentValue, currentLabels, fieldConfig.field, fieldConfig.kind]);
+    // Seed once when the dialog opens; a default `currentLabels = []` would
+    // retrigger this effect every render and overflow the update depth.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open transition only
+  }, [open]);
 
   const finishWithInDialogSuccess = async (
     successMessage: string,
