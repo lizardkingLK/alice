@@ -43,7 +43,7 @@ export function seedEmailFromName(
     return `${first}@${domain}`;
   }
 
-  const lastInitial = parts[parts.length - 1]?.[0];
+  const lastInitial = parts.at(-1)?.[0];
   if (!lastInitial) {
     return `${first}@${domain}`;
   }
