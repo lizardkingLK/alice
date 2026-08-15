@@ -196,4 +196,22 @@ describe('AccessAllowlistRegistry', () => {
     });
     expect(mockRefresh).toHaveBeenCalled();
   });
+
+  it('disables Delete for the domain that matches the current user email', () => {
+    render(
+      <AccessAllowlistRegistry
+        entries={entries}
+        totalCount={2}
+        page={1}
+        limit={10}
+        totalPages={1}
+        search=""
+        currentUserEmail="admin@acme.com"
+      />
+    );
+
+    const deleteButtons = screen.getAllByRole('button', { name: /^Delete$/i });
+    expect(deleteButtons[0]).toBeDisabled();
+    expect(deleteButtons[1]).toBeEnabled();
+  });
 });

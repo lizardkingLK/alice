@@ -7,6 +7,7 @@ import {
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
 import { accessAllowlistService } from './accessAllowlist.service';
+import { OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE } from '@repo/types';
 import {
   accessAllowlistCreateSchema,
   accessAllowlistLockActionSchema,
@@ -29,6 +30,11 @@ function routeError(
   }
 
   const message = error instanceof Error ? error.message : fallbackMessage;
+  if (message === OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE) {
+    res.status(403).json({ error: message });
+    return;
+  }
+
   res.status(500).json({ error: message });
 }
 

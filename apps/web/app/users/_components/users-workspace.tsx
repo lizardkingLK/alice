@@ -29,6 +29,7 @@ interface UsersWorkspaceProps {
   readonly allowlistPage: number;
   readonly allowlistLimit: number;
   readonly allowlistTotalPages: number;
+  readonly currentUserEmail?: string | null;
 }
 
 export function UsersWorkspace({
@@ -45,6 +46,7 @@ export function UsersWorkspace({
   allowlistPage,
   allowlistLimit,
   allowlistTotalPages,
+  currentUserEmail = null,
 }: Readonly<UsersWorkspaceProps>) {
   const router = useRouter();
   const pathname = usePathname();
@@ -128,6 +130,7 @@ export function UsersWorkspace({
           limit={allowlistLimit}
           totalPages={allowlistTotalPages}
           search={search}
+          currentUserEmail={currentUserEmail}
         />
       </TabsContent>
     </Tabs>

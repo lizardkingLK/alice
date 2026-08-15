@@ -154,4 +154,24 @@ describe('AccessAllowlistForm', () => {
       await screen.findByText(/Allowlist entry updated/i)
     ).toBeInTheDocument();
   });
+
+  it('locks status when editing the current user own domain', () => {
+    const entry = accessAllowlistFactory.build({
+      kind: 'domain',
+      value: 'alice.dev',
+      status: 'active',
+    });
+
+    render(
+      <AccessAllowlistForm entry={entry} currentUserEmail="admin@alice.dev" />
+    );
+
+    const statusSelect = screen.getAllByTestId('ui-select')[1];
+    expect(statusSelect).toBeDisabled();
+    expect(
+      screen.getByRole('button', {
+        name: /You cannot delete or deactivate the domain that matches your email/i,
+      })
+    ).toBeInTheDocument();
+  });
 });

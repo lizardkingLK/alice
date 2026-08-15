@@ -54,6 +54,10 @@ import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useRouter } from 'next/navigation';
 import {
+  isActorOwnAllowlistDomain,
+  OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE,
+} from '@repo/types';
+import {
   deleteAccessAllowlistEntry,
   type AccessAllowlistEntry,
 } from '@/app/access-allowlist/_services/accessAllowlist.service';
@@ -66,6 +70,7 @@ interface AccessAllowlistRegistryProps {
   readonly limit: number;
   readonly totalPages: number;
   readonly search: string;
+  readonly currentUserEmail?: string | null;
 }
 
 type AllowlistRow = Row<AccessAllowlistEntry>;
@@ -148,6 +153,7 @@ interface ActionsCellProps {
   readonly isBusy: boolean;
   readonly onEdit: (entry: AccessAllowlistEntry) => void;
   readonly onDelete: (entry: AccessAllowlistEntry) => void;
+  readonly canDelete: boolean;
 }
 /* eslint-enable no-unused-vars */
 
@@ -156,6 +162,7 @@ function ActionsCell({
   isBusy,
   onEdit,
   onDelete,
+  canDelete,
 }: Readonly<ActionsCellProps>) {
   const entry = row.original;
 
@@ -180,7 +187,14 @@ function ActionsCell({
           </DropdownMenuItem>
           <DropdownMenuItem
             variant="destructive"
-            onClick={() => onDelete(entry)}
+            disabled={!canDelete}
+            title={canDelete ? undefined : OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE}
+            onClick={() => {
+              if (!canDelete) {
+                return;
+              }
+              onDelete(entry);
+            }}
           >
             <Trash2 />
             Delete
@@ -196,6 +210,7 @@ interface AllowlistTableMeta {
   readonly isBusy: boolean;
   readonly onEdit: (entry: AccessAllowlistEntry) => void;
   readonly onDelete: (entry: AccessAllowlistEntry) => void;
+  readonly currentUserEmail?: string | null;
 }
 
 type AllowlistCellRenderer = (
@@ -222,6 +237,9 @@ const CELL_RENDERERS: Record<string, AllowlistCellRenderer> = {
         isBusy={meta.isBusy}
         onEdit={meta.onEdit}
         onDelete={meta.onDelete}
+        canDelete={
+          !isActorOwnAllowlistDomain(row.original, meta.currentUserEmail)
+        }
       />
     );
   },
@@ -252,6 +270,7 @@ export function AccessAllowlistRegistry({
   limit,
   totalPages,
   search,
+  currentUserEmail = null,
 }: Readonly<AccessAllowlistRegistryProps>) {
   const router = useRouter();
   const { handlePageChange, handleLimitChange } = usePaginationNavigation(
@@ -279,6 +298,11 @@ export function AccessAllowlistRegistry({
 
   const confirmDelete = () => {
     if (!deletingEntry) return;
+    if (isActorOwnAllowlistDomain(deletingEntry, currentUserEmail)) {
+      setError(OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE);
+      setDeletingEntry(null);
+      return;
+    }
     setIsBusy(true);
     deleteAccessAllowlistEntry(deletingEntry.id, deletingEntry.updated_at)
       .then(() => {
@@ -308,6 +332,7 @@ export function AccessAllowlistRegistry({
       isBusy,
       onEdit: openEditDialog,
       onDelete: openDeleteDialog,
+      currentUserEmail,
     } satisfies AllowlistTableMeta,
   });
 
@@ -401,6 +426,7 @@ export function AccessAllowlistRegistry({
           {editingEntry ? (
             <AccessAllowlistForm
               entry={editingEntry}
+              currentUserEmail={currentUserEmail}
               onClose={() => setEditingEntry(null)}
               onSuccess={() => {
                 setEditingEntry(null);
