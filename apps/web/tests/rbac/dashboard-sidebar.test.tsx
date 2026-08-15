@@ -132,12 +132,16 @@ describe('DashboardSidebar RBAC', () => {
     ).toBeInTheDocument();
   });
 
-  it('always shows Views under Platform', () => {
+  it('always shows Views and Alice under Platform', () => {
     renderSidebar('member');
 
     expect(screen.getByRole('link', { name: /^Views$/i })).toHaveAttribute(
       'href',
       '/views'
     );
+    const aliceChatLink = screen
+      .getAllByRole('link', { name: /^Alice$/i })
+      .find((link) => link.getAttribute('href') === '/chat');
+    expect(aliceChatLink).toBeDefined();
   });
 });

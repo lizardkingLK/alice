@@ -2,6 +2,7 @@ import { SidebarTrigger } from '@repo/ui/components/ui/sidebar';
 import { DashboardPageMeta } from './dashboard-page-meta';
 import { AuthControls } from '@/app/dashboard/_components/dashboard-auth';
 import { NotificationInbox } from '@/app/dashboard/_components/dashboard-notifications';
+import { ChatLauncherButton } from '@/app/chat/_components/chat-launcher';
 import { getDbUser, getUser } from '@/lib/auth';
 import { buildLoginPath } from '@/lib/auth-redirect';
 import { getRequestPathForLoginNext } from '@/lib/auth-redirect.server';
@@ -78,21 +79,20 @@ export async function DashboardHeader({
         favoriteLabel={favoriteLabel}
         projectId={projectId}
       />
-      <section>
+      <div className="flex shrink-0 items-center gap-2">
         <NotificationInbox
           userId={user.id}
           initialNotifications={initialNotifications ?? []}
           initialLoadFailed={notificationsLoadFailed}
         />
-      </section>
-      <section>
+        <ChatLauncherButton />
         <AuthControls
           email={user.email}
           name={dbUser?.name}
           role={dbUser?.role}
           profilePicture={dbUser?.profile_picture}
         />
-      </section>
+      </div>
     </header>
   );
 }

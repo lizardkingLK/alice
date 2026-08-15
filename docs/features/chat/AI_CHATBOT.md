@@ -22,8 +22,8 @@ Related:
 - Let signed-in users ask in natural language to list/create **projects**,
   **sprints**, and **work items**.
 - Persist multi-turn conversations per user (sidebar history on `/chat`).
-- Surface a floating assistant on dashboard pages without leaving the current
-  route.
+- Surface Alice from the dashboard **navbar** (between notifications and
+  profile) without leaving the current route.
 - Confirm intent in conversation before mutating (prompt-guided; no separate
   approval UI).
 
@@ -43,8 +43,8 @@ Related:
 | Surface         | Location                                  | Behavior                                                                                                                      |
 | --------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | Full page       | `/chat`                                   | Edge-to-edge in the dashboard shell (no card chrome); toggleable history sidebar; New Chat, delete, suggestions, action cards |
-| Floating widget | All `DashboardShell` pages except `/chat` | FAB → right drawer; same `ChatClient` (`variant="drawer"`) — no conversation sidebar                                          |
-| Nav             | Platform → **Alice**                      | Links to `/chat`                                                                                                              |
+| Navbar launcher | All `DashboardShell` pages except `/chat` | Header control between notifications and profile → right drawer; same `ChatClient` (`variant="drawer"`)                       |
+| Nav             | Platform → **Alice** (`Sparkles` icon)    | Links to `/chat`                                                                                                              |
 
 Empty-state suggestions cover common flows (e.g. create a bug, list projects).
 Successful mutations can render **executed action** cards with deep links to
@@ -121,7 +121,8 @@ Mounted in `apps/api/src/config/routing.ts` as `/api/chat`.
 | Client API      | `apps/web/app/chat/_components/chat-client.service.ts` (mutations + Storage history) |
 | Server reads    | `apps/web/app/chat/_services/chat.service.server.ts`                                 |
 | Client list     | `apps/web/app/chat/_services/chat-read-actions.ts` (`listChatConversationsAction`)   |
-| Widget          | `apps/web/app/chat/_components/floating-chat-widget.tsx`                             |
+| Launcher        | `apps/web/app/chat/_components/chat-launcher.tsx`                                    |
+| Drawer          | `apps/web/app/chat/_components/floating-chat-widget.tsx`                             |
 | Routes          | `createChatRouter` in `chat.route.ts` (mounted as `chat.router`)                     |
 | Service         | `ChatService` in `chat.service.ts`                                                   |
 | Repository      | `ChatRepository` in `chat.repository.ts` (`db` injected)                             |
@@ -291,5 +292,5 @@ message.
 
 1. Conversations table + Storage history format
 2. Gemini tools for list/create project, sprint, work item, users
-3. Full-page `/chat` + floating drawer on dashboard shell
+3. Full-page `/chat` + navbar launcher drawer on dashboard shell
 4. Action cards after successful mutations

@@ -158,7 +158,6 @@ function ActionsCell({
   onDelete,
 }: Readonly<ActionsCellProps>) {
   const entry = row.original;
-  const canDelete = entry.status !== 'deleted';
 
   return (
     <div className="flex justify-end">
@@ -179,15 +178,13 @@ function ActionsCell({
             <Pencil />
             Edit
           </DropdownMenuItem>
-          {canDelete ? (
-            <DropdownMenuItem
-              variant="destructive"
-              onClick={() => onDelete(entry)}
-            >
-              <Trash2 />
-              Remove
-            </DropdownMenuItem>
-          ) : null}
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => onDelete(entry)}
+          >
+            <Trash2 />
+            Delete
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
@@ -293,7 +290,7 @@ export function AccessAllowlistRegistry({
         const message =
           deleteError instanceof Error
             ? deleteError.message
-            : 'Failed to remove allowlist entry.';
+            : 'Failed to delete allowlist entry.';
         setError(message);
       })
       .finally(() => {
@@ -424,11 +421,11 @@ export function AccessAllowlistRegistry({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-rose-500">
               <AlertTriangle className="size-5 shrink-0" />
-              Remove allowlist entry
+              Delete allowlist entry
             </DialogTitle>
             <DialogDescription>
               {deletingEntry
-                ? `Remove ${deletingEntry.kind} "${deletingEntry.value}"? Matching emails will no longer be admitted.`
+                ? `Delete ${deletingEntry.kind} "${deletingEntry.value}"? This cannot be undone. Matching emails will no longer be admitted.`
                 : null}
             </DialogDescription>
           </DialogHeader>
@@ -451,10 +448,10 @@ export function AccessAllowlistRegistry({
               {isBusy ? (
                 <>
                   <Loader2 className="animate-spin" />
-                  Removing…
+                  Deleting…
                 </>
               ) : (
-                'Remove'
+                'Delete'
               )}
             </Button>
           </DialogFooter>

@@ -6,6 +6,7 @@ import {
   type AccessAllowlistRow,
   type AccessAllowlistStatus,
 } from './accessAllowlist.repository';
+import { notifyAllowlistedEmail } from './notify-allowlisted-email';
 
 async function requireAdmin(actorId: string) {
   return await requireUserWithRole(
@@ -13,6 +14,19 @@ async function requireAdmin(actorId: string) {
     [UserRoleEnum.admin],
     'Unauthorized. Only administrators can manage the access allowlist.'
   );
+}
+
+async function notifyIfEmailAllowlisted(entry: AccessAllowlistRow) {
+  if (entry.kind !== 'email' || entry.status !== RecordStatusEnum.active) {
+    return;
+  }
+
+  try {
+    await notifyAllowlistedEmail(entry.value);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('error. allowlist admission email failed:', message);
+  }
 }
 
 export type CreateAccessAllowlistInput = {
@@ -37,7 +51,7 @@ export class AccessAllowlistService {
   ): Promise<AccessAllowlistRow> {
     await requireAdmin(actorId);
 
-    return await accessAllowlistRepository.create({
+    const entry = await accessAllowlistRepository.create({
       actorId,
       kind: input.kind,
       value: input.value,
@@ -45,6 +59,10 @@ export class AccessAllowlistService {
       expires_at: input.expires_at,
       status: input.status ?? RecordStatusEnum.active,
     });
+
+    await notifyIfEmailAllowlisted(entry);
+
+    return entry;
   }
 
   async updateAccessAllowlist(
@@ -54,7 +72,12 @@ export class AccessAllowlistService {
   ): Promise<AccessAllowlistRow> {
     await requireAdmin(actorId);
 
-    return await accessAllowlistRepository.update({
+    const previous =
+      input.status === RecordStatusEnum.active
+        ? await accessAllowlistRepository.findById(id)
+        : null;
+
+    const entry = await accessAllowlistRepository.update({
       actorId,
       id,
       label: input.label,
@@ -62,6 +85,12 @@ export class AccessAllowlistService {
       status: input.status,
       expectedUpdatedAt: input.expectedUpdatedAt,
     });
+
+    if (previous && previous.status !== RecordStatusEnum.active) {
+      await notifyIfEmailAllowlisted(entry);
+    }
+
+    return entry;
   }
 
   async deleteAccessAllowlist(
@@ -70,8 +99,7 @@ export class AccessAllowlistService {
     expectedUpdatedAt: string
   ): Promise<void> {
     await requireAdmin(actorId);
-    return await accessAllowlistRepository.softDelete({
-      actorId,
+    return await accessAllowlistRepository.hardDelete({
       id,
       expectedUpdatedAt,
     });
