@@ -11,6 +11,8 @@
 
 This document describes the technical architecture and implementation of Alice based on the current codebase. The API is described in `apps/api/package.json` as a Jira clone.
 
+Versioned HTTP contracts and shared DTOs (Plan): [API_VERSIONING.md](./API_VERSIONING.md).
+
 ## 2. System Overview
 
 Alice is a pnpm + Turborepo monorepo. The browser loads the Next.js web app (`apps/web`). Users authenticate via Supabase Auth (email/password). The web app calls the Express API (`apps/api`) using `NEXT_PUBLIC_API_URL` with a Supabase JWT. Application data is stored in Supabase (PostgreSQL).
