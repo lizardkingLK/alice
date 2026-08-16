@@ -1,6 +1,6 @@
 # Database workflow
 
-See also: [`docs/database/ER_DIAGRAM.md`](../database/ER_DIAGRAM.md) — entity model from the 1BT-JIRA task breakdown. [`docs/database/AUDIT_COLUMNS.md`](../database/AUDIT_COLUMNS.md) — audit metadata conventions and helpers. [`docs/database/WORK_ITEM_DESCRIPTION.md`](../database/WORK_ITEM_DESCRIPTION.md) — TipTap JSON for `work_items.description`.
+See also: [`docs/database/ER_DIAGRAM.md`](../database/ER_DIAGRAM.md) — entity model from the 1BT-JIRA task breakdown. [`docs/database/AUDIT_COLUMNS.md`](../database/AUDIT_COLUMNS.md) — audit metadata conventions and helpers. [`docs/database/WORK_ITEM_DESCRIPTION.md`](../database/WORK_ITEM_DESCRIPTION.md) — TipTap JSON for `work_items.description`. Planned new-project bootstrap (migrate, Storage, Google, SMTP): [`docs/features/platform/DAY_ONE_SETUP.md`](../features/platform/DAY_ONE_SETUP.md).
 
 ## Packages
 

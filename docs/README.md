@@ -42,19 +42,20 @@ How the monorepo fits together (apps, auth, deployment).
 
 One folder per product area. Prefer a local `README.md` as the index.
 
-| Area       | Index                                                                                                                    |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Users      | [features/users/](./features/users/)                                                                                     |
-| Access     | [features/access/](./features/access/) ([ACCESS_ALLOWLIST.md](./features/access/ACCESS_ALLOWLIST.md))                    |
-| Work items | [features/work-items/](./features/work-items/)                                                                           |
-| Board      | [features/board/](./features/board/)                                                                                     |
-| Projects   | [features/projects/](./features/projects/)                                                                               |
-| Sprints    | [features/sprints/](./features/sprints/)                                                                                 |
-| Chat / AI  | [features/chat/](./features/chat/) ([AI_CHATBOT.md](./features/chat/AI_CHATBOT.md)) — Gemini assistant (**Implemented**) |
-| Dashboard  | [features/dashboard/](./features/dashboard/)                                                                             |
-| Views      | [features/views/](./features/views/) ([FAVORITES_AND_VIEWS.md](./features/views/FAVORITES_AND_VIEWS.md))                 |
-| Profile    | [features/profile/](./features/profile/) ([EDIT_PROFILE.md](./features/profile/EDIT_PROFILE.md))                         |
-| Docs (app) | [features/docs/](./features/docs/) — in-app `/docs` browser (**Living**)                                                 |
+| Area       | Index                                                                                                                             |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Users      | [features/users/](./features/users/)                                                                                              |
+| Access     | [features/access/](./features/access/) ([ACCESS_ALLOWLIST.md](./features/access/ACCESS_ALLOWLIST.md))                             |
+| Work items | [features/work-items/](./features/work-items/)                                                                                    |
+| Board      | [features/board/](./features/board/)                                                                                              |
+| Projects   | [features/projects/](./features/projects/)                                                                                        |
+| Sprints    | [features/sprints/](./features/sprints/)                                                                                          |
+| Chat / AI  | [features/chat/](./features/chat/) ([AI_CHATBOT.md](./features/chat/AI_CHATBOT.md)) — Gemini assistant (**Implemented**)          |
+| Dashboard  | [features/dashboard/](./features/dashboard/)                                                                                      |
+| Views      | [features/views/](./features/views/) ([FAVORITES_AND_VIEWS.md](./features/views/FAVORITES_AND_VIEWS.md))                          |
+| Profile    | [features/profile/](./features/profile/) ([EDIT_PROFILE.md](./features/profile/EDIT_PROFILE.md))                                  |
+| Docs (app) | [features/docs/](./features/docs/) — in-app `/docs` browser (**Living**)                                                          |
+| Platform   | [features/platform/](./features/platform/) ([DAY_ONE_SETUP.md](./features/platform/DAY_ONE_SETUP.md)) — new-env script (**Plan**) |
 
 ### Database
 
@@ -72,6 +73,7 @@ Authentication and authorization. Index: [auth/README.md](./auth/README.md).
 - [RBAC_AUTHORIZATION_SKELETON.md](./auth/RBAC_AUTHORIZATION_SKELETON.md) — Phase-1 role route matrix (**Implemented**)
 - [FORGOT_PASSWORD_AUTH_PLAN.md](./auth/FORGOT_PASSWORD_AUTH_PLAN.md) — original recovery plan (**Plan**; see AUTHENTICATION.md §7 for as-built)
 - Admission allowlist: [features/access/ACCESS_ALLOWLIST.md](./features/access/ACCESS_ALLOWLIST.md) (**Living**)
+- Day-one env bootstrap (Google + SMTP): [features/platform/DAY_ONE_SETUP.md](./features/platform/DAY_ONE_SETUP.md) (**Plan**)
 - Account deactivation / offboarding: [features/users/ACCOUNT_DEACTIVATION.md](./features/users/ACCOUNT_DEACTIVATION.md) (phase 1 implemented)
 
 ### Guides
@@ -80,6 +82,7 @@ How we work day to day.
 
 - [TESTING_DEVELOPMENT_FLOW.md](./guides/TESTING_DEVELOPMENT_FLOW.md) — Project development & testing flow for all features
 - [DATABASE.md](./guides/DATABASE.md) — Prisma / Supabase workflow
+- Day-one env bootstrap (Plan): [features/platform/DAY_ONE_SETUP.md](./features/platform/DAY_ONE_SETUP.md)
 - [PERFORMANCE.md](./guides/PERFORMANCE.md) — RSC data loading, caching, parallel fetches + roadmap
 - [DEBUGGING.md](./guides/DEBUGGING.md) — IDE debug configs
 - [SEO.md](./guides/SEO.md) — metadata, sitemap, robots
