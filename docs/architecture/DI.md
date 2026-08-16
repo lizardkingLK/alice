@@ -4,6 +4,8 @@
 **Scope:** `apps/api` only — Express routers, services, repositories  
 **Last updated:** August 10, 2026
 
+Related: [TRD.md](./TRD.md), [API_VERSIONING.md](./API_VERSIONING.md) (shared DTOs / `/api/v1`).
+
 ## 1. Why
 
 Today most API domains wire themselves with **module-level singletons**:
@@ -29,7 +31,7 @@ We are not introducing Nest, Inversify, or a DI container. The pattern is **manu
 2. **Constructor injection** — repositories take `db`; services take repositories; routers take services via a factory.
 3. **Process singletons are intentional** — shared HTTP clients (`supabase`, `authClient`) and the built service graph live once per process. They must remain **stateless** (no request Maps, no session fields).
 4. **No per-request services** — do not `new WorkItemService()` inside handlers.
-5. **Migrate by slice** — convert one domain at a time; other routes may keep module singletons until touched.
+5. **Migrate by slice** — convert one domain at a time; other routes may keep module singletons until touched. **All product domains must be composed before API URL versioning** ([API_VERSIONING.md](./API_VERSIONING.md) prerequisite).
 6. **Narrow deps** — prefer `Pick<Service, 'method'>` (or a small interface) at the router boundary so tests can pass stubs.
 
 ## 3. Target shape
