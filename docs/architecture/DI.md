@@ -4,7 +4,7 @@
 **Scope:** `apps/api` only — Express routers, services, repositories  
 **Last updated:** August 17, 2026
 
-Related: [TRD.md](./TRD.md), [API_VERSIONING.md](./API_VERSIONING.md) (shared DTOs / `/api/v1`).
+Related: [TRD.md](./TRD.md), [API_VERSIONING.md](./API_VERSIONING.md) (composition prerequisite, unused Express GETs, `/api/v1`).
 
 ## 1. Why
 
@@ -83,6 +83,8 @@ flowchart TB
 | Boot             | `apps/api/src/index.ts` → `app.use(routesConfig)`                                |
 
 Notifications are composed (`composition.ts` → `notifications`) and injected into the work-items **and** comments routers/services so assign/mention side-effects stay testable.
+
+Unused Prisma reads on this slice: `WorkItemRepository.listPaginated` / `getDetailById` → `WorkItemService.listWorkItemsPaginated` / `getWorkItemDetail` → `GET /api/workItems` and `GET /api/workItems/:id`. Mutation `getById` remains supabase-js. Next.js does not call the new GETs yet.
 
 ### Sprints
 

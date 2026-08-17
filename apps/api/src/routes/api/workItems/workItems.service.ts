@@ -2,9 +2,14 @@ import {
   getAllowedChildType,
   type WorkItemType,
   parseWorkItemLabels,
+  type ListWorkItemsQuery,
+  type WorkItemDetailRow,
+  type WorkItemListRow,
+  type WorkItemListRowWithDescription,
 } from '@repo/types';
 import { WorkItemRepository } from './workItems.repository';
 import type { DbWorkItem, DbGithubPullRequest } from './workItems.repository';
+import type { WorkItemPaginatedList } from './workItems.prisma-query';
 import { sameNullable } from './workItems.patch-utils';
 import {
   toDateOnly,
@@ -38,6 +43,33 @@ interface GithubCommitApiResponse {
 
 export class WorkItemService {
   constructor(private readonly workItems: WorkItemRepository) {}
+
+  async listWorkItemsPaginated(
+    query: ListWorkItemsQuery
+  ): Promise<
+    WorkItemPaginatedList<WorkItemListRow | WorkItemListRowWithDescription>
+  > {
+    return await this.workItems.listPaginated({
+      filters: {
+        sprintId: query.sprintId,
+        projectId: query.projectId,
+        parentId: query.parentId,
+        type: query.type,
+        assigneeId: query.assigneeId,
+        labels: query.labels,
+      },
+      search: query.search,
+      page: query.page,
+      limit: query.limit,
+      includeDescription: query.includeDescription,
+    });
+  }
+
+  async getWorkItemDetail(
+    workItemId: string
+  ): Promise<WorkItemDetailRow | null> {
+    return await this.workItems.getDetailById(workItemId);
+  }
 
   async getWorkItem(workItemId: string): Promise<DbWorkItem> {
     return await this.workItems.getById(workItemId);

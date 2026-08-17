@@ -11,7 +11,7 @@
 
 This document describes the technical architecture and implementation of Alice based on the current codebase. The API is described in `apps/api/package.json` as a Jira clone.
 
-Versioned HTTP contracts and shared DTOs (Plan): [API_VERSIONING.md](./API_VERSIONING.md).
+Versioned HTTP contracts and shared DTOs (Plan): [API_VERSIONING.md](./API_VERSIONING.md). Dual-path reads (SSR vs Express, Plan): [DATA_RETRIEVAL.md](./DATA_RETRIEVAL.md).
 
 ## 2. System Overview
 
