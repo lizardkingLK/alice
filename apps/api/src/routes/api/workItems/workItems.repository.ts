@@ -61,8 +61,6 @@ export class WorkItemRepository {
   ): Promise<{ projectId: string }> {
     // Supabase's generated DB types don't yet include `work_item_worklogs`,
     // so we cast to access the new table safely.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = this.db as unknown as SupabaseClient<any>;
 
     const { data: workItem, error: workItemError } = await this.db
       .from('work_items')
@@ -93,7 +91,7 @@ export class WorkItemRepository {
       return { projectId: workItem.project_id };
     }
 
-    const { data: member, error: memberError } = await db
+    const { data: member, error: memberError } = await this.db
       .from('project_members')
       .select('user_id')
       .eq('project_id', workItem.project_id)

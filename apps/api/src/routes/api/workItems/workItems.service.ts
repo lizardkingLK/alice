@@ -11,6 +11,7 @@ import {
   WorkItemBody,
   WorkItemUpdateBody,
 } from './workItems.schemas';
+import { WorkItemValidationError } from './workItems.errors';
 
 interface GithubPRApiResponse {
   title?: string;
@@ -33,13 +34,6 @@ interface GithubCommitApiResponse {
   author?: {
     login?: string;
   };
-}
-
-export class WorkItemValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'WorkItemValidationError';
-  }
 }
 
 export class WorkItemService {

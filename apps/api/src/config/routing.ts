@@ -1,30 +1,34 @@
 import { Router } from 'express';
-import attachmentsRouter from '../routes/api/attachments/attachments.route';
 import usersRouter from '../routes/api/users/users.route';
 import healthRouter from '../routes/health.route';
-import notificationsRouter from '../routes/api/notifications/notifications.route';
 import projectsRouter from '../routes/api/projects/projects.route';
 import teamsRouter from '../routes/api/teams/teams.route';
-import commentsRouter from '../routes/api/comments/comments.route';
 import profileRouter from '../routes/api/profile/profile.route';
-import accessAllowlistRouter from '../routes/api/accessAllowlist/accessAllowlist.route';
 import savedViewsRouter from '../routes/api/savedViews/savedViews.route';
-import { workItems, sprints, chat } from './composition';
+import {
+  accessAllowlist,
+  attachments,
+  chat,
+  comments,
+  notifications,
+  sprints,
+  workItems,
+} from './composition';
 
 const routesConfig: Router = Router();
 
 routesConfig.use('/', healthRouter);
-routesConfig.use('/api/attachments', attachmentsRouter);
-routesConfig.use('/api/comments', commentsRouter);
-routesConfig.use('/api/notifications', notificationsRouter);
+routesConfig.use('/api/accessAllowlist', accessAllowlist.router);
+routesConfig.use('/api/attachments', attachments.router);
+routesConfig.use('/api/chat', chat.router);
+routesConfig.use('/api/comments', comments.router);
+routesConfig.use('/api/notifications', notifications.router);
 routesConfig.use('/api/profile', profileRouter);
 routesConfig.use('/api/projects', projectsRouter);
+routesConfig.use('/api/saved-views', savedViewsRouter);
 routesConfig.use('/api/sprints', sprints.router);
 routesConfig.use('/api/teams', teamsRouter);
 routesConfig.use('/api/users', usersRouter);
 routesConfig.use('/api/workItems', workItems.router);
-routesConfig.use('/api/accessAllowlist', accessAllowlistRouter);
-routesConfig.use('/api/chat', chat.router);
-routesConfig.use('/api/saved-views', savedViewsRouter);
 
 export default routesConfig;

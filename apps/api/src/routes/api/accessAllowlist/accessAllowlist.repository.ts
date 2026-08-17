@@ -1,4 +1,3 @@
-import { supabase } from '../../../lib/supabase';
 import { type RecordStatus } from '../../../lib/audit';
 import { prisma } from '../../../lib/prisma';
 import {
@@ -13,11 +12,13 @@ import {
   resolveOptimisticPrismaUpdate,
 } from '../../../lib/optimistic-lock';
 import {
+  Database,
   isValidAccessAllowlistDomain,
   normalizeAccessAllowlistDomain,
   type Tables,
 } from '@repo/types';
 import { AccessAllowlistKind as AccessAllowlistKindEnum } from '@repo/types/prisma';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 export type AccessAllowlistRow = Tables<'access_allowlist'>;
 export type AccessAllowlistKind = Tables<'access_allowlist'>['kind'];
@@ -60,8 +61,10 @@ function toAccessAllowlistRow(row: {
 }
 
 export class AccessAllowlistRepository {
+  constructor(private readonly db: SupabaseClient<Database>) {}
+
   async findById(id: string): Promise<AccessAllowlistRow | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('access_allowlist')
       .select('*')
       .eq('id', id)
@@ -190,5 +193,3 @@ export class AccessAllowlistRepository {
     throw new OptimisticLockError(current);
   }
 }
-
-export const accessAllowlistRepository = new AccessAllowlistRepository();

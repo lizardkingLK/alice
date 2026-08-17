@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { AccessAllowlistService } from '../../src/routes/api/accessAllowlist/accessAllowlist.service';
+import type { AccessAllowlistRepository } from '../../src/routes/api/accessAllowlist/accessAllowlist.repository';
 
 const {
   createMock,
@@ -29,25 +31,18 @@ vi.mock('../../src/lib/supabase', () => ({
 }));
 
 vi.mock(
-  '../../src/routes/api/accessAllowlist/accessAllowlist.repository',
-  () => ({
-    accessAllowlistRepository: {
-      create: createMock,
-      update: updateMock,
-      findById: findByIdMock,
-      hardDelete: hardDeleteMock,
-    },
-  })
-);
-
-vi.mock(
   '../../src/routes/api/accessAllowlist/notify-allowlisted-email',
   () => ({
     notifyAllowlistedEmail: notifyMock,
   })
 );
 
-import { AccessAllowlistService } from '../../src/routes/api/accessAllowlist/accessAllowlist.service';
+const repository = {
+  create: createMock,
+  update: updateMock,
+  findById: findByIdMock,
+  hardDelete: hardDeleteMock,
+} as unknown as AccessAllowlistRepository;
 
 const emailEntry = {
   id: 'allow-1',
@@ -63,7 +58,7 @@ const emailEntry = {
 };
 
 describe('AccessAllowlistService admission email', () => {
-  const service = new AccessAllowlistService();
+  const service = new AccessAllowlistService(repository);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -127,7 +122,7 @@ describe('AccessAllowlistService admission email', () => {
 });
 
 describe('AccessAllowlistService delete own domain', () => {
-  const service = new AccessAllowlistService();
+  const service = new AccessAllowlistService(repository);
   const domainEntry = {
     ...emailEntry,
     kind: 'domain' as const,

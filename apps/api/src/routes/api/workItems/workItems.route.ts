@@ -5,10 +5,8 @@ import {
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
 import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
-import {
-  WorkItemValidationError,
-  type WorkItemService,
-} from './workItems.service';
+import { WorkItemValidationError } from './workItems.errors';
+import { type WorkItemService } from './workItems.service';
 import type { NotificationsService } from '../notifications/notifications.service';
 import {
   createUpdateWorkItemBodySchema,
