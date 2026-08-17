@@ -1,12 +1,16 @@
 import { prisma } from '../../../lib/prisma';
-import { supabase } from '../../../lib/supabase';
 import {
   prismaAuditCreate,
   prismaAuditUpdate,
   prismaLockTimestamp,
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
-import { ATTACHMENT_SELECT, type AttachmentWithUploader } from '@repo/types';
+import {
+  ATTACHMENT_SELECT,
+  Database,
+  type AttachmentWithUploader,
+} from '@repo/types';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 export type CreateAttachmentInput = {
   work_item_id: string;
@@ -18,8 +22,10 @@ export type CreateAttachmentInput = {
 };
 
 export class AttachmentsRepository {
+  constructor(private readonly db: SupabaseClient<Database>) {}
+
   async getById(id: string): Promise<AttachmentWithUploader | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('attachments')
       .select(ATTACHMENT_SELECT)
       .eq('id', id)
@@ -75,7 +81,7 @@ export class AttachmentsRepository {
   }
 
   async workItemExists(workItemId: string): Promise<boolean> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('work_items')
       .select('id')
       .eq('id', workItemId)
@@ -89,5 +95,3 @@ export class AttachmentsRepository {
     return Boolean(data);
   }
 }
-
-export const attachmentsRepository = new AttachmentsRepository();

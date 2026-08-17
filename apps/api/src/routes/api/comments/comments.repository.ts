@@ -1,14 +1,15 @@
 import {
+  Database,
   USER_PROJECTION_WITH_ROLE,
   projectRelationSelect,
   userRelationSelect,
   type Json,
 } from '@repo/types';
 import { Prisma, RecordStatus } from '@repo/types/prisma';
-import { supabase } from '../../../lib/supabase';
 import { prisma } from '../../../lib/prisma';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
 import { prismaLockTimestamp } from '../../../lib/prisma-audit';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 export type CommentRow = {
   id: string;
@@ -37,8 +38,10 @@ const COMMENT_WITH_RELATIONS = `
       `;
 
 export class CommentsRepository {
+  constructor(private readonly db: SupabaseClient<Database>) {}
+
   async getById(id: string): Promise<CommentRow | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('comments')
       .select(COMMENT_WITH_RELATIONS)
       .eq('id', id)
@@ -56,7 +59,7 @@ export class CommentsRepository {
   private async getLockSnapshotById(
     id: string
   ): Promise<{ id: string; status: string; updated_at: string } | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('comments')
       .select('id, status, updated_at')
       .eq('id', id)
@@ -145,5 +148,3 @@ export class CommentsRepository {
     await prisma.comments.deleteMany({ where: { id } });
   }
 }
-
-export const commentsRepository = new CommentsRepository();

@@ -2,7 +2,7 @@
 
 **Status:** Plan (Living for work-items, sprints, and chat slices)  
 **Scope:** `apps/api` only — Express routers, services, repositories  
-**Last updated:** August 10, 2026
+**Last updated:** August 17, 2026
 
 Related: [TRD.md](./TRD.md), [API_VERSIONING.md](./API_VERSIONING.md) (shared DTOs / `/api/v1`).
 
@@ -42,7 +42,7 @@ flowchart TB
   db["supabase client"]
   repo["new WorkItemRepository(db)"]
   svc["new WorkItemService(repo)"]
-  notif["notificationsService (shared until migrated)"]
+  notif["notifications (composed)"]
   router["createWorkItemsRouter({ workItemService, notificationsService })"]
   routing["routing.ts mounts workItems.router"]
   app["index.ts → app.use(routesConfig)"]
@@ -82,7 +82,7 @@ flowchart TB
 | Route mount      | `apps/api/src/config/routing.ts` → `workItems.router`                            |
 | Boot             | `apps/api/src/index.ts` → `app.use(routesConfig)`                                |
 
-Notifications stay on the existing module singleton for now; the work-items router **receives** it so assign side-effects remain testable without rewriting notifications.
+Notifications are composed (`composition.ts` → `notifications`) and injected into the work-items **and** comments routers/services so assign/mention side-effects stay testable.
 
 ### Sprints
 
@@ -93,6 +93,50 @@ Notifications stay on the existing module singleton for now; the work-items rout
 | Route factory    | `createSprintsRouter`                                                     |
 | Injection config | `composition.ts` → `sprints`                                              |
 | Route mount      | `routing.ts` → `sprints.router`                                           |
+
+### Attachments
+
+| Piece            | Path                                                            |
+| ---------------- | --------------------------------------------------------------- |
+| Repository       | `apps/api/src/routes/api/attachments/attachments.repository.ts` |
+| Service          | `apps/api/src/routes/api/attachments/attachments.service.ts`    |
+| Route factory    | `createAttachmentsRouter`                                       |
+| Injection config | `composition.ts` → `attachments`                                |
+| Route mount      | `routing.ts` → `attachments.router`                             |
+
+Prisma mutations stay on the process `prisma` client (same as work-items). PostgREST reads (`getById`, `workItemExists`) use the injected `SupabaseClient`.
+
+### Comments
+
+| Piece            | Path                                                                         |
+| ---------------- | ---------------------------------------------------------------------------- |
+| Repository       | `apps/api/src/routes/api/comments/comments.repository.ts`                    |
+| Service          | `CommentsService` — receives `notificationsService` for mention side-effects |
+| Route factory    | `createCommentsRouter`                                                       |
+| Injection config | `composition.ts` → `comments`                                                |
+| Route mount      | `routing.ts` → `comments.router`                                             |
+
+### Access allowlist
+
+| Piece            | Path                                                                    |
+| ---------------- | ----------------------------------------------------------------------- |
+| Repository       | `apps/api/src/routes/api/accessAllowlist/accessAllowlist.repository.ts` |
+| Service          | `AccessAllowlistService`                                                |
+| Route factory    | `createAccessAllowlistRouter`                                           |
+| Injection config | `composition.ts` → `accessAllowlist`                                    |
+| Route mount      | `routing.ts` → `accessAllowlist.router`                                 |
+
+### Notifications
+
+| Piece            | Path                                                                               |
+| ---------------- | ---------------------------------------------------------------------------------- |
+| Repository       | `apps/api/src/routes/api/notifications/notifications.repository.ts`                |
+| Service          | `NotificationsService` — builders, due-date rules, UUID gate; no direct DB clients |
+| Route factory    | `createNotificationsRouter`                                                        |
+| Injection config | `composition.ts` → `notifications` (built **before** comments and work-items)      |
+| Route mount      | `routing.ts` → `notifications.router`                                              |
+
+PostgREST reads (admins, actor name, due work items, existing due-date rows) use the injected client. Prisma writes stay on the process `prisma` helper (`insert` / `insertMany` / `create`).
 
 ### Chat
 
@@ -108,7 +152,7 @@ Chat receives `workItemService` and `sprintsService` from the composition root f
 
 ## 5. Migration checklist (next domain)
 
-When converting e.g. projects or attachments:
+When converting e.g. projects or users:
 
 1. Add a constructor to the repository (`db: SupabaseClient<Database>`).
 2. Add a constructor to the service (inject repository).

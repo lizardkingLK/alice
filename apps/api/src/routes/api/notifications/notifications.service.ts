@@ -1,40 +1,28 @@
-import { supabase } from '../../../lib/supabase';
-import { prisma } from '../../../lib/prisma';
-import { prismaNotificationCreate } from '../../../lib/prisma-audit';
 import {
   NotificationBuilder,
   AssignNotification,
   MentionNotification,
   DueDateNotification,
   todayDateString,
-  UserRoleEnum,
-  WorkItemStatusEnum,
+  type NotificationType,
 } from '@repo/types';
-import {
-  NotificationType as NotificationTypeEnum,
-  RecordStatus,
-} from '@repo/types/prisma';
+import { NotificationsRepository } from './notifications.repository';
 
 export class NotificationsService {
+  constructor(
+    private readonly notificationsRepository: NotificationsRepository
+  ) {}
+
   async sendInAppNotification(params: {
     subscriberId: string;
     message: string;
     title?: string;
   }) {
-    // Save to Supabase notifications table if subscriberId is a valid UUID
     const uuidRegex =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (uuidRegex.test(params.subscriberId)) {
       try {
-        await prisma.notifications.create({
-          data: {
-            user_id: params.subscriberId,
-            type: NotificationTypeEnum.mention,
-            message: params.message,
-            read_status: false,
-            status: RecordStatus.active,
-          },
-        });
+        await this.notificationsRepository.create(params);
       } catch (err) {
         console.error('Error inserting notification to Supabase:', err);
       }
@@ -52,34 +40,42 @@ export class NotificationsService {
     message: string;
     title?: string;
   }) {
-    const { data: admins, error: adminsError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('role', UserRoleEnum.admin)
-      .eq('active', true);
-
-    if (adminsError) {
-      throw new Error(`Failed to query admins: ${adminsError.message}`);
+    try {
+      await this.notificationsRepository.createMany(params);
+    } catch (err) {
+      console.error('Error inserting notifications to Supabase:', err);
     }
+  }
 
-    const adminIds = (admins ?? []).map((a) => a.id);
-    if (!adminIds.length) {
+  private async notifyRelatedUser<T extends NotificationType>(params: {
+    recipientId: string;
+    actorId: string;
+    taskId: string;
+    typeClass: new () => T;
+    buildMessage: (actorName: string) => string;
+    logLabel: string;
+  }): Promise<void> {
+    if (params.recipientId === params.actorId) {
       return;
     }
 
-    const fromNamePart = params.fromName ? ` (${params.fromName})` : '';
-    const titlePrefix = params.title ? `${params.title}\n\n` : '';
-    const fullMessage = `${titlePrefix}From: ${params.fromEmail}${fromNamePart}\n\n${params.message}`;
+    try {
+      const actorName =
+        (await this.notificationsRepository.getUserName(params.actorId)) ||
+        'A teammate';
 
-    await prisma.notifications.createMany({
-      data: adminIds.map((adminId) => ({
-        user_id: adminId,
-        type: NotificationTypeEnum.comment,
-        message: fullMessage,
-        read_status: false,
-        status: RecordStatus.active,
-      })),
-    });
+      const notification = new NotificationBuilder(params.typeClass)
+        .ToUser(params.recipientId)
+        .WithMessage(params.buildMessage(actorName))
+        .WithRelatedItem(params.taskId)
+        .WithCreatedBy(params.actorId)
+        .WithUpdatedBy(params.actorId)
+        .Build();
+
+      await this.notificationsRepository.insert(notification);
+    } catch (err) {
+      console.error(params.logLabel, err);
+    }
   }
 
   async createAssignNotification(params: {
@@ -88,35 +84,15 @@ export class NotificationsService {
     taskTitle: string;
     taskId: string;
   }) {
-    if (params.assigneeId === params.actorId) return;
-
-    try {
-      // Fetch actor name
-      const { data: actor } = await supabase
-        .from('users')
-        .select('name')
-        .eq('id', params.actorId)
-        .maybeSingle();
-
-      const actorName = actor?.name || 'A teammate';
-
-      // Insert notification
-      const notification = new NotificationBuilder(AssignNotification)
-        .ToUser(params.assigneeId)
-        .WithMessage(
-          `${actorName} assigned a task to you: "${params.taskTitle}"`
-        )
-        .WithRelatedItem(params.taskId)
-        .WithCreatedBy(params.actorId)
-        .WithUpdatedBy(params.actorId)
-        .Build();
-
-      await prisma.notifications.create({
-        data: prismaNotificationCreate(notification),
-      });
-    } catch (err) {
-      console.error('Error creating assign notification:', err);
-    }
+    await this.notifyRelatedUser({
+      recipientId: params.assigneeId,
+      actorId: params.actorId,
+      taskId: params.taskId,
+      typeClass: AssignNotification,
+      buildMessage: (actorName) =>
+        `${actorName} assigned a task to you: "${params.taskTitle}"`,
+      logLabel: 'Error creating assign notification:',
+    });
   }
 
   async createMentionNotification(params: {
@@ -126,34 +102,15 @@ export class NotificationsService {
     taskId: string;
     commentContentSnippet: string;
   }) {
-    if (params.mentionedUserId === params.actorId) return;
-
-    try {
-      // Fetch actor name
-      const { data: actor } = await supabase
-        .from('users')
-        .select('name')
-        .eq('id', params.actorId)
-        .maybeSingle();
-
-      const actorName = actor?.name || 'A teammate';
-
-      const notification = new NotificationBuilder(MentionNotification)
-        .ToUser(params.mentionedUserId)
-        .WithMessage(
-          `${actorName} mentioned you in a comment on "${params.taskTitle}": "${params.commentContentSnippet}"`
-        )
-        .WithRelatedItem(params.taskId)
-        .WithCreatedBy(params.actorId)
-        .WithUpdatedBy(params.actorId)
-        .Build();
-
-      await prisma.notifications.create({
-        data: prismaNotificationCreate(notification),
-      });
-    } catch (err) {
-      console.error('Error creating mention notification:', err);
-    }
+    await this.notifyRelatedUser({
+      recipientId: params.mentionedUserId,
+      actorId: params.actorId,
+      taskId: params.taskId,
+      typeClass: MentionNotification,
+      buildMessage: (actorName) =>
+        `${actorName} mentioned you in a comment on "${params.taskTitle}": "${params.commentContentSnippet}"`,
+      logLabel: 'Error creating mention notification:',
+    });
   }
 
   private getDueDateMessage(
@@ -179,47 +136,27 @@ export class NotificationsService {
     tomorrowDate.setDate(tomorrowDate.getDate() + 1);
     const tomorrowStr = todayDateString(tomorrowDate);
 
-    // Fetch active work items (not Done status) with assignee and due date matching today or tomorrow
-    const { data: workItems, error: fetchError } = await supabase
-      .from('work_items')
-      .select('id, title, assignee_id, due_date')
-      .not('assignee_id', 'is', null)
-      .neq('status', WorkItemStatusEnum.Done)
-      .or(`due_date.eq.${todayStr},due_date.eq.${tomorrowStr}`);
-
-    if (fetchError) {
-      console.error('Failed to fetch due work items:', fetchError);
-      throw new Error(`Failed to fetch due work items: ${fetchError.message}`);
-    }
-    if (!workItems || workItems.length === 0) {
+    const workItems = await this.notificationsRepository.findDueWorkItems(
+      todayStr,
+      tomorrowStr
+    );
+    if (workItems.length === 0) {
       return { checkedCount: 0, createdCount: 0 };
     }
-    // Get list of assignee IDs and work item IDs to fetch existing notifications
+
     const assigneeIds = workItems.map((item) => item.assignee_id as string);
     const workItemIds = workItems.map((item) => item.id);
 
-    // Fetch existing due_date notifications for these assignees and work items
-    const { data: existingNotifications, error: fetchNotifError } =
-      await supabase
-        .from('notifications')
-        .select('user_id, related_item_id, message')
-        .eq('type', 'due_date')
-        .in('user_id', assigneeIds)
-        .in('related_item_id', workItemIds);
-
-    if (fetchNotifError) {
-      console.error(
-        'Failed to fetch existing due_date notifications:',
-        fetchNotifError
+    const existingNotifications =
+      await this.notificationsRepository.findExistingDueDateNotifications(
+        assigneeIds,
+        workItemIds
       );
-      throw new Error(
-        `Failed to fetch existing notifications: ${fetchNotifError.message}`
-      );
-    }
 
     const existingMessagesSet = new Set(
-      (existingNotifications || []).map(
-        (n) => `${n.user_id}:${n.related_item_id}:${n.message}`
+      existingNotifications.map(
+        (notification) =>
+          `${notification.user_id}:${notification.related_item_id}:${notification.message}`
       )
     );
 
@@ -246,16 +183,10 @@ export class NotificationsService {
       notificationsToInsert.push(notification);
     }
 
-    if (notificationsToInsert.length > 0) {
-      await prisma.notifications.createMany({
-        data: notificationsToInsert.map(prismaNotificationCreate),
-      });
-    }
+    await this.notificationsRepository.insertMany(notificationsToInsert);
     return {
       checkedCount: workItems.length,
       createdCount: notificationsToInsert.length,
     };
   }
 }
-
-export const notificationsService = new NotificationsService();

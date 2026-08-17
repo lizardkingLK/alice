@@ -6,7 +6,7 @@ import {
   isOwnAllowlistDomainLockout,
 } from '@repo/types';
 import {
-  accessAllowlistRepository,
+  AccessAllowlistRepository,
   type AccessAllowlistKind,
   type AccessAllowlistRow,
   type AccessAllowlistStatus,
@@ -19,22 +19,6 @@ async function requireAdmin(actorId: string) {
     [UserRoleEnum.admin],
     'Unauthorized. Only administrators can manage the access allowlist.'
   );
-}
-
-async function requireAdminAllowlistEntry(
-  actorId: string,
-  id: string
-): Promise<{
-  actor: { email: string };
-  entry: AccessAllowlistRow;
-}> {
-  const actor = await requireAdmin(actorId);
-  const entry = await accessAllowlistRepository.findById(id);
-  if (!entry) {
-    throw new Error('Access allowlist entry not found');
-  }
-
-  return { actor, entry };
 }
 
 function rejectOwnDomainLockout(
@@ -83,13 +67,33 @@ export type UpdateAccessAllowlistInput = {
 };
 
 export class AccessAllowlistService {
+  constructor(
+    private readonly accessAllowlistRepository: AccessAllowlistRepository
+  ) {}
+
+  async requireAdminAllowlistEntry(
+    actorId: string,
+    id: string
+  ): Promise<{
+    actor: { email: string };
+    entry: AccessAllowlistRow;
+  }> {
+    const actor = await requireAdmin(actorId);
+    const entry = await this.accessAllowlistRepository.findById(id);
+    if (!entry) {
+      throw new Error('Access allowlist entry not found');
+    }
+
+    return { actor, entry };
+  }
+
   async createAccessAllowlist(
     actorId: string,
     input: CreateAccessAllowlistInput
   ): Promise<AccessAllowlistRow> {
     await requireAdmin(actorId);
 
-    const entry = await accessAllowlistRepository.create({
+    const entry = await this.accessAllowlistRepository.create({
       actorId,
       kind: input.kind,
       value: input.value,
@@ -108,7 +112,7 @@ export class AccessAllowlistService {
     id: string,
     input: UpdateAccessAllowlistInput
   ): Promise<AccessAllowlistRow> {
-    const { actor, entry: previous } = await requireAdminAllowlistEntry(
+    const { actor, entry: previous } = await this.requireAdminAllowlistEntry(
       actorId,
       id
     );
@@ -116,7 +120,7 @@ export class AccessAllowlistService {
       nextStatus: input.status,
     });
 
-    const entry = await accessAllowlistRepository.update({
+    const entry = await this.accessAllowlistRepository.update({
       actorId,
       id,
       label: input.label,
@@ -140,14 +144,12 @@ export class AccessAllowlistService {
     id: string,
     expectedUpdatedAt: string
   ): Promise<void> {
-    const { actor, entry } = await requireAdminAllowlistEntry(actorId, id);
+    const { actor, entry } = await this.requireAdminAllowlistEntry(actorId, id);
     rejectOwnDomainLockout(entry, actor.email, { deleting: true });
 
-    return await accessAllowlistRepository.hardDelete({
+    return await this.accessAllowlistRepository.hardDelete({
       id,
       expectedUpdatedAt,
     });
   }
 }
-
-export const accessAllowlistService = new AccessAllowlistService();
