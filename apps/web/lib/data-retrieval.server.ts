@@ -25,8 +25,11 @@ export function parseDataReadsViaApiFlag(
 }
 
 export function getDataRetrievalStrategy(): DataRetrievalStrategy {
+  // Bracket access so Next does not inline this at `next build`. Vercel can
+  // then change the web-project env and pick it up on the next deployment
+  // without a code change (server-only; not per-request).
   const viaApi = parseDataReadsViaApiFlag(
-    process.env.DATA_READS_VIA_API,
+    process.env['DATA_READS_VIA_API'],
     process.env.GITHUB_ACTIONS === 'true'
   );
   return viaApi ? 'api' : 'ssr';

@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import usersRouter from '../routes/api/users/users.route';
-import healthRouter from '../routes/health.route';
 import projectsRouter from '../routes/api/projects/projects.route';
 import teamsRouter from '../routes/api/teams/teams.route';
 import profileRouter from '../routes/api/profile/profile.route';
@@ -10,14 +9,21 @@ import {
   attachments,
   chat,
   comments,
+  health,
   notifications,
+  root,
   sprints,
   workItems,
 } from './composition';
 
 const routesConfig: Router = Router();
 
-routesConfig.use('/', healthRouter);
+// Version path map lives here (not composition, not per-route middleware).
+// See docs/architecture/API_VERSIONING.md
+routesConfig.use('/', root.router);
+routesConfig.use('/api/health', health.v1Router);
+routesConfig.use('/api/v1/health', health.v1Router);
+routesConfig.use('/api/v2/health', health.v2Router);
 routesConfig.use('/api/accessAllowlist', accessAllowlist.router);
 routesConfig.use('/api/attachments', attachments.router);
 routesConfig.use('/api/chat', chat.router);
