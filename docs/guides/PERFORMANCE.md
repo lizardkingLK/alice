@@ -197,6 +197,8 @@ Form dropdowns (`getUserList`, `getProjectList`) are shared across many pages an
 
 Paginated registry lists (`getUsersListPaginated`, `getProjectListPaginated`, etc.) are **not** cached this way — they stay request-fresh.
 
+**Express-only mutations (chat):** `POST /api/chat` creates projects via the API, so it never runs `apps/web/app/projects/_components/actions.ts`. After `create_project`, the chat client must call `revalidateAfterChatActions` (`updateTag('dropdown-projects')`) and then `router.refresh()`. Do **not** `revalidatePath('/projects')` or `revalidatePath('/work-items')` from that action — those pages live in `(list)` route groups, and on-demand revalidate in Next 16 can cache a **404** for the list URL until the dev server restarts. Create Sprint lists **all active projects** (API allows admin/manager to create a sprint on any project). Do not filter the dropdown by `owner_id` — that hid chat-created projects owned by another user. Create Sprint also re-reads via `loadProjectsForSprintForm`.
+
 ### 2.8 Backlog workspace loader (M4.1)
 
 `/backlog` has the highest read fan-out (4 parallel Supabase calls). Data loading is centralized in `getBacklogWorkspace()` and streamed via Suspense:

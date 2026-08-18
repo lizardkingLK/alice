@@ -28,7 +28,12 @@ async function startServer(app: Express) {
   const server = app.listen(port, () =>
     console.log(`info. listening on http://localhost:${port}`)
   );
-  server.setTimeout(15_000);
+  // Chat POST waits on Gemini + up to 5 tool rounds. Node's socket inactivity
+  // timeout would otherwise destroy the connection (~15s) and Next's rewrite
+  // surfaces that as a non-JSON 500 → "Could not connect to the backend."
+  const httpTimeoutMs = 120_000;
+  server.setTimeout(httpTimeoutMs);
+  server.headersTimeout = httpTimeoutMs + 5_000;
 }
 
 /** Listen locally; on Vercel the platform invokes the exported app directly. */

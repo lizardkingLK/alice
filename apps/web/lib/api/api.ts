@@ -125,6 +125,11 @@ function isNetworkConnectivityError(error: unknown): boolean {
 
 const FETCH_TIMEOUT_MS = 20_000;
 
+export type GetResponseInit = RequestInit & {
+  /** Overrides the default 20s abort. Chat needs longer for Gemini tool loops. */
+  timeoutMs?: number;
+};
+
 function mergeAbortSignals(
   timeoutMs: number,
   external?: AbortSignal | null
@@ -139,7 +144,7 @@ function mergeAbortSignals(
 export async function getResponse<T>(
   path: string,
   token: string,
-  init?: RequestInit
+  init?: GetResponseInit
 ): Promise<T> {
   const apiUrl = getAPIUrl();
   // `''` is same-origin in `next dev` (rewritten to Express). Do not treat it
@@ -148,11 +153,13 @@ export async function getResponse<T>(
     throw new BackendUnreachableError();
   }
 
-  const headers = new Headers(init?.headers);
+  const { timeoutMs = FETCH_TIMEOUT_MS, ...fetchInit } = init ?? {};
+
+  const headers = new Headers(fetchInit.headers);
   headers.set('Authorization', `Bearer ${token}`);
 
   const isFormData =
-    typeof FormData !== 'undefined' && init?.body instanceof FormData;
+    typeof FormData !== 'undefined' && fetchInit.body instanceof FormData;
 
   // Let the browser set multipart boundary for FormData uploads.
   if (isFormData) {
@@ -165,9 +172,9 @@ export async function getResponse<T>(
   try {
     response = await fetch(`${apiUrl}${path}`, {
       cache: 'no-store',
-      ...init,
+      ...fetchInit,
       headers,
-      signal: mergeAbortSignals(FETCH_TIMEOUT_MS, init?.signal),
+      signal: mergeAbortSignals(timeoutMs, fetchInit.signal),
     });
   } catch (error) {
     if (isNetworkConnectivityError(error)) {

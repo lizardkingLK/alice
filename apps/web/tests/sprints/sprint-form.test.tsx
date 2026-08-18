@@ -22,6 +22,10 @@ vi.mock('@/app/sprints/_services/sprints.service', () => ({
   updateSprint: vi.fn(),
 }));
 
+vi.mock('@/lib/cache/load-projects-for-forms', () => ({
+  loadProjectsForSprintForm: vi.fn().mockRejectedValue(new Error('skip')),
+}));
+
 const mockProjects: Project[] = [
   projectFactory.build({
     id: 'proj-1',
@@ -79,6 +83,33 @@ describe('SprintForm Component', () => {
     expect(options).toHaveLength(2);
     expect(options[0]).toHaveTextContent('Project Alpha (PAL)');
     expect(options[1]).toHaveTextContent('Project Beta (PBE)');
+  });
+
+  it('lists active projects owned by other users when currentUserId is set', async () => {
+    render(
+      <SprintForm
+        projects={[
+          ...mockProjects,
+          projectFactory.build({
+            id: 'proj-demo',
+            name: 'Demo',
+            key: 'DE',
+            owner_id: 'bob-manager',
+            status: 'active',
+            created_at: formatDateToISOString(2026, 8, 18, 10, 0, 0),
+            updated_at: formatDateToISOString(2026, 8, 18, 10, 0, 0),
+          }),
+        ]}
+        currentUserId="alice-admin"
+      />
+    );
+
+    const options = await getComboboxOptions(/Project/i);
+    expect(options.map((option) => option.textContent)).toEqual([
+      'Demo (DE)',
+      'Project Alpha (PAL)',
+      'Project Beta (PBE)',
+    ]);
   });
 
   it('performs validation on submit', async () => {
