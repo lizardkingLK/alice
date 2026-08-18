@@ -17,12 +17,13 @@ import {
   DEFAULT_CHAT_MODEL_VALUE,
   type ChatModelValue,
 } from '@repo/types';
-import type { ChatMessage } from './chat-client.types';
+import type { ChatMessage, ActionItem } from './chat-client.types';
 import {
   sendChatMessage,
   deleteConversation,
   type ChatConversation,
 } from '../_services/chat-client.service';
+import { revalidateAfterChatActions } from '@/lib/cache/revalidate-after-chat';
 import {
   bootstrapLatestChat,
   loadConversationHistory,
@@ -246,6 +247,9 @@ export function ChatClient({
       }
 
       if (response.actions && response.actions.length > 0) {
+        await revalidateAfterChatActions(
+          response.actions.map((action: ActionItem) => action.type)
+        );
         router.refresh();
       }
     } catch (err: unknown) {

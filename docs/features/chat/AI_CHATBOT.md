@@ -253,13 +253,15 @@ message.
 
 ## Reliability
 
-| Topic              | Behavior                                                                                      |
-| ------------------ | --------------------------------------------------------------------------------------------- |
-| Streaming          | None — full JSON response; UI shows a “Thinking…” state                                       |
-| Gemini 429 / 5xx   | Up to 3 retries with exponential backoff; errors appended to `gemini-errors.log` (gitignored) |
-| Tool errors        | Returned as function-response `{ error }`; loop may continue                                  |
-| Rate limiting      | No app-level chat quota beyond Gemini retries                                                 |
-| Request validation | Manual `messages` checks; no Zod body schema on the chat router yet                           |
+| Topic              | Behavior                                                                                                                                                                                                                                      |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Streaming          | None — full JSON response; UI shows a “Thinking…” state                                                                                                                                                                                       |
+| Gemini 429 / 5xx   | Up to 3 retries with exponential backoff; errors appended to `gemini-errors.log` (gitignored)                                                                                                                                                 |
+| HTTP timeouts      | Express socket inactivity **120s** (`server.setTimeout`); chat `apiFetch` **90s**. A 15s socket timeout was destroying the POST mid-Gemini; Next’s rewrite then returned a non-JSON 500 and the UI showed “Could not connect to the backend.” |
+| Dropdown cache     | After `create_project` (and related tools), chat calls `revalidateAfterChatActions` so `/sprints` Create Sprint is not stuck on the 60s `dropdown-projects` cache. See [PERFORMANCE.md](../../guides/PERFORMANCE.md) §2.7.                    |
+| Tool errors        | Returned as function-response `{ error }`; loop may continue                                                                                                                                                                                  |
+| Rate limiting      | No app-level chat quota beyond Gemini retries                                                                                                                                                                                                 |
+| Request validation | Manual `messages` checks; no Zod body schema on the chat router yet                                                                                                                                                                           |
 
 ---
 
