@@ -27,7 +27,7 @@ We are not introducing Nest, Inversify, or a DI container. The pattern is **manu
 
 ## 2. Principles
 
-1. **Composition root** — `apps/api/src/config/composition.ts` builds domain graphs once per process; `routing.ts` mounts them; `index.ts` stays thin.
+1. **Composition root** — `apps/api/src/config/composition.ts` builds domain graphs once per process; `routing.ts` mounts them (including `/api/v1` aliases); `index.ts` stays thin.
 2. **Constructor injection** — repositories take `db`; services take repositories; routers take services via a factory.
 3. **Process singletons are intentional** — shared HTTP clients (`supabase`, `authClient`) and the built service graph live once per process. They must remain **stateless** (no request Maps, no session fields).
 4. **No per-request services** — do not `new WorkItemService()` inside handlers.
@@ -66,12 +66,27 @@ flowchart TB
 | Service                 | Domain orchestration                   | Repository instance(s)            |
 | Route factory           | HTTP, validation, status codes         | Service(s) (+ cross-cutting deps) |
 | `config/composition.ts` | Wire domains; export injection configs | Shared clients + peer services    |
-| `config/routing.ts`     | Mount routers; export `routesConfig`   | Composed routers from composition |
+| `config/routing.ts`     | Mount routers + version path map       | Composed routers from composition |
 | `index.ts`              | Middleware + `app.use(routesConfig)`   | —                                 |
 
 ## 4. Migrated slices (reference)
 
-### Work-items (first)
+### Root status vs health (v1 + v2 reference)
+
+| Piece            | Path                                                                     |
+| ---------------- | ------------------------------------------------------------------------ |
+| Root factory     | `createRootRouter` — plain listening text at `GET /`                     |
+| Repository       | `health.repository.ts` — shared `getVersionRecord()` (no real DB)        |
+| v1 service       | `HealthService` → v1 wire                                                |
+| v2 service       | `HealthServiceV2` → v2 wire (`checkedAt`)                                |
+| v1 factory       | `createHealthRouter`                                                     |
+| v2 factory       | `createHealthV2Router`                                                   |
+| Injection config | `composition.ts` → `health` (`healthRepository`, `v1Router`, `v2Router`) |
+| Route mounts     | v1: `GET /api/health`, `GET /api/v1/health`; v2: `GET /api/v2/health`    |
+
+URI prefixes stay in `routing.ts`, not in composition. See [API_VERSIONING.md](./API_VERSIONING.md).
+
+### Work-items (first product domain)
 
 | Piece            | Path                                                                             |
 | ---------------- | -------------------------------------------------------------------------------- |
@@ -160,7 +175,7 @@ When converting e.g. projects or users:
 2. Add a constructor to the service (inject repository).
 3. Replace `export default router` with `createXRouter(deps)`.
 4. Add a `createXConfig()` + export (e.g. `projects`) in `config/composition.ts`.
-5. Mount `x.router` from `routing.ts` instead of the old default import.
+5. Mount `x.router` from `routing.ts` instead of the old default import. Version aliases (`/api/v1/...`) are extra `use()` lines **in routing.ts**, not in composition.
 6. Remove bottom-of-file `export const xService = new …` once nothing imports it.
 7. Leave unrelated domains on singletons.
 

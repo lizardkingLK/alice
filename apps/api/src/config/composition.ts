@@ -26,6 +26,24 @@ import { CommentsService } from '../routes/api/comments/comments.service';
 import { createCommentsRouter } from '../routes/api/comments/comments.route';
 import { createNotificationsRouter } from '../routes/api/notifications/notifications.route';
 import { NotificationsRepository } from '../routes/api/notifications/notifications.repository';
+import { HealthRepository } from '../routes/api/health/health.repository';
+import {
+  HealthService,
+  HealthServiceV2,
+} from '../routes/api/health/health.service';
+import {
+  createHealthRouter,
+  createHealthV2Router,
+} from '../routes/api/health/health.route';
+import { createRootRouter } from '../routes';
+
+function createRootConfig() {
+  const router = createRootRouter();
+
+  return {
+    router,
+  };
+}
 
 function createAccessAllowlistConfig() {
   const accessAllowlistRepository = new AccessAllowlistRepository(supabase);
@@ -145,7 +163,25 @@ function createChatConfig(
   };
 }
 
+function createHealthConfig() {
+  const healthRepository = new HealthRepository();
+  const healthService = new HealthService(healthRepository);
+  const healthServiceV2 = new HealthServiceV2(healthRepository);
+  const v1Router = createHealthRouter({ healthService });
+  const v2Router = createHealthV2Router({ healthService: healthServiceV2 });
+
+  return {
+    healthRepository,
+    healthService,
+    healthServiceV2,
+    v1Router,
+    v2Router,
+  };
+}
+
 /** Production configs graph (repo → service → router). */
+export const root = createRootConfig();
+export const health = createHealthConfig();
 export const accessAllowlist = createAccessAllowlistConfig();
 export const attachments = createAttachmentsConfig();
 export const notifications = createNotificationsConfig();

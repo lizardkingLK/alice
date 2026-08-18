@@ -425,7 +425,9 @@ Legend:
 | `GET /api/attachments/:id`               | **Kept**            | Attachments UI       | Mints signed preview/download URLs (private bucket)                                                                                                |
 | `GET /api/accessAllowlist`               | **Removed**         | —                    | `/users` uses `listAccessAllowlist` in `accessAllowlist.service.server.ts` (admin-gated); mutations stay Express                                   |
 | `GET /api/notifications/check-due-dates` | **Kept**            | Vercel cron          | Not a page read                                                                                                                                    |
-| `GET /` (health)                         | **Kept**            | Deploy / probes      | Not a data read                                                                                                                                    |
+| `GET /api/health`, `GET /api/v1/health`  | **Kept**            | Deploy / probes      | v1 health router; static version details, no DB                                                                                                    |
+| `GET /api/v2/health`                     | **Kept**            | Deploy / probes      | v2 reference (adds `checkedAt`); shared repository, separate service/router                                                                        |
+| `GET /`                                  | **Kept**            | Deploy / probes      | Root status line (`createRootRouter`); not aliased to health JSON                                                                                  |
 | `POST /api/notifications/send`           | Active              | Server-side notify   | No GET on this router                                                                                                                              |
 | `POST /api/attachments`                  | Active              | `upload-form.tsx`    | Upload only (private bucket; signed URL)                                                                                                           |
 

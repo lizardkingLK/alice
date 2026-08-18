@@ -1,7 +1,7 @@
 # Data retrieval strategy (SSR vs Express)
 
 Status: **Plan** (helper + work-items gate implemented; default `ssr`)  
-Last updated: 2026-08-17  
+Last updated: 2026-08-18  
 Scope: `apps/web` server reads; Express Prisma GETs in `apps/api`
 
 Alice has **two ways to load list/detail data**. Mutations stay on Express either way.
@@ -62,6 +62,24 @@ Do **not** name it `NEXT_PUBLIC_DATA_READS_VIA_API`. A public flag would:
 CI (`GITHUB_ACTIONS=true`): treat as `false` (same as other web env mocks).
 
 E2E / Cypress: leave unset so lists stay on SSR unless a job **explicitly** tests the `api` path.
+
+### Vercel — runtime flag (no code change)
+
+**Yes.** `DATA_READS_VIA_API` is already a **server runtime** switch. It is not a build-only `NEXT_PUBLIC_*` flag.
+
+| What                         | Behavior                                                                                                                                    |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Where to set it              | Vercel → **web** project → Environment Variables. Not the API project (Express GETs are always mounted).                                    |
+| Preview vs Production        | Independent values. Trial `true` on Preview first.                                                                                          |
+| Per request / per user       | **No.** One value for that deployment. Not a feature-flag SaaS.                                                                             |
+| Client bundle                | Not included. `getDataRetrievalStrategy()` reads `process.env['DATA_READS_VIA_API']` **on each RSC call** (bracket access avoids inlining). |
+| After changing the dashboard | Create a **new deployment** of web. Vercel binds env to a deployment; a running instance does not hot-swap. A code change is not required.  |
+| Rebuild vs redeploy          | Redeploy is required. A full rebuild is only required if something else (e.g. `next.config` `env`) inlined the value — we do not do that.   |
+| CI                           | `GITHUB_ACTIONS=true` still forces `ssr` even if the flag is `true`.                                                                        |
+
+`turbo.json` lists the var under `globalEnv` / `build.env` so Turbo cache keys stay honest. That does **not** bake the value into the Next client bundle.
+
+Production `true` still reintroduces the Express hop ([PERFORMANCE.md](../guides/PERFORMANCE.md)).
 
 ---
 

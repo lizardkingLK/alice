@@ -290,7 +290,9 @@ One Supabase project serves both development and production. Migrations must be 
 **Implemented Endpoints**
 
 - **Health check**
-  - `GET /api/health` — public. Returns `{ "status": "ok", "runtime": "express" }`.
+  - `GET /api/v1/health` — public versioned probe (alias `GET /api/health`). Returns `{ "status": "ok", "runtime": "express", "name": "alice-api", "version": "v1" }` (`apiVersionDetailsSchema`). No database.
+  - `GET /api/v2/health` — v2 probe with required `checkedAt` (`apiVersionDetailsV2Schema`). Same shared `HealthRepository`; mapped by `HealthServiceV2`.
+  - `GET /` — public root status. Plain text `api server is listening on port {PORT}...` (not the version-details JSON).
 
 - **Users**
   - `POST /api/users` — protected. Invites / creates a user via Supabase.
