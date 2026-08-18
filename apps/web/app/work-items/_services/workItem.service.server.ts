@@ -1,12 +1,18 @@
 import { cache } from 'react';
 import { User as DbUser } from '@/app/users/_services/users.service';
 import { createClient } from '@/lib/supabase/server';
+import { apiFetch } from '@/lib/api/api-client.server';
+import { shouldReadViaApi } from '@/lib/data-retrieval.server';
 import { runPaginatedSelect, throwIfError } from '@/lib/db/query';
 import {
   ASSIGNEE_SELECT,
   REPORTER_SELECT,
   workItemListSelect,
 } from '@/app/work-items/_helpers/work-item-list-select';
+import {
+  getWorkItemFromApi,
+  listWorkItemsPaginatedFromApi,
+} from '@/app/work-items/_helpers/work-item-api-reads';
 import {
   Enums,
   Tables,
@@ -139,7 +145,7 @@ export async function getWorkItems(
   return (data ?? []) as unknown as DbWorkItem[];
 }
 
-export async function getWorkItemsPaginated(
+async function listPaginatedFromSupabase(
   page: number,
   limit: number,
   search?: string,
@@ -172,21 +178,50 @@ export async function getWorkItemsPaginated(
   return { workItems, ...meta };
 }
 
+export async function getWorkItemsPaginated(
+  page: number,
+  limit: number,
+  search?: string,
+  filters?: WorkItemListFilters
+): Promise<GetWorkItemsPaginatedResponse> {
+  if (shouldReadViaApi('work-items')) {
+    return listWorkItemsPaginatedFromApi(
+      apiFetch,
+      page,
+      limit,
+      search,
+      filters
+    );
+  }
+
+  return listPaginatedFromSupabase(page, limit, search, filters);
+}
+
+async function getByIdFromSupabase(
+  workItemId: string
+): Promise<DbWorkItem | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('work_items')
+    .select(
+      `*, ${ASSIGNEE_SELECT}, ${REPORTER_SELECT}, ${PROJECT_SELECT}, sprint:sprints(id, name)`
+    )
+    .eq('id', workItemId)
+    .maybeSingle();
+
+  throwIfError(error, 'failed to get work-item', 'Failed to get work-item');
+
+  return (data as unknown as DbWorkItem | null) ?? null;
+}
+
 export const getWorkItem = cache(
   async (workItemId: string): Promise<DbWorkItem | null> => {
-    const supabase = await createClient();
+    if (shouldReadViaApi('work-items')) {
+      return getWorkItemFromApi(apiFetch, workItemId);
+    }
 
-    const { data, error } = await supabase
-      .from('work_items')
-      .select(
-        `*, ${ASSIGNEE_SELECT}, ${REPORTER_SELECT}, ${PROJECT_SELECT}, sprint:sprints(id, name)`
-      )
-      .eq('id', workItemId)
-      .maybeSingle();
-
-    throwIfError(error, 'failed to get work-item', 'Failed to get work-item');
-
-    return (data as unknown as DbWorkItem | null) ?? null;
+    return getByIdFromSupabase(workItemId);
   }
 );
 

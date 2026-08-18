@@ -8,6 +8,14 @@ import {
   type Database,
   type WorkItemWorkLog,
   type WorkItemWorkLogRowRaw,
+  workItemDetailSelect,
+  workItemListSelect,
+  workItemListSelectWithDescription,
+  type WorkItemDetailRow,
+  type WorkItemListRow,
+  type WorkItemListRowWithDescription,
+  type WorkItemPrismaListFilters,
+  paginationMeta,
 } from '@repo/types';
 import { Prisma } from '@repo/types/prisma';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -21,6 +29,11 @@ import {
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
 import { WorkItemBody, WorkItemUpdateBody } from './workItems.schemas';
+import {
+  buildWorkItemPrismaListWhere,
+  workItemListPageSlice,
+  type WorkItemPaginatedList,
+} from './workItems.prisma-query';
 
 export type DbWorkItem = Tables<'work_items'>;
 
@@ -112,6 +125,65 @@ export class WorkItemRepository {
     }
 
     return { projectId: workItem.project_id };
+  }
+
+  /**
+   * Unused Express list path (Prisma). Do not call from mutation/lock flows —
+   * those still use supabase-js `getById`.
+   */
+  async listPaginated(input: {
+    filters?: WorkItemPrismaListFilters;
+    search?: string;
+    page: number;
+    limit: number;
+    includeDescription?: boolean;
+  }): Promise<
+    WorkItemPaginatedList<WorkItemListRow | WorkItemListRowWithDescription>
+  > {
+    const where = buildWorkItemPrismaListWhere(input.filters, input.search);
+    const { skip, take } = workItemListPageSlice(input.page, input.limit);
+    const select = input.includeDescription
+      ? workItemListSelectWithDescription
+      : workItemListSelect;
+
+    try {
+      const [workItems, totalCount] = await Promise.all([
+        prisma.work_items.findMany({
+          where,
+          select,
+          orderBy: { created_at: 'desc' },
+          skip,
+          take,
+        }),
+        prisma.work_items.count({ where }),
+      ]);
+
+      return {
+        workItems,
+        ...paginationMeta(totalCount, input.page, input.limit),
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to list work-items:', message);
+      throw new Error('Failed to list work-items');
+    }
+  }
+
+  /**
+   * Unused Express detail path (Prisma). Mutation optimistic-lock still uses
+   * supabase-js `getById`.
+   */
+  async getDetailById(workItemId: string): Promise<WorkItemDetailRow | null> {
+    try {
+      return await prisma.work_items.findUnique({
+        where: { id: workItemId },
+        select: workItemDetailSelect,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to get work-item detail:', message);
+      throw new Error('Failed to get work-item');
+    }
   }
 
   async getById(workItemId: string): Promise<DbWorkItem> {

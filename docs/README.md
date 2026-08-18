@@ -37,7 +37,8 @@ How the monorepo fits together (apps, auth, deployment).
 
 - [TRD.md](./architecture/TRD.md) — technical requirements and system design
 - [DI.md](./architecture/DI.md) — Express composition root (`config/composition.ts`) / constructor injection (**Plan**; work-items, sprints, chat Living)
-- [API_VERSIONING.md](./architecture/API_VERSIONING.md) — versioned HTTP + shared Zod DTOs (**Plan**)
+- [API_VERSIONING.md](./architecture/API_VERSIONING.md) — Prisma GETs (unused), Zod mutation DTOs, `/api/v1` (**Plan**)
+- [DATA_RETRIEVAL.md](./architecture/DATA_RETRIEVAL.md) — app toggle: RSC supabase-js vs Express Prisma GETs (**Plan**)
 
 ### Features
 
