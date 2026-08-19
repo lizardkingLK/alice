@@ -1,12 +1,12 @@
 {
   "name": "@repo/db",
   "version": "0.0.0",
-  "type": "module",
   "private": true,
   "exports": {
     ".": {
       "types": "./src/index.ts",
       "development": "./src/index.ts",
+      "require": "./dist/index.js",
       "default": "./dist/index.js"
     }
   },

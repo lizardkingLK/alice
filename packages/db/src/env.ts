@@ -1,15 +1,11 @@
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import dotenv from 'dotenv';
 import { z } from 'zod';
 
-const packageRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '..'
-);
+import { dbPackageRoot } from './package-root.js';
 
-dotenv.config({ path: path.join(packageRoot, '.env'), quiet: true });
+dotenv.config({ path: path.join(dbPackageRoot(), '.env'), quiet: true });
 
 const serverSchema = z.object({
   DATABASE_URL: z.string().min(1),

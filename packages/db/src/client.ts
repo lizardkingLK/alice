@@ -79,7 +79,7 @@ export function createPrismaClient(connectionString: string): PrismaClient {
     console.error('error. prisma pg pool:', err.message);
   });
   const adapter = new PrismaPg(pool, {
-    onPoolError: (err) => {
+    onPoolError: (err: Error) => {
       console.error('error. prisma pg pool:', err.message);
     },
   });
