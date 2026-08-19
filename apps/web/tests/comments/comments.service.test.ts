@@ -112,7 +112,9 @@ describe('createCommentsService', () => {
 
   it('updates comment content with mentions via PATCH', async () => {
     // Arrange
-    const updatedDoc = toCommentTiptapContent('Updated mention to @[Bob Developer](user-dev-1)');
+    const updatedDoc = toCommentTiptapContent(
+      'Updated mention to @[Bob Developer](user-dev-1)'
+    );
     const comment = commentFactory.build({
       content: updatedDoc,
       edited: true,
@@ -193,10 +195,13 @@ describe('createCommentsService', () => {
     await service.archiveComment('comment-1', expectedUpdatedAt, true);
 
     // Assert
-    expect(apiFetch).toHaveBeenCalledWith('/api/comments/comment-1?permanent=true', {
-      method: 'DELETE',
-      body: undefined,
-    });
+    expect(apiFetch).toHaveBeenCalledWith(
+      '/api/comments/comment-1?permanent=true',
+      {
+        method: 'DELETE',
+        body: undefined,
+      }
+    );
   });
 
   it('restores a comment via POST', async () => {

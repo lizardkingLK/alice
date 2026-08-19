@@ -35,6 +35,7 @@ import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.ser
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
 import type { User as DbUser } from '@/app/users/_services/users.service';
+import { SprintStatusEnum } from '@repo/types';
 import { ExternalLink } from '@repo/ui/lib/icons';
 
 /* eslint-disable no-unused-vars */
@@ -258,10 +259,17 @@ export function BacklogItemDetailsSheet({
                   className="bg-background/50 border-border/80 h-9 w-full"
                   options={[
                     { value: 'backlog', label: 'Backlog' },
-                    ...sprints.map((s) => ({
-                      value: s.id,
-                      label: `${s.name} (${s.status})`,
-                    })),
+                    ...sprints
+                      .filter(
+                        (s) =>
+                          s.status === SprintStatusEnum.Planned ||
+                          s.status === SprintStatusEnum.Active ||
+                          (item && s.id === item.sprint_id)
+                      )
+                      .map((s) => ({
+                        value: s.id,
+                        label: `${s.name} (${s.status})`,
+                      })),
                   ]}
                 />
               </div>
