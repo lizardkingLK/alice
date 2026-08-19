@@ -2,7 +2,6 @@ import 'dotenv/config';
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import {
   auditCreate,
@@ -14,15 +13,13 @@ import { createClient } from '@supabase/supabase-js';
 import pg from 'pg';
 
 import { env } from './env.js';
+import { dbPackageRoot } from './package-root.js';
 import { isSeedResetRequested, resetDevData } from './seed-reset.js';
 import { SEED_SQUAD_MEMBERS, squadSeedUsers } from './seed-squad.js';
 
 const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
-const packageRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '..'
-);
+const packageRoot = dbPackageRoot();
 
 function getSeedUserPassword(): string {
   const password = process.env.SEED_USER_PASSWORD;
@@ -933,9 +930,7 @@ async function main(): Promise<void> {
   );
 }
 
-try {
-  await main();
-} catch (error: unknown) {
+main().catch((error: unknown) => {
   console.error('error. seed failed.', error);
   process.exit(1);
-}
+});

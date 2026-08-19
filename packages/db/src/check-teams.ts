@@ -13,8 +13,6 @@ async function check() {
   console.log(JSON.stringify(projRes.data, null, 2));
 }
 
-try {
-  await check();
-} catch (err) {
+check().catch((err: unknown) => {
   console.error(err);
-}
+});

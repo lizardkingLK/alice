@@ -12,5 +12,8 @@ node_modules
 package-lock.json
 pnpm-lock.yaml
 
+# Generated clients (Prisma / Supabase) — do not Prettier-rewrite
+packages/types/src/generated/**
+
 # System files
 .vscode
