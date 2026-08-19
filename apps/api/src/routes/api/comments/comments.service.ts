@@ -1,15 +1,19 @@
 import type { Json } from '@repo/types';
-import { commentsRepository, type CommentRow } from './comments.repository';
-import { notificationsService } from '../notifications/notifications.service';
+import { CommentsRepository, type CommentRow } from './comments.repository';
+import type { NotificationsService } from '../notifications/notifications.service';
 import {
   extractMentionedUserIds,
   createCommentSnippet,
 } from './comments.utils';
 
 export class CommentsService {
-  async listComments(workItemId?: string): Promise<CommentRow[]> {
-    return await commentsRepository.listAll(workItemId);
-  }
+  constructor(
+    private readonly commentsRepository: CommentsRepository,
+    private readonly notificationsService: Pick<
+      NotificationsService,
+      'createMentionNotification'
+    >
+  ) {}
 
   private async notifyMentionedUsers(
     actorId: string,
@@ -28,7 +32,7 @@ export class CommentsService {
 
     try {
       for (const userId of mentionedUserIds) {
-        await notificationsService.createMentionNotification({
+        await this.notificationsService.createMentionNotification({
           mentionedUserId: userId,
           actorId,
           taskTitle: 'work item',
@@ -49,7 +53,7 @@ export class CommentsService {
       parent_id?: string | null;
     }
   ): Promise<CommentRow> {
-    const created = await commentsRepository.create({
+    const created = await this.commentsRepository.create({
       ...input,
       author_id: actorId,
     });
@@ -67,7 +71,7 @@ export class CommentsService {
     expectedUpdatedAt: string,
     actorId?: string
   ): Promise<CommentRow> {
-    const updated = await commentsRepository.update(
+    const updated = await this.commentsRepository.update(
       id,
       content,
       expectedUpdatedAt
@@ -82,16 +86,14 @@ export class CommentsService {
   }
 
   async archiveComment(id: string, expectedUpdatedAt: string): Promise<void> {
-    await commentsRepository.archive(id, expectedUpdatedAt);
+    await this.commentsRepository.archive(id, expectedUpdatedAt);
   }
 
   async restoreComment(id: string, expectedUpdatedAt: string): Promise<void> {
-    await commentsRepository.restore(id, expectedUpdatedAt);
+    await this.commentsRepository.restore(id, expectedUpdatedAt);
   }
 
   async hardDeleteComment(id: string): Promise<void> {
-    await commentsRepository.hardDelete(id);
+    await this.commentsRepository.hardDelete(id);
   }
 }
-
-export const commentsService = new CommentsService();

@@ -53,6 +53,8 @@ function resolveProfilePicture(user: User): string | null {
 /**
  * Ensures a Supabase Auth user has a matching `public.users` profile.
  * Idempotent — safe after signup, email confirmation, login, and admin invite.
+ * Looks up by Auth id, then email, and treats unique-constraint races as
+ * “already provisioned” so a second sign-up cannot surface a primary-key error.
  * Profile picture is set only on insert from Auth metadata; later updates go
  * through `/edit-profile`.
  */
@@ -65,7 +67,7 @@ export async function ensurePublicUser(
 
   const adminSupabase = createAdminClient();
 
-  const { data: existing, error: lookupError } = await adminSupabase
+  const { data: existingById, error: lookupError } = await adminSupabase
     .from('users')
     .select('id')
     .eq('id', user.id)
@@ -75,7 +77,21 @@ export async function ensurePublicUser(
     return { created: false, error: lookupError.message };
   }
 
-  if (existing) {
+  if (existingById) {
+    return { created: false, error: null };
+  }
+
+  const { data: existingByEmail, error: emailLookupError } = await adminSupabase
+    .from('users')
+    .select('id')
+    .eq('email', user.email)
+    .maybeSingle();
+
+  if (emailLookupError) {
+    return { created: false, error: emailLookupError.message };
+  }
+
+  if (existingByEmail) {
     return { created: false, error: null };
   }
 
@@ -90,8 +106,24 @@ export async function ensurePublicUser(
   });
 
   if (insertError) {
+    if (isUniqueConstraintError(insertError)) {
+      return { created: false, error: null };
+    }
     return { created: false, error: insertError.message };
   }
 
   return { created: true, error: null };
+}
+
+function isUniqueConstraintError(error: {
+  message?: string;
+  code?: string;
+}): boolean {
+  const code = error.code ?? '';
+  const message = error.message?.toLowerCase() ?? '';
+  return (
+    code === '23505' ||
+    message.includes('duplicate key') ||
+    message.includes('unique constraint')
+  );
 }

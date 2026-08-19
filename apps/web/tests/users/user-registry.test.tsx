@@ -1,35 +1,13 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
 import { UserRegistry } from '@/app/users/_components/user-registry';
 import { toggleUserActive } from '@/app/users/_services/users.service';
 import type { User } from '@/app/users/_services/users.service';
 
-// Mock Dropdown Menu to avoid testing Radix internals in the jsdom environment
-vi.mock('@repo/ui/components/ui/dropdown-menu', () => {
-  return {
-    DropdownMenu: ({ children }: { children: ReactNode }) => (
-      <div data-testid="dropdown-menu">{children}</div>
-    ),
-    DropdownMenuTrigger: ({ children }: { children: ReactNode }) => (
-      <div data-testid="dropdown-menu-trigger">{children}</div>
-    ),
-    DropdownMenuContent: ({ children }: { children: ReactNode }) => (
-      <div data-testid="dropdown-menu-content">{children}</div>
-    ),
-    DropdownMenuItem: ({
-      children,
-      onClick,
-    }: {
-      children: ReactNode;
-      onClick?: () => void;
-    }) => (
-      <button type="button" onClick={onClick}>
-        {children}
-      </button>
-    ),
-  };
-});
+vi.mock(
+  '@repo/ui/components/ui/dropdown-menu',
+  () => import('../mocks/dropdown-menu')
+);
 
 const mockPush = vi.fn();
 const mockRefresh = vi.fn();

@@ -29,37 +29,7 @@ export function createUsersService(
 ) {
   const apiUsers = '/api/users';
 
-  async function getUsersList(): Promise<User[]> {
-    const data = await apiFetch<{ users: User[] }>(apiUsers);
-    return data.users;
-  }
-
   return {
-    getUsersList,
-
-    async getUsersListPaginated(
-      page: number,
-      limit: number,
-      search = ''
-    ): Promise<GetUsersPaginatedResponse> {
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
-      });
-      if (search.trim()) {
-        params.set('search', search.trim());
-      }
-      const url = `${apiUsers}?${params.toString()}`;
-      return apiFetch<GetUsersPaginatedResponse>(url);
-    },
-
-    async getUserList(): Promise<User[]> {
-      const users = await getUsersList();
-      return users
-        .filter((u) => u.active)
-        .sort((a, b) => a.name.localeCompare(b.name));
-    },
-
     async createUser(input: CreateUserInput): Promise<User> {
       const data = await apiFetch<{ user: User }>(apiUsers, {
         method: 'POST',

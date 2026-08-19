@@ -4,7 +4,7 @@
 
 | Field        | Value                                           |
 | ------------ | ----------------------------------------------- |
-| Project      | Alice (Jira Teams)                              |
+| Project      | Alice                                           |
 | Area         | Auth + Users — deactivate / Auth ban            |
 | Version      | 0.3                                             |
 | Status       | **Phase 1 implemented** (webhook still planned) |

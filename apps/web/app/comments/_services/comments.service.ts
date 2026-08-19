@@ -3,7 +3,6 @@ import { createCommentsService } from './comments.service.base';
 
 const service = createCommentsService(apiFetch);
 
-export const getCommentsList = service.getCommentsList;
 export const createComment = service.createComment;
 export const updateComment = service.updateComment;
 export const forceUpdateComment = service.forceUpdateComment;

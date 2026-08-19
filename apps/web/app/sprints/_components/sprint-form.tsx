@@ -29,6 +29,7 @@ import {
 } from '../_services/sprints.service';
 import type { Project } from '@/app/projects/_services/projects.service.base';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
+import { loadProjectsForSprintForm } from '@/lib/cache/load-projects-for-forms';
 import { createClient } from '@/lib/supabase/client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
@@ -84,10 +85,39 @@ export function SprintForm({
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [projectList, setProjectList] = useState(projects);
+
+  useEffect(() => {
+    setProjectList(projects);
+  }, [projects]);
+
+  useEffect(() => {
+    if (isEditMode) {
+      return;
+    }
+
+    let cancelled = false;
+    loadProjectsForSprintForm()
+      .then((fresh) => {
+        if (!cancelled) {
+          setProjectList(fresh);
+        }
+      })
+      .catch((error: unknown) => {
+        console.error(
+          'error. failed to refresh projects for sprint form:',
+          error
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isEditMode]);
 
   const activeProjects = useMemo(
-    () => filterActiveProjects(projects),
-    [projects]
+    () => filterActiveProjects(projectList),
+    [projectList]
   );
 
   const [selectedProjectId, setSelectedProjectId] = useState<string>(
@@ -120,13 +150,7 @@ export function SprintForm({
     }
   }, [sprintToEdit]);
 
-  const displayedProjects = useMemo(() => {
-    if (!currentUserId) return activeProjects;
-    return activeProjects.filter(
-      (project) =>
-        project.owner_id === currentUserId || project.id === selectedProjectId
-    );
-  }, [activeProjects, currentUserId, selectedProjectId]);
+  const displayedProjects = activeProjects;
 
   useEffect(() => {
     if (sprintToEdit) {
@@ -138,11 +162,14 @@ export function SprintForm({
       return;
     }
 
-    const ownProjects = currentUserId
-      ? activeProjects.filter((project) => project.owner_id === currentUserId)
-      : activeProjects;
-    if (ownProjects.length > 0 && ownProjects[0]) {
-      setSelectedProjectId(ownProjects[0].id);
+    // Prefer an owned project as the default, but the list includes every
+    // active project — admins/managers may create sprints on any of them.
+    const preferred =
+      (currentUserId
+        ? activeProjects.find((project) => project.owner_id === currentUserId)
+        : undefined) ?? activeProjects[0];
+    if (preferred) {
+      setSelectedProjectId(preferred.id);
     }
   }, [sprintToEdit, activeProjects, currentUserId]);
 

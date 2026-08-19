@@ -10,10 +10,9 @@ apps/web/app/
 ├── robots.ts               # /robots.txt
 ├── sitemap.ts              # /sitemap.xml
 ├── shared/values.ts        # baseUrl, appTitle, appDescription
-├── favicon.ico
-├── icon.svg
-├── apple-icon.png
-├── opengraph-image.png
+├── icon.tsx                # generated app icon
+├── apple-icon.tsx          # generated touch icon
+├── opengraph-image.tsx     # generated OG image
 └── <route>/
     └── layout.tsx          # robots: noindex on forbidden routes
 ```
@@ -34,9 +33,11 @@ Agent and code-review rules live in `.cursor/rules/06-seo-optimizer.mdc`.
 
 ```typescript
 export const baseUrl = 'https://alice-web-seven.vercel.app';
-export const appTitle = 'Jira Teams';
-export const appTitleTemplate = '%s | Jira Teams';
-export const appDescription = 'A Jira Clone';
+export const appTitle = 'Alice';
+export const appTitleTemplate = '%s | Alice';
+export const appSubtitle = 'Plan, track, and deliver work together';
+export const appDescription =
+  'Alice helps teams manage projects, sprints, boards, backlogs, and work items — with auth, dashboards, and file sharing built for real product workflows.';
 ```
 
 Update `baseUrl` when the canonical production domain changes. `metadataBase` in the root layout resolves relative OG and icon URLs against this value.
@@ -47,10 +48,9 @@ Next.js automatically serves these from `app/`:
 
 | File                  | Role                         |
 | --------------------- | ---------------------------- |
-| `favicon.ico`         | Legacy browser favicon       |
-| `icon.svg`            | Vector app icon              |
-| `apple-icon.png`      | Apple touch icon             |
-| `opengraph-image.png` | Default social sharing image |
+| `icon.tsx`            | App icon (32×32 PNG)         |
+| `apple-icon.tsx`      | Apple touch icon             |
+| `opengraph-image.tsx` | Default social sharing image |
 
 Replace assets in place; no route handler is required.
 

@@ -4,6 +4,7 @@ import {
   DEFAULT_WORK_ITEM_PRIORITY,
   WORK_ITEM_PRIORITIES,
   WORK_ITEM_TYPES,
+  parseWorkItemLabels,
   type WorkItemPriority,
   type WorkItemType,
 } from '@repo/types';
@@ -22,6 +23,7 @@ import { WorkItemFormClassicFields } from '@/app/work-items/_components/work-ite
 import { WorkItemFormModernFields } from '@/app/work-items/_components/work-item-form-modern';
 import type { WorkItemCreateFormMode } from '@/app/work-items/_helpers/work-item-create-form-preference';
 import { Project as DbProject } from '@/app/projects/_services/projects.service';
+import { useProjectMembers } from '@/app/work-items/_hooks/use-project-members';
 import { delay } from '@/app/_shared/utility';
 import { ResponseDTO } from '@repo/types/connection';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
@@ -128,6 +130,14 @@ export function WorkItemForm({
   });
   const lockAssignee = Boolean(lockAssigneeId);
 
+  const currentMembers = useProjectMembers({
+    projectId,
+    projectMembers,
+    assigneeId,
+    lockAssignee,
+    onAssigneeChange: (val) => setAssigneeId(val ?? ''),
+  });
+
   useEffect(() => {
     if (!useModernCreate || !state?.error) {
       return;
@@ -187,7 +197,7 @@ export function WorkItemForm({
 
   const fieldProps = {
     projects,
-    projectMembers,
+    projectMembers: currentMembers,
     availableTypes,
     projectId,
     assigneeId,
@@ -213,6 +223,7 @@ export function WorkItemForm({
           titleDefault={itemToEdit?.title ?? ''}
           dueDateDefault={itemToEdit?.due_date ?? ''}
           storyPointsDefault={itemToEdit?.story_points ?? null}
+          labelsDefault={parseWorkItemLabels(itemToEdit?.labels)}
         />
       )}
 

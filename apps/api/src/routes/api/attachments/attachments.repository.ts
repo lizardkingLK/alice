@@ -1,7 +1,16 @@
-import { auditCreate, auditUpdate } from '../../../lib/audit';
-import { supabase } from '../../../lib/supabase';
-import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
-import { ATTACHMENT_SELECT, type AttachmentWithUploader } from '@repo/types';
+import { prisma } from '../../../lib/prisma';
+import {
+  prismaAuditCreate,
+  prismaAuditUpdate,
+  prismaLockTimestamp,
+} from '../../../lib/prisma-audit';
+import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
+import {
+  ATTACHMENT_SELECT,
+  Database,
+  type AttachmentWithUploader,
+} from '@repo/types';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 export type CreateAttachmentInput = {
   work_item_id: string;
@@ -13,8 +22,10 @@ export type CreateAttachmentInput = {
 };
 
 export class AttachmentsRepository {
+  constructor(private readonly db: SupabaseClient<Database>) {}
+
   async getById(id: string): Promise<AttachmentWithUploader | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('attachments')
       .select(ATTACHMENT_SELECT)
       .eq('id', id)
@@ -29,26 +40,23 @@ export class AttachmentsRepository {
   }
 
   async create(input: CreateAttachmentInput): Promise<AttachmentWithUploader> {
-    const { data, error } = await supabase
-      .from('attachments')
-      .insert({
+    const created = await prisma.attachments.create({
+      data: {
         work_item_id: input.work_item_id,
         uploader_id: input.uploader_id,
         file_name: input.file_name,
         storage_path: input.storage_path,
         file_size: input.file_size,
         mime_type: input.mime_type,
-        ...auditCreate(input.uploader_id),
-      })
-      .select(ATTACHMENT_SELECT)
-      .single();
+        ...prismaAuditCreate(input.uploader_id),
+      },
+    });
 
-    if (error) {
-      console.error('database error create attachment:', error.message);
-      throw new Error(`Failed to create attachment: ${error.message}`);
+    const row = await this.getById(created.id);
+    if (!row) {
+      throw new Error('Failed to create attachment');
     }
-
-    return data as unknown as AttachmentWithUploader;
+    return row;
   }
 
   async archive(
@@ -56,27 +64,24 @@ export class AttachmentsRepository {
     actorId: string,
     expectedUpdatedAt: string
   ): Promise<void> {
-    const { data, error } = await supabase
-      .from('attachments')
-      .update({
+    const { count } = await prisma.attachments.updateMany({
+      where: { id, updated_at: prismaLockTimestamp(expectedUpdatedAt) },
+      data: {
         status: 'archived',
-        ...auditUpdate(actorId),
-      })
-      .eq('id', id)
-      .eq('updated_at', expectedUpdatedAt)
-      .select('id')
-      .maybeSingle();
+        ...prismaAuditUpdate(actorId),
+      },
+    });
 
-    await resolveOptimisticUpdate({
-      data,
-      error,
+    await resolveOptimisticPrismaUpdate({
+      count,
+      fetchUpdated: () => this.getById(id),
       fetchCurrent: () => this.getById(id),
       notFoundMessage: 'Attachment not found',
     });
   }
 
   async workItemExists(workItemId: string): Promise<boolean> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('work_items')
       .select('id')
       .eq('id', workItemId)
@@ -90,5 +95,3 @@ export class AttachmentsRepository {
     return Boolean(data);
   }
 }
-
-export const attachmentsRepository = new AttachmentsRepository();

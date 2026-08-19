@@ -5,6 +5,11 @@
     "source=pnpm-store-cache,target=/home/node/.local/share/pnpm/store,type=volume"
   ],
   "postCreateCommand": "bash ./.devcontainer/devcontainer.sh",
+  "forwardPorts": [3000, 5000],
+  "portsAttributes": {
+    "3000": { "label": "web" },
+    "5000": { "label": "api" }
+  },
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {
       "version": "latest",

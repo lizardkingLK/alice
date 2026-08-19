@@ -1,6 +1,8 @@
 import type { Enums } from './generated/supabase/database.types.js';
+import { RecordStatus as RecordStatusEnum } from './generated/prisma/enums.js';
 
 export type RecordStatus = Enums<'RecordStatus'>;
+export { RecordStatusEnum };
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -9,7 +11,7 @@ function nowIso(): string {
 /** Audit columns for INSERT on tables that use `RecordStatus`. */
 export function auditCreate(actorId: string) {
   return {
-    status: 'active' as const satisfies RecordStatus,
+    status: RecordStatusEnum.active satisfies RecordStatus,
     created_by: actorId,
     updated_by: actorId,
     updated_at: nowIso(),
@@ -40,7 +42,9 @@ export function auditUpdate(actorId: string) {
 export function userActiveAuditUpdate(actorId: string, active: boolean) {
   return {
     active,
-    status: (active ? 'active' : 'inactive') as RecordStatus,
+    status: (active
+      ? RecordStatusEnum.active
+      : RecordStatusEnum.inactive) as RecordStatus,
     ...auditUpdate(actorId),
   };
 }

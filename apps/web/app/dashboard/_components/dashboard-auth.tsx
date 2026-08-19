@@ -76,27 +76,30 @@ const UserProfile = ({
           asChild
           className="bg-muted/30 hover:bg-muted h-auto cursor-pointer p-2"
         >
-          <Link href="/profile" className="items-start gap-3 rounded-lg">
+          <Link
+            href="/profile"
+            className="flex min-w-0 items-start gap-3 rounded-lg"
+          >
             <Avatar className="size-9 shrink-0">
               {image ? <AvatarImage src={image} alt={displayName} /> : null}
               <AvatarFallback className="text-xs font-semibold">
                 {getInitials(displayName)}
               </AvatarFallback>
             </Avatar>
-            <div className="flex w-full items-center justify-between">
-              <div className="min-w-0 flex-1 space-y-1">
-                <TruncatedText className="text-sm font-medium">
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="flex min-w-0 items-center gap-2">
+                <TruncatedText className="min-w-0 flex-1 text-sm font-medium">
                   {displayName}
                 </TruncatedText>
-                <TruncatedText className="text-muted-foreground text-xs">
-                  {email}
-                </TruncatedText>
+                {roleLabel ? (
+                  <Badge variant="outline" className="shrink-0 font-normal">
+                    {roleLabel}
+                  </Badge>
+                ) : null}
               </div>
-              {roleLabel ? (
-                <Badge variant="outline" className="font-normal">
-                  {roleLabel}
-                </Badge>
-              ) : null}
+              <TruncatedText className="text-muted-foreground text-xs">
+                {email}
+              </TruncatedText>
             </div>
           </Link>
         </DropdownMenuItem>

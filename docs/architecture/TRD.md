@@ -1,15 +1,17 @@
 # Technical Requirements Document (TRD)
 
-## Jira Teams — Project Management Platform
+## Alice — Project Management Platform
 
-**Project:** Alice (Jira Teams)  
+**Project:** Alice  
 **Version:** 1.5  
 **Last Updated:** July 20, 2026  
 **Status:** In development (Living)
 
 ## 1. Purpose
 
-This document describes the technical architecture and implementation of Alice (branded as Jira Teams) based on the current codebase. The API is described in `apps/api/package.json` as a Jira clone.
+This document describes the technical architecture and implementation of Alice based on the current codebase. The API is described in `apps/api/package.json` as a Jira clone.
+
+Versioned HTTP contracts and shared DTOs (Plan): [API_VERSIONING.md](./API_VERSIONING.md). Dual-path reads (SSR vs Express, Plan): [DATA_RETRIEVAL.md](./DATA_RETRIEVAL.md).
 
 ## 2. System Overview
 
@@ -113,8 +115,9 @@ Both apps deploy to Vercel. The API runs as Vercel Serverless Functions. Protect
 **packages/types** (`@repo/types`)
 
 - `src/generated/supabase/database.types.ts` — generated Supabase client types (committed, overwritten on `pnpm db generate`)
+- `src/generated/prisma/` — generated Prisma Client (committed; import as `@repo/types/prisma`)
 - `src/index.ts` — re-exports `Database`, `Tables`, `TablesInsert`, `TablesUpdate`, `Enums`
-- Consumed by `apps/web` and `apps/api` for typed Supabase SDK clients; apps do not import `@repo/db`
+- Consumed by `apps/web` and `apps/api` for typed Supabase SDK clients. `apps/api` also imports Prisma Client types from `@repo/types/prisma` and the runtime factory from `@repo/db`. `apps/web` must not import `@repo/db`.
 
 **packages/eslint-config** — shared ESLint configs  
 **packages/typescript-config** — shared TypeScript configs
@@ -143,7 +146,8 @@ See also: `docs/guides/DATABASE.md` (operational runbook), `docs/guides/DEBUGGIN
 **Backend (`apps/api`)**
 
 - Express.js 4.22
-- `@supabase/supabase-js` (JWT verification in `requireApiAuth`)
+- `@supabase/supabase-js` (JWT verification in `requireApiAuth`; Storage; joined PostgREST reads after mutations)
+- Prisma Client via `@repo/db` for table mutations (pooled `DATABASE_URL`)
 - cors, express.json middleware
 - Vitest for tests
 
@@ -152,7 +156,9 @@ See also: `docs/guides/DATABASE.md` (operational runbook), `docs/guides/DEBUGGIN
 - Supabase (PostgreSQL) for application data and auth
 - Prisma 7 for schema management and SQL migrations (`@repo/db`)
 - Supabase CLI for client type generation (`@repo/types`)
-- Runtime data access via `@supabase/ssr` (web) and `@supabase/supabase-js` (api) — not Prisma Client in apps
+- Runtime reads: `@supabase/ssr` (web) and `@supabase/supabase-js` (api list/detail and Storage)
+- Runtime mutations in `apps/api`: Prisma Client (`getPrismaClient`) over pooled `DATABASE_URL`
+- Auth, Storage, and `deactivate_user_guarded` RPC stay on supabase-js
 
 **Hosting and CI**
 
@@ -212,17 +218,18 @@ Custom RBAC will be stored in Supabase application tables, not in Supabase Auth 
 
 ## 7. Database — Supabase and `@repo/db`
 
-Supabase (PostgreSQL) stores application data. Identity uses Supabase Auth. Structural changes are owned by `@repo/db`; compile-time contracts live in `@repo/types`; runtime queries use the Supabase SDK in apps.
+Supabase (PostgreSQL) stores application data. Identity uses Supabase Auth. Structural changes are owned by `@repo/db`; compile-time contracts live in `@repo/types`; RSC reads use the Supabase SDK; Express table mutations use Prisma Client.
 
 ### Package responsibilities
 
-| Package                | Role                                                                          |
-| ---------------------- | ----------------------------------------------------------------------------- |
-| `@repo/db`             | Prisma schema, SQL migrations, seeds, type-generation scripts, env validation |
-| `@repo/types`          | Generated Supabase `Database` types only (no Prisma client types)             |
-| `apps/web`, `apps/api` | Supabase SDK for reads/writes; import `@repo/types` for typing only           |
+| Package       | Role                                                                             |
+| ------------- | -------------------------------------------------------------------------------- |
+| `@repo/db`    | Prisma schema, SQL migrations, seeds, type-generation scripts, `getPrismaClient` |
+| `@repo/types` | Generated Supabase `Database` types and generated Prisma Client                  |
+| `apps/web`    | supabase-js for reads / Auth / Storage; import `@repo/types` for DTO typing      |
+| `apps/api`    | Prisma for mutations; supabase-js for Auth, Storage, RPC, and joined reads       |
 
-Apps must not import `@repo/db`. Prisma is a migration and data-engineering tool, not the application ORM.
+`apps/web` must not import `@repo/db`. `apps/api` imports the Prisma factory from `@repo/db` and client types from `@repo/types/prisma`. Do not ship `prisma/migrations` into Vercel functions — generate the client at build (`prisma generate`) and run `migrate deploy` in CI/release.
 
 ### Schema and migrations
 
@@ -244,8 +251,7 @@ Apps must not import `@repo/db`. Prisma is a migration and data-engineering tool
 ### Seeding
 
 - Script: `packages/db/src/seed.ts` (registered in `prisma.config.ts`)
-- Command: `pnpm db seed`
-- Pattern: idempotent check-before-insert (safe on the shared dev/prod database)
+- Command: `pnpm db seed` (idempotent). `pnpm db seed:reset` wipes public rows, Auth, and storage then seeds.
 - Auth: `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` from `packages/db/.env`
 
 ### Validation and status checks
@@ -270,7 +276,7 @@ Application-level Supabase vars remain in `apps/web/sample.env` and `apps/api/sa
 
 ### Single-database constraint
 
-One Supabase project serves both development and production. Migrations must be additive. Seeds must remain idempotent. Avoid destructive `db push` or truncate-and-reload patterns.
+One Supabase project serves both development and production. Migrations must be additive. Default seeds remain idempotent. `pnpm db seed:reset` is the explicit truncate-and-reload path — do not run it against data you need to keep.
 
 ## 8. API
 
@@ -284,21 +290,24 @@ One Supabase project serves both development and production. Migrations must be 
 **Implemented Endpoints**
 
 - **Health check**
-  - `GET /api/health` — public. Returns `{ "status": "ok", "runtime": "express" }`.
+  - `GET /api/v1/health` — public versioned probe (alias `GET /api/health`). Returns `{ "status": "ok", "runtime": "express", "name": "alice-api", "version": "v1" }` (`apiVersionDetailsSchema`). No database.
+  - `GET /api/v2/health` — v2 probe with required `checkedAt` (`apiVersionDetailsV2Schema`). Same shared `HealthRepository`; mapped by `HealthServiceV2`.
+  - `GET /` — public root status. Plain text `api server is listening on port {PORT}...` (not the version-details JSON).
 
 - **Users**
-  - `GET /api/users` — protected. Returns a list of users (supports pagination `page` and `limit`).
-  - `GET /api/users/api/secure` — protected. Returns secure welcome message.
-  - `POST /api/users/invite` — protected. Invites a new user via Supabase.
-  - `PATCH /api/users/:id/active` — protected. Admin-only active/inactive status toggle.
+  - `POST /api/users` — protected. Invites / creates a user via Supabase.
+  - `PUT /api/users/:id` — protected. Updates a user.
+  - `PATCH /api/users/:id/toggle-active` — protected. Admin (or self) active/inactive status toggle.
+  - User **list reads** are not Express GETs — `/users` uses direct Supabase RSC readers (`users.service.server.ts`).
 
 - **Projects**
-  - `GET /api/projects` — protected. Returns list of projects (supports pagination `page` and `limit`, filter `status`, and search query `search`).
   - `POST /api/projects` — protected. Creates a new project (validates request body via `createProjectSchema` Zod validator).
   - `PUT /api/projects/:id` — protected. Updates a project (validates body via `updateProjectSchema`).
   - `PATCH /api/projects/:id/soft-delete` — protected. Soft deletes a project by marking it `archived`.
   - `PATCH /api/projects/:id/restore` — protected. Restores an archived project back to `active`.
   - `DELETE /api/projects/:id` — protected. Hard deletes a project from database.
+  - `POST /api/projects/:id/members` / `DELETE /api/projects/:id/members/:userId` — protected. Membership mutations.
+  - Project **list/detail/member reads** are not Express GETs — dashboard pages and the work-item form use direct Supabase RSC readers / server actions (`projects.service.server.ts`, `form-read-actions.ts`).
 
 - **Sprints**
   - `POST /api/sprints` — protected. Creates a sprint (validates request body via `createSprintBodySchema`).
@@ -325,7 +334,7 @@ One Supabase project serves both development and production. Migrations must be 
 
 **Routes**
 
-- `/` — home page ("Jira Teams") with Sign In / Sign Up controls
+- `/` — home page ("Alice") with Sign In / Sign Up controls
 - `/about`, `/contact` — public marketing pages
 - `/login` — email/password sign-in (Server Action)
 - `/signup` — registration (Server Action)
@@ -429,6 +438,7 @@ pnpm db migrate:deploy    # apply pending migrations
 pnpm db migrate:status    # check migration sync with database
 pnpm db generate          # regenerate Supabase types into @repo/types
 pnpm db seed              # run idempotent seeds
+pnpm db seed:reset        # wipe public + Auth + storage, then seed
 pnpm db create:migrate <name>  # create + deploy migration, generate types, seed
 pnpm commit               # conventional commit (interactive)
 ```

@@ -1,14 +1,11 @@
 import { requireUserWithRole } from '../../../lib/auth-helpers';
-import {
-  teamsRepository,
-  type TeamRow,
-  type TeamRowWithManager,
-} from './teams.repository';
+import { RecordStatusEnum, UserRoleEnum } from '@repo/types';
+import { teamsRepository, type TeamRow } from './teams.repository';
 
 async function requireTeamManager(actorId: string) {
   return await requireUserWithRole(
     actorId,
-    ['admin', 'manager'],
+    [UserRoleEnum.admin, UserRoleEnum.manager],
     'Unauthorized. Only admins and managers can manage teams.'
   );
 }
@@ -16,7 +13,7 @@ async function requireTeamManager(actorId: string) {
 async function requireAdmin(actorId: string) {
   return await requireUserWithRole(
     actorId,
-    ['admin'],
+    [UserRoleEnum.admin],
     'Unauthorized. Only administrators can permanently delete teams.'
   );
 }
@@ -31,35 +28,6 @@ export type CreateTeamInput = Omit<
 export type UpdateTeamInput = Partial<CreateTeamInput>;
 
 export class TeamsService {
-  async listTeams(): Promise<TeamRowWithManager[]>;
-  async listTeams(
-    page: number,
-    limit: number,
-    status?: 'active' | 'inactive' | 'archived' | 'deleted',
-    search?: string,
-    projectId?: string
-  ): Promise<{ teams: TeamRowWithManager[]; totalCount: number }>;
-  async listTeams(
-    page?: number,
-    limit?: number,
-    status?: 'active' | 'inactive' | 'archived' | 'deleted',
-    search?: string,
-    projectId?: string
-  ): Promise<
-    { teams: TeamRowWithManager[]; totalCount: number } | TeamRowWithManager[]
-  > {
-    if (page !== undefined && limit !== undefined) {
-      return await teamsRepository.listPaginated(
-        page,
-        limit,
-        status,
-        search,
-        projectId
-      );
-    }
-    return await teamsRepository.listAll();
-  }
-
   async createTeam(actorId: string, input: CreateTeamInput): Promise<TeamRow> {
     await requireTeamManager(actorId);
 
@@ -123,7 +91,7 @@ export class TeamsService {
     return await teamsRepository.update(
       teamId,
       {
-        status: 'active',
+        status: RecordStatusEnum.active,
       },
       actorId,
       expectedUpdatedAt

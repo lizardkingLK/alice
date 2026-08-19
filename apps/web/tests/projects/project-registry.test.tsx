@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ProjectRegistry } from '@/app/projects/_components/project-registry';
@@ -9,6 +8,7 @@ import {
 import { hardDeleteProject } from '@/app/projects/_components/actions';
 import type { Project } from '@/app/projects/_services/projects.service';
 import type { User } from '@/app/users/_services/users.service';
+import { assertDebouncedSearchRedirect } from '../helpers/assert-debounced-search';
 
 const mockPush = vi.fn();
 const mockRefresh = vi.fn();
@@ -29,40 +29,11 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-vi.mock('@repo/ui/components/ui/select', () => {
-  return {
-    Select: ({
-      children,
-      value,
-      onValueChange,
-    }: {
-      children: ReactNode;
-      value: string;
-      // eslint-disable-next-line no-unused-vars
-      onValueChange: (val: string) => void;
-    }) => (
-      <select
-        value={value}
-        onChange={(e) => onValueChange(e.target.value)}
-        data-testid="status-select"
-      >
-        {children}
-      </select>
-    ),
-    SelectTrigger: ({ children }: { children: ReactNode }) => <>{children}</>,
-    SelectValue: ({ placeholder }: { placeholder: string }) => (
-      <>{placeholder}</>
-    ),
-    SelectContent: ({ children }: { children: ReactNode }) => <>{children}</>,
-    SelectItem: ({
-      children,
-      value,
-    }: {
-      children: ReactNode;
-      value: string;
-    }) => <option value={value}>{children}</option>,
-  };
-});
+vi.mock('@repo/ui/components/ui/select', () =>
+  import('../mocks/select').then((module) =>
+    module.createSelectMock('status-select')
+  )
+);
 
 vi.mock(
   '@repo/ui/components/ui/dropdown-menu',
@@ -131,6 +102,8 @@ const mockProjects: Project[] = [
     updated_by: null,
     attributes_config: null,
     workflow_config: null,
+    github_repo: null,
+    github_token: null,
     owner: {
       id: 'user-1',
       name: 'Bob Manager',
@@ -154,6 +127,8 @@ const mockProjects: Project[] = [
     updated_by: null,
     attributes_config: null,
     workflow_config: null,
+    github_repo: null,
+    github_token: null,
     owner: {
       id: 'user-1',
       name: 'Bob Manager',
@@ -249,15 +224,14 @@ describe('ProjectRegistry Component', () => {
       />
     );
 
-    const searchInput = screen.getByPlaceholderText(/Search projects/i);
-    fireEvent.change(searchInput, { target: { value: 'Alpha' } });
+    await assertDebouncedSearchRedirect({
+      searchInput: screen.getByPlaceholderText(/Search projects/i),
+      value: 'Alpha',
+      expectedPath: '/projects?search=Alpha&page=1',
+      mockPush,
+    });
 
-    await waitFor(
-      () => {
-        expect(mockPush).toHaveBeenCalledWith('/projects?search=Alpha&page=1');
-      },
-      { timeout: 500 }
-    );
+    expect(mockPush).toHaveBeenCalledWith('/projects?search=Alpha&page=1');
   });
 
   it('opens project form on Add Project button click', () => {

@@ -62,6 +62,38 @@ export async function resolveOptimisticUpdate<T>(options: {
   throw new OptimisticLockError(current);
 }
 
+/**
+ * After Prisma `updateMany` with `id` + `updated_at`, resolve the row or a 409.
+ * `fetchUpdated` / `fetchCurrent` may still use supabase-js for joined DTOs.
+ */
+export async function resolveOptimisticPrismaUpdate<T>(options: {
+  readonly count: number;
+  readonly fetchUpdated: () => Promise<T | null>;
+  readonly fetchCurrent: () => Promise<T | null>;
+  readonly notFoundMessage?: string;
+}): Promise<T> {
+  const {
+    count,
+    fetchUpdated,
+    fetchCurrent,
+    notFoundMessage = 'Record not found',
+  } = options;
+
+  if (count > 0) {
+    const updated = await fetchUpdated();
+    if (updated) {
+      return updated;
+    }
+  }
+
+  const current = await fetchCurrent();
+  if (!current) {
+    throw new Error(notFoundMessage);
+  }
+
+  throw new OptimisticLockError(current);
+}
+
 type JsonResponder = {
   status: (code: number) => {
     json: (body: Record<string, unknown>) => unknown;

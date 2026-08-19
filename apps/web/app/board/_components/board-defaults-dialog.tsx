@@ -1,12 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
@@ -17,6 +15,7 @@ import { ALL_PROJECTS_ID } from '@/app/board/_helpers/board-defaults-storage';
 import { resolveDefaultBoardSprint } from '@/app/board/_services/board-defaults';
 import type { Project } from '@/app/projects/_services/projects.service.base';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
+import { PreferenceDialogFooter } from '@/components/preference-dialog-footer';
 import { preventDismissForComboboxPortal } from '@/lib/dialog-outside-events';
 
 const ALL_SPRINTS = 'all';
@@ -31,6 +30,9 @@ type BoardDefaultsDialogProps = {
   // eslint-disable-next-line no-unused-vars -- Save callback signature
   readonly onSave: (preference: BoardDefaultsPreference) => void;
   readonly onSkip: () => void;
+  readonly onClear: () => void;
+  /** True when a saved preference exists and can be cleared from storage. */
+  readonly canClear: boolean;
   readonly allowSkip: boolean;
   readonly showAllProjectsOption?: boolean;
 };
@@ -43,6 +45,8 @@ export function BoardDefaultsDialog({
   initialPreference,
   onSave,
   onSkip,
+  onClear,
+  canClear,
   allowSkip,
   showAllProjectsOption = true,
 }: Readonly<BoardDefaultsDialogProps>) {
@@ -130,8 +134,8 @@ export function BoardDefaultsDialog({
           <DialogTitle>Workspace defaults</DialogTitle>
           <DialogDescription>
             Choose the project and sprint to open by default when you visit the
-            board, backlog, or work items list. Changing filters later will not
-            update this preference.
+            board, backlog, or work items list. Changing filters won&apos;t
+            affect default preferences.
           </DialogDescription>
         </DialogHeader>
 
@@ -178,24 +182,15 @@ export function BoardDefaultsDialog({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          {allowSkip ? (
-            <Button type="button" variant="ghost" onClick={onSkip}>
-              Skip for now
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-          )}
-          <Button type="button" onClick={handleSave} disabled={!projectId}>
-            Save defaults
-          </Button>
-        </DialogFooter>
+        <PreferenceDialogFooter
+          onReset={onClear}
+          canReset={canClear}
+          onCancel={() => onOpenChange(false)}
+          onSave={handleSave}
+          saveDisabled={!projectId}
+          allowSkip={allowSkip}
+          onSkip={onSkip}
+        />
       </DialogContent>
     </Dialog>
   );

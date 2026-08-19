@@ -1,28 +1,18 @@
 import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { requireActorId } from '../../../lib/audit';
-import { parsePagination } from '../../../lib/pagination';
 import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
 import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
-import { accessAllowlistService } from './accessAllowlist.service';
+import { OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE } from '@repo/types';
 import {
   accessAllowlistCreateSchema,
   accessAllowlistLockActionSchema,
   accessAllowlistUpdateSchema,
 } from './accessAllowlist.schemas';
-
-const accessAllowlistRouter: Router = Router();
-
-const statusFilterSchema = z.enum([
-  'active',
-  'inactive',
-  'archived',
-  'deleted',
-  'all',
-]);
+import { AccessAllowlistService } from './accessAllowlist.service';
 
 function routeError(
   res: Response,
@@ -38,6 +28,11 @@ function routeError(
   }
 
   const message = error instanceof Error ? error.message : fallbackMessage;
+  if (message === OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE) {
+    res.status(403).json({ error: message });
+    return;
+  }
+
   res.status(500).json({ error: message });
 }
 
@@ -46,157 +41,102 @@ function readRouteId(req: AuthenticatedRequest): string | null {
   return id && typeof id === 'string' ? id : null;
 }
 
-function parseStatusFilter(
-  statusParam: string | undefined
-): 'active' | 'inactive' | 'archived' | 'deleted' | undefined | 'invalid' {
-  if (!statusParam) {
-    return undefined;
-  }
+export type AccessAllowlistRouterDeps = {
+  accessAllowlistService: AccessAllowlistService;
+};
 
-  const parsed = statusFilterSchema.safeParse(statusParam);
-  if (!parsed.success) {
-    return 'invalid';
-  }
+export function createAccessAllowlistRouter(deps: AccessAllowlistRouterDeps) {
+  const { accessAllowlistService } = deps;
 
-  return parsed.data === 'all' ? undefined : parsed.data;
+  const accessAllowlistRouter: Router = Router();
+
+  accessAllowlistRouter.post(
+    '/',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const actorId = requireActorId(req);
+
+        const parsed = accessAllowlistCreateSchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({ error: z.treeifyError(parsed.error) });
+        }
+
+        const entry = await accessAllowlistService.createAccessAllowlist(
+          actorId,
+          parsed.data
+        );
+
+        res.status(201).json({ entry });
+      } catch (error) {
+        routeError(res, error, 'Failed to create access allowlist entry');
+      }
+    }
+  );
+
+  accessAllowlistRouter.put(
+    '/:id',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const actorId = requireActorId(req);
+        const id = readRouteId(req);
+        if (!id) {
+          return res.status(400).json({ error: 'Invalid id' });
+        }
+
+        const bodyParsed = accessAllowlistUpdateSchema.safeParse(req.body);
+        if (!bodyParsed.success) {
+          return res
+            .status(400)
+            .json({ error: z.treeifyError(bodyParsed.error) });
+        }
+
+        const entry = await accessAllowlistService.updateAccessAllowlist(
+          actorId,
+          id,
+          bodyParsed.data
+        );
+
+        res.json({ entry });
+      } catch (error) {
+        if (trySendOptimisticLockError(res, error)) return;
+        routeError(res, error, 'Failed to update access allowlist entry');
+      }
+    }
+  );
+
+  accessAllowlistRouter.delete(
+    '/:id',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const actorId = requireActorId(req);
+        const id = readRouteId(req);
+        if (!id) {
+          return res.status(400).json({ error: 'Invalid id' });
+        }
+
+        const bodyParsed = accessAllowlistLockActionSchema.safeParse(req.body);
+        if (!bodyParsed.success) {
+          return res
+            .status(400)
+            .json({ error: z.treeifyError(bodyParsed.error) });
+        }
+
+        await accessAllowlistService.deleteAccessAllowlist(
+          actorId,
+          id,
+          bodyParsed.data.expectedUpdatedAt
+        );
+
+        res.json({ success: true });
+      } catch (error) {
+        if (trySendOptimisticLockError(res, error)) return;
+        routeError(res, error, 'Failed to delete access allowlist entry');
+      }
+    }
+  );
+
+  return accessAllowlistRouter;
 }
-
-accessAllowlistRouter.get(
-  '/',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    try {
-      const actorId = requireActorId(req);
-
-      const statusParam =
-        typeof req.query.status === 'string' ? req.query.status : undefined;
-      const status = parseStatusFilter(statusParam);
-      if (status === 'invalid') {
-        return res.status(400).json({ error: 'Invalid status filter' });
-      }
-
-      const searchQuery =
-        typeof req.query.search === 'string' ? req.query.search : undefined;
-
-      const pagination = parsePagination(req);
-      if (pagination) {
-        const { page, limit } = pagination;
-        const result =
-          await accessAllowlistService.listAccessAllowlistPaginated(
-            actorId,
-            page,
-            limit,
-            status,
-            searchQuery
-          );
-        const totalPages = Math.max(1, Math.ceil(result.totalCount / limit));
-        return res.json({
-          items: result.items,
-          totalCount: result.totalCount,
-          page,
-          limit,
-          totalPages,
-        });
-      }
-
-      const items = await accessAllowlistService.listAccessAllowlist(
-        actorId,
-        status
-      );
-
-      res.json({ items });
-    } catch (error) {
-      routeError(res, error, 'Failed to retrieve access allowlist');
-    }
-  }
-);
-
-accessAllowlistRouter.post(
-  '/',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    try {
-      const actorId = requireActorId(req);
-
-      const parsed = accessAllowlistCreateSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({ error: z.treeifyError(parsed.error) });
-      }
-
-      const entry = await accessAllowlistService.createAccessAllowlist(
-        actorId,
-        parsed.data
-      );
-
-      res.status(201).json({ entry });
-    } catch (error) {
-      routeError(res, error, 'Failed to create access allowlist entry');
-    }
-  }
-);
-
-accessAllowlistRouter.put(
-  '/:id',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    try {
-      const actorId = requireActorId(req);
-      const id = readRouteId(req);
-      if (!id) {
-        return res.status(400).json({ error: 'Invalid id' });
-      }
-
-      const bodyParsed = accessAllowlistUpdateSchema.safeParse(req.body);
-      if (!bodyParsed.success) {
-        return res
-          .status(400)
-          .json({ error: z.treeifyError(bodyParsed.error) });
-      }
-
-      const entry = await accessAllowlistService.updateAccessAllowlist(
-        actorId,
-        id,
-        bodyParsed.data
-      );
-
-      res.json({ entry });
-    } catch (error) {
-      if (trySendOptimisticLockError(res, error)) return;
-      routeError(res, error, 'Failed to update access allowlist entry');
-    }
-  }
-);
-
-accessAllowlistRouter.delete(
-  '/:id',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    try {
-      const actorId = requireActorId(req);
-      const id = readRouteId(req);
-      if (!id) {
-        return res.status(400).json({ error: 'Invalid id' });
-      }
-
-      const bodyParsed = accessAllowlistLockActionSchema.safeParse(req.body);
-      if (!bodyParsed.success) {
-        return res
-          .status(400)
-          .json({ error: z.treeifyError(bodyParsed.error) });
-      }
-
-      await accessAllowlistService.deleteAccessAllowlist(
-        actorId,
-        id,
-        bodyParsed.data.expectedUpdatedAt
-      );
-
-      res.json({ success: true });
-    } catch (error) {
-      if (trySendOptimisticLockError(res, error)) return;
-      routeError(res, error, 'Failed to delete access allowlist entry');
-    }
-  }
-);
-
-export default accessAllowlistRouter;

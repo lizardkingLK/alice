@@ -24,6 +24,10 @@ export const REGISTRY_PAGES = {
     description: 'Organize project administration.',
     skeleton: { columnCount: 6, rowCount: 8, showTabs: true },
   },
+  calendar: {
+    description: 'Track and plan work items on a visual timeline calendar.',
+    skeleton: { columnCount: 7, rowCount: 6, showTabs: false },
+  },
   sprints: {
     description: 'Plan and track team sprints.',
     skeleton: { columnCount: 5, rowCount: 6, showTabs: true },
@@ -34,7 +38,13 @@ export const REGISTRY_PAGES = {
   },
   workItems: {
     description: 'Manage Work Items.',
+    /** Default visible count (7); overridden from cookie at request time. */
     skeleton: { columnCount: 7, rowCount: 8 },
+  },
+  views: {
+    description:
+      'Manage saved page snapshots, share them with teammates, and archive ones you no longer need.',
+    skeleton: { columnCount: 5, rowCount: 8, showTabs: true },
   },
 } as const satisfies Record<string, RegistryPageMeta>;
 

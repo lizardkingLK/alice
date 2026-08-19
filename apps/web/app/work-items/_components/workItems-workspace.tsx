@@ -1,3 +1,4 @@
+import type { VisibilityState } from '@tanstack/react-table';
 import { Project as DbProject } from '@/app/projects/_services/projects.service';
 import { User as DbUser } from '@/app/users/_services/users.service';
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
@@ -20,6 +21,8 @@ export interface WorkItemWorkspaceProps {
   sprintFilter: string;
   typeFilter: string;
   assigneeFilter: string;
+  /** Exact labels currently applied (from URL). */
+  labelsFilter?: readonly string[];
   /** Flat (default) or hierarchy (roots + expand). */
   listView?: WorkItemListView;
   /** When set, list is scoped to this project and create/edit locks project. */
@@ -29,6 +32,13 @@ export interface WorkItemWorkspaceProps {
   currentUserId?: string | null;
   suggestedDefaults?: BoardDefaultsPreference | null;
   needsClientBootstrap?: boolean;
+  /**
+   * SSR column prefs from the mirrored cookie so the table can paint once in
+   * the preferred configuration.
+   */
+  initialColumnVisibility?: VisibilityState;
+  /** False → migrate from localStorage before first table paint. */
+  columnVisibilityHasCookie?: boolean;
 }
 
 export default function WorkItemsWorkspace(

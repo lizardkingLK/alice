@@ -2,11 +2,12 @@ import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { apiFetch } from '@/lib/api/api-client';
 import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
 import type { WorkItemWorkLog } from '@repo/types';
+import { coerceLabelsFormField } from '@repo/types';
 import { ResponseDTO } from '@repo/types/connection';
 
 const workItemsPath = '/api/workItems';
 
-export type { WorkItemWorkLog };
+export type { WorkItemWorkLog } from '@repo/types';
 
 export async function createWorkItemWorkLog(
   workItemId: string,
@@ -40,6 +41,13 @@ function isTiptapDoc(value: unknown): value is { type: 'doc' } {
   );
 }
 
+function applyLabelsFormField(body: Record<string, unknown>): void {
+  if (!('labels' in body)) {
+    return;
+  }
+  body.labels = coerceLabelsFormField(body.labels);
+}
+
 function formDataToCreateBody(formData: FormData): Record<string, unknown> {
   const body: Record<string, unknown> = Object.fromEntries(formData.entries());
 
@@ -61,6 +69,8 @@ function formDataToCreateBody(formData: FormData): Record<string, unknown> {
     }
   }
 
+  applyLabelsFormField(body);
+
   return body;
 }
 
@@ -79,6 +89,7 @@ function formDataToPatchBody(
 ): Record<string, unknown> {
   const body: Record<string, unknown> = Object.fromEntries(formData.entries());
   body.expectedUpdatedAt = expectedUpdatedAt;
+  applyLabelsFormField(body);
   return body;
 }
 
@@ -115,4 +126,53 @@ export async function forceUpdateWorkItemFields(
     `${workItemsPath}/${id}`,
     { pendingFields, expectedUpdatedAt, method: 'PATCH' }
   );
+}
+
+export interface GithubCommit {
+  sha: string;
+  message: string;
+  author: string;
+  date: string;
+}
+
+export interface LinkedGithubPR {
+  id: string;
+  pr_number: number;
+  pr_title: string;
+  pr_url: string;
+  status: 'open' | 'merged' | 'closed';
+  branch_name: string | null;
+  commits: GithubCommit[];
+}
+
+export async function getLinkedPRs(
+  workItemId: string
+): Promise<{ prs: LinkedGithubPR[]; githubRepo: string | null }> {
+  const res = await apiFetch<{
+    prs: LinkedGithubPR[];
+    githubRepo: string | null;
+  }>(`${workItemsPath}/${workItemId}/github`);
+  return { prs: res.prs || [], githubRepo: res.githubRepo || null };
+}
+
+export async function linkPR(
+  workItemId: string,
+  prUrl: string
+): Promise<ResponseDTO<LinkedGithubPR>> {
+  return await apiFetch<ResponseDTO<LinkedGithubPR>>(
+    `${workItemsPath}/${workItemId}/github`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ prUrl }),
+    }
+  );
+}
+
+export async function unlinkPR(
+  workItemId: string,
+  prId: string
+): Promise<void> {
+  await apiFetch<void>(`${workItemsPath}/${workItemId}/github/${prId}`, {
+    method: 'DELETE',
+  });
 }

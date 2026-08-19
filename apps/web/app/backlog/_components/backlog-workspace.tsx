@@ -3,11 +3,15 @@
 import React, { useState, useMemo } from 'react';
 import { AlertCircle, HelpCircle } from '@repo/ui/lib/icons';
 import { TooltipProvider } from '@repo/ui/components/ui/tooltip';
+import { SprintStatusEnum } from '@repo/types';
 
 import { useBacklogLayout } from '@/app/backlog/_components/backlog-layout-menu';
 import { BacklogToolbar } from '@/app/backlog/_components/backlog-toolbar';
 import { useBacklogProjectDefaults } from '@/app/backlog/_hooks/use-backlog-project-defaults';
-import { BoardDefaultsDialog } from '@/app/board/_components/board-defaults-dialog';
+import {
+  pickWorkspaceDefaultsDialogController,
+  WorkspaceDefaultsDialogHost,
+} from '@/app/board/_components/workspace-defaults-dialog-host';
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import { BacklogSprintCard } from '@/app/backlog/_components/backlog-sprint-card';
 import { BacklogPanel } from '@/app/backlog/_components/backlog-panel';
@@ -85,25 +89,20 @@ export function BacklogWorkspace({
   const { preferredLayout, effectiveLayout, setPreferredLayout } =
     useBacklogLayout(currentUserId, showBacklogPane);
 
-  const {
-    projectFilter,
-    setProjectFilter,
-    savedDefaultsApplied,
-    baselineProjectId,
-    defaultsDialogOpen,
-    setDefaultsDialogOpen,
-    allowSkipInDialog,
-    dialogInitialPreference,
-    openDefaultsDialog,
-    handleSaveDefaults,
-    handleSkipDefaults,
-    resetProjectFilterToBaseline,
-  } = useBacklogProjectDefaults({
+  const backlogDefaults = useBacklogProjectDefaults({
     userId: currentUserId ?? null,
     projects,
     sprints,
     suggestedDefaults,
   });
+  const {
+    projectFilter,
+    setProjectFilter,
+    savedDefaultsApplied,
+    baselineProjectId,
+    openDefaultsDialog,
+    resetProjectFilterToBaseline,
+  } = backlogDefaults;
 
   // Filters state
   const [searchQuery, setSearchQuery] = useState('');
@@ -296,9 +295,11 @@ export function BacklogWorkspace({
   const displayedSprints = useMemo(() => {
     const byTab =
       activeTab === 'completed'
-        ? sprintList.filter((s) => s.status === 'Completed')
+        ? sprintList.filter((s) => s.status === SprintStatusEnum.Closed)
         : sprintList.filter(
-            (s) => s.status === 'Ongoing' || s.status === 'Not Started'
+            (s) =>
+              s.status === SprintStatusEnum.Active ||
+              s.status === SprintStatusEnum.Planned
           );
 
     if (projectFilter === 'all') {
@@ -328,8 +329,16 @@ export function BacklogWorkspace({
     }
   };
 
-  // Start Sprint API Caller
-  const confirmStartSprint = async (sprintId: string) => {
+  // Start / complete sprint (shared pending + lock + list update path)
+  const confirmSprintStatusChange = async (
+    sprintId: string,
+    status: 'active' | 'closed',
+    options: {
+      readonly actionLabel: string;
+      readonly clearDialog: () => void;
+      readonly afterSuccess?: () => void;
+    }
+  ) => {
     if (!isManagerOrAdmin) {
       setActionError('Only admins and managers can perform this action.');
       return;
@@ -342,64 +351,50 @@ export function BacklogWorkspace({
     setActionError(null);
     setIsActionPending(true);
     try {
-      const updatedSprint = await updateSprintStatusWithLock(sprint, 'Ongoing');
+      const updatedSprint = await updateSprintStatusWithLock(sprint, status);
       if (!updatedSprint) {
         return;
       }
       setSprintList((prev) =>
         prev.map((s) => (s.id === sprintId ? updatedSprint : s))
       );
-      setSprintToStart(null);
+      options.afterSuccess?.();
+      options.clearDialog();
     } catch (err) {
-      console.error('Failed to start sprint:', err);
+      console.error(`Failed to ${options.actionLabel} sprint:`, err);
       setActionError(
-        err instanceof Error ? err.message : 'Failed to start sprint.'
+        err instanceof Error
+          ? err.message
+          : `Failed to ${options.actionLabel} sprint.`
       );
     } finally {
       setIsActionPending(false);
     }
   };
 
-  // Complete Sprint API Caller
+  const confirmStartSprint = async (sprintId: string) => {
+    await confirmSprintStatusChange(sprintId, 'active', {
+      actionLabel: 'start',
+      clearDialog: () => setSprintToStart(null),
+    });
+  };
+
+  const clearIncompleteItemsFromSprint = (sprintId: string) => {
+    setWorkItems((prev) =>
+      prev.map((item) =>
+        item.sprint_id === sprintId && item.status !== 'Done'
+          ? { ...item, sprint_id: null }
+          : item
+      )
+    );
+  };
+
   const confirmCompleteSprint = async (sprintId: string) => {
-    if (!isManagerOrAdmin) {
-      setActionError('Only admins and managers can perform this action.');
-      return;
-    }
-    const sprint = sprintList.find((entry) => entry.id === sprintId);
-    if (!sprint) {
-      setActionError('Sprint not found.');
-      return;
-    }
-    setActionError(null);
-    setIsActionPending(true);
-    try {
-      const updatedSprint = await updateSprintStatusWithLock(
-        sprint,
-        'Completed'
-      );
-      if (!updatedSprint) {
-        return;
-      }
-      setSprintList((prev) =>
-        prev.map((s) => (s.id === sprintId ? updatedSprint : s))
-      );
-      setWorkItems((prev) =>
-        prev.map((item) =>
-          item.sprint_id === sprintId && item.status !== 'Done'
-            ? { ...item, sprint_id: null }
-            : item
-        )
-      );
-      setSprintToComplete(null);
-    } catch (err) {
-      console.error('Failed to complete sprint:', err);
-      setActionError(
-        err instanceof Error ? err.message : 'Failed to complete sprint.'
-      );
-    } finally {
-      setIsActionPending(false);
-    }
+    await confirmSprintStatusChange(sprintId, 'closed', {
+      actionLabel: 'complete',
+      clearDialog: () => setSprintToComplete(null),
+      afterSuccess: () => clearIncompleteItemsFromSprint(sprintId),
+    });
   };
 
   // Toggle Collapse
@@ -757,18 +752,12 @@ export function BacklogWorkspace({
           onAcknowledge={() => setIsMismatchOpen(false)}
         />
 
-        {currentUserId ? (
-          <BoardDefaultsDialog
-            open={defaultsDialogOpen}
-            onOpenChange={setDefaultsDialogOpen}
-            projects={projects}
-            sprints={sprints}
-            initialPreference={dialogInitialPreference}
-            onSave={handleSaveDefaults}
-            onSkip={handleSkipDefaults}
-            allowSkip={allowSkipInDialog}
-          />
-        ) : null}
+        <WorkspaceDefaultsDialogHost
+          enabled={Boolean(currentUserId)}
+          projects={projects}
+          sprints={sprints}
+          defaults={pickWorkspaceDefaultsDialogController(backlogDefaults)}
+        />
       </div>
     </TooltipProvider>
   );

@@ -1,11 +1,14 @@
 import { USER_PROJECTION_WITH_ROLE, userRelationSelect } from '@repo/types';
 import { supabase } from '../../../lib/supabase';
+import { prisma } from '../../../lib/prisma';
 import {
-  auditCreate,
-  auditCreateWithoutStatus,
-  auditUpdate,
-} from '../../../lib/audit';
-import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
+  prismaAuditCreate,
+  prismaAuditCreateWithoutStatus,
+  prismaAuditUpdate,
+  prismaLockTimestamp,
+  prismaOptionalDate,
+} from '../../../lib/prisma-audit';
+import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
 
 export type ProjectRow = {
   id: string;
@@ -23,6 +26,8 @@ export type ProjectRow = {
   jira_email: string | null;
   jira_token: string | null;
   jira_project_key: string | null;
+  github_repo: string | null;
+  github_token: string | null;
 };
 
 export type ProjectRowWithOwner = ProjectRow & {
@@ -81,51 +86,6 @@ export class ProjectsRepository {
     return unsafeCast<ProjectRowWithOwner[]>(data);
   }
 
-  async listPaginated(
-    page: number,
-    limit: number,
-    status?: 'active' | 'archived',
-    search?: string
-  ): Promise<{ projects: ProjectRowWithOwner[]; totalCount: number }> {
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
-
-    let query = supabase
-      .from('projects')
-      .select('*, owner:users!projects_owner_id_fkey(id, name, email)', {
-        count: 'exact',
-      });
-
-    // Handle soft deleted vs active status
-    if (status === 'archived') {
-      query = query.not('deleted_at', 'is', null);
-    } else {
-      query = query.is('deleted_at', null);
-    }
-
-    // Handle search query
-    if (search) {
-      const sanitized = `%${search}%`;
-      query = query.or(
-        `name.ilike.${sanitized},key.ilike.${sanitized},description.ilike.${sanitized}`
-      );
-    }
-
-    const { data, error, count } = await query
-      .order('created_at', { ascending: false })
-      .range(from, to);
-
-    if (error) {
-      console.error('error. failed to list projects paginated:', error.message);
-      throw new Error('Failed to list projects');
-    }
-
-    return {
-      projects: unsafeCast<ProjectRowWithOwner[]>(data ?? []),
-      totalCount: count ?? 0,
-    };
-  }
-
   async findByKey(key: string, excludeId?: string): Promise<ProjectRow | null> {
     let query = supabase.from('projects').select('*').eq('key', key);
     if (excludeId) {
@@ -173,19 +133,13 @@ export class ProjectsRepository {
     userId: string,
     actorId: string
   ): Promise<void> {
-    const payload = {
-      project_id: projectId,
-      user_id: userId,
-      ...auditCreate(actorId),
-    };
-    const { error } = await supabase.from('project_members').insert(payload);
-
-    if (error) {
-      console.error('error. failed to add project member:', error.message);
-      throw new Error(
-        `Database failed to add project member: ${error.message}`
-      );
-    }
+    await prisma.project_members.create({
+      data: {
+        project_id: projectId,
+        user_id: userId,
+        ...prismaAuditCreate(actorId),
+      },
+    });
   }
 
   async removeMember(projectId: string, userId: string): Promise<void> {
@@ -205,70 +159,49 @@ export class ProjectsRepository {
     const teamIds = (projectTeams ?? []).map((team) => team.id);
 
     if (teamIds.length > 0) {
-      const { error: reportingError } = await supabase
-        .from('team_members')
-        .update({ reporting_line: null })
-        .in('team_id', teamIds)
-        .eq('reporting_line', userId);
-
-      if (reportingError) {
-        console.error(
-          'error. failed to clear team reporting lines:',
-          reportingError.message
-        );
-        throw new Error('Failed to remove project member team assignments');
-      }
-
-      const { error: membersError } = await supabase
-        .from('team_members')
-        .delete()
-        .in('team_id', teamIds)
-        .eq('user_id', userId);
-
-      if (membersError) {
-        console.error(
-          'error. failed to remove team memberships:',
-          membersError.message
-        );
-        throw new Error('Failed to remove project member team assignments');
-      }
+      await prisma.team_members.updateMany({
+        where: { team_id: { in: teamIds }, reporting_line: userId },
+        data: { reporting_line: null },
+      });
+      await prisma.team_members.deleteMany({
+        where: { team_id: { in: teamIds }, user_id: userId },
+      });
     }
 
-    const { error } = await supabase
-      .from('project_members')
-      .delete()
-      .eq('project_id', projectId)
-      .eq('user_id', userId);
-
-    if (error) {
-      console.error('error. failed to remove project member:', error.message);
-      throw new Error(
-        `Database failed to remove project member: ${error.message}`
-      );
-    }
+    await prisma.project_members.deleteMany({
+      where: { project_id: projectId, user_id: userId },
+    });
   }
 
   async create(
     data: Omit<ProjectRow, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>,
     actorId: string
   ): Promise<ProjectRow> {
-    const insertData = {
-      ...data,
-      deleted_at: null,
-      ...auditCreateWithoutStatus(actorId),
-    };
-    const { data: created, error } = await supabase
-      .from('projects')
-      .insert(insertData)
-      .select()
-      .single();
+    const created = await prisma.projects.create({
+      data: {
+        name: data.name,
+        key: data.key,
+        description: data.description,
+        status: data.status,
+        start_date: prismaOptionalDate(data.start_date) ?? null,
+        end_date: prismaOptionalDate(data.end_date) ?? null,
+        owner_id: data.owner_id,
+        jira_url: data.jira_url,
+        jira_email: data.jira_email,
+        jira_token: data.jira_token,
+        jira_project_key: data.jira_project_key,
+        github_repo: data.github_repo,
+        github_token: data.github_token,
+        deleted_at: null,
+        ...prismaAuditCreateWithoutStatus(actorId),
+      },
+    });
 
-    if (error) {
-      console.error('error. failed to create project:', error.message);
-      throw new Error(`Database insertion failed: ${error.message}`);
+    const row = await this.findById(created.id);
+    if (!row) {
+      throw new Error('Database insertion failed');
     }
-
-    return created;
+    return row;
   }
 
   async update(
@@ -277,23 +210,53 @@ export class ProjectsRepository {
     actorId: string,
     expectedUpdatedAt: string
   ): Promise<ProjectRow> {
-    const updateData = {
-      ...data,
-      ...auditUpdate(actorId),
-    };
-    const { data: updated, error } = await supabase
-      .from('projects')
-      .update(updateData)
-      .eq('id', id)
-      .eq('updated_at', expectedUpdatedAt)
-      .select()
-      .maybeSingle();
+    const { count } = await prisma.projects.updateMany({
+      where: { id, updated_at: prismaLockTimestamp(expectedUpdatedAt) },
+      data: {
+        ...(data.name !== undefined ? { name: data.name } : {}),
+        ...(data.key !== undefined ? { key: data.key } : {}),
+        ...(data.description !== undefined
+          ? { description: data.description }
+          : {}),
+        ...(data.status !== undefined ? { status: data.status } : {}),
+        ...(data.start_date !== undefined
+          ? { start_date: prismaOptionalDate(data.start_date) }
+          : {}),
+        ...(data.end_date !== undefined
+          ? { end_date: prismaOptionalDate(data.end_date) }
+          : {}),
+        ...(data.owner_id !== undefined ? { owner_id: data.owner_id } : {}),
+        ...(data.deleted_at !== undefined
+          ? { deleted_at: prismaOptionalDate(data.deleted_at) }
+          : {}),
+        ...(data.jira_url !== undefined ? { jira_url: data.jira_url } : {}),
+        ...(data.jira_email !== undefined
+          ? { jira_email: data.jira_email }
+          : {}),
+        ...(data.jira_token !== undefined
+          ? { jira_token: data.jira_token }
+          : {}),
+        ...(data.jira_project_key !== undefined
+          ? { jira_project_key: data.jira_project_key }
+          : {}),
+        ...(data.github_repo !== undefined
+          ? { github_repo: data.github_repo }
+          : {}),
+        ...(data.github_token !== undefined
+          ? { github_token: data.github_token }
+          : {}),
+        ...prismaAuditUpdate(actorId),
+      },
+    });
 
-    return await resolveOptimisticUpdate({
-      data: updated
-        ? (withoutJiraToken(updated as ProjectRow) as ProjectRow)
-        : null,
-      error,
+    return resolveOptimisticPrismaUpdate({
+      count,
+      fetchUpdated: async () => {
+        const current = await this.findById(id);
+        return current
+          ? (withoutJiraToken(current) as unknown as ProjectRow)
+          : null;
+      },
       fetchCurrent: async () => {
         const current = await this.findById(id);
         return current
@@ -305,12 +268,7 @@ export class ProjectsRepository {
   }
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase.from('projects').delete().eq('id', id);
-
-    if (error) {
-      console.error('error. failed to delete project:', error.message);
-      throw new Error(`Database delete failed: ${error.message}`);
-    }
+    await prisma.projects.deleteMany({ where: { id } });
   }
 
   async getJiraSettings(): Promise<{
@@ -336,20 +294,20 @@ export class ProjectsRepository {
     email: string,
     token: string
   ): Promise<void> {
-    const row = {
-      singleton: true,
-      jira_url: url,
-      jira_email: email,
-      jira_token: token,
-    };
-    const { error } = await supabase
-      .from('jira_settings')
-      .upsert(row as never, { onConflict: 'singleton' });
-
-    if (error) {
-      console.error('error. failed to upsert Jira settings:', error.message);
-      throw new Error(`Database upsert failed: ${error.message}`);
-    }
+    await prisma.jira_settings.upsert({
+      where: { singleton: true },
+      create: {
+        singleton: true,
+        jira_url: url,
+        jira_email: email,
+        jira_token: token,
+      },
+      update: {
+        jira_url: url,
+        jira_email: email,
+        jira_token: token,
+      },
+    });
   }
 }
 

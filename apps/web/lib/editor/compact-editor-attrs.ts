@@ -3,6 +3,10 @@ import { COMPACT_EDITOR_LIST_CLASSES } from '@/lib/editor/editor-list-classes';
 
 type CompactEditorSize = 'sm' | 'lg';
 
+/** Suppress focus rings/borders on modern create fields (same fix as comment editors). */
+export const MODERN_BORDERLESS_FOCUS_CLASSES =
+  'border-0 shadow-none ring-0 outline-none focus:ring-0 focus-visible:border-transparent focus-visible:ring-0 focus-visible:ring-offset-0';
+
 type CompactEditorAttributesOptions = {
   ariaLabel: string;
   size?: CompactEditorSize;
@@ -21,12 +25,9 @@ export function getCompactEditorAttributes({
 } {
   return {
     class: cn(
-      'max-w-none min-h-16 px-3 py-2 outline-none focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2',
+      'max-w-none min-h-16 px-3 py-2 outline-none',
       'prose-p:my-1',
       COMPACT_EDITOR_LIST_CLASSES,
-      // Only the empty-doc class — not every empty paragraph — so placeholder
-      // does not reappear on trailing lines after Enter / list commands.
-      '[&_p.is-editor-empty::before]:text-muted-foreground [&_p.is-editor-empty::before]:float-left [&_p.is-editor-empty::before]:h-0 [&_p.is-editor-empty::before]:pointer-events-none [&_p.is-editor-empty::before]:content-[attr(data-placeholder)]',
       size === 'lg' ? 'prose-base text-foreground text-lg' : 'text-sm',
       className
     ),

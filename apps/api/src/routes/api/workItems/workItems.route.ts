@@ -4,12 +4,9 @@ import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
-import { parsePagination } from '../../../lib/pagination';
 import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
-import {
-  WorkItemValidationError,
-  type WorkItemService,
-} from './workItems.service';
+import { WorkItemValidationError } from './workItems.errors';
+import { type WorkItemService } from './workItems.service';
 import type { NotificationsService } from '../notifications/notifications.service';
 import {
   createUpdateWorkItemBodySchema,
@@ -20,6 +17,11 @@ import {
 } from './workItems.schemas';
 import type { DbWorkItem } from './workItems.repository';
 import { coalescePatchField } from './workItems.patch-utils';
+import {
+  coerceLabelsFormField,
+  listWorkItemsQuerySchema,
+  parseWorkItemLabels,
+} from '@repo/types';
 
 type PatchUpdateWorkItemPayload = z.infer<typeof patchUpdateWorkItemBodySchema>;
 
@@ -37,6 +39,10 @@ function parsePatchBody(body: Record<string, unknown>) {
     } catch {
       return null;
     }
+  }
+
+  if ('labels' in body) {
+    processedBody.labels = coerceLabelsFormField(body.labels);
   }
 
   return processedBody;
@@ -86,6 +92,10 @@ function buildWorkItemPayload(
       parsedData.description as WorkItemUpdateBody['description'] | undefined,
       existingWorkItem.description as WorkItemUpdateBody['description']
     ),
+    labels: coalescePatchField(
+      parsedData.labels,
+      parseWorkItemLabels(existingWorkItem.labels)
+    ),
     jira_issue_key: coalescePatchField(
       parsedData.jira_issue_key,
       existingWorkItem.jira_issue_key
@@ -126,6 +136,32 @@ function sendWorkItemMutationError(
   return res.status(500).json({ data: null, error: message });
 }
 
+function firstQueryValue(value: unknown): string | undefined {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (Array.isArray(value) && typeof value[0] === 'string') {
+    return value[0];
+  }
+  return undefined;
+}
+
+function listWorkItemsQueryFromRequest(query: Record<string, unknown>) {
+  return listWorkItemsQuerySchema.safeParse({
+    page: firstQueryValue(query.page),
+    limit: firstQueryValue(query.limit),
+    search: firstQueryValue(query.search),
+    projectId: firstQueryValue(query.projectId),
+    sprintId: firstQueryValue(query.sprintId),
+    parentId: firstQueryValue(query.parentId),
+    type: firstQueryValue(query.type),
+    assigneeId: firstQueryValue(query.assigneeId),
+    labels: firstQueryValue(query.labels),
+    view: firstQueryValue(query.view),
+    includeDescription: firstQueryValue(query.includeDescription),
+  });
+}
+
 export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
   const { workItemService, notificationsService } = deps;
 
@@ -148,41 +184,18 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
     '/',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
+      const parsed = listWorkItemsQueryFromRequest(
+        req.query as Record<string, unknown>
+      );
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+
       try {
-        const searchQuery =
-          typeof req.query.search === 'string' ? req.query.search : undefined;
-        const pagination = parsePagination(req);
-
-        // Parse filters
-        let sprint_id: string | null | undefined = undefined;
-        if (req.query.sprint_id === 'null' || req.query.backlog === 'true') {
-          sprint_id = null;
-        } else if (typeof req.query.sprint_id === 'string') {
-          sprint_id = req.query.sprint_id;
-        }
-        const filters = { sprint_id };
-
-        if (pagination) {
-          const { page, limit } = pagination;
-          const result = (await workItemService.listWorkItems(
-            page,
-            limit,
-            searchQuery,
-            filters
-          )) as { workItems: DbWorkItem[]; totalCount: number };
-          const totalPages = Math.max(1, Math.ceil(result.totalCount / limit));
-
-          return res.json({
-            workItems: result.workItems,
-            totalCount: result.totalCount,
-            page,
-            limit,
-            totalPages,
-          });
-        }
-
-        const workItems = await workItemService.getWorkItems(filters);
-        res.json({ data: workItems, error: null });
+        const result = await workItemService.listWorkItemsPaginated(
+          parsed.data
+        );
+        res.json(result);
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Failed to list work-items';
@@ -192,40 +205,94 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
   );
 
   workItemsRouter.get(
-    '/:id',
+    '/:id/github',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const workItem = await workItemService.getWorkItem(req.params.id!);
-        if (!workItem) {
-          return res
-            .status(404)
-            .json({ data: null, error: 'Work-Item not found' });
-        }
-
-        res.json({ data: workItem, error: null });
+        const result = await workItemService.listLinkedPRs(
+          req.userId!,
+          req.params.id!
+        );
+        res.json(result);
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : 'Failed to get work-item';
+          error instanceof Error ? error.message : 'Failed to get GitHub PRs';
+        res.status(500).json({ error: message });
+      }
+    }
+  );
+
+  workItemsRouter.post(
+    '/:id/github',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const { prUrl } = req.body;
+      if (typeof prUrl !== 'string' || !prUrl.trim()) {
+        return res
+          .status(400)
+          .json({ error: 'prUrl is required and must be a string' });
+      }
+
+      try {
+        const linked = await workItemService.linkPR(
+          req.userId!,
+          req.params.id!,
+          prUrl.trim()
+        );
+        res.status(201).json({ data: linked, error: null });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to link GitHub PR';
+        if (error instanceof WorkItemValidationError) {
+          return res.status(400).json({ data: null, error: message });
+        }
         res.status(500).json({ data: null, error: message });
       }
     }
   );
 
-  workItemsRouter.get(
-    '/:id/worklogs',
+  workItemsRouter.delete(
+    '/:id/github/:prId',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const worklogs = await workItemService.listWorkItemWorkLogs(
+        await workItemService.unlinkPR(
           req.userId!,
-          req.params.id!
+          req.params.id!,
+          req.params.prId!
         );
-        res.json({ worklogs });
+        res.json({ success: true });
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : 'Failed to get work logs';
+          error instanceof Error ? error.message : 'Failed to unlink GitHub PR';
         res.status(500).json({ error: message });
+      }
+    }
+  );
+
+  workItemsRouter.get(
+    '/:id',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsedId = z.uuid().safeParse(req.params.id);
+      if (!parsedId.success) {
+        return res
+          .status(400)
+          .json({ data: null, error: 'Invalid work item id' });
+      }
+
+      try {
+        const workItem = await workItemService.getWorkItemDetail(parsedId.data);
+        if (!workItem) {
+          return res
+            .status(404)
+            .json({ data: null, error: 'Work item not found' });
+        }
+        res.json({ data: workItem, error: null });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to get work-item';
+        res.status(500).json({ data: null, error: message });
       }
     }
   );

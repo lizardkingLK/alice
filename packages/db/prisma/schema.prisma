@@ -1,3 +1,10 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../../types/src/generated/prisma"
+  runtime      = "nodejs"
+  moduleFormat = "esm"
+}
+
 datasource db {
   provider = "postgresql"
 }
@@ -58,6 +65,7 @@ enum NotificationType {
   mention
   sprint
   due_date
+  view_shared
 }
 
 enum AccessAllowlistKind {
@@ -116,6 +124,13 @@ model users {
   updated_notifications   notifications[]   @relation("NotificationUpdatedBy")
   created_access_allowlist access_allowlist[] @relation("AccessAllowlistCreatedBy")
   updated_access_allowlist access_allowlist[] @relation("AccessAllowlistUpdatedBy")
+  chat_conversations      chat_conversations[]
+  owned_saved_views       saved_views[]       @relation("SavedViewOwner")
+  created_saved_views     saved_views[]       @relation("SavedViewCreatedBy")
+  updated_saved_views     saved_views[]       @relation("SavedViewUpdatedBy")
+  saved_view_shares       saved_view_shares[] @relation("SavedViewShareRecipient")
+  created_saved_view_shares saved_view_shares[] @relation("SavedViewShareCreatedBy")
+  updated_saved_view_shares saved_view_shares[] @relation("SavedViewShareUpdatedBy")
 }
 
 model projects {
@@ -138,6 +153,8 @@ model projects {
   jira_email        String?
   jira_token        String?
   jira_project_key  String?
+  github_repo       String?
+  github_token      String?
 
   owner           users             @relation("ProjectOwner", fields: [owner_id], references: [id])
   created_by_user users?            @relation("ProjectCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
@@ -146,6 +163,7 @@ model projects {
   teams           teams[]
   sprints         sprints[]
   work_items      work_items[]
+  saved_views     saved_views[]
 }
 
 model project_members {
@@ -240,6 +258,7 @@ model work_items {
   type         WorkItemType
   priority     WorkItemPriority @default(medium)
   description  Json?
+  labels       Json             @default("[]")
   assignee_id  String?          @db.Uuid
   reporter_id  String?          @db.Uuid
   due_date     DateTime?        @db.Date
@@ -260,9 +279,10 @@ model work_items {
   reporter        users?        @relation("WorkItemReporter", fields: [reporter_id], references: [id], onDelete: SetNull)
   created_by_user users?        @relation("WorkItemCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
   updated_by_user users?        @relation("WorkItemUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
-  comments        comments[]
-  attachments     attachments[]
-  worklogs        work_item_worklogs[]
+  comments             comments[]
+  attachments          attachments[]
+  worklogs             work_item_worklogs[]
+  github_pull_requests github_pull_requests[]
 
   @@unique([project_id, jira_issue_key])
 }
@@ -373,3 +393,81 @@ model jira_settings {
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @updatedAt @db.Timestamptz(6)
 }
+
+model chat_conversations {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  title      String   @default("New Chat")
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @updatedAt @db.Timestamptz(6)
+
+  user       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+/// Personal saved navigation snapshots (pathname + query); shareable via saved_view_shares.
+model saved_views {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  owner_id    String       @db.Uuid
+  title       String
+  description String?
+  pathname    String
+  /// Query string without leading `?`.
+  search      String       @default("")
+  project_id  String?      @db.Uuid
+  status      RecordStatus @default(active)
+  created_by  String?      @db.Uuid
+  created_at  DateTime     @default(now()) @db.Timestamptz(6)
+  updated_by  String?      @db.Uuid
+  updated_at  DateTime     @updatedAt @db.Timestamptz(6)
+
+  owner           users               @relation("SavedViewOwner", fields: [owner_id], references: [id], onDelete: Cascade)
+  project         projects?           @relation(fields: [project_id], references: [id], onDelete: SetNull)
+  created_by_user users?              @relation("SavedViewCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users?              @relation("SavedViewUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+  shares          saved_view_shares[]
+
+  @@index([owner_id, status])
+  @@index([project_id])
+  /// Partial unique index `saved_views_owner_path_active_key` enforces one active row
+  /// per (owner_id, pathname, search) — see migration add_saved_views_owner_path_unique.
+}
+
+model saved_view_shares {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  view_id    String       @db.Uuid
+  user_id    String       @db.Uuid
+  status     RecordStatus @default(active)
+  created_by String?      @db.Uuid
+  created_at DateTime     @default(now()) @db.Timestamptz(6)
+  updated_by String?      @db.Uuid
+  updated_at DateTime     @updatedAt @db.Timestamptz(6)
+
+  view            saved_views @relation(fields: [view_id], references: [id], onDelete: Cascade)
+  user            users       @relation("SavedViewShareRecipient", fields: [user_id], references: [id], onDelete: Cascade)
+  created_by_user users?      @relation("SavedViewShareCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users?      @relation("SavedViewShareUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+
+  @@unique([view_id, user_id])
+  @@index([user_id, status])
+}
+
+model github_pull_requests {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  work_item_id   String     @db.Uuid
+  pr_number      Int
+  repo_owner     String
+  repo_name      String
+  pr_title       String
+  pr_url         String
+  branch_name    String?
+  status         String?    
+  created_at     DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime   @updatedAt @db.Timestamptz(6)
+
+  work_item      work_items @relation(fields: [work_item_id], references: [id], onDelete: Cascade)
+
+  @@unique([work_item_id, repo_owner, repo_name, pr_number])
+}
+

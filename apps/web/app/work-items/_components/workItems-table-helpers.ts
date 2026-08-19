@@ -1,8 +1,10 @@
+import { serializeWorkItemLabelsFilter } from '@repo/types';
 import {
   flattenWorkItemHierarchyRows,
   type WorkItemHierarchyDisplayRow,
 } from '@/app/work-items/_helpers/work-item-hierarchy-rows';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import { applyQueryFilterParam } from '@/hooks/use-query-filter';
 import type { WorkItemListView } from '@/lib/search-params';
 
 const WORK_ITEM_FILTER_PARAMS = [
@@ -11,7 +13,17 @@ const WORK_ITEM_FILTER_PARAMS = [
   'sprint',
   'type',
   'assignee',
+  'labels',
 ] as const;
+
+/** Staged work-item list filters edited in the filter dialog before Okay. */
+export type WorkItemsFilterDraft = {
+  readonly project: string;
+  readonly sprint: string;
+  readonly type: string;
+  readonly assignee: string;
+  readonly labels: readonly string[];
+};
 
 export function resolveWorkItemsListDescription(options: {
   readonly isAssigneeLocked: boolean;
@@ -117,4 +129,44 @@ export function buildClearedWorkItemFilterParams(options: {
     next.set('assignee', options.lockedAssigneeId);
   }
   return next;
+}
+
+/**
+ * Writes staged filter-dialog values into search params in one shot so Okay
+ * triggers a single navigation / refetch.
+ */
+export function applyWorkItemsFilterDraftToSearchParams(
+  params: URLSearchParams,
+  draft: WorkItemsFilterDraft,
+  options: {
+    readonly allValue: string;
+    readonly isProjectLocked: boolean;
+    readonly isAssigneeLocked: boolean;
+    readonly listView: WorkItemListView;
+  }
+): void {
+  const { allValue } = options;
+
+  if (!options.isProjectLocked) {
+    if (!draft.project || draft.project === allValue) {
+      // Explicit sentinel so SSR can tell "All projects" from unset bootstrap.
+      params.set('project', allValue);
+      params.delete('sprint');
+    } else {
+      params.set('project', draft.project);
+      applyQueryFilterParam(params, 'sprint', draft.sprint, allValue);
+    }
+  }
+
+  applyQueryFilterParam(params, 'type', draft.type, allValue);
+
+  if (!options.isAssigneeLocked) {
+    applyQueryFilterParam(params, 'assignee', draft.assignee, allValue);
+  }
+
+  const labelsEncoded = serializeWorkItemLabelsFilter([...draft.labels]);
+  applyQueryFilterParam(params, 'labels', labelsEncoded || allValue, allValue);
+
+  applyWorkItemListViewParam(params, options.listView);
+  params.set('page', '1');
 }

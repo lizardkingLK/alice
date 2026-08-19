@@ -1,8 +1,10 @@
 # API dependency injection (composition root)
 
-**Status:** Plan (Living for the work-items slice)  
+**Status:** Plan (Living for work-items, sprints, and chat slices)  
 **Scope:** `apps/api` only — Express routers, services, repositories  
-**Last updated:** July 27, 2026
+**Last updated:** August 17, 2026
+
+Related: [TRD.md](./TRD.md), [API_VERSIONING.md](./API_VERSIONING.md) (composition prerequisite, unused Express GETs, `/api/v1`).
 
 ## 1. Why
 
@@ -25,11 +27,11 @@ We are not introducing Nest, Inversify, or a DI container. The pattern is **manu
 
 ## 2. Principles
 
-1. **Composition root** — `apps/api/src/config/composition.ts` builds domain graphs once per process; `routing.ts` mounts them; `index.ts` stays thin.
+1. **Composition root** — `apps/api/src/config/composition.ts` builds domain graphs once per process; `routing.ts` mounts them (including `/api/v1` aliases); `index.ts` stays thin.
 2. **Constructor injection** — repositories take `db`; services take repositories; routers take services via a factory.
 3. **Process singletons are intentional** — shared HTTP clients (`supabase`, `authClient`) and the built service graph live once per process. They must remain **stateless** (no request Maps, no session fields).
 4. **No per-request services** — do not `new WorkItemService()` inside handlers.
-5. **Migrate by slice** — convert one domain at a time; other routes may keep module singletons until touched.
+5. **Migrate by slice** — convert one domain at a time; other routes may keep module singletons until touched. **All product domains must be composed before API URL versioning** ([API_VERSIONING.md](./API_VERSIONING.md) prerequisite).
 6. **Narrow deps** — prefer `Pick<Service, 'method'>` (or a small interface) at the router boundary so tests can pass stubs.
 
 ## 3. Target shape
@@ -40,7 +42,7 @@ flowchart TB
   db["supabase client"]
   repo["new WorkItemRepository(db)"]
   svc["new WorkItemService(repo)"]
-  notif["notificationsService (shared until migrated)"]
+  notif["notifications (composed)"]
   router["createWorkItemsRouter({ workItemService, notificationsService })"]
   routing["routing.ts mounts workItems.router"]
   app["index.ts → app.use(routesConfig)"]
@@ -64,12 +66,27 @@ flowchart TB
 | Service                 | Domain orchestration                   | Repository instance(s)            |
 | Route factory           | HTTP, validation, status codes         | Service(s) (+ cross-cutting deps) |
 | `config/composition.ts` | Wire domains; export injection configs | Shared clients + peer services    |
-| `config/routing.ts`     | Mount routers; export `routesConfig`   | Composed routers from composition |
+| `config/routing.ts`     | Mount routers + version path map       | Composed routers from composition |
 | `index.ts`              | Middleware + `app.use(routesConfig)`   | —                                 |
 
-## 4. Work-items slice (reference implementation)
+## 4. Migrated slices (reference)
 
-First migrated domain. Use it as the template for the next routes.
+### Root status vs health (v1 + v2 reference)
+
+| Piece            | Path                                                                     |
+| ---------------- | ------------------------------------------------------------------------ |
+| Root factory     | `createRootRouter` — plain listening text at `GET /`                     |
+| Repository       | `health.repository.ts` — shared `getVersionRecord()` (no real DB)        |
+| v1 service       | `HealthService` → v1 wire                                                |
+| v2 service       | `HealthServiceV2` → v2 wire (`checkedAt`)                                |
+| v1 factory       | `createHealthRouter`                                                     |
+| v2 factory       | `createHealthV2Router`                                                   |
+| Injection config | `composition.ts` → `health` (`healthRepository`, `v1Router`, `v2Router`) |
+| Route mounts     | v1: `GET /api/health`, `GET /api/v1/health`; v2: `GET /api/v2/health`    |
+
+URI prefixes stay in `routing.ts`, not in composition. See [API_VERSIONING.md](./API_VERSIONING.md).
+
+### Work-items (first product domain)
 
 | Piece            | Path                                                                             |
 | ---------------- | -------------------------------------------------------------------------------- |
@@ -80,17 +97,85 @@ First migrated domain. Use it as the template for the next routes.
 | Route mount      | `apps/api/src/config/routing.ts` → `workItems.router`                            |
 | Boot             | `apps/api/src/index.ts` → `app.use(routesConfig)`                                |
 
-Notifications stay on the existing module singleton for now; the work-items router **receives** it so assign side-effects remain testable without rewriting notifications.
+Notifications are composed (`composition.ts` → `notifications`) and injected into the work-items **and** comments routers/services so assign/mention side-effects stay testable.
+
+Unused Prisma reads on this slice: `WorkItemRepository.listPaginated` / `getDetailById` → `WorkItemService.listWorkItemsPaginated` / `getWorkItemDetail` → `GET /api/workItems` and `GET /api/workItems/:id`. Mutation `getById` remains supabase-js. Next.js does not call the new GETs yet.
+
+### Sprints
+
+| Piece            | Path                                                                      |
+| ---------------- | ------------------------------------------------------------------------- |
+| Repositories     | `sprints.repository.ts` (`SprintsRepository`, `SprintBurndownRepository`) |
+| Services         | `sprints.service.ts`                                                      |
+| Route factory    | `createSprintsRouter`                                                     |
+| Injection config | `composition.ts` → `sprints`                                              |
+| Route mount      | `routing.ts` → `sprints.router`                                           |
+
+### Attachments
+
+| Piece            | Path                                                            |
+| ---------------- | --------------------------------------------------------------- |
+| Repository       | `apps/api/src/routes/api/attachments/attachments.repository.ts` |
+| Service          | `apps/api/src/routes/api/attachments/attachments.service.ts`    |
+| Route factory    | `createAttachmentsRouter`                                       |
+| Injection config | `composition.ts` → `attachments`                                |
+| Route mount      | `routing.ts` → `attachments.router`                             |
+
+Prisma mutations stay on the process `prisma` client (same as work-items). PostgREST reads (`getById`, `workItemExists`) use the injected `SupabaseClient`.
+
+### Comments
+
+| Piece            | Path                                                                         |
+| ---------------- | ---------------------------------------------------------------------------- |
+| Repository       | `apps/api/src/routes/api/comments/comments.repository.ts`                    |
+| Service          | `CommentsService` — receives `notificationsService` for mention side-effects |
+| Route factory    | `createCommentsRouter`                                                       |
+| Injection config | `composition.ts` → `comments`                                                |
+| Route mount      | `routing.ts` → `comments.router`                                             |
+
+### Access allowlist
+
+| Piece            | Path                                                                    |
+| ---------------- | ----------------------------------------------------------------------- |
+| Repository       | `apps/api/src/routes/api/accessAllowlist/accessAllowlist.repository.ts` |
+| Service          | `AccessAllowlistService`                                                |
+| Route factory    | `createAccessAllowlistRouter`                                           |
+| Injection config | `composition.ts` → `accessAllowlist`                                    |
+| Route mount      | `routing.ts` → `accessAllowlist.router`                                 |
+
+### Notifications
+
+| Piece            | Path                                                                               |
+| ---------------- | ---------------------------------------------------------------------------------- |
+| Repository       | `apps/api/src/routes/api/notifications/notifications.repository.ts`                |
+| Service          | `NotificationsService` — builders, due-date rules, UUID gate; no direct DB clients |
+| Route factory    | `createNotificationsRouter`                                                        |
+| Injection config | `composition.ts` → `notifications` (built **before** comments and work-items)      |
+| Route mount      | `routing.ts` → `notifications.router`                                              |
+
+PostgREST reads (admins, actor name, due work items, existing due-date rows) use the injected client. Prisma writes stay on the process `prisma` helper (`insert` / `insertMany` / `create`).
+
+### Chat
+
+| Piece            | Path                                                           |
+| ---------------- | -------------------------------------------------------------- |
+| Repository       | `apps/api/src/routes/api/chat/chat.repository.ts`              |
+| Service          | `apps/api/src/routes/api/chat/chat.service.ts` → `ChatService` |
+| Route factory    | `createChatRouter`                                             |
+| Injection config | `composition.ts` → `chat`                                      |
+| Route mount      | `routing.ts` → `chat.router`                                   |
+
+Chat receives `workItemService` and `sprintsService` from the composition root for tool mutations (avoids importing `composition.ts` from the service). Projects create/list still use the projects module singletons until that domain is migrated. Pure helpers (`chatHistoryToMarkdown`, `markdownToChatHistory`, `sanitizeLog`) stay module-level.
 
 ## 5. Migration checklist (next domain)
 
-When converting e.g. projects or attachments:
+When converting e.g. projects or users:
 
 1. Add a constructor to the repository (`db: SupabaseClient<Database>`).
 2. Add a constructor to the service (inject repository).
 3. Replace `export default router` with `createXRouter(deps)`.
 4. Add a `createXConfig()` + export (e.g. `projects`) in `config/composition.ts`.
-5. Mount `x.router` from `routing.ts` instead of the old default import.
+5. Mount `x.router` from `routing.ts` instead of the old default import. Version aliases (`/api/v1/...`) are extra `use()` lines **in routing.ts**, not in composition.
 6. Remove bottom-of-file `export const xService = new …` once nothing imports it.
 7. Leave unrelated domains on singletons.
 

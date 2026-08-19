@@ -51,12 +51,15 @@ import {
 } from '@repo/ui/components/ui/tooltip';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { formatLabelWithSpace, getInitials } from '@/app/_shared/utility';
-import { BoardDefaultsDialog } from '@/app/board/_components/board-defaults-dialog';
+import {
+  pickWorkspaceDefaultsDialogController,
+  WorkspaceDefaultsDialogHost,
+} from '@/app/board/_components/workspace-defaults-dialog-host';
 import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
 import {
-  applyProjectFilterToSearchParams,
-  buildSprintFilterOptions,
+  buildSprintFilterOptionsForQuery,
+  pushOptimisticProjectFilter,
 } from '@/app/board/_services/board-defaults';
 import type { Project } from '@/app/projects/_services/projects.service.base';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
@@ -67,6 +70,7 @@ import { DescriptionView } from '@/app/work-items/_components/workItem-descripti
 import { descriptionToPlainText } from '@/app/work-items/_helpers/work-item-description';
 import { BOARD_STATUS_COLUMNS } from '@/app/work-items/_helpers/work-item-status';
 import { PRIORITY_BORDER_STYLES } from '@/app/work-items/_helpers/work-item-priority-ui';
+import { WORK_ITEM_PRIORITIES } from '@repo/types';
 import { updateWorkItemStatus } from '@/app/work-items/_services/workItem.service.client';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { ListFilterSelect } from '@/components/list-filter-select';
@@ -82,13 +86,7 @@ const COLUMNS = BOARD_STATUS_COLUMNS;
 
 const MAX_VISIBLE_ASSIGNEES = 3;
 
-const PRIORITIES: BoardPriority[] = [
-  'highest',
-  'high',
-  'medium',
-  'low',
-  'lowest',
-];
+const PRIORITIES: BoardPriority[] = [...WORK_ITEM_PRIORITIES].reverse();
 
 function shortId(id: string) {
   return id.slice(0, 8).toUpperCase();
@@ -137,18 +135,7 @@ export function KanbanBoard({
     setWorkItems(initialWorkItems);
   }, [initialWorkItems]);
 
-  const {
-    defaultsDialogOpen,
-    setDefaultsDialogOpen,
-    allowSkipInDialog,
-    dialogInitialPreference,
-    savedDefaultsApplied,
-    urlFiltersActive,
-    openDefaultsDialog,
-    handleSaveDefaults,
-    handleSkipDefaults,
-    resetUrlFilters,
-  } = useBoardDefaultsBootstrap({
+  const boardDefaults = useBoardDefaultsBootstrap({
     userId,
     needsClientBootstrap,
     projectFilter,
@@ -157,28 +144,54 @@ export function KanbanBoard({
     sprints,
     suggestedDefaults,
   });
+  const {
+    savedDefaultsApplied,
+    urlFiltersActive,
+    openDefaultsDialog,
+    resetUrlFilters,
+  } = boardDefaults;
 
+  const projectQuery = useQueryFilter('project', projectFilter);
   const sprintQuery = useQueryFilter('sprint', sprintFilter);
+  const { setValue: setProjectFilterValue, allValue: projectAllValue } =
+    projectQuery;
+  const { setValue: setSprintFilterValue } = sprintQuery;
 
   const handleProjectChange = useCallback(
     (nextProject: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      applyProjectFilterToSearchParams(params, {
+      pushOptimisticProjectFilter({
+        searchParams,
         nextProject,
         sprints,
+        allValue: projectAllValue,
         pageMode: 'delete',
+        pathname,
+        push: (href) => router.push(href),
+        setProjectValue: setProjectFilterValue,
+        setSprintValue: setSprintFilterValue,
       });
-      const query = params.toString();
-      router.push(query ? `${pathname}?${query}` : pathname);
     },
-    [pathname, router, searchParams, sprints]
+    [
+      pathname,
+      projectAllValue,
+      router,
+      searchParams,
+      setProjectFilterValue,
+      setSprintFilterValue,
+      sprints,
+    ]
   );
 
-  const projectSelectValue = projectFilter || 'all';
   const sprintOptions = useMemo(
-    () => buildSprintFilterOptions(sprints, projectFilter),
-    [projectFilter, sprints]
+    () =>
+      buildSprintFilterOptionsForQuery(
+        sprints,
+        projectQuery.value,
+        projectAllValue
+      ),
+    [projectAllValue, projectQuery.value, sprints]
   );
+
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [activeDropCol, setActiveDropCol] = useState<BoardStatus | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -225,6 +238,8 @@ export function KanbanBoard({
     setPriorityFilter('all');
     setAssigneeFilter(null);
     if (urlFiltersActive) {
+      setProjectFilterValue(projectAllValue);
+      setSprintFilterValue(sprintQuery.allValue);
       resetUrlFilters();
     }
   };
@@ -430,9 +445,9 @@ export function KanbanBoard({
             />
 
             <ListFilterSelect
-              value={projectSelectValue}
+              value={projectQuery.value}
               onValueChange={handleProjectChange}
-              allValue="all"
+              allValue={projectQuery.allValue}
               allLabel="All Projects"
               ariaLabel="Filter by project"
               placeholder="All Projects"
@@ -580,7 +595,7 @@ export function KanbanBoard({
               key={column.id}
               aria-label={formatLabelWithSpace(column.id)}
               className={cn(
-                'bg-muted/25 flex h-full min-h-128 flex-col rounded-xl border border-t-4 p-3 transition-colors',
+                'bg-muted/25 flex h-full min-h-128 min-w-0 flex-col rounded-xl border border-t-4 p-3 transition-colors',
                 column.accentClassName,
                 isOver && 'border-primary bg-primary/5 border-dashed'
               )}
@@ -594,7 +609,7 @@ export function KanbanBoard({
               </div>
 
               <ScrollArea className="h-0 min-h-0 flex-1 pr-2">
-                <div className="flex flex-col gap-3 pb-1">
+                <div className="flex min-w-0 flex-col gap-3 pb-1">
                   {columnItems.length === 0 ? (
                     <div className="text-muted-foreground flex min-h-40 flex-col items-center justify-center rounded-lg border border-dashed px-4 py-10 text-center text-xs">
                       <FolderDot className="text-muted-foreground/50 mb-2 size-8 stroke-1" />
@@ -620,14 +635,14 @@ export function KanbanBoard({
                             setIsDetailOpen(true);
                           }}
                           className={cn(
-                            'group cursor-grab rounded-l-none border-y-0 border-r-0 border-l-4 py-0 shadow-none active:cursor-grabbing',
+                            'group min-w-0 cursor-grab rounded-l-none border-y-0 border-r-0 border-l-4 py-0 shadow-none active:cursor-grabbing',
                             PRIORITY_BORDER_STYLES[item.priority],
                             (draggedTaskId === item.id ||
                               pendingStatusIds.has(item.id)) &&
                               'opacity-40'
                           )}
                         >
-                          <CardContent className="flex flex-col gap-2 p-3.5">
+                          <CardContent className="flex min-w-0 flex-col gap-2 p-3.5">
                             <div className="flex items-start justify-between gap-2">
                               <span className="text-muted-foreground font-mono text-[10px] font-medium tracking-wider uppercase">
                                 {shortId(item.id)}
@@ -635,7 +650,7 @@ export function KanbanBoard({
                               <PriorityBadge priority={item.priority} />
                             </div>
 
-                            <TruncatedText className="text-foreground group-hover:text-primary w-[17rem] max-w-full text-sm leading-snug font-semibold transition-colors">
+                            <TruncatedText className="text-foreground group-hover:text-primary w-full min-w-0 text-sm leading-snug font-semibold transition-colors">
                               {item.title}
                             </TruncatedText>
 
@@ -800,18 +815,12 @@ export function KanbanBoard({
         </DialogContent>
       </Dialog>
 
-      {userId ? (
-        <BoardDefaultsDialog
-          open={defaultsDialogOpen}
-          onOpenChange={setDefaultsDialogOpen}
-          projects={projects}
-          sprints={sprints}
-          initialPreference={dialogInitialPreference}
-          onSave={handleSaveDefaults}
-          onSkip={handleSkipDefaults}
-          allowSkip={allowSkipInDialog}
-        />
-      ) : null}
+      <WorkspaceDefaultsDialogHost
+        enabled={Boolean(userId)}
+        projects={projects}
+        sprints={sprints}
+        defaults={pickWorkspaceDefaultsDialogController(boardDefaults)}
+      />
     </div>
   );
 }

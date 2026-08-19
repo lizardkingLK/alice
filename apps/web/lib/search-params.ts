@@ -1,5 +1,5 @@
 import type { WorkItemType } from '@repo/types';
-import { WORK_ITEM_TYPES } from '@repo/types';
+import { WORK_ITEM_TYPES, parseWorkItemLabelsFilterParam } from '@repo/types';
 import { ALL_PROJECTS_ID } from '@/app/board/_helpers/board-defaults-storage';
 
 export interface RawSearchParams {
@@ -12,6 +12,8 @@ export interface RawSearchParams {
   sprint?: string;
   type?: string;
   assignee?: string;
+  /** JSON array of exact label strings, e.g. `["Mobile","auth"]`. */
+  labels?: string;
   fromProject?: string;
   fromAssignee?: string;
   /** Work-items list layout: flat (default) or hierarchy (roots + expand). */
@@ -33,6 +35,8 @@ export interface ParsedWorkItemFilters {
   sprintId?: string;
   type?: WorkItemTypeFilter;
   assigneeId?: string;
+  /** Exact case-sensitive labels (OR containment). */
+  labels?: string[];
 }
 
 const WORK_ITEM_TYPE_FILTERS = new Set<WorkItemTypeFilter>(WORK_ITEM_TYPES);
@@ -72,8 +76,9 @@ export function parseWorkItemFilters(
     WORK_ITEM_TYPE_FILTERS.has(rawType as WorkItemTypeFilter)
       ? (rawType as WorkItemTypeFilter)
       : undefined;
+  const labels = parseWorkItemLabelsFilterParam(resolvedParams.labels);
 
-  return { projectId, sprintId, type, assigneeId };
+  return { projectId, sprintId, type, assigneeId, labels };
 }
 
 /** Work-items list view mode. Default is flat (all matching rows). */
@@ -93,6 +98,16 @@ export function workItemHierarchyListFilter(
 
 export function parseTabStatus(tab?: string): 'active' | 'archived' {
   return tab === 'archived' ? 'archived' : 'active';
+}
+
+/** Views workspace tabs (My / Shared with me / Archived). */
+export type ViewsListTab = 'mine' | 'shared' | 'archived';
+
+export function parseViewsListTab(tab?: string | null): ViewsListTab {
+  if (tab === 'shared' || tab === 'archived') {
+    return tab;
+  }
+  return 'mine';
 }
 
 export type ProjectDetailsTab = 'details' | 'members' | 'teams' | 'work-items';
@@ -124,4 +139,20 @@ export type UsersPageTab = 'users' | 'allowlist';
 
 export function parseUsersPageTab(tab?: string | null): UsersPageTab {
   return tab === 'allowlist' ? 'allowlist' : 'users';
+}
+
+/**
+ * Users and allowlist share `/users` query params. Only the active tab
+ * should consume `page` / `search`; the other list stays on page 1.
+ */
+export function listParamsForUsersPageTab(
+  parsed: ParsedStandardParams,
+  activeTab: UsersPageTab,
+  targetTab: UsersPageTab
+): ParsedStandardParams {
+  if (activeTab === targetTab) {
+    return parsed;
+  }
+
+  return { page: 1, limit: parsed.limit, search: '' };
 }

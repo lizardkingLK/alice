@@ -14,6 +14,7 @@ import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.servi
 import { getDbUser } from '@/lib/auth';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
+import { readWorkItemTableColumnVisibilityBootstrap } from '@/app/work-items/_helpers/work-item-table-columns-cookie.server';
 import {
   parseStandardParams,
   parseWorkItemFilters,
@@ -51,7 +52,7 @@ export async function WorkItemsData({
   const listView = parseWorkItemListView(resolvedSearchParams.view);
   const projectId = lockedProjectId ?? filters.projectId;
   const assigneeId = lockedAssigneeId ?? filters.assigneeId;
-  const { type, sprintId } = filters;
+  const { type, sprintId, labels } = filters;
   const dbUser = await getDbUser();
   const resolvedUserId = currentUserId ?? dbUser?.id ?? null;
   const isProjectLocked = Boolean(lockedProjectId);
@@ -61,13 +62,32 @@ export async function WorkItemsData({
     !isAssigneeLocked &&
     needsWorkspaceProjectBootstrap(resolvedSearchParams.project);
 
-  const [projects, projectMembers, sprintsResult] = await Promise.all([
+  const [
+    columnVisibilityBootstrap,
+    projects,
+    projectMembers,
+    sprintsResult,
+    workItemsResult,
+  ] = await Promise.all([
+    readWorkItemTableColumnVisibilityBootstrap(),
     safeServerFetch(getProjectList(), [], 'fetch projects for work items'),
     safeServerFetch(getUserList(), [], 'fetch users for work items'),
     safeServerFetch(
       getSprintsPaginatedServer('active', 1, 100),
       EMPTY_ACTIVE_SPRINTS_PAGE,
       'fetch sprints for work items'
+    ),
+    safeServerFetch(
+      getWorkItemsPaginated(page, limit, search, {
+        projectId,
+        type,
+        assigneeId,
+        sprintId,
+        labels,
+        ...workItemHierarchyListFilter(listView),
+      }),
+      EMPTY_WORK_ITEMS,
+      'fetch work items list'
     ),
   ]);
 
@@ -77,21 +97,6 @@ export async function WorkItemsData({
     !isProjectLocked && !isAssigneeLocked && dbUser
       ? await getSuggestedBoardDefaults(dbUser, activeProjects, sprints)
       : null;
-
-  // Always fetch: missing projectId means "All projects", not an empty list.
-  // needsClientBootstrap only drives client-side URL seeding from localStorage.
-  // Hierarchy mode lists roots only; children load on expand.
-  const workItemsResult = await safeServerFetch(
-    getWorkItemsPaginated(page, limit, search, {
-      projectId,
-      type,
-      assigneeId,
-      sprintId,
-      ...workItemHierarchyListFilter(listView),
-    }),
-    EMPTY_WORK_ITEMS,
-    'fetch work items list'
-  );
 
   return (
     <WorkItemsWorkspace
@@ -108,12 +113,15 @@ export async function WorkItemsData({
       sprintFilter={sprintId ?? ''}
       typeFilter={type ?? ''}
       assigneeFilter={assigneeId ?? ''}
+      labelsFilter={labels ?? []}
       listView={listView}
       lockedProjectId={lockedProjectId}
       lockedAssigneeId={lockedAssigneeId}
       currentUserId={resolvedUserId}
       suggestedDefaults={suggestedDefaults}
       needsClientBootstrap={needsClientBootstrap}
+      initialColumnVisibility={columnVisibilityBootstrap.visibility}
+      columnVisibilityHasCookie={columnVisibilityBootstrap.hasCookie}
     />
   );
 }

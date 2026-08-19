@@ -1,17 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import {
-  buildProjectSprintLookups,
-  loadValidatedBoardDefaults,
   preferenceMatchesProjectFilter,
   preferenceToProjectFilter,
   projectFilterToPreference,
   resolveBaselineProjectFilter,
-  resolveOpenDefaultsPreference,
 } from '@/app/board/_helpers/workspace-defaults-shared';
-import { useWorkspaceDefaultsDialog } from '@/app/board/_hooks/use-workspace-defaults-dialog';
+import { useWorkspaceDefaultsSession } from '@/app/board/_hooks/use-workspace-defaults-session';
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
 
@@ -28,13 +25,7 @@ export function useBacklogProjectDefaults({
   sprints,
   suggestedDefaults,
 }: UseBacklogProjectDefaultsOptions) {
-  const didBootstrap = useRef(false);
   const [projectFilter, setProjectFilter] = useState('all');
-
-  const { projectIds, sprintById } = useMemo(
-    () => buildProjectSprintLookups(projects, sprints),
-    [projects, sprints]
-  );
 
   const {
     defaultsDialogOpen,
@@ -42,31 +33,29 @@ export function useBacklogProjectDefaults({
     allowSkipInDialog,
     dialogInitialPreference,
     savedPreference,
-    setSavedPreference,
-    handleSaveDefaults: saveDefaults,
+    handleSaveDefaults,
     handleSkipDefaults,
+    handleClearDefaults,
     promptDefaultsDialog,
-    openDefaultsDialog: openDialog,
-  } = useWorkspaceDefaultsDialog({
+    canClearDefaults,
+    consumeBootstrap,
+    openDefaultsDialog: openSessionDefaultsDialog,
+  } = useWorkspaceDefaultsSession({
     userId,
+    projects,
+    sprints,
     onSave: (preference) => {
       setProjectFilter(preferenceToProjectFilter(preference));
     },
   });
 
   useEffect(() => {
-    if (!userId || didBootstrap.current) {
+    const boot = consumeBootstrap();
+    if (!boot) {
       return;
     }
-    didBootstrap.current = true;
 
-    const { record, validated } = loadValidatedBoardDefaults(
-      userId,
-      projectIds,
-      sprintById
-    );
-
-    setSavedPreference(validated);
+    const { record, validated } = boot;
 
     if (validated) {
       setProjectFilter(preferenceToProjectFilter(validated));
@@ -77,33 +66,15 @@ export function useBacklogProjectDefaults({
     if (!record?.prompted && !validated && suggestedDefaults) {
       promptDefaultsDialog(suggestedDefaults, true);
     }
-  }, [
-    projectIds,
-    promptDefaultsDialog,
-    setSavedPreference,
-    sprintById,
-    suggestedDefaults,
-    userId,
-  ]);
+  }, [consumeBootstrap, promptDefaultsDialog, suggestedDefaults]);
 
   const savedDefaultsApplied =
     savedPreference !== null &&
     preferenceMatchesProjectFilter(savedPreference, projectFilter);
 
   const openDefaultsDialog = useCallback(() => {
-    if (!userId) {
-      return;
-    }
-
-    openDialog(
-      resolveOpenDefaultsPreference(
-        userId,
-        projectIds,
-        sprintById,
-        projectFilterToPreference(projectFilter)
-      )
-    );
-  }, [openDialog, projectFilter, projectIds, sprintById, userId]);
+    openSessionDefaultsDialog(projectFilterToPreference(projectFilter));
+  }, [openSessionDefaultsDialog, projectFilter]);
 
   const baselineProjectId = resolveBaselineProjectFilter(
     savedPreference,
@@ -118,14 +89,16 @@ export function useBacklogProjectDefaults({
     projectFilter,
     setProjectFilter,
     savedDefaultsApplied,
+    canClearDefaults,
     baselineProjectId,
     defaultsDialogOpen,
     setDefaultsDialogOpen,
     allowSkipInDialog,
     dialogInitialPreference,
     openDefaultsDialog,
-    handleSaveDefaults: saveDefaults,
+    handleSaveDefaults,
     handleSkipDefaults,
+    handleClearDefaults,
     resetProjectFilterToBaseline,
   };
 }

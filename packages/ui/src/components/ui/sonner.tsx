@@ -40,10 +40,16 @@ function Toaster({ ...props }: Readonly<ToasterProps>) {
       }}
       style={
         {
-          '--normal-bg': 'color-mix(in oklch, var(--primary) 10%, var(--card))',
+          '--normal-bg': 'color-mix(in oklch, var(--card) 78%, transparent)',
           '--normal-text': 'var(--foreground)',
           '--normal-border':
             'color-mix(in oklch, var(--primary) 18%, var(--border))',
+          '--success-bg':
+            'color-mix(in oklch, var(--card) 68%, oklch(0.78 0.12 155))',
+          '--error-bg':
+            'color-mix(in oklch, var(--card) 72%, var(--destructive))',
+          '--warning-bg':
+            'color-mix(in oklch, var(--card) 70%, oklch(0.84 0.14 85))',
           '--border-radius': 'var(--radius)',
           '--toast-close-button-start': 'auto',
           '--toast-close-button-end': 'auto',
@@ -53,27 +59,27 @@ function Toaster({ ...props }: Readonly<ToasterProps>) {
       toastOptions={{
         classNames: {
           toast:
-            'cn-toast flex! min-h-12 w-auto min-w-[16rem] items-center gap-2 border py-2.5 pr-3.5 pl-3.5 shadow-md',
+            'cn-toast flex! min-h-12 w-auto min-w-[16rem] items-center gap-2 border py-2.5 pr-3.5 pl-3.5 shadow-lg backdrop-blur-xl backdrop-saturate-150',
           title: 'text-sm leading-snug font-medium',
           content: 'flex! w-auto! flex-none! items-center',
           icon: 'm-0! mr-0!',
           success: [
-            'bg-emerald-500/10! text-emerald-600! border-emerald-500/20!',
-            'dark:text-emerald-400! [&_[data-icon]]:text-emerald-600! dark:[&_[data-icon]]:text-emerald-400!',
-            '[&_[data-close-button]]:text-emerald-600/70! dark:[&_[data-close-button]]:text-emerald-400/70!',
-            '[&_[data-close-button]:hover]:text-emerald-700! dark:[&_[data-close-button]:hover]:text-emerald-300!',
+            'text-emerald-700! border-emerald-500/35!',
+            'dark:text-emerald-300! [&_[data-icon]]:text-emerald-600! dark:[&_[data-icon]]:text-emerald-400!',
+            '[&_[data-close-button]]:text-emerald-700/70! dark:[&_[data-close-button]]:text-emerald-300/70!',
+            '[&_[data-close-button]:hover]:text-emerald-800! dark:[&_[data-close-button]:hover]:text-emerald-200!',
           ].join(' '),
           error: [
-            'bg-destructive/10! text-destructive! border-destructive/20!',
+            'text-destructive! border-destructive/30!',
             '[&_[data-icon]]:text-destructive!',
             '[&_[data-close-button]]:text-destructive/70!',
             '[&_[data-close-button]:hover]:text-destructive!',
           ].join(' '),
           warning: [
-            'bg-amber-500/10! text-amber-700! border-amber-500/20!',
-            'dark:text-amber-400! [&_[data-icon]]:text-amber-600! dark:[&_[data-icon]]:text-amber-400!',
-            '[&_[data-close-button]]:text-amber-700/70! dark:[&_[data-close-button]]:text-amber-400/70!',
-            '[&_[data-close-button]:hover]:text-amber-800! dark:[&_[data-close-button]:hover]:text-amber-300!',
+            'text-amber-800! border-amber-500/35!',
+            'dark:text-amber-300! [&_[data-icon]]:text-amber-600! dark:[&_[data-icon]]:text-amber-400!',
+            '[&_[data-close-button]]:text-amber-800/70! dark:[&_[data-close-button]:hover]:text-amber-300/70!',
+            '[&_[data-close-button]:hover]:text-amber-900! dark:[&_[data-close-button]:hover]:text-amber-200!',
           ].join(' '),
           info: '[&_[data-icon]]:text-primary!',
           description: 'hidden',

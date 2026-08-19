@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
+import { SIGNUP_CHECK_EMAIL_MESSAGE } from '@/lib/auth-existing-account';
 import { signUp } from '@/app/auth/actions';
 import { PendingSubmitButton } from '@/components/pending-submit-button';
 
@@ -20,14 +21,16 @@ export default async function SignUpPage({
         <div className="space-y-1 text-center">
           <h1 className="text-2xl font-semibold">Create account</h1>
           <p className="text-muted-foreground text-sm">
-            Get started with Jira Teams
+            {showCheckEmail
+              ? 'Check your inbox for the next steps'
+              : 'Get started with Alice'}
           </p>
         </div>
 
         {showCheckEmail ? (
-          <output className="text-sm text-emerald-600">
-            Check your email for a confirmation link. After confirming, sign in
-            to continue.
+          <output className="text-muted-foreground text-sm">
+            {SIGNUP_CHECK_EMAIL_MESSAGE} Check your spam folder if it does not
+            arrive within a few minutes.
           </output>
         ) : (
           <form action={signUp} className="space-y-4">

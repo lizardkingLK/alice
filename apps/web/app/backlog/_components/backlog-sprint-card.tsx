@@ -6,6 +6,7 @@ import { formatDateRange } from '@/app/backlog/_helpers/backlog-item-utils';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
+import { SprintStatusEnum } from '@repo/types';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card } from '@repo/ui/components/ui/card';
@@ -23,20 +24,25 @@ import {
 const SPRINT_STATUS_BADGE: Partial<
   Record<Sprint['status'], { label: string; className: string }>
 > = {
-  Ongoing: {
-    label: 'Ongoing',
+  [SprintStatusEnum.Active]: {
+    label: 'Active',
     className:
       'border-primary/20 bg-primary/10 px-2 py-0 font-semibold text-primary',
   },
-  Completed: {
-    label: 'Completed',
+  [SprintStatusEnum.Closed]: {
+    label: 'Closed',
     className:
       'border-emerald-500/20 bg-emerald-500/10 px-2 py-0 font-semibold text-emerald-600 dark:text-emerald-400',
   },
-  'Not Started': {
+  [SprintStatusEnum.Planned]: {
     label: 'Planned',
     className:
       'border-muted-foreground/20 bg-muted px-2 py-0 font-semibold text-muted-foreground',
+  },
+  [SprintStatusEnum.Archived]: {
+    label: 'Archived',
+    className:
+      'border-amber-500/20 bg-amber-500/10 px-2 py-0 font-semibold text-amber-500 dark:text-amber-400',
   },
 };
 
@@ -84,7 +90,7 @@ function SprintCardActions({
   onStartSprint,
   onCompleteSprint,
 }: Readonly<SprintCardActionsProps>) {
-  if (sprint.status === 'Completed') {
+  if (sprint.status === SprintStatusEnum.Closed) {
     if (!isManagerOrAdmin) {
       return null;
     }
@@ -115,7 +121,7 @@ function SprintCardActions({
         className="hidden h-6 @xl/sprint-card:block"
       />
 
-      {isManagerOrAdmin && sprint.status === 'Ongoing' ? (
+      {isManagerOrAdmin && sprint.status === SprintStatusEnum.Active ? (
         <Button
           size="sm"
           variant="outline"
@@ -129,7 +135,7 @@ function SprintCardActions({
         </Button>
       ) : null}
 
-      {isManagerOrAdmin && sprint.status === 'Not Started' ? (
+      {isManagerOrAdmin && sprint.status === SprintStatusEnum.Planned ? (
         <Button
           size="sm"
           className="h-8 cursor-pointer bg-emerald-600 text-white hover:bg-emerald-700"
@@ -140,7 +146,7 @@ function SprintCardActions({
         </Button>
       ) : null}
 
-      {isManagerOrAdmin && sprint.status === 'Ongoing' ? (
+      {isManagerOrAdmin && sprint.status === SprintStatusEnum.Active ? (
         <Button
           size="sm"
           className="h-8 cursor-pointer bg-sky-600 text-white hover:bg-sky-700"
@@ -177,7 +183,7 @@ export function BacklogSprintCard({
     <Card
       className={cn(
         'border-border/70 @container/sprint-card overflow-hidden shadow-sm transition-all duration-200',
-        sprint.status === 'Ongoing'
+        sprint.status === SprintStatusEnum.Active
           ? 'border-l-primary border-l-4'
           : 'border-l-muted-foreground/30 border-l-4'
       )}

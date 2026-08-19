@@ -1,5 +1,4 @@
-import Link from 'next/link';
-import { Button } from '@repo/ui/components/ui/button';
+import { HomeAuthButtons } from '@/app/_components/home/home-auth-buttons';
 
 type HomeCtaProps = {
   isSignedIn: boolean;
@@ -9,7 +8,7 @@ export function HomeCta({ isSignedIn }: Readonly<HomeCtaProps>) {
   return (
     <section
       aria-labelledby="home-cta-heading"
-      className="border-border/60 relative flex min-h-dvh snap-start snap-always flex-col items-center justify-center overflow-hidden border-t px-6 py-12"
+      className="border-border/60 relative flex h-dvh shrink-0 snap-start flex-col items-center justify-center overflow-hidden border-t px-6 py-12"
     >
       <div
         aria-hidden
@@ -30,20 +29,11 @@ export function HomeCta({ isSignedIn }: Readonly<HomeCtaProps>) {
             : 'Create an account to manage projects, backlogs, and boards in one workspace.'}
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          {isSignedIn ? (
-            <Button asChild size="lg">
-              <Link href="/dashboard">Open dashboard</Link>
-            </Button>
-          ) : (
-            <>
-              <Button asChild size="lg">
-                <Link href="/signup">Create account</Link>
-              </Button>
-              <Button asChild size="lg" variant="outline">
-                <Link href="/login">Sign in</Link>
-              </Button>
-            </>
-          )}
+          <HomeAuthButtons
+            isSignedIn={isSignedIn}
+            signedInLabel="Open dashboard"
+            signedOutPrimaryLabel="Create account"
+          />
         </div>
       </div>
     </section>

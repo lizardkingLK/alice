@@ -2,15 +2,16 @@
 
 How Alice keeps dashboard pages fast, what has already been optimized, and the roadmap for further wins.
 
-| Field        | Value                                          |
-| ------------ | ---------------------------------------------- |
-| Status       | **Living**                                     |
-| Last updated | 2026-08-01 (dashboard burndown SSR + Suspense) |
-| Scope        | `apps/web` RSC data loading, `apps/api` auth   |
+| Field        | Value                                                      |
+| ------------ | ---------------------------------------------------------- |
+| Status       | **Living**                                                 |
+| Last updated | 2026-08-14 (M8 first slice: list payload + burndown embed) |
+| Scope        | `apps/web` RSC data loading, `apps/api` auth               |
 
 Related:
 
 - [architecture/TRD.md](../architecture/TRD.md) — system design and app boundaries
+- [architecture/DATA_RETRIEVAL.md](../architecture/DATA_RETRIEVAL.md) — app toggle to send list/detail through Express (reintroduces the hop)
 - [auth/AUTHENTICATION.md](../auth/AUTHENTICATION.md) — session, token, and API auth flow
 - [guides/DATABASE.md](./DATABASE.md) — Supabase access patterns
 
@@ -89,20 +90,20 @@ Independent server fetches now run concurrently instead of sequentially. Each ca
   ]);
 ```
 
-`safeServerFetch` (`apps/web/lib/safe-server-fetch.ts`) replaced a `try/catch` block that was copy-pasted into every page — the wrapped promise is created by the caller, so concurrency inside `Promise.all` is preserved. Applied to: `work-items`, `projects`, `manager`, `projects/[id]`, `users`, `sprints`, `backlog` (via `getBacklogWorkspace()`).
+`safeServerFetch` (`apps/web/lib/safe-server-fetch.ts`) replaced a `try/catch` block that was copy-pasted into every page — the wrapped promise is created by the caller, so concurrency inside `Promise.all` is preserved. Applied to: `work-items`, `projects`, `manager`, `projects/[id]`, `users`, `sprints`, `backlog` (via `getBacklogWorkspace()`), `views`.
 
-Paginated readers also share `pageRange` / `paginationMeta` (`apps/web/lib/db/pagination.ts`) for the range math and `{ totalCount, page, limit, totalPages }` shape, keeping the direct-read services free of duplicated pagination boilerplate.
+Paginated readers share `pageRange` / `paginationMeta` (`apps/web/lib/db/pagination.ts`) and `runPaginatedSelect` (`apps/web/lib/db/query.ts`) for order + range + `{ rows, totalCount, page, limit, totalPages }`. Feature services keep table filters and map `rows` to their DTO key (`users`, `workItems`, …).
 
 ### 2.4 Direct Supabase reads in RSC
 
 GET/list pages now read **straight from Supabase in the server component** instead of hopping through the Express API. This removes one full network round trip (`web → api → Supabase`) per read, plus the `requireApiAuth` JWT verify + `public.users` touch that came with it.
 
-- **Reads (direct):** work items, users, projects (list/detail/members), sprints (list + `getSprint` + burndown series), teams — implemented in each feature's `_services/*.server.ts` using the SSR Supabase client (`@/lib/supabase/server`).
+- **Reads (direct):** work items, users, projects (list/detail/members), sprints (list + `getSprint` + burndown series), teams, access allowlist — implemented in each feature's `_services/*.server.ts` using the SSR Supabase client (`@/lib/supabase/server`).
 - **Mutations (unchanged):** create / update / delete / toggle still go through the API, which keeps Zod validation, audit columns, and the service-role client.
 
 Each server reader mirrors the query in the matching API repository (same `select`, filters, ordering, and pagination) so results are identical.
 
-**Security note:** the API uses the Supabase **service-role** key (bypasses RLS); the web SSR client uses the **anon key + user session**. Reads rely on default table grants for the `authenticated` role with RLS unenforced. If RLS is ever enforced, list/detail policies must be added for `work_items`, `projects`, `users`, `sprints`, `project_members`, `teams`, and `team_members` before these reads keep working.
+**Security note:** the API uses the Supabase **service-role** key (bypasses RLS); the web SSR client uses the **anon key + user session**. Reads rely on default table grants for the `authenticated` role with RLS unenforced. If RLS is ever enforced, list/detail policies must be added for `work_items`, `projects`, `users`, `sprints`, `project_members`, `teams`, `team_members`, and `access_allowlist` before these reads keep working. Allowlist list is also **admin-gated in RSC** (`isAdmin`); do not treat table grants as the only control.
 
 ```1:10:apps/web/app/work-items/_services/workItem.service.server.ts
 import { User as DbUser } from '@/app/users/_services/users.service';
@@ -195,6 +196,8 @@ Form dropdowns (`getUserList`, `getProjectList`) are shared across many pages an
 4. Tabs already open with old props keep showing that snapshot until they remount or re-fetch (normal App Router behavior).
 
 Paginated registry lists (`getUsersListPaginated`, `getProjectListPaginated`, etc.) are **not** cached this way — they stay request-fresh.
+
+**Express-only mutations (chat):** `POST /api/chat` creates projects via the API, so it never runs `apps/web/app/projects/_components/actions.ts`. After `create_project`, the chat client must call `revalidateAfterChatActions` (`updateTag('dropdown-projects')`) and then `router.refresh()`. Do **not** `revalidatePath('/projects')` or `revalidatePath('/work-items')` from that action — those pages live in `(list)` route groups, and on-demand revalidate in Next 16 can cache a **404** for the list URL until the dev server restarts. Create Sprint lists **all active projects** (API allows admin/manager to create a sprint on any project). Do not filter the dropdown by `owner_id` — that hid chat-created projects owned by another user. Create Sprint also re-reads via `loadProjectsForSprintForm`.
 
 ### 2.8 Backlog workspace loader (M4.1)
 
@@ -348,8 +351,10 @@ Targeting sub-1.5s. Ordered by impact-to-effort.
 | **M4** | Batch "workspace" loaders — see §5                                                                                            | M      | Low     | Medium on high fan-out pages              | ✅ Shipped (§5)              |
 | **M5** | Short-TTL caching for stable dropdown data (`getUserList`, `getProjectList`) via `unstable_cache` + `updateTag` on mutations. | S–M    | Low–Med | Medium                                    | ✅ Shipped (§2.7)            |
 | **M6** | Infra alignment — same Vercel region for web/api/Supabase, verify prod API URL path, warm cold starts if needed.              | S      | Low     | Medium (spiky)                            | ✅ Shipped (§2.10)           |
+| **M7** | Evaluate Prisma Client (or `pg`) vs PostgREST for hot queries — protocol win is real; full-app swap is not the default.       | L      | High    | High on _some_ queries; mixed for Alice   | 📋 Evaluated (§8)            |
+| **M8** | Inventory **critical hit areas** where Prisma Client (or `pg` / RPC) would beat PostgREST — measure first, swap one path.     | M      | Medium  | High only on named hot queries            | 🔄 First slice (§8.1)        |
 
-**Roadmap complete for existing features (2026-07-24).** Optional hygiene remains in §6 (deprecate unused API GETs, shared paginated-list helper). New surfaces should adopt §3 patterns as they land.
+**Shipped for existing features (2026-07-24 / 2026-08-14).** Unused Express GET reads were removed, including the allowlist table list. API table mutations use Prisma Client. Paginated RSC lists share `runPaginatedSelect`. New surfaces should adopt §3 patterns as they land. **Do not move RSC page reads onto Prisma by default.** The next performance goal is M8: find the few reads that still hurt, then rewrite only those (§8.1).
 
 **RLS reminder:** M1 reads run with the `authenticated` role and RLS unenforced. Before enabling RLS, add SELECT policies for `work_items`, `projects`, `users`, `sprints`, `project_members`, `teams`, and `team_members`. Dropdown cache (§2.7) uses the **service-role** client inside `unstable_cache` only.
 
@@ -383,61 +388,80 @@ Classic M4 (“one Express workspace GET”) was superseded by named RSC loaders
 
 ## 6. Unused API read paths (post-M1)
 
-After M1, dashboard **RSC pages** read from Supabase directly. The Express API remains the write path (Zod, audit, service-role). Several **GET** routes are no longer on the hot path from `apps/web`.
+After M1, dashboard **RSC pages** read from Supabase directly. The Express API remains the write path (Zod, audit, service-role). Unused list/detail **GET** handlers were removed (2026-08-14), including `GET /api/accessAllowlist`. Remaining GETs are capability-kept (Storage, signed URLs, GitHub proxy, cron, health) or non-web — not leftover page table reads.
 
 Legend:
 
-| Status                 | Meaning                                                                                     |
-| ---------------------- | ------------------------------------------------------------------------------------------- |
-| **Unused (web)**       | Handler exists; no current `apps/web` caller; safe to treat as legacy read surface          |
-| **Not implemented**    | No Express GET; web reads via RSC Supabase mirrors                                          |
-| **Client-only**        | Still hit from client components (`*.service.ts` / `apiFetch`) — migrate in next M1 cleanup |
-| **Active (mutations)** | POST/PUT/PATCH/DELETE still used — keep                                                     |
+| Status                 | Meaning                                                                                |
+| ---------------------- | -------------------------------------------------------------------------------------- |
+| **Removed**            | Express GET deleted; web reads via RSC Supabase                                        |
+| **Plan (toggle)**      | Express GET exists (Prisma); web still RSC until `DATA_READS_VIA_API`                  |
+| **Not implemented**    | Never had an Express GET; web reads via RSC                                            |
+| **Client-only**        | Still hit from client components (`*.service.ts` / `apiFetch`) — do not delete yet     |
+| **Kept**               | Capability-required (Storage, signed URLs, cron, probes, non-web) — not an M1 leftover |
+| **Active (mutations)** | POST/PUT/PATCH/DELETE still used — keep                                                |
 
 ### Read routes — web usage audit
 
-| API route                       | Status              | Web caller today   | Notes                                                                                                         |
-| ------------------------------- | ------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `GET /api/users`                | **Unused (web)**    | —                  | `/users` uses `users.service.server.ts`                                                                       |
-| `GET /api/users/secure`         | **Unused (web)**    | —                  | Auth smoke test only                                                                                          |
-| `GET /api/projects`             | **Unused (web)**    | —                  | SSR + forms pass `getProjectList()` from `projects.service.server.ts` (since 2026-07-22)                      |
-| `GET /api/projects/:id`         | **Unused (web)**    | —                  | Edit form uses row data via `projectToEdit`; detail page uses server `getProjectDetails`                      |
-| `GET /api/projects/:id/members` | **Unused (web)**    | —                  | `team-form` uses server action `fetchProjectMembersForForm`; `/projects/[id]` uses server `getProjectMembers` |
-| `GET /api/teams`                | **Unused (web)**    | —                  | `/manager` uses `teams.service.server.ts` (since 2026-07-22)                                                  |
-| `GET /api/sprints`              | **Not implemented** | —                  | List reads are RSC-only (`sprints.service.server.ts`); `/dashboard` uses `getDashboardBurndownBootstrap()`    |
-| `GET /api/sprints/:id`          | **Not implemented** | —                  | Server mirror `getSprint()` in `sprints.service.server.ts`; forms use `sprintToEdit` from list state          |
-| `GET /api/sprints/:id/burndown` | **Unused (web)**    | —                  | Dashboard uses `sprint-burndown.server.ts` + server action; Express handler kept for non-web consumers        |
-| `GET /api/workItems`            | **Unused (web)**    | —                  | List/detail use `workItem.service.server.ts`                                                                  |
-| `GET /api/workItems/:id`        | **Unused (web)**    | —                  | `[id]/page` uses server `getWorkItem`                                                                         |
-| `GET /api/comments`             | **Client-only**     | Mutations + legacy | RSC reads use `listComments` / `getWorkItemDiscussion` in `comments.service.server.ts` (direct Supabase)      |
-| `GET /` (health)                | Active              | Deploy / probes    | Not a data read                                                                                               |
-| `POST /api/notifications/send`  | Active              | Server-side notify | No GET on this router                                                                                         |
-| `POST /api/attachments`         | Active              | `upload-form.tsx`  | Upload only (private bucket; signed URL)                                                                      |
+| API route                                | Status              | Web caller today     | Notes                                                                                                                                              |
+| ---------------------------------------- | ------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/users`                         | **Removed**         | —                    | `/users` uses `users.service.server.ts`                                                                                                            |
+| `GET /api/users/secure`                  | **Removed**         | —                    | Auth smoke test only                                                                                                                               |
+| `GET /api/projects`                      | **Removed**         | —                    | SSR + forms pass `getProjectList()` from `projects.service.server.ts` (incl. `/views` Share)                                                       |
+| `GET /api/projects/:id`                  | **Removed**         | —                    | Edit form uses row data via `projectToEdit`; detail page uses server `getProjectDetails`                                                           |
+| `GET /api/projects/:id/members`          | **Removed**         | —                    | Work-item form uses `fetchProjectMembersForForm`; share/team forms already RSC                                                                     |
+| `GET /api/projects/jira/settings`        | **Removed**         | —                    | Preview/import resolve credentials internally; `PUT /jira/settings` kept                                                                           |
+| `GET /api/teams`                         | **Removed**         | —                    | `/manager` + project workspace use `teams.service.server.ts` (direct Supabase, 2026-08-14)                                                         |
+| `GET /api/sprints`                       | **Not implemented** | —                    | List reads are RSC-only (`sprints.service.server.ts`); `/dashboard` uses `getDashboardBurndownBootstrap()`                                         |
+| `GET /api/sprints/:id`                   | **Not implemented** | —                    | Server mirror `getSprint()` in `sprints.service.server.ts`; forms use `sprintToEdit` from list state                                               |
+| `GET /api/sprints/:id/burndown`          | **Kept**            | —                    | Dashboard uses `sprint-burndown.server.ts` + server action; Express handler kept for non-web consumers                                             |
+| `GET /api/workItems`                     | **Plan (toggle)**   | RSC default          | Prisma list exists; Next stays on `workItem.service.server.ts` until `DATA_READS_VIA_API` ([DATA_RETRIEVAL.md](../architecture/DATA_RETRIEVAL.md)) |
+| `GET /api/workItems/:id`                 | **Plan (toggle)**   | RSC default          | Prisma detail exists; `[id]/page` uses server `getWorkItem` until the same toggle                                                                  |
+| `GET /api/workItems/:id/github`          | **Client-only**     | Work-item sidebar    | `getLinkedPRs()` — GitHub API via service-role on Express                                                                                          |
+| `GET /api/workItems/:id/worklogs`        | **Removed**         | —                    | Detail uses `workItem-worklogs.service.server.ts`; client only **POST**s worklogs                                                                  |
+| `GET /api/comments`                      | **Removed**         | —                    | RSC reads use `listComments` / `getWorkItemDiscussion`; client GET helper had no callers                                                           |
+| `GET /api/saved-views`                   | **Removed**         | —                    | `/views` uses `getSavedViewsPaginated` in `saved-views.service.server.ts`                                                                          |
+| `GET /api/saved-views/shared-with-me`    | **Removed**         | —                    | Same SSR reader (`tab=shared`)                                                                                                                     |
+| `GET /api/chat/conversations`            | **Removed**         | —                    | Page + drawer use `listChatConversations` / `listChatConversationsAction` (direct Supabase)                                                        |
+| `GET /api/chat`, `GET /api/chat/:id`     | **Kept**            | `/chat` RSC + drawer | History is Storage (service-role); RSC uses server `apiFetch`; drawer client `apiFetch`                                                            |
+| `GET /api/attachments/:id`               | **Kept**            | Attachments UI       | Mints signed preview/download URLs (private bucket)                                                                                                |
+| `GET /api/accessAllowlist`               | **Removed**         | —                    | `/users` uses `listAccessAllowlist` in `accessAllowlist.service.server.ts` (admin-gated); mutations stay Express                                   |
+| `GET /api/notifications/check-due-dates` | **Kept**            | Vercel cron          | Not a page read                                                                                                                                    |
+| `GET /api/health`, `GET /api/v1/health`  | **Kept**            | Deploy / probes      | v1 health router; static version details, no DB                                                                                                    |
+| `GET /api/v2/health`                     | **Kept**            | Deploy / probes      | v2 reference (adds `checkedAt`); shared repository, separate service/router                                                                        |
+| `GET /`                                  | **Kept**            | Deploy / probes      | Root status line (`createRootRouter`); not aliased to health JSON                                                                                  |
+| `POST /api/notifications/send`           | Active              | Server-side notify   | No GET on this router                                                                                                                              |
+| `POST /api/attachments`                  | Active              | `upload-form.tsx`    | Upload only (private bucket; signed URL)                                                                                                           |
 
 There is **no** `/api/team-members` or `/api/project-members` router. Membership is nested:
 
-- **Team members** — embedded in `GET /api/teams` select (`members:team_members(*)`) and in team create/update; profile reads `team_members` direct from Supabase.
-- **Project members** — `GET /api/projects/:id/members`; server mirror in `getProjectMembers()`.
+- **Team members** — embedded in RSC `teams.service.server.ts` select (`members:team_members(*)`) and in team create/update; profile reads `team_members` direct from Supabase.
+- **Project members** — RSC `getProjectMembers()`; work-item form refreshes via `fetchProjectMembersForForm`. Mutations stay `POST`/`DELETE /api/projects/:id/members`.
 
 ### Dead client exports (mirror API GET, removed)
 
 These were removed from `*.service.ts` after client forms stopped refetching (2026-07-22). Client modules now export **mutations only** plus shared types:
 
-| Module                | Removed GET helpers                                                                                 |
-| --------------------- | --------------------------------------------------------------------------------------------------- |
-| `users.service.ts`    | `getUsersList`, `getUsersListPaginated`, `getUserList`                                              |
-| `projects.service.ts` | `getProjectList`, `getProjectListPaginated`, `getProjectDetails`, `getProject`, `getProjectMembers` |
-| `teams.service.ts`    | `getTeamList`, `getTeamListPaginated`                                                               |
-| `sprints.service.ts`  | `listSprints`, `getSprint`                                                                          |
+| Module                       | Removed GET helpers                                                                                 |
+| ---------------------------- | --------------------------------------------------------------------------------------------------- |
+| `users.service.ts`           | `getUsersList`, `getUsersListPaginated`, `getUserList`                                              |
+| `projects.service.ts`        | `getProjectList`, `getProjectListPaginated`, `getProjectDetails`, `getProject`, `getProjectMembers` |
+| `teams.service.ts`           | `getTeamList`, `getTeamListPaginated`                                                               |
+| `sprints.service.ts`         | `listSprints`, `getSprint`                                                                          |
+| `saved-views.client.ts`      | `listMySavedViews`, `listSharedWithMeSavedViews`                                                    |
+| `comments.service.ts`        | `getCommentsList` (2026-08-14)                                                                      |
+| `accessAllowlist.service.ts` | `listAccessAllowlist` (2026-08-14)                                                                  |
 
-Dynamic form reads that still need a round trip (e.g. project members on project select in `team-form`) use the server action `fetchProjectMembersForForm` in `apps/web/lib/form-read-actions.ts` — direct Supabase, not Express.
+Dynamic form reads that still need a round trip (project members on project select in share-view / team / work-item forms) use server actions in `apps/web/lib/form-read-actions.ts` — direct Supabase, not Express.
 
 ### Cleanup order (remaining)
 
 1. ~~**Client forms** — stop read refetch via `projects.service.ts` / `sprints.service.ts`~~ ✅ Done (2026-07-22).
 2. ~~**Add `getSprint` server reader**~~ ✅ Done — `sprints.service.server.ts` mirrors `sprintsRepository.findById`.
-3. **Optional:** mark unused GET handlers deprecated in API or keep for non-web consumers / M4 batch endpoints.
-4. **Dedup refactor (deferred):** shared paginated-list helper for `*.service.server.ts` files.
+3. ~~**Remove unused Express GET handlers**~~ ✅ Done (2026-08-14). Remaining GETs: chat Storage history, attachment signed URLs, GitHub PR list, burndown (non-web), cron, health. Leftover **repository** list/paginated methods with no HTTP GET were removed; `projectsRepository.listAll` stays for chat tools. `GET /api/accessAllowlist` removed with the RSC reader.
+4. ~~**Work-item members hook + chat drawer list**~~ ✅ Done (2026-08-14) — `fetchProjectMembersForForm` + `listChatConversationsAction`.
+5. ~~**Dedup paginated RSC lists**~~ ✅ Done (2026-08-14) — `runPaginatedSelect` in `apps/web/lib/db/query.ts` (allowlist list uses it).
+6. ~~**Move `GET /api/accessAllowlist` to RSC**~~ ✅ Done (2026-08-14) — `listAccessAllowlist` in `accessAllowlist.service.server.ts`.
 
 ---
 
@@ -445,3 +469,121 @@ Dynamic form reads that still need a round trip (e.g. project members on project
 
 - **Chrome DevTools → Network:** `document` timing = server RSC time; split TTFB vs download. Watch for multiple sequential calls to `NEXT_PUBLIC_API_URL`.
 - **Vercel logs:** compare `web` vs `api` function durations for one navigation; look for 1–3s cold starts on API invocations.
+- **Before any Prisma / `pg` swap:** pick 2–3 slow pages, record TTFB + query count. Re-measure the same navigation after a _single_ hot path is rewritten. Do not treat “PostgREST is HTTP” as proof of a whole-app win. Candidate list and done-when: **M8** (§8.1).
+
+---
+
+## 8. PostgREST (`supabase-js`) vs Prisma Client (M7)
+
+Prisma already owns **schema and migrations** in `@repo/db`. Runtime **reads** in `apps/web` (and remaining API list/detail) use **`supabase-js` → PostgREST → Postgres`**. Express **table mutations** use Prisma Client over pooled `DATABASE_URL` (`apps/api/src/lib/prisma.ts`). That split is intentional ([DATABASE.md](./DATABASE.md), [TRD.md](../architecture/TRD.md)).
+
+### What the manager is describing (true)
+
+```text
+supabase-js
+  → HTTPS to PostgREST (Data API)
+    → PostgREST plans SQL, runs it, builds JSON
+    → HTTP response to the app
+```
+
+Prisma Client (with a pooled Postgres URL) instead:
+
+```text
+Prisma Client
+  → TCP to Postgres (usually via Supavisor / PgBouncer)
+    → SQL + binary/text protocol
+    → mapped objects in-process
+```
+
+So yes: each `.from().select()` pays an **HTTP round trip** and PostgREST’s JSON assembly. Nested `select('*, assignee:users(...)')` is convenient but can become several SQL statements or a heavy embed. Prisma can emit one SQL join (or a known query plan) over a persistent/pooled connection.
+
+What is **not** generally true: PostgREST does not “SELECT * then filter in Node.” A well-written client query (`select` columns, `.eq` / `.in`, `.range`) becomes SQL with `LIMIT`/`OFFSET`. The waste is the **protocol and fan-out**, not “the database returns the whole table and we throw it away.”
+
+### Why a full-app Prisma swap is a weak next move for Alice
+
+The last ~6s → ~3s drop came from **removing `web → Express → Supabase`**, parallel reads, auth `cache()`, and region alignment — not from replacing PostgREST. Remaining latency is mostly Singapore → Sydney plus **how many** round trips a page fires.
+
+A wholesale Prisma Client rollout would:
+
+| Cost                       | Why it matters here                                                                                                                                                                              |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Serverless connections** | Prisma Client uses `@prisma/adapter-pg`, which needs Supavisor **session** mode (`DATABASE_URL` on the pooler host, port 5432). Transaction mode (6543) can stall mutations indefinitely.        |
+| **RLS / identity**         | RSC reads today use the **user JWT + anon key**. Prisma typically uses a DB role (often bypassing RLS unless you set `SET LOCAL` / `request.jwt.claim`). Auth stays on `supabase-js` either way. |
+| **Two type systems**       | Apps consume `@repo/types` `Database` / `Tables<>`. Prisma generates a second client. Dual sources of truth unless we drop generated Supabase types.                                             |
+| **Still need supabase-js** | Auth, Storage (chat history, attachments), Realtime if we add it. Prisma does not replace those products.                                                                                        |
+| **Rewrite surface**        | Every `*.service.server.ts` and API repository — high regression risk vs incremental RPC/`select` fixes.                                                                                         |
+
+### When Prisma (or `pg` / an RPC) _is_ worth it
+
+Use a **direct Postgres** path for a **named hot query**, not as a default for every `.from()`:
+
+- Aggregations / reports (burndown math, dashboards) that PostgREST expresses poorly.
+- Deep graphs that today fan out as many HTTP embeds.
+- Mutations that already live in Express with the service-role key (connection pooling is easier to own in `apps/api` than in every RSC).
+
+Prefer in this order:
+
+1. **Fewer round trips** — one workspace loader, narrower `select`, indexes (see Postgres best practices).
+2. **`supabase.rpc(...)`** — SQL function, still RLS-aware if `SECURITY INVOKER`, one HTTP call.
+3. **Prisma or `pg` in `apps/api` only** — service-role-equivalent DB user, pooled `DATABASE_URL`, keep RSC on supabase-js until measured.
+4. **Prisma in RSC** — last; requires a pooling + RLS story and a types decision.
+
+### Decision (2026-08-14)
+
+**Do not migrate RSC / page reads to Prisma Client by default.** Keep PostgREST for CRUD list/detail reads. Express mutations use Prisma Client with pooled `DATABASE_URL`; Auth, Storage, and guarded RPCs stay on supabase-js. If a page is still slow after §3 patterns, profile that query and add an RPC or an API-side Prisma/`pg` reader for that path only — that selection work is **M8**.
+
+### 8.1 Prisma hot-path inventory (M8)
+
+Mutations already use Prisma in `apps/api`. Remaining latency on dashboard **reads** is still mostly PostgREST HTTP + how many round trips a navigation fires (Singapore → Sydney). The next step is **not** “put Prisma in every `*.service.server.ts`.” It is to **name the queries where a TCP/SQL client would actually win**, prove it with timings, then change one path.
+
+#### Inventory (2026-08-14) — `/backlog`, `/dashboard`, `/work-items`
+
+Counted from RSC loaders (each `supabase.from().select()` ≈ one `rest/v1` call), not production TTFB. Auth `getDbUser()` is `cache()`d and omitted from the counts below.
+
+| Surface               | REST calls before                       | Bottleneck                                                                                      | Prisma in RSC?                        | What we did (first slice)                                                                                       |
+| --------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `/work-items`         | 4 parallel, **then** paginated items    | List waited on dropdowns/sprints. `select(*)` pulled TipTap `description` JSON for every row.   | No — paginated list + embeds is fine. | Fetch items **in the same** `Promise.all`. List select omits `description` (`workItemListSelect(false)`).       |
+| `/backlog`            | 4 parallel unbounded `getWorkItems()`   | `select(*)` + assignee/reporter embeds for **all** items (description JSON is the payload hog). | Not yet — payload, not protocol.      | Default `getWorkItems()` omits `description`. Four lists stay parallel PostgREST (workspace SQL would be M8.2). |
+| `/dashboard` burndown | 1 sprint list + **3 sequential** series | Sprint → items → worklogs waterfall. Math is already in `computeBurndown` (JS).                 | No — would add a hop or need RPC.     | One nested PostgREST embed: sprint + `work_items` + `work_item_worklogs` (`sprint-burndown.server.ts`).         |
+| `/board` (same pass)  | projects + sprints, **then** all items  | Same unbounded list as backlog, plus description for card preview.                              | No                                    | Items fetched in parallel with projects/sprints. Board still opts into `includeDescription: true`.              |
+
+**Rank (latency × traffic, qualitative):** `/work-items` and `/backlog` first (every session); `/dashboard` burndown next (3 sequential REST → 1 embed); `/projects/[id]` not in this slice.
+
+Prisma Client was **not** the right first rewrite: `apps/web` must not import `@repo/db`, and an API-side Prisma reader would reintroduce the M1 `web → api` hop. Prefer fewer round trips and narrower `select`s (this slice), then `rpc` if a single SQL workspace query is still needed.
+
+#### How to qualify a hit area
+
+A path is a candidate only if **all** of these hold:
+
+1. **User-visible** — the navigation is on the authenticated hot path (dashboard, board, backlog, work-item list/detail), not a rare admin screen.
+2. **Measured** — TTFB + query count recorded for that URL **before** any rewrite (§7). Guessing from “PostgREST is HTTP” is not enough.
+3. **Protocol-bound, not hop-bound** — M1 already removed `web → Express → Supabase`. If the page is still slow, the leftover cost should be nested embeds, N+1-style `.in()` follow-ups, or aggregations PostgREST expresses poorly — not a missing `Promise.all`.
+4. **One SQL shape** — Prisma/`pg` (or `supabase.rpc`) can replace **several** PostgREST calls or a heavy embed with **one** known query plan.
+
+If a page is slow because it fires four independent simple `select`s, fix fan-out first (workspace loader, narrower columns, indexes). Prisma will not magically merge those without a new query.
+
+#### Remaining candidates
+
+| Surface                      | Status after first slice                                    | Next if still slow                                                                     | Where to look                                |
+| ---------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `/backlog`                   | Description dropped; still 4 REST lists + unbounded rows    | Cap/filter items, or one `rpc` workspace query                                         | `getBacklogWorkspace()`                      |
+| `/work-items` list           | Parallelized; no description JSON                           | Re-measure TTFB; indexes on filter columns                                             | `work-items-data.tsx`                        |
+| `/dashboard` burndown        | Series is 1 embed call (+ sprint list for the dropdown)     | Confirm embed in Network; otherwise keep split fallback                                | `sprint-burndown.server.ts`                  |
+| `/board`                     | Parallelized; still ships description JSON for card preview | Plain-text preview column / omit description until sheet open                          | `board-data.tsx`                             |
+| `/work-items/[id]`           | Unchanged                                                   | Ancestor walk is up to 3 sequential `maybeSingle`s — candidate for one recursive query | `getWorkItemAncestors`                       |
+| `/projects/[id]`             | Unchanged                                                   | Same fan-out pattern as backlog                                                        | `getProjectWorkspace(id)`                    |
+| API joined reads still on JS | Unchanged                                                   | Return Prisma rows instead of supabase `getById` after writes                          | Repositories that `getById` after `prisma.*` |
+
+**Out of scope for M8:** Auth, Storage (chat history, attachment signed URLs), cron, GitHub proxy. Prisma does not replace those. Also out of scope: swapping Prisma into RSC **just** to share a client with API mutations.
+
+#### How to run the next measurement
+
+1. Record **document TTFB** and **`rest/v1` call count** on `/work-items`, `/backlog`, `/dashboard` after this slice (§7).
+2. Rank leftover cost by **(latency × traffic)**.
+3. Next rewrite should be **one** of: index, `supabase.rpc` workspace query for `/backlog`, or an **API-side** Prisma/`pg` reader. Do not put Prisma in RSC until pooling/RLS is solved.
+
+#### Done when
+
+- Production TTFB is recorded against the table above (replace qualitative rank with numbers).
+- At most **one** further read path is rewritten to Prisma/`pg`/RPC as a proof — or the inventory closes with “PostgREST + this slice is enough.”
+- `DATABASE.md` / TRD stay aligned: RSC default remains supabase-js; Prisma stays the Express mutation client unless a named exception is documented here.

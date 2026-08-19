@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useProjectMembers } from '@/app/work-items/_hooks/use-project-members';
 import Link from 'next/link';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
@@ -65,6 +66,18 @@ export function BacklogItemDetailsSheet({
   useEffect(() => {
     setDraft({});
   }, [item?.id]);
+
+  const projectId = draft.project_id ?? item?.project_id ?? '';
+  const assigneeId =
+    draft.assignee_id !== undefined ? draft.assignee_id : item?.assignee_id;
+
+  const currentMembers = useProjectMembers({
+    projectId,
+    projectMembers,
+    assigneeId,
+    onAssigneeChange: (val) =>
+      setDraft((prev) => ({ ...prev, assignee_id: val })),
+  });
 
   const handleSave = () => {
     if (item && Object.keys(draft).length > 0) {
@@ -222,7 +235,7 @@ export function BacklogItemDetailsSheet({
                   placeholder="Search assignees…"
                   className="bg-background/50 border-border/80 h-9 w-full"
                   options={buildMemberSelectOptions({
-                    members: projectMembers,
+                    members: currentMembers,
                   })}
                 />
               </div>

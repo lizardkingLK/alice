@@ -5,6 +5,10 @@ import {
   isPublicAccessPath,
   normalizeEmail,
 } from '@/lib/access-allowlist';
+import {
+  isActorOwnAllowlistDomain,
+  isOwnAllowlistDomainLockout,
+} from '@repo/types';
 
 vi.mock('@/lib/supabase/admin', () => import('../mocks/supabase-admin'));
 
@@ -64,6 +68,66 @@ describe('extractEmailDomain', () => {
 
   it('returns null for an invalid email', () => {
     expect(extractEmailDomain('not-an-email')).toBeNull();
+  });
+});
+
+describe('isActorOwnAllowlistDomain', () => {
+  it('is true for a domain row matching the actor email', () => {
+    expect(
+      isActorOwnAllowlistDomain(
+        { kind: 'domain', value: 'Alice.dev' },
+        'admin@alice.dev'
+      )
+    ).toBe(true);
+  });
+
+  it('is false for email rows and other domains', () => {
+    expect(
+      isActorOwnAllowlistDomain(
+        { kind: 'email', value: 'admin@alice.dev' },
+        'admin@alice.dev'
+      )
+    ).toBe(false);
+    expect(
+      isActorOwnAllowlistDomain(
+        { kind: 'domain', value: 'partner.com' },
+        'admin@alice.dev'
+      )
+    ).toBe(false);
+  });
+});
+
+describe('isOwnAllowlistDomainLockout', () => {
+  const ownDomain = { kind: 'domain', value: 'alice.dev' };
+
+  it('is true when deleting the actor own domain', () => {
+    expect(
+      isOwnAllowlistDomainLockout({
+        entry: ownDomain,
+        actorEmail: 'admin@alice.dev',
+        deleting: true,
+      })
+    ).toBe(true);
+  });
+
+  it('is true when setting the actor own domain inactive', () => {
+    expect(
+      isOwnAllowlistDomainLockout({
+        entry: ownDomain,
+        actorEmail: 'admin@alice.dev',
+        nextStatus: 'inactive',
+      })
+    ).toBe(true);
+  });
+
+  it('is false when the actor own domain stays active', () => {
+    expect(
+      isOwnAllowlistDomainLockout({
+        entry: ownDomain,
+        actorEmail: 'admin@alice.dev',
+        nextStatus: 'active',
+      })
+    ).toBe(false);
   });
 });
 

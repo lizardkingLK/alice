@@ -95,10 +95,10 @@ describe('Sprints Workspace', () => {
     cy.contains('tr', sprintName).should('contain', updatedGoal);
 
     // 6. Verify Status is Read-Only
-    // The status should display 'Not Started' and should not be editable (rendered as span, not a button)
+    // The status should display 'Planned' and should not be editable (rendered as span, not a button)
     cy.contains('tr', sprintName).within(() => {
-      cy.contains('span', 'Not Started').should('exist');
-      cy.get('button').contains('Not Started').should('not.exist');
+      cy.contains('span', 'Planned').should('exist');
+      cy.get('button').contains('Planned').should('not.exist');
     });
   });
 
@@ -125,8 +125,8 @@ describe('Sprints Workspace', () => {
 
     // 5. Verify status is read-only as non-creator
     cy.contains('tr', sprintName).within(() => {
-      cy.contains('span', 'Not Started').should('exist');
-      cy.get('button').contains('Not Started').should('not.exist');
+      cy.contains('span', 'Planned').should('exist');
+      cy.get('button').contains('Planned').should('not.exist');
     });
 
     // 6. Edit the sprint as non-creator

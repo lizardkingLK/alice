@@ -3,7 +3,7 @@
 **Status:** Plan  
 **Last updated:** August 1, 2026
 
-Future direction for **Jira Teams** beyond the current board, backlog, work items, sprints, and admin surfaces. The in-app **Roadmap** page (`/roadmap`) surfaces this plan for authenticated users.
+Future direction for **Alice** beyond the current board, backlog, work items, sprints, and admin surfaces. The in-app **Roadmap** page (`/roadmap`) surfaces this plan for authenticated users.
 
 ---
 

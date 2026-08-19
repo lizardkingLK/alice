@@ -1,16 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import {
-  buildProjectSprintLookups,
-  loadValidatedBoardDefaults,
   preferenceMatchesBoardFilters,
   projectFilterToPreference,
-  resolveOpenDefaultsPreference,
 } from '@/app/board/_helpers/workspace-defaults-shared';
-import { useWorkspaceDefaultsDialog } from '@/app/board/_hooks/use-workspace-defaults-dialog';
+import { useWorkspaceDefaultsSession } from '@/app/board/_hooks/use-workspace-defaults-session';
 import { buildWorkspaceFilterRedirectPath } from '@/app/board/_services/board-defaults';
 import type { Project } from '@/app/projects/_services/projects.service.base';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
@@ -48,12 +45,6 @@ export function useBoardDefaultsBootstrap({
 }: UseBoardDefaultsBootstrapOptions) {
   const router = useRouter();
   const pathname = usePathname();
-  const didBootstrap = useRef(false);
-
-  const { projectIds, sprintById } = useMemo(
-    () => buildProjectSprintLookups(projects, sprints),
-    [projects, sprints]
-  );
 
   const navigateToPreference = useCallback(
     (preference: BoardDefaultsPreference) => {
@@ -76,37 +67,31 @@ export function useBoardDefaultsBootstrap({
     allowSkipInDialog,
     dialogInitialPreference,
     savedPreference,
-    setSavedPreference,
-    handleSaveDefaults: saveDefaults,
+    handleSaveDefaults,
     handleSkipDefaults,
+    handleClearDefaults,
     promptDefaultsDialog,
-    openDefaultsDialog: openDialog,
-  } = useWorkspaceDefaultsDialog({
+    canClearDefaults,
+    consumeBootstrap,
+    openDefaultsDialog: openSessionDefaultsDialog,
+  } = useWorkspaceDefaultsSession({
     userId,
+    projects,
+    sprints,
     onSave: navigateToPreference,
   });
 
   useEffect(() => {
-    if (!userId) {
+    const boot = consumeBootstrap();
+    if (!boot) {
       return;
     }
-    if (didBootstrap.current) {
-      return;
-    }
-    didBootstrap.current = true;
-
-    const { record, validated } = loadValidatedBoardDefaults(
-      userId,
-      projectIds,
-      sprintById
-    );
-
-    setSavedPreference(validated);
 
     if (!needsClientBootstrap) {
       return;
     }
 
+    const { record, validated } = boot;
     const nextPreference =
       validated ??
       (suggestedDefaults
@@ -124,30 +109,18 @@ export function useBoardDefaultsBootstrap({
       promptDefaultsDialog(nextPreference, true);
     }
   }, [
+    consumeBootstrap,
     navigateToPreference,
     needsClientBootstrap,
-    projectIds,
     promptDefaultsDialog,
-    setSavedPreference,
-    sprintById,
     suggestedDefaults,
-    userId,
   ]);
 
   const openDefaultsDialog = useCallback(() => {
-    if (!userId) {
-      return;
-    }
-
-    openDialog(
-      resolveOpenDefaultsPreference(
-        userId,
-        projectIds,
-        sprintById,
-        projectFilterToPreference(projectFilter || 'all', sprintFilter)
-      )
+    openSessionDefaultsDialog(
+      projectFilterToPreference(projectFilter || 'all', sprintFilter)
     );
-  }, [openDialog, projectFilter, projectIds, sprintById, sprintFilter, userId]);
+  }, [openSessionDefaultsDialog, projectFilter, sprintFilter]);
 
   const savedDefaultsApplied =
     savedPreference !== null &&
@@ -187,10 +160,12 @@ export function useBoardDefaultsBootstrap({
     allowSkipInDialog,
     dialogInitialPreference,
     savedDefaultsApplied,
+    canClearDefaults,
     urlFiltersActive,
     openDefaultsDialog,
-    handleSaveDefaults: saveDefaults,
+    handleSaveDefaults,
     handleSkipDefaults,
+    handleClearDefaults,
     resetUrlFilters,
   };
 }

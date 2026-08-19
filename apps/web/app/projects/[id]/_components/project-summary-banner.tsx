@@ -1,15 +1,7 @@
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Calendar, CheckCircle, AlertCircle } from '@repo/ui/lib/icons';
+import { formatDate } from '@/app/_shared/utility';
 import type { Project } from '../../_services/projects.service';
-
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return 'No date';
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
 
 type ProjectSummaryBannerProps = {
   readonly project: Project;

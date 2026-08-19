@@ -12,6 +12,7 @@ import {
   CommandList,
 } from '@repo/ui/components/ui/command';
 import { Search } from '@repo/ui/lib/icons';
+import { DIALOG_CLOSE_ANIMATION_MS } from '@/lib/dialog-close';
 import {
   docHref,
   filterDocsIndex,
@@ -43,6 +44,18 @@ export function DocsSearchDialog({ entries }: DocsSearchDialogProps) {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
+  useEffect(() => {
+    if (open) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setQuery('');
+    }, DIALOG_CLOSE_ANIMATION_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [open]);
+
   const results = filterDocsIndex(entries, query).slice(0, 40);
 
   return (
@@ -65,12 +78,7 @@ export function DocsSearchDialog({ entries }: DocsSearchDialogProps) {
 
       <CommandDialog
         open={open}
-        onOpenChange={(next) => {
-          setOpen(next);
-          if (!next) {
-            setQuery('');
-          }
-        }}
+        onOpenChange={setOpen}
         title="Search documentation"
         description="Find a documentation page by title or content."
         shouldFilter={false}
@@ -89,7 +97,6 @@ export function DocsSearchDialog({ entries }: DocsSearchDialogProps) {
                 value={`${entry.title} ${entry.section} ${entry.excerpt}`}
                 onSelect={() => {
                   setOpen(false);
-                  setQuery('');
                   router.push(docHref(entry.slug));
                 }}
               >

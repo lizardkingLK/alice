@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
 import { WorkItemForm } from '@/app/work-items/_components/workItem-form';
 import {
   createWorkItem,
@@ -10,10 +9,15 @@ import { userFactory } from '../factories/user.factory';
 import { projectFactory } from '../factories/project.factory';
 import { workItemFactory } from '../factories/workItem.factory';
 import { pickComboboxOption } from '../helpers/pick-combobox-option';
+import { fetchProjectMembersForForm } from '@/lib/form-read-actions';
 
 vi.mock('@/app/work-items/_services/workItem.service.client', () => ({
   createWorkItem: vi.fn(),
   updateWorkItem: vi.fn(),
+}));
+
+vi.mock('@/lib/form-read-actions', () => ({
+  fetchProjectMembersForForm: vi.fn(),
 }));
 
 vi.mock('@/app/_shared/utility', async (importOriginal) => {
@@ -24,35 +28,32 @@ vi.mock('@/app/_shared/utility', async (importOriginal) => {
   };
 });
 
-vi.mock('@repo/ui/components/ui/dropdown-menu', () => ({
-  DropdownMenu: ({ children }: { children: ReactNode }) => (
-    <div data-testid="dropdown-menu">{children}</div>
-  ),
-  DropdownMenuTrigger: ({ children }: { children: ReactNode }) => (
-    <>{children}</>
-  ),
-  DropdownMenuContent: ({ children }: { children: ReactNode }) => (
-    <div role="menu">{children}</div>
-  ),
-  DropdownMenuItem: ({
-    children,
-    onSelect,
-  }: {
-    children: ReactNode;
-    onSelect?: () => void;
-  }) => (
-    <button type="button" role="menuitem" onClick={() => onSelect?.()}>
-      {children}
-    </button>
-  ),
-}));
+vi.mock(
+  '@repo/ui/components/ui/dropdown-menu',
+  () => import('../mocks/dropdown-menu')
+);
 
 describe('WorkItemForm', () => {
-  const projects = projectFactory.buildList(2);
   const projectMembers = userFactory.buildList(2);
+  const projects = projectFactory.buildList(2).map((proj, idx) => ({
+    ...proj,
+    owner: {
+      id: projectMembers[idx]!.id,
+      name: projectMembers[idx]!.name,
+      email: projectMembers[idx]!.email,
+    },
+  }));
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(fetchProjectMembersForForm).mockResolvedValue(
+      projectMembers.map((member) => ({
+        id: member.id,
+        name: member.name,
+        email: member.email,
+        profile_picture: member.profile_picture ?? null,
+      }))
+    );
   });
 
   it('renders fields and lists projects and members in selects', async () => {
@@ -157,7 +158,7 @@ describe('WorkItemForm', () => {
 
     expect(screen.getByLabelText(/^Title$/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/^Description$/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/^Labels$/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/^Labels$/i)).toBeInTheDocument();
   });
 
   it('submits in create mode and calls onSuccess', async () => {

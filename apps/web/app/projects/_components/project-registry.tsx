@@ -62,6 +62,7 @@ import {
 import type { Project } from '../_services/projects.service';
 import type { User } from '@/app/users/_services/users.service';
 import { cn } from '@repo/ui/lib/utils';
+import { formatMonthYear } from '@/app/_shared/utility';
 
 type ProjectTab = 'active' | 'archived';
 
@@ -80,18 +81,8 @@ interface ProjectRegistryProps {
 
 function formatTimeline(startDate?: string | null, endDate?: string | null) {
   if (!startDate && !endDate) return 'No timeline';
-  const startStr = startDate
-    ? new Date(startDate).toLocaleDateString(undefined, {
-        month: 'short',
-        year: 'numeric',
-      })
-    : 'Start';
-  const endStr = endDate
-    ? new Date(endDate).toLocaleDateString(undefined, {
-        month: 'short',
-        year: 'numeric',
-      })
-    : 'End';
+  const startStr = startDate ? formatMonthYear(startDate) : 'Start';
+  const endStr = endDate ? formatMonthYear(endDate) : 'End';
   return `${startStr} - ${endStr}`;
 }
 
@@ -464,7 +455,7 @@ export function ProjectRegistry({
           <div
             className={cn(
               'animate-in fade-in zoom-in-95 no-scrollbar max-h-[calc(100vh-2rem)] w-full overflow-y-auto transition-all duration-300',
-              isAddWide ? 'max-w-4xl' : 'max-w-lg'
+              isAddWide ? 'max-w-2xl' : 'max-w-xl'
             )}
           >
             <ProjectForm
@@ -488,7 +479,7 @@ export function ProjectRegistry({
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
           <div
             className={cn(
-              'animate-in fade-in zoom-in-95 no-scrollbar max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto duration-200'
+              'animate-in fade-in zoom-in-95 no-scrollbar max-h-[calc(100vh-2rem)] w-full max-w-xl overflow-y-auto duration-200'
             )}
           >
             <ProjectForm

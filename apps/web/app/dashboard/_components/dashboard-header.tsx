@@ -2,6 +2,7 @@ import { SidebarTrigger } from '@repo/ui/components/ui/sidebar';
 import { DashboardPageMeta } from './dashboard-page-meta';
 import { AuthControls } from '@/app/dashboard/_components/dashboard-auth';
 import { NotificationInbox } from '@/app/dashboard/_components/dashboard-notifications';
+import { ChatLauncherButton } from '@/app/chat/_components/chat-launcher';
 import { getDbUser, getUser } from '@/lib/auth';
 import { buildLoginPath } from '@/lib/auth-redirect';
 import { getRequestPathForLoginNext } from '@/lib/auth-redirect.server';
@@ -19,12 +20,16 @@ type DashboardHeaderProps = {
   description?: string;
   breadcrumbOverrides?: DashboardBreadcrumbOverride[];
   breadcrumbAsTrail?: boolean;
+  favoriteLabel?: string;
+  projectId?: string | null;
 };
 
 export async function DashboardHeader({
   description,
   breadcrumbOverrides,
   breadcrumbAsTrail,
+  favoriteLabel,
+  projectId,
 }: Readonly<DashboardHeaderProps>) {
   const user = await getUser();
   const dbUser = await getDbUser();
@@ -70,22 +75,24 @@ export async function DashboardHeader({
         description={description}
         breadcrumbOverrides={breadcrumbOverrides}
         breadcrumbAsTrail={breadcrumbAsTrail}
+        userId={user.id}
+        favoriteLabel={favoriteLabel}
+        projectId={projectId}
       />
-      <section>
+      <div className="flex shrink-0 items-center gap-2">
         <NotificationInbox
           userId={user.id}
           initialNotifications={initialNotifications ?? []}
           initialLoadFailed={notificationsLoadFailed}
         />
-      </section>
-      <section>
+        <ChatLauncherButton />
         <AuthControls
           email={user.email}
           name={dbUser?.name}
           role={dbUser?.role}
           profilePicture={dbUser?.profile_picture}
         />
-      </section>
+      </div>
     </header>
   );
 }

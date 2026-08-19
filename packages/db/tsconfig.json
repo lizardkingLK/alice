@@ -7,7 +7,10 @@
     "types": ["node"],
     "strict": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "rootDir": "src",
+    "outDir": "./dist",
+    "declaration": true,
+    "noEmit": false
   },
-  "include": ["prisma.config.ts", "eslint.config.mjs", "src/**/*.ts"]
+  "include": ["src/**/*.ts"]
 }

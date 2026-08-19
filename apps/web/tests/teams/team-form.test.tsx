@@ -115,6 +115,8 @@ const mockProjects: Project[] = [
     deleted_at: null,
     attributes_config: null,
     workflow_config: null,
+    github_repo: null,
+    github_token: null,
     owner: {
       id: 'user-admin-1',
       name: 'Admin User',
@@ -137,6 +139,8 @@ const mockProjects: Project[] = [
     deleted_at: null,
     attributes_config: null,
     workflow_config: null,
+    github_repo: null,
+    github_token: null,
     owner: {
       id: 'user-admin-1',
       name: 'Admin User',

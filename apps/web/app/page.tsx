@@ -1,12 +1,10 @@
-import { getDbUser, getUser } from '@/lib/auth';
-import { isEmailAllowed } from '@/lib/access-allowlist';
-import Link from 'next/link';
-import { Button } from '@repo/ui/components/ui/button';
-import { AuthControls } from '@/app/dashboard/_components/dashboard-auth';
 import { HomeCta } from '@/app/_components/home/home-cta';
-import { HomeFeatures } from '@/app/_components/home/home-features';
 import { HomeFooter } from '@/app/_components/home/home-footer';
 import { HomeHowItWorks } from '@/app/_components/home/home-how-it-works';
+import { HomeHero } from '@/app/_components/home/home-hero';
+import { HomeNavbar } from '@/app/_components/home/home-navbar';
+import { HomePricing } from '@/app/_components/home/home-pricing';
+import { getMarketingSession } from '@/app/_components/home/get-marketing-session';
 import './globals.css';
 
 type HomeProps = {
@@ -14,48 +12,30 @@ type HomeProps = {
 };
 
 export default async function Home({ searchParams }: Readonly<HomeProps>) {
-  const [user, dbUser] = await Promise.all([getUser(), getDbUser()]);
-
-  const showAppLinks = user?.email ? await isEmailAllowed(user.email) : false;
+  const { user, dbUser, showAppLinks, isSignedIn } =
+    await getMarketingSession();
 
   const { reset, account } = await searchParams;
   const resetSuccess = reset === 'success';
   const accountClosed = account === 'closed';
 
   return (
-    <main className="h-dvh snap-y snap-mandatory overflow-y-auto">
-      <section className="relative flex min-h-dvh snap-start snap-always flex-col items-center justify-center px-6">
-        <div className="absolute top-0 right-0 p-4">
-          <AuthControls
-            email={user?.email}
-            profilePicture={dbUser?.profile_picture}
-          />
-        </div>
-        {resetSuccess ? (
-          <output className="absolute top-16 text-sm text-emerald-600">
-            Password updated. Sign in with your new password.
-          </output>
-        ) : null}
-        {accountClosed ? (
-          <output className="text-muted-foreground absolute top-16 max-w-md px-4 text-center text-sm">
-            Your account has been deactivated. Contact an administrator if you
-            need access restored.
-          </output>
-        ) : null}
-        <div>
-          <h1 className="text-8xl font-bold">Jira Teams</h1>
-          <h2 className="text-center text-4xl">A Jira Clone</h2>
-        </div>
-        <div className="flex gap-4 p-4">
-          <Button asChild className="cursor-pointer">
-            <Link href="/dashboard">Dashboard</Link>
-          </Button>
-        </div>
-      </section>
+    <main className="h-dvh snap-y snap-proximity overflow-x-hidden overflow-y-auto">
+      <div className="flex h-dvh shrink-0 snap-start flex-col">
+        <HomeNavbar
+          email={user?.email}
+          profilePicture={dbUser?.profile_picture}
+        />
+        <HomeHero
+          isSignedIn={isSignedIn}
+          resetSuccess={resetSuccess}
+          accountClosed={accountClosed}
+        />
+      </div>
 
-      <HomeFeatures />
       <HomeHowItWorks />
-      <HomeCta isSignedIn={Boolean(user)} />
+      <HomePricing isSignedIn={isSignedIn} />
+      <HomeCta isSignedIn={isSignedIn} />
       <HomeFooter showAppLinks={showAppLinks} />
     </main>
   );

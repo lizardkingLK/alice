@@ -1,15 +1,15 @@
 # Agile Requirements Document (ARD)
 
-## Jira Teams — Project Management Platform
+## Alice — Project Management Platform
 
-**Project:** Alice (Jira Teams)  
+**Project:** Alice  
 **Version:** 1.5  
 **Last Updated:** July 20, 2026  
 **Status:** In development (Living)
 
 ## 1. Executive Summary
 
-Jira Teams is a Jira-inspired project management application described in the README as a cost-effective alternative to Jira. Teams will use it to organize work into projects and track issues such as tasks, bugs, and stories.
+Alice is a Jira-inspired project management application described in the README as a cost-effective alternative to Jira. Teams will use it to organize work into projects and track issues such as tasks, bugs, and stories.
 
 The project is a Turborepo monorepo with a Next.js frontend (`apps/web`), an Express API backend (`apps/api`), and a shared UI package (`packages/ui`). Authentication is handled by Supabase Auth. Supabase (PostgreSQL) is the database for application data.
 
@@ -31,7 +31,7 @@ The project is a Turborepo monorepo with a Next.js frontend (`apps/web`), an Exp
 - Monorepo setup with Turborepo and pnpm workspaces.
 - Supabase Auth integration on the web app (SSR clients, session cookies, middleware session refresh, and auth actions).
 - Supabase Auth on the API (`requireApiAuth` middleware validating Bearer access tokens).
-- Home page at `/` with "Jira Teams" branding and email/password authentication (sign-in, sign-up, sign-out).
+- Home page at `/` with "Alice" branding and email/password authentication (sign-in, sign-up, sign-out).
 - Password recovery pages (`/forgot-password`, `/reset-password`) and auth confirm flow.
 - Dashboard workspace shell (`/dashboard`) with customizable overview widgets.
 - Sprints management workspace (`/sprints`) supporting active/archived sprint lists, creation, and status transitions.
@@ -44,7 +44,9 @@ The project is a Turborepo monorepo with a Next.js frontend (`apps/web`), an Exp
 - Files and profile workspace pages (`/files`, `/profile`).
 - Global client-side and server-side pagination component and routing hooks.
 - Express API with modular route structure under `src/routes/api/` (health, users, notifications, files, projects, sprints, attributes, work items).
-- `GET /api/health` — public health check.
+- `GET /api/health` / `GET /api/v1/health` — public health / version probe (v1).
+- `GET /api/v2/health` — v2 health probe (adds `checkedAt`; reference for URL versioning).
+- `GET /` — public API listening status (plain text).
 - Shared UI components via `@repo/ui` (shadcn-based; add with `pnpm ui:add`).
 - GitHub Actions workflow for lint, test, and Vercel deployment.
 - Conventional Commits enforced via Husky, Commitlint, and Commitizen.
@@ -86,7 +88,9 @@ Users without a matching role are redirected to `/` when visiting a role-specifi
 ### Platform
 
 - **OPS-1:** As a developer, I want a health-check endpoint so that deployments can be verified.
-  - `GET /api/health` returns `{ "status": "ok", "runtime": "express" }`.
+  - `GET /api/v1/health` (alias `/api/health`) returns `{ "status": "ok", "runtime": "express", "name": "alice-api", "version": "v1" }`.
+  - `GET /api/v2/health` returns v2 shape with `checkedAt` (versioning reference).
+  - `GET /` returns a plain listening status (not version JSON).
   - Status: Done.
 
 - **OPS-2:** As a developer, I want lint and test gates in CI so that broken code is not merged.
@@ -132,7 +136,7 @@ Users without a matching role are redirected to `/` when visiting a role-specifi
 - **FR-2:** The system shall store application data in Supabase (PostgreSQL) using Prisma migrations.
 - **FR-3:** The system shall expose a REST API from `apps/api` consumed by the Next.js frontend.
 - **FR-4:** The system shall provide a web UI at `apps/web` using shared `@repo/ui` components.
-- **FR-5:** The API shall expose a public health check at `GET /api/health`.
+- **FR-5:** The API shall expose a public health check at `GET /api/health` (versioned alias `GET /api/v1/health`).
 - **FR-6:** The API shall protect endpoints using `requireApiAuth` middleware validating Supabase access tokens.
 
 ## 7. Non-Functional Requirements

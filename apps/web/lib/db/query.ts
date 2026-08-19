@@ -1,3 +1,5 @@
+import { pageRange, paginationMeta, type PaginationMeta } from './pagination';
+
 /**
  * Small, client-agnostic helpers shared by the RSC data services so each
  * paginated list query doesn't re-implement the same search / error-handling
@@ -29,6 +31,69 @@ export function applyListSearch<Q extends OrSearchable<Q>>(
     .join(',');
 
   return query.or(expression);
+}
+
+export type PaginatedSelectResult<TRow> = {
+  rows: TRow[];
+} & PaginationMeta;
+
+export type RunPaginatedSelectOptions = {
+  orderBy: string;
+  ascending?: boolean;
+  logLabel: string;
+  errorMessage: string;
+};
+
+/**
+ * PostgREST builders chain `.order()` then `.range()`, and `range()` is thenable.
+ * Keep this structural so RSC readers stay free of `SupabaseClient` generics.
+ */
+/* eslint-disable no-unused-vars */
+interface PaginatedSelectBuilder {
+  order(
+    column: string,
+    options?: { ascending?: boolean }
+  ): {
+    range(
+      from: number,
+      to: number
+    ): PromiseLike<{
+      data: unknown;
+      error: { message: string; code?: string } | null;
+      count: number | null;
+    }>;
+  };
+}
+/* eslint-enable no-unused-vars */
+
+/**
+ * Shared page slice: order + range + count meta + `throwIfError`.
+ * Callers apply table-specific filters first, then map `rows` to their DTO key.
+ */
+export async function runPaginatedSelect<TRow>(
+  query: PaginatedSelectBuilder,
+  page: number,
+  limit: number,
+  options: RunPaginatedSelectOptions
+): Promise<PaginatedSelectResult<TRow>> {
+  const { from, to } = pageRange(page, limit);
+  const { data, error, count } = await query
+    .order(options.orderBy, { ascending: options.ascending ?? false })
+    .range(from, to);
+
+  if (error && isUnsatisfiableRangeError(error)) {
+    return {
+      rows: [] as TRow[],
+      ...paginationMeta(count ?? 0, page, limit),
+    };
+  }
+
+  throwIfError(error, options.logLabel, options.errorMessage);
+
+  return {
+    rows: (data ?? []) as TRow[],
+    ...paginationMeta(count ?? 0, page, limit),
+  };
 }
 
 /** Logs (with the repo `error. <label>:` prefix) and throws when a query fails. */
@@ -78,5 +143,17 @@ export function isMissingRelationError(error: {
     message.includes('schema cache') ||
     message.includes('could not find the table') ||
     (message.includes('relation') && message.includes('does not exist'))
+  );
+}
+
+/** True when `.range(from, to)` starts past the last row (HTTP 416 / PGRST103). */
+export function isUnsatisfiableRangeError(error: {
+  message?: string;
+  code?: string;
+}): boolean {
+  const code = error.code ?? '';
+  const message = error.message?.toLowerCase() ?? '';
+  return (
+    code === 'PGRST103' || message.includes('requested range not satisfiable')
   );
 }

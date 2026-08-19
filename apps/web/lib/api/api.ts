@@ -38,6 +38,15 @@ type TreeifiedError = {
 };
 
 export function getAPIUrl() {
+  // In the browser during `next dev`, call the Next origin so mutations are
+  // rewritten to Express. Direct `localhost:5000` fails in a devcontainer
+  // when only port 3000 is forwarded (Save view never reaches the API).
+  if (
+    globalThis.window !== undefined &&
+    process.env.NODE_ENV === 'development'
+  ) {
+    return '';
+  }
   return process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL;
 }
 
@@ -114,21 +123,43 @@ function isNetworkConnectivityError(error: unknown): boolean {
   );
 }
 
+const FETCH_TIMEOUT_MS = 20_000;
+
+export type GetResponseInit = RequestInit & {
+  /** Overrides the default 20s abort. Chat needs longer for Gemini tool loops. */
+  timeoutMs?: number;
+};
+
+function mergeAbortSignals(
+  timeoutMs: number,
+  external?: AbortSignal | null
+): AbortSignal {
+  const timeout = AbortSignal.timeout(timeoutMs);
+  if (!external) {
+    return timeout;
+  }
+  return AbortSignal.any([timeout, external]);
+}
+
 export async function getResponse<T>(
   path: string,
   token: string,
-  init?: RequestInit
+  init?: GetResponseInit
 ): Promise<T> {
   const apiUrl = getAPIUrl();
-  if (!apiUrl) {
+  // `''` is same-origin in `next dev` (rewritten to Express). Do not treat it
+  // as missing — `!''` is true and was aborting Save view immediately.
+  if (apiUrl == null) {
     throw new BackendUnreachableError();
   }
 
-  const headers = new Headers(init?.headers);
+  const { timeoutMs = FETCH_TIMEOUT_MS, ...fetchInit } = init ?? {};
+
+  const headers = new Headers(fetchInit.headers);
   headers.set('Authorization', `Bearer ${token}`);
 
   const isFormData =
-    typeof FormData !== 'undefined' && init?.body instanceof FormData;
+    typeof FormData !== 'undefined' && fetchInit.body instanceof FormData;
 
   // Let the browser set multipart boundary for FormData uploads.
   if (isFormData) {
@@ -141,8 +172,9 @@ export async function getResponse<T>(
   try {
     response = await fetch(`${apiUrl}${path}`, {
       cache: 'no-store',
-      ...init,
+      ...fetchInit,
       headers,
+      signal: mergeAbortSignals(timeoutMs, fetchInit.signal),
     });
   } catch (error) {
     if (isNetworkConnectivityError(error)) {

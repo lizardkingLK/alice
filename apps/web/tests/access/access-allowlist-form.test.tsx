@@ -7,6 +7,10 @@ import {
 } from '@/app/access-allowlist/_services/accessAllowlist.service';
 import { accessAllowlistFactory } from '../factories/accessAllowlist.factory';
 
+vi.mock('@repo/ui/components/ui/select', () =>
+  import('../mocks/select').then((module) => module.createSelectMock())
+);
+
 vi.mock('@/app/access-allowlist/_services/accessAllowlist.service', () => ({
   createAccessAllowlistEntry: vi.fn(),
   updateAccessAllowlistEntry: vi.fn(),
@@ -22,13 +26,13 @@ describe('AccessAllowlistForm', () => {
     render(<AccessAllowlistForm />);
 
     // Assert
-    expect(screen.getByLabelText(/^Kind$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Kind$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^Domain$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Label \(optional\)/i)).toBeInTheDocument();
     expect(
       screen.getByLabelText(/Expires on \(optional\)/i)
     ).toBeInTheDocument();
-    expect(screen.getByLabelText(/^Status$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Status$/i)).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /Add Entry/i })
     ).toBeInTheDocument();
@@ -55,8 +59,8 @@ describe('AccessAllowlistForm', () => {
   it('rejects an invalid email via Zod alert', async () => {
     // Arrange
     render(<AccessAllowlistForm />);
-    fireEvent.click(screen.getByLabelText(/^Kind$/i));
-    fireEvent.click(screen.getByRole('option', { name: 'Email' }));
+    const kindSelect = screen.getAllByTestId('ui-select')[0]!;
+    fireEvent.change(kindSelect, { target: { value: 'email' } });
     fireEvent.change(screen.getByLabelText(/^Email$/i), {
       target: { value: 'not-an-email' },
     });
@@ -148,6 +152,26 @@ describe('AccessAllowlistForm', () => {
     });
     expect(
       await screen.findByText(/Allowlist entry updated/i)
+    ).toBeInTheDocument();
+  });
+
+  it('locks status when editing the current user own domain', () => {
+    const entry = accessAllowlistFactory.build({
+      kind: 'domain',
+      value: 'alice.dev',
+      status: 'active',
+    });
+
+    render(
+      <AccessAllowlistForm entry={entry} currentUserEmail="admin@alice.dev" />
+    );
+
+    const statusSelect = screen.getAllByTestId('ui-select')[1];
+    expect(statusSelect).toBeDisabled();
+    expect(
+      screen.getByRole('button', {
+        name: /You cannot delete or deactivate the domain that matches your email/i,
+      })
     ).toBeInTheDocument();
   });
 });

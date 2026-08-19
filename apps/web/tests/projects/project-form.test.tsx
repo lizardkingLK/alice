@@ -96,6 +96,8 @@ const mockProject = {
   jira_email: null,
   jira_token: null,
   jira_project_key: null,
+  github_repo: null,
+  github_token: null,
   owner: {
     id: 'user-mgr-1',
     name: 'Manager One',
@@ -123,11 +125,11 @@ describe('ProjectForm Component', () => {
   it('performs required field validation on submit', async () => {
     render(<ProjectForm users={mockUsers} />);
 
-    const form = screen.getByLabelText(/Project Name/i).closest('form')!;
-    fireEvent.submit(form);
+    const nextBtn = screen.getByRole('button', { name: /Next/i });
+    fireEvent.click(nextBtn);
 
     expect(
-      await screen.findByText(/Project Name, Key, and Owner are required/i)
+      await screen.findByText(/Project Name is required/i)
     ).toBeInTheDocument();
   });
 
@@ -161,8 +163,14 @@ describe('ProjectForm Component', () => {
       target: { value: '2026-08-10' },
     });
 
-    const form = screen.getByLabelText(/Project Name/i).closest('form')!;
-    fireEvent.submit(form);
+    // Advance to Step 2 (Jira)
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+
+    // Advance to Step 3 (GitHub)
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+
+    // Submit on Step 3
+    fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     await waitFor(() => {
       expect(createProject).toHaveBeenCalledWith({
@@ -177,6 +185,8 @@ describe('ProjectForm Component', () => {
         workflow_config: null,
         jira_url: null,
         jira_project_key: null,
+        github_repo: null,
+        github_token: null,
       });
     });
 
@@ -219,8 +229,14 @@ describe('ProjectForm Component', () => {
       target: { value: 'Project Alice Updated' },
     });
 
-    const form = screen.getByLabelText(/Project Name/i).closest('form')!;
-    fireEvent.submit(form);
+    // Advance to Step 2 (Jira)
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+
+    // Advance to Step 3 (GitHub)
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+
+    // Submit on Step 3
+    fireEvent.click(screen.getByRole('button', { name: /Save Changes/i }));
 
     await waitFor(() => {
       expect(updateProject).toHaveBeenCalledWith(
@@ -237,6 +253,8 @@ describe('ProjectForm Component', () => {
           workflow_config: null,
           jira_url: null,
           jira_project_key: null,
+          github_repo: null,
+          github_token: null,
         },
         '2026-07-09T10:00:00Z'
       );
@@ -271,8 +289,22 @@ describe('ProjectForm Component', () => {
 
     render(<ProjectForm users={mockUsers} />);
 
+    // Fill Step 1
+    fireEvent.change(screen.getByLabelText(/Project Name/i), {
+      target: { value: 'Project Alice' },
+    });
+    fireEvent.change(screen.getByLabelText(/Project Key/i), {
+      target: { value: 'alice' },
+    });
+    await pickComboboxOption(/Project Owner/i, 'Manager One (mgr1@alice.dev)');
+
+    // Go to Step 2
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+
     // Toggle Checkbox
-    const checkbox = screen.getByLabelText(/Import tasks from Jira Cloud/i);
+    const checkbox = screen.getByLabelText(
+      /Enable Jira Integration & Task Import/i
+    );
     fireEvent.click(checkbox);
 
     // Verify Jira input fields are rendered
@@ -320,7 +352,7 @@ describe('ProjectForm Component', () => {
     const onSuccess = vi.fn();
     render(<ProjectForm users={mockUsers} onSuccess={onSuccess} />);
 
-    // Fill project details
+    // Fill project details (Step 1)
     fireEvent.change(screen.getByLabelText(/Project Name/i), {
       target: { value: 'Project Alice' },
     });
@@ -329,8 +361,13 @@ describe('ProjectForm Component', () => {
     });
     await pickComboboxOption(/Project Owner/i, 'Manager One (mgr1@alice.dev)');
 
+    // Go to Step 2
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+
     // Toggle Jira checkbox
-    fireEvent.click(screen.getByLabelText(/Import tasks from Jira Cloud/i));
+    fireEvent.click(
+      screen.getByLabelText(/Enable Jira Integration & Task Import/i)
+    );
 
     // Fill integration details
     fireEvent.change(screen.getByLabelText(/Jira Cloud URL \/ Domain/i), {
@@ -340,9 +377,11 @@ describe('ProjectForm Component', () => {
       target: { value: 'TEST' },
     });
 
-    // Submit form
-    const form = screen.getByLabelText(/Project Name/i).closest('form')!;
-    fireEvent.submit(form);
+    // Go to Step 3
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+
+    // Submit on Step 3
+    fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     // Verify project is created first, then apiFetch is called to import tasks
     await waitFor(() => {
@@ -360,5 +399,55 @@ describe('ProjectForm Component', () => {
     expect(
       await screen.findByText(/tasks successfully imported from Jira/i)
     ).toBeInTheDocument();
+  });
+
+  it('submits project creation with split GitHub fields when GitHub is enabled', async () => {
+    vi.mocked(createProject).mockResolvedValue(mockProject);
+
+    render(<ProjectForm users={mockUsers} />);
+
+    // Fill project details (Step 1)
+    fireEvent.change(screen.getByLabelText(/Project Name/i), {
+      target: { value: 'Project Alice' },
+    });
+    fireEvent.change(screen.getByLabelText(/Project Key/i), {
+      target: { value: 'alice' },
+    });
+    await pickComboboxOption(/Project Owner/i, 'Manager One (mgr1@alice.dev)');
+
+    // Go to Step 2
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+
+    // Go to Step 3
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+
+    // Toggle GitHub integration checkbox
+    fireEvent.click(screen.getByLabelText(/Enable GitHub Integration/i));
+
+    // Fill in split owner and repo inputs
+    fireEvent.change(screen.getByLabelText(/GitHub Owner \/ Organization/i), {
+      target: { value: 'facebook' },
+    });
+    fireEvent.change(screen.getByLabelText(/GitHub Repository Name/i), {
+      target: { value: 'react' },
+    });
+    fireEvent.change(
+      screen.getByLabelText(/Personal Access Token \(optional\)/i),
+      {
+        target: { value: 'ghp_secret_token_123' },
+      }
+    );
+
+    // Submit
+    fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
+
+    await waitFor(() => {
+      expect(createProject).toHaveBeenCalledWith(
+        expect.objectContaining({
+          github_repo: 'facebook/react',
+          github_token: 'ghp_secret_token_123',
+        })
+      );
+    });
   });
 });

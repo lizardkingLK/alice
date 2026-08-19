@@ -31,6 +31,7 @@ import type { Team } from '@/app/manager/_services/teams.service';
 import type { User } from '@/app/users/_services/users.service';
 import WorkItemsWorkspace from '@/app/work-items/_components/workItems-workspace';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import { formatDate } from '@/app/_shared/utility';
 import {
   parseProjectDetailsTab,
   type ProjectDetailsTab,
@@ -39,6 +40,7 @@ import { UNDERLINE_TAB_TRIGGER_CLASS } from '@/components/underline-tab-trigger'
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { apiFetch } from '@/lib/api/api-client';
+import type { VisibilityState } from '@tanstack/react-table';
 import {
   Info,
   Users,
@@ -54,6 +56,7 @@ import {
   Database,
   RefreshCw,
   Edit,
+  GitPullRequest,
 } from '@repo/ui/lib/icons';
 
 const REPORT_CARD_CLASS = 'border-border/60 bg-card/50 backdrop-blur-sm';
@@ -67,6 +70,7 @@ interface ProjectWorkItemsProps {
   readonly search: string;
   readonly typeFilter: string;
   readonly assigneeFilter: string;
+  readonly labelsFilter?: readonly string[];
   readonly listView: 'flat' | 'hierarchy';
 }
 
@@ -88,6 +92,8 @@ interface ProjectDetailsWorkspaceProps {
   readonly currentUserRole?: string | null;
   readonly workItems: ProjectWorkItemsProps;
   readonly teams: ProjectTeamsProps;
+  readonly initialColumnVisibility?: VisibilityState;
+  readonly columnVisibilityHasCookie?: boolean;
 }
 
 export function ProjectDetailsWorkspace({
@@ -98,78 +104,13 @@ export function ProjectDetailsWorkspace({
   currentUserRole,
   workItems,
   teams,
+  initialColumnVisibility,
+  columnVisibilityHasCookie,
 }: Readonly<ProjectDetailsWorkspaceProps>) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const activeTab = parseProjectDetailsTab(searchParams.get('tab'));
-
-  const [isEditingJira, setIsEditingJira] = useState(!project.jira_project_key);
-  const [jiraUrl, setJiraUrl] = useState(project.jira_url || '');
-  const [jiraProjectKey, setJiraProjectKey] = useState(
-    project.jira_project_key || ''
-  );
-  const [isSavingJira, setIsSavingJira] = useState(false);
-  const [isSyncingJira, setIsSyncingJira] = useState(false);
-  const [jiraMessage, setJiraMessage] = useState<string | null>(null);
-  const [isJiraError, setIsJiraError] = useState(false);
-
-  const handleSaveJira = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSavingJira(true);
-    setJiraMessage(null);
-    setIsJiraError(false);
-
-    try {
-      await apiFetch(`/api/projects/${project.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          jira_url: jiraUrl.trim() || null,
-          jira_project_key: jiraProjectKey.toUpperCase().trim() || null,
-        }),
-      });
-      setJiraMessage('Jira integration settings saved successfully!');
-      setIsEditingJira(false);
-      router.refresh();
-    } catch (err) {
-      console.error('Failed to save Jira integration:', err);
-      setJiraMessage(
-        err instanceof Error ? err.message : 'Failed to save configuration'
-      );
-      setIsJiraError(true);
-    } finally {
-      setIsSavingJira(false);
-    }
-  };
-
-  const handleSyncJira = async () => {
-    setIsSyncingJira(true);
-    setJiraMessage(null);
-    setIsJiraError(false);
-
-    try {
-      setJiraMessage('Syncing tasks from Jira Cloud...');
-      const res = await apiFetch<{ importedCount: number }>(
-        '/api/projects/jira/import',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            projectId: project.id,
-          }),
-        }
-      );
-      setJiraMessage(
-        `Successfully imported/synced ${res.importedCount} tasks from Jira!`
-      );
-      router.refresh();
-    } catch (err) {
-      console.error('Jira sync failed:', err);
-      setJiraMessage(err instanceof Error ? err.message : 'Sync failed');
-      setIsJiraError(true);
-    } finally {
-      setIsSyncingJira(false);
-    }
-  };
 
   const [error, setError] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
@@ -304,25 +245,11 @@ export function ProjectDetailsWorkspace({
                       {project.start_date || project.end_date ? (
                         <>
                           {project.start_date
-                            ? new Date(project.start_date).toLocaleDateString(
-                                undefined,
-                                {
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric',
-                                }
-                              )
+                            ? formatDate(project.start_date)
                             : 'Start Date'}
                           {' — '}
                           {project.end_date
-                            ? new Date(project.end_date).toLocaleDateString(
-                                undefined,
-                                {
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric',
-                                }
-                              )
+                            ? formatDate(project.end_date)
                             : 'End Date'}
                         </>
                       ) : (
@@ -376,142 +303,8 @@ export function ProjectDetailsWorkspace({
               </CardContent>
             </Card>
 
-            <Card className={`${REPORT_CARD_CLASS} md:col-span-3`}>
-              <CardHeader>
-                <CardTitle className="text-primary flex items-center gap-2 text-base font-semibold">
-                  <Database className="h-5 w-5" />
-                  Jira Cloud Integration
-                </CardTitle>
-                <CardDescription className="text-muted-foreground text-sm">
-                  Configure your Jira Cloud connection to import issues and keep
-                  tasks synced.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {jiraMessage && (
-                  <div
-                    className={`rounded p-3 text-sm ${
-                      isJiraError
-                        ? 'bg-destructive/10 text-destructive'
-                        : 'bg-emerald-500/10 text-emerald-600'
-                    }`}
-                  >
-                    {jiraMessage}
-                  </div>
-                )}
-
-                {isEditingJira ? (
-                  <form onSubmit={handleSaveJira} className="space-y-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="jiraUrl"
-                          className="text-xs font-semibold"
-                        >
-                          Jira Cloud URL / Domain
-                        </Label>
-                        <Input
-                          id="jiraUrl"
-                          value={jiraUrl}
-                          onChange={(e) => setJiraUrl(e.target.value)}
-                          placeholder="e.g. company.atlassian.net"
-                          className="bg-background/50 h-9 text-sm"
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="jiraProjectKey"
-                          className="text-xs font-semibold"
-                        >
-                          Jira Project Key
-                        </Label>
-                        <Input
-                          id="jiraProjectKey"
-                          value={jiraProjectKey}
-                          onChange={(e) => setJiraProjectKey(e.target.value)}
-                          placeholder="e.g. PROJ"
-                          className="bg-background/50 h-9 text-sm uppercase"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end gap-2 pt-2">
-                      {project.jira_project_key && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setJiraUrl(project.jira_url || '');
-                            setJiraProjectKey(project.jira_project_key || '');
-                            setIsEditingJira(false);
-                            setJiraMessage(null);
-                          }}
-                          disabled={isSavingJira}
-                        >
-                          Cancel
-                        </Button>
-                      )}
-                      <Button type="submit" size="sm" disabled={isSavingJira}>
-                        {isSavingJira && (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        )}
-                        Save Connection
-                      </Button>
-                    </div>
-                  </form>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="bg-muted/20 border-border/40 grid gap-4 rounded-lg border p-4 text-sm sm:grid-cols-2">
-                      <div>
-                        <span className="text-muted-foreground block text-xs font-semibold tracking-wider uppercase">
-                          Jira URL
-                        </span>
-                        <span className="text-foreground font-medium">
-                          {project.jira_url || 'Not configured'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground block text-xs font-semibold tracking-wider uppercase">
-                          Project Key
-                        </span>
-                        <span className="text-foreground font-mono font-medium">
-                          {project.jira_project_key || 'Not configured'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-2 pt-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsEditingJira(true)}
-                        disabled={isSyncingJira}
-                      >
-                        <Edit className="mr-2 h-4 w-4" />
-                        Modify Connection
-                      </Button>
-
-                      <Button
-                        size="sm"
-                        onClick={handleSyncJira}
-                        disabled={isSyncingJira || !project.jira_project_key}
-                        className="animate-fade-in bg-emerald-600 text-white hover:bg-emerald-700"
-                      >
-                        {isSyncingJira ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <RefreshCw className="mr-2 h-4 w-4" />
-                        )}
-                        Sync / Import Tasks
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <JiraSettingsCard project={project} />
+            <GithubSettingsCard project={project} />
           </div>
         </TabsContent>
 
@@ -718,11 +511,426 @@ export function ProjectDetailsWorkspace({
             sprintFilter=""
             typeFilter={workItems.typeFilter}
             assigneeFilter={workItems.assigneeFilter}
+            labelsFilter={workItems.labelsFilter ?? []}
             listView={workItems.listView}
             lockedProjectId={project.id}
+            currentUserId={currentUserId}
+            initialColumnVisibility={initialColumnVisibility}
+            columnVisibilityHasCookie={columnVisibilityHasCookie}
           />
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+interface JiraSettingsCardProps {
+  readonly project: Project;
+}
+
+function JiraSettingsCard({ project }: JiraSettingsCardProps) {
+  const router = useRouter();
+  const [isEditingJira, setIsEditingJira] = useState(!project.jira_project_key);
+  const [jiraUrl, setJiraUrl] = useState(project.jira_url || '');
+  const [jiraProjectKey, setJiraProjectKey] = useState(
+    project.jira_project_key || ''
+  );
+  const [isSavingJira, setIsSavingJira] = useState(false);
+  const [isSyncingJira, setIsSyncingJira] = useState(false);
+  const [jiraMessage, setJiraMessage] = useState<string | null>(null);
+  const [isJiraError, setIsJiraError] = useState(false);
+
+  const handleSaveJira = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingJira(true);
+    setJiraMessage(null);
+    setIsJiraError(false);
+
+    try {
+      await apiFetch(`/api/projects/${project.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          jira_url: jiraUrl.trim() || null,
+          jira_project_key: jiraProjectKey.toUpperCase().trim() || null,
+        }),
+      });
+      setJiraMessage('Jira integration settings saved successfully!');
+      setIsEditingJira(false);
+      router.refresh();
+    } catch (err) {
+      console.error('Failed to save Jira integration:', err);
+      setJiraMessage(
+        err instanceof Error ? err.message : 'Failed to save configuration'
+      );
+      setIsJiraError(true);
+    } finally {
+      setIsSavingJira(false);
+    }
+  };
+
+  const handleSyncJira = async () => {
+    setIsSyncingJira(true);
+    setJiraMessage(null);
+    setIsJiraError(false);
+
+    try {
+      setJiraMessage('Syncing tasks from Jira Cloud...');
+      const res = await apiFetch<{ importedCount: number }>(
+        '/api/projects/jira/import',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            projectId: project.id,
+          }),
+        }
+      );
+      setJiraMessage(
+        `Successfully imported/synced ${res.importedCount} tasks from Jira!`
+      );
+      router.refresh();
+    } catch (err) {
+      console.error('Jira sync failed:', err);
+      setJiraMessage(err instanceof Error ? err.message : 'Sync failed');
+      setIsJiraError(true);
+    } finally {
+      setIsSyncingJira(false);
+    }
+  };
+
+  return (
+    <Card className={`${REPORT_CARD_CLASS} md:col-span-3`}>
+      <CardHeader>
+        <CardTitle className="text-primary flex items-center gap-2 text-base font-semibold">
+          <Database className="h-5 w-5" />
+          Jira Cloud Integration
+        </CardTitle>
+        <CardDescription className="text-muted-foreground text-sm">
+          Configure your Jira Cloud connection to import issues and keep tasks
+          synced.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {jiraMessage && (
+          <div
+            className={`rounded p-3 text-sm ${
+              isJiraError
+                ? 'bg-destructive/10 text-destructive'
+                : 'bg-emerald-500/10 text-emerald-600'
+            }`}
+          >
+            {jiraMessage}
+          </div>
+        )}
+
+        {isEditingJira ? (
+          <form onSubmit={handleSaveJira} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="jiraUrl" className="text-xs font-semibold">
+                  Jira Cloud URL / Domain
+                </Label>
+                <Input
+                  id="jiraUrl"
+                  value={jiraUrl}
+                  onChange={(e) => setJiraUrl(e.target.value)}
+                  placeholder="e.g. company.atlassian.net"
+                  className="bg-background/50 h-9 text-sm"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label
+                  htmlFor="jiraProjectKey"
+                  className="text-xs font-semibold"
+                >
+                  Jira Project Key
+                </Label>
+                <Input
+                  id="jiraProjectKey"
+                  value={jiraProjectKey}
+                  onChange={(e) => setJiraProjectKey(e.target.value)}
+                  placeholder="e.g. PROJ"
+                  className="bg-background/50 h-9 text-sm uppercase"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              {project.jira_project_key && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setJiraUrl(project.jira_url || '');
+                    setJiraProjectKey(project.jira_project_key || '');
+                    setIsEditingJira(false);
+                    setJiraMessage(null);
+                  }}
+                  disabled={isSavingJira}
+                >
+                  Cancel
+                </Button>
+              )}
+              <Button type="submit" size="sm" disabled={isSavingJira}>
+                {isSavingJira && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Save Connection
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <div className="space-y-4">
+            <div className="bg-muted/20 border-border/40 grid gap-4 rounded-lg border p-4 text-sm sm:grid-cols-2">
+              <div>
+                <span className="text-muted-foreground block text-xs font-semibold tracking-wider uppercase">
+                  Jira URL
+                </span>
+                <span className="text-foreground font-medium">
+                  {project.jira_url || 'Not configured'}
+                </span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block text-xs font-semibold tracking-wider uppercase">
+                  Project Key
+                </span>
+                <span className="text-foreground font-mono font-medium">
+                  {project.jira_project_key || 'Not configured'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditingJira(true)}
+                disabled={isSyncingJira}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Modify Connection
+              </Button>
+
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleSyncJira}
+                disabled={isSyncingJira || !project.jira_project_key}
+                className="animate-fade-in bg-emerald-600 text-white hover:bg-emerald-700"
+              >
+                {isSyncingJira ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                )}
+                Sync / Import Tasks
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+interface GithubSettingsCardProps {
+  readonly project: Project;
+}
+
+function GithubSettingsCard({ project }: GithubSettingsCardProps) {
+  const router = useRouter();
+  const initialOwner = project.github_repo
+    ? (project.github_repo.split('/')[0] ?? '')
+    : '';
+  const initialRepoName = project.github_repo
+    ? (project.github_repo.split('/')[1] ?? '')
+    : '';
+
+  const [isEditingGithub, setIsEditingGithub] = useState(!project.github_repo);
+  // useState is a React Hook used to store and update component state.
+  // It returns the current value and a function to update that value.
+  // When the state changes, React re-renders the component.
+  const [githubOwner, setGithubOwner] = useState(initialOwner);
+  const [githubRepoName, setGithubRepoName] = useState(initialRepoName);
+  const [githubToken, setGithubToken] = useState(project.github_token || '');
+  const [isSavingGithub, setIsSavingGithub] = useState(false);
+  const [githubMessage, setGithubMessage] = useState<string | null>(null);
+  const [isGithubError, setIsGithubError] = useState(false);
+
+  const handleSaveGithub = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingGithub(true);
+    setGithubMessage(null);
+    setIsGithubError(false);
+
+    try {
+      //trim used to remove unnecessary spaces at the beginning and end.
+      const repoPath =
+        githubOwner.trim() && githubRepoName.trim()
+          ? `${githubOwner.trim()}/${githubRepoName.trim()}`
+          : null;
+
+      await apiFetch(`/api/projects/${project.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          github_repo: repoPath,
+          github_token: githubToken.trim() || null,
+          expectedUpdatedAt: project.updated_at,
+        }),
+      });
+      setGithubMessage('GitHub integration settings saved successfully!');
+      setIsEditingGithub(false);
+      router.refresh();
+    } catch (err) {
+      console.error('Failed to save GitHub integration:', err);
+      setGithubMessage(
+        err instanceof Error ? err.message : 'Failed to save configuration'
+      );
+      setIsGithubError(true);
+    } finally {
+      setIsSavingGithub(false);
+    }
+  };
+
+  return (
+    <Card className={`${REPORT_CARD_CLASS} md:col-span-3`}>
+      <CardHeader>
+        <CardTitle className="text-primary flex items-center gap-2 text-base font-semibold">
+          <GitPullRequest className="h-5 w-5" />
+          GitHub Integration
+        </CardTitle>
+        <CardDescription className="text-muted-foreground text-sm">
+          Configure your GitHub repository to link Pull Requests, view commits,
+          and track branches.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {githubMessage && (
+          <div
+            className={`rounded p-3 text-sm ${
+              isGithubError
+                ? 'bg-destructive/10 text-destructive'
+                : 'bg-emerald-500/10 text-emerald-600'
+            }`}
+          >
+            {githubMessage}
+          </div>
+        )}
+
+        {isEditingGithub ? (
+          <form onSubmit={handleSaveGithub} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="githubOwner" className="text-xs font-semibold">
+                  GitHub Owner / Organization
+                </Label>
+                <Input
+                  id="githubOwner"
+                  value={githubOwner}
+                  onChange={(e) => setGithubOwner(e.target.value)}
+                  placeholder="e.g. facebook"
+                  className="bg-background/50 h-9 text-sm"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label
+                  htmlFor="githubRepoName"
+                  className="text-xs font-semibold"
+                >
+                  GitHub Repository Name
+                </Label>
+                <Input
+                  id="githubRepoName"
+                  value={githubRepoName}
+                  onChange={(e) => setGithubRepoName(e.target.value)}
+                  placeholder="e.g. react"
+                  className="bg-background/50 h-9 text-sm"
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="githubToken" className="text-xs font-semibold">
+                Personal Access Token (optional)
+              </Label>
+              <Input
+                id="githubToken"
+                type="password"
+                value={githubToken}
+                onChange={(e) => setGithubToken(e.target.value)}
+                placeholder="e.g. ghp_xxxxxxxxxxxx"
+                className="bg-background/50 h-9 text-sm"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              {project.github_repo && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const parts = (project.github_repo || '').split('/');
+                    setGithubOwner(parts[0] ?? '');
+                    setGithubRepoName(parts[1] ?? '');
+                    setGithubToken(project.github_token || '');
+                    setIsEditingGithub(false);
+                    setGithubMessage(null);
+                  }}
+                  disabled={isSavingGithub}
+                >
+                  Cancel
+                </Button>
+              )}
+              <Button type="submit" size="sm" disabled={isSavingGithub}>
+                {isSavingGithub && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Save GitHub Configuration
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <div className="space-y-4">
+            <div className="bg-muted/20 border-border/40 grid gap-4 rounded-lg border p-4 text-sm sm:grid-cols-2">
+              <div>
+                <span className="text-muted-foreground block text-xs font-semibold tracking-wider uppercase">
+                  GitHub Repository
+                </span>
+                <span className="text-foreground font-medium">
+                  {project.github_repo || 'Not configured'}
+                </span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block text-xs font-semibold tracking-wider uppercase">
+                  Access Token
+                </span>
+                <span className="text-foreground font-mono font-medium">
+                  {project.github_token
+                    ? '••••••••••••••••'
+                    : 'Not configured (Public repos only)'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditingGithub(true)}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Modify GitHub Settings
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

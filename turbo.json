@@ -10,7 +10,11 @@
     "CYPRESS_TEST_USER_PASSWORD",
     "JIRA_API_TOKEN",
     "JIRA_EMAIL",
-    "CRON_SECRET"
+    "CRON_SECRET",
+    "GEMINI_API_KEY",
+    "GEMINI_API_URL",
+    "DATABASE_URL",
+    "DATA_READS_VIA_API"
   ],
   "tasks": {
     "build": {
@@ -25,8 +29,11 @@
         "SUPABASE_SERVICE_ROLE_KEY",
         "STORAGE_BUCKET_ATTACHMENTS",
         "STORAGE_BUCKET_PROFILE_PICTURES",
+        "STORAGE_BUCKET_CHAT_HISTORY",
         "SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET",
-        "INTERNAL_API_URL"
+        "INTERNAL_API_URL",
+        "DATABASE_URL",
+        "DATA_READS_VIA_API"
       ]
     },
     "dev": {
@@ -37,7 +44,9 @@
         "SUPABASE_URL",
         "SUPABASE_SERVICE_ROLE_KEY",
         "SUPABASE_ANON_KEY",
-        "FRONTEND_URL"
+        "FRONTEND_URL",
+        "DATABASE_URL",
+        "DATA_READS_VIA_API"
       ]
     },
     "lint": {

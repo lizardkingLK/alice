@@ -22,7 +22,7 @@ P0 coverage for the admission gate and admin form lives under `apps/web/tests/ac
 | `access-allowlist.test.ts`           | Pure helpers (`isPublicAccessPath`, normalize/expiry) |
 | `access-allowlist-gate.test.ts`      | `isEmailAllowed` with mocked admin client             |
 | `access-allowlist-schema.test.ts`    | Shared Zod domain/email create schemas                |
-| `accessAllowlist.service.test.ts`    | Web CRUD service factory (search + pagination)        |
+| `accessAllowlist.service.test.ts`    | Web mutation service factory                          |
 | `access-allowlist-form.test.tsx`     | Admin create/edit form + Zod alerts                   |
 | `access-allowlist-registry.test.tsx` | Debounced search, pagination, delete                  |
 | `home-footer.test.tsx`               | Footer app-link gating                                |

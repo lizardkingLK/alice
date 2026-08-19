@@ -1,11 +1,11 @@
-import { getResponse } from '@/lib/api/api';
+import { getResponse, type GetResponseInit } from '@/lib/api/api';
 import { createClient } from '@/lib/supabase/client';
 import { redirect } from 'next/navigation';
 import { buildLoginPath } from '@/lib/auth-redirect';
 
 export async function apiFetch<T>(
   path: string,
-  init?: RequestInit
+  init?: GetResponseInit
 ): Promise<T> {
   const supabase = createClient();
   const {

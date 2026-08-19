@@ -14,6 +14,8 @@ import { createClient } from '@supabase/supabase-js';
 import pg from 'pg';
 
 import { env } from './env.js';
+import { isSeedResetRequested, resetDevData } from './seed-reset.js';
+import { SEED_SQUAD_MEMBERS, squadSeedUsers } from './seed-squad.js';
 
 const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
@@ -49,6 +51,24 @@ const SEED_USERS = [
     role: 'member' as const,
   },
 ] as const;
+
+type SeedUser = {
+  email: string;
+  name: string;
+  role: 'admin' | 'manager' | 'member';
+};
+
+type UserIds = Record<string, string>;
+
+function requireUserId(userIds: UserIds, email: string): string {
+  const id = userIds[email];
+  if (!id) {
+    throw new Error(`Seed is missing user id for "${email}".`);
+  }
+  return id;
+}
+
+const ALL_SEED_USERS: SeedUser[] = [...SEED_USERS, ...squadSeedUsers()];
 
 type TiptapMark = { type: string };
 
@@ -180,10 +200,6 @@ const SEED_WORK_ITEM_DESCRIPTIONS = {
   ),
 } as const;
 
-type SeedUser = (typeof SEED_USERS)[number];
-
-type UserIds = Record<(typeof SEED_USERS)[number]['email'], string>;
-
 async function findAuthUserIdByEmail(email: string): Promise<string | null> {
   let page = 1;
   const perPage = 200;
@@ -252,7 +268,7 @@ async function seedUsers(): Promise<UserIds> {
   const ids = {} as UserIds;
   let adminId: string | undefined;
 
-  for (const user of SEED_USERS) {
+  for (const user of ALL_SEED_USERS) {
     const authId = await ensureAuthUser(user);
 
     const { data: existing } = await supabase
@@ -294,7 +310,7 @@ async function seedUsers(): Promise<UserIds> {
 }
 
 async function seedTeam(userIds: UserIds, actorId: string): Promise<string> {
-  const managerId = userIds['manager@alice.dev'];
+  const managerId = requireUserId(userIds, 'manager@alice.dev');
 
   const { data: existing } = await supabase
     .from('teams')
@@ -330,24 +346,31 @@ async function seedTeamMembers(
   userIds: UserIds,
   actorId: string
 ): Promise<void> {
+  const managerId = requireUserId(userIds, 'manager@alice.dev');
+  const adminId = requireUserId(userIds, 'admin@alice.dev');
   const members = [
     {
-      user_id: userIds['manager@alice.dev'],
+      user_id: managerId,
       role: 'Engineering Manager',
       seniority: 'Senior',
       capacity: 40,
       allocation: 50,
-      reporting_line: userIds['admin@alice.dev'],
+      reporting_line: adminId,
     },
-    {
-      user_id: userIds['member@alice.dev'],
-      role: 'Software Engineer',
-      seniority: 'Mid',
-      capacity: 40,
-      allocation: 100,
-      reporting_line: userIds['manager@alice.dev'],
-    },
-  ] as const;
+    ...Object.entries(userIds)
+      .filter(
+        ([email]) =>
+          email !== 'admin@alice.dev' && email !== 'manager@alice.dev'
+      )
+      .map(([, userId]) => ({
+        user_id: userId,
+        role: 'Software Engineer',
+        seniority: 'Mid',
+        capacity: 40,
+        allocation: 100,
+        reporting_line: managerId,
+      })),
+  ];
 
   for (const member of members) {
     const { data: existing } = await supabase
@@ -374,7 +397,7 @@ async function seedTeamMembers(
 }
 
 async function seedProject(userIds: UserIds, actorId: string): Promise<string> {
-  const ownerId = userIds['admin@alice.dev'];
+  const ownerId = requireUserId(userIds, 'admin@alice.dev');
 
   const { data: existing } = await supabase
     .from('projects')
@@ -413,8 +436,8 @@ async function seedProjectMembers(
   userIds: UserIds,
   actorId: string
 ): Promise<void> {
-  for (const email of Object.keys(userIds) as (keyof UserIds)[]) {
-    const userId = userIds[email];
+  for (const email of Object.keys(userIds)) {
+    const userId = requireUserId(userIds, email);
 
     const { data: existing } = await supabase
       .from('project_members')
@@ -563,8 +586,8 @@ async function seedWorkItems(
   sprintIds: { activeSprintId: string; plannedSprintId: string },
   userIds: UserIds
 ): Promise<{ storyId: string; taskId: string; backlogId: string }> {
-  const adminId = userIds['admin@alice.dev'];
-  const memberId = userIds['member@alice.dev'];
+  const adminId = requireUserId(userIds, 'admin@alice.dev');
+  const memberId = requireUserId(userIds, 'member@alice.dev');
 
   const epicId = await ensureWorkItem(
     projectId,
@@ -750,14 +773,14 @@ async function seedNotifications(
 ): Promise<void> {
   const notifications: NotificationSeed[] = [
     {
-      user_id: userIds['member@alice.dev'],
+      user_id: requireUserId(userIds, 'member@alice.dev'),
       type: 'assign',
       message: 'You were assigned to "Admin user registry screen".',
       related_item_id: relatedItemId,
       read_status: false,
     },
     {
-      user_id: userIds['manager@alice.dev'],
+      user_id: requireUserId(userIds, 'manager@alice.dev'),
       type: 'sprint',
       message: 'Sprint 1 — Auth & Users is now active.',
       related_item_id: relatedItemId,
@@ -851,12 +874,19 @@ async function ensureDeactivateUserGuardedRpc(): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  if (isSeedResetRequested()) {
+    console.warn(
+      'warn. seed reset: wiping public tables, auth.users, and storage buckets...'
+    );
+    await resetDevData(supabase, env.DIRECT_URL);
+  }
+
   console.log('info. ensuring deactivate_user_guarded RPC...');
   await ensureDeactivateUserGuardedRpc();
 
   console.log('info. seeding users and auth accounts...');
   const userIds = await seedUsers();
-  const adminId = userIds['admin@alice.dev'];
+  const adminId = requireUserId(userIds, 'admin@alice.dev');
 
   console.log('info. seeding access allowlist...');
   await seedAccessAllowlist(adminId);
@@ -878,14 +908,17 @@ async function main(): Promise<void> {
   console.log('info. seeding comments, attachments, notifications...');
   const commentId = await seedComments(
     workItems.storyId,
-    userIds['manager@alice.dev']
+    requireUserId(userIds, 'manager@alice.dev')
   );
   await seedCommentReply(
     workItems.storyId,
-    userIds['member@alice.dev'],
+    requireUserId(userIds, 'member@alice.dev'),
     commentId
   );
-  await seedAttachment(workItems.storyId, userIds['member@alice.dev']);
+  await seedAttachment(
+    workItems.storyId,
+    requireUserId(userIds, 'member@alice.dev')
+  );
   await seedNotifications(userIds, workItems.storyId, adminId);
 
   console.log('info. seed completed.');
@@ -895,6 +928,9 @@ async function main(): Promise<void> {
   for (const user of SEED_USERS) {
     console.log(`  - ${user.email} (${user.role})`);
   }
+  console.log(
+    `info. also seeded ${SEED_SQUAD_MEMBERS.length} squad members @alice.dev.`
+  );
 }
 
 try {

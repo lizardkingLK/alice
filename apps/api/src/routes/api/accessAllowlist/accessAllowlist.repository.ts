@@ -1,15 +1,24 @@
-import { supabase } from '../../../lib/supabase';
+import { type RecordStatus } from '../../../lib/audit';
+import { prisma } from '../../../lib/prisma';
 import {
-  auditCreateWithoutStatus,
-  auditUpdate,
-  type RecordStatus,
-} from '../../../lib/audit';
-import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
+  prismaAuditCreateWithoutStatus,
+  prismaAuditUpdate,
+  prismaLockTimestamp,
+  prismaOptionalDate,
+} from '../../../lib/prisma-audit';
+import { isPrismaUniqueConflict } from '../../../lib/prisma-errors';
 import {
+  OptimisticLockError,
+  resolveOptimisticPrismaUpdate,
+} from '../../../lib/optimistic-lock';
+import {
+  Database,
   isValidAccessAllowlistDomain,
   normalizeAccessAllowlistDomain,
   type Tables,
 } from '@repo/types';
+import { AccessAllowlistKind as AccessAllowlistKindEnum } from '@repo/types/prisma';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 export type AccessAllowlistRow = Tables<'access_allowlist'>;
 export type AccessAllowlistKind = Tables<'access_allowlist'>['kind'];
@@ -20,14 +29,42 @@ function normalizeEmail(value: string): string {
 }
 
 function normalizeValue(kind: AccessAllowlistKind, value: string): string {
-  return kind === 'domain'
+  return kind === AccessAllowlistKindEnum.domain
     ? normalizeAccessAllowlistDomain(value)
     : normalizeEmail(value);
 }
 
+function toAccessAllowlistRow(row: {
+  id: string;
+  kind: AccessAllowlistKind;
+  value: string;
+  label: string | null;
+  expires_at: Date | null;
+  status: AccessAllowlistStatus;
+  created_by: string | null;
+  created_at: Date;
+  updated_by: string | null;
+  updated_at: Date;
+}): AccessAllowlistRow {
+  return {
+    id: row.id,
+    kind: row.kind,
+    value: row.value,
+    label: row.label,
+    expires_at: row.expires_at?.toISOString() ?? null,
+    status: row.status,
+    created_by: row.created_by,
+    created_at: row.created_at.toISOString(),
+    updated_by: row.updated_by,
+    updated_at: row.updated_at.toISOString(),
+  };
+}
+
 export class AccessAllowlistRepository {
+  constructor(private readonly db: SupabaseClient<Database>) {}
+
   async findById(id: string): Promise<AccessAllowlistRow | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('access_allowlist')
       .select('*')
       .eq('id', id)
@@ -44,116 +81,6 @@ export class AccessAllowlistRepository {
     return data as AccessAllowlistRow | null;
   }
 
-  async listAll(status?: AccessAllowlistStatus): Promise<AccessAllowlistRow[]> {
-    let query = supabase
-      .from('access_allowlist')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (status) {
-      query = query.eq('status', status);
-    }
-
-    const { data, error } = await query;
-    if (error) {
-      console.error('error. failed to list access_allowlist:', error.message);
-      throw new Error('Failed to list access allowlist');
-    }
-
-    return (data ?? []) as AccessAllowlistRow[];
-  }
-
-  async listPaginated(
-    page: number,
-    limit: number,
-    status?: AccessAllowlistStatus,
-    search?: string
-  ): Promise<{ items: AccessAllowlistRow[]; totalCount: number }> {
-    // Supabase/PostgREST returns 416 when `.range(from, to)` is out-of-bounds.
-    // To keep pagination stable, we compute `totalCount` up-front and only
-    // issue the ranged query when the requested page can contain rows.
-    let countQuery = supabase
-      .from('access_allowlist')
-      .select('id', { count: 'exact', head: true });
-
-    if (status) {
-      countQuery = countQuery.eq('status', status);
-    }
-
-    if (search) {
-      const sanitized = `%${search}%`;
-      countQuery = countQuery.or(
-        `value.ilike.${sanitized},label.ilike.${sanitized}`
-      );
-    }
-
-    const { count, error: countError } = await countQuery;
-    if (countError) {
-      console.error(
-        'error. failed to count access_allowlist paginated:',
-        countError.message
-      );
-      throw new Error('Failed to list access allowlist');
-    }
-
-    const totalCount = count ?? 0;
-    const from = (page - 1) * limit;
-
-    if (totalCount === 0 || from >= totalCount) {
-      return { items: [], totalCount };
-    }
-
-    const to = from + limit - 1;
-
-    let itemsQuery = supabase
-      .from('access_allowlist')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .range(from, to);
-
-    if (status) {
-      itemsQuery = itemsQuery.eq('status', status);
-    }
-
-    if (search) {
-      const sanitized = `%${search}%`;
-      itemsQuery = itemsQuery.or(
-        `value.ilike.${sanitized},label.ilike.${sanitized}`
-      );
-    }
-
-    const { data, error } = await itemsQuery;
-    if (error) {
-      console.error(
-        'error. failed to list access_allowlist paginated:',
-        error.message
-      );
-      throw new Error('Failed to list access allowlist');
-    }
-
-    return { items: (data ?? []) as AccessAllowlistRow[], totalCount };
-  }
-
-  async findByKindAndValue(kind: AccessAllowlistKind, value: string) {
-    const normalized = normalizeValue(kind, value);
-    const { data, error } = await supabase
-      .from('access_allowlist')
-      .select('id')
-      .eq('kind', kind)
-      .eq('value', normalized)
-      .maybeSingle();
-
-    if (error) {
-      console.error(
-        'error. failed to find access_allowlist entry by kind/value:',
-        error.message
-      );
-      throw new Error('Failed to validate access allowlist entry');
-    }
-
-    return data as { id: string } | null;
-  }
-
   async create(params: {
     actorId: string;
     kind: AccessAllowlistKind;
@@ -165,13 +92,11 @@ export class AccessAllowlistRepository {
     const { actorId, kind } = params;
     const normalizedValue = normalizeValue(kind, params.value);
 
-    if (kind === 'domain' && !isValidAccessAllowlistDomain(normalizedValue)) {
+    if (
+      kind === AccessAllowlistKindEnum.domain &&
+      !isValidAccessAllowlistDomain(normalizedValue)
+    ) {
       throw new Error('Invalid domain value');
-    }
-
-    const existing = await this.findByKindAndValue(kind, params.value);
-    if (existing) {
-      throw new Error('This allowlist entry already exists');
     }
 
     const expires_at =
@@ -179,28 +104,27 @@ export class AccessAllowlistRepository {
         ? null
         : new Date(params.expires_at).toISOString();
 
-    const { data, error } = await supabase
-      .from('access_allowlist')
-      .insert({
-        kind,
-        value: normalizedValue,
-        label: params.label ?? null,
-        expires_at,
-        status: params.status,
-        ...auditCreateWithoutStatus(actorId),
-      })
-      .select('*')
-      .single();
+    try {
+      const created = await prisma.access_allowlist.create({
+        data: {
+          kind,
+          value: normalizedValue,
+          label: params.label ?? null,
+          expires_at: prismaOptionalDate(expires_at) ?? null,
+          status: params.status,
+          ...prismaAuditCreateWithoutStatus(actorId),
+        },
+      });
 
-    if (error) {
-      console.error(
-        'error. failed to create access_allowlist entry:',
-        error.message
-      );
+      return toAccessAllowlistRow(created);
+    } catch (error) {
+      if (isPrismaUniqueConflict(error)) {
+        throw new Error('This allowlist entry already exists');
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to create access_allowlist:', message);
       throw new Error('Failed to create access allowlist entry');
     }
-
-    return data as AccessAllowlistRow;
   }
 
   async update(params: {
@@ -224,50 +148,48 @@ export class AccessAllowlistRepository {
       }
     }
 
-    const { data, error } = await supabase
-      .from('access_allowlist')
-      .update({
+    const { count } = await prisma.access_allowlist.updateMany({
+      where: {
+        id: params.id,
+        updated_at: prismaLockTimestamp(params.expectedUpdatedAt),
+      },
+      data: {
         ...(params.label !== undefined ? { label: params.label ?? null } : {}),
-        ...(expires_at !== undefined ? { expires_at } : {}),
+        ...(expires_at !== undefined
+          ? { expires_at: prismaOptionalDate(expires_at) }
+          : {}),
         ...(params.status !== undefined ? { status: params.status } : {}),
-        ...auditUpdate(params.actorId),
-      })
-      .eq('id', params.id)
-      .eq('updated_at', params.expectedUpdatedAt)
-      .select('*')
-      .maybeSingle();
+        ...prismaAuditUpdate(params.actorId),
+      },
+    });
 
-    return await resolveOptimisticUpdate({
-      data: data as AccessAllowlistRow | null,
-      error,
+    return resolveOptimisticPrismaUpdate({
+      count,
+      fetchUpdated: () => this.findById(params.id),
       fetchCurrent: () => this.findById(params.id),
       notFoundMessage: 'Access allowlist entry not found',
     });
   }
 
-  async softDelete(params: {
-    actorId: string;
+  async hardDelete(params: {
     id: string;
     expectedUpdatedAt: string;
-  }) {
-    const { data, error } = await supabase
-      .from('access_allowlist')
-      .update({
-        status: 'deleted',
-        ...auditUpdate(params.actorId),
-      })
-      .eq('id', params.id)
-      .eq('updated_at', params.expectedUpdatedAt)
-      .select('*')
-      .maybeSingle();
-
-    await resolveOptimisticUpdate({
-      data: data as AccessAllowlistRow | null,
-      error,
-      fetchCurrent: () => this.findById(params.id),
-      notFoundMessage: 'Access allowlist entry not found',
+  }): Promise<void> {
+    const { count } = await prisma.access_allowlist.deleteMany({
+      where: {
+        id: params.id,
+        updated_at: prismaLockTimestamp(params.expectedUpdatedAt),
+      },
     });
+
+    if (count > 0) {
+      return;
+    }
+
+    const current = await this.findById(params.id);
+    if (!current) {
+      throw new Error('Access allowlist entry not found');
+    }
+    throw new OptimisticLockError(current);
   }
 }
-
-export const accessAllowlistRepository = new AccessAllowlistRepository();

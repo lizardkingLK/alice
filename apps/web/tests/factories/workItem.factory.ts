@@ -28,6 +28,7 @@ export const workItemFactory = {
       created_by: null,
       updated_by: null,
       jira_issue_key: null,
+      labels: [],
       assignee: defaultAssignee,
       reporter: null,
       ...overrides,

@@ -72,7 +72,7 @@ access_allowlist
   value         text  -- domain: "acme.com" | email: "client@partner.com"
   label         text? -- optional display note ("Acme corp", "Pilot client")
   expires_at    timestamptz?  -- null = never expires
-  status        RecordStatus  -- active | inactive | archived | deleted
+  status        RecordStatus  -- active | inactive | archived (Delete in the UI hard-deletes the row)
   created_by    UUID?
   created_at    timestamptz
   updated_by    UUID?
@@ -81,8 +81,7 @@ access_allowlist
 
 Constraints / indexes:
 
-- Unique `(kind, lower(value))` among `status = active` (or unique on
-  `kind + lower(value)` and treat inactive as soft-disable)
+- Unique `(kind, value)` — deleting a row (hard delete) frees the pair so it can be added again
 - Normalize: store domains and emails **lowercase**, strip leading `@` on domains
 - Check: `kind = email` ⇒ `value` looks like an email; `kind = domain` ⇒ no `@`
 
@@ -361,14 +360,37 @@ sequenceDiagram
   SA-->>U: Redirect /contact?sent=1
 ```
 
-Admin tooling: **`/users?tab=allowlist`** (admins only) — create / edit / soft-delete
-`access_allowlist` rows (domain or email, optional label + expiry, status).
-Seed at least one company domain for prod.
+Admin tooling: **`/users?tab=allowlist`** (admins only) — create / edit / **hard-delete**
+`access_allowlist` rows (domain or email, optional label + expiry, status
+active / inactive / archived). Context menu **Delete** (not Remove) permanently
+removes the row, matching other registries’ destructive action. An admin **cannot delete or deactivate a domain row that matches their own
+email** (API returns 403; Delete and status are disabled in the UI) so they
+cannot lock themselves out. The form does not offer a `deleted` status. Seed
+at least one company domain for prod.
+
+### Admission email (email rows)
+
+When an admin **creates an active email-kind row** (or **reactivates** one),
+the API emails that address via the Supabase Auth mailer — no extra SMTP
+provider. Domain rows have no recipient and do not send mail. Mailer failures
+are logged; the allowlist row still saves.
+
+| Recipient                | Email sent                                              |
+| ------------------------ | ------------------------------------------------------- |
+| New address              | Auth **Invite user** (set password → `/reset-password`) |
+| Already in Auth          | Magic link to `/dashboard` (`signInWithOtp`)            |
+| Domain allowlist row     | None                                                    |
+| Inactive email on create | None                                                    |
+
+Implementation: `apps/api/src/routes/api/accessAllowlist/notify-allowlisted-email.ts`.
+Customize copy in the Supabase dashboard email templates (Invite / Magic Link).
 
 ---
 
 ## API / security notes
 
+- Admin registry list on `/users` is RSC (`listAccessAllowlist`, admin-gated);
+  mutations stay `POST/PUT/DELETE /api/accessAllowlist`.
 - Allowlist reads for the gate may use service-role or a tight RLS policy
   (authenticated read of active rows is OK; writes admin-only).
 - Never trust client-only checks; middleware + callback are mandatory.
@@ -410,10 +432,14 @@ Seed at least one company domain for prod.
    `POST /api/notifications/contact`; API inserts in-app notifications for
    all active admins.
 9. ~~Admin CRUD for allowlist (can follow in a second PR).~~
-   **Done:** Express endpoints under `GET/POST/PUT/DELETE /api/accessAllowlist`
-   plus web service wrappers in `apps/web/app/access-allowlist/_services/`.
+   **Done:** mutations under `POST/PUT/DELETE /api/accessAllowlist`;
+   list/detail reads are RSC (`accessAllowlist.service.server.ts`).
+   Web mutation wrappers in `apps/web/app/access-allowlist/_services/`.
    Admin UI: `/users?tab=allowlist` tabbed panel (`UsersWorkspace` +
-   `AccessAllowlistRegistry`).
+   `AccessAllowlistRegistry`). Context menu **Delete** hard-deletes the row
+   (`access_allowlist_hard_delete` migration purges leftover `status=deleted`).
+   **Admission email:** active email-kind create/reactivate sends Auth invite
+   or magic link (`notify-allowlisted-email.ts`).
 10. ~~Docs → **Living**; link from auth README + users README.~~
     **Done:** this doc is **Living**; indexed from
     [features/access/README.md](./README.md),
@@ -427,16 +453,23 @@ Seed at least one company domain for prod.
 Coverage lives under `apps/web/tests/access/` (see also
 [TESTING_DEVELOPMENT_FLOW.md](../../guides/TESTING_DEVELOPMENT_FLOW.md)):
 
-| Spec                                 | SUT                                                                                | Focus                                                                                 |
-| ------------------------------------ | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `access-allowlist.test.ts`           | `isPublicAccessPath`, `normalizeEmail`, `extractEmailDomain`, `isAllowlistExpired` | Public path set, email normalize/reject, domain extract, expiry edge cases            |
-| `access-allowlist-gate.test.ts`      | `isEmailAllowed`                                                                   | Email/domain hits, expiry deny, invalid email short-circuit, DB error                 |
-| `access-allowlist-schema.test.ts`    | `@repo/types` allowlist Zod                                                        | Domain requires TLD (`fff` reject / `fff.com` accept); email shape                    |
-| `accessAllowlist.service.test.ts`    | `createAccessAllowlistService`                                                     | List/create/update/delete paths via fake `apiFetch` (incl. search + pagination query) |
-| `access-allowlist-form.test.tsx`     | `AccessAllowlistForm`                                                              | Zod domain/email alerts, create/edit submit, no HTML `required`                       |
-| `access-allowlist-registry.test.tsx` | `AccessAllowlistRegistry`                                                          | Debounced search, pagination, add dialog, delete confirm                              |
-| `home-footer.test.tsx`               | `HomeFooter`                                                                       | Hide/show Workspace + Team when `showAppLinks`                                        |
-| `contact-request-schema.test.ts`     | `contactRequestSchema`                                                             | Shared Zod contact payload validation                                                 |
+| Spec                                 | SUT                                                                                | Focus                                                                      |
+| ------------------------------------ | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `access-allowlist.test.ts`           | `isPublicAccessPath`, `normalizeEmail`, `extractEmailDomain`, `isAllowlistExpired` | Public path set, email normalize/reject, domain extract, expiry edge cases |
+| `access-allowlist-gate.test.ts`      | `isEmailAllowed`                                                                   | Email/domain hits, expiry deny, invalid email short-circuit, DB error      |
+| `access-allowlist-schema.test.ts`    | `@repo/types` allowlist Zod                                                        | Domain requires TLD (`fff` reject / `fff.com` accept); email shape         |
+| `accessAllowlist.service.test.ts`    | `createAccessAllowlistService`                                                     | Create/update/delete paths via fake `apiFetch`                             |
+| `access-allowlist-form.test.tsx`     | `AccessAllowlistForm`                                                              | Zod domain/email alerts, create/edit submit, no HTML `required`            |
+| `access-allowlist-registry.test.tsx` | `AccessAllowlistRegistry`                                                          | Debounced search, pagination, add dialog, delete confirm                   |
+| `home-footer.test.tsx`               | `HomeFooter`                                                                       | Hide/show Workspace + Team when `showAppLinks`                             |
+| `contact-request-schema.test.ts`     | `contactRequestSchema`                                                             | Shared Zod contact payload validation                                      |
+
+API (`apps/api/tests/access/`):
+
+| Spec                               | SUT                      | Focus                                             |
+| ---------------------------------- | ------------------------ | ------------------------------------------------- |
+| `notify-allowlisted-email.test.ts` | `notifyAllowlistedEmail` | Invite vs magic-link fallback; mailer errors      |
+| `accessAllowlist.service.test.ts`  | `AccessAllowlistService` | Email on create/reactivate; skip domain and edits |
 
 Shared factory / mocks:
 
@@ -446,11 +479,8 @@ Shared factory / mocks:
 Run:
 
 ```bash
-pnpm --filter web vitest --run tests/access
+pnpm turbo run test --filter=web --filter=api
 ```
-
-API route/service unit tests are deferred until `apps/api/tests` scaffolding lands
-(follow `.cursor/rules/08-qa-dev-manager.mdc`).
 
 ---
 

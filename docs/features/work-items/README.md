@@ -4,6 +4,7 @@
 | ------------------------------------------------------------------- | ------------------------------------------------------------ | ----------- |
 | [WORK_ITEM_DESCRIPTION.md](../../database/WORK_ITEM_DESCRIPTION.md) | TipTap / ProseMirror JSON stored in `work_items.description` | Living      |
 | [ATTACHMENTS.md](./ATTACHMENTS.md)                                  | Private Storage attachments, SSR list, signed URLs on click  | Implemented |
+| [LABELS.md](./LABELS.md)                                            | JSONB text-array labels, create/details edit, search UX      | Implemented |
 | [ACTIVITY.md](./ACTIVITY.md)                                        | Work-item activity timeline next to Discussion               | Plan        |
 
 Quick links:
@@ -11,6 +12,7 @@ Quick links:
 - Implementation: `apps/web/app/work-items/`
 - Client services: `apps/web/app/work-items/_services/workItem.service.client.ts`
 - Server reads: `apps/web/app/work-items/_services/workItem.service.server.ts`
+- Retrieval toggle (Plan): [DATA_RETRIEVAL.md](../../architecture/DATA_RETRIEVAL.md) — list/detail can switch to Express Prisma GETs; default remains SSR
 - API: `apps/api/src/routes/api/workItems/`
 - Schema: `work_items` in `packages/db/prisma/schema.prisma`
 - Shared hierarchy helpers: `packages/types/src/work-item-types.ts`

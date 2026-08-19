@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { TeamRegistry } from '@/app/manager/_components/team-registry';
@@ -9,6 +8,7 @@ import {
 import { hardDeleteTeam } from '@/app/manager/_components/actions';
 import type { Team } from '@/app/manager/_services/teams.service';
 import type { User } from '@/app/users/_services/users.service';
+import { assertDebouncedSearchRedirect } from '../helpers/assert-debounced-search';
 
 const mockPush = vi.fn();
 const mockRefresh = vi.fn();
@@ -22,40 +22,11 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-vi.mock('@repo/ui/components/ui/select', () => {
-  return {
-    Select: ({
-      children,
-      value,
-      onValueChange,
-    }: {
-      children: ReactNode;
-      value: string;
-      // eslint-disable-next-line no-unused-vars
-      onValueChange: (val: string) => void;
-    }) => (
-      <select
-        value={value}
-        onChange={(e) => onValueChange(e.target.value)}
-        data-testid="status-select"
-      >
-        {children}
-      </select>
-    ),
-    SelectTrigger: ({ children }: { children: ReactNode }) => <>{children}</>,
-    SelectValue: ({ placeholder }: { placeholder: string }) => (
-      <>{placeholder}</>
-    ),
-    SelectContent: ({ children }: { children: ReactNode }) => <>{children}</>,
-    SelectItem: ({
-      children,
-      value,
-    }: {
-      children: ReactNode;
-      value: string;
-    }) => <option value={value}>{children}</option>,
-  };
-});
+vi.mock('@repo/ui/components/ui/select', () =>
+  import('../mocks/select').then((module) =>
+    module.createSelectMock('status-select')
+  )
+);
 
 vi.mock(
   '@repo/ui/components/ui/dropdown-menu',
@@ -198,18 +169,17 @@ describe('TeamRegistry Component', () => {
       />
     );
 
-    const searchInput = screen.getByPlaceholderText(
-      /Search teams by name, tech stack, or description/i
-    );
-    fireEvent.change(searchInput, { target: { value: 'Infrastructure' } });
+    await assertDebouncedSearchRedirect({
+      searchInput: screen.getByPlaceholderText(
+        /Search teams by name, tech stack, or description/i
+      ),
+      value: 'Infrastructure',
+      expectedPath: '/manager?search=Infrastructure&page=1',
+      mockPush,
+    });
 
-    await waitFor(
-      () => {
-        expect(mockPush).toHaveBeenCalledWith(
-          '/manager?search=Infrastructure&page=1'
-        );
-      },
-      { timeout: 800 }
+    expect(mockPush).toHaveBeenCalledWith(
+      '/manager?search=Infrastructure&page=1'
     );
   });
 

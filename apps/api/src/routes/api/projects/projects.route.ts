@@ -15,15 +15,11 @@ import {
   projectLockActionSchema,
   updateProjectSchema,
 } from './projects.schemas';
-import { parsePagination } from '../../../lib/pagination';
-import {
-  type ProjectRow,
-  type ProjectRowWithOwner,
-  withoutJiraToken,
-} from './projects.repository';
+import { type ProjectRow, withoutJiraToken } from './projects.repository';
 import { workItems } from '../../../config/composition';
 import { type WorkItemBody } from '../workItems/workItems.schemas';
 import { supabase } from '../../../lib/supabase';
+import { WorkItemTypeEnum } from '@repo/types';
 
 const projectsRouter: Router = Router();
 
@@ -263,7 +259,10 @@ interface ParsedJiraIssue {
   key: string;
   title: string;
   description: string;
-  type: 'Task' | 'Story' | 'Epic';
+  type:
+    | typeof WorkItemTypeEnum.Task
+    | typeof WorkItemTypeEnum.Story
+    | typeof WorkItemTypeEnum.Epic;
 }
 
 function extractText(node: JiraNode | null | undefined): string {
@@ -351,12 +350,15 @@ async function fetchAndParseJiraIssues(
   }
 
   return data.issues.map((issue) => {
-    let type: 'Task' | 'Story' | 'Epic' = 'Task';
+    let type:
+      | typeof WorkItemTypeEnum.Task
+      | typeof WorkItemTypeEnum.Story
+      | typeof WorkItemTypeEnum.Epic = WorkItemTypeEnum.Task;
     const jiraType = (issue.fields?.issuetype?.name || '').toLowerCase();
     if (jiraType === 'story') {
-      type = 'Story';
+      type = WorkItemTypeEnum.Story;
     } else if (jiraType === 'epic') {
-      type = 'Epic';
+      type = WorkItemTypeEnum.Epic;
     }
 
     return {
@@ -367,45 +369,6 @@ async function fetchAndParseJiraIssues(
     };
   });
 }
-
-projectsRouter.get(
-  '/',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    try {
-      const statusQuery = req.query.status as 'active' | 'archived' | undefined;
-      const searchQuery = req.query.search as string | undefined;
-
-      const pagination = parsePagination(req);
-      if (pagination) {
-        const { page, limit } = pagination;
-        const result = (await projectsService.listProjects(
-          page,
-          limit,
-          statusQuery,
-          searchQuery
-        )) as { projects: ProjectRowWithOwner[]; totalCount: number };
-        const totalPages = Math.ceil(result.totalCount / limit);
-        return res.json({
-          projects: result.projects.map(withoutJiraToken),
-          totalCount: result.totalCount,
-          page,
-          limit,
-          totalPages,
-        });
-      }
-
-      const projects = await projectsService.listProjects();
-      res.json({
-        projects: (projects as ProjectRowWithOwner[]).map(withoutJiraToken),
-      });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to list projects';
-      res.status(500).json({ error: message });
-    }
-  }
-);
 
 projectsRouter.post(
   '/',
@@ -429,6 +392,8 @@ projectsRouter.post(
         jira_email: parsed.data.jira_email ?? null,
         jira_token: parsed.data.jira_token ?? null,
         jira_project_key: parsed.data.jira_project_key ?? null,
+        github_repo: parsed.data.github_repo ?? null,
+        github_token: parsed.data.github_token ?? null,
       });
       res.status(201).json({ project: withoutJiraToken(project) });
     } catch (error) {
@@ -532,28 +497,6 @@ projectsRouter.post(
   }
 );
 
-projectsRouter.get(
-  '/jira/settings',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    try {
-      const settings = await projectsService.getJiraSettings(req.userId!);
-      if (!settings) {
-        return res.json({ configured: false });
-      }
-      res.json({
-        configured: true,
-        jiraUrl: settings.jira_url,
-        jiraEmail: settings.jira_email,
-      });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to fetch settings';
-      res.status(500).json({ error: message });
-    }
-  }
-);
-
 projectsRouter.put(
   '/jira/settings',
   requireApiAuth,
@@ -641,46 +584,6 @@ projectsRouter.delete(
         error instanceof Error
           ? error.message
           : 'Failed to hard delete project';
-      res.status(500).json({ error: message });
-    }
-  }
-);
-
-projectsRouter.get(
-  '/:id',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ error: 'Project ID is required' });
-    }
-    try {
-      const project = await projectsService.getProjectById(id);
-      res.json({ project: withoutJiraToken(project) });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to retrieve project';
-      res.status(500).json({ error: message });
-    }
-  }
-);
-
-projectsRouter.get(
-  '/:id/members',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ error: 'Project ID is required' });
-    }
-    try {
-      const members = await projectsService.listMembers(id);
-      res.json({ members });
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Failed to retrieve project members';
       res.status(500).json({ error: message });
     }
   }

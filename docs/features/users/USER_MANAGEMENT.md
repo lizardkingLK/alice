@@ -4,7 +4,7 @@
 
 | Field        | Value                            |
 | ------------ | -------------------------------- |
-| Project      | Alice (Jira Teams)               |
+| Project      | Alice                            |
 | Area         | Web — `apps/web/app/users`       |
 | Version      | 1.0                              |
 | Status       | Implemented (phase-1 route RBAC) |

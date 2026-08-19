@@ -20,9 +20,12 @@ import {
 } from '@repo/ui/components/ui/card';
 import { Loader2, Shield, X } from '@repo/ui/lib/icons';
 import { Button } from '@repo/ui/components/ui/button';
+import { InfoTooltip } from '@repo/ui/components/ui/info-tooltip';
 import {
   accessAllowlistDomainValueSchema,
   accessAllowlistEmailValueSchema,
+  isActorOwnAllowlistDomain,
+  OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE,
 } from '@repo/types';
 import {
   createAccessAllowlistEntry,
@@ -36,6 +39,7 @@ import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutat
 
 interface AccessAllowlistFormProps {
   readonly entry?: AccessAllowlistEntry;
+  readonly currentUserEmail?: string | null;
   readonly onClose?: () => void;
   readonly onSuccess?: () => void;
 }
@@ -75,10 +79,14 @@ function validateAllowlistValue(
 
 export function AccessAllowlistForm({
   entry,
+  currentUserEmail = null,
   onClose,
   onSuccess,
 }: Readonly<AccessAllowlistFormProps>) {
   const isEdit = Boolean(entry);
+  const lockOwnDomainStatus = Boolean(
+    entry && isActorOwnAllowlistDomain(entry, currentUserEmail)
+  );
   const { handleMutationError } = useOptimisticLock();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -199,14 +207,18 @@ export function AccessAllowlistForm({
           {isEdit ? 'Edit allowlist entry' : 'Add allowlist entry'}
         </CardTitle>
         <CardDescription>
-          Approve a company domain or a specific email for app admission.
+          Approve a company domain or a specific email for app admission. Adding
+          an email sends that person an invite (or a sign-in link if they
+          already have an account). Domain rows do not send mail.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="allowlist-kind">Kind</Label>
+              <div className="flex h-6 items-center gap-1">
+                <Label htmlFor="allowlist-kind">Kind</Label>
+              </div>
               <Select
                 value={kind}
                 onValueChange={(next) => setKind(next as AccessAllowlistKind)}
@@ -222,13 +234,20 @@ export function AccessAllowlistForm({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="allowlist-status">Status</Label>
+              <div className="flex h-6 items-center gap-1">
+                <Label htmlFor="allowlist-status">Status</Label>
+                {lockOwnDomainStatus ? (
+                  <InfoTooltip ariaLabel={OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE}>
+                    {OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE}
+                  </InfoTooltip>
+                ) : null}
+              </div>
               <Select
                 value={status}
                 onValueChange={(next) =>
                   setStatus(next as AccessAllowlistStatus)
                 }
-                disabled={isSubmitting || isSuccess}
+                disabled={isSubmitting || isSuccess || lockOwnDomainStatus}
               >
                 <SelectTrigger id="allowlist-status" className="w-full">
                   <SelectValue placeholder="Select status" />
@@ -237,7 +256,6 @@ export function AccessAllowlistForm({
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>
                   <SelectItem value="archived">Archived</SelectItem>
-                  <SelectItem value="deleted">Deleted</SelectItem>
                 </SelectContent>
               </Select>
             </div>

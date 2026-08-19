@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function HelpPage() {
   return (
-    <DashboardShell description="Guides and support for Jira Teams.">
+    <DashboardShell description="Guides and support for Alice.">
       <ComingSoonPanel title="Help" />
     </DashboardShell>
   );

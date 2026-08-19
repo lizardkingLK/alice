@@ -1,6 +1,6 @@
 # Auth documentation
 
-Identity and access docs for Alice (Jira Teams). Start with the living authentication guide.
+Identity and access docs for Alice. Start with the living authentication guide.
 
 | Document                                                           | Description                                                                                       | Status                                                        |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
@@ -10,6 +10,7 @@ Identity and access docs for Alice (Jira Teams). Start with the living authentic
 
 Related feature docs:
 
+- [Day-one setup](../features/platform/DAY_ONE_SETUP.md) — Google Auth + custom SMTP as part of new-env bootstrap (**Plan**)
 - [User management](../features/users/) — registry UI, roles, activate/deactivate; allowlist admin tab
 - [Account deactivation](../features/users/ACCOUNT_DEACTIVATION.md) — offboarding (admin / self done; webhook planned)
 - [Access allowlist](../features/access/) — email domain / email admission gate (**Living**)

@@ -1,6 +1,5 @@
 import { expectedUpdatedAtSchema } from '@repo/types';
 import { z } from 'zod';
-import { auditUpdate } from '../../../lib/audit';
 import { env } from '../../../config/env';
 import {
   getPublicStorageUrl,
@@ -9,7 +8,12 @@ import {
   storagePathFromPublicUrl,
   uploadToStorage,
 } from '../../../lib/file-helpers';
-import { resolveOptimisticUpdate } from '../../../lib/optimistic-lock';
+import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
+import { prisma } from '../../../lib/prisma';
+import {
+  prismaAuditUpdate,
+  prismaLockTimestamp,
+} from '../../../lib/prisma-audit';
 import { supabase } from '../../../lib/supabase';
 
 const ALLOWED_MIME_TYPES = new Set([
@@ -62,23 +66,23 @@ export class ProfileService {
     userId: string,
     input: UpdateOwnProfileInput
   ): Promise<ProfileUser> {
-    const { data: user, error } = await supabase
-      .from('users')
-      .update({
+    const { count } = await prisma.users.updateMany({
+      where: {
+        id: userId,
+        updated_at: prismaLockTimestamp(input.expectedUpdatedAt),
+      },
+      data: {
         name: input.name,
-        ...auditUpdate(userId),
-      })
-      .eq('id', userId)
-      .eq('updated_at', input.expectedUpdatedAt)
-      .select(PROFILE_USER_SELECT)
-      .maybeSingle();
+        ...prismaAuditUpdate(userId),
+      },
+    });
 
-    return (await resolveOptimisticUpdate({
-      data: user as ProfileUser | null,
-      error,
+    return resolveOptimisticPrismaUpdate({
+      count,
+      fetchUpdated: () => this.findProfileUser(userId),
       fetchCurrent: () => this.findProfileUser(userId),
       notFoundMessage: 'User profile not found.',
-    })) as ProfileUser;
+    });
   }
 
   async updateOwnProfilePicture(
@@ -106,25 +110,25 @@ export class ProfileService {
       contentType: file.mimetype,
     });
 
-    const { data: updated, error: updateError } = await supabase
-      .from('users')
-      .update({
+    const { count } = await prisma.users.updateMany({
+      where: {
+        id: userId,
+        updated_at: prismaLockTimestamp(expectedUpdatedAt),
+      },
+      data: {
         profile_picture: getPublicStorageUrl(bucket, uploaded.path),
-        ...auditUpdate(userId),
-      })
-      .eq('id', userId)
-      .eq('updated_at', expectedUpdatedAt)
-      .select(PROFILE_USER_SELECT)
-      .maybeSingle();
+        ...prismaAuditUpdate(userId),
+      },
+    });
 
     let resolvedUser: ProfileUser;
     try {
-      resolvedUser = (await resolveOptimisticUpdate({
-        data: updated as ProfileUser | null,
-        error: updateError,
+      resolvedUser = await resolveOptimisticPrismaUpdate({
+        count,
+        fetchUpdated: () => this.findProfileUser(userId),
         fetchCurrent: () => this.findProfileUser(userId),
         notFoundMessage: 'User profile not found.',
-      })) as ProfileUser;
+      });
     } catch (error) {
       await removeStorageObjects(bucket, [uploaded.path]);
       throw error;

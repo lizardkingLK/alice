@@ -2,7 +2,7 @@
 
 ## Document Metadata
 
-- Project: Alice (Jira Teams)
+- Project: Alice
 - Area: Web Authorization (`apps/web`)
 - Version: 1.0 (Phase 1)
 - Status: Implemented
