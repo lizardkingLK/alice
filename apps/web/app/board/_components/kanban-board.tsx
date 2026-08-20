@@ -409,15 +409,15 @@ export function KanbanBoard({
   };
 
   return (
-    <div className="flex h-full w-full flex-col gap-6">
+    <div className="flex h-full min-h-0 w-full flex-1 flex-col gap-6">
       {needsClientBootstrap ? (
-        <div className="text-muted-foreground rounded-lg border px-3 py-2 text-sm">
+        <div className="text-muted-foreground shrink-0 rounded-lg border px-3 py-2 text-sm">
           Loading your board defaults…
         </div>
       ) : null}
 
       {statusError ? (
-        <div className="bg-destructive/10 text-destructive border-destructive/20 flex items-start gap-2 rounded-lg border px-3 py-2 text-sm">
+        <div className="bg-destructive/10 text-destructive border-destructive/20 flex shrink-0 items-start gap-2 rounded-lg border px-3 py-2 text-sm">
           <AlertCircle className="mt-0.5 size-4 shrink-0" />
           <div className="flex flex-1 items-start justify-between gap-3">
             <p>{statusError}</p>
@@ -434,7 +434,7 @@ export function KanbanBoard({
         </div>
       ) : null}
 
-      <Card className="shadow-none">
+      <Card className="shrink-0 shadow-none">
         <CardContent className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <SearchInput
@@ -583,7 +583,7 @@ export function KanbanBoard({
         </CardContent>
       </Card>
 
-      <div className="grid min-h-128 flex-1 grid-cols-1 items-stretch gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid min-h-0 flex-1 grid-cols-1 items-stretch gap-4 md:grid-cols-2 xl:grid-cols-5">
         {COLUMNS.map((column) => {
           const columnItems = filteredItems.filter(
             (item) => item.status === column.id
@@ -595,7 +595,7 @@ export function KanbanBoard({
               key={column.id}
               aria-label={formatLabelWithSpace(column.id)}
               className={cn(
-                'bg-muted/25 flex h-full min-h-128 min-w-0 flex-col rounded-xl border border-t-4 p-3 transition-colors',
+                'bg-muted/25 flex h-full min-h-0 min-w-0 flex-col rounded-xl border border-t-4 p-3 transition-colors',
                 column.accentClassName,
                 isOver && 'border-primary bg-primary/5 border-dashed'
               )}

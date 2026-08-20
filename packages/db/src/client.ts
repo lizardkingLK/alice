@@ -54,6 +54,10 @@ export function connectionStringForPgAdapter(connectionString: string): string {
   }
 }
 
+function logPrismaPoolError(err: Error) {
+  console.error('error. prisma pg pool:', err.message);
+}
+
 /**
  * Pooled runtime client for app queries (Vercel / Express).
  * Use `DIRECT_URL` only with Prisma CLI migrate — never here.
@@ -75,13 +79,9 @@ export function createPrismaClient(connectionString: string): PrismaClient {
       checkServerIdentity: () => undefined,
     },
   });
-  pool.on('error', (err) => {
-    console.error('error. prisma pg pool:', err.message);
-  });
+  pool.on('error', logPrismaPoolError);
   const adapter = new PrismaPg(pool, {
-    onPoolError: (err: Error) => {
-      console.error('error. prisma pg pool:', err.message);
-    },
+    onPoolError: logPrismaPoolError,
   });
   return new PrismaClient({ adapter });
 }
