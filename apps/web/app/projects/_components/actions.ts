@@ -24,8 +24,11 @@ import {
   invalidateDropdownCache,
 } from '@/lib/cache/dropdown-cache';
 
-function revalidateProjects() {
+function revalidateProjects(projectId?: string) {
   revalidatePath('/projects');
+  if (projectId) {
+    revalidatePath(`/projects/${projectId}`);
+  }
   invalidateDropdownCache(DROPDOWN_CACHE_TAGS.projects);
 }
 
@@ -72,7 +75,7 @@ export async function createProject(
       github_token: null,
     });
 
-    revalidateProjects();
+    revalidateProjects(project.id);
     return { ...actionSuccess(), projectId: project.id };
   });
 }
@@ -103,7 +106,7 @@ export async function updateProject(
       expectedUpdatedAt
     );
 
-    revalidateProjects();
+    revalidateProjects(projectId);
     return actionSuccess();
   });
 }
@@ -114,7 +117,7 @@ export async function softDeleteProject(
 ): Promise<ActionState> {
   return runProjectMutation(async () => {
     await apiSoftDeleteProject(projectId, expectedUpdatedAt);
-    revalidateProjects();
+    revalidateProjects(projectId);
     return actionSuccess();
   });
 }
@@ -125,7 +128,7 @@ export async function restoreProject(
 ): Promise<ActionState> {
   return runProjectMutation(async () => {
     await apiRestoreProject(projectId, expectedUpdatedAt);
-    revalidateProjects();
+    revalidateProjects(projectId);
     return actionSuccess();
   });
 }
@@ -146,7 +149,7 @@ export async function hardDeleteProject(
 
   try {
     await apiHardDeleteProject(projectId);
-    revalidateProjects();
+    revalidateProjects(projectId);
     return actionSuccess();
   } catch (err) {
     return unexpectedActionError(err);
