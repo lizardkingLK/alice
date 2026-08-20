@@ -7,12 +7,13 @@ import {
   type UpdateSavedViewInput,
 } from '@repo/types';
 import { supabase } from '../../../lib/supabase';
-import { prisma } from '../../../lib/prisma';
-import { prismaNotificationCreate } from '../../../lib/prisma-audit';
+import { NotificationsRepository } from '../notifications/notifications.repository';
 import {
   savedViewsRepository,
   type SavedViewRow,
 } from './savedViews.repository';
+
+const notificationsRepository = new NotificationsRepository(supabase);
 
 export class SavedViewsService {
   create(ownerId: string, input: CreateSavedViewInput) {
@@ -126,13 +127,8 @@ export class SavedViewsService {
       return;
     }
 
-    const { data: actor } = await supabase
-      .from('users')
-      .select('name')
-      .eq('id', params.actorId)
-      .maybeSingle();
-
-    const actorName = actor?.name ?? 'Someone';
+    const actorName =
+      (await notificationsRepository.getUserName(params.actorId)) ?? 'Someone';
     const message = `${actorName} shared the view “${params.view.title}” with you`;
 
     const rows = params.recipientIds.map((userId) =>
@@ -145,9 +141,7 @@ export class SavedViewsService {
         .Build()
     );
 
-    await prisma.notifications.createMany({
-      data: rows.map(prismaNotificationCreate),
-    });
+    await notificationsRepository.insertMany(rows);
   }
 }
 

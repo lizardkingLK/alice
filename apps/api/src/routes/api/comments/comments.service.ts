@@ -15,6 +15,10 @@ export class CommentsService {
     >
   ) {}
 
+  /**
+   * Await mention inserts so Vercel does not freeze the isolate before Prisma
+   * commits. Realtime postgres_changes reads WAL only after commit.
+   */
   private async notifyMentionedUsers(
     actorId: string,
     comment: CommentRow
@@ -45,6 +49,14 @@ export class CommentsService {
     }
   }
 
+  private async notifyMentionsAndReturn(
+    actorId: string,
+    comment: CommentRow
+  ): Promise<CommentRow> {
+    await this.notifyMentionedUsers(actorId, comment);
+    return comment;
+  }
+
   async createComment(
     actorId: string,
     input: {
@@ -58,11 +70,7 @@ export class CommentsService {
       author_id: actorId,
     });
 
-    this.notifyMentionedUsers(actorId, created).catch((err) => {
-      console.error('Failed to notify mentioned users in createComment:', err);
-    });
-
-    return created;
+    return this.notifyMentionsAndReturn(actorId, created);
   }
 
   async updateComment(
@@ -77,12 +85,10 @@ export class CommentsService {
       expectedUpdatedAt
     );
 
-    const editorId = actorId || updated.author_id;
-    this.notifyMentionedUsers(editorId, updated).catch((err) => {
-      console.error('Failed to notify mentioned users in updateComment:', err);
-    });
-
-    return updated;
+    return this.notifyMentionsAndReturn(
+      actorId || updated.author_id,
+      updated
+    );
   }
 
   async archiveComment(id: string, expectedUpdatedAt: string): Promise<void> {

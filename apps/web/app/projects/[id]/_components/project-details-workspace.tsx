@@ -552,6 +552,7 @@ function JiraSettingsCard({ project }: JiraSettingsCardProps) {
         body: JSON.stringify({
           jira_url: jiraUrl.trim() || null,
           jira_project_key: jiraProjectKey.toUpperCase().trim() || null,
+          expectedUpdatedAt: project.updated_at,
         }),
       });
       setJiraMessage('Jira integration settings saved successfully!');

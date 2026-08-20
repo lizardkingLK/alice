@@ -104,16 +104,22 @@ function buildWorkItemPayload(
   };
 }
 
+function shouldNotifyNewAssignee(
+  workItem: DbWorkItem | null | undefined,
+  actorId?: string
+) {
+  return Boolean(workItem?.assignee_id && workItem.assignee_id !== actorId);
+}
+
 export function shouldNotifyAssigneeChange(
   existingWorkItem: DbWorkItem,
   workItem: DbWorkItem | null,
   actorId?: string
 ) {
-  return Boolean(
-    workItem?.assignee_id &&
-    workItem.assignee_id !== existingWorkItem.assignee_id &&
-    workItem.assignee_id !== actorId
-  );
+  if (!workItem || !shouldNotifyNewAssignee(workItem, actorId)) {
+    return false;
+  }
+  return workItem.assignee_id !== existingWorkItem.assignee_id;
 }
 
 function sendWorkItemMutationError(
@@ -166,16 +172,27 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
   const { workItemService, notificationsService } = deps;
 
   function createAssignNotification(workItem: DbWorkItem, actorId: string) {
-    notificationsService
-      .createAssignNotification({
-        assigneeId: workItem.assignee_id!,
-        actorId,
-        taskTitle: workItem.title,
-        taskId: workItem.id,
-      })
-      .catch((err) =>
-        console.error('Failed to trigger assign notification:', err)
-      );
+    return notificationsService.createAssignNotification({
+      assigneeId: workItem.assignee_id!,
+      actorId,
+      taskTitle: workItem.title,
+      taskId: workItem.id,
+    });
+  }
+
+  /**
+   * Await the Prisma insert so Vercel does not freeze the isolate before
+   * commit. Realtime postgres_changes reads WAL only after commit.
+   */
+  async function notifyAssigneeAfterCommit(
+    workItem: DbWorkItem | null | undefined,
+    actorId: string | undefined,
+    shouldNotify: boolean
+  ): Promise<void> {
+    if (!workItem || !actorId || !shouldNotify) {
+      return;
+    }
+    await createAssignNotification(workItem, actorId);
   }
 
   const workItemsRouter: Router = Router();
@@ -351,9 +368,11 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
           parsed.data
         );
 
-        if (workItem?.assignee_id && workItem.assignee_id !== req.userId) {
-          createAssignNotification(workItem, req.userId!);
-        }
+        await notifyAssigneeAfterCommit(
+          workItem,
+          req.userId,
+          shouldNotifyNewAssignee(workItem, req.userId)
+        );
 
         res.status(201).json({ data: workItem, error: null });
       } catch (error) {
@@ -414,12 +433,11 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
           expectedUpdatedAt
         );
 
-        if (
-          workItem &&
+        await notifyAssigneeAfterCommit(
+          workItem,
+          req.userId,
           shouldNotifyAssigneeChange(existingWorkItem, workItem, req.userId)
-        ) {
-          createAssignNotification(workItem, req.userId!);
-        }
+        );
 
         res.status(200).json({ data: workItem, error: null });
       } catch (error) {
