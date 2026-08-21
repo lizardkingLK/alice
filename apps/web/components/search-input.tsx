@@ -15,6 +15,8 @@ import {
 } from '@repo/ui/components/ui/tooltip';
 import { Search, X } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
+import { useKeyboardShortcut } from '@repo/ui/hooks/use-keyboard-shortcut';
+import { isModKey } from '@repo/ui/lib/shortcut-gate';
 
 const TOOLTIP_DELAY_MS = 400;
 
@@ -68,18 +70,9 @@ export function SearchInput({
     setHotkey(shortcutLabel());
   }, []);
 
-  useEffect(() => {
-    if (!enableFocusShortcut) {
-      return;
-    }
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key.toLowerCase() !== 'k') {
-        return;
-      }
-      if (!(event.metaKey || event.ctrlKey) || event.altKey) {
-        return;
-      }
+  useKeyboardShortcut(
+    (event) => isModKey(event, 'k'),
+    (event) => {
       event.preventDefault();
       const input = inputRef.current;
       if (!input) {
@@ -87,11 +80,9 @@ export function SearchInput({
       }
       input.focus();
       input.select();
-    };
-
-    globalThis.window.addEventListener('keydown', onKeyDown);
-    return () => globalThis.window.removeEventListener('keydown', onKeyDown);
-  }, [enableFocusShortcut]);
+    },
+    { enabled: enableFocusShortcut }
+  );
 
   const handleClear = () => {
     if (onClear) {

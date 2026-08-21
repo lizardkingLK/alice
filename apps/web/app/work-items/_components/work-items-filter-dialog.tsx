@@ -18,6 +18,8 @@ import {
 } from '@repo/ui/components/ui/tooltip';
 import { Filter, Plus, Search } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
+import { useToggleKeyboardShortcut } from '@repo/ui/hooks/use-keyboard-shortcut';
+import { isShiftLetter } from '@repo/ui/lib/shortcut-gate';
 import { parseWorkItemLabelsFilterParam } from '@repo/types';
 import {
   applyProjectFilterToSearchParams,
@@ -514,17 +516,11 @@ export function WorkItemsFilterDialog(
     // eslint-disable-next-line react-hooks/exhaustive-deps -- open transition only
   }, [open]);
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.shiftKey && event.key.toLowerCase() === 'f') {
-        event.preventDefault();
-        setOpen((current) => !current);
-      }
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  useToggleKeyboardShortcut(
+    (event) => isShiftLetter(event, 'f'),
+    open,
+    setOpen
+  );
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);

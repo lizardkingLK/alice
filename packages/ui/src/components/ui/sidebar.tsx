@@ -6,6 +6,8 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { Slot } from 'radix-ui';
 
 import { useIsMobile } from '@repo/ui/hooks/use-mobile';
+import { useKeyboardShortcut } from '@repo/ui/hooks/use-keyboard-shortcut';
+import { isModKey } from '@repo/ui/lib/shortcut-gate';
 import { cn, trueRandom } from '@repo/ui/lib/utils';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
@@ -91,29 +93,13 @@ function SidebarProvider({
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
   }, [isMobile, setOpen, setOpenMobile]);
 
-  // Adds a keyboard shortcut to toggle the sidebar.
-  React.useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
-        (event.metaKey || event.ctrlKey)
-      ) {
-        event.preventDefault();
-        const target = event.target as HTMLElement;
-        if (
-          target.isContentEditable ||
-          ['INPUT', 'TEXTAREA'].includes(target.tagName)
-        ) {
-          return;
-        }
-
-        toggleSidebar();
-      }
-    };
-
-    globalThis.addEventListener('keydown', handleKeyDown);
-    return () => globalThis.removeEventListener('keydown', handleKeyDown);
-  }, [toggleSidebar]);
+  useKeyboardShortcut(
+    (event) => isModKey(event, SIDEBAR_KEYBOARD_SHORTCUT),
+    (event) => {
+      event.preventDefault();
+      toggleSidebar();
+    }
+  );
 
   // We add a state so that we can do data-state='expanded' or 'collapsed'.
   // This makes it easier to style the sidebar with Tailwind classes.

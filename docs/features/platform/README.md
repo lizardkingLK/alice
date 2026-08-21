@@ -2,9 +2,10 @@
 
 Operator-facing setup for a new Alice environment (Supabase project, Auth, mail).
 
-| Document                               | Description                                                              | Status |
-| -------------------------------------- | ------------------------------------------------------------------------ | ------ |
-| [DAY_ONE_SETUP.md](./DAY_ONE_SETUP.md) | Day-one script: schema, indexes, RPCs, Storage, Google Auth, custom SMTP | Plan   |
+| Document                                         | Description                                                              | Status |
+| ------------------------------------------------ | ------------------------------------------------------------------------ | ------ |
+| [DAY_ONE_SETUP.md](./DAY_ONE_SETUP.md)           | Day-one script: schema, indexes, RPCs, Storage, Google Auth, custom SMTP | Plan   |
+| [KEYBOARD_SHORTCUTS.md](./KEYBOARD_SHORTCUTS.md) | Global shortcut gate, hook, and inventory                                | Living |
 
 Related:
 

@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import { Dialog as DialogPrimitive } from 'radix-ui';
 
 import { cn } from '@repo/ui/lib/utils';
+import { shortcutGateContentProps } from '@repo/ui/lib/shortcut-gate';
 import { Button } from '@repo/ui/components/ui/button';
 
 function Dialog({
@@ -82,6 +83,7 @@ function DialogContent({
           onInteractOutside?.(event);
         }}
         {...props}
+        {...shortcutGateContentProps()}
       >
         {children}
         {showCloseButton && (
