@@ -48,6 +48,7 @@ export type SprintStatus = (typeof SprintStatus)[keyof typeof SprintStatus]
 
 export const WorkItemType = {
   Epic: 'Epic',
+  Feature: 'Feature',
   Story: 'Story',
   Task: 'Task',
   Issue: 'Issue'

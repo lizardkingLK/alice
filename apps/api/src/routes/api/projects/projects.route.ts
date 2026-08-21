@@ -19,7 +19,8 @@ import { type ProjectRow, withoutJiraToken } from './projects.repository';
 import { workItems } from '../../../config/composition';
 import { type WorkItemBody } from '../workItems/workItems.schemas';
 import { supabase } from '../../../lib/supabase';
-import { WorkItemTypeEnum } from '@repo/types';
+import { WorkItemTypeEnum, type WorkItemType } from '@repo/types';
+import { prisma } from '../../../lib/prisma';
 
 const projectsRouter: Router = Router();
 
@@ -238,6 +239,9 @@ interface JiraIssueField {
     name?: string;
   };
   description?: unknown;
+  parent?: {
+    key?: string;
+  };
 }
 
 interface JiraIssue {
@@ -259,10 +263,8 @@ interface ParsedJiraIssue {
   key: string;
   title: string;
   description: string;
-  type:
-    | typeof WorkItemTypeEnum.Task
-    | typeof WorkItemTypeEnum.Story
-    | typeof WorkItemTypeEnum.Epic;
+  type: WorkItemType;
+  parentKey?: string | null;
 }
 
 function extractText(node: JiraNode | null | undefined): string {
@@ -327,7 +329,7 @@ async function fetchAndParseJiraIssues(
   const authHeader = `Basic ${Buffer.from(credentials).toString('base64')}`;
   const jql = encodeURIComponent(`project="${jiraProjectKey.trim()}"`);
   const response = await fetch(
-    `${cleanUrl}/rest/api/3/search/jql?jql=${jql}&fields=summary,description,issuetype`,
+    `${cleanUrl}/rest/api/3/search/jql?jql=${jql}&fields=summary,description,issuetype,parent`,
     {
       // NOSONAR
       headers: {
@@ -350,22 +352,28 @@ async function fetchAndParseJiraIssues(
   }
 
   return data.issues.map((issue) => {
-    let type:
-      | typeof WorkItemTypeEnum.Task
-      | typeof WorkItemTypeEnum.Story
-      | typeof WorkItemTypeEnum.Epic = WorkItemTypeEnum.Task;
+    let type: WorkItemType = WorkItemTypeEnum.Task;
     const jiraType = (issue.fields?.issuetype?.name || '').toLowerCase();
-    if (jiraType === 'story') {
-      type = WorkItemTypeEnum.Story;
-    } else if (jiraType === 'epic') {
+    if (jiraType === 'epic') {
       type = WorkItemTypeEnum.Epic;
+    } else if (jiraType === 'feature') {
+      type = WorkItemTypeEnum.Feature;
+    } else if (jiraType === 'story') {
+      type = WorkItemTypeEnum.Story;
+    } else if (jiraType === 'task' || jiraType === 'sub-task' || jiraType === 'subtask') {
+      type = WorkItemTypeEnum.Task;
+    } else if (jiraType === 'bug' || jiraType === 'issue') {
+      type = WorkItemTypeEnum.Issue;
     }
+
+    const parentKey = issue.fields?.parent?.key || null;
 
     return {
       key: issue.key,
       title: issue.fields?.summary || 'Untitled',
       description: parseJiraDescription(issue.fields?.description),
       type,
+      parentKey,
     };
   });
 }
@@ -442,6 +450,40 @@ projectsRouter.post(
   }
 );
 
+async function linkImportedJiraParents(
+  projectId: string,
+  issues: ParsedJiraIssue[]
+): Promise<void> {
+  const allWorkItems = await prisma.work_items.findMany({
+    where: { project_id: projectId },
+    select: { id: true, jira_issue_key: true, parent_id: true },
+  });
+
+  const keyToIdMap = new Map<string, string>();
+  for (const item of allWorkItems) {
+    if (item.jira_issue_key) {
+      keyToIdMap.set(item.jira_issue_key, item.id);
+    }
+  }
+
+  for (const issue of issues) {
+    if (!issue.parentKey) {
+      continue;
+    }
+    const childId = keyToIdMap.get(issue.key);
+    const parentId = keyToIdMap.get(issue.parentKey);
+    if (childId && parentId) {
+      const currentItem = allWorkItems.find((item) => item.id === childId);
+      if (currentItem && currentItem.parent_id !== parentId) {
+        await prisma.work_items.update({
+          where: { id: childId },
+          data: { parent_id: parentId },
+        });
+      }
+    }
+  }
+}
+
 projectsRouter.post(
   '/jira/import',
   requireApiAuth,
@@ -483,6 +525,12 @@ projectsRouter.post(
         issues,
         existingKeys,
       });
+
+      try {
+        await linkImportedJiraParents(projectId, issues);
+      } catch (linkError) {
+        console.error('error. failed to link parents during Jira import:', linkError);
+      }
 
       res.json({ success: true, importedCount });
     } catch (error) {

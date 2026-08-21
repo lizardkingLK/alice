@@ -13,7 +13,8 @@ export type WorkItemType = (typeof WORK_ITEM_TYPES)[number];
  */
 export const WORK_ITEM_CHILD_TYPE: Partial<Record<WorkItemType, WorkItemType>> =
   {
-    [WorkItemTypeEnum.Epic]: WorkItemTypeEnum.Story,
+    [WorkItemTypeEnum.Epic]: WorkItemTypeEnum.Feature,
+    [WorkItemTypeEnum.Feature]: WorkItemTypeEnum.Story,
     [WorkItemTypeEnum.Story]: WorkItemTypeEnum.Task,
     [WorkItemTypeEnum.Task]: WorkItemTypeEnum.Issue,
   };

@@ -1214,7 +1214,7 @@ export type Database = {
       WorkItemPriority: 'lowest' | 'low' | 'medium' | 'high' | 'highest';
       WorkItemStatus:
         'Draft' | 'New' | 'ToDo' | 'InProgress' | 'Testing' | 'Done';
-      WorkItemType: 'Epic' | 'Story' | 'Task' | 'Issue';
+      WorkItemType: 'Epic' | 'Feature' | 'Story' | 'Task' | 'Issue';
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -1358,7 +1358,7 @@ export const Constants = {
       UserRole: ['admin', 'manager', 'member'],
       WorkItemPriority: ['lowest', 'low', 'medium', 'high', 'highest'],
       WorkItemStatus: ['Draft', 'New', 'ToDo', 'InProgress', 'Testing', 'Done'],
-      WorkItemType: ['Epic', 'Story', 'Task', 'Issue'],
+      WorkItemType: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
     },
   },
 } as const;

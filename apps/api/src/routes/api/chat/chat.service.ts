@@ -303,7 +303,9 @@ export class ChatService {
     let typeValue: WorkItemType = WorkItemTypeEnum.Task;
     if (typeof args.type === 'string') {
       const normalized = args.type.toLowerCase();
-      if (normalized === 'story') typeValue = WorkItemTypeEnum.Story;
+      if (normalized === 'epic') typeValue = WorkItemTypeEnum.Epic;
+      else if (normalized === 'feature') typeValue = WorkItemTypeEnum.Feature;
+      else if (normalized === 'story') typeValue = WorkItemTypeEnum.Story;
       else if (normalized === 'bug' || normalized === 'issue')
         typeValue = WorkItemTypeEnum.Issue;
     }

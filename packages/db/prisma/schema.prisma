@@ -36,6 +36,7 @@ enum SprintStatus {
 
 enum WorkItemType {
   Epic
+  Feature
   Story
   Task
   Issue
