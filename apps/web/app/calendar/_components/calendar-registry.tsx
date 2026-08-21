@@ -413,11 +413,14 @@ export function CalendarRegistry({
                     setPageSize(5);
                     logAction({
                       type: 'select_date',
-                      entity: { id: dayCell.dateString, label: dayCell.dateString },
+                      entity: {
+                        id: dayCell.dateString,
+                        label: dayCell.dateString,
+                      },
                     });
                   }}
                   className={cn(
-                    'bg-card group hover:bg-accent/15 cursor-pointer flex min-h-30 flex-col justify-between p-2 transition-colors duration-150 text-left outline-hidden focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-0 w-full',
+                    'bg-card group hover:bg-accent/15 focus-visible:ring-ring flex min-h-30 w-full cursor-pointer flex-col justify-between p-2 text-left outline-hidden transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-offset-0',
                     !dayCell.isCurrentMonth &&
                       'bg-muted/30 text-muted-foreground/50'
                   )}
@@ -437,10 +440,13 @@ export function CalendarRegistry({
                   </div>
 
                   {dayItems.length > 0 ? (
-                    <div className="flex flex-col gap-1 mt-1">
-                      <div className="flex items-center gap-1.5 rounded border border-primary/25 bg-primary/5 px-2 py-1 text-[11px] font-medium text-primary shadow-xs">
-                        <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                        <span className="truncate">{dayItems.length} item{dayItems.length === 1 ? '' : 's'} due</span>
+                    <div className="mt-1 flex flex-col gap-1">
+                      <div className="border-primary/25 bg-primary/5 text-primary flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] font-medium shadow-xs">
+                        <span className="bg-primary h-1.5 w-1.5 animate-pulse rounded-full" />
+                        <span className="truncate">
+                          {dayItems.length} item
+                          {dayItems.length === 1 ? '' : 's'} due
+                        </span>
                       </div>
                     </div>
                   ) : null}
@@ -452,28 +458,36 @@ export function CalendarRegistry({
       </Card>
 
       {/* Sidebar Sheet */}
-      <Sheet open={!!selectedDateStr} onOpenChange={(open) => !open && setSelectedDateStr(null)}>
-        <SheetContent className="data-[side=right]:sm:max-w-2xl flex flex-col h-full bg-card border-border/80 p-0">
+      <Sheet
+        open={!!selectedDateStr}
+        onOpenChange={(open) => !open && setSelectedDateStr(null)}
+      >
+        <SheetContent className="bg-card border-border/80 flex h-full flex-col p-0 data-[side=right]:sm:max-w-2xl">
           {selectedDateStr && (
             <Tabs
               value={activeTab}
               onValueChange={setActiveTab}
               orientation="horizontal"
-              className="flex flex-col h-full w-full min-w-0"
+              className="flex h-full w-full min-w-0 flex-col"
             >
-              <SheetHeader className="p-6 pr-14 pb-4 border-b flex flex-row items-center justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <SheetTitle className="text-xl font-bold truncate">
-                    {new Date(selectedDateStr + 'T00:00:00').toLocaleDateString(undefined, { dateStyle: 'full' })}
+              <SheetHeader className="flex flex-row items-center justify-between gap-4 border-b p-6 pr-14 pb-4">
+                <div className="min-w-0 flex-1">
+                  <SheetTitle className="truncate text-xl font-bold">
+                    {new Date(selectedDateStr + 'T00:00:00').toLocaleDateString(
+                      undefined,
+                      { dateStyle: 'full' }
+                    )}
                   </SheetTitle>
-                  <SheetDescription className="text-muted-foreground text-xs truncate">
+                  <SheetDescription className="text-muted-foreground truncate text-xs">
                     View work items due on this date or create a new one.
                   </SheetDescription>
                 </div>
                 <TabsList className="shrink-0">
                   <TabsTrigger value="due" className="gap-2">
                     <CheckSquare className="size-4 shrink-0" />
-                    <span>Due ({itemsByDate[selectedDateStr]?.length ?? 0})</span>
+                    <span>
+                      Due ({itemsByDate[selectedDateStr]?.length ?? 0})
+                    </span>
                   </TabsTrigger>
                   <TabsTrigger value="create" className="gap-2">
                     <Plus className="size-4 shrink-0" />
@@ -481,16 +495,16 @@ export function CalendarRegistry({
                   </TabsTrigger>
                 </TabsList>
               </SheetHeader>
-              <div className="flex-1 overflow-y-auto no-scrollbar p-6 h-full min-h-0 w-full min-w-0">
+              <div className="no-scrollbar h-full min-h-0 w-full min-w-0 flex-1 overflow-y-auto p-6">
                 <TabsContent
                   value="due"
-                  className="mt-0 space-y-3 outline-none focus-visible:ring-0 focus-visible:ring-offset-0 h-full w-full"
+                  className="mt-0 h-full w-full space-y-3 outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
                 >
                   {(() => {
                     const dayItems = itemsByDate[selectedDateStr] || [];
                     if (dayItems.length === 0) {
                       return (
-                        <div className="text-center text-muted-foreground text-sm py-12">
+                        <div className="text-muted-foreground py-12 text-center text-sm">
                           No work items due on this date.
                         </div>
                       );
@@ -504,12 +518,18 @@ export function CalendarRegistry({
                     );
 
                     return (
-                      <div className="flex flex-col h-full justify-between gap-4">
-                        <div className="space-y-3 w-full">
+                      <div className="flex h-full flex-col justify-between gap-4">
+                        <div className="w-full space-y-3">
                           {paginatedItems.map((item) => {
-                            const isIssue = item.type === CalendarWorkItemTypes.Issue;
-                            const isStory = item.type === CalendarWorkItemTypes.Story;
-                            const projectKey = item.project?.key ?? projects.find((p) => p.id === item.project_id)?.key ?? 'ITEM';
+                            const isIssue =
+                              item.type === CalendarWorkItemTypes.Issue;
+                            const isStory =
+                              item.type === CalendarWorkItemTypes.Story;
+                            const projectKey =
+                              item.project?.key ??
+                              projects.find((p) => p.id === item.project_id)
+                                ?.key ??
+                              'ITEM';
                             const displayKey = `${projectKey}-${item.id.slice(-4)}`;
 
                             return (
@@ -523,23 +543,27 @@ export function CalendarRegistry({
                                   })
                                 }
                                 className={cn(
-                                  'flex w-full min-w-0 items-center justify-between gap-3 p-3 rounded-lg border border-border bg-card transition-all duration-150 shadow-sm select-none',
-                                  'hover:translate-x-0.5 hover:shadow-md hover:border-primary/30',
-                                  isIssue && 'border-red-500/20 bg-red-500/5 hover:bg-red-500/10',
-                                  isStory && 'border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10',
-                                  !isIssue && !isStory && 'border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10'
+                                  'border-border bg-card flex w-full min-w-0 items-center justify-between gap-3 rounded-lg border p-3 shadow-sm transition-all duration-150 select-none',
+                                  'hover:border-primary/30 hover:translate-x-0.5 hover:shadow-md',
+                                  isIssue &&
+                                    'border-red-500/20 bg-red-500/5 hover:bg-red-500/10',
+                                  isStory &&
+                                    'border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10',
+                                  !isIssue &&
+                                    !isStory &&
+                                    'border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10'
                                 )}
                               >
-                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <div className="flex min-w-0 flex-1 items-center gap-2">
                                   <WorkItemTypeBadge type={item.type} compact />
-                                  <span className="text-muted-foreground font-mono text-xs font-semibold shrink-0">
+                                  <span className="text-muted-foreground shrink-0 font-mono text-xs font-semibold">
                                     {displayKey}
                                   </span>
-                                  <span className="text-foreground text-sm font-medium truncate">
+                                  <span className="text-foreground truncate text-sm font-medium">
                                     {item.title}
                                   </span>
                                 </div>
-                                <div className="flex items-center gap-2 shrink-0">
+                                <div className="flex shrink-0 items-center gap-2">
                                   <WorkItemStatusBadge status={item.status} />
                                   <PriorityBadge priority={item.priority} />
                                   <UserAvatar
@@ -569,7 +593,7 @@ export function CalendarRegistry({
                 </TabsContent>
                 <TabsContent
                   value="create"
-                  className="mt-0 outline-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
+                  className="mt-0 w-full outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
                 >
                   <WorkItemForm
                     projects={projects}

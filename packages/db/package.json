@@ -15,6 +15,7 @@
   ],
   "scripts": {
     "lint": "eslint . --max-warnings 0",
+    "clean": "rm -rf .turbo node_modules/.cache/turbo",
     "check:env": "tsx src/env.ts",
     "checktypes": "pnpm run check:env && tsc --noEmit",
     "build": "tsc",

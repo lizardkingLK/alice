@@ -402,7 +402,7 @@ export function NotificationInbox({
             <div className="min-w-0 flex-1 space-y-1 pr-2">
               <p
                 className={cn(
-                  'text-xs leading-relaxed wrap-break-word line-clamp-3',
+                  'line-clamp-3 text-xs leading-relaxed wrap-break-word',
                   notif.read_status
                     ? 'text-muted-foreground'
                     : 'text-foreground font-medium'
@@ -467,7 +467,9 @@ export function NotificationInbox({
               <h3 className="text-foreground text-sm font-semibold">
                 Notifications
               </h3>
-              <p className="text-muted-foreground text-xs">{getSubTitleText()}</p>
+              <p className="text-muted-foreground text-xs">
+                {getSubTitleText()}
+              </p>
             </div>
             {unreadCount > 0 && (
               <button
@@ -504,10 +506,10 @@ export function NotificationInbox({
                 An outside domain user is requesting access to the system.
               </DialogDescription>
             </DialogHeader>
-            <div className="mt-2 max-h-75 overflow-y-auto whitespace-pre-wrap rounded-md bg-muted p-4 text-xs font-mono border">
+            <div className="bg-muted mt-2 max-h-75 overflow-y-auto rounded-md border p-4 font-mono text-xs whitespace-pre-wrap">
               {selectedAccessRequest.message}
             </div>
-            <DialogFooter className="sm:justify-end gap-2">
+            <DialogFooter className="gap-2 sm:justify-end">
               <Button
                 type="button"
                 variant="outline"
