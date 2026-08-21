@@ -480,9 +480,16 @@ projectsRouter.post(
       });
 
       try {
-        await projectsService.linkImportedJiraParents(req.userId!, projectId, issues);
+        await projectsService.linkImportedJiraParents(
+          req.userId!,
+          projectId,
+          issues
+        );
       } catch (linkError) {
-        console.error('error. failed to link parents during Jira import:', linkError);
+        console.error(
+          'error. failed to link parents during Jira import:',
+          linkError
+        );
       }
 
       res.json({ success: true, importedCount });

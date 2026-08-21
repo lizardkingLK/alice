@@ -20,10 +20,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@repo/ui/components/ui/sheet';
-import {
-  mapPriority,
-  projectDisplayKey,
-} from '@/app/backlog/_helpers/backlog-item-utils';
+import { mapPriority } from '@/app/backlog/_helpers/backlog-item-utils';
 import { formatLabelWithSpace } from '@/app/_shared/utility';
 import { buildMemberSelectOptions } from '@/app/work-items/_components/member-select-items';
 import { WorkItemTypeBadge } from '@/app/work-items/_components/workItem-badge-type';
@@ -104,43 +101,23 @@ export function BacklogItemDetailsSheet({
       >
         {item && (
           <div className="space-y-6">
-            <SheetHeader className="pb-2">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <WorkItemTypeBadge
-                  type={item.type}
-                  compact
-                  className="text-[10px] font-semibold"
-                />
-                <Button
-                  asChild
-                  variant="link"
-                  size="sm"
-                  className="h-auto px-0"
-                >
-                  <Link
-                    href={workItemDetailHref(item.id, {
-                      fromProjectId: item.project_id,
-                    })}
-                  >
-                    {projectDisplayKey(
-                      projects.find((p) => p.id === item.project_id)?.key,
-                      item.id
-                    )}
-                    <ExternalLink data-icon="inline-end" className="size-3.5" />
-                  </Link>
-                </Button>
-              </div>
-              <SheetTitle className="text-foreground mt-2 text-xl font-bold tracking-tight">
+            <SheetHeader className="space-y-3 pb-2">
+              <WorkItemTypeBadge
+                type={item.type}
+                compact
+                className="text-[10px] font-semibold"
+              />
+              <SheetTitle className="text-foreground pt-1 text-xl font-bold tracking-tight">
                 <Input
                   value={draft.title ?? item.title ?? ''}
                   onChange={(e) =>
                     setDraft((prev) => ({ ...prev, title: e.target.value }))
                   }
-                  className="hover:bg-muted/30 focus-visible:bg-background h-auto border-none px-1.5 py-1 text-lg font-bold shadow-none transition-colors"
+                  className="hover:bg-muted/30 focus-visible:bg-background h-auto border-none px-2 py-2 text-lg font-bold shadow-none transition-colors"
                 />
               </SheetTitle>
-              <SheetDescription className="text-muted-foreground text-xs">
-                Edit and manage issue parameters in real-time.
+              <SheetDescription className="sr-only">
+                Edit backlog work item fields.
               </SheetDescription>
             </SheetHeader>
 
@@ -264,7 +241,7 @@ export function BacklogItemDetailsSheet({
                         (s) =>
                           s.status === SprintStatusEnum.Planned ||
                           s.status === SprintStatusEnum.Active ||
-                          (item && s.id === item.sprint_id)
+                          s.id === item?.sprint_id
                       )
                       .map((s) => ({
                         value: s.id,
@@ -325,6 +302,8 @@ export function BacklogItemDetailsSheet({
                   href={workItemDetailHref(item.id, {
                     fromProjectId: item.project_id,
                   })}
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
                   Open work item
                   <ExternalLink data-icon="inline-end" className="size-3.5" />

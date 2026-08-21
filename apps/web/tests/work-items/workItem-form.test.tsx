@@ -14,6 +14,7 @@ import { fetchProjectMembersForForm } from '@/lib/form-read-actions';
 vi.mock('@/app/work-items/_services/workItem.service.client', () => ({
   createWorkItem: vi.fn(),
   updateWorkItem: vi.fn(),
+  listParentCandidateWorkItems: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock('@/lib/form-read-actions', () => ({
@@ -394,6 +395,7 @@ describe('WorkItemForm', () => {
         allowedTypes={['Task']}
         lockProject
         lockType
+        lockParent
         onSuccess={onSuccess}
         onClose={vi.fn()}
       />

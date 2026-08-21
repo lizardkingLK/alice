@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, HelpCircle } from '@repo/ui/lib/icons';
 import { TooltipProvider } from '@repo/ui/components/ui/tooltip';
 import { SprintStatusEnum } from '@repo/types';
@@ -29,6 +29,7 @@ import {
   getBacklogSprintsPaneClass,
 } from '@/app/backlog/_helpers/backlog-layout-storage';
 import {
+  enrichWorkItemsWithMemberAvatars,
   getFormDataStringValue,
   mapPriority,
   type BacklogActiveTab,
@@ -81,7 +82,15 @@ export function BacklogWorkspace({
 
   // Client state
   const [sprintList, setSprintList] = useState<Sprint[]>(sprints);
-  const [workItems, setWorkItems] = useState<DbWorkItem[]>(initialWorkItems);
+  const [workItems, setWorkItems] = useState<DbWorkItem[]>(() =>
+    enrichWorkItemsWithMemberAvatars(initialWorkItems, projectMembers)
+  );
+
+  useEffect(() => {
+    setWorkItems(
+      enrichWorkItemsWithMemberAvatars(initialWorkItems, projectMembers)
+    );
+  }, [initialWorkItems, projectMembers]);
 
   // Active Tab: active sprints & backlog vs completed sprints
   const [activeTab, setActiveTab] = useState<BacklogActiveTab>('active');
@@ -659,6 +668,7 @@ export function BacklogWorkspace({
                   isDragOver={dragOverTargetId === sprint.id}
                   isManagerOrAdmin={isManagerOrAdmin}
                   projects={projects}
+                  projectMembers={projectMembers}
                   onToggle={toggleSprint}
                   onStartSprint={handleStartSprint}
                   onCompleteSprint={handleCompleteSprint}
@@ -678,6 +688,7 @@ export function BacklogWorkspace({
               <BacklogPanel
                 items={backlogItems}
                 projects={projects}
+                projectMembers={projectMembers}
                 isCollapsed={isBacklogCollapsed}
                 isDragOver={dragOverTargetId === 'backlog'}
                 onToggle={() => setIsBacklogCollapsed(!isBacklogCollapsed)}

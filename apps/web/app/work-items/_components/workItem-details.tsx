@@ -293,7 +293,7 @@ export default function WorkItemDetails({
   };
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6">
+    <div className="mx-auto w-full max-w-7xl space-y-6 pb-12">
       {/* Title + actions — same 3∶2 column ratio as the body so the
           title pencil lines up above the description pencil. */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
@@ -586,6 +586,7 @@ export default function WorkItemDetails({
             allowedTypes={[allowedChildType]}
             lockProject
             lockType
+            lockParent
             onClose={() => setSubtaskDialogOpen(false)}
             onSuccess={handleSubtaskCreated}
           />

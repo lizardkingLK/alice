@@ -3,17 +3,16 @@
 import { useState } from 'react';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@repo/ui/components/ui/select';
 import { SearchableSelect } from '@/components/searchable-select';
 import type { WorkItemFormSharedFieldProps } from '@/app/work-items/_components/work-item-form-field-props';
+import {
+  resolveShowParentPicker,
+  WorkItemFormParentStatusSection,
+} from '@/app/work-items/_components/work-item-form-parent-status';
+import { WorkItemFormTypeSelect } from '@/app/work-items/_components/work-item-form-type-select';
 import { WorkItemLabelsInput } from '@/app/work-items/_components/work-item-labels-input';
 import { WorkItemPrioritySelect } from '@/app/work-items/_components/work-item-priority-select';
+import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
 
 export type WorkItemFormClassicFieldsProps = WorkItemFormSharedFieldProps & {
   readonly titleDefault?: string;
@@ -34,10 +33,16 @@ export function WorkItemFormClassicFields({
   assigneeId,
   type,
   priority,
-  parentId = null,
+  parentId,
+  parentOptions,
+  parentOptionsLoading,
+  parentTypeLabel,
+  lockParent,
   lockProject,
   lockAssignee,
   typeLocked,
+  lockStatus,
+  status,
   titleDefault = '',
   dueDateDefault = '',
   storyPointsDefault = null,
@@ -46,8 +51,10 @@ export function WorkItemFormClassicFields({
   onAssigneeIdChange,
   onTypeChange,
   onPriorityChange,
+  onParentIdChange,
 }: Readonly<WorkItemFormClassicFieldsProps>) {
   const [labels, setLabels] = useState<string[]>(() => [...labelsDefault]);
+  const showParentPicker = resolveShowParentPicker(lockParent, parentTypeLabel);
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
@@ -80,19 +87,12 @@ export function WorkItemFormClassicFields({
 
       <div className="space-y-2">
         <Label htmlFor="type">Type</Label>
-        <Select value={type} onValueChange={onTypeChange} disabled={typeLocked}>
-          <SelectTrigger id="type">
-            <SelectValue placeholder="Select type..." />
-          </SelectTrigger>
-          <SelectContent>
-            {availableTypes.map((taskType) => (
-              <SelectItem key={taskType} value={taskType}>
-                {taskType}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <input type="hidden" name="type" value={type} />
+        <WorkItemFormTypeSelect
+          type={type}
+          onTypeChange={onTypeChange}
+          availableTypes={availableTypes}
+          typeLocked={typeLocked}
+        />
       </div>
 
       <div className="space-y-2">
@@ -103,9 +103,49 @@ export function WorkItemFormClassicFields({
         />
       </div>
 
-      {parentId ? (
-        <input type="hidden" name="parent_id" value={parentId} />
-      ) : null}
+      <WorkItemFormParentStatusSection
+        lockStatus={lockStatus}
+        status={status}
+        lockParent={lockParent}
+        parentId={parentId}
+        parentTypeLabel={parentTypeLabel}
+        lockedStatusSlot={
+          status ? (
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <div className="flex h-9 items-center">
+                <WorkItemStatusBadge status={status} />
+              </div>
+            </div>
+          ) : null
+        }
+        parentPickerSlot={
+          showParentPicker ? (
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="parent_id">Parent ({parentTypeLabel})</Label>
+              <SearchableSelect
+                id="parent_id"
+                value={parentId}
+                onValueChange={onParentIdChange}
+                showClear
+                disabled={!projectId || parentOptionsLoading}
+                placeholder={
+                  parentOptionsLoading
+                    ? 'Loading parents…'
+                    : `Search ${parentTypeLabel}s…`
+                }
+                options={parentOptions}
+                emptyText="No matching parent work items."
+              />
+              <input type="hidden" name="parent_id" value={parentId} />
+              <p className="text-muted-foreground text-xs">
+                Optional. Same project only; hierarchy rules prevent invalid
+                links and cycles.
+              </p>
+            </div>
+          ) : null
+        }
+      />
 
       <div className="space-y-2">
         <Label htmlFor="due_date">Due date</Label>

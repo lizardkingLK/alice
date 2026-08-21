@@ -11,13 +11,6 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@repo/ui/components/ui/select';
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -28,6 +21,7 @@ import {
   ChevronRight,
   CircleUserRound,
   FolderKanban,
+  GitBranch,
   Hash,
   Layers,
   Plus,
@@ -41,9 +35,15 @@ import {
   type SearchableSelectOption,
 } from '@/components/searchable-select';
 import type { WorkItemFormSharedFieldProps } from '@/app/work-items/_components/work-item-form-field-props';
+import {
+  resolveShowParentPicker,
+  WorkItemFormParentStatusSection,
+} from '@/app/work-items/_components/work-item-form-parent-status';
+import { WorkItemFormTypeSelect } from '@/app/work-items/_components/work-item-form-type-select';
 import { WorkItemFormModernDescription } from '@/app/work-items/_components/work-item-form-modern-description';
 import { WorkItemLabelsInput } from '@/app/work-items/_components/work-item-labels-input';
 import { WorkItemPrioritySelect } from '@/app/work-items/_components/work-item-priority-select';
+import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
 import { WORK_ITEM_TYPE_ICONS } from '@/app/work-items/_helpers/work-item-type';
 import { MODERN_BORDERLESS_FOCUS_CLASSES } from '@/lib/editor/compact-editor-attrs';
 
@@ -89,6 +89,7 @@ function IconSearchablePill({
   placeholder,
   options,
   emptyText,
+  showClear = false,
 }: Readonly<{
   icon: ReactNode;
   id: string;
@@ -99,6 +100,7 @@ function IconSearchablePill({
   placeholder: string;
   options: readonly SearchableSelectOption[];
   emptyText: string;
+  showClear?: boolean;
 }>) {
   return (
     <div className="relative min-w-40 flex-1 sm:max-w-56">
@@ -114,6 +116,7 @@ function IconSearchablePill({
         ariaLabel={placeholder}
         options={options}
         emptyText={emptyText}
+        showClear={showClear}
         className={cn(pillTriggerClassName(Boolean(value)), 'pl-8')}
       />
       <input type="hidden" name={id} value={value} />
@@ -138,20 +141,28 @@ export function WorkItemFormModernFields({
   assigneeId,
   type,
   priority,
-  parentId = null,
+  parentId,
+  parentOptions,
+  parentOptionsLoading,
+  parentTypeLabel,
+  lockParent,
   lockProject,
   lockAssignee,
   typeLocked,
+  lockStatus,
+  status,
   onProjectIdChange,
   onAssigneeIdChange,
   onTypeChange,
   onPriorityChange,
+  onParentIdChange,
 }: Readonly<WorkItemFormModernFieldsProps>) {
   const [descriptionJson, setDescriptionJson] = useState<string | null>(null);
   const [labels, setLabels] = useState<string[]>([]);
   const [optionalFields, setOptionalFields] = useState<
     ReadonlySet<OptionalField>
   >(() => new Set());
+  const showParentPicker = resolveShowParentPicker(lockParent, parentTypeLabel);
 
   const handleDescriptionChange = useCallback((json: string | null) => {
     setDescriptionJson(json);
@@ -246,34 +257,58 @@ export function WorkItemFormModernFields({
 
           <FieldTooltip label="Type">
             <div>
-              <Select
-                value={type}
-                onValueChange={onTypeChange}
-                disabled={typeLocked}
-              >
-                <SelectTrigger
-                  id="type"
-                  aria-label="Type"
-                  className={pillTriggerClassName(Boolean(type))}
-                >
+              <WorkItemFormTypeSelect
+                type={type}
+                onTypeChange={onTypeChange}
+                availableTypes={availableTypes}
+                typeLocked={typeLocked}
+                triggerClassName={pillTriggerClassName(Boolean(type))}
+                placeholder="Type"
+                aria-label="Type"
+                triggerStart={
                   <Layers className="text-muted-foreground size-3.5 shrink-0" />
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableTypes.map((taskType) => (
-                    <SelectItem key={taskType} value={taskType}>
-                      {taskType}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <input type="hidden" name="type" value={type} />
+                }
+              />
             </div>
           </FieldTooltip>
 
-          {parentId ? (
-            <input type="hidden" name="parent_id" value={parentId} />
-          ) : null}
+          <WorkItemFormParentStatusSection
+            lockStatus={lockStatus}
+            status={status}
+            lockParent={lockParent}
+            parentId={parentId}
+            parentTypeLabel={parentTypeLabel}
+            lockedStatusSlot={
+              status ? (
+                <FieldTooltip label="Status">
+                  <div className="flex h-8 items-center">
+                    <WorkItemStatusBadge status={status} />
+                  </div>
+                </FieldTooltip>
+              ) : null
+            }
+            parentPickerSlot={
+              showParentPicker ? (
+                <FieldTooltip label={`Parent (${parentTypeLabel})`}>
+                  <IconSearchablePill
+                    icon={<GitBranch />}
+                    id="parent_id"
+                    value={parentId}
+                    onValueChange={onParentIdChange}
+                    disabled={!projectId || parentOptionsLoading}
+                    showClear
+                    placeholder={
+                      parentOptionsLoading
+                        ? 'Parent…'
+                        : `Parent ${parentTypeLabel}`
+                    }
+                    options={parentOptions}
+                    emptyText="No matching parents."
+                  />
+                </FieldTooltip>
+              ) : null
+            }
+          />
 
           <FieldTooltip label="Assignee">
             <IconSearchablePill

@@ -1,13 +1,8 @@
 'use client';
 
-import { formatDateTime, getInitials } from '@/app/_shared/utility';
+import { formatDateTime } from '@/app/_shared/utility';
 import type { WorkItemWorkLog } from '@repo/types';
 import { formatDuration } from '@/app/work-items/_helpers/work-item-time-tracking';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@repo/ui/components/ui/avatar';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
@@ -21,6 +16,7 @@ import {
   TableRow,
 } from '@repo/ui/components/ui/table';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
+import { UserAvatar } from '@/components/user-avatar';
 import { type FormEvent } from 'react';
 
 type WorkItemWorkLogPanelProps = {
@@ -59,12 +55,12 @@ export function WorkItemWorkLogPanel({
       {readOnly ? null : (
         <form
           onSubmit={onSubmit}
-          className="space-y-3 rounded-lg border px-4 pt-4 pb-6"
+          className="bg-muted/20 space-y-5 rounded-xl border p-5"
           aria-label="Work log form"
         >
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1">
-              <Label htmlFor="worklog-hours">Log time</Label>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-2.5">
+              <Label htmlFor="worklog-hours">Log time (hrs)</Label>
               <Input
                 id="worklog-hours"
                 type="number"
@@ -73,36 +69,36 @@ export function WorkItemWorkLogPanel({
                 value={loggedHoursInput}
                 onChange={(event) => onLoggedHoursChange(event.target.value)}
                 placeholder="e.g. 2.5"
-                className="bg-background/80"
+                className="bg-background h-9"
                 required
               />
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-2.5">
               <Label htmlFor="worklog-date">Date started</Label>
               <Input
                 id="worklog-date"
                 type="date"
                 value={loggedAtInput}
                 onChange={(event) => onLoggedAtChange(event.target.value)}
-                className="bg-background/80"
+                className="bg-background h-9"
                 required
               />
             </div>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-2.5">
             <Label htmlFor="worklog-comment">Work description</Label>
             <Textarea
               id="worklog-comment"
               value={workLogCommentInput}
               onChange={(event) => onWorkLogCommentChange(event.target.value)}
               placeholder="What did you work on?"
-              className="bg-background/80 min-h-24 resize-none"
+              className="bg-background min-h-28 resize-none"
             />
           </div>
 
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-end pt-1">
             <Button type="submit" disabled={isLoggingWork}>
               {isLoggingWork ? 'Saving…' : 'Save'}
             </Button>
@@ -134,17 +130,11 @@ export function WorkItemWorkLogPanel({
                   <TableRow key={log.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Avatar size="sm">
-                          {log.user?.profile_picture ? (
-                            <AvatarImage
-                              src={log.user.profile_picture}
-                              alt={authorLabel}
-                            />
-                          ) : null}
-                          <AvatarFallback>
-                            {getInitials(log.user?.name)}
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          name={log.user?.name}
+                          imageUrl={log.user?.profile_picture}
+                          title={authorLabel}
+                        />
                         <span className="text-sm font-medium">
                           {authorLabel}
                         </span>

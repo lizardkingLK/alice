@@ -26,6 +26,23 @@ export function getAllowedChildType(
 }
 
 /**
+ * Child → allowed parent type (inverse of {@link getAllowedChildType}).
+ * Epic has no parent in the hierarchy.
+ */
+export function getAllowedParentType(
+  childType: WorkItemType
+): WorkItemType | null {
+  for (const [parentType, allowedChild] of Object.entries(
+    WORK_ITEM_CHILD_TYPE
+  ) as Array<[WorkItemType, WorkItemType]>) {
+    if (allowedChild === childType) {
+      return parentType;
+    }
+  }
+  return null;
+}
+
+/**
  * Static mapping of raw strings (including lowercase and aliases) to WorkItemType.
  */
 export const WORK_ITEM_TYPE_MAPPINGS: Record<string, WorkItemType> = {

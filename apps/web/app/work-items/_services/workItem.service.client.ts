@@ -83,6 +83,27 @@ export async function createWorkItem(
   });
 }
 
+/** Parent picker options for create/edit forms (same project + allowed parent type). */
+export async function listParentCandidateWorkItems(input: {
+  projectId: string;
+  parentType: string;
+  excludeId?: string | null;
+}): Promise<Array<{ id: string; title: string; type: string }>> {
+  const params = new URLSearchParams({
+    page: '1',
+    limit: '100',
+    projectId: input.projectId,
+    type: input.parentType,
+  });
+  const result = await apiFetch<{
+    workItems: Array<{ id: string; title: string; type: string }>;
+  }>(`${workItemsPath}?${params.toString()}`);
+
+  return (result.workItems ?? []).filter(
+    (item) => !input.excludeId || item.id !== input.excludeId
+  );
+}
+
 function formDataToPatchBody(
   formData: FormData,
   expectedUpdatedAt: string

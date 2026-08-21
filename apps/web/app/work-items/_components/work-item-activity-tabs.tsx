@@ -146,7 +146,7 @@ export function WorkItemActivityTabs({
           ) : null}
         </div>
 
-        <TabsContent value="discussion" className="mt-4 pb-4">
+        <TabsContent value="discussion" className="mt-4 pb-6">
           <CommentsFeed
             embedded
             hideSortControl
@@ -159,7 +159,7 @@ export function WorkItemActivityTabs({
           />
         </TabsContent>
 
-        <TabsContent value="activity" className="mt-4 pb-4">
+        <TabsContent value="activity" className="mt-4 pb-6">
           <Card className="border-dashed">
             <CardContent className="space-y-3 pt-12 pb-14 text-center">
               <div className="bg-muted mx-auto flex size-12 items-center justify-center rounded-full">
@@ -178,7 +178,7 @@ export function WorkItemActivityTabs({
           </Card>
         </TabsContent>
 
-        <TabsContent value="work-log" className="mt-4 pb-4">
+        <TabsContent value="work-log" className="mt-4 pb-6">
           <WorkItemWorkLogPanel
             workLogs={workLogs}
             currentUserId={currentUserId}

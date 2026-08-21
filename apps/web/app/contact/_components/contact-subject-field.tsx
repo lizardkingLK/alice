@@ -30,8 +30,8 @@ export function ContactSubjectField() {
   const title = subject === OTHER_SUBJECT ? otherReason.trim() : subject.trim();
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-3">
+    <div className="space-y-4">
+      <div className="space-y-2">
         <Label htmlFor="contact-subject">Reason</Label>
         <Select
           value={subject}
@@ -44,7 +44,7 @@ export function ContactSubjectField() {
         >
           <SelectTrigger
             id="contact-subject"
-            className="h-11 w-full"
+            className="h-10 w-full"
             aria-label="Reason for contacting"
           >
             <SelectValue placeholder="Select a reason" />
@@ -61,7 +61,7 @@ export function ContactSubjectField() {
       </div>
 
       {subject === OTHER_SUBJECT ? (
-        <div className="space-y-3">
+        <div className="space-y-2">
           <Label htmlFor="subjectOther">Tell us the reason</Label>
           <Input
             id="subjectOther"
@@ -72,7 +72,7 @@ export function ContactSubjectField() {
             value={otherReason}
             onChange={(event) => setOtherReason(event.target.value)}
             placeholder="Describe your reason"
-            className="h-11"
+            className="h-10"
             autoComplete="off"
           />
         </div>

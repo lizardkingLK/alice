@@ -20,7 +20,10 @@ import { Filter, Plus, Search } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { useToggleKeyboardShortcut } from '@repo/ui/hooks/use-keyboard-shortcut';
 import { isShiftLetter } from '@repo/ui/lib/shortcut-gate';
-import { parseWorkItemLabelsFilterParam } from '@repo/types';
+import {
+  parseWorkItemLabelsFilterParam,
+  WORK_ITEM_PRIORITIES,
+} from '@repo/types';
 import {
   applyProjectFilterToSearchParams,
   buildSprintFilterOptionsForQuery,
@@ -30,6 +33,7 @@ import type { FilterQuery } from '@/app/work-items/_components/workItems-table-t
 import { WorkItemLabelsInput } from '@/app/work-items/_components/work-item-labels-input';
 import type { WorkItemWorkspaceProps } from '@/app/work-items/_components/workItems-workspace';
 import { WORK_ITEM_STATUSES } from '@/app/work-items/_helpers/work-item-status';
+import { PRIORITY_LABELS } from '@/app/work-items/_helpers/work-item-priority-ui';
 import { formatLabelWithSpace } from '@/app/_shared/utility';
 import { QUERY_FILTER_ALL_VALUE } from '@/hooks/use-query-filter';
 
@@ -38,8 +42,37 @@ const FILTER_OPTIONS_SCROLL_CLASS = 'h-64';
 
 const WORK_ITEM_TYPES = Constants.public.Enums.WorkItemType;
 
-type FilterFieldId =
-  'project' | 'sprint' | 'assignee' | 'type' | 'status' | 'labels' | 'parent';
+/** Single-value draft fields updated by the same apply/clear path. */
+const SCALAR_DRAFT_FILTER_KEYS = [
+  'sprint',
+  'assignee',
+  'type',
+  'priority',
+] as const satisfies ReadonlyArray<keyof WorkItemsFilterDraft>;
+
+type ScalarDraftFilterKey = (typeof SCALAR_DRAFT_FILTER_KEYS)[number];
+
+function isScalarDraftFilterKey(id: string): id is ScalarDraftFilterKey {
+  return (SCALAR_DRAFT_FILTER_KEYS as readonly string[]).includes(id);
+}
+
+function withDraftScalarField(
+  draft: WorkItemsFilterDraft,
+  fieldId: ScalarDraftFilterKey,
+  value: string
+): WorkItemsFilterDraft {
+  return { ...draft, [fieldId]: value };
+}
+
+export type WorkItemsFilterFieldId =
+  | 'project'
+  | 'sprint'
+  | 'assignee'
+  | 'type'
+  | 'status'
+  | 'labels'
+  | 'parent'
+  | 'priority';
 
 type FilterOption = {
   readonly value: string;
@@ -47,10 +80,61 @@ type FilterOption = {
 };
 
 type FilterFieldConfig = {
-  readonly id: FilterFieldId;
+  readonly id: WorkItemsFilterFieldId;
   readonly label: string;
   readonly searchPlaceholder: string;
   readonly wired: boolean;
+};
+
+const FILTER_FIELD_CONFIG: Record<WorkItemsFilterFieldId, FilterFieldConfig> = {
+  project: {
+    id: 'project',
+    label: 'Project',
+    searchPlaceholder: 'Search projects',
+    wired: true,
+  },
+  sprint: {
+    id: 'sprint',
+    label: 'Sprint',
+    searchPlaceholder: 'Search sprints',
+    wired: true,
+  },
+  parent: {
+    id: 'parent',
+    label: 'Parent',
+    searchPlaceholder: 'Search parent work items',
+    wired: false,
+  },
+  assignee: {
+    id: 'assignee',
+    label: 'Assignee',
+    searchPlaceholder: 'Search assignees',
+    wired: true,
+  },
+  status: {
+    id: 'status',
+    label: 'Status',
+    searchPlaceholder: 'Search statuses',
+    wired: false,
+  },
+  type: {
+    id: 'type',
+    label: 'Work type',
+    searchPlaceholder: 'Search work types',
+    wired: true,
+  },
+  labels: {
+    id: 'labels',
+    label: 'Labels',
+    searchPlaceholder: 'Add label',
+    wired: true,
+  },
+  priority: {
+    id: 'priority',
+    label: 'Priority',
+    searchPlaceholder: 'Search priorities',
+    wired: true,
+  },
 };
 
 /* eslint-disable no-unused-vars */
@@ -63,6 +147,13 @@ export type WorkItemsFilterDialogProps = {
   readonly typeQuery: FilterQuery;
   readonly assigneeQuery: FilterQuery;
   readonly labelsQuery: FilterQuery;
+  /** When set, enables the Priority field (e.g. board toolbar). */
+  readonly priorityQuery?: FilterQuery;
+  /**
+   * Optional explicit field set. Board uses project/sprint/priority;
+   * work-items list uses the default buildVisibleFields() set.
+   */
+  readonly visibleFieldIds?: readonly WorkItemsFilterFieldId[];
   readonly isProjectLocked: boolean;
   readonly isAssigneeLocked: boolean;
   readonly hasActiveFilters: boolean;
@@ -132,69 +223,36 @@ function FilterOptionRow({
 
 function buildVisibleFields(
   isProjectLocked: boolean,
-  isAssigneeLocked: boolean
+  isAssigneeLocked: boolean,
+  visibleFieldIds?: readonly WorkItemsFilterFieldId[]
 ): FilterFieldConfig[] {
+  if (visibleFieldIds && visibleFieldIds.length > 0) {
+    return visibleFieldIds.map((id) => FILTER_FIELD_CONFIG[id]);
+  }
+
   const fields: FilterFieldConfig[] = [];
 
   if (!isProjectLocked) {
-    fields.push(
-      {
-        id: 'project',
-        label: 'Project',
-        searchPlaceholder: 'Search projects',
-        wired: true,
-      },
-      {
-        id: 'sprint',
-        label: 'Sprint',
-        searchPlaceholder: 'Search sprints',
-        wired: true,
-      }
-    );
+    fields.push(FILTER_FIELD_CONFIG.project, FILTER_FIELD_CONFIG.sprint);
   }
 
-  fields.push({
-    id: 'parent',
-    label: 'Parent',
-    searchPlaceholder: 'Search parent work items',
-    wired: false,
-  });
+  fields.push(FILTER_FIELD_CONFIG.parent);
 
   if (!isAssigneeLocked) {
-    fields.push({
-      id: 'assignee',
-      label: 'Assignee',
-      searchPlaceholder: 'Search assignees',
-      wired: true,
-    });
+    fields.push(FILTER_FIELD_CONFIG.assignee);
   }
 
   fields.push(
-    {
-      id: 'status',
-      label: 'Status',
-      searchPlaceholder: 'Search statuses',
-      wired: false,
-    },
-    {
-      id: 'type',
-      label: 'Work type',
-      searchPlaceholder: 'Search work types',
-      wired: true,
-    },
-    {
-      id: 'labels',
-      label: 'Labels',
-      searchPlaceholder: 'Add label',
-      wired: true,
-    }
+    FILTER_FIELD_CONFIG.status,
+    FILTER_FIELD_CONFIG.type,
+    FILTER_FIELD_CONFIG.labels
   );
 
   return fields;
 }
 
 function optionsForField(
-  fieldId: FilterFieldId,
+  fieldId: WorkItemsFilterFieldId,
   props: WorkItemsFilterDialogProps,
   draft: WorkItemsFilterDraft
 ): FilterOption[] {
@@ -225,6 +283,11 @@ function optionsForField(
         value: status,
         label: formatLabelWithSpace(status),
       }));
+    case 'priority':
+      return [...WORK_ITEM_PRIORITIES].reverse().map((priority) => ({
+        value: priority,
+        label: PRIORITY_LABELS[priority],
+      }));
     case 'labels':
       return [];
     case 'parent':
@@ -234,7 +297,7 @@ function optionsForField(
   }
 }
 
-function allLabelForField(fieldId: FilterFieldId): string {
+function allLabelForField(fieldId: WorkItemsFilterFieldId): string {
   switch (fieldId) {
     case 'project':
       return 'All projects';
@@ -244,6 +307,8 @@ function allLabelForField(fieldId: FilterFieldId): string {
       return 'All assignees';
     case 'type':
       return 'All types';
+    case 'priority':
+      return 'All priorities';
     case 'labels':
       return 'No labels';
     default:
@@ -267,6 +332,7 @@ function snapshotDraft(
     type: props.typeQuery.value,
     assignee: props.assigneeQuery.value,
     labels: labelsFromQuery(props.labelsQuery),
+    priority: props.priorityQuery?.value ?? QUERY_FILTER_ALL_VALUE,
   };
 }
 
@@ -278,6 +344,7 @@ function emptyDraft(props: WorkItemsFilterDialogProps): WorkItemsFilterDraft {
     type: all,
     assignee: props.isAssigneeLocked ? props.assigneeQuery.value : all,
     labels: [],
+    priority: all,
   };
 }
 
@@ -336,7 +403,7 @@ function FilterChecklistPane({
   onApplySelection,
   onClearActiveField,
 }: Readonly<{
-  fieldId: FilterFieldId;
+  fieldId: WorkItemsFilterFieldId;
   searchPlaceholder: string;
   optionSearch: string;
   // eslint-disable-next-line no-unused-vars
@@ -413,7 +480,7 @@ function FilterChecklistPane({
 function selectedValueForField(
   field: FilterFieldConfig,
   draft: WorkItemsFilterDraft,
-  placeholderSelections: Partial<Record<FilterFieldId, string>>
+  placeholderSelections: Partial<Record<WorkItemsFilterFieldId, string>>
 ): string {
   if (!field.wired) {
     return placeholderSelections[field.id] ?? '';
@@ -427,6 +494,8 @@ function selectedValueForField(
       return draft.assignee;
     case 'type':
       return draft.type;
+    case 'priority':
+      return draft.priority;
     case 'labels':
       return '';
     default:
@@ -474,23 +543,25 @@ export function WorkItemsFilterDialog(
     hasActiveFilters,
     onApplyFilters,
     sprints,
+    visibleFieldIds,
   } = props;
 
   const fields = useMemo(
-    () => buildVisibleFields(isProjectLocked, isAssigneeLocked),
-    [isAssigneeLocked, isProjectLocked]
+    () =>
+      buildVisibleFields(isProjectLocked, isAssigneeLocked, visibleFieldIds),
+    [isAssigneeLocked, isProjectLocked, visibleFieldIds]
   );
 
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<WorkItemsFilterDraft>(() =>
     snapshotDraft(props)
   );
-  const [activeFieldId, setActiveFieldId] = useState<FilterFieldId>(
+  const [activeFieldId, setActiveFieldId] = useState<WorkItemsFilterFieldId>(
     fields[0]?.id ?? 'type'
   );
   const [optionSearch, setOptionSearch] = useState('');
   const [placeholderSelections, setPlaceholderSelections] = useState<
-    Partial<Record<FilterFieldId, string>>
+    Partial<Record<WorkItemsFilterFieldId, string>>
   >({});
 
   const activeField =
@@ -554,18 +625,10 @@ export function WorkItemsFilterDialog(
       return;
     }
 
-    setDraft((current) => {
-      switch (activeField.id) {
-        case 'sprint':
-          return { ...current, sprint: value };
-        case 'assignee':
-          return { ...current, assignee: value };
-        case 'type':
-          return { ...current, type: value };
-        default:
-          return current;
-      }
-    });
+    if (isScalarDraftFilterKey(activeField.id)) {
+      const fieldId = activeField.id;
+      setDraft((current) => withDraftScalarField(current, fieldId, value));
+    }
   };
 
   const clearActiveField = () => {
@@ -590,18 +653,12 @@ export function WorkItemsFilterDialog(
       return;
     }
 
-    setDraft((current) => {
-      switch (activeField.id) {
-        case 'sprint':
-          return { ...current, sprint: QUERY_FILTER_ALL_VALUE };
-        case 'assignee':
-          return { ...current, assignee: QUERY_FILTER_ALL_VALUE };
-        case 'type':
-          return { ...current, type: QUERY_FILTER_ALL_VALUE };
-        default:
-          return current;
-      }
-    });
+    if (isScalarDraftFilterKey(activeField.id)) {
+      const fieldId = activeField.id;
+      setDraft((current) =>
+        withDraftScalarField(current, fieldId, QUERY_FILTER_ALL_VALUE)
+      );
+    }
   };
 
   const handleClearAllDraft = () => {
@@ -654,8 +711,8 @@ export function WorkItemsFilterDialog(
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <TooltipProvider delayDuration={200}>
-        <Tooltip>
+      <TooltipProvider delayDuration={600}>
+        <Tooltip open={open ? false : undefined}>
           <TooltipTrigger asChild>
             <DialogTrigger asChild>
               <Button
@@ -663,6 +720,7 @@ export function WorkItemsFilterDialog(
                 variant="outline"
                 size="sm"
                 aria-label="Open filters"
+                aria-keyshortcuts="Shift+F"
                 className={cn(
                   'h-9 cursor-pointer gap-1.5 px-3',
                   (open || hasActiveFilters) &&

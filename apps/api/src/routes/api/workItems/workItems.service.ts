@@ -249,6 +249,36 @@ export class WorkItemService {
         `Parent of type ${parent.type} only allows child type ${allowedChildType}`
       );
     }
+
+    if (childId) {
+      await this.assertParentLinkIsAcyclic(childId, parentId);
+    }
+  }
+
+  /** Walk up from the proposed parent; fail if the child appears in that chain. */
+  private async assertParentLinkIsAcyclic(
+    childId: string,
+    parentId: string
+  ): Promise<void> {
+    let currentId: string | null = parentId;
+    const seen = new Set<string>();
+
+    while (currentId) {
+      if (currentId === childId) {
+        throw new WorkItemValidationError(
+          'Cannot set parent: that would create a cycle in the work item hierarchy'
+        );
+      }
+      if (seen.has(currentId)) {
+        throw new WorkItemValidationError(
+          'Cannot set parent: that would create a cycle in the work item hierarchy'
+        );
+      }
+      seen.add(currentId);
+
+      const ancestor = await this.workItems.getById(currentId);
+      currentId = ancestor?.parent_id ?? null;
+    }
   }
 
   private async fetchGithubPRData(

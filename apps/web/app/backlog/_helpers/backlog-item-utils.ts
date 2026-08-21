@@ -36,6 +36,62 @@ export function projectDisplayKey(
   return `${projectKey || 'ALICE'}-${itemId.slice(0, 4).toUpperCase()}`;
 }
 
+/**
+ * Prefer the work-item assignee embed, then fall back to the workspace member
+ * list so backlog rows still get profile pictures when the embed is thin.
+ */
+export function resolveBacklogAssigneeAvatar(
+  item: Pick<DbWorkItem, 'assignee_id' | 'assignee'>,
+  membersById: ReadonlyMap<string, BacklogAssignee>
+): string | null {
+  const fromItem = item.assignee?.profile_picture?.trim();
+  if (fromItem) {
+    return fromItem;
+  }
+  if (!item.assignee_id) {
+    return null;
+  }
+  return membersById.get(item.assignee_id)?.profile_picture?.trim() || null;
+}
+
+export function enrichWorkItemsWithMemberAvatars(
+  items: readonly DbWorkItem[],
+  members: readonly BacklogAssignee[]
+): DbWorkItem[] {
+  const membersById = new Map(members.map((member) => [member.id, member]));
+
+  return items.map((item) => {
+    if (!item.assignee_id) {
+      return item;
+    }
+
+    const member = membersById.get(item.assignee_id);
+    if (!member && !item.assignee) {
+      return item;
+    }
+
+    const profilePicture = resolveBacklogAssigneeAvatar(item, membersById);
+
+    if (
+      item.assignee &&
+      item.assignee.profile_picture === profilePicture &&
+      (!member || item.assignee.name === member.name)
+    ) {
+      return item;
+    }
+
+    return {
+      ...item,
+      assignee: {
+        id: item.assignee?.id ?? member?.id ?? item.assignee_id,
+        name: item.assignee?.name ?? member?.name ?? 'Unknown',
+        email: item.assignee?.email ?? member?.email ?? '',
+        profile_picture: profilePicture,
+      },
+    };
+  });
+}
+
 export function getFormDataStringValue(value: unknown): string {
   if (value === null || value === undefined) {
     return '';

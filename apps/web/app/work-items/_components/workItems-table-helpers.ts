@@ -23,6 +23,7 @@ export type WorkItemsFilterDraft = {
   readonly type: string;
   readonly assignee: string;
   readonly labels: readonly string[];
+  readonly priority: string;
 };
 
 export function resolveWorkItemsListDescription(options: {
@@ -132,6 +133,37 @@ export function buildClearedWorkItemFilterParams(options: {
 }
 
 /**
+ * Writes project/sprint from a filter draft into search params.
+ * Used by the work-items list and board so URL updates stay consistent.
+ */
+export function applyWorkItemsProjectSprintDraftToSearchParams(
+  params: URLSearchParams,
+  draft: Pick<WorkItemsFilterDraft, 'project' | 'sprint'>,
+  options: {
+    readonly allValue: string;
+    /** When false, only sprint is written (project locked / omitted). */
+    readonly applyProject: boolean;
+  }
+): void {
+  const { allValue } = options;
+
+  if (!options.applyProject) {
+    applyQueryFilterParam(params, 'sprint', draft.sprint, allValue);
+    return;
+  }
+
+  if (!draft.project || draft.project === allValue) {
+    // Explicit sentinel so SSR can tell "All projects" from unset bootstrap.
+    params.set('project', allValue);
+    params.delete('sprint');
+    return;
+  }
+
+  params.set('project', draft.project);
+  applyQueryFilterParam(params, 'sprint', draft.sprint, allValue);
+}
+
+/**
  * Writes staged filter-dialog values into search params in one shot so Okay
  * triggers a single navigation / refetch.
  */
@@ -148,14 +180,10 @@ export function applyWorkItemsFilterDraftToSearchParams(
   const { allValue } = options;
 
   if (!options.isProjectLocked) {
-    if (!draft.project || draft.project === allValue) {
-      // Explicit sentinel so SSR can tell "All projects" from unset bootstrap.
-      params.set('project', allValue);
-      params.delete('sprint');
-    } else {
-      params.set('project', draft.project);
-      applyQueryFilterParam(params, 'sprint', draft.sprint, allValue);
-    }
+    applyWorkItemsProjectSprintDraftToSearchParams(params, draft, {
+      allValue,
+      applyProject: true,
+    });
   }
 
   applyQueryFilterParam(params, 'type', draft.type, allValue);

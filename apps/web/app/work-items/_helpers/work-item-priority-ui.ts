@@ -33,15 +33,6 @@ export const PRIORITY_BADGE_STYLES: Record<WorkItemPriority, string> = {
     'border-rose-600/20 bg-rose-600/5 text-rose-700 dark:text-rose-400',
 };
 
-/** Left accent borders for board cards — same green → red ramp as badges. */
-export const PRIORITY_BORDER_STYLES: Record<WorkItemPriority, string> = {
-  [WorkItemPriorityEnum.lowest]: 'border-l-sky-500',
-  [WorkItemPriorityEnum.low]: 'border-l-blue-500',
-  [WorkItemPriorityEnum.medium]: 'border-l-emerald-500',
-  [WorkItemPriorityEnum.high]: 'border-l-orange-500',
-  [WorkItemPriorityEnum.highest]: 'border-l-red-500',
-};
-
 export function mapPriorityToBacklogPriority(
   priority: WorkItemPriority
 ): BacklogPriority {

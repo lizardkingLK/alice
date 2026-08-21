@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@repo/ui/components/ui/button';
-import { List, ListTree, Loader2, Plus, X } from '@repo/ui/lib/icons';
+import { List, ListTree, Plus, X } from '@repo/ui/lib/icons';
 import type { VisibilityState } from '@tanstack/react-table';
 import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
 import type { WorkItemsFilterDraft } from '@/app/work-items/_components/workItems-table-helpers';
@@ -71,11 +71,6 @@ export function WorkItemsTableToolbar({
   columnVisibility,
   onApplyColumnVisibility,
   columnsHydrated,
-  rootCount,
-  isExpandingAll,
-  expandedCount,
-  onExpandAll,
-  onCollapseAll,
   showWorkspaceDefaults,
   onOpenDefaultsDialog,
   savedDefaultsApplied,
@@ -106,11 +101,6 @@ export function WorkItemsTableToolbar({
   // eslint-disable-next-line no-unused-vars -- apply staged columns
   onApplyColumnVisibility: (visibility: VisibilityState) => void;
   columnsHydrated: boolean;
-  rootCount: number;
-  isExpandingAll: boolean;
-  expandedCount: number;
-  onExpandAll: () => Promise<void>;
-  onCollapseAll: () => void;
   showWorkspaceDefaults: boolean;
   onOpenDefaultsDialog: () => void;
   savedDefaultsApplied: boolean;
@@ -154,38 +144,6 @@ export function WorkItemsTableToolbar({
           disabled={!columnsHydrated}
           onApply={onApplyColumnVisibility}
         />
-
-        {isHierarchy ? (
-          <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground h-9 cursor-pointer gap-1.5 px-3 text-xs"
-              disabled={isExpandingAll || rootCount === 0}
-              onClick={() => {
-                onExpandAll().catch(() => {
-                  // Hierarchy hook reports failures via onError / DismissibleError.
-                });
-              }}
-            >
-              {isExpandingAll ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : null}
-              <span>Expand all</span>
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground h-9 cursor-pointer px-3 text-xs"
-              disabled={expandedCount === 0}
-              onClick={onCollapseAll}
-            >
-              Collapse all
-            </Button>
-          </div>
-        ) : null}
 
         {showWorkspaceDefaults ? (
           <WorkspaceDefaultsControls

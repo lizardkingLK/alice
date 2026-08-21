@@ -13,6 +13,7 @@ import {
   AlertCircle,
   Calendar,
   FolderDot,
+  Plus,
   SquareArrowOutUpRight,
   X,
 } from '@repo/ui/lib/icons';
@@ -21,6 +22,7 @@ import {
   AvatarFallback,
   AvatarGroup,
   AvatarGroupCount,
+  AvatarImage,
 } from '@repo/ui/components/ui/avatar';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
@@ -57,36 +59,44 @@ import {
 } from '@/app/board/_components/workspace-defaults-dialog-host';
 import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
-import {
-  buildSprintFilterOptionsForQuery,
-  pushOptimisticProjectFilter,
-} from '@/app/board/_services/board-defaults';
 import type { Project } from '@/app/projects/_services/projects.service.base';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
 import { WorkItemTypeBadge } from '@/app/work-items/_components/workItem-badge-type';
+import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form-dialog';
 import { DescriptionView } from '@/app/work-items/_components/workItem-description-view';
+import { WorkItemsFilterDialog } from '@/app/work-items/_components/work-items-filter-dialog';
+import {
+  applyWorkItemsProjectSprintDraftToSearchParams,
+  type WorkItemsFilterDraft,
+} from '@/app/work-items/_components/workItems-table-helpers';
+import type { FilterQuery } from '@/app/work-items/_components/workItems-table-types';
 import { descriptionToPlainText } from '@/app/work-items/_helpers/work-item-description';
 import { BOARD_STATUS_COLUMNS } from '@/app/work-items/_helpers/work-item-status';
-import { PRIORITY_BORDER_STYLES } from '@/app/work-items/_helpers/work-item-priority-ui';
-import { WORK_ITEM_PRIORITIES } from '@repo/types';
 import { updateWorkItemStatus } from '@/app/work-items/_services/workItem.service.client';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
-import { ListFilterSelect } from '@/components/list-filter-select';
 import { SearchInput } from '@/components/search-input';
+import { UserAvatar } from '@/components/user-avatar';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
-import { useQueryFilter } from '@/hooks/use-query-filter';
+import {
+  QUERY_FILTER_ALL_VALUE,
+  useQueryFilter,
+} from '@/hooks/use-query-filter';
 import { tryHandleLockedMutationError } from '@/lib/optimistic-lock/run-locked-mutation';
 
 type BoardStatus = Exclude<DbWorkItem['status'], 'Draft'>;
-type BoardPriority = DbWorkItem['priority'];
 
 const COLUMNS = BOARD_STATUS_COLUMNS;
 
 const MAX_VISIBLE_ASSIGNEES = 3;
 
-const PRIORITIES: BoardPriority[] = [...WORK_ITEM_PRIORITIES].reverse();
+const IDLE_FILTER_QUERY: FilterQuery = {
+  value: QUERY_FILTER_ALL_VALUE,
+  setFilter: () => undefined,
+  setValue: () => undefined,
+  allValue: QUERY_FILTER_ALL_VALUE,
+};
 
 function shortId(id: string) {
   return id.slice(0, 8).toUpperCase();
@@ -127,6 +137,7 @@ export function KanbanBoard({
   const searchParams = useSearchParams();
   const { handleMutationError } = useOptimisticLock();
   const [workItems, setWorkItems] = useState<DbWorkItem[]>(initialWorkItems);
+  const [createStatus, setCreateStatus] = useState<BoardStatus | null>(null);
   const [search, setSearch] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);
@@ -157,40 +168,17 @@ export function KanbanBoard({
     projectQuery;
   const { setValue: setSprintFilterValue } = sprintQuery;
 
-  const handleProjectChange = useCallback(
-    (nextProject: string) => {
-      pushOptimisticProjectFilter({
-        searchParams,
-        nextProject,
-        sprints,
-        allValue: projectAllValue,
-        pageMode: 'delete',
-        pathname,
-        push: (href) => router.push(href),
-        setProjectValue: setProjectFilterValue,
-        setSprintValue: setSprintFilterValue,
-      });
-    },
-    [
-      pathname,
-      projectAllValue,
-      router,
-      searchParams,
-      setProjectFilterValue,
-      setSprintFilterValue,
-      sprints,
-    ]
-  );
+  const createProjects = useMemo(() => {
+    if (!projectQuery.value || projectQuery.value === projectAllValue) {
+      return projects;
+    }
+    return projects.filter((project) => project.id === projectQuery.value);
+  }, [projectAllValue, projectQuery.value, projects]);
 
-  const sprintOptions = useMemo(
-    () =>
-      buildSprintFilterOptionsForQuery(
-        sprints,
-        projectQuery.value,
-        projectAllValue
-      ),
-    [projectAllValue, projectQuery.value, sprints]
-  );
+  const lockCreateProject =
+    createProjects.length === 1 &&
+    Boolean(projectQuery.value) &&
+    projectQuery.value !== projectAllValue;
 
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [activeDropCol, setActiveDropCol] = useState<BoardStatus | null>(null);
@@ -202,15 +190,22 @@ export function KanbanBoard({
   );
 
   const uniqueAssignees = useMemo(() => {
-    const byId = new Map<string, string>();
+    const byId = new Map<
+      string,
+      { id: string; name: string; profilePicture: string | null }
+    >();
 
     for (const item of workItems) {
       if (item.assignee_id && item.assignee?.name) {
-        byId.set(item.assignee_id, item.assignee.name);
+        byId.set(item.assignee_id, {
+          id: item.assignee_id,
+          name: item.assignee.name,
+          profilePicture: item.assignee.profile_picture?.trim() || null,
+        });
       }
     }
 
-    return Array.from(byId.entries()).map(([id, name]) => ({ id, name }));
+    return Array.from(byId.values());
   }, [workItems]);
 
   const visibleAssignees = uniqueAssignees.slice(0, MAX_VISIBLE_ASSIGNEES);
@@ -219,9 +214,24 @@ export function KanbanBoard({
     (assignee) => assignee.id === assigneeFilter
   );
 
-  const handlePriorityChange = (value: string) => {
-    setPriorityFilter(value || 'all');
-  };
+  const boardFilterFieldIds = useMemo(() => {
+    const fields: Array<'project' | 'sprint' | 'priority'> = [];
+    if (allowAllFilters) {
+      fields.push('project');
+    }
+    fields.push('sprint', 'priority');
+    return fields;
+  }, [allowAllFilters]);
+
+  const priorityQuery = useMemo<FilterQuery>(
+    () => ({
+      value: priorityFilter,
+      setFilter: (value) => setPriorityFilter(value || QUERY_FILTER_ALL_VALUE),
+      setValue: (value) => setPriorityFilter(value || QUERY_FILTER_ALL_VALUE),
+      allValue: QUERY_FILTER_ALL_VALUE,
+    }),
+    [priorityFilter]
+  );
 
   const toggleAssignee = (assigneeId: string) => {
     setAssigneeFilter((previous) =>
@@ -230,12 +240,70 @@ export function KanbanBoard({
   };
 
   const hasLocalFilters =
-    search.trim() !== '' || priorityFilter !== 'all' || assigneeFilter !== null;
+    search.trim() !== '' ||
+    priorityFilter !== QUERY_FILTER_ALL_VALUE ||
+    assigneeFilter !== null;
   const hasActiveFilters = hasLocalFilters || urlFiltersActive;
+  const hasDialogFilters =
+    urlFiltersActive || priorityFilter !== QUERY_FILTER_ALL_VALUE;
+
+  const handleApplyFilters = useCallback(
+    (draft: WorkItemsFilterDraft) => {
+      setPriorityFilter(
+        !draft.priority || draft.priority === QUERY_FILTER_ALL_VALUE
+          ? QUERY_FILTER_ALL_VALUE
+          : draft.priority
+      );
+
+      const params = new URLSearchParams(searchParams.toString());
+
+      if (allowAllFilters) {
+        applyWorkItemsProjectSprintDraftToSearchParams(params, draft, {
+          allValue: projectAllValue,
+          applyProject: true,
+        });
+        if (!draft.project || draft.project === projectAllValue) {
+          setProjectFilterValue(projectAllValue);
+          setSprintFilterValue(sprintQuery.allValue);
+        } else {
+          setProjectFilterValue(draft.project);
+          setSprintFilterValue(
+            !draft.sprint || draft.sprint === projectAllValue
+              ? sprintQuery.allValue
+              : draft.sprint
+          );
+        }
+      } else {
+        applyWorkItemsProjectSprintDraftToSearchParams(params, draft, {
+          allValue: sprintQuery.allValue,
+          applyProject: false,
+        });
+        setSprintFilterValue(
+          !draft.sprint || draft.sprint === sprintQuery.allValue
+            ? sprintQuery.allValue
+            : draft.sprint
+        );
+      }
+
+      params.delete('page');
+      const query = params.toString();
+      router.push(query ? `${pathname}?${query}` : pathname);
+    },
+    [
+      allowAllFilters,
+      pathname,
+      projectAllValue,
+      router,
+      searchParams,
+      setProjectFilterValue,
+      setSprintFilterValue,
+      sprintQuery.allValue,
+    ]
+  );
 
   const handleClearFilters = () => {
     setSearch('');
-    setPriorityFilter('all');
+    setPriorityFilter(QUERY_FILTER_ALL_VALUE);
     setAssigneeFilter(null);
     if (urlFiltersActive) {
       setProjectFilterValue(projectAllValue);
@@ -264,7 +332,8 @@ export function KanbanBoard({
         item.type.toLowerCase().includes(query);
 
       const matchesPriority =
-        priorityFilter === 'all' || item.priority === priorityFilter;
+        priorityFilter === QUERY_FILTER_ALL_VALUE ||
+        item.priority === priorityFilter;
 
       const matchesAssignee =
         !assigneeFilter || item.assignee_id === assigneeFilter;
@@ -435,8 +504,8 @@ export function KanbanBoard({
       ) : null}
 
       <Card className="shrink-0 shadow-none">
-        <CardContent className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
             <SearchInput
               value={search}
               onValueChange={setSearch}
@@ -444,85 +513,46 @@ export function KanbanBoard({
               className="sm:w-64"
             />
 
-            <ListFilterSelect
-              value={projectQuery.value}
-              onValueChange={handleProjectChange}
-              allValue={projectQuery.allValue}
-              allLabel="All Projects"
-              ariaLabel="Filter by project"
-              placeholder="All Projects"
-              showAllOption={allowAllFilters}
-              triggerClassName="sm:w-44"
-              options={projects.map((project) => ({
-                value: project.id,
-                label: project.name,
-              }))}
-            />
-
-            <ListFilterSelect
-              value={sprintQuery.value}
-              onValueChange={sprintQuery.setFilter}
-              allValue={sprintQuery.allValue}
-              allLabel="All Sprints"
-              ariaLabel="Filter by sprint"
-              placeholder="All Sprints"
-              triggerClassName="sm:w-44"
-              options={sprintOptions}
-            />
-
-            <ListFilterSelect
-              value={priorityFilter}
-              onValueChange={handlePriorityChange}
-              allValue="all"
-              allLabel="All Priorities"
-              ariaLabel="Filter by priority"
-              placeholder="All Priorities"
-              triggerClassName="sm:w-36"
-              options={PRIORITIES.map((priority) => ({
-                value: priority,
-                label: formatLabelWithSpace(priority),
-              }))}
-            />
-
-            {hasActiveFilters ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleClearFilters}
-                className="text-muted-foreground hover:text-foreground h-9 px-3 text-xs"
-              >
-                Clear filters
-                <X className="size-3.5" />
-              </Button>
-            ) : null}
-          </div>
-
-          <div className="flex items-center gap-3 lg:shrink-0">
-            <AvatarGroup className="*:data-[slot=avatar]:size-8">
+            <AvatarGroup
+              className="*:data-[slot=avatar]:size-8"
+              role="group"
+              aria-label="Filter by assignee"
+            >
               {visibleAssignees.map((assignee) => {
                 const isSelected = assigneeFilter === assignee.id;
                 return (
                   <Tooltip key={assignee.id}>
                     <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        onClick={() => toggleAssignee(assignee.id)}
-                        className={cn(
-                          'focus-visible:ring-ring rounded-full outline-none focus-visible:ring-2',
-                          isSelected &&
-                            'ring-primary ring-offset-background ring-2 ring-offset-2',
-                          assigneeFilter && !isSelected && 'opacity-40'
-                        )}
+                      <Avatar
+                        size="default"
+                        role="button"
+                        tabIndex={0}
                         aria-pressed={isSelected}
                         aria-label={`Filter by ${assignee.name}`}
+                        className={cn(
+                          'focus-visible:ring-ring cursor-pointer outline-none focus-visible:ring-2',
+                          isSelected &&
+                            'ring-primary ring-offset-background z-10 ring-2 ring-offset-2',
+                          assigneeFilter && !isSelected && 'opacity-40'
+                        )}
+                        onClick={() => toggleAssignee(assignee.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            toggleAssignee(assignee.id);
+                          }
+                        }}
                       >
-                        <Avatar size="default">
-                          <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-                            {getInitials(assignee.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                      </button>
+                        {assignee.profilePicture ? (
+                          <AvatarImage
+                            src={assignee.profilePicture}
+                            alt={assignee.name}
+                          />
+                        ) : null}
+                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                          {getInitials(assignee.name)}
+                        </AvatarFallback>
+                      </Avatar>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">
                       {assignee.name}
@@ -535,28 +565,23 @@ export function KanbanBoard({
               {overflowAssignees.length > 0 ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
+                    <AvatarGroupCount
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Show more assignees"
                       className={cn(
-                        'focus-visible:ring-ring rounded-full outline-none focus-visible:ring-2',
+                        'focus-visible:ring-ring cursor-pointer text-xs font-medium outline-none focus-visible:ring-2',
                         assigneeFilter &&
                           !isOverflowAssigneeSelected &&
-                          'opacity-40'
+                          'opacity-40',
+                        isOverflowAssigneeSelected &&
+                          'ring-primary ring-offset-background z-10 ring-2 ring-offset-2'
                       )}
-                      aria-label="Show more assignees"
                     >
-                      <AvatarGroupCount
-                        className={cn(
-                          'text-xs font-medium',
-                          isOverflowAssigneeSelected &&
-                            'ring-primary ring-offset-background ring-2 ring-offset-2'
-                        )}
-                      >
-                        +{overflowAssignees.length}
-                      </AvatarGroupCount>
-                    </button>
+                      +{overflowAssignees.length}
+                    </AvatarGroupCount>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuContent align="start" className="w-56">
                     <DropdownMenuLabel>More assignees</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {overflowAssignees.map((assignee) => (
@@ -572,6 +597,38 @@ export function KanbanBoard({
                 </DropdownMenu>
               ) : null}
             </AvatarGroup>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <WorkItemsFilterDialog
+              projects={projects}
+              projectMembers={[]}
+              sprints={sprints}
+              projectQuery={projectQuery}
+              sprintQuery={sprintQuery}
+              typeQuery={IDLE_FILTER_QUERY}
+              assigneeQuery={IDLE_FILTER_QUERY}
+              labelsQuery={IDLE_FILTER_QUERY}
+              priorityQuery={priorityQuery}
+              visibleFieldIds={boardFilterFieldIds}
+              isProjectLocked={!allowAllFilters}
+              isAssigneeLocked
+              onApplyFilters={handleApplyFilters}
+              hasActiveFilters={hasDialogFilters}
+            />
+
+            {hasActiveFilters ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFilters}
+                className="text-muted-foreground hover:text-foreground h-9 px-3 text-xs"
+              >
+                Clear filters
+                <X className="size-3.5" />
+              </Button>
+            ) : null}
 
             {userId ? (
               <WorkspaceDefaultsControls
@@ -583,7 +640,7 @@ export function KanbanBoard({
         </CardContent>
       </Card>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 items-stretch gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="flex min-h-0 flex-1 gap-4 overflow-x-auto pb-1">
         {COLUMNS.map((column) => {
           const columnItems = filteredItems.filter(
             (item) => item.status === column.id
@@ -595,7 +652,7 @@ export function KanbanBoard({
               key={column.id}
               aria-label={formatLabelWithSpace(column.id)}
               className={cn(
-                'bg-muted/25 flex h-full min-h-0 min-w-0 flex-col rounded-xl border border-t-4 p-3 transition-colors',
+                'bg-muted/25 flex h-full min-h-0 w-72 min-w-72 flex-1 flex-col rounded-xl border border-t-4 p-3 transition-colors',
                 column.accentClassName,
                 isOver && 'border-primary bg-primary/5 border-dashed'
               )}
@@ -603,15 +660,34 @@ export function KanbanBoard({
               onDragLeave={handleDragLeave}
               onDrop={(event) => handleDrop(event, column.id)}
             >
-              <div className="mb-3 flex items-center justify-between gap-2 px-1">
+              <div className="mb-3 flex items-center justify-between gap-2">
                 <WorkItemStatusBadge status={column.id} />
-                <Badge variant="secondary">{columnItems.length}</Badge>
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="secondary">{columnItems.length}</Badge>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon-sm"
+                        variant="ghost"
+                        className="cursor-pointer"
+                        aria-label={`Create work item in ${formatLabelWithSpace(column.id)}`}
+                        onClick={() => setCreateStatus(column.id)}
+                      >
+                        <Plus className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Create in {formatLabelWithSpace(column.id)}
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
               </div>
 
-              <ScrollArea className="h-0 min-h-0 flex-1 pr-2">
-                <div className="flex min-w-0 flex-col gap-3 pb-1">
+              <ScrollArea className="h-0 min-h-0 flex-1">
+                <div className="flex w-full flex-col gap-3 pb-1">
                   {columnItems.length === 0 ? (
-                    <div className="text-muted-foreground flex min-h-40 flex-col items-center justify-center rounded-lg border border-dashed px-4 py-10 text-center text-xs">
+                    <div className="text-muted-foreground flex min-h-40 w-full flex-col items-center justify-center rounded-lg border border-dashed px-4 py-10 text-center text-xs">
                       <FolderDot className="text-muted-foreground/50 mb-2 size-8 stroke-1" />
                       No work items in this stage
                     </div>
@@ -635,8 +711,7 @@ export function KanbanBoard({
                             setIsDetailOpen(true);
                           }}
                           className={cn(
-                            'group min-w-0 cursor-grab rounded-l-none border-y-0 border-r-0 border-l-4 py-0 shadow-none active:cursor-grabbing',
-                            PRIORITY_BORDER_STYLES[item.priority],
+                            'group w-full max-w-full min-w-0 cursor-grab border border-b-[3px] py-0 shadow-sm active:cursor-grabbing',
                             (draggedTaskId === item.id ||
                               pendingStatusIds.has(item.id)) &&
                               'opacity-40'
@@ -644,15 +719,24 @@ export function KanbanBoard({
                         >
                           <CardContent className="flex min-w-0 flex-col gap-2 p-3.5">
                             <div className="flex items-start justify-between gap-2">
-                              <span className="text-muted-foreground font-mono text-[10px] font-medium tracking-wider uppercase">
-                                {shortId(item.id)}
-                              </span>
-                              <PriorityBadge priority={item.priority} />
+                              <TruncatedText className="text-foreground group-hover:text-primary min-w-0 flex-1 text-sm leading-snug font-semibold transition-colors">
+                                {item.title}
+                              </TruncatedText>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="inline-flex shrink-0">
+                                    <UserAvatar
+                                      name={name}
+                                      imageUrl={item.assignee?.profile_picture}
+                                      title={name}
+                                    />
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  {name}
+                                </TooltipContent>
+                              </Tooltip>
                             </div>
-
-                            <TruncatedText className="text-foreground group-hover:text-primary w-full min-w-0 text-sm leading-snug font-semibold transition-colors">
-                              {item.title}
-                            </TruncatedText>
 
                             {description ? (
                               <p className="text-muted-foreground line-clamp-2 text-xs leading-relaxed">
@@ -662,23 +746,12 @@ export function KanbanBoard({
 
                             <Separator className="my-1" />
 
-                            <div className="flex items-center justify-between gap-2">
+                            <div className="flex min-w-0 flex-wrap items-center gap-2">
                               <WorkItemTypeBadge
                                 type={item.type}
-                                className="max-w-[60%] truncate"
+                                className="max-w-full truncate"
                               />
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Avatar size="sm">
-                                    <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-medium">
-                                      {getInitials(name)}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                </TooltipTrigger>
-                                <TooltipContent side="top">
-                                  {name}
-                                </TooltipContent>
-                              </Tooltip>
+                              <PriorityBadge priority={item.priority} />
                             </div>
                           </CardContent>
                         </Card>
@@ -712,8 +785,8 @@ export function KanbanBoard({
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="min-w-0 space-y-4 text-sm">
-                <div className="space-y-2">
+              <div className="min-w-0 space-y-5 text-sm">
+                <div className="space-y-2.5">
                   <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                     Description
                   </p>
@@ -726,15 +799,17 @@ export function KanbanBoard({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-muted/20 rounded-lg border p-3">
-                    <p className="text-muted-foreground mb-2 text-[10px] font-medium tracking-wide uppercase">
+                    <p className="text-muted-foreground mb-2.5 text-[10px] font-medium tracking-wide uppercase">
                       Assignee
                     </p>
                     <div className="flex items-center gap-2">
-                      <Avatar size="sm">
-                        <AvatarFallback className="bg-primary text-primary-foreground text-[10px] font-medium">
-                          {getInitials(assigneeName(selectedTask))}
-                        </AvatarFallback>
-                      </Avatar>
+                      <UserAvatar
+                        name={assigneeName(selectedTask)}
+                        imageUrl={selectedTask.assignee?.profile_picture}
+                        title={assigneeName(selectedTask)}
+                        className="size-6"
+                        fallbackClassName="bg-primary text-primary-foreground text-[10px] font-medium"
+                      />
                       <span className="text-foreground text-xs font-medium">
                         {assigneeName(selectedTask)}
                       </span>
@@ -742,14 +817,14 @@ export function KanbanBoard({
                   </div>
 
                   <div className="bg-muted/20 rounded-lg border p-3">
-                    <p className="text-muted-foreground mb-2 text-[10px] font-medium tracking-wide uppercase">
+                    <p className="text-muted-foreground mb-2.5 text-[10px] font-medium tracking-wide uppercase">
                       Type
                     </p>
                     <WorkItemTypeBadge type={selectedTask.type} />
                   </div>
 
                   <div className="bg-muted/20 rounded-lg border p-3">
-                    <p className="text-muted-foreground mb-2 text-[10px] font-medium tracking-wide uppercase">
+                    <p className="text-muted-foreground mb-2.5 text-[10px] font-medium tracking-wide uppercase">
                       Due date
                     </p>
                     <span className="text-foreground inline-flex items-center gap-1.5 text-xs font-medium">
@@ -759,14 +834,14 @@ export function KanbanBoard({
                   </div>
 
                   <div className="bg-muted/20 rounded-lg border p-3">
-                    <p className="text-muted-foreground mb-2 text-[10px] font-medium tracking-wide uppercase">
+                    <p className="text-muted-foreground mb-2.5 text-[10px] font-medium tracking-wide uppercase">
                       Status
                     </p>
                     <WorkItemStatusBadge status={selectedTask.status} />
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                     Move to
                   </p>
@@ -814,6 +889,39 @@ export function KanbanBoard({
           ) : null}
         </DialogContent>
       </Dialog>
+
+      <WorkItemFormDialog
+        open={createStatus !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCreateStatus(null);
+          }
+        }}
+        title="Create Work Item"
+        description={
+          createStatus
+            ? `Create a work item in ${formatLabelWithSpace(createStatus)}.`
+            : 'Create a work item.'
+        }
+        projects={
+          lockCreateProject && createProjects[0] ? createProjects : projects
+        }
+        projectMembers={[]}
+        lockProject={lockCreateProject}
+        lockStatus={Boolean(createStatus)}
+        defaultStatus={createStatus ?? undefined}
+        defaultSprintId={
+          sprintQuery.value && sprintQuery.value !== sprintQuery.allValue
+            ? sprintQuery.value
+            : null
+        }
+        onClose={() => setCreateStatus(null)}
+        onSuccess={(created) => {
+          setWorkItems((current) => [created, ...current]);
+          setCreateStatus(null);
+          router.refresh();
+        }}
+      />
 
       <WorkspaceDefaultsDialogHost
         enabled={Boolean(userId)}

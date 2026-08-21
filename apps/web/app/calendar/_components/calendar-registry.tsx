@@ -5,35 +5,21 @@ import Link from 'next/link';
 import {
   ChevronLeft,
   ChevronRight,
-  Calendar as CalendarIcon,
   CheckSquare,
   Plus,
 } from '@repo/ui/lib/icons';
 import { Button } from '@repo/ui/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@repo/ui/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@repo/ui/components/ui/select';
 import { cn } from '@repo/ui/lib/utils';
 import type { Project } from '@/app/projects/_services/projects.service';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import type { User } from '@/app/users/_services/users.service';
-import { toNameCase } from '@repo/types';
+import { toNameCase, WORK_ITEM_TYPES, WorkItemTypeEnum } from '@repo/types';
 import { ALL_OPTION } from '@/app/_shared/values';
+import { type CalendarActionItem } from './calendar-client.types';
 import {
-  type CalendarActionItem,
-  CalendarWorkItemTypes,
-} from './calendar-client.types';
+  applyCalendarFilterChange,
+  CalendarFilterSelect,
+} from './calendar-filter-controls';
 import { MONTHS, DAYS_OF_WEEK } from './calendar-constants';
 
 import {
@@ -87,11 +73,17 @@ export function CalendarRegistry({
   }, [workItems]);
 
   const [currentDate, setCurrentDate] = useState(() => new Date());
+  /** Set after mount so SSR/client "today" highlight stays in sync (TZ-safe). */
+  const [todayDateString, setTodayDateString] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] =
     useState<string>(ALL_OPTION);
   const [selectedAssigneeId, setSelectedAssigneeId] =
     useState<string>(ALL_OPTION);
   const [selectedType, setSelectedType] = useState<string>(ALL_OPTION);
+
+  useEffect(() => {
+    setTodayDateString(toLocalYYYYMMDD(new Date()));
+  }, []);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -109,38 +101,32 @@ export function CalendarRegistry({
   };
 
   const handleProjectChange = (val: string) => {
-    setSelectedProjectId(val);
-    logAction({
-      type: 'filter_project',
-      entity: {
-        id: val,
-        value: val,
-        label: projects.find((p) => p.id === val)?.name ?? 'All Projects',
-      },
+    applyCalendarFilterChange({
+      value: val,
+      setValue: setSelectedProjectId,
+      actionType: 'filter_project',
+      label: projects.find((p) => p.id === val)?.name ?? 'All Projects',
+      logAction,
     });
   };
 
   const handleAssigneeChange = (val: string) => {
-    setSelectedAssigneeId(val);
-    logAction({
-      type: 'filter_assignee',
-      entity: {
-        id: val,
-        value: val,
-        label: users.find((u) => u.id === val)?.name ?? 'All Assignees',
-      },
+    applyCalendarFilterChange({
+      value: val,
+      setValue: setSelectedAssigneeId,
+      actionType: 'filter_assignee',
+      label: users.find((u) => u.id === val)?.name ?? 'All Assignees',
+      logAction,
     });
   };
 
   const handleTypeChange = (val: string) => {
-    setSelectedType(val);
-    logAction({
-      type: 'filter_type',
-      entity: {
-        id: val,
-        value: val,
-        label: val === ALL_OPTION ? 'All Types' : toNameCase(val),
-      },
+    applyCalendarFilterChange({
+      value: val,
+      setValue: setSelectedType,
+      actionType: 'filter_type',
+      label: val === ALL_OPTION ? 'All Types' : toNameCase(val),
+      logAction,
     });
   };
 
@@ -164,6 +150,8 @@ export function CalendarRegistry({
 
   const handleToday = () => {
     const d = new Date();
+    const today = toLocalYYYYMMDD(d);
+    setTodayDateString(today);
     setCurrentDate(d);
     logAction({
       type: 'navigate_month',
@@ -185,47 +173,40 @@ export function CalendarRegistry({
       dateString: string;
     }> = [];
 
-    const today = new Date();
+    const pushDay = (
+      d: Date,
+      dayNum: number,
+      isCurrentMonth: boolean
+    ): void => {
+      const dateString = toLocalYYYYMMDD(d);
+      days.push({
+        date: d,
+        dayNum,
+        isCurrentMonth,
+        isToday: todayDateString !== null && dateString === todayDateString,
+        dateString,
+      });
+    };
 
     // Previous month spacer days
     for (let i = firstDayIndex - 1; i >= 0; i--) {
       const d = new Date(year, month - 1, daysInPrevMonth - i);
-      days.push({
-        date: d,
-        dayNum: daysInPrevMonth - i,
-        isCurrentMonth: false,
-        isToday: d.toDateString() === today.toDateString(),
-        dateString: toLocalYYYYMMDD(d),
-      });
+      pushDay(d, daysInPrevMonth - i, false);
     }
 
     // Current month days
     for (let i = 1; i <= daysInMonth; i++) {
-      const d = new Date(year, month, i);
-      days.push({
-        date: d,
-        dayNum: i,
-        isCurrentMonth: true,
-        isToday: d.toDateString() === today.toDateString(),
-        dateString: toLocalYYYYMMDD(d),
-      });
+      pushDay(new Date(year, month, i), i, true);
     }
 
     // Next month spacer days to complete a 42-cell grid
     const remainingSlots = 42 - days.length;
     for (let i = 1; i <= remainingSlots; i++) {
-      const d = new Date(year, month + 1, i);
-      days.push({
-        date: d,
-        dayNum: i,
-        isCurrentMonth: false,
-        isToday: d.toDateString() === today.toDateString(),
-        dateString: toLocalYYYYMMDD(d),
-      });
+      pushDay(new Date(year, month + 1, i), i, false);
     }
 
     return days;
-  }, [year, month]);
+  }, [year, month, todayDateString]);
 
   // Filtered work items
   const filteredWorkItems = useMemo(() => {
@@ -265,197 +246,137 @@ export function CalendarRegistry({
   }, [filteredWorkItems]);
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Filters & Header Bar */}
-      <Card className="border-border bg-card shadow-md">
-        <CardHeader className="flex flex-col space-y-4 border-b pb-4 md:flex-row md:items-center md:justify-between md:space-y-0">
-          <div>
-            <div className="flex items-center gap-2">
-              <CalendarIcon className="text-primary h-6 w-6" />
-              <CardTitle className="text-2xl font-bold tracking-tight">
-                Calendar
-              </CardTitle>
-            </div>
-            <CardDescription className="text-muted-foreground mt-1">
-              Visualize schedules and track upcoming milestones for tasks,
-              stories, and bugs.
-            </CardDescription>
-          </div>
+    <div className="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={handlePrevMonth}
+            className="size-8"
+          >
+            <ChevronLeft className="size-4" />
+            <span className="sr-only">Previous Month</span>
+          </Button>
+          <h2 className="min-w-28 text-center text-base font-semibold tracking-tight sm:min-w-36 sm:text-lg">
+            {MONTHS[month]} {year}
+          </h2>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={handleNextMonth}
+            className="size-8"
+          >
+            <ChevronRight className="size-4" />
+            <span className="sr-only">Next Month</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleToday}
+            className="h-8 px-2.5 text-xs"
+          >
+            Today
+          </Button>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Project Filter */}
-            <div className="w-40">
-              <Select
-                value={selectedProjectId}
-                onValueChange={handleProjectChange}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Filter Project" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL_OPTION}>All Projects</SelectItem>
-                  {projects.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <CalendarFilterSelect
+            value={selectedProjectId}
+            onValueChange={handleProjectChange}
+            placeholder="Filter Project"
+            allLabel="All Projects"
+            options={projects.map((p) => ({ id: p.id, label: p.name }))}
+          />
 
-            {/* Assignee Filter */}
-            <div className="w-40">
-              <Select
-                value={selectedAssigneeId}
-                onValueChange={handleAssigneeChange}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Filter Assignee" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL_OPTION}>All Assignees</SelectItem>
-                  {users.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <CalendarFilterSelect
+            value={selectedAssigneeId}
+            onValueChange={handleAssigneeChange}
+            placeholder="Filter Assignee"
+            allLabel="All Assignees"
+            options={users.map((u) => ({ id: u.id, label: u.name }))}
+          />
 
-            {/* Type Filter */}
-            <div className="w-35">
-              <Select value={selectedType} onValueChange={handleTypeChange}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Filter Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL_OPTION}>All Types</SelectItem>
-                  <SelectItem value={CalendarWorkItemTypes.Epic}>
-                    Epic
-                  </SelectItem>
-                  <SelectItem value={CalendarWorkItemTypes.Story}>
-                    Story
-                  </SelectItem>
-                  <SelectItem value={CalendarWorkItemTypes.Task}>
-                    Task
-                  </SelectItem>
-                  <SelectItem value={CalendarWorkItemTypes.Issue}>
-                    Issue
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardHeader>
+          <CalendarFilterSelect
+            value={selectedType}
+            onValueChange={handleTypeChange}
+            placeholder="Filter Type"
+            allLabel="All Types"
+            triggerClassName="h-8 w-28 text-xs sm:w-32"
+            options={WORK_ITEM_TYPES.map((workItemType) => ({
+              id: workItemType,
+              label: workItemType,
+            }))}
+          />
+        </div>
+      </div>
 
-        <CardContent className="pt-6">
-          {/* Calendar Controller */}
-          <div className="mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handlePrevMonth}
-                className="h-9 w-9"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                <span className="sr-only">Previous Month</span>
-              </Button>
-              <h2 className="min-w-35 text-center text-xl font-semibold">
-                {MONTHS[month]} {year}
-              </h2>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleNextMonth}
-                className="h-9 w-9"
-              >
-                <ChevronRight className="h-4 w-4" />
-                <span className="sr-only">Next Month</span>
-              </Button>
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleToday}
-              className="px-3 py-1 text-sm font-medium"
+      <div className="border-border flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border">
+        <div className="bg-muted grid shrink-0 grid-cols-7 border-b">
+          {DAYS_OF_WEEK.map((day) => (
+            <div
+              key={day}
+              className="text-muted-foreground py-1.5 text-center text-[10px] font-semibold tracking-wider uppercase sm:text-xs"
             >
-              Today
-            </Button>
-          </div>
+              {day}
+            </div>
+          ))}
+        </div>
 
-          {/* Days of Week Header */}
-          <div className="bg-border grid grid-cols-7 gap-px overflow-hidden rounded-t-lg border-x border-t">
-            {DAYS_OF_WEEK.map((day) => (
-              <div
-                key={day}
-                className="bg-muted text-muted-foreground py-2 text-center text-xs font-semibold tracking-wider uppercase"
+        <div className="bg-border grid min-h-0 flex-1 grid-cols-7 grid-rows-6 gap-px">
+          {calendarDays.map((dayCell) => {
+            const dayItems = itemsByDate[dayCell.dateString] || [];
+            return (
+              <button
+                key={dayCell.dateString}
+                type="button"
+                onClick={() => {
+                  setSelectedDateStr(dayCell.dateString);
+                  setActiveTab('due');
+                  setCurrentPage(1);
+                  setPageSize(5);
+                  logAction({
+                    type: 'select_date',
+                    entity: {
+                      id: dayCell.dateString,
+                      label: dayCell.dateString,
+                    },
+                  });
+                }}
+                className={cn(
+                  'bg-card group hover:bg-accent/15 focus-visible:ring-ring flex h-full min-h-0 w-full cursor-pointer flex-col justify-between gap-1 overflow-hidden p-1.5 text-left outline-hidden transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-offset-0 sm:p-2',
+                  !dayCell.isCurrentMonth &&
+                    'bg-muted/30 text-muted-foreground/50'
+                )}
               >
-                {day}
-              </div>
-            ))}
-          </div>
+                <div className="flex items-center justify-between">
+                  <span
+                    className={cn(
+                      'flex size-5 items-center justify-center rounded-full text-[10px] font-bold select-none sm:size-6 sm:text-xs',
+                      dayCell.isToday &&
+                        'bg-primary text-primary-foreground font-extrabold shadow-sm',
+                      !dayCell.isToday &&
+                        'text-foreground/80 group-hover:text-foreground'
+                    )}
+                  >
+                    {dayCell.dayNum}
+                  </span>
+                </div>
 
-          {/* Days Grid */}
-          <div className="bg-border grid grid-cols-7 gap-px overflow-hidden rounded-b-lg border">
-            {calendarDays.map((dayCell) => {
-              const dayItems = itemsByDate[dayCell.dateString] || [];
-              return (
-                <button
-                  key={dayCell.dateString}
-                  type="button"
-                  onClick={() => {
-                    setSelectedDateStr(dayCell.dateString);
-                    setActiveTab('due');
-                    setCurrentPage(1);
-                    setPageSize(5);
-                    logAction({
-                      type: 'select_date',
-                      entity: {
-                        id: dayCell.dateString,
-                        label: dayCell.dateString,
-                      },
-                    });
-                  }}
-                  className={cn(
-                    'bg-card group hover:bg-accent/15 focus-visible:ring-ring flex min-h-30 w-full cursor-pointer flex-col justify-between p-2 text-left outline-hidden transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-offset-0',
-                    !dayCell.isCurrentMonth &&
-                      'bg-muted/30 text-muted-foreground/50'
-                  )}
-                >
-                  <div className="mb-1 flex items-center justify-between">
-                    <span
-                      className={cn(
-                        'flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold select-none',
-                        dayCell.isToday &&
-                          'bg-primary text-primary-foreground font-extrabold shadow-sm',
-                        !dayCell.isToday &&
-                          'text-foreground/80 group-hover:text-foreground'
-                      )}
-                    >
-                      {dayCell.dayNum}
+                {dayItems.length > 0 ? (
+                  <div className="border-primary/25 bg-primary/5 text-primary flex min-w-0 items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium shadow-xs sm:gap-1.5 sm:px-2 sm:text-[11px]">
+                    <span className="bg-primary size-1 shrink-0 animate-pulse rounded-full sm:size-1.5" />
+                    <span className="truncate">
+                      {dayItems.length} item
+                      {dayItems.length === 1 ? '' : 's'} due
                     </span>
                   </div>
-
-                  {dayItems.length > 0 ? (
-                    <div className="mt-1 flex flex-col gap-1">
-                      <div className="border-primary/25 bg-primary/5 text-primary flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] font-medium shadow-xs">
-                        <span className="bg-primary h-1.5 w-1.5 animate-pulse rounded-full" />
-                        <span className="truncate">
-                          {dayItems.length} item
-                          {dayItems.length === 1 ? '' : 's'} due
-                        </span>
-                      </div>
-                    </div>
-                  ) : null}
-                </button>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Sidebar Sheet */}
       <Sheet
@@ -522,9 +443,9 @@ export function CalendarRegistry({
                         <div className="w-full space-y-3">
                           {paginatedItems.map((item) => {
                             const isIssue =
-                              item.type === CalendarWorkItemTypes.Issue;
+                              item.type === WorkItemTypeEnum.Issue;
                             const isStory =
-                              item.type === CalendarWorkItemTypes.Story;
+                              item.type === WorkItemTypeEnum.Story;
                             const projectKey =
                               item.project?.key ??
                               projects.find((p) => p.id === item.project_id)
