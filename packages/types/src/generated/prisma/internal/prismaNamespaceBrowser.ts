@@ -92,6 +92,7 @@ export const UsersScalarFieldEnum = {
   name: 'name',
   role: 'role',
   active: 'active',
+  membership_status: 'membership_status',
   status: 'status',
   profile_picture: 'profile_picture',
   created_by: 'created_by',

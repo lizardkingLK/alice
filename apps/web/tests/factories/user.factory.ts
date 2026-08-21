@@ -8,6 +8,7 @@ export const userFactory = {
       email: 'erlich@bachmanity.com',
       role: 'member',
       active: true,
+      membership_status: 'active',
       created_at: '2026-07-09T10:00:00Z',
       updated_at: '2026-07-09T10:00:00Z',
       created_by: null,

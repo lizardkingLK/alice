@@ -93,17 +93,39 @@ function RoleBadge({ role }: Readonly<{ role: string }>) {
   );
 }
 
-function StatusBadge({ active }: Readonly<{ active: boolean }>) {
+type RegistryMembershipLabel = 'Pending' | 'Active' | 'Inactive';
+
+function resolveRegistryMembershipLabel(
+  active: boolean,
+  membershipStatus: string
+): RegistryMembershipLabel {
+  if (!active) {
+    return 'Inactive';
+  }
+  if (membershipStatus === 'pending') {
+    return 'Pending';
+  }
+  return 'Active';
+}
+
+function StatusBadge({
+  active,
+  membershipStatus,
+}: Readonly<{ active: boolean; membershipStatus: string }>) {
+  const label = resolveRegistryMembershipLabel(active, membershipStatus);
   return (
     <Badge
       variant="outline"
       className={cn(
-        active
-          ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-          : 'border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-400'
+        label === 'Active' &&
+          'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+        label === 'Pending' &&
+          'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400',
+        label === 'Inactive' &&
+          'border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-400'
       )}
     >
-      {active ? 'Active' : 'Inactive'}
+      {label}
     </Badge>
   );
 }
@@ -247,7 +269,12 @@ const CELL_RENDERERS: Record<string, UserCellRenderer> = {
     />
   ),
   role: ({ row }) => <RoleBadge role={row.original.role} />,
-  status: ({ row }) => <StatusBadge active={row.original.active} />,
+  status: ({ row }) => (
+    <StatusBadge
+      active={row.original.active}
+      membershipStatus={row.original.membership_status}
+    />
+  ),
   joined: ({ row }) => <JoinedCell row={row} />,
   actions: ({ row, table }) => {
     const meta = getUserTableMeta(table);

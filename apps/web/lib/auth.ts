@@ -1,4 +1,5 @@
 import { cache } from 'react';
+import { isProductUsableUser } from '@repo/types';
 import { createClient } from '@/lib/supabase/server';
 
 /** One Auth `getUser()` per RSC request. */
@@ -30,12 +31,12 @@ const getDbUserRow = cache(async () => {
 
 /**
  * Application profile from `public.users`.
- * Returns null when unsigned-in or when a profile exists and is inactive.
+ * Returns null when unsigned-in, inactive (kill switch), or membership pending.
  * Missing profile returns null (caller may treat as unsigned / incomplete).
  */
 export const getDbUser = cache(async () => {
   const dbUser = await getDbUserRow();
-  if (!dbUser?.active) {
+  if (!dbUser || !isProductUsableUser(dbUser)) {
     return null;
   }
 
@@ -44,7 +45,8 @@ export const getDbUser = cache(async () => {
 
 /**
  * Supabase Auth user for the session.
- * Returns null when unsigned-in, or when a `public.users` row exists and is inactive.
+ * Returns null when unsigned-in, or when a `public.users` row exists and is
+ * inactive or still pending membership.
  * Reuses the same Auth + DB lookups as `getDbUser` within a request.
  */
 export const getUser = cache(async () => {
@@ -54,7 +56,7 @@ export const getUser = cache(async () => {
   }
 
   const dbUser = await getDbUserRow();
-  if (dbUser && !dbUser.active) {
+  if (dbUser && !isProductUsableUser(dbUser)) {
     return null;
   }
 

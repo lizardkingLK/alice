@@ -77,6 +77,7 @@ Authentication and authorization. Index: [auth/README.md](./auth/README.md).
 - Admission allowlist: [features/access/ACCESS_ALLOWLIST.md](./features/access/ACCESS_ALLOWLIST.md) (**Living**)
 - Day-one env bootstrap (Google + SMTP): [features/platform/DAY_ONE_SETUP.md](./features/platform/DAY_ONE_SETUP.md) (**Plan**)
 - Account deactivation / offboarding: [features/users/ACCOUNT_DEACTIVATION.md](./features/users/ACCOUNT_DEACTIVATION.md) (phase 1 implemented)
+- User membership pending → active: [features/users/USER_MEMBERSHIP_STATUS.md](./features/users/USER_MEMBERSHIP_STATUS.md) (**Plan**)
 
 ### Guides
 

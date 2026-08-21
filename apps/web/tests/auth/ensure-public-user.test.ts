@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { User } from '@supabase/supabase-js';
-import { ensurePublicUser } from '@/lib/ensure-public-user';
+import {
+  ensurePublicUser,
+  promoteMembershipIfReady,
+} from '@/lib/ensure-public-user';
 import { createAdminClient } from '../mocks/supabase-admin';
 
 vi.mock('@/lib/supabase/admin', () => import('../mocks/supabase-admin'));
@@ -13,6 +16,8 @@ type UsersLookup = {
 type UsersAdminOptions = {
   existing?: UsersLookup;
   insertError?: { code?: string; message: string } | null;
+  updateResult?: { id: string } | null;
+  updateError?: { message: string } | null;
 };
 
 function existingRowForColumn(
@@ -34,6 +39,16 @@ function createUsersAdminClient(options: UsersAdminOptions) {
     error: options.insertError ?? null,
   });
 
+  const updateChain = {
+    eq: vi.fn(() => updateChain),
+    select: vi.fn(() => updateChain),
+    maybeSingle: vi.fn(async () => ({
+      data: options.updateResult ?? null,
+      error: options.updateError ?? null,
+    })),
+  };
+  const update = vi.fn(() => updateChain);
+
   let column = '';
   const filterChain = {
     eq: vi.fn((nextColumn: string) => {
@@ -48,17 +63,19 @@ function createUsersAdminClient(options: UsersAdminOptions) {
 
   return {
     insert,
+    update,
     from: vi.fn(() => ({
       select: vi.fn(() => filterChain),
       insert,
+      update,
     })),
   };
 }
 
 function mockUsersAdmin(options: UsersAdminOptions) {
-  const { insert, from } = createUsersAdminClient(options);
+  const { insert, update, from } = createUsersAdminClient(options);
   createAdminClient.mockImplementation(() => ({ from }));
-  return { insert };
+  return { insert, update };
 }
 
 function authUser(overrides: Partial<User> = {}): User {
@@ -69,6 +86,7 @@ function authUser(overrides: Partial<User> = {}): User {
     user_metadata: { name: 'Alex' },
     aud: 'authenticated',
     created_at: '2026-01-01T00:00:00.000Z',
+    email_confirmed_at: '2026-01-01T00:00:00.000Z',
     ...overrides,
   } as User;
 }
@@ -79,14 +97,16 @@ describe('ensurePublicUser', () => {
   });
 
   it('does not insert when a profile already exists for the Auth id', async () => {
-    const { insert } = mockUsersAdmin({
+    const { insert, update } = mockUsersAdmin({
       existing: { id: { id: '11111111-1111-4111-8111-111111111111' } },
+      updateResult: null,
     });
 
     const result = await ensurePublicUser(authUser());
 
     expect(result).toEqual({ created: false, error: null });
     expect(insert).not.toHaveBeenCalled();
+    expect(update).toHaveBeenCalled();
   });
 
   it('does not insert when the email already has a profile (duplicate sign-up)', async () => {
@@ -110,6 +130,7 @@ describe('ensurePublicUser', () => {
         code: '23505',
         message: 'duplicate key value violates unique constraint "users_pkey"',
       },
+      updateResult: null,
     });
 
     const result = await ensurePublicUser(authUser());
@@ -117,7 +138,7 @@ describe('ensurePublicUser', () => {
     expect(result).toEqual({ created: false, error: null });
   });
 
-  it('inserts a new profile when id and email are free', async () => {
+  it('inserts a membership-active profile when Auth email is confirmed', async () => {
     const { insert } = mockUsersAdmin({
       existing: { id: null, email: null },
     });
@@ -125,6 +146,56 @@ describe('ensurePublicUser', () => {
     const result = await ensurePublicUser(authUser());
 
     expect(result).toEqual({ created: true, error: null });
-    expect(insert).toHaveBeenCalled();
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        membership_status: 'active',
+        active: true,
+      })
+    );
+  });
+
+  it('inserts pending membership when Auth email is not confirmed', async () => {
+    const { insert } = mockUsersAdmin({
+      existing: { id: null, email: null },
+    });
+
+    const result = await ensurePublicUser(
+      authUser({ email_confirmed_at: undefined })
+    );
+
+    expect(result).toEqual({ created: true, error: null });
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        membership_status: 'pending',
+      })
+    );
+  });
+});
+
+describe('promoteMembershipIfReady', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('no-ops when Auth email is not confirmed', async () => {
+    const { update } = mockUsersAdmin({});
+
+    const result = await promoteMembershipIfReady(
+      authUser({ email_confirmed_at: undefined })
+    );
+
+    expect(result).toEqual({ promoted: false, error: null });
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('promotes pending row when Auth is confirmed', async () => {
+    const { update } = mockUsersAdmin({
+      updateResult: { id: '11111111-1111-4111-8111-111111111111' },
+    });
+
+    const result = await promoteMembershipIfReady(authUser());
+
+    expect(result).toEqual({ promoted: true, error: null });
+    expect(update).toHaveBeenCalledWith({ membership_status: 'active' });
   });
 });

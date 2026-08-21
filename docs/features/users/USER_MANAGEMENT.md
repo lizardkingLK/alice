@@ -18,6 +18,7 @@ Related:
 - `docs/guides/DATABASE.md` — `public.users` schema and migrations
 - `docs/features/access/ACCESS_ALLOWLIST.md` — admission allowlist; admin UI at `/users?tab=allowlist`
 - `docs/features/users/ACCOUNT_DEACTIVATION.md` — offboarding plan (admin / self / webhook → shared helper)
+- `docs/features/users/USER_MEMBERSHIP_STATUS.md` — pending → active membership (**Living**)
 
 ---
 
@@ -109,7 +110,7 @@ sequenceDiagram
 4. **Supabase invite** — `auth.admin.inviteUserByEmail` with:
    - `redirectTo`: `{origin}/auth/callback?next=/reset-password`
    - `data`: `{ name, role }` (auth metadata only; not used for RBAC enforcement)
-5. **Database insert** — row in `public.users` with `id` from the invited auth user, `active: true`.
+5. **Database insert** — row in `public.users` with `id` from the invited auth user, `active: true` (kill switch on), and `membership_status: pending`. Registry shows **Pending** until `/auth/callback` / `ensurePublicUser` promotes to membership `active` after Auth confirmation ([USER_MEMBERSHIP_STATUS.md](./USER_MEMBERSHIP_STATUS.md)).
 6. **Rollback** — if insert fails, `auth.admin.deleteUser` removes the orphaned auth record.
 7. **Invitee** receives email, completes callback, sets password on `/reset-password`, then lands on `/dashboard`.
 

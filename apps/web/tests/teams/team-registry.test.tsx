@@ -67,6 +67,7 @@ const mockUsers: User[] = [
     email: 'alice@alice.dev',
     role: 'manager',
     active: true,
+    membership_status: 'active',
     created_at: '2026-07-01T00:00:00Z',
     updated_at: '2026-07-01T00:00:00Z',
     created_by: null,
