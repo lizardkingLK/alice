@@ -166,6 +166,15 @@ export class ProjectsService {
     await requireProjectManager(actorId);
     await projectsRepository.saveJiraSettings(url, email, token);
   }
+
+  async linkImportedJiraParents(
+    actorId: string,
+    projectId: string,
+    issues: { key: string; parentKey?: string | null }[]
+  ): Promise<void> {
+    await requireProjectManager(actorId);
+    await projectsRepository.linkImportedJiraParents(projectId, issues);
+  }
 }
 
 export const projectsService = new ProjectsService();

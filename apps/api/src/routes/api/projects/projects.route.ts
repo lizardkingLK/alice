@@ -19,7 +19,7 @@ import { type ProjectRow, withoutJiraToken } from './projects.repository';
 import { workItems } from '../../../config/composition';
 import { type WorkItemBody } from '../workItems/workItems.schemas';
 import { supabase } from '../../../lib/supabase';
-import { WorkItemTypeEnum } from '@repo/types';
+import { type WorkItemType, mapToWorkItemType } from '@repo/types';
 
 const projectsRouter: Router = Router();
 
@@ -238,6 +238,9 @@ interface JiraIssueField {
     name?: string;
   };
   description?: unknown;
+  parent?: {
+    key?: string;
+  };
 }
 
 interface JiraIssue {
@@ -259,10 +262,8 @@ interface ParsedJiraIssue {
   key: string;
   title: string;
   description: string;
-  type:
-    | typeof WorkItemTypeEnum.Task
-    | typeof WorkItemTypeEnum.Story
-    | typeof WorkItemTypeEnum.Epic;
+  type: WorkItemType;
+  parentKey?: string | null;
 }
 
 function extractText(node: JiraNode | null | undefined): string {
@@ -327,7 +328,7 @@ async function fetchAndParseJiraIssues(
   const authHeader = `Basic ${Buffer.from(credentials).toString('base64')}`;
   const jql = encodeURIComponent(`project="${jiraProjectKey.trim()}"`);
   const response = await fetch(
-    `${cleanUrl}/rest/api/3/search/jql?jql=${jql}&fields=summary,description,issuetype`,
+    `${cleanUrl}/rest/api/3/search/jql?jql=${jql}&fields=summary,description,issuetype,parent`,
     {
       // NOSONAR
       headers: {
@@ -350,22 +351,16 @@ async function fetchAndParseJiraIssues(
   }
 
   return data.issues.map((issue) => {
-    let type:
-      | typeof WorkItemTypeEnum.Task
-      | typeof WorkItemTypeEnum.Story
-      | typeof WorkItemTypeEnum.Epic = WorkItemTypeEnum.Task;
-    const jiraType = (issue.fields?.issuetype?.name || '').toLowerCase();
-    if (jiraType === 'story') {
-      type = WorkItemTypeEnum.Story;
-    } else if (jiraType === 'epic') {
-      type = WorkItemTypeEnum.Epic;
-    }
+    const jiraType = issue.fields?.issuetype?.name || '';
+    const type = mapToWorkItemType(jiraType);
+    const parentKey = issue.fields?.parent?.key || null;
 
     return {
       key: issue.key,
       title: issue.fields?.summary || 'Untitled',
       description: parseJiraDescription(issue.fields?.description),
       type,
+      parentKey,
     };
   });
 }
@@ -483,6 +478,12 @@ projectsRouter.post(
         issues,
         existingKeys,
       });
+
+      try {
+        await projectsService.linkImportedJiraParents(req.userId!, projectId, issues);
+      } catch (linkError) {
+        console.error('error. failed to link parents during Jira import:', linkError);
+      }
 
       res.json({ success: true, importedCount });
     } catch (error) {

@@ -6,8 +6,9 @@ import {
 import { workItemFactory } from '../factories/workItem.factory';
 
 describe('workItemCanExpand', () => {
-  it('allows expand for Epic, Story, and Task only', () => {
+  it('allows expand for Epic, Feature, Story, and Task only', () => {
     expect(workItemCanExpand('Epic')).toBe(true);
+    expect(workItemCanExpand('Feature')).toBe(true);
     expect(workItemCanExpand('Story')).toBe(true);
     expect(workItemCanExpand('Task')).toBe(true);
     expect(workItemCanExpand('Issue')).toBe(false);
