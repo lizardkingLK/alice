@@ -12,6 +12,8 @@ import {
   CommandList,
 } from '@repo/ui/components/ui/command';
 import { Search } from '@repo/ui/lib/icons';
+import { useToggleKeyboardShortcut } from '@repo/ui/hooks/use-keyboard-shortcut';
+import { isModKey } from '@repo/ui/lib/shortcut-gate';
 import { DIALOG_CLOSE_ANIMATION_MS } from '@/lib/dialog-close';
 import {
   docHref,
@@ -28,21 +30,7 @@ export function DocsSearchDialog({ entries }: DocsSearchDialogProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key.toLowerCase() !== 'k') {
-        return;
-      }
-      if (!(event.metaKey || event.ctrlKey)) {
-        return;
-      }
-      event.preventDefault();
-      setOpen((prev) => !prev);
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  useToggleKeyboardShortcut((event) => isModKey(event, 'k'), open, setOpen);
 
   useEffect(() => {
     if (open) {
