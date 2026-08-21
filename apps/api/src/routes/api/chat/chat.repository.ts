@@ -1,4 +1,5 @@
 import type { Database, Tables } from '@repo/types';
+import { filterProductUsableUsers } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { env } from '../../../config/env';
 import { prisma } from '../../../lib/prisma';
@@ -153,9 +154,9 @@ export class ChatRepository {
   }
 
   async listUsersSnapshot(): Promise<ChatUserSnapshot[]> {
-    const { data, error } = await this.db
-      .from('users')
-      .select('id, name, email');
+    const { data, error } = await filterProductUsableUsers(
+      this.db.from('users').select('id, name, email')
+    );
 
     if (error) throw error;
     return (data || []) as ChatUserSnapshot[];

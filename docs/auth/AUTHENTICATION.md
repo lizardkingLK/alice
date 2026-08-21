@@ -292,7 +292,7 @@ sequenceDiagram
   API->>Auth: inviteUserByEmail(email, redirectTo=/auth/callback?next=/reset-password, data={name,role})
   Auth->>Mail: Invitation email
   Auth-->>API: invited user id
-  API->>DB: INSERT public.users (id, name, email, role, active)
+  API->>DB: INSERT public.users (id, name, email, role, active=true, membership_status=pending)
   alt DB insert fails
     API->>Auth: deleteUser(id) rollback
     API-->>UI: error
@@ -303,12 +303,14 @@ sequenceDiagram
   Invitee->>Mail: Open invite link
   Mail->>CB: ?token_hash=…&type=invite&next=/reset-password
   CB->>Auth: verifyOtp({ type: 'invite', token_hash })
-  CB->>DB: ensurePublicUser (usually already exists)
+  CB->>DB: ensurePublicUser (idempotent; promotes membership pending → active)
   CB-->>Invitee: Redirect /reset-password
   Invitee->>Reset: Set password
   Reset->>Auth: updateUser({ password })
   Reset-->>Invitee: Redirect /dashboard (stays signed in)
 ```
+
+See [USER_MEMBERSHIP_STATUS.md](../features/users/USER_MEMBERSHIP_STATUS.md) for pending vs kill switch.
 
 > **Email template requirement.** The Invite template must use the server-readable `token_hash` link, **not** the default `{{ .ConfirmationURL }}` (which uses the implicit hash-fragment flow the server callback can't read). See §12 for the exact string and the allowlist / Site URL setup.
 >
@@ -319,7 +321,7 @@ sequenceDiagram
 - Shared API kill switch: `public.users.active = false` + Auth `ban_duration` via `usersService.deactivateUser`.
 - **Admin:** `/users` registry → `PATCH /api/users/:id/toggle-active`.
 - **Self:** Edit profile Danger zone → same toggle-active on own id → sign out → `/?account=closed`.
-- Web `getUser()` treats inactive registry rows as unauthenticated for UI gates.
+- Web `getUser()` / `getDbUser()` require `membership_status === 'active'` **and** kill switch `active === true`.
 - **Webhook** offboarding still planned — see [ACCOUNT_DEACTIVATION.md](../features/users/ACCOUNT_DEACTIVATION.md). No allowlist deny-list.
 
 ### Security notes

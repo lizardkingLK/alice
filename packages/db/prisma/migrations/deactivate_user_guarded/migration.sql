@@ -1,6 +1,7 @@
 -- Atomically deactivate a user while preventing the last active admin from
 -- being turned off (count + update under a row lock).
 -- Invoked by the API service role via supabase.rpc('deactivate_user_guarded', …).
+-- "Active admin" = role admin AND kill switch on AND membership_status active.
 
 CREATE OR REPLACE FUNCTION public.deactivate_user_guarded(
   p_user_id uuid,
@@ -39,6 +40,7 @@ BEGIN
     FROM public.users
     WHERE role = 'admin'
       AND active = true
+      AND membership_status = 'active'
       AND id <> p_user_id;
 
     IF other_admins < 1 THEN

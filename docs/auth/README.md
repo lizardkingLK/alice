@@ -13,4 +13,5 @@ Related feature docs:
 - [Day-one setup](../features/platform/DAY_ONE_SETUP.md) — Google Auth + custom SMTP as part of new-env bootstrap (**Plan**)
 - [User management](../features/users/) — registry UI, roles, activate/deactivate; allowlist admin tab
 - [Account deactivation](../features/users/ACCOUNT_DEACTIVATION.md) — offboarding (admin / self done; webhook planned)
+- [User membership status](../features/users/USER_MEMBERSHIP_STATUS.md) — pending → active onboarding vs kill switch (**Plan**)
 - [Access allowlist](../features/access/) — email domain / email admission gate (**Living**)

@@ -57,6 +57,7 @@ const mockUsers: User[] = [
     email: 'admin@alice.dev',
     role: 'admin' as const,
     active: true,
+    membership_status: 'active' as const,
     created_at: '2026-07-01T10:00:00Z',
     updated_at: '2026-07-01T10:00:00Z',
     created_by: null,
@@ -70,6 +71,7 @@ const mockUsers: User[] = [
     email: 'bob@alice.dev',
     role: 'member' as const,
     active: false,
+    membership_status: 'active' as const,
     created_at: '2026-07-05T10:00:00Z',
     updated_at: '2026-07-05T10:00:00Z',
     created_by: null,
@@ -118,6 +120,33 @@ describe('UserRegistry Component', () => {
     expect(screen.getByText('You')).toBeInTheDocument();
   });
 
+  it('shows Pending badge for invitees who have not joined', () => {
+    const pendingUser: User = {
+      ...mockUsers[0]!,
+      id: 'user-pending-id',
+      name: 'Pending Pat',
+      email: 'pending@alice.dev',
+      role: 'member',
+      active: true,
+      membership_status: 'pending',
+    };
+
+    render(
+      <UserRegistry
+        users={[pendingUser]}
+        totalCount={1}
+        page={1}
+        limit={10}
+        totalPages={1}
+        search=""
+        currentUserId="user-admin-id"
+        currentUserRole="admin"
+      />
+    );
+
+    expect(screen.getByText('Pending')).toBeInTheDocument();
+  });
+
   it('activates an inactive user directly', async () => {
     vi.mocked(toggleUserActive).mockResolvedValue({
       id: 'user-bob-id',
@@ -160,6 +189,7 @@ describe('UserRegistry Component', () => {
         email: 'charlie@alice.dev',
         role: 'manager' as const,
         active: true,
+        membership_status: 'active' as const,
         created_at: '2026-07-01T10:00:00Z',
         updated_at: '2026-07-01T10:00:00Z',
         created_by: null,

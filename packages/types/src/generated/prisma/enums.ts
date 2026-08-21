@@ -18,6 +18,14 @@ export const UserRole = {
 export type UserRole = (typeof UserRole)[keyof typeof UserRole]
 
 
+export const UserMembershipStatus = {
+  pending: 'pending',
+  active: 'active'
+} as const
+
+export type UserMembershipStatus = (typeof UserMembershipStatus)[keyof typeof UserMembershipStatus]
+
+
 export const RecordStatus = {
   active: 'active',
   inactive: 'inactive',

@@ -9,7 +9,11 @@ import {
   OptimisticLockError,
   resolveOptimisticPrismaUpdate,
 } from '../../../lib/optimistic-lock';
-import { UserRoleEnum } from '@repo/types';
+import {
+  filterProductUsableUsers,
+  UserMembershipStatusEnum,
+  UserRoleEnum,
+} from '@repo/types';
 
 export type UserRow = {
   id: string;
@@ -17,6 +21,7 @@ export type UserRow = {
   email: string;
   role: 'admin' | 'manager' | 'member';
   active: boolean;
+  membership_status: 'pending' | 'active';
   created_at: string;
   updated_at: string;
   created_by?: string | null;
@@ -39,14 +44,14 @@ export class UsersRepository {
     return data as UserRow | null;
   }
 
-  /** Active admins other than `excludeUserId` (for last-admin guard / tests). */
+  /** Membership-active admins with kill switch on, other than `excludeUserId`. */
   async countOtherActiveAdmins(excludeUserId: string): Promise<number> {
-    const { count, error } = await supabase
-      .from('users')
-      .select('id', { count: 'exact', head: true })
-      .eq('role', UserRoleEnum.admin)
-      .eq('active', true)
-      .neq('id', excludeUserId);
+    const { count, error } = await filterProductUsableUsers(
+      supabase
+        .from('users')
+        .select('id', { count: 'exact', head: true })
+        .eq('role', UserRoleEnum.admin)
+    ).neq('id', excludeUserId);
 
     if (error) {
       console.error(
@@ -124,6 +129,7 @@ export class UsersRepository {
       data: {
         ...data,
         active: true,
+        membership_status: UserMembershipStatusEnum.pending,
         ...prismaAuditCreate(actorId),
       },
     });
