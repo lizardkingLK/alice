@@ -1,5 +1,6 @@
 import {
   Database,
+  filterProductUsableUsers,
   UserRoleEnum,
   WorkItemStatusEnum,
   type NotificationType,
@@ -45,11 +46,9 @@ export class NotificationsRepository {
   }
 
   async listActiveAdminIds(): Promise<string[]> {
-    const { data: admins, error: adminsError } = await this.db
-      .from('users')
-      .select('id')
-      .eq('role', UserRoleEnum.admin)
-      .eq('active', true);
+    const { data: admins, error: adminsError } = await filterProductUsableUsers(
+      this.db.from('users').select('id').eq('role', UserRoleEnum.admin)
+    );
 
     if (adminsError) {
       throw new Error(`Failed to query admins: ${adminsError.message}`);

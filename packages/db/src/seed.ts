@@ -290,6 +290,7 @@ async function seedUsers(): Promise<UserIds> {
       name: user.name,
       role: user.role,
       active: true,
+      membership_status: 'active',
       ...auditCreate(actorId),
     });
 

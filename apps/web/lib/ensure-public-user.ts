@@ -2,6 +2,7 @@ import type { User } from '@supabase/supabase-js';
 
 import { auditCreate } from '@/lib/audit';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { UserMembershipStatusEnum } from '@repo/types';
 
 const APP_ROLES = ['admin', 'manager', 'member'] as const;
 type AppRole = (typeof APP_ROLES)[number];
@@ -50,6 +51,38 @@ function resolveProfilePicture(user: User): string | null {
   return null;
 }
 
+/** Auth treats the email as confirmed (invite accepted, email confirm, OAuth). */
+export function isAuthUserConfirmed(user: User): boolean {
+  return Boolean(user.email_confirmed_at);
+}
+
+/**
+ * Promote pending → active when Auth confirmation is present.
+ * Idempotent. Does not poll Auth Admin — caller passes the session user.
+ */
+export async function promoteMembershipIfReady(
+  user: User
+): Promise<{ promoted: boolean; error: string | null }> {
+  if (!user.id || !isAuthUserConfirmed(user)) {
+    return { promoted: false, error: null };
+  }
+
+  const adminSupabase = createAdminClient();
+  const { data, error } = await adminSupabase
+    .from('users')
+    .update({ membership_status: UserMembershipStatusEnum.active })
+    .eq('id', user.id)
+    .eq('membership_status', UserMembershipStatusEnum.pending)
+    .select('id')
+    .maybeSingle();
+
+  if (error) {
+    return { promoted: false, error: error.message };
+  }
+
+  return { promoted: Boolean(data?.id), error: null };
+}
+
 /**
  * Ensures a Supabase Auth user has a matching `public.users` profile.
  * Idempotent — safe after signup, email confirmation, login, and admin invite.
@@ -57,6 +90,9 @@ function resolveProfilePicture(user: User): string | null {
  * “already provisioned” so a second sign-up cannot surface a primary-key error.
  * Profile picture is set only on insert from Auth metadata; later updates go
  * through `/edit-profile`.
+ *
+ * Membership: insert `pending` until Auth email is confirmed; promote when
+ * confirmed (see docs/features/users/USER_MEMBERSHIP_STATUS.md).
  */
 export async function ensurePublicUser(
   user: User
@@ -78,6 +114,10 @@ export async function ensurePublicUser(
   }
 
   if (existingById) {
+    const promote = await promoteMembershipIfReady(user);
+    if (promote.error) {
+      return { created: false, error: promote.error };
+    }
     return { created: false, error: null };
   }
 
@@ -95,6 +135,10 @@ export async function ensurePublicUser(
     return { created: false, error: null };
   }
 
+  const membershipStatus = isAuthUserConfirmed(user)
+    ? UserMembershipStatusEnum.active
+    : UserMembershipStatusEnum.pending;
+
   const { error: insertError } = await adminSupabase.from('users').insert({
     id: user.id,
     email: user.email,
@@ -102,11 +146,16 @@ export async function ensurePublicUser(
     role: resolveRole(user),
     profile_picture: resolveProfilePicture(user),
     active: true,
+    membership_status: membershipStatus,
     ...auditCreate(user.id),
   });
 
   if (insertError) {
     if (isUniqueConstraintError(insertError)) {
+      const promote = await promoteMembershipIfReady(user);
+      if (promote.error) {
+        return { created: false, error: promote.error };
+      }
       return { created: false, error: null };
     }
     return { created: false, error: insertError.message };

@@ -32,6 +32,7 @@
   --work-item-type-story: oklch(0.58 0.1 220);
   --work-item-type-task: oklch(0.508 0.118 165.612);
   --work-item-type-issue: oklch(0.62 0.14 45);
+  --work-item-type-feature: oklch(0.55 0.12 310);
 }
 
 .dark {
@@ -62,6 +63,7 @@
   --work-item-type-story: oklch(0.68 0.1 220);
   --work-item-type-task: oklch(0.65 0.12 165);
   --work-item-type-issue: oklch(0.7 0.12 45);
+  --work-item-type-feature: oklch(0.65 0.12 310);
 }
 
 @theme {
@@ -87,6 +89,7 @@
   --color-work-item-story: var(--work-item-type-story);
   --color-work-item-task: var(--work-item-type-task);
   --color-work-item-issue: var(--work-item-type-issue);
+  --color-work-item-feature: var(--work-item-type-feature);
   --radius-lg: var(--radius);
 }
 

@@ -1,4 +1,5 @@
 import { unstable_cache, updateTag } from 'next/cache';
+import { filterProductUsableUsers } from '@repo/types';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getUser } from '@/lib/auth';
 
@@ -34,11 +35,9 @@ const OWNER_SELECT = 'owner:users!projects_owner_id_fkey(id, name, email)';
  */
 async function fetchActiveUsersForDropdown(): Promise<unknown[]> {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('active', true)
-    .order('name', { ascending: true });
+  const { data, error } = await filterProductUsableUsers(
+    supabase.from('users').select('*')
+  ).order('name', { ascending: true });
 
   if (error) {
     console.error('error. failed to list cached users:', error.message);

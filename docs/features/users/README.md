@@ -1,9 +1,10 @@
 # Users feature documentation
 
-| Document                                             | Description                                                                     | Status       |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------- | ------------ |
-| [USER_MANAGEMENT.md](./USER_MANAGEMENT.md)           | Registry UI, invitation emails, activate/deactivate, RBAC status                | Living       |
-| [ACCOUNT_DEACTIVATION.md](./ACCOUNT_DEACTIVATION.md) | Offboarding: admin + self-deactivate + webhook → shared `deactivateUser` helper | Phase 1 done |
+| Document                                                 | Description                                                                     | Status       |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------ |
+| [USER_MANAGEMENT.md](./USER_MANAGEMENT.md)               | Registry UI, invitation emails, activate/deactivate, RBAC status                | Living       |
+| [ACCOUNT_DEACTIVATION.md](./ACCOUNT_DEACTIVATION.md)     | Offboarding: admin + self-deactivate + webhook → shared `deactivateUser` helper | Phase 1 done |
+| [USER_MEMBERSHIP_STATUS.md](./USER_MEMBERSHIP_STATUS.md) | Pending → active membership (invite onboarding) vs kill switch — orthogonal     | **Living**   |
 
 Quick links:
 

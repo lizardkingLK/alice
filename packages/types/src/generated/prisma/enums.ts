@@ -18,6 +18,14 @@ export const UserRole = {
 export type UserRole = (typeof UserRole)[keyof typeof UserRole]
 
 
+export const UserMembershipStatus = {
+  pending: 'pending',
+  active: 'active'
+} as const
+
+export type UserMembershipStatus = (typeof UserMembershipStatus)[keyof typeof UserMembershipStatus]
+
+
 export const RecordStatus = {
   active: 'active',
   inactive: 'inactive',
@@ -50,7 +58,8 @@ export const WorkItemType = {
   Epic: 'Epic',
   Story: 'Story',
   Task: 'Task',
-  Issue: 'Issue'
+  Issue: 'Issue',
+  Feature: 'Feature'
 } as const
 
 export type WorkItemType = (typeof WorkItemType)[keyof typeof WorkItemType]
