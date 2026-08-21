@@ -20,7 +20,6 @@ import { workItems } from '../../../config/composition';
 import { type WorkItemBody } from '../workItems/workItems.schemas';
 import { supabase } from '../../../lib/supabase';
 import { type WorkItemType, mapToWorkItemType } from '@repo/types';
-import { prisma } from '../../../lib/prisma';
 
 const projectsRouter: Router = Router();
 
@@ -438,40 +437,6 @@ projectsRouter.post(
   }
 );
 
-async function linkImportedJiraParents(
-  projectId: string,
-  issues: ParsedJiraIssue[]
-): Promise<void> {
-  const allWorkItems = await prisma.work_items.findMany({
-    where: { project_id: projectId },
-    select: { id: true, jira_issue_key: true, parent_id: true },
-  });
-
-  const keyToIdMap = new Map<string, string>();
-  for (const item of allWorkItems) {
-    if (item.jira_issue_key) {
-      keyToIdMap.set(item.jira_issue_key, item.id);
-    }
-  }
-
-  for (const issue of issues) {
-    if (!issue.parentKey) {
-      continue;
-    }
-    const childId = keyToIdMap.get(issue.key);
-    const parentId = keyToIdMap.get(issue.parentKey);
-    if (childId && parentId) {
-      const currentItem = allWorkItems.find((item) => item.id === childId);
-      if (currentItem && currentItem.parent_id !== parentId) {
-        await prisma.work_items.update({
-          where: { id: childId },
-          data: { parent_id: parentId },
-        });
-      }
-    }
-  }
-}
-
 projectsRouter.post(
   '/jira/import',
   requireApiAuth,
@@ -515,7 +480,7 @@ projectsRouter.post(
       });
 
       try {
-        await linkImportedJiraParents(projectId, issues);
+        await projectsService.linkImportedJiraParents(req.userId!, projectId, issues);
       } catch (linkError) {
         console.error('error. failed to link parents during Jira import:', linkError);
       }
