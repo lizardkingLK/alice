@@ -4,7 +4,8 @@ export type CalendarActionItem = {
     | 'filter_assignee'
     | 'filter_type'
     | 'navigate_month'
-    | 'view_item_details';
+    | 'view_item_details'
+    | 'select_date';
   entity: {
     id: string;
     value?: string;

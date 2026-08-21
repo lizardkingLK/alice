@@ -1,14 +1,13 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import {
   ChevronLeft,
   ChevronRight,
   Calendar as CalendarIcon,
   CheckSquare,
-  BookOpen,
-  AlertCircle,
+  Plus,
 } from '@repo/ui/lib/icons';
 import { Button } from '@repo/ui/components/ui/button';
 import {
@@ -37,6 +36,26 @@ import {
 } from './calendar-client.types';
 import { MONTHS, DAYS_OF_WEEK } from './calendar-constants';
 
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@repo/ui/components/ui/sheet';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@repo/ui/components/ui/tabs';
+import { WorkItemForm } from '@/app/work-items/_components/workItem-form';
+import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
+import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
+import { WorkItemTypeBadge } from '@/app/work-items/_components/workItem-badge-type';
+import { UserAvatar } from '@/components/user-avatar';
+import { Pagination } from '@/components/pagination';
+
 interface CalendarRegistryProps {
   readonly projects: Project[];
   readonly workItems: DbWorkItem[];
@@ -57,6 +76,16 @@ export function CalendarRegistry({
   workItems,
   users,
 }: Readonly<CalendarRegistryProps>) {
+  const [localWorkItems, setLocalWorkItems] = useState(workItems);
+  const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('due');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  useEffect(() => {
+    setLocalWorkItems(workItems);
+  }, [workItems]);
+
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [selectedProjectId, setSelectedProjectId] =
     useState<string>(ALL_OPTION);
@@ -200,7 +229,7 @@ export function CalendarRegistry({
 
   // Filtered work items
   const filteredWorkItems = useMemo(() => {
-    return workItems.filter(
+    return localWorkItems.filter(
       (item): item is DbWorkItem & { due_date: string } => {
         if (!item.due_date) return false;
 
@@ -216,7 +245,7 @@ export function CalendarRegistry({
         return matchesProject && matchesAssignee && matchesType;
       }
     );
-  }, [workItems, selectedProjectId, selectedAssigneeId, selectedType]);
+  }, [localWorkItems, selectedProjectId, selectedAssigneeId, selectedType]);
 
   // Group work items by due date string ("YYYY-MM-DD")
   const itemsByDate = useMemo(() => {
@@ -229,9 +258,7 @@ export function CalendarRegistry({
       if (!dateStr) {
         return;
       }
-      if (!map[dateStr]) {
-        map[dateStr] = [];
-      }
+      map[dateStr] ??= [];
       map[dateStr].push(item);
     });
     return map;
@@ -376,10 +403,21 @@ export function CalendarRegistry({
             {calendarDays.map((dayCell) => {
               const dayItems = itemsByDate[dayCell.dateString] || [];
               return (
-                <div
+                <button
                   key={dayCell.dateString}
+                  type="button"
+                  onClick={() => {
+                    setSelectedDateStr(dayCell.dateString);
+                    setActiveTab('due');
+                    setCurrentPage(1);
+                    setPageSize(5);
+                    logAction({
+                      type: 'select_date',
+                      entity: { id: dayCell.dateString, label: dayCell.dateString },
+                    });
+                  }}
                   className={cn(
-                    'bg-card group hover:bg-accent/10 flex min-h-30 flex-col justify-between p-2 transition-colors duration-150',
+                    'bg-card group hover:bg-accent/15 cursor-pointer flex min-h-30 flex-col justify-between p-2 transition-colors duration-150 text-left outline-hidden focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-0 w-full',
                     !dayCell.isCurrentMonth &&
                       'bg-muted/30 text-muted-foreground/50'
                   )}
@@ -398,55 +436,157 @@ export function CalendarRegistry({
                     </span>
                   </div>
 
-                  <div className="flex max-h-20 flex-1 scrollbar-thin flex-col gap-1 overflow-y-auto">
-                    {dayItems.map((item) => {
-                      const isIssue = item.type === CalendarWorkItemTypes.Issue;
-                      const isStory = item.type === CalendarWorkItemTypes.Story;
-
-                      let itemIcon = (
-                        <CheckSquare className="h-3 w-3 shrink-0" />
-                      );
-                      if (isIssue) {
-                        itemIcon = <AlertCircle className="h-3 w-3 shrink-0" />;
-                      } else if (isStory) {
-                        itemIcon = <BookOpen className="h-3 w-3 shrink-0" />;
-                      }
-
-                      return (
-                        <Link
-                          key={item.id}
-                          href={`/calendar/${item.id}`}
-                          onClick={() =>
-                            logAction({
-                              type: 'view_item_details',
-                              entity: { id: item.id, label: item.title },
-                            })
-                          }
-                          className={cn(
-                            'flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] font-medium transition-all duration-150',
-                            'hover:translate-x-0.5 hover:shadow-xs',
-                            isIssue &&
-                              'border-red-500/30 bg-red-500/10 text-red-700 hover:bg-red-500/20 dark:text-red-400',
-                            isStory &&
-                              'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-400',
-                            !isIssue &&
-                              !isStory &&
-                              'border-blue-500/30 bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 dark:text-blue-400'
-                          )}
-                          title={`${toNameCase(item.type)} - ${item.title}`}
-                        >
-                          {itemIcon}
-                          <span className="truncate">{item.title}</span>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
+                  {dayItems.length > 0 ? (
+                    <div className="flex flex-col gap-1 mt-1">
+                      <div className="flex items-center gap-1.5 rounded border border-primary/25 bg-primary/5 px-2 py-1 text-[11px] font-medium text-primary shadow-xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                        <span className="truncate">{dayItems.length} item{dayItems.length === 1 ? '' : 's'} due</span>
+                      </div>
+                    </div>
+                  ) : null}
+                </button>
               );
             })}
           </div>
         </CardContent>
       </Card>
+
+      {/* Sidebar Sheet */}
+      <Sheet open={!!selectedDateStr} onOpenChange={(open) => !open && setSelectedDateStr(null)}>
+        <SheetContent className="data-[side=right]:sm:max-w-2xl flex flex-col h-full bg-card border-border/80 p-0">
+          {selectedDateStr && (
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              orientation="horizontal"
+              className="flex flex-col h-full w-full min-w-0"
+            >
+              <SheetHeader className="p-6 pr-14 pb-4 border-b flex flex-row items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <SheetTitle className="text-xl font-bold truncate">
+                    {new Date(selectedDateStr + 'T00:00:00').toLocaleDateString(undefined, { dateStyle: 'full' })}
+                  </SheetTitle>
+                  <SheetDescription className="text-muted-foreground text-xs truncate">
+                    View work items due on this date or create a new one.
+                  </SheetDescription>
+                </div>
+                <TabsList className="shrink-0">
+                  <TabsTrigger value="due" className="gap-2">
+                    <CheckSquare className="size-4 shrink-0" />
+                    <span>Due ({itemsByDate[selectedDateStr]?.length ?? 0})</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="create" className="gap-2">
+                    <Plus className="size-4 shrink-0" />
+                    <span>Create</span>
+                  </TabsTrigger>
+                </TabsList>
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto no-scrollbar p-6 h-full min-h-0 w-full min-w-0">
+                <TabsContent
+                  value="due"
+                  className="mt-0 space-y-3 outline-none focus-visible:ring-0 focus-visible:ring-offset-0 h-full w-full"
+                >
+                  {(() => {
+                    const dayItems = itemsByDate[selectedDateStr] || [];
+                    if (dayItems.length === 0) {
+                      return (
+                        <div className="text-center text-muted-foreground text-sm py-12">
+                          No work items due on this date.
+                        </div>
+                      );
+                    }
+
+                    const totalCount = dayItems.length;
+                    const totalPages = Math.ceil(totalCount / pageSize);
+                    const paginatedItems = dayItems.slice(
+                      (currentPage - 1) * pageSize,
+                      currentPage * pageSize
+                    );
+
+                    return (
+                      <div className="flex flex-col h-full justify-between gap-4">
+                        <div className="space-y-3 w-full">
+                          {paginatedItems.map((item) => {
+                            const isIssue = item.type === CalendarWorkItemTypes.Issue;
+                            const isStory = item.type === CalendarWorkItemTypes.Story;
+                            const projectKey = item.project?.key ?? projects.find((p) => p.id === item.project_id)?.key ?? 'ITEM';
+                            const displayKey = `${projectKey}-${item.id.slice(-4)}`;
+
+                            return (
+                              <Link
+                                key={item.id}
+                                href={`/calendar/${item.id}`}
+                                onClick={() =>
+                                  logAction({
+                                    type: 'view_item_details',
+                                    entity: { id: item.id, label: item.title },
+                                  })
+                                }
+                                className={cn(
+                                  'flex w-full min-w-0 items-center justify-between gap-3 p-3 rounded-lg border border-border bg-card transition-all duration-150 shadow-sm select-none',
+                                  'hover:translate-x-0.5 hover:shadow-md hover:border-primary/30',
+                                  isIssue && 'border-red-500/20 bg-red-500/5 hover:bg-red-500/10',
+                                  isStory && 'border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10',
+                                  !isIssue && !isStory && 'border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10'
+                                )}
+                              >
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  <WorkItemTypeBadge type={item.type} compact />
+                                  <span className="text-muted-foreground font-mono text-xs font-semibold shrink-0">
+                                    {displayKey}
+                                  </span>
+                                  <span className="text-foreground text-sm font-medium truncate">
+                                    {item.title}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <WorkItemStatusBadge status={item.status} />
+                                  <PriorityBadge priority={item.priority} />
+                                  <UserAvatar
+                                    name={item.assignee?.name}
+                                    imageUrl={item.assignee?.profile_picture}
+                                    title={item.assignee?.name ?? 'Unassigned'}
+                                  />
+                                </div>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                        {totalCount > 0 && (
+                          <Pagination
+                            totalCount={totalCount}
+                            page={currentPage}
+                            limit={pageSize}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                            onLimitChange={setPageSize}
+                            label="work items"
+                          />
+                        )}
+                      </div>
+                    );
+                  })()}
+                </TabsContent>
+                <TabsContent
+                  value="create"
+                  className="mt-0 outline-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
+                >
+                  <WorkItemForm
+                    projects={projects}
+                    projectMembers={users}
+                    onSuccess={(newWI) => {
+                      setLocalWorkItems((prev) => [newWI, ...prev]);
+                      setActiveTab('due');
+                      setCurrentPage(1);
+                      setPageSize(5);
+                    }}
+                  />
+                </TabsContent>
+              </div>
+            </Tabs>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
