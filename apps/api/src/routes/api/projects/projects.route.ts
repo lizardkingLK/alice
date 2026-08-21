@@ -19,7 +19,7 @@ import { type ProjectRow, withoutJiraToken } from './projects.repository';
 import { workItems } from '../../../config/composition';
 import { type WorkItemBody } from '../workItems/workItems.schemas';
 import { supabase } from '../../../lib/supabase';
-import { WorkItemTypeEnum, type WorkItemType } from '@repo/types';
+import { type WorkItemType, mapToWorkItemType } from '@repo/types';
 import { prisma } from '../../../lib/prisma';
 
 const projectsRouter: Router = Router();
@@ -352,20 +352,8 @@ async function fetchAndParseJiraIssues(
   }
 
   return data.issues.map((issue) => {
-    let type: WorkItemType = WorkItemTypeEnum.Task;
-    const jiraType = (issue.fields?.issuetype?.name || '').toLowerCase();
-    if (jiraType === 'epic') {
-      type = WorkItemTypeEnum.Epic;
-    } else if (jiraType === 'feature') {
-      type = WorkItemTypeEnum.Feature;
-    } else if (jiraType === 'story') {
-      type = WorkItemTypeEnum.Story;
-    } else if (jiraType === 'task' || jiraType === 'sub-task' || jiraType === 'subtask') {
-      type = WorkItemTypeEnum.Task;
-    } else if (jiraType === 'bug' || jiraType === 'issue') {
-      type = WorkItemTypeEnum.Issue;
-    }
-
+    const jiraType = issue.fields?.issuetype?.name || '';
+    const type = mapToWorkItemType(jiraType);
     const parentKey = issue.fields?.parent?.key || null;
 
     return {
