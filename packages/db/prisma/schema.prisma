@@ -15,6 +15,12 @@ enum UserRole {
   member
 }
 
+/// Invite / self-signup onboarding. Orthogonal to kill switch `users.active`.
+enum UserMembershipStatus {
+  pending
+  active
+}
+
 enum RecordStatus {
   active
   inactive
@@ -36,6 +42,7 @@ enum SprintStatus {
 
 enum WorkItemType {
   Epic
+  Feature
   Story
   Task
   Issue
@@ -78,9 +85,10 @@ model users {
   id              String       @id @db.Uuid
   email           String       @unique
   name            String
-  role            UserRole     @default(member)
-  active          Boolean      @default(true)
-  status          RecordStatus @default(active)
+  role               UserRole              @default(member)
+  active             Boolean               @default(true)
+  membership_status  UserMembershipStatus  @default(active)
+  status             RecordStatus          @default(active)
   profile_picture String?
   created_by      String?      @db.Uuid
   created_at      DateTime     @default(now()) @db.Timestamptz(6)

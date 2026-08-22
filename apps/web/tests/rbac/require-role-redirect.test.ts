@@ -29,6 +29,7 @@ function userWithRole(role: Tables<'users'>['role']): Tables<'users'> {
     email: 'test@example.com',
     role,
     active: true,
+    membership_status: 'active',
     status: 'active',
     profile_picture: null,
     created_at: '2026-01-01T00:00:00.000Z',

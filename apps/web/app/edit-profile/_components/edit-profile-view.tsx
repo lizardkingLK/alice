@@ -649,20 +649,27 @@ export function EditProfileView({
       </Dialog>
 
       <div className="bg-background/80 sticky bottom-0 z-10 border-t backdrop-blur">
-        <div className="mx-auto flex w-full max-w-3xl items-center justify-end gap-3 px-4 py-3 sm:px-6">
-          <Button asChild variant="outline">
-            <Link href="/profile">Cancel</Link>
-          </Button>
-          <Button type="button" onClick={handleSaveName} disabled={isBusy}>
-            {isSavingName ? (
-              <>
-                <Loader2 className="size-4 animate-spin" />
-                Saving…
-              </>
-            ) : (
-              'Save changes'
-            )}
-          </Button>
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 px-4 py-3 sm:px-6">
+          {error || success ? (
+            <div aria-live="polite">
+              <FormStatusAlerts error={error} success={success} />
+            </div>
+          ) : null}
+          <div className="flex items-center justify-end gap-3">
+            <Button asChild variant="outline">
+              <Link href="/profile">Cancel</Link>
+            </Button>
+            <Button type="button" onClick={handleSaveName} disabled={isBusy}>
+              {isSavingName ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                'Save changes'
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

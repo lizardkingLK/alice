@@ -5,6 +5,7 @@ import { Card } from '@repo/ui/components/ui/card';
 import { Button } from '@repo/ui/components/ui/button';
 import { ChevronDown, ChevronRight, Plus } from '@repo/ui/lib/icons';
 import { BacklogDropZone } from '@/app/backlog/_components/backlog-drop-zone';
+import type { BacklogAssignee } from '@/app/backlog/_helpers/backlog-item-utils';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
 
@@ -12,6 +13,7 @@ import type { Project as DbProject } from '@/app/projects/_services/projects.ser
 type BacklogPanelProps = {
   readonly items: DbWorkItem[];
   readonly projects: DbProject[];
+  readonly projectMembers: readonly BacklogAssignee[];
   readonly isCollapsed: boolean;
   readonly isDragOver: boolean;
   readonly onToggle: () => void;
@@ -30,6 +32,7 @@ type BacklogPanelProps = {
 export function BacklogPanel({
   items,
   projects,
+  projectMembers,
   isCollapsed,
   isDragOver,
   onToggle,
@@ -74,10 +77,10 @@ export function BacklogPanel({
             onClick={onCreateIssue}
           >
             <Plus className="mr-1.5 h-3.5 w-3.5" />
-            New Issue
+            New Item
           </Button>
           <span className="text-muted-foreground bg-muted/65 rounded-full px-2.5 py-0.5 text-xs font-semibold">
-            {items.length} issue{items.length === 1 ? '' : 's'}
+            {items.length} item{items.length === 1 ? '' : 's'}
           </span>
         </div>
       </div>
@@ -86,6 +89,7 @@ export function BacklogPanel({
         <BacklogDropZone
           items={items}
           projects={projects}
+          projectMembers={projectMembers}
           targetId={null}
           isDragOver={isDragOver}
           minHeightClass="min-h-37.5"

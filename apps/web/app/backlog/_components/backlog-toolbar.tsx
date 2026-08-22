@@ -131,7 +131,7 @@ export function BacklogToolbar({
           )}
           <Button size="sm" className="cursor-pointer" onClick={onCreateIssue}>
             <Plus className="mr-1.5 size-4" />
-            Create Issue
+            Create Item
           </Button>
         </div>
       </div>
@@ -140,7 +140,7 @@ export function BacklogToolbar({
         <div className="relative w-full sm:max-w-xs">
           <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input
-            placeholder="Search backlog issues..."
+            placeholder="Search backlog items..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className="bg-background/50 border-border/80 focus-visible:border-ring h-9 pl-9 transition-colors"

@@ -85,10 +85,7 @@ export class CommentsService {
       expectedUpdatedAt
     );
 
-    return this.notifyMentionsAndReturn(
-      actorId || updated.author_id,
-      updated
-    );
+    return this.notifyMentionsAndReturn(actorId || updated.author_id, updated);
   }
 
   async archiveComment(id: string, expectedUpdatedAt: string): Promise<void> {

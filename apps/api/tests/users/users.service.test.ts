@@ -47,6 +47,7 @@ const baseUser = {
   email: 'pat@example.com',
   role: 'member' as const,
   active: true,
+  membership_status: 'active' as const,
   created_at: '2026-01-01T00:00:00.000Z',
   updated_at: '2026-01-01T00:00:00.000Z',
 };

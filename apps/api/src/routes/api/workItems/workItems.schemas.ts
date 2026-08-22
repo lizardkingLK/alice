@@ -150,6 +150,12 @@ export const workItemCoreObject = z.object({
       z.uuid({ message: 'Please select a valid parent work item' }).nullable()
     )
     .optional(),
+  status: z.preprocess((value) => {
+    if (value === '' || value === undefined || value === null) {
+      return undefined;
+    }
+    return value;
+  }, workItemStatusSchema.optional()),
 });
 
 export const createUpdateWorkItemBodySchema = workItemCoreObject.refine(

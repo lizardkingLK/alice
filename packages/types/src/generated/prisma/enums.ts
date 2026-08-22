@@ -18,6 +18,14 @@ export const UserRole = {
 export type UserRole = (typeof UserRole)[keyof typeof UserRole]
 
 
+export const UserMembershipStatus = {
+  pending: 'pending',
+  active: 'active'
+} as const
+
+export type UserMembershipStatus = (typeof UserMembershipStatus)[keyof typeof UserMembershipStatus]
+
+
 export const RecordStatus = {
   active: 'active',
   inactive: 'inactive',
@@ -48,6 +56,7 @@ export type SprintStatus = (typeof SprintStatus)[keyof typeof SprintStatus]
 
 export const WorkItemType = {
   Epic: 'Epic',
+  Feature: 'Feature',
   Story: 'Story',
   Task: 'Task',
   Issue: 'Issue'

@@ -278,10 +278,7 @@ export default function WorkItemsTable({
     expandedIds,
     childrenByParentId,
     loadingIds,
-    isExpandingAll,
     toggleExpand: handleToggleExpand,
-    expandAll: handleExpandAll,
-    collapseAll: handleCollapseAll,
   } = useWorkItemHierarchy({
     enabled: isHierarchy,
     roots: initialWorkItems,
@@ -409,11 +406,6 @@ export default function WorkItemsTable({
         columnVisibility={columnVisibility}
         onApplyColumnVisibility={handleApplyColumnVisibility}
         columnsHydrated={columnsHydrated}
-        rootCount={initialWorkItems.length}
-        isExpandingAll={isExpandingAll}
-        expandedCount={expandedIds.size}
-        onExpandAll={handleExpandAll}
-        onCollapseAll={handleCollapseAll}
         showWorkspaceDefaults={showWorkspaceDefaults}
         onOpenDefaultsDialog={openDefaultsDialog}
         savedDefaultsApplied={savedDefaultsApplied}

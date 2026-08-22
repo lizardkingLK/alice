@@ -9,7 +9,7 @@ import {
   DEFAULT_WORK_ITEM_PRIORITY,
   WORK_ITEM_PRIORITIES,
   ProjectStatusEnum,
-  type WorkItemType,
+  mapToWorkItemType,
 } from '@repo/types';
 import { projectsService } from '../projects/projects.service';
 import { projectsRepository } from '../projects/projects.repository';
@@ -300,13 +300,10 @@ export class ChatService {
     const assigneeId =
       typeof args.assigneeId === 'string' ? args.assigneeId : null;
 
-    let typeValue: WorkItemType = WorkItemTypeEnum.Task;
-    if (typeof args.type === 'string') {
-      const normalized = args.type.toLowerCase();
-      if (normalized === 'story') typeValue = WorkItemTypeEnum.Story;
-      else if (normalized === 'bug' || normalized === 'issue')
-        typeValue = WorkItemTypeEnum.Issue;
-    }
+    const typeValue =
+      typeof args.type === 'string'
+        ? mapToWorkItemType(args.type)
+        : WorkItemTypeEnum.Task;
 
     const rawPriority =
       typeof args.priority === 'string'

@@ -13,7 +13,7 @@ type HomeAuthButtonsProps = {
 
 export function HomeAuthButtons({
   isSignedIn,
-  signedInLabel = 'Open dashboard',
+  signedInLabel = 'Open Dashboard',
   signedOutPrimaryLabel = 'Get Started - It is Free',
   signedOutSecondaryLabel = 'Sign in',
   showSignedOutSecondary = true,

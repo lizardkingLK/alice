@@ -13,6 +13,7 @@
 Related:
 
 - [USER_MANAGEMENT.md](./USER_MANAGEMENT.md) — admin registry activate/deactivate (as-built today)
+- [USER_MEMBERSHIP_STATUS.md](./USER_MEMBERSHIP_STATUS.md) — pending invite vs kill switch (**Plan**)
 - [AUTHENTICATION.md](../../auth/AUTHENTICATION.md) — sign-in gates, `active` + Auth ban
 - [ACCESS_ALLOWLIST.md](../access/ACCESS_ALLOWLIST.md) — admission only (not changed by this plan)
 - [RBAC_AUTHORIZATION_SKELETON.md](../../auth/RBAC_AUTHORIZATION_SKELETON.md) — roles after admission
@@ -93,7 +94,7 @@ async function deactivateUser(
 1. Apply actor authz (table below) **before** existence lookup so unauthorized callers cannot probe whether a user id exists.
 2. Load target `public.users` row; 404-style error if missing.
 3. If `active === false` already → **idempotent success** (return row; ensure Auth still banned — best-effort re-apply ban).
-4. **Last-admin guard:** if target is `role === 'admin'` and `active`, and no _other_ `active` admin exists → reject (`Cannot deactivate the last active admin.`). Applies to **self** and **webhook**. Admin path already blocks self-deactivate; deactivating _another_ last-admin is also rejected.
+4. **Last-admin guard:** if target is `role === 'admin'` and kill-switch `active`, and no _other_ admin exists with **`membership_status = active` AND `active = true`** → reject (`Cannot deactivate the last active admin.`). Pending invited admins do not count. Applies to **self** and **webhook**. Admin path already blocks self-deactivate; deactivating _another_ last-admin is also rejected.
 5. Update `public.users.active = false` (`updated_by` = `actorId` for admin/self; for webhook use a well-known system actor or leave `updated_by` null / service user — decide at implement; prefer nullable + log `source`).
 6. `supabase.auth.admin.updateUserById(id, { ban_duration: '87600h' })`.
 7. Log: `warn. user deactivated actor=<type> target=<id> source=<…>`.

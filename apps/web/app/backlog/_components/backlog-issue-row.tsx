@@ -1,10 +1,15 @@
 'use client';
 
 import type React from 'react';
+import { useMemo } from 'react';
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
 import { WorkItemTypeBadge } from '@/app/work-items/_components/workItem-badge-type';
-import { projectDisplayKey } from '@/app/backlog/_helpers/backlog-item-utils';
+import {
+  projectDisplayKey,
+  resolveBacklogAssigneeAvatar,
+  type BacklogAssignee,
+} from '@/app/backlog/_helpers/backlog-item-utils';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
 import { UserAvatar } from '@/components/user-avatar';
@@ -16,6 +21,7 @@ import { GripVertical } from '@repo/ui/lib/icons';
 type BacklogIssueRowProps = {
   readonly item: DbWorkItem;
   readonly projects: DbProject[];
+  readonly projectMembers: readonly BacklogAssignee[];
   readonly onSelect: (item: DbWorkItem) => void;
   readonly onDragStart: (event: React.DragEvent, id: string) => void;
 };
@@ -24,11 +30,17 @@ type BacklogIssueRowProps = {
 export function BacklogIssueRow({
   item,
   projects,
+  projectMembers,
   onSelect,
   onDragStart,
 }: Readonly<BacklogIssueRowProps>) {
   const projectKey = projects.find((p) => p.id === item.project_id)?.key;
   const displayKey = projectDisplayKey(projectKey, item.id);
+  const membersById = useMemo(
+    () => new Map(projectMembers.map((member) => [member.id, member])),
+    [projectMembers]
+  );
+  const avatarUrl = resolveBacklogAssigneeAvatar(item, membersById);
 
   return (
     <button
@@ -55,7 +67,7 @@ export function BacklogIssueRow({
           {displayKey}
         </span>
 
-        <TruncatedText className="text-foreground group-hover:text-primary min-w-0 text-sm font-medium transition-colors">
+        <TruncatedText className="text-foreground group-hover:text-primary min-w-0 pl-1 text-sm font-medium transition-colors">
           {item.title}
         </TruncatedText>
       </div>
@@ -65,7 +77,7 @@ export function BacklogIssueRow({
         <PriorityBadge priority={item.priority} />
         <UserAvatar
           name={item.assignee?.name}
-          imageUrl={item.assignee?.profile_picture}
+          imageUrl={avatarUrl}
           title={item.assignee?.name ?? 'Unassigned'}
         />
       </div>

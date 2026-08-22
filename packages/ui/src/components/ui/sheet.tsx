@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import { Dialog as SheetPrimitive } from 'radix-ui';
 
 import { cn } from '@repo/ui/lib/utils';
+import { shortcutGateContentProps } from '@repo/ui/lib/shortcut-gate';
 import { Button } from '@repo/ui/components/ui/button';
 
 function Sheet({
@@ -68,6 +69,7 @@ function SheetContent({
           className
         )}
         {...props}
+        {...shortcutGateContentProps()}
       >
         {children}
         {showCloseButton && (

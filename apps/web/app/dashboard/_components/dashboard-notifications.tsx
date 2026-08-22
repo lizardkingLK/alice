@@ -25,6 +25,14 @@ import {
 import { cn } from '@repo/ui/lib/utils';
 import { Button } from '@repo/ui/components/ui/button';
 import { resolveNotificationHref } from '@/lib/notifications/resolve-notification-href';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@repo/ui/components/ui/dialog';
 
 export type Notification = Database['public']['Tables']['notifications']['Row'];
 
@@ -135,6 +143,8 @@ export function NotificationInbox({
   const [loadFailed, setLoadFailed] = useState(initialLoadFailed);
   const loading = false;
   const [isOpen, setIsOpen] = useState(false);
+  const [selectedAccessRequest, setSelectedAccessRequest] =
+    useState<Notification | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -290,6 +300,14 @@ export function NotificationInbox({
     if (!notif.read_status) {
       await handleMarkAsRead(notif.id);
     }
+    const isAccessRequest =
+      notif.related_item_id === null &&
+      (notif.message.includes('Access request') ||
+        notif.message.includes('Access Request'));
+    if (isAccessRequest) {
+      setSelectedAccessRequest(notif);
+      return;
+    }
     if (!notif.related_item_id) {
       return;
     }
@@ -384,7 +402,7 @@ export function NotificationInbox({
             <div className="min-w-0 flex-1 space-y-1 pr-2">
               <p
                 className={cn(
-                  'text-xs leading-relaxed wrap-break-word',
+                  'line-clamp-3 text-xs leading-relaxed wrap-break-word',
                   notif.read_status
                     ? 'text-muted-foreground'
                     : 'text-foreground font-medium'
@@ -416,59 +434,102 @@ export function NotificationInbox({
   };
 
   return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label="View notifications"
-          className="relative cursor-pointer"
-        >
-          <Bell
-            className={cn(
-              'size-4 transition-transform duration-300',
-              unreadCount > 0 && 'animate-wiggle'
+    <>
+      <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="View notifications"
+            className="relative cursor-pointer"
+          >
+            <Bell
+              className={cn(
+                'size-4 transition-transform duration-300',
+                unreadCount > 0 && 'animate-wiggle'
+              )}
+            />
+            {unreadCount > 0 && (
+              <span className="ring-background animate-fade-in absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
             )}
-          />
-          {unreadCount > 0 && (
-            <span className="ring-background animate-fade-in absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-        </Button>
-      </DropdownMenuTrigger>
+          </Button>
+        </DropdownMenuTrigger>
 
-      <DropdownMenuContent
-        align="end"
-        sideOffset={8}
-        className="bg-background/95 border-border w-95 overflow-hidden rounded-xl border p-0 shadow-2xl backdrop-blur-md"
-      >
-        <div className="border-border bg-muted/20 flex items-center justify-between border-b px-4 py-3">
-          <div>
-            <h3 className="text-foreground text-sm font-semibold">
-              Notifications
-            </h3>
-            <p className="text-muted-foreground text-xs">{getSubTitleText()}</p>
+        <DropdownMenuContent
+          align="end"
+          sideOffset={8}
+          className="bg-background/95 border-border w-95 overflow-hidden rounded-xl border p-0 shadow-2xl backdrop-blur-md"
+        >
+          <div className="border-border bg-muted/20 flex items-center justify-between border-b px-4 py-3">
+            <div>
+              <h3 className="text-foreground text-sm font-semibold">
+                Notifications
+              </h3>
+              <p className="text-muted-foreground text-xs">
+                {getSubTitleText()}
+              </p>
+            </div>
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMarkAllAsRead();
+                }}
+                className="text-primary hover:text-primary/80 flex cursor-pointer items-center gap-1 text-xs font-medium transition-colors"
+              >
+                <CheckCheck className="size-3.5" />
+                Mark all as read
+              </button>
+            )}
           </div>
-          {unreadCount > 0 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleMarkAllAsRead();
-              }}
-              className="text-primary hover:text-primary/80 flex cursor-pointer items-center gap-1 text-xs font-medium transition-colors"
-            >
-              <CheckCheck className="size-3.5" />
-              Mark all as read
-            </button>
-          )}
-        </div>
 
-        <div className="divide-border/60 max-h-90 divide-y overflow-y-auto">
-          {renderNotificationsList()}
-        </div>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <div className="divide-border/60 max-h-90 divide-y overflow-y-auto">
+            {renderNotificationsList()}
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {selectedAccessRequest && (
+        <Dialog
+          open={!!selectedAccessRequest}
+          onOpenChange={(open) => {
+            if (!open) setSelectedAccessRequest(null);
+          }}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Access Request Details</DialogTitle>
+              <DialogDescription>
+                An outside domain user is requesting access to the system.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="bg-muted mt-2 max-h-75 overflow-y-auto rounded-md border p-4 font-mono text-xs whitespace-pre-wrap">
+              {selectedAccessRequest.message}
+            </div>
+            <DialogFooter className="gap-2 sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setSelectedAccessRequest(null)}
+              >
+                Close
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  setSelectedAccessRequest(null);
+                  router.push('/users?tab=allowlist');
+                }}
+              >
+                Allow
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   );
 }

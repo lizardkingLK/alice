@@ -231,7 +231,7 @@ export class WorkItemRepository {
         due_date: prismaOptionalDate(input.due_date) ?? null,
         sprint_id: input.sprint_id,
         reporter_id: input.createdBy,
-        status: WorkItemStatusEnum.New,
+        status: input.status ?? WorkItemStatusEnum.New,
         story_points: input.story_points,
         jira_issue_key: input.jira_issue_key,
         description:

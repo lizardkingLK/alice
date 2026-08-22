@@ -1,9 +1,11 @@
 'use client';
 
-import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import { forwardRef, useImperativeHandle, useRef } from 'react';
 import type { JSONContent } from '@tiptap/react';
 import { Button } from '@repo/ui/components/ui/button';
 import { cn } from '@repo/ui/lib/utils';
+import { useKeyboardShortcut } from '@repo/ui/hooks/use-keyboard-shortcut';
+import { isUnmodifiedKey } from '@repo/ui/lib/shortcut-gate';
 import { UserAvatar } from '@/components/user-avatar';
 import {
   CommentEditor,
@@ -70,35 +72,14 @@ export const CommentComposer = forwardRef<
     []
   );
 
-  useEffect(() => {
-    if (!enableMShortcut) {
-      return;
-    }
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'm' && event.key !== 'M') {
-        return;
-      }
-      if (event.metaKey || event.ctrlKey || event.altKey) {
-        return;
-      }
-      const target = event.target as HTMLElement | null;
-      if (
-        target &&
-        (target.isContentEditable ||
-          target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.closest('[contenteditable="true"]'))
-      ) {
-        return;
-      }
+  useKeyboardShortcut(
+    (event) => isUnmodifiedKey(event, 'm'),
+    (event) => {
       event.preventDefault();
       editorRef.current?.focus();
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [enableMShortcut]);
+    },
+    { enabled: enableMShortcut }
+  );
 
   const handleSubmit = async () => {
     if (!editorRef.current || editorRef.current.isEmpty() || isSubmitting) {
