@@ -6,11 +6,13 @@ import { HelpCircle } from '@repo/ui/lib/icons';
 import { BacklogIssueRow } from '@/app/backlog/_components/backlog-issue-row';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
+import type { BacklogAssignee } from '@/app/backlog/_helpers/backlog-item-utils';
 
 /* eslint-disable no-unused-vars */
 type BacklogDropZoneProps = {
   readonly items: DbWorkItem[];
   readonly projects: DbProject[];
+  readonly projectMembers: readonly BacklogAssignee[];
   readonly targetId: string | null;
   readonly isDragOver: boolean;
   readonly minHeightClass: string;
@@ -31,6 +33,7 @@ type BacklogDropZoneProps = {
 export function BacklogDropZone({
   items,
   projects,
+  projectMembers,
   targetId,
   isDragOver,
   minHeightClass,
@@ -74,6 +77,7 @@ export function BacklogDropZone({
             key={item.id}
             item={item}
             projects={projects}
+            projectMembers={projectMembers}
             onSelect={onSelectItem}
             onDragStart={onItemDragStart}
           />

@@ -4,8 +4,10 @@ import {
   DEFAULT_WORK_ITEM_PRIORITY,
   WORK_ITEM_PRIORITIES,
   WORK_ITEM_TYPES,
+  getAllowedParentType,
   parseWorkItemLabels,
   type WorkItemPriority,
+  type WorkItemStatus,
   type WorkItemType,
 } from '@repo/types';
 import { useEffect, useState, type FormEvent } from 'react';
@@ -16,6 +18,7 @@ import { User as DbUser } from '@/app/users/_services/users.service';
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import {
   createWorkItem,
+  listParentCandidateWorkItems,
   updateWorkItem,
 } from '@/app/work-items/_services/workItem.service.client';
 import { FormStatusAlerts } from '@/app/work-items/_components/workItem-form-alerts';
@@ -24,10 +27,11 @@ import { WorkItemFormModernFields } from '@/app/work-items/_components/work-item
 import type { WorkItemCreateFormMode } from '@/app/work-items/_helpers/work-item-create-form-preference';
 import { Project as DbProject } from '@/app/projects/_services/projects.service';
 import { useProjectMembers } from '@/app/work-items/_hooks/use-project-members';
-import { delay } from '@/app/_shared/utility';
+import { delay, toShortId } from '@/app/_shared/utility';
 import { ResponseDTO } from '@repo/types/connection';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
+import type { SearchableSelectOption } from '@/components/searchable-select';
 
 type WorkItemFormMember = Pick<DbUser, 'id' | 'name' | 'email'>;
 
@@ -44,10 +48,18 @@ export interface WorkItemFormProps {
   lockAssigneeId?: string;
   /** Parent work item for subtask create (submitted as parent_id). */
   parentId?: string | null;
+  /** When true, parent cannot be changed (e.g. create-subtask from details). */
+  lockParent?: boolean;
   /** Restrict selectable types (defaults to all work-item types). */
   allowedTypes?: readonly WorkItemType[];
   /** When true, type select is disabled (value still submitted). */
   lockType?: boolean;
+  /** Initial / locked status for create (e.g. board column). */
+  defaultStatus?: WorkItemStatus;
+  /** When true, status is fixed and submitted via hidden input. */
+  lockStatus?: boolean;
+  /** Optional sprint for create (e.g. board sprint filter). */
+  defaultSprintId?: string | null;
   /**
    * Create layout preference. Edit mode always uses classic.
    * Defaults to classic when omitted.
@@ -60,6 +72,20 @@ const ALERT_DISMISS_MS = 5000;
 
 function isWorkItemPriority(value: string): value is WorkItemPriority {
   return (WORK_ITEM_PRIORITIES as readonly string[]).includes(value);
+}
+
+function isWorkItemType(value: string): value is WorkItemType {
+  return (WORK_ITEM_TYPES as readonly string[]).includes(value);
+}
+
+function keepOrClearParentId(
+  current: string,
+  options: readonly SearchableSelectOption[]
+): string {
+  if (current && options.some((option) => option.value === current)) {
+    return current;
+  }
+  return '';
 }
 
 const SubmitButtonText = ({
@@ -95,9 +121,13 @@ export function WorkItemForm({
   projects,
   lockProject = false,
   lockAssigneeId,
-  parentId = null,
+  parentId: lockedParentId = null,
+  lockParent = false,
   allowedTypes,
   lockType = false,
+  defaultStatus,
+  lockStatus = false,
+  defaultSprintId = null,
   createFormMode = 'classic',
 }: Readonly<WorkItemFormProps>) {
   const { handleMutationError } = useOptimisticLock();
@@ -106,6 +136,10 @@ export function WorkItemForm({
   const typeLocked = lockType || availableTypes.length === 1;
   const isEditMode = itemToEdit !== null;
   const useModernCreate = !isEditMode && createFormMode === 'modern';
+  const parentLocked = lockParent;
+  const initialParentId = lockParent
+    ? (lockedParentId ?? '')
+    : (itemToEdit?.parent_id ?? lockedParentId ?? '');
 
   const [isPending, setPending] = useState(false);
   const [state, setState] = useState<{
@@ -128,7 +162,14 @@ export function WorkItemForm({
     }
     return DEFAULT_WORK_ITEM_PRIORITY;
   });
+  const [parentId, setParentId] = useState(initialParentId);
+  const [parentOptions, setParentOptions] = useState<SearchableSelectOption[]>(
+    []
+  );
+  const [parentOptionsLoading, setParentOptionsLoading] = useState(false);
   const lockAssignee = Boolean(lockAssigneeId);
+  const statusValue: WorkItemStatus | '' =
+    itemToEdit?.status ?? defaultStatus ?? '';
 
   const currentMembers = useProjectMembers({
     projectId,
@@ -137,6 +178,56 @@ export function WorkItemForm({
     lockAssignee,
     onAssigneeChange: (val) => setAssigneeId(val ?? ''),
   });
+
+  const allowedParentType =
+    isWorkItemType(type) && !parentLocked ? getAllowedParentType(type) : null;
+
+  useEffect(() => {
+    if (parentLocked) {
+      return;
+    }
+    if (!projectId || !allowedParentType) {
+      setParentOptions([]);
+      setParentId('');
+      return;
+    }
+
+    let cancelled = false;
+    setParentOptionsLoading(true);
+
+    const loadParents = async () => {
+      try {
+        const items = await listParentCandidateWorkItems({
+          projectId,
+          parentType: allowedParentType,
+          excludeId: itemToEdit?.id,
+        });
+        if (cancelled) {
+          return;
+        }
+        const options = items.map((item) => ({
+          value: item.id,
+          label: `${toShortId(item.id)} · ${item.title}`,
+        }));
+        setParentOptions(options);
+        setParentId((current) => keepOrClearParentId(current, options));
+      } catch {
+        if (!cancelled) {
+          setParentOptions([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setParentOptionsLoading(false);
+        }
+      }
+    };
+
+    loadParents().catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [allowedParentType, itemToEdit?.id, parentLocked, projectId, type]);
 
   useEffect(() => {
     if (!useModernCreate || !state?.error) {
@@ -203,18 +294,29 @@ export function WorkItemForm({
     assigneeId,
     type,
     priority,
-    parentId,
+    parentId: parentLocked ? (lockedParentId ?? parentId) : parentId,
+    parentOptions,
+    parentOptionsLoading,
+    parentTypeLabel: allowedParentType,
+    lockParent: parentLocked,
     lockProject,
     lockAssignee,
     typeLocked,
+    lockStatus,
+    status: statusValue,
     onProjectIdChange: setProjectId,
     onAssigneeIdChange: setAssigneeId,
     onTypeChange: setType,
     onPriorityChange: setPriority,
+    onParentIdChange: setParentId,
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {!isEditMode && defaultSprintId ? (
+        <input type="hidden" name="sprint_id" value={defaultSprintId} />
+      ) : null}
+
       {useModernCreate ? (
         <WorkItemFormModernFields {...fieldProps} />
       ) : (

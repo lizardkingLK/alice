@@ -30,7 +30,9 @@ export function WorkItemTypeBadge({
         className
       )}
     >
-      {Icon && <Icon className={cn('shrink-0', compact ? 'size-2.5' : 'size-3')} />}
+      {Icon && (
+        <Icon className={cn('shrink-0', compact ? 'size-2.5' : 'size-3')} />
+      )}
       {type || 'Unknown'}
     </Badge>
   );

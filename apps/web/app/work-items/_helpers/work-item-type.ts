@@ -10,7 +10,8 @@ import {
 
 export const WORK_ITEM_TYPE_BADGE_STYLES: Record<WorkItemType, string> = {
   Epic: 'border-work-item-epic/20 bg-work-item-epic/10 text-work-item-epic',
-  Feature: 'border-work-item-feature/20 bg-work-item-feature/10 text-work-item-feature',
+  Feature:
+    'border-work-item-feature/20 bg-work-item-feature/10 text-work-item-feature',
   Story: 'border-work-item-story/20 bg-work-item-story/10 text-work-item-story',
   Task: 'border-work-item-task/20 bg-work-item-task/10 text-work-item-task',
   Issue: 'border-work-item-issue/20 bg-work-item-issue/10 text-work-item-issue',

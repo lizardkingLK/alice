@@ -18,13 +18,3 @@ export type CalendarStateLog = {
   action: CalendarActionItem;
   timestamp: string;
 };
-
-export const CalendarWorkItemTypes = {
-  Epic: 'Epic',
-  Story: 'Story',
-  Task: 'Task',
-  Issue: 'Issue',
-} as const;
-
-export type CalendarWorkItemType =
-  (typeof CalendarWorkItemTypes)[keyof typeof CalendarWorkItemTypes];

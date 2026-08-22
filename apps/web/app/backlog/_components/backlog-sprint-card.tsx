@@ -2,7 +2,10 @@
 
 import type React from 'react';
 import { BacklogDropZone } from '@/app/backlog/_components/backlog-drop-zone';
-import { formatDateRange } from '@/app/backlog/_helpers/backlog-item-utils';
+import {
+  formatDateRange,
+  type BacklogAssignee,
+} from '@/app/backlog/_helpers/backlog-item-utils';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
@@ -55,6 +58,7 @@ type BacklogSprintCardProps = {
   readonly isDragOver: boolean;
   readonly isManagerOrAdmin: boolean;
   readonly projects: DbProject[];
+  readonly projectMembers: readonly BacklogAssignee[];
   readonly onToggle: (sprintId: string) => void;
   readonly onStartSprint: (sprintId: string) => void;
   readonly onCompleteSprint: (sprintId: string) => void;
@@ -113,7 +117,7 @@ function SprintCardActions({
   return (
     <>
       <span className="text-muted-foreground bg-muted rounded-full px-2.5 py-0.5 text-xs font-semibold">
-        {issueCount} issue{issueCount === 1 ? '' : 's'}
+        {issueCount} item{issueCount === 1 ? '' : 's'}
       </span>
 
       <Separator
@@ -168,6 +172,7 @@ export function BacklogSprintCard({
   isDragOver,
   isManagerOrAdmin,
   projects,
+  projectMembers,
   onToggle,
   onStartSprint,
   onCompleteSprint,
@@ -246,6 +251,7 @@ export function BacklogSprintCard({
         <BacklogDropZone
           items={items}
           projects={projects}
+          projectMembers={projectMembers}
           targetId={sprint.id}
           isDragOver={isDragOver}
           minHeightClass="min-h-22.5"

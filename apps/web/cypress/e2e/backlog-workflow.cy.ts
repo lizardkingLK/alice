@@ -39,8 +39,7 @@ function createSprintFromBacklog(sprintName: string, goal: string) {
 }
 
 function createWorkItemFromBacklog(title: string) {
-  // Click "Create Issue" or "New Issue" button
-  cy.contains('button', 'Create Issue').click();
+  cy.contains('button', 'Create Item').click();
 
   // Enter title
   cy.get('input#title').first().type(title, { delay: 30 });

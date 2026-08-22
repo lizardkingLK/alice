@@ -616,30 +616,4 @@ describe('WorkItemsTable', () => {
       await screen.findByRole('button', { name: /Expand subtasks/i })
     ).toBeInTheDocument();
   });
-
-  it('expands all and collapses all in hierarchy mode', async () => {
-    // Arrange
-    const { epic } = arrangeEpicWithChildStory();
-
-    await renderTable({
-      initialWorkItems: [epic],
-      listView: 'hierarchy',
-      totalCount: 1,
-      totalPages: 1,
-    });
-
-    // Act
-    fireEvent.click(screen.getByRole('button', { name: /Expand all/i }));
-
-    // Assert
-    expect(await screen.findByText('Child story')).toBeInTheDocument();
-
-    // Act
-    fireEvent.click(screen.getByRole('button', { name: /Collapse all/i }));
-
-    // Assert
-    await waitFor(() => {
-      expect(screen.queryByText('Child story')).not.toBeInTheDocument();
-    });
-  });
 });

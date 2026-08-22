@@ -300,9 +300,10 @@ export class ChatService {
     const assigneeId =
       typeof args.assigneeId === 'string' ? args.assigneeId : null;
 
-    const typeValue = typeof args.type === 'string'
-      ? mapToWorkItemType(args.type)
-      : WorkItemTypeEnum.Task;
+    const typeValue =
+      typeof args.type === 'string'
+        ? mapToWorkItemType(args.type)
+        : WorkItemTypeEnum.Task;
 
     const rawPriority =
       typeof args.priority === 'string'
