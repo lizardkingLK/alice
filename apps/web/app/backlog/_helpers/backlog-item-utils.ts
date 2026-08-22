@@ -73,9 +73,8 @@ export function enrichWorkItemsWithMemberAvatars(
     const profilePicture = resolveBacklogAssigneeAvatar(item, membersById);
 
     if (
-      item.assignee &&
-      item.assignee.profile_picture === profilePicture &&
-      (!member || item.assignee.name === member.name)
+      item.assignee?.profile_picture === profilePicture &&
+      (!member || item.assignee?.name === member.name)
     ) {
       return item;
     }
