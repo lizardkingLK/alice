@@ -89,7 +89,7 @@ export async function promoteMembershipIfReady(
  * Looks up by Auth id, then email, and treats unique-constraint races as
  * “already provisioned” so a second sign-up cannot surface a primary-key error.
  * Profile picture is set only on insert from Auth metadata; later updates go
- * through `/edit-profile`.
+ * through Settings → General (`/settings?tab=general`).
  *
  * Membership: insert `pending` until Auth email is confirmed; promote when
  * confirmed (see docs/features/users/USER_MEMBERSHIP_STATUS.md).

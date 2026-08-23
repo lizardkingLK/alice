@@ -10,6 +10,7 @@ import {
   OptimisticLockClientError,
   isOptimisticLockClientError,
   parseOptimisticLockFromApiError,
+  readApiLockConflict,
 } from '@/lib/optimistic-lock/errors';
 import { ApiError } from '@/lib/api/api';
 import {
@@ -104,6 +105,29 @@ describe('optimistic lock client errors', () => {
         baseUpdatedAt: '2024-01-01T00:00:00.000Z',
       })
     ).toBeNull();
+  });
+
+  it('reads updated_at from a 409 ApiError serverEntity', () => {
+    const apiError = new ApiError('conflict', OPTIMISTIC_LOCK_HTTP_STATUS, {
+      code: OPTIMISTIC_LOCK_ERROR_CODE,
+      serverEntity: { updated_at: '2024-01-02T00:00:00.000Z' },
+    });
+    expect(readApiLockConflict(apiError)).toEqual({
+      updatedAt: '2024-01-02T00:00:00.000Z',
+    });
+  });
+
+  it('returns null updatedAt when 409 has no serverEntity updated_at', () => {
+    const apiError = new ApiError('conflict', OPTIMISTIC_LOCK_HTTP_STATUS, {
+      code: OPTIMISTIC_LOCK_ERROR_CODE,
+      serverEntity: { id: 'user-1' },
+    });
+    expect(readApiLockConflict(apiError)).toEqual({ updatedAt: null });
+  });
+
+  it('returns null from readApiLockConflict for non-409 errors', () => {
+    expect(readApiLockConflict(new ApiError('nope', 400))).toBeNull();
+    expect(readApiLockConflict(new Error('boom'))).toBeNull();
   });
 });
 

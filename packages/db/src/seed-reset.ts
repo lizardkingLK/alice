@@ -5,6 +5,7 @@ import pg from 'pg';
 export const SEED_STORAGE_BUCKETS = [
   'alice_storage_attachments',
   'alice_storage_profile_pictures',
+  'alice_storage_profile_covers',
   'alice_storage_chat_history',
 ] as const;
 

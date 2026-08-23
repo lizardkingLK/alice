@@ -132,7 +132,7 @@ async function deactivateUser(
 | Confirm       | Client + Server Action require typed email match                                                                      |
 | After success | `/?account=closed` banner on home                                                                                     |
 
-Admin registry and edit-profile are **different UI mechanisms** over one kill-switch route.
+Admin registry and Settings → General are **different UI mechanisms** over one kill-switch route.
 
 ### 5.3 Webhook (phase 2) — sketch locked, build later
 
@@ -169,7 +169,7 @@ Admin registry and edit-profile are **different UI mechanisms** over one kill-sw
 3. **Implement phase 1** — done
    - Extract `deactivateUser` in API users service
    - Refactor admin deactivate onto it
-   - Reuse `PATCH /api/users/:id/toggle-active` for self-deactivate + edit-profile Danger zone + `/?account=closed` banner
+   - Reuse `PATCH /api/users/:id/toggle-active` for self-deactivate + Settings Danger zone + `/?account=closed` banner
    - Tests per §8
 4. **Implement phase 2** — webhook router when a caller is ready
 
@@ -194,12 +194,12 @@ Admin registry and edit-profile are **different UI mechanisms** over one kill-sw
 
 ## 9. Open questions — resolved
 
-| Question                                    | Decision                                                                             |
-| ------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Self-deactivate: Server Action only vs API? | **Same** `toggle-active` API; web Server Action + edit-profile dialog as the self UI |
-| Webhook lookup key?                         | **Email primary**; optional `user_id` must agree                                     |
-| Account-closed UX?                          | **`/?account=closed`** banner on home (no new page in phase 1)                       |
-| Webhook notify admins?                      | **No** for v1; structured logs only                                                  |
+| Question                                    | Decision                                                                         |
+| ------------------------------------------- | -------------------------------------------------------------------------------- |
+| Self-deactivate: Server Action only vs API? | **Same** `toggle-active` API; web Server Action + Settings dialog as the self UI |
+| Webhook lookup key?                         | **Email primary**; optional `user_id` must agree                                 |
+| Account-closed UX?                          | **`/?account=closed`** banner on home (no new page in phase 1)                   |
+| Webhook notify admins?                      | **No** for v1; structured logs only                                              |
 
 ---
 
@@ -210,8 +210,8 @@ Admin registry and edit-profile are **different UI mechanisms** over one kill-sw
 | API service         | `users.service.ts` — `deactivateUser`, refactor `toggleUserActive`                    |
 | API route           | `users.route.ts` — `PATCH /:id/toggle-active` (admin + self)                          |
 | API schema          | `users.schemas.ts` — `toggleActiveSchema` (shared admin + self)                       |
-| Web action / client | edit-profile action or service calling API                                            |
-| Web UI              | `edit-profile-view.tsx` — Danger zone + confirm dialog                                |
+| Web action / client | Settings (edit-profile) action calling API                                            |
+| Web UI              | `edit-profile-view.tsx` (Settings → Security) — Danger zone + confirm dialog          |
 | Web home            | `app/page.tsx` / home component — read `account=closed` query                         |
 | Docs                | Mark this file **Implemented** for phase 1 when shipped; keep webhook section Planned |
 

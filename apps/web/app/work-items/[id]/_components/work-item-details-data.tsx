@@ -6,7 +6,7 @@ import {
   getWorkItemAncestors,
   getWorkItems,
 } from '@/app/work-items/_services/workItem.service.server';
-import { getWorkItemAttachments } from '@/app/work-items/_services/attachments.service.server';
+import { getWorkItemAttachments } from '@/app/work-items/_services/workItem-attachments.service.server';
 import {
   getCommentCountsByWorkItemIds,
   getWorkItemDiscussion,
@@ -41,6 +41,8 @@ export async function WorkItemDetailsData({
   }
 
   const allowedChildType = getAllowedChildType(workItem.type as WorkItemType);
+  const childRecordStatus =
+    workItem.record_status === 'archived' ? 'archived' : 'active';
 
   const [initialWorkLogs, childWorkItems, project, ancestors, linkableRaw] =
     await Promise.all([
@@ -50,7 +52,10 @@ export async function WorkItemDetailsData({
         'fetch work logs for work item details'
       ),
       safeServerFetch(
-        getWorkItems({ parentId: workItemId }),
+        getWorkItems({
+          parentId: workItemId,
+          recordStatus: childRecordStatus,
+        }),
         [],
         'fetch subtasks for work item details'
       ),
@@ -72,6 +77,7 @@ export async function WorkItemDetailsData({
               projectId: workItem.project_id,
               type: allowedChildType,
               parentId: null,
+              recordStatus: 'active',
             }),
             [],
             'fetch linkable subtask candidates'

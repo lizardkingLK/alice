@@ -2,11 +2,16 @@ import {
   getAllowedChildType,
   type WorkItemType,
   parseWorkItemLabels,
+  paginationMeta,
   type ListWorkItemsQuery,
   type WorkItemDetailRow,
   type WorkItemListRow,
   type WorkItemListRowWithDescription,
+  UserRoleEnum,
 } from '@repo/types';
+import { requireUserWithRole } from '../../../lib/auth-helpers';
+import { env } from '../../../config/env';
+import { removeStorageObjects } from '../../../lib/file-helpers';
 import { WorkItemRepository } from './workItems.repository';
 import type { DbWorkItem, DbGithubPullRequest } from './workItems.repository';
 import type { WorkItemPaginatedList } from './workItems.prisma-query';
@@ -17,6 +22,14 @@ import {
   WorkItemUpdateBody,
 } from './workItems.schemas';
 import { WorkItemValidationError } from './workItems.errors';
+
+async function requireAdmin(actorId: string) {
+  return await requireUserWithRole(
+    actorId,
+    [UserRoleEnum.admin],
+    'Unauthorized. Only administrators can permanently delete work items.'
+  );
+}
 
 interface GithubPRApiResponse {
   title?: string;
@@ -45,19 +58,23 @@ export class WorkItemService {
   constructor(private readonly workItems: WorkItemRepository) {}
 
   async listWorkItemsPaginated(
-    query: ListWorkItemsQuery
+    query: ListWorkItemsQuery,
+    actorId: string
   ): Promise<
     WorkItemPaginatedList<WorkItemListRow | WorkItemListRowWithDescription>
   > {
+    const accessible = await this.workItems.listAccessibleProjectIds(actorId);
+    const scopedFilters = this.resolveScopedListFilters(query, accessible);
+
+    if (scopedFilters === null) {
+      return {
+        workItems: [],
+        ...paginationMeta(0, query.page, query.limit),
+      };
+    }
+
     return await this.workItems.listPaginated({
-      filters: {
-        sprintId: query.sprintId,
-        projectId: query.projectId,
-        parentId: query.parentId,
-        type: query.type,
-        assigneeId: query.assigneeId,
-        labels: query.labels,
-      },
+      filters: scopedFilters,
       search: query.search,
       page: query.page,
       limit: query.limit,
@@ -66,12 +83,17 @@ export class WorkItemService {
   }
 
   async getWorkItemDetail(
-    workItemId: string
+    workItemId: string,
+    actorId: string
   ): Promise<WorkItemDetailRow | null> {
+    await this.workItems.requireProjectMember(workItemId, actorId);
     return await this.workItems.getDetailById(workItemId);
   }
 
-  async getWorkItem(workItemId: string): Promise<DbWorkItem> {
+  async getWorkItem(workItemId: string, actorId?: string): Promise<DbWorkItem> {
+    if (actorId) {
+      await this.workItems.requireProjectMember(workItemId, actorId);
+    }
     return await this.workItems.getById(workItemId);
   }
 
@@ -79,6 +101,8 @@ export class WorkItemService {
     userId: string,
     input: WorkItemBody
   ): Promise<DbWorkItem> {
+    await this.workItems.assertCanAccessProject(userId, input.project_id);
+
     await this.assertValidParentLink({
       parentId: input.parent_id,
       projectId: input.project_id,
@@ -97,6 +121,9 @@ export class WorkItemService {
     input: WorkItemUpdateBody,
     expectedUpdatedAt: string
   ): Promise<DbWorkItem> {
+    await this.workItems.requireProjectMember(workItemId, userId);
+    await this.workItems.assertCanAccessProject(userId, input.project_id);
+
     const current = await this.workItems.getById(workItemId);
 
     if (!sameNullable(input.parent_id, current?.parent_id)) {
@@ -117,6 +144,83 @@ export class WorkItemService {
       updatedBy: userId,
       expectedUpdatedAt,
     });
+  }
+
+  async archiveWorkItem(
+    actorId: string,
+    workItemId: string,
+    expectedUpdatedAt: string
+  ): Promise<DbWorkItem> {
+    return await this.setSubtreeRecordStatus(
+      actorId,
+      workItemId,
+      expectedUpdatedAt,
+      'archived',
+      'Work item is already archived.'
+    );
+  }
+
+  async restoreWorkItem(
+    actorId: string,
+    workItemId: string,
+    expectedUpdatedAt: string
+  ): Promise<DbWorkItem> {
+    return await this.setSubtreeRecordStatus(
+      actorId,
+      workItemId,
+      expectedUpdatedAt,
+      'active',
+      'Only archived work items can be restored.'
+    );
+  }
+
+  async purgeWorkItem(
+    actorId: string,
+    workItemId: string
+  ): Promise<{
+    deletedIds: string[];
+    descendantCount: number;
+  }> {
+    await requireAdmin(actorId);
+    await this.workItems.requireProjectMember(workItemId, actorId);
+
+    const current = await this.workItems.getById(workItemId);
+    if (current.record_status !== 'archived') {
+      throw new WorkItemValidationError(
+        'Only archived work items can be permanently deleted.'
+      );
+    }
+
+    const ids = await this.workItems.collectDescendantIds(workItemId);
+    const storagePaths = await this.workItems.listAttachmentStoragePaths(ids);
+
+    await this.workItems.deleteNotificationsForWorkItems(ids);
+    await this.workItems.deleteWorkItemsByIds(ids);
+
+    if (storagePaths.length > 0) {
+      try {
+        await removeStorageObjects(
+          env.STORAGE_BUCKET_ATTACHMENTS,
+          storagePaths
+        );
+      } catch (error) {
+        console.error(
+          'error. failed to remove attachment storage after work-item purge:',
+          error instanceof Error ? error.message : error
+        );
+      }
+    }
+
+    return {
+      deletedIds: ids,
+      descendantCount: Math.max(0, ids.length - 1),
+    };
+  }
+
+  async countDescendants(workItemId: string, actorId: string): Promise<number> {
+    await this.workItems.requireProjectMember(workItemId, actorId);
+    const ids = await this.workItems.collectDescendantIds(workItemId);
+    return Math.max(0, ids.length - 1);
   }
 
   async listWorkItemWorkLogs(actorId: string, workItemId: string) {
@@ -146,6 +250,79 @@ export class WorkItemService {
       loggedAtIso: input.loggedAtIso,
       comment: input.comment,
     });
+  }
+
+  /**
+   * Archive or restore a work-item subtree after membership + state checks.
+   */
+  private async setSubtreeRecordStatus(
+    actorId: string,
+    workItemId: string,
+    expectedUpdatedAt: string,
+    recordStatus: 'active' | 'archived',
+    invalidStateMessage: string
+  ): Promise<DbWorkItem> {
+    await this.workItems.requireProjectMember(workItemId, actorId);
+    const current = await this.workItems.getById(workItemId);
+    const isArchived = current.record_status === 'archived';
+    const isInvalid = recordStatus === 'archived' ? isArchived : !isArchived;
+    if (isInvalid) {
+      throw new WorkItemValidationError(invalidStateMessage);
+    }
+    return await this.workItems.setRecordStatusForSubtree(
+      workItemId,
+      recordStatus,
+      actorId,
+      expectedUpdatedAt,
+      {
+        unlinkFromParent:
+          recordStatus === 'active' && Boolean(current.parent_id),
+      }
+    );
+  }
+
+  /**
+   * Apply membership scope to list filters.
+   * Returns `null` when the actor has no accessible projects (or requested an inaccessible one).
+   */
+  private resolveScopedListFilters(
+    query: ListWorkItemsQuery,
+    accessible: 'all' | string[]
+  ): {
+    sprintId?: string | null;
+    projectId?: string;
+    projectIds?: readonly string[];
+    parentId?: string | null;
+    type?: WorkItemType;
+    assigneeId?: string;
+    labels?: string[];
+    recordStatus?: 'active' | 'archived';
+  } | null {
+    const base = {
+      sprintId: query.sprintId,
+      parentId: query.parentId,
+      type: query.type,
+      assigneeId: query.assigneeId,
+      labels: query.labels,
+      recordStatus: query.recordStatus,
+    };
+
+    if (accessible === 'all') {
+      return { ...base, projectId: query.projectId };
+    }
+
+    if (accessible.length === 0) {
+      return null;
+    }
+
+    if (query.projectId) {
+      if (!accessible.includes(query.projectId)) {
+        return null;
+      }
+      return { ...base, projectId: query.projectId };
+    }
+
+    return { ...base, projectIds: accessible };
   }
 
   private async assertCanBecomeDone(
@@ -366,7 +543,7 @@ export class WorkItemService {
   }
 
   async listLinkedPRs(
-    _actorId: string,
+    actorId: string,
     workItemId: string
   ): Promise<{
     prs: (DbGithubPullRequest & {
@@ -374,6 +551,7 @@ export class WorkItemService {
     })[];
     githubRepo: string | null;
   }> {
+    await this.workItems.requireProjectMember(workItemId, actorId);
     const prs = await this.workItems.listLinkedPRs(workItemId);
     const settings =
       await this.workItems.getProjectGithubSettingsByWorkItem(workItemId);
@@ -439,10 +617,11 @@ export class WorkItemService {
   }
 
   async linkPR(
-    _actorId: string,
+    actorId: string,
     workItemId: string,
     prUrl: string
   ): Promise<DbGithubPullRequest> {
+    await this.workItems.requireProjectMember(workItemId, actorId);
     const githubPrRegex =
       /^(?:https?:\/\/github\.com\/)?([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)\/pull\/(\d+)$/;
     const match = githubPrRegex.exec(prUrl);
@@ -524,10 +703,11 @@ export class WorkItemService {
   }
 
   async unlinkPR(
-    _actorId: string,
+    actorId: string,
     workItemId: string,
     prId: string
   ): Promise<void> {
+    await this.workItems.requireProjectMember(workItemId, actorId);
     await this.workItems.unlinkPR(workItemId, prId);
   }
 }

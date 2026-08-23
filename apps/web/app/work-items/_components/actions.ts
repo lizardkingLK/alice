@@ -97,7 +97,12 @@ export async function loadWorkItemChildrenAction(
       };
     }
 
-    const children = await getWorkItems({ parentId: parent.id });
+    const recordStatus =
+      parent.record_status === 'archived' ? 'archived' : 'active';
+    const children = await getWorkItems({
+      parentId: parent.id,
+      recordStatus,
+    });
     return { ok: true, children };
   } catch (loadError) {
     console.error('error. failed to load work item children', loadError);

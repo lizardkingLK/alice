@@ -37,6 +37,8 @@ export type CreateProjectInput = Omit<
   | 'jira_project_key'
   | 'github_repo'
   | 'github_token'
+  | 'logo_url'
+  | 'cover_picture'
 > & {
   jira_url?: string | null;
   jira_email?: string | null;
@@ -44,6 +46,8 @@ export type CreateProjectInput = Omit<
   jira_project_key?: string | null;
   github_repo?: string | null;
   github_token?: string | null;
+  logo_url?: string | null;
+  cover_picture?: string | null;
 };
 
 export type UpdateProjectInput = Partial<CreateProjectInput>;

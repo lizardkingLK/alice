@@ -7,6 +7,7 @@ import {
   parseTeamStatusFilter,
   parseWorkItemFilters,
   parseWorkItemListView,
+  parseWorkItemRecordStatus,
   workItemHierarchyListFilter,
   type RawSearchParams,
 } from '@/lib/search-params';
@@ -68,6 +69,7 @@ function toWorkItemsPayload(
     readonly assigneeFilter: string;
     readonly labelsFilter: readonly string[];
     readonly listView: 'flat' | 'hierarchy';
+    readonly tab: 'active' | 'archived';
   }
 ) {
   return {
@@ -81,6 +83,7 @@ function toWorkItemsPayload(
     assigneeFilter: options.active ? options.assigneeFilter : '',
     labelsFilter: options.active ? [...options.labelsFilter] : [],
     listView: options.active ? options.listView : 'flat',
+    tab: options.tab,
   };
 }
 
@@ -122,6 +125,7 @@ export type ProjectWorkspaceAllowed = {
     assigneeFilter: string;
     labelsFilter: string[];
     listView: 'flat' | 'hierarchy';
+    tab: 'active' | 'archived';
   };
   readonly teams: {
     items: Team[];
@@ -186,6 +190,7 @@ export async function getProjectWorkspace(
   const workItemsPage = isWorkItemsTab ? page : 1;
   const workItemsLimit = isWorkItemsTab ? limit : 1;
   const workItemsSearch = isWorkItemsTab ? search : undefined;
+  const workItemRecordStatus = parseWorkItemRecordStatus(searchParams);
 
   const [members, allUsers, workItemsResult, teamsResult] = await Promise.all([
     safeServerFetch(
@@ -202,6 +207,7 @@ export async function getProjectWorkspace(
               type,
               assigneeId,
               labels,
+              recordStatus: workItemRecordStatus,
               ...workItemHierarchyListFilter(listView),
             }
           : {}),
@@ -237,6 +243,7 @@ export async function getProjectWorkspace(
       assigneeFilter: assigneeId ?? '',
       labelsFilter: labels ?? [],
       listView,
+      tab: workItemRecordStatus,
     }),
     teams: toTeamsPayload(teamsResult, {
       active: activeTab === 'teams',

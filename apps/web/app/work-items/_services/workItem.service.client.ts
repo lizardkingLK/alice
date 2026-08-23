@@ -149,6 +149,48 @@ export async function forceUpdateWorkItemFields(
   );
 }
 
+export async function countWorkItemDescendants(id: string): Promise<number> {
+  const data = await apiFetch<{ descendantCount: number }>(
+    `${workItemsPath}/${id}/descendant-count`
+  );
+  return data.descendantCount;
+}
+
+async function patchWorkItemLifecycle(
+  id: string,
+  action: 'archive' | 'restore',
+  expectedUpdatedAt: string
+): Promise<DbWorkItem> {
+  const data = await apiFetch<{ workItem: DbWorkItem }>(
+    `${workItemsPath}/${id}/${action}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ expectedUpdatedAt }),
+    }
+  );
+  return data.workItem;
+}
+
+export async function archiveWorkItem(
+  id: string,
+  expectedUpdatedAt: string
+): Promise<DbWorkItem> {
+  return patchWorkItemLifecycle(id, 'archive', expectedUpdatedAt);
+}
+
+export async function restoreWorkItem(
+  id: string,
+  expectedUpdatedAt: string
+): Promise<DbWorkItem> {
+  return patchWorkItemLifecycle(id, 'restore', expectedUpdatedAt);
+}
+
+export async function purgeWorkItem(id: string): Promise<void> {
+  await apiFetch<void>(`${workItemsPath}/${id}`, {
+    method: 'DELETE',
+  });
+}
+
 export interface GithubCommit {
   sha: string;
   message: string;

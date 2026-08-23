@@ -48,6 +48,7 @@
     "radix-ui": "^1.6.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-easy-crop": "^6.2.3",
     "react-grid-layout": "^2.2.3",
     "react-markdown": "^10.1.0",
     "react-to-print": "^3.3.0",

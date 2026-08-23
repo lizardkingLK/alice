@@ -95,6 +95,7 @@ export const UsersScalarFieldEnum = {
   membership_status: 'membership_status',
   status: 'status',
   profile_picture: 'profile_picture',
+  cover_picture: 'cover_picture',
   created_by: 'created_by',
   created_at: 'created_at',
   updated_by: 'updated_by',
@@ -125,7 +126,9 @@ export const ProjectsScalarFieldEnum = {
   jira_token: 'jira_token',
   jira_project_key: 'jira_project_key',
   github_repo: 'github_repo',
-  github_token: 'github_token'
+  github_token: 'github_token',
+  logo_url: 'logo_url',
+  cover_picture: 'cover_picture'
 } as const
 
 export type ProjectsScalarFieldEnum = (typeof ProjectsScalarFieldEnum)[keyof typeof ProjectsScalarFieldEnum]
@@ -212,6 +215,7 @@ export const Work_itemsScalarFieldEnum = {
   due_date: 'due_date',
   story_points: 'story_points',
   status: 'status',
+  record_status: 'record_status',
   done_at: 'done_at',
   created_by: 'created_by',
   created_at: 'created_at',

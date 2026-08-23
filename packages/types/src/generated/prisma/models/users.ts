@@ -33,6 +33,7 @@ export type UsersMinAggregateOutputType = {
   membership_status: $Enums.UserMembershipStatus | null
   status: $Enums.RecordStatus | null
   profile_picture: string | null
+  cover_picture: string | null
   created_by: string | null
   created_at: Date | null
   updated_by: string | null
@@ -48,6 +49,7 @@ export type UsersMaxAggregateOutputType = {
   membership_status: $Enums.UserMembershipStatus | null
   status: $Enums.RecordStatus | null
   profile_picture: string | null
+  cover_picture: string | null
   created_by: string | null
   created_at: Date | null
   updated_by: string | null
@@ -63,6 +65,7 @@ export type UsersCountAggregateOutputType = {
   membership_status: number
   status: number
   profile_picture: number
+  cover_picture: number
   created_by: number
   created_at: number
   updated_by: number
@@ -80,6 +83,7 @@ export type UsersMinAggregateInputType = {
   membership_status?: true
   status?: true
   profile_picture?: true
+  cover_picture?: true
   created_by?: true
   created_at?: true
   updated_by?: true
@@ -95,6 +99,7 @@ export type UsersMaxAggregateInputType = {
   membership_status?: true
   status?: true
   profile_picture?: true
+  cover_picture?: true
   created_by?: true
   created_at?: true
   updated_by?: true
@@ -110,6 +115,7 @@ export type UsersCountAggregateInputType = {
   membership_status?: true
   status?: true
   profile_picture?: true
+  cover_picture?: true
   created_by?: true
   created_at?: true
   updated_by?: true
@@ -198,6 +204,7 @@ export type UsersGroupByOutputType = {
   membership_status: $Enums.UserMembershipStatus
   status: $Enums.RecordStatus
   profile_picture: string | null
+  cover_picture: string | null
   created_by: string | null
   created_at: Date
   updated_by: string | null
@@ -234,6 +241,7 @@ export type usersWhereInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFilter<"users"> | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFilter<"users"> | $Enums.RecordStatus
   profile_picture?: Prisma.StringNullableFilter<"users"> | string | null
+  cover_picture?: Prisma.StringNullableFilter<"users"> | string | null
   created_by?: Prisma.UuidNullableFilter<"users"> | string | null
   created_at?: Prisma.DateTimeFilter<"users"> | Date | string
   updated_by?: Prisma.UuidNullableFilter<"users"> | string | null
@@ -291,6 +299,7 @@ export type usersOrderByWithRelationInput = {
   membership_status?: Prisma.SortOrder
   status?: Prisma.SortOrder
   profile_picture?: Prisma.SortOrderInput | Prisma.SortOrder
+  cover_picture?: Prisma.SortOrderInput | Prisma.SortOrder
   created_by?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_by?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -351,6 +360,7 @@ export type usersWhereUniqueInput = Prisma.AtLeast<{
   membership_status?: Prisma.EnumUserMembershipStatusFilter<"users"> | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFilter<"users"> | $Enums.RecordStatus
   profile_picture?: Prisma.StringNullableFilter<"users"> | string | null
+  cover_picture?: Prisma.StringNullableFilter<"users"> | string | null
   created_by?: Prisma.UuidNullableFilter<"users"> | string | null
   created_at?: Prisma.DateTimeFilter<"users"> | Date | string
   updated_by?: Prisma.UuidNullableFilter<"users"> | string | null
@@ -408,6 +418,7 @@ export type usersOrderByWithAggregationInput = {
   membership_status?: Prisma.SortOrder
   status?: Prisma.SortOrder
   profile_picture?: Prisma.SortOrderInput | Prisma.SortOrder
+  cover_picture?: Prisma.SortOrderInput | Prisma.SortOrder
   created_by?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_by?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -429,6 +440,7 @@ export type usersScalarWhereWithAggregatesInput = {
   membership_status?: Prisma.EnumUserMembershipStatusWithAggregatesFilter<"users"> | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusWithAggregatesFilter<"users"> | $Enums.RecordStatus
   profile_picture?: Prisma.StringNullableWithAggregatesFilter<"users"> | string | null
+  cover_picture?: Prisma.StringNullableWithAggregatesFilter<"users"> | string | null
   created_by?: Prisma.UuidNullableWithAggregatesFilter<"users"> | string | null
   created_at?: Prisma.DateTimeWithAggregatesFilter<"users"> | Date | string
   updated_by?: Prisma.UuidNullableWithAggregatesFilter<"users"> | string | null
@@ -444,6 +456,7 @@ export type usersCreateInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -499,6 +512,7 @@ export type usersUncheckedCreateInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -554,6 +568,7 @@ export type usersUpdateInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -609,6 +624,7 @@ export type usersUncheckedUpdateInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -664,6 +680,7 @@ export type usersCreateManyInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -679,6 +696,7 @@ export type usersUpdateManyMutationInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -692,6 +710,7 @@ export type usersUncheckedUpdateManyInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -722,6 +741,7 @@ export type usersCountOrderByAggregateInput = {
   membership_status?: Prisma.SortOrder
   status?: Prisma.SortOrder
   profile_picture?: Prisma.SortOrder
+  cover_picture?: Prisma.SortOrder
   created_by?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_by?: Prisma.SortOrder
@@ -737,6 +757,7 @@ export type usersMaxOrderByAggregateInput = {
   membership_status?: Prisma.SortOrder
   status?: Prisma.SortOrder
   profile_picture?: Prisma.SortOrder
+  cover_picture?: Prisma.SortOrder
   created_by?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_by?: Prisma.SortOrder
@@ -752,6 +773,7 @@ export type usersMinOrderByAggregateInput = {
   membership_status?: Prisma.SortOrder
   status?: Prisma.SortOrder
   profile_picture?: Prisma.SortOrder
+  cover_picture?: Prisma.SortOrder
   created_by?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_by?: Prisma.SortOrder
@@ -1502,6 +1524,7 @@ export type usersCreateWithoutCreated_usersInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -1556,6 +1579,7 @@ export type usersUncheckedCreateWithoutCreated_usersInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -1615,6 +1639,7 @@ export type usersCreateWithoutCreatorInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   created_users?: Prisma.usersCreateNestedManyWithoutCreatorInput
@@ -1669,6 +1694,7 @@ export type usersUncheckedCreateWithoutCreatorInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_by?: string | null
   updated_at?: Date | string
@@ -1733,6 +1759,7 @@ export type usersCreateWithoutUpdated_usersInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -1787,6 +1814,7 @@ export type usersUncheckedCreateWithoutUpdated_usersInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -1846,6 +1874,7 @@ export type usersCreateWithoutUpdaterInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -1900,6 +1929,7 @@ export type usersUncheckedCreateWithoutUpdaterInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_at?: Date | string
@@ -1975,6 +2005,7 @@ export type usersUpdateWithoutCreated_usersInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -2029,6 +2060,7 @@ export type usersUncheckedUpdateWithoutCreated_usersInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2102,6 +2134,7 @@ export type usersScalarWhereInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFilter<"users"> | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFilter<"users"> | $Enums.RecordStatus
   profile_picture?: Prisma.StringNullableFilter<"users"> | string | null
+  cover_picture?: Prisma.StringNullableFilter<"users"> | string | null
   created_by?: Prisma.UuidNullableFilter<"users"> | string | null
   created_at?: Prisma.DateTimeFilter<"users"> | Date | string
   updated_by?: Prisma.UuidNullableFilter<"users"> | string | null
@@ -2128,6 +2161,7 @@ export type usersUpdateWithoutUpdated_usersInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -2182,6 +2216,7 @@ export type usersUncheckedUpdateWithoutUpdated_usersInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2252,6 +2287,7 @@ export type usersCreateWithoutOwned_projectsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -2306,6 +2342,7 @@ export type usersUncheckedCreateWithoutOwned_projectsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -2365,6 +2402,7 @@ export type usersCreateWithoutCreated_projectsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -2419,6 +2457,7 @@ export type usersUncheckedCreateWithoutCreated_projectsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -2478,6 +2517,7 @@ export type usersCreateWithoutUpdated_projectsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -2532,6 +2572,7 @@ export type usersUncheckedCreateWithoutUpdated_projectsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -2602,6 +2643,7 @@ export type usersUpdateWithoutOwned_projectsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -2656,6 +2698,7 @@ export type usersUncheckedUpdateWithoutOwned_projectsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2721,6 +2764,7 @@ export type usersUpdateWithoutCreated_projectsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -2775,6 +2819,7 @@ export type usersUncheckedUpdateWithoutCreated_projectsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2840,6 +2885,7 @@ export type usersUpdateWithoutUpdated_projectsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -2894,6 +2940,7 @@ export type usersUncheckedUpdateWithoutUpdated_projectsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2948,6 +2995,7 @@ export type usersCreateWithoutProject_membershipsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -3002,6 +3050,7 @@ export type usersUncheckedCreateWithoutProject_membershipsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -3061,6 +3110,7 @@ export type usersCreateWithoutCreated_project_membersInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -3115,6 +3165,7 @@ export type usersUncheckedCreateWithoutCreated_project_membersInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -3174,6 +3225,7 @@ export type usersCreateWithoutUpdated_project_membersInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -3228,6 +3280,7 @@ export type usersUncheckedCreateWithoutUpdated_project_membersInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -3298,6 +3351,7 @@ export type usersUpdateWithoutProject_membershipsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -3352,6 +3406,7 @@ export type usersUncheckedUpdateWithoutProject_membershipsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3417,6 +3472,7 @@ export type usersUpdateWithoutCreated_project_membersInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -3471,6 +3527,7 @@ export type usersUncheckedUpdateWithoutCreated_project_membersInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3536,6 +3593,7 @@ export type usersUpdateWithoutUpdated_project_membersInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -3590,6 +3648,7 @@ export type usersUncheckedUpdateWithoutUpdated_project_membersInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3644,6 +3703,7 @@ export type usersCreateWithoutManaged_teamsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -3698,6 +3758,7 @@ export type usersUncheckedCreateWithoutManaged_teamsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -3757,6 +3818,7 @@ export type usersCreateWithoutCreated_teamsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -3811,6 +3873,7 @@ export type usersUncheckedCreateWithoutCreated_teamsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -3870,6 +3933,7 @@ export type usersCreateWithoutUpdated_teamsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -3924,6 +3988,7 @@ export type usersUncheckedCreateWithoutUpdated_teamsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -3994,6 +4059,7 @@ export type usersUpdateWithoutManaged_teamsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -4048,6 +4114,7 @@ export type usersUncheckedUpdateWithoutManaged_teamsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4113,6 +4180,7 @@ export type usersUpdateWithoutCreated_teamsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -4167,6 +4235,7 @@ export type usersUncheckedUpdateWithoutCreated_teamsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4232,6 +4301,7 @@ export type usersUpdateWithoutUpdated_teamsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -4286,6 +4356,7 @@ export type usersUncheckedUpdateWithoutUpdated_teamsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4340,6 +4411,7 @@ export type usersCreateWithoutTeam_membershipsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -4394,6 +4466,7 @@ export type usersUncheckedCreateWithoutTeam_membershipsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -4453,6 +4526,7 @@ export type usersCreateWithoutReporting_linesInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -4507,6 +4581,7 @@ export type usersUncheckedCreateWithoutReporting_linesInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -4566,6 +4641,7 @@ export type usersCreateWithoutCreated_team_membersInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -4620,6 +4696,7 @@ export type usersUncheckedCreateWithoutCreated_team_membersInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -4679,6 +4756,7 @@ export type usersCreateWithoutUpdated_team_membersInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -4733,6 +4811,7 @@ export type usersUncheckedCreateWithoutUpdated_team_membersInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -4803,6 +4882,7 @@ export type usersUpdateWithoutTeam_membershipsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -4857,6 +4937,7 @@ export type usersUncheckedUpdateWithoutTeam_membershipsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4922,6 +5003,7 @@ export type usersUpdateWithoutReporting_linesInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -4976,6 +5058,7 @@ export type usersUncheckedUpdateWithoutReporting_linesInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5041,6 +5124,7 @@ export type usersUpdateWithoutCreated_team_membersInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -5095,6 +5179,7 @@ export type usersUncheckedUpdateWithoutCreated_team_membersInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5160,6 +5245,7 @@ export type usersUpdateWithoutUpdated_team_membersInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -5214,6 +5300,7 @@ export type usersUncheckedUpdateWithoutUpdated_team_membersInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5268,6 +5355,7 @@ export type usersCreateWithoutCreated_sprintsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -5322,6 +5410,7 @@ export type usersUncheckedCreateWithoutCreated_sprintsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -5381,6 +5470,7 @@ export type usersCreateWithoutUpdated_sprintsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -5435,6 +5525,7 @@ export type usersUncheckedCreateWithoutUpdated_sprintsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -5505,6 +5596,7 @@ export type usersUpdateWithoutCreated_sprintsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -5559,6 +5651,7 @@ export type usersUncheckedUpdateWithoutCreated_sprintsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5624,6 +5717,7 @@ export type usersUpdateWithoutUpdated_sprintsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -5678,6 +5772,7 @@ export type usersUncheckedUpdateWithoutUpdated_sprintsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5732,6 +5827,7 @@ export type usersCreateWithoutAssigned_work_itemsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -5786,6 +5882,7 @@ export type usersUncheckedCreateWithoutAssigned_work_itemsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -5845,6 +5942,7 @@ export type usersCreateWithoutReported_work_itemsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -5899,6 +5997,7 @@ export type usersUncheckedCreateWithoutReported_work_itemsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -5958,6 +6057,7 @@ export type usersCreateWithoutCreated_work_itemsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -6012,6 +6112,7 @@ export type usersUncheckedCreateWithoutCreated_work_itemsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -6071,6 +6172,7 @@ export type usersCreateWithoutUpdated_work_itemsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -6125,6 +6227,7 @@ export type usersUncheckedCreateWithoutUpdated_work_itemsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -6195,6 +6298,7 @@ export type usersUpdateWithoutAssigned_work_itemsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -6249,6 +6353,7 @@ export type usersUncheckedUpdateWithoutAssigned_work_itemsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -6314,6 +6419,7 @@ export type usersUpdateWithoutReported_work_itemsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -6368,6 +6474,7 @@ export type usersUncheckedUpdateWithoutReported_work_itemsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -6433,6 +6540,7 @@ export type usersUpdateWithoutCreated_work_itemsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -6487,6 +6595,7 @@ export type usersUncheckedUpdateWithoutCreated_work_itemsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -6552,6 +6661,7 @@ export type usersUpdateWithoutUpdated_work_itemsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -6606,6 +6716,7 @@ export type usersUncheckedUpdateWithoutUpdated_work_itemsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -6660,6 +6771,7 @@ export type usersCreateWithoutWork_item_worklogsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -6714,6 +6826,7 @@ export type usersUncheckedCreateWithoutWork_item_worklogsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -6784,6 +6897,7 @@ export type usersUpdateWithoutWork_item_worklogsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -6838,6 +6952,7 @@ export type usersUncheckedUpdateWithoutWork_item_worklogsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -6892,6 +7007,7 @@ export type usersCreateWithoutCommentsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -6946,6 +7062,7 @@ export type usersUncheckedCreateWithoutCommentsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -7005,6 +7122,7 @@ export type usersCreateWithoutCreated_commentsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -7059,6 +7177,7 @@ export type usersUncheckedCreateWithoutCreated_commentsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -7118,6 +7237,7 @@ export type usersCreateWithoutUpdated_commentsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -7172,6 +7292,7 @@ export type usersUncheckedCreateWithoutUpdated_commentsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -7242,6 +7363,7 @@ export type usersUpdateWithoutCommentsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -7296,6 +7418,7 @@ export type usersUncheckedUpdateWithoutCommentsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -7361,6 +7484,7 @@ export type usersUpdateWithoutCreated_commentsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -7415,6 +7539,7 @@ export type usersUncheckedUpdateWithoutCreated_commentsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -7480,6 +7605,7 @@ export type usersUpdateWithoutUpdated_commentsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -7534,6 +7660,7 @@ export type usersUncheckedUpdateWithoutUpdated_commentsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -7588,6 +7715,7 @@ export type usersCreateWithoutAttachmentsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -7642,6 +7770,7 @@ export type usersUncheckedCreateWithoutAttachmentsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -7701,6 +7830,7 @@ export type usersCreateWithoutCreated_attachmentsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -7755,6 +7885,7 @@ export type usersUncheckedCreateWithoutCreated_attachmentsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -7814,6 +7945,7 @@ export type usersCreateWithoutUpdated_attachmentsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -7868,6 +8000,7 @@ export type usersUncheckedCreateWithoutUpdated_attachmentsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -7938,6 +8071,7 @@ export type usersUpdateWithoutAttachmentsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -7992,6 +8126,7 @@ export type usersUncheckedUpdateWithoutAttachmentsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -8057,6 +8192,7 @@ export type usersUpdateWithoutCreated_attachmentsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -8111,6 +8247,7 @@ export type usersUncheckedUpdateWithoutCreated_attachmentsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -8176,6 +8313,7 @@ export type usersUpdateWithoutUpdated_attachmentsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -8230,6 +8368,7 @@ export type usersUncheckedUpdateWithoutUpdated_attachmentsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -8284,6 +8423,7 @@ export type usersCreateWithoutNotificationsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -8338,6 +8478,7 @@ export type usersUncheckedCreateWithoutNotificationsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -8397,6 +8538,7 @@ export type usersCreateWithoutCreated_notificationsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -8451,6 +8593,7 @@ export type usersUncheckedCreateWithoutCreated_notificationsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -8510,6 +8653,7 @@ export type usersCreateWithoutUpdated_notificationsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -8564,6 +8708,7 @@ export type usersUncheckedCreateWithoutUpdated_notificationsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -8634,6 +8779,7 @@ export type usersUpdateWithoutNotificationsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -8688,6 +8834,7 @@ export type usersUncheckedUpdateWithoutNotificationsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -8753,6 +8900,7 @@ export type usersUpdateWithoutCreated_notificationsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -8807,6 +8955,7 @@ export type usersUncheckedUpdateWithoutCreated_notificationsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -8872,6 +9021,7 @@ export type usersUpdateWithoutUpdated_notificationsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -8926,6 +9076,7 @@ export type usersUncheckedUpdateWithoutUpdated_notificationsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -8980,6 +9131,7 @@ export type usersCreateWithoutCreated_access_allowlistInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -9034,6 +9186,7 @@ export type usersUncheckedCreateWithoutCreated_access_allowlistInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -9093,6 +9246,7 @@ export type usersCreateWithoutUpdated_access_allowlistInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -9147,6 +9301,7 @@ export type usersUncheckedCreateWithoutUpdated_access_allowlistInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -9217,6 +9372,7 @@ export type usersUpdateWithoutCreated_access_allowlistInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -9271,6 +9427,7 @@ export type usersUncheckedUpdateWithoutCreated_access_allowlistInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -9336,6 +9493,7 @@ export type usersUpdateWithoutUpdated_access_allowlistInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -9390,6 +9548,7 @@ export type usersUncheckedUpdateWithoutUpdated_access_allowlistInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -9444,6 +9603,7 @@ export type usersCreateWithoutChat_conversationsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -9498,6 +9658,7 @@ export type usersUncheckedCreateWithoutChat_conversationsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -9568,6 +9729,7 @@ export type usersUpdateWithoutChat_conversationsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -9622,6 +9784,7 @@ export type usersUncheckedUpdateWithoutChat_conversationsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -9676,6 +9839,7 @@ export type usersCreateWithoutOwned_saved_viewsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -9730,6 +9894,7 @@ export type usersUncheckedCreateWithoutOwned_saved_viewsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -9789,6 +9954,7 @@ export type usersCreateWithoutCreated_saved_viewsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -9843,6 +10009,7 @@ export type usersUncheckedCreateWithoutCreated_saved_viewsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -9902,6 +10069,7 @@ export type usersCreateWithoutUpdated_saved_viewsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -9956,6 +10124,7 @@ export type usersUncheckedCreateWithoutUpdated_saved_viewsInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -10026,6 +10195,7 @@ export type usersUpdateWithoutOwned_saved_viewsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -10080,6 +10250,7 @@ export type usersUncheckedUpdateWithoutOwned_saved_viewsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -10145,6 +10316,7 @@ export type usersUpdateWithoutCreated_saved_viewsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -10199,6 +10371,7 @@ export type usersUncheckedUpdateWithoutCreated_saved_viewsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -10264,6 +10437,7 @@ export type usersUpdateWithoutUpdated_saved_viewsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -10318,6 +10492,7 @@ export type usersUncheckedUpdateWithoutUpdated_saved_viewsInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -10372,6 +10547,7 @@ export type usersCreateWithoutSaved_view_sharesInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -10426,6 +10602,7 @@ export type usersUncheckedCreateWithoutSaved_view_sharesInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -10485,6 +10662,7 @@ export type usersCreateWithoutCreated_saved_view_sharesInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -10539,6 +10717,7 @@ export type usersUncheckedCreateWithoutCreated_saved_view_sharesInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -10598,6 +10777,7 @@ export type usersCreateWithoutUpdated_saved_view_sharesInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
@@ -10652,6 +10832,7 @@ export type usersUncheckedCreateWithoutUpdated_saved_view_sharesInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_by?: string | null
@@ -10722,6 +10903,7 @@ export type usersUpdateWithoutSaved_view_sharesInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -10776,6 +10958,7 @@ export type usersUncheckedUpdateWithoutSaved_view_sharesInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -10841,6 +11024,7 @@ export type usersUpdateWithoutCreated_saved_view_sharesInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -10895,6 +11079,7 @@ export type usersUncheckedUpdateWithoutCreated_saved_view_sharesInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -10960,6 +11145,7 @@ export type usersUpdateWithoutUpdated_saved_view_sharesInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -11014,6 +11200,7 @@ export type usersUncheckedUpdateWithoutUpdated_saved_view_sharesInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -11068,6 +11255,7 @@ export type usersCreateManyCreatorInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_at?: Date | string
   updated_by?: string | null
   updated_at?: Date | string
@@ -11082,6 +11270,7 @@ export type usersCreateManyUpdaterInput = {
   membership_status?: $Enums.UserMembershipStatus
   status?: $Enums.RecordStatus
   profile_picture?: string | null
+  cover_picture?: string | null
   created_by?: string | null
   created_at?: Date | string
   updated_at?: Date | string
@@ -11096,6 +11285,7 @@ export type usersUpdateWithoutCreatorInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_users?: Prisma.usersUpdateManyWithoutCreatorNestedInput
@@ -11150,6 +11340,7 @@ export type usersUncheckedUpdateWithoutCreatorInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -11204,6 +11395,7 @@ export type usersUncheckedUpdateManyWithoutCreatorInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -11218,6 +11410,7 @@ export type usersUpdateWithoutUpdaterInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
@@ -11272,6 +11465,7 @@ export type usersUncheckedUpdateWithoutUpdaterInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -11326,6 +11520,7 @@ export type usersUncheckedUpdateManyWithoutUpdaterInput = {
   membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -11722,6 +11917,7 @@ export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   membership_status?: boolean
   status?: boolean
   profile_picture?: boolean
+  cover_picture?: boolean
   created_by?: boolean
   created_at?: boolean
   updated_by?: boolean
@@ -11780,6 +11976,7 @@ export type usersSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   membership_status?: boolean
   status?: boolean
   profile_picture?: boolean
+  cover_picture?: boolean
   created_by?: boolean
   created_at?: boolean
   updated_by?: boolean
@@ -11797,6 +11994,7 @@ export type usersSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   membership_status?: boolean
   status?: boolean
   profile_picture?: boolean
+  cover_picture?: boolean
   created_by?: boolean
   created_at?: boolean
   updated_by?: boolean
@@ -11814,13 +12012,14 @@ export type usersSelectScalar = {
   membership_status?: boolean
   status?: boolean
   profile_picture?: boolean
+  cover_picture?: boolean
   created_by?: boolean
   created_at?: boolean
   updated_by?: boolean
   updated_at?: boolean
 }
 
-export type usersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "name" | "role" | "active" | "membership_status" | "status" | "profile_picture" | "created_by" | "created_at" | "updated_by" | "updated_at", ExtArgs["result"]["users"]>
+export type usersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "name" | "role" | "active" | "membership_status" | "status" | "profile_picture" | "cover_picture" | "created_by" | "created_at" | "updated_by" | "updated_at", ExtArgs["result"]["users"]>
 export type usersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   creator?: boolean | Prisma.users$creatorArgs<ExtArgs>
   created_users?: boolean | Prisma.users$created_usersArgs<ExtArgs>
@@ -11930,6 +12129,7 @@ export type $usersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     membership_status: $Enums.UserMembershipStatus
     status: $Enums.RecordStatus
     profile_picture: string | null
+    cover_picture: string | null
     created_by: string | null
     created_at: Date
     updated_by: string | null
@@ -12407,6 +12607,7 @@ export interface usersFieldRefs {
   readonly membership_status: Prisma.FieldRef<"users", 'UserMembershipStatus'>
   readonly status: Prisma.FieldRef<"users", 'RecordStatus'>
   readonly profile_picture: Prisma.FieldRef<"users", 'String'>
+  readonly cover_picture: Prisma.FieldRef<"users", 'String'>
   readonly created_by: Prisma.FieldRef<"users", 'String'>
   readonly created_at: Prisma.FieldRef<"users", 'DateTime'>
   readonly updated_by: Prisma.FieldRef<"users", 'String'>

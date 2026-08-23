@@ -41,8 +41,12 @@ export function isShortcutGateBlocked(
 }
 
 export function isModKey(event: KeyboardEvent, key: string): boolean {
+  const eventKey = event.key?.toLowerCase();
+  if (!eventKey) {
+    return false;
+  }
   return (
-    event.key.toLowerCase() === key.toLowerCase() &&
+    eventKey === key.toLowerCase() &&
     (event.metaKey || event.ctrlKey) &&
     !event.altKey &&
     !event.repeat
@@ -50,9 +54,13 @@ export function isModKey(event: KeyboardEvent, key: string): boolean {
 }
 
 export function isShiftLetter(event: KeyboardEvent, letter: string): boolean {
+  const eventKey = event.key?.toLowerCase();
+  if (!eventKey) {
+    return false;
+  }
   return (
     event.shiftKey &&
-    event.key.toLowerCase() === letter.toLowerCase() &&
+    eventKey === letter.toLowerCase() &&
     !event.metaKey &&
     !event.ctrlKey &&
     !event.altKey &&
@@ -61,8 +69,12 @@ export function isShiftLetter(event: KeyboardEvent, letter: string): boolean {
 }
 
 export function isUnmodifiedKey(event: KeyboardEvent, key: string): boolean {
+  const eventKey = event.key?.toLowerCase();
+  if (!eventKey) {
+    return false;
+  }
   return (
-    event.key.toLowerCase() === key.toLowerCase() &&
+    eventKey === key.toLowerCase() &&
     !event.metaKey &&
     !event.ctrlKey &&
     !event.altKey &&

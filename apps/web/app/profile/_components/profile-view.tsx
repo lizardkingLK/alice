@@ -32,6 +32,7 @@ import {
   getInitials,
 } from '@/app/_shared/utility';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
+import { ProfileCoverBanner } from '@/app/profile/_components/profile-cover-banner';
 import type {
   ProfileTeam,
   ProfileWorkedOn,
@@ -43,6 +44,8 @@ type ProfileViewProps = {
   email: string;
   phone: string | null;
   avatarUrl: string | null;
+  coverUrl: string | null;
+  updatedAt: string;
   role: string;
   provider: string;
   emailVerified: boolean;
@@ -75,6 +78,8 @@ export function ProfileView({
   email,
   phone,
   avatarUrl,
+  coverUrl,
+  updatedAt,
   role,
   provider,
   emailVerified,
@@ -107,17 +112,7 @@ export function ProfileView({
 
   return (
     <div className="bg-background min-h-full">
-      {/* Banner */}
-      <div
-        className={cn(
-          'relative h-40 w-full overflow-hidden sm:h-48 md:h-56',
-          'bg-linear-to-br from-sky-700 via-teal-700 to-emerald-800'
-        )}
-        aria-hidden
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(255,255,255,0.18),transparent_45%),radial-gradient(circle_at_80%_70%,rgba(0,0,0,0.25),transparent_50%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-black/25 to-transparent" />
-      </div>
+      <ProfileCoverBanner coverUrl={coverUrl} updatedAt={updatedAt} />
 
       <div className="mx-auto w-full max-w-6xl px-4 pb-10 sm:px-6">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[17.5rem_minmax(0,1fr)] lg:gap-10">
@@ -150,7 +145,7 @@ export function ProfileView({
               </div>
 
               <Button asChild variant="secondary" className="w-full">
-                <Link href="/edit-profile">Manage your account</Link>
+                <Link href="/settings?tab=general">Manage your account</Link>
               </Button>
             </div>
 

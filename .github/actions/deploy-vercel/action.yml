@@ -1,9 +1,10 @@
 name: Deploy Vercel App
 description: >-
-  Build @repo/types, install the Vercel CLI, then pull / build / deploy a
-  production prebuilt project. Requires checkout + setup-workspace first.
-  Expects VERCEL_TOKEN (and VERCEL_ORG_ID) in the job environment.
-  Project Root Directory is configured in Vercel (e.g. apps/api, apps/web).
+  Build @repo/types, prevalidate Vercel secrets/link, install the Vercel CLI,
+  then pull / build / deploy a production prebuilt project. Requires checkout +
+  setup-workspace first. Expects VERCEL_TOKEN and VERCEL_ORG_ID in the job
+  environment. Project Root Directory is configured in Vercel (e.g. apps/api,
+  apps/web).
 
 inputs:
   vercel-project-id:
@@ -21,13 +22,23 @@ runs:
       shell: bash
       run: pnpm turbo build --filter=@repo/types
 
+    - name: Prevalidate Vercel deploy
+      uses: ./.github/actions/vercel-prevalidate
+      with:
+        vercel-project-id: ${{ inputs.vercel-project-id }}
+
     - name: Install Global Vercel CLI Execution Agent
       shell: bash
       run: pnpm install --global vercel@latest --ignore-scripts
 
     - name: Pull Vercel Environment Variables
       shell: bash
-      run: vercel pull --yes --environment=${{ inputs.environment }} --token=$VERCEL_TOKEN
+      run: |
+        set -euo pipefail
+        if ! vercel pull --yes --environment=${{ inputs.environment }} --token="$VERCEL_TOKEN"; then
+          echo "::error::vercel pull failed. Usual causes: expired VERCEL_TOKEN, project-scoped token (use team-scoped or account-scoped), wrong VERCEL_ORG_ID, or wrong project id. Re-run with debug locally: VERCEL_ORG_ID=… VERCEL_PROJECT_ID=… vercel pull --yes --environment=production --token=… --debug"
+          exit 1
+        fi
       env:
         VERCEL_PROJECT_ID: ${{ inputs.vercel-project-id }}
 

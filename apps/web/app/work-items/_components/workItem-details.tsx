@@ -41,6 +41,7 @@ import {
   Paperclip,
   PencilIcon,
   Plus,
+  RefreshCw,
 } from '@repo/ui/lib/icons';
 import WorkItemDescriptionEditor from '@/app/work-items/_components/workItem-description-editor';
 import { DescriptionView } from '@/app/work-items/_components/workItem-description-view';
@@ -49,6 +50,7 @@ import {
   createWorkItemWorkLog,
   updateWorkItem,
 } from '@/app/work-items/_services/workItem.service.client';
+import { useWorkItemLifecycleActions } from '@/app/work-items/_hooks/use-work-item-lifecycle-actions';
 import WorkItemSidebar from '@/app/work-items/_components/workItem-details-sidebar';
 import { WorkItemTitleEditor } from '@/app/work-items/_components/workItem-title-editor';
 import { WorkItemPathBreadcrumb } from '@/app/work-items/_components/work-item-path-breadcrumb';
@@ -72,6 +74,7 @@ import { toast } from '@repo/ui/components/ui/sonner';
 import { CommentItem } from '@/app/comments/_services/comments.service';
 import type { Project as DbProject } from '@/app/projects/_services/projects.service';
 import type { WorkItemAncestor } from '@/app/work-items/_services/workItem.service.server';
+import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { useOptimisticPending } from '@/lib/optimistic-lock/use-optimistic-pending';
 import { useOptimisticPendingHydrate } from '@/lib/optimistic-lock/use-optimistic-pending-hydrate';
@@ -113,6 +116,22 @@ export default function WorkItemDetails({
   const router = useRouter();
   const { handleMutationError } = useOptimisticLock();
   const [workItem, setWorkItem] = useState<DbWorkItem>(workItemDetails);
+  const lifecycle = useWorkItemLifecycleActions({
+    currentUserId,
+    onError: (message) => {
+      if (message) {
+        toast.error(message);
+      }
+    },
+    onRestoreSuccess: () => {
+      setWorkItem((prev) => ({
+        ...prev,
+        record_status: 'active',
+        ...(prev.parent_id ? { parent_id: null } : {}),
+      }));
+      toast.success('Work item restored');
+    },
+  });
   const [isEditing, setEditing] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(true);
   const [moreFieldsOpen, setMoreFieldsOpen] = useState(false);
@@ -154,7 +173,8 @@ export default function WorkItemDetails({
   };
 
   const allowedChildType = getAllowedChildType(workItem.type as WorkItemType);
-  const isRecordReadOnly = workItem.status === 'Done';
+  const isArchived = workItem.record_status === 'archived';
+  const isRecordReadOnly = workItem.status === 'Done' || isArchived;
   const canCreateSubtask = Boolean(
     allowedChildType && project && !isRecordReadOnly
   );
@@ -294,6 +314,43 @@ export default function WorkItemDetails({
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 pb-12">
+      {isArchived && (
+        <div className="border-border bg-muted/40 flex flex-col gap-3 rounded-lg border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <p className="text-sm font-medium">This work item is archived</p>
+            <p className="text-muted-foreground text-sm">
+              It is hidden from the board, calendar, and active lists. Restore
+              it to edit again.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="shrink-0 cursor-pointer self-start"
+            disabled={lifecycle.isPending}
+            onClick={() => lifecycle.handleRestore(workItem)}
+          >
+            <RefreshCw data-icon="inline-start" />
+            Restore
+          </Button>
+        </div>
+      )}
+
+      {lifecycle.itemToConfirm ? (
+        <RegistryConfirmDialog
+          title={lifecycle.confirmCopy.title}
+          subject={lifecycle.itemToConfirm.title}
+          detail={lifecycle.confirmCopy.detail}
+          confirmLabel={lifecycle.confirmCopy.confirmLabel}
+          isPending={lifecycle.isPending}
+          isSoft={lifecycle.confirmCopy.isSoft}
+          actionVerb={lifecycle.confirmCopy.actionVerb}
+          onCancel={lifecycle.clearConfirm}
+          onConfirm={lifecycle.confirmLifecycleAction}
+        />
+      ) : null}
+
       {/* Title + actions — same 3∶2 column ratio as the body so the
           title pencil lines up above the description pencil. */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">

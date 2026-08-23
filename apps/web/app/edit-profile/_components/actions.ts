@@ -62,7 +62,7 @@ export async function deactivateMyAccount(
 
   invalidateDropdownCache(DROPDOWN_CACHE_TAGS.users);
   revalidatePath('/users');
-  revalidatePath('/edit-profile');
+  revalidatePath('/settings');
   revalidatePath('/profile');
 
   const supabase = await createClient();

@@ -25,6 +25,15 @@ const nextConfig = {
     ],
   },
   output: 'standalone',
+  async redirects() {
+    return [
+      {
+        source: '/edit-profile',
+        destination: '/settings?tab=general',
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     if (process.env.NODE_ENV === 'production') {
       return [];

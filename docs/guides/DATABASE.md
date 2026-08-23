@@ -76,6 +76,9 @@ Destructive and opt-in. Truncates every `public` table except `_prisma_migration
 
 - `alice_storage_attachments`
 - `alice_storage_profile_pictures`
+- `alice_storage_profile_covers`
+- `alice_storage_project_logos`
+- `alice_storage_project_covers`
 - `alice_storage_chat_history`
 
 Then runs the same seed as `pnpm db seed`. Equivalent: `SEED_RESET=1 pnpm db seed`.

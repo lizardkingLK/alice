@@ -6,6 +6,8 @@ export interface RawSearchParams {
   page?: string;
   limit?: string;
   tab?: string;
+  /** Work-item lifecycle list filter (`active` | `archived`). */
+  recordStatus?: string;
   teamStatus?: string;
   search?: string;
   project?: string;
@@ -100,6 +102,25 @@ export function parseTabStatus(tab?: string): 'active' | 'archived' {
   return tab === 'archived' ? 'archived' : 'active';
 }
 
+/**
+ * Work-item Active/Archived list filter.
+ * Prefers `recordStatus` so it does not collide with page-level `tab`
+ * (e.g. project details `?tab=work-items`).
+ * Falls back to legacy `/work-items?tab=archived`.
+ */
+export function parseWorkItemRecordStatus(params: {
+  readonly recordStatus?: string | null;
+  readonly tab?: string | null;
+}): 'active' | 'archived' {
+  if (params.recordStatus === 'archived' || params.recordStatus === 'active') {
+    return params.recordStatus;
+  }
+  if (params.tab === 'archived' || params.tab === 'active') {
+    return params.tab;
+  }
+  return 'active';
+}
+
 /** Views workspace tabs (My / Shared with me / Archived). */
 export type ViewsListTab = 'mine' | 'shared' | 'archived';
 
@@ -110,10 +131,16 @@ export function parseViewsListTab(tab?: string | null): ViewsListTab {
   return 'mine';
 }
 
-export type ProjectDetailsTab = 'details' | 'members' | 'teams' | 'work-items';
+export type ProjectDetailsTab =
+  'details' | 'members' | 'teams' | 'work-items' | 'integrations';
 
 export function parseProjectDetailsTab(tab?: string | null): ProjectDetailsTab {
-  if (tab === 'members' || tab === 'teams' || tab === 'work-items') {
+  if (
+    tab === 'members' ||
+    tab === 'teams' ||
+    tab === 'work-items' ||
+    tab === 'integrations'
+  ) {
     return tab;
   }
   return 'details';
@@ -139,6 +166,17 @@ export type UsersPageTab = 'users' | 'allowlist';
 
 export function parseUsersPageTab(tab?: string | null): UsersPageTab {
   return tab === 'allowlist' ? 'allowlist' : 'users';
+}
+
+/** Account settings page tabs (`/settings?tab=`). */
+export type SettingsTab =
+  'general' | 'security' | 'notifications' | 'preferences';
+
+export function parseSettingsTab(tab?: string | null): SettingsTab {
+  if (tab === 'security' || tab === 'notifications' || tab === 'preferences') {
+    return tab;
+  }
+  return 'general';
 }
 
 /**

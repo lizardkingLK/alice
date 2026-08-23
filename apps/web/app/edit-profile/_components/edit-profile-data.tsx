@@ -7,8 +7,15 @@ import {
 import { getDbUser, getUser } from '@/lib/auth';
 import { buildLoginPath } from '@/lib/auth-redirect';
 import { getRequestPathForLoginNext } from '@/lib/auth-redirect.server';
+import type { SettingsTab } from '@/lib/search-params';
 
-export async function EditProfileData() {
+type EditProfileDataProps = {
+  readonly section: SettingsTab;
+};
+
+export async function EditProfileData({
+  section,
+}: Readonly<EditProfileDataProps>) {
   const [user, dbUser] = await Promise.all([getUser(), getDbUser()]);
 
   if (!user || !dbUser) {
@@ -24,6 +31,7 @@ export async function EditProfileData() {
 
   return (
     <EditProfileView
+      section={section}
       name={name}
       handle={handleFromEmail(email)}
       email={email}

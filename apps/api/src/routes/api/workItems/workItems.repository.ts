@@ -28,6 +28,7 @@ import {
   prismaOptionalDate,
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
+import { WorkItemAccessError } from './workItems.errors';
 import { WorkItemBody, WorkItemUpdateBody } from './workItems.schemas';
 import {
   buildWorkItemPrismaListWhere,
@@ -68,13 +69,72 @@ const WORK_ITEM_WITH_PEOPLE = `*, ${ASSIGNEE_SELECT}, ${REPORTER_SELECT}`;
 export class WorkItemRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
+  /**
+   * Admin: all projects. Member/manager: active membership ∪ owned projects.
+   */
+  async listAccessibleProjectIds(actorId: string): Promise<'all' | string[]> {
+    const { data: systemUser } = await this.db
+      .from('users')
+      .select('role')
+      .eq('id', actorId)
+      .maybeSingle();
+
+    if (systemUser?.role === 'admin') {
+      return 'all';
+    }
+
+    const [
+      { data: memberships, error: memberError },
+      { data: owned, error: ownedError },
+    ] = await Promise.all([
+      this.db
+        .from('project_members')
+        .select('project_id')
+        .eq('user_id', actorId)
+        .eq('status', 'active'),
+      this.db.from('projects').select('id').eq('owner_id', actorId),
+    ]);
+
+    if (memberError) {
+      console.error(
+        'error. failed to list member projects for work-item access:',
+        memberError.message
+      );
+      throw new Error('Failed to authorize work-item access');
+    }
+
+    if (ownedError) {
+      console.error(
+        'error. failed to list owned projects for work-item access:',
+        ownedError.message
+      );
+      throw new Error('Failed to authorize work-item access');
+    }
+
+    const ids = [
+      ...(memberships ?? []).map((row) => row.project_id),
+      ...(owned ?? []).map((row) => row.id),
+    ];
+    return [...new Set(ids)];
+  }
+
+  async assertCanAccessProject(
+    actorId: string,
+    projectId: string
+  ): Promise<void> {
+    const accessible = await this.listAccessibleProjectIds(actorId);
+    if (accessible === 'all') {
+      return;
+    }
+    if (!accessible.includes(projectId)) {
+      throw new WorkItemAccessError();
+    }
+  }
+
   async requireProjectMember(
     workItemId: string,
     actorId: string
   ): Promise<{ projectId: string }> {
-    // Supabase's generated DB types don't yet include `work_item_worklogs`,
-    // so we cast to access the new table safely.
-
     const { data: workItem, error: workItemError } = await this.db
       .from('work_items')
       .select('project_id')
@@ -83,47 +143,17 @@ export class WorkItemRepository {
 
     if (workItemError) {
       console.error(
-        'error. failed to load work-item for worklog auth:',
+        'error. failed to load work-item for project access:',
         workItemError.message
       );
-      throw new Error('Failed to authorize worklog');
+      throw new Error('Failed to authorize work-item access');
     }
 
     if (!workItem) {
       throw new Error('Work item not found');
     }
 
-    // System administrators (role: 'admin') bypass project membership checks
-    const { data: systemUser } = await this.db
-      .from('users')
-      .select('role')
-      .eq('id', actorId)
-      .maybeSingle();
-
-    if (systemUser?.role === 'manager' || systemUser?.role === 'admin') {
-      return { projectId: workItem.project_id };
-    }
-
-    const { data: member, error: memberError } = await this.db
-      .from('project_members')
-      .select('user_id')
-      .eq('project_id', workItem.project_id)
-      .eq('user_id', actorId)
-      .eq('status', 'active')
-      .maybeSingle();
-
-    if (memberError) {
-      console.error(
-        'error. failed to verify project membership for worklog:',
-        memberError.message
-      );
-      throw new Error('Failed to authorize worklog');
-    }
-
-    if (!member) {
-      throw new Error('Unauthorized');
-    }
-
+    await this.assertCanAccessProject(actorId, workItem.project_id);
     return { projectId: workItem.project_id };
   }
 
@@ -207,6 +237,7 @@ export class WorkItemRepository {
       .from('work_items')
       .select('id', { count: 'exact', head: true })
       .eq('parent_id', parentId)
+      .eq('record_status', 'active')
       .neq('status', WorkItemStatusEnum.Done);
 
     if (error) {
@@ -482,5 +513,105 @@ export class WorkItemRepository {
     }
 
     return project;
+  }
+
+  /**
+   * BFS collect of `rootId` and every descendant via `parent_id`.
+   * Order is root-first; callers that need leaves-first should reverse.
+   */
+  async collectDescendantIds(rootId: string): Promise<string[]> {
+    const collected: string[] = [];
+    let frontier = [rootId];
+
+    while (frontier.length > 0) {
+      collected.push(...frontier);
+      const children = await prisma.work_items.findMany({
+        where: { parent_id: { in: frontier } },
+        select: { id: true },
+      });
+      frontier = children.map((child) => child.id);
+    }
+
+    return collected;
+  }
+
+  async setRecordStatusForSubtree(
+    rootId: string,
+    recordStatus: 'active' | 'archived',
+    actorId: string,
+    expectedUpdatedAt: string,
+    options?: {
+      /** When restoring a child, clear `parent_id` so it becomes a root. */
+      readonly unlinkFromParent?: boolean;
+    }
+  ): Promise<DbWorkItem> {
+    const ids = await this.collectDescendantIds(rootId);
+    const audit = prismaAuditUpdate(actorId);
+    const unlinkFromParent = Boolean(options?.unlinkFromParent);
+
+    const { count } = await prisma.$transaction(async (tx) => {
+      const rootUpdate = await tx.work_items.updateMany({
+        where: {
+          id: rootId,
+          updated_at: prismaLockTimestamp(expectedUpdatedAt),
+        },
+        data: {
+          record_status: recordStatus,
+          ...(unlinkFromParent ? { parent_id: null } : {}),
+          ...audit,
+        },
+      });
+
+      if (rootUpdate.count > 0) {
+        const childIds = ids.filter((id) => id !== rootId);
+        if (childIds.length > 0) {
+          await tx.work_items.updateMany({
+            where: { id: { in: childIds } },
+            data: {
+              record_status: recordStatus,
+              ...audit,
+            },
+          });
+        }
+      }
+
+      return rootUpdate;
+    });
+
+    return resolveOptimisticPrismaUpdate({
+      count,
+      fetchUpdated: () => this.getById(rootId),
+      fetchCurrent: () => this.getById(rootId),
+      notFoundMessage: 'Work item not found',
+    });
+  }
+
+  async listAttachmentStoragePaths(workItemIds: string[]): Promise<string[]> {
+    if (workItemIds.length === 0) {
+      return [];
+    }
+    const rows = await prisma.attachments.findMany({
+      where: { work_item_id: { in: workItemIds } },
+      select: { storage_path: true },
+    });
+    return rows.map((row) => row.storage_path).filter(Boolean);
+  }
+
+  async deleteNotificationsForWorkItems(workItemIds: string[]): Promise<void> {
+    if (workItemIds.length === 0) {
+      return;
+    }
+    await prisma.notifications.deleteMany({
+      where: { related_item_id: { in: workItemIds } },
+    });
+  }
+
+  async deleteWorkItemsByIds(workItemIds: string[]): Promise<void> {
+    if (workItemIds.length === 0) {
+      return;
+    }
+    await prisma.work_items.deleteMany({
+      where: { id: { in: workItemIds } },
+    });
   }
 }

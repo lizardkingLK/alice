@@ -499,6 +499,8 @@ export type Database = {
           jira_token: string | null
           jira_url: string | null
           key: string
+          logo_url: string | null
+          cover_picture: string | null
           name: string
           owner_id: string
           start_date: string | null
@@ -522,6 +524,8 @@ export type Database = {
           jira_token?: string | null
           jira_url?: string | null
           key: string
+          logo_url?: string | null
+          cover_picture?: string | null
           name: string
           owner_id: string
           start_date?: string | null
@@ -545,6 +549,8 @@ export type Database = {
           jira_token?: string | null
           jira_url?: string | null
           key?: string
+          logo_url?: string | null
+          cover_picture?: string | null
           name?: string
           owner_id?: string
           start_date?: string | null
@@ -935,6 +941,7 @@ export type Database = {
       users: {
         Row: {
           active: boolean
+          cover_picture: string | null
           created_at: string
           created_by: string | null
           email: string
@@ -949,6 +956,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          cover_picture?: string | null
           created_at?: string
           created_by?: string | null
           email: string
@@ -963,6 +971,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          cover_picture?: string | null
           created_at?: string
           created_by?: string | null
           email?: string
@@ -1063,6 +1072,7 @@ export type Database = {
           parent_id: string | null
           priority: Database["public"]["Enums"]["WorkItemPriority"]
           project_id: string
+          record_status: Database["public"]["Enums"]["RecordStatus"]
           reporter_id: string | null
           sprint_id: string | null
           status: Database["public"]["Enums"]["WorkItemStatus"]
@@ -1085,6 +1095,7 @@ export type Database = {
           parent_id?: string | null
           priority?: Database["public"]["Enums"]["WorkItemPriority"]
           project_id: string
+          record_status?: Database["public"]["Enums"]["RecordStatus"]
           reporter_id?: string | null
           sprint_id?: string | null
           status?: Database["public"]["Enums"]["WorkItemStatus"]
@@ -1107,6 +1118,7 @@ export type Database = {
           parent_id?: string | null
           priority?: Database["public"]["Enums"]["WorkItemPriority"]
           project_id?: string
+          record_status?: Database["public"]["Enums"]["RecordStatus"]
           reporter_id?: string | null
           sprint_id?: string | null
           status?: Database["public"]["Enums"]["WorkItemStatus"]
@@ -1181,6 +1193,7 @@ export type Database = {
         }
         Returns: {
           active: boolean
+          cover_picture: string | null
           created_at: string
           created_by: string | null
           email: string
