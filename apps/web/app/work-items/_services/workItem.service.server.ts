@@ -5,7 +5,6 @@ import {
   listWorkItemsPaginatedFromApi,
 } from '@/app/work-items/_services/workItem.service.server.api';
 import {
-  applyWorkItemFilters,
   getWorkItemAncestorsFromSupabase,
   getWorkItemFromSupabase,
   getWorkItemsFromSupabase,
@@ -28,11 +27,11 @@ export type {
 } from '@/app/work-items/_services/workItem.service.server.types';
 
 export { applyWorkItemFilters } from '@/app/work-items/_services/workItem.service.server.supabase';
+
 /**
  * Strategy facade for server-only work-item reads.
  * Mutations still go through the API (`workItem.service.client.ts`).
  */
-
 export async function getWorkItems(
   filters?: WorkItemListFilters,
   options?: GetWorkItemsOptions
