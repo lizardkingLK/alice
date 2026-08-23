@@ -72,6 +72,7 @@ const mockUsers: User[] = [
     updated_at: '2026-07-01T00:00:00Z',
     created_by: null,
     profile_picture: null,
+    cover_picture: null,
     status: 'active',
     updated_by: null,
   },

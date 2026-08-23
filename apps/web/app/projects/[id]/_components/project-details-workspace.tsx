@@ -53,11 +53,14 @@ import {
   Folder,
   Network,
   ClipboardPenLine,
-  Database,
   RefreshCw,
   Edit,
-  GitPullRequest,
+  Plug,
 } from '@repo/ui/lib/icons';
+import {
+  GitHubLogo,
+  JiraLogo,
+} from '@/app/projects/[id]/_components/integration-brand-logos';
 
 const REPORT_CARD_CLASS = 'border-border/60 bg-card/50 backdrop-blur-sm';
 
@@ -72,6 +75,7 @@ interface ProjectWorkItemsProps {
   readonly assigneeFilter: string;
   readonly labelsFilter?: readonly string[];
   readonly listView: 'flat' | 'hierarchy';
+  readonly tab: 'active' | 'archived';
 }
 
 interface ProjectTeamsProps {
@@ -154,7 +158,10 @@ export function ProjectDetailsWorkspace({
 
   return (
     <div className="space-y-6">
-      <ProjectSummaryBanner project={project} />
+      <ProjectSummaryBanner
+        project={project}
+        canEditBranding={isManagerOrAdmin}
+      />
 
       {/* Tabs Selector */}
       <Tabs
@@ -181,6 +188,13 @@ export function ProjectDetailsWorkspace({
           >
             <ClipboardPenLine className="h-4 w-4" />
             Work Items
+          </TabsTrigger>
+          <TabsTrigger
+            value="integrations"
+            className={UNDERLINE_TAB_TRIGGER_CLASS}
+          >
+            <Plug className="h-4 w-4" />
+            Integrations
           </TabsTrigger>
         </TabsList>
 
@@ -302,7 +316,14 @@ export function ProjectDetailsWorkspace({
                 </div>
               </CardContent>
             </Card>
+          </div>
+        </TabsContent>
 
+        <TabsContent
+          value="integrations"
+          className="m-0 space-y-6 focus-visible:ring-0 focus-visible:ring-offset-0"
+        >
+          <div className="grid gap-6 md:grid-cols-2">
             <JiraSettingsCard project={project} />
             <GithubSettingsCard project={project} />
           </div>
@@ -513,8 +534,10 @@ export function ProjectDetailsWorkspace({
             assigneeFilter={workItems.assigneeFilter}
             labelsFilter={workItems.labelsFilter ?? []}
             listView={workItems.listView}
+            tab={workItems.tab}
             lockedProjectId={project.id}
             currentUserId={currentUserId}
+            currentUserRole={currentUserRole ?? undefined}
             initialColumnVisibility={initialColumnVisibility}
             columnVisibilityHasCookie={columnVisibilityHasCookie}
           />
@@ -599,10 +622,10 @@ function JiraSettingsCard({ project }: JiraSettingsCardProps) {
   };
 
   return (
-    <Card className={`${REPORT_CARD_CLASS} md:col-span-3`}>
+    <Card className={REPORT_CARD_CLASS}>
       <CardHeader>
         <CardTitle className="text-primary flex items-center gap-2 text-base font-semibold">
-          <Database className="h-5 w-5" />
+          <JiraLogo />
           Jira Cloud Integration
         </CardTitle>
         <CardDescription className="text-muted-foreground text-sm">
@@ -797,10 +820,10 @@ function GithubSettingsCard({ project }: GithubSettingsCardProps) {
   };
 
   return (
-    <Card className={`${REPORT_CARD_CLASS} md:col-span-3`}>
+    <Card className={REPORT_CARD_CLASS}>
       <CardHeader>
         <CardTitle className="text-primary flex items-center gap-2 text-base font-semibold">
-          <GitPullRequest className="h-5 w-5" />
+          <GitHubLogo />
           GitHub Integration
         </CardTitle>
         <CardDescription className="text-muted-foreground text-sm">

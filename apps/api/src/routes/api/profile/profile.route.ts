@@ -1,24 +1,42 @@
 import multer, { Multer } from 'multer';
 import { Router } from 'express';
 import { z } from 'zod';
-import { expectedUpdatedAtSchema } from '@repo/types';
 import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
+import {
+  handleMultipartImageUpload,
+  MAX_PUBLIC_IMAGE_BYTES,
+} from '../../../lib/image-upload-route';
 import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
 import { profileService, updateOwnProfileSchema } from './profile.service';
 
 const profileRouter: Router = Router();
 
-const MAX_PROFILE_PICTURE_BYTES = 2 * 1024 * 1024;
-
 const upload: Multer = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: MAX_PROFILE_PICTURE_BYTES,
+    fileSize: MAX_PUBLIC_IMAGE_BYTES,
   },
 });
+
+/**
+ * Self-service cover photo upload for the signed-in user.
+ * Multipart field: `file`. Persists forever public URL on `public.users.cover_picture`.
+ */
+profileRouter.post(
+  '/cover',
+  requireApiAuth,
+  upload.single('file'),
+  async (req: AuthenticatedRequest, res) => {
+    await handleMultipartImageUpload(req, res, {
+      failureLabel: 'cover picture',
+      update: (actorId, file, expectedUpdatedAt) =>
+        profileService.updateOwnCoverPicture(actorId, file, expectedUpdatedAt),
+    });
+  }
+);
 
 /**
  * Self-service profile picture upload for the signed-in user.
@@ -29,55 +47,15 @@ profileRouter.post(
   requireApiAuth,
   upload.single('file'),
   async (req: AuthenticatedRequest, res) => {
-    const userId = req.userId;
-    if (!userId) {
-      res.status(401).json({ error: 'Unauthorized' });
-      return;
-    }
-
-    const file = req.file;
-    if (!file) {
-      res.status(400).json({ error: 'No file uploaded.' });
-      return;
-    }
-
-    const expectedUpdatedAtResult = expectedUpdatedAtSchema.safeParse(
-      req.body?.expectedUpdatedAt
-    );
-    if (!expectedUpdatedAtResult.success) {
-      res.status(400).json({
-        error: z.treeifyError(expectedUpdatedAtResult.error),
-      });
-      return;
-    }
-
-    try {
-      const result = await profileService.updateOwnProfilePicture(
-        userId,
-        file,
-        expectedUpdatedAtResult.data
-      );
-      res.json(result);
-    } catch (error) {
-      if (trySendOptimisticLockError(res, error)) return;
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Failed to update profile picture.';
-      let status = 500;
-      if (
-        message.includes('Invalid file type') ||
-        message.includes('No file')
-      ) {
-        status = 400;
-      } else if (message.includes('not found')) {
-        status = 404;
-      }
-      if (status >= 500) {
-        console.error('error. profile picture upload:', message);
-      }
-      res.status(status).json({ error: message });
-    }
+    await handleMultipartImageUpload(req, res, {
+      failureLabel: 'profile picture',
+      update: (actorId, file, expectedUpdatedAt) =>
+        profileService.updateOwnProfilePicture(
+          actorId,
+          file,
+          expectedUpdatedAt
+        ),
+    });
   }
 );
 

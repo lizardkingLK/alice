@@ -1,5 +1,6 @@
 import { requireUserWithRole } from '../../../lib/auth-helpers';
 import { ProjectStatusEnum, UserRoleEnum } from '@repo/types';
+import { uploadPublicImageReplacingPrevious } from '../../../lib/public-image-upload';
 import {
   projectsRepository,
   type ProjectRow,
@@ -25,10 +26,20 @@ async function requireAdmin(actorId: string) {
 
 export type CreateProjectInput = Omit<
   ProjectRow,
-  'id' | 'created_at' | 'updated_at' | 'deleted_at'
->;
+  | 'id'
+  | 'created_at'
+  | 'updated_at'
+  | 'deleted_at'
+  | 'logo_url'
+  | 'cover_picture'
+> & {
+  logo_url?: string | null;
+  cover_picture?: string | null;
+};
 
 export type UpdateProjectInput = Partial<CreateProjectInput>;
+
+type ProjectImageField = 'logo_url' | 'cover_picture';
 
 export class ProjectsService {
   async getProjectById(projectId: string): Promise<ProjectRowWithOwner> {
@@ -174,6 +185,106 @@ export class ProjectsService {
   ): Promise<void> {
     await requireProjectManager(actorId);
     await projectsRepository.linkImportedJiraParents(projectId, issues);
+  }
+
+  async updateProjectLogo(
+    actorId: string,
+    projectId: string,
+    file: Express.Multer.File,
+    expectedUpdatedAt: string
+  ): Promise<{
+    success: true;
+    url: string;
+    path: string;
+    project: ProjectRow;
+  }> {
+    return this.updateProjectImageField(
+      actorId,
+      projectId,
+      file,
+      expectedUpdatedAt,
+      {
+        field: 'logo_url',
+        fileNameFallback: 'logo',
+      }
+    );
+  }
+
+  async updateProjectCover(
+    actorId: string,
+    projectId: string,
+    file: Express.Multer.File,
+    expectedUpdatedAt: string
+  ): Promise<{
+    success: true;
+    url: string;
+    path: string;
+    project: ProjectRow;
+  }> {
+    return this.updateProjectImageField(
+      actorId,
+      projectId,
+      file,
+      expectedUpdatedAt,
+      {
+        field: 'cover_picture',
+        fileNameFallback: 'cover',
+      }
+    );
+  }
+
+  private async updateProjectImageField(
+    actorId: string,
+    projectId: string,
+    file: Express.Multer.File,
+    expectedUpdatedAt: string,
+    options: {
+      field: ProjectImageField;
+      fileNameFallback: string;
+    }
+  ): Promise<{
+    success: true;
+    url: string;
+    path: string;
+    project: ProjectRow;
+  }> {
+    await requireProjectManager(actorId);
+
+    const existing = await projectsRepository.findById(projectId);
+    if (!existing) {
+      throw new Error('Project not found.');
+    }
+
+    const { field, fileNameFallback } = options;
+    const { env } = await import('../../../config/env.js');
+    const bucket =
+      field === 'logo_url'
+        ? env.STORAGE_BUCKET_PROJECT_LOGOS
+        : env.STORAGE_BUCKET_PROJECT_COVERS;
+
+    let project!: ProjectRow;
+    const uploaded = await uploadPublicImageReplacingPrevious({
+      file,
+      bucket,
+      ownerKey: projectId,
+      fileNameFallback,
+      previousPublicUrl: existing[field],
+      persistUrl: async (publicUrl) => {
+        project = await projectsRepository.update(
+          projectId,
+          { [field]: publicUrl },
+          actorId,
+          expectedUpdatedAt
+        );
+      },
+    });
+
+    return {
+      success: true,
+      url: project[field]!,
+      path: uploaded.path,
+      project,
+    };
   }
 }
 

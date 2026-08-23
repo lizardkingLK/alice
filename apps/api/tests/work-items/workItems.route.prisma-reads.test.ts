@@ -85,7 +85,8 @@ describe('work-items unused Prisma GET routes', () => {
           parentId: null,
           page: 1,
           limit: 10,
-        })
+        }),
+        'user-1'
       );
     });
   });
@@ -111,7 +112,7 @@ describe('work-items unused Prisma GET routes', () => {
         data: JSON.parse(JSON.stringify(row)),
         error: null,
       });
-      expect(getWorkItemDetailMock).toHaveBeenCalledWith(row.id);
+      expect(getWorkItemDetailMock).toHaveBeenCalledWith(row.id, 'user-1');
     });
   });
 

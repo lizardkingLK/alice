@@ -5,14 +5,10 @@ import type {
   WorkItemPrismaListFilters,
 } from '@repo/types';
 
-/** Matches RSC `applyWorkItemFilters` + `buildWorkItemSearchOrFilter`. */
-export function buildWorkItemPrismaListWhere(
-  filters?: WorkItemPrismaListFilters,
-  search?: string
-): Prisma.work_itemsWhereInput {
-  const where: Prisma.work_itemsWhereInput = {};
-  const and: Prisma.work_itemsWhereInput[] = [];
-
+function applyProjectFilters(
+  where: Prisma.work_itemsWhereInput,
+  filters?: WorkItemPrismaListFilters
+): void {
   if (filters?.sprintId === null) {
     where.sprint_id = null;
   } else if (filters?.sprintId) {
@@ -20,7 +16,13 @@ export function buildWorkItemPrismaListWhere(
   }
 
   if (filters?.projectId) {
-    where.project_id = filters.projectId;
+    if (filters.projectIds && !filters.projectIds.includes(filters.projectId)) {
+      where.project_id = { in: [] };
+    } else {
+      where.project_id = filters.projectId;
+    }
+  } else if (filters?.projectIds) {
+    where.project_id = { in: [...filters.projectIds] };
   }
 
   if (filters?.parentId === null) {
@@ -28,14 +30,13 @@ export function buildWorkItemPrismaListWhere(
   } else if (filters?.parentId) {
     where.parent_id = filters.parentId;
   }
+}
 
-  if (filters?.type) {
-    where.type = filters.type;
-  }
-
-  if (filters?.assigneeId) {
-    where.assignee_id = filters.assigneeId;
-  }
+function buildSearchAndClauses(
+  filters?: WorkItemPrismaListFilters,
+  search?: string
+): Prisma.work_itemsWhereInput[] {
+  const and: Prisma.work_itemsWhereInput[] = [];
 
   if (filters?.labels?.length) {
     and.push({
@@ -46,18 +47,42 @@ export function buildWorkItemPrismaListWhere(
   }
 
   const term = search?.trim();
-  if (term) {
-    const ilikeTerm = term.replaceAll(/[,()]/g, '');
-    const searchOr: Prisma.work_itemsWhereInput[] = [];
-    if (ilikeTerm) {
-      searchOr.push({
-        title: { contains: ilikeTerm, mode: 'insensitive' },
-      });
-    }
-    searchOr.push({ labels: { array_contains: [term] } });
-    and.push({ OR: searchOr });
+  if (!term) {
+    return and;
   }
 
+  const ilikeTerm = term.replaceAll(/[,()]/g, '');
+  const searchOr: Prisma.work_itemsWhereInput[] = [];
+  if (ilikeTerm) {
+    searchOr.push({
+      title: { contains: ilikeTerm, mode: 'insensitive' },
+    });
+  }
+  searchOr.push({ labels: { array_contains: [term] } });
+  and.push({ OR: searchOr });
+  return and;
+}
+
+/** Matches RSC `applyWorkItemFilters` + `buildWorkItemSearchOrFilter`. */
+export function buildWorkItemPrismaListWhere(
+  filters?: WorkItemPrismaListFilters,
+  search?: string
+): Prisma.work_itemsWhereInput {
+  const where: Prisma.work_itemsWhereInput = {};
+
+  applyProjectFilters(where, filters);
+
+  if (filters?.type) {
+    where.type = filters.type;
+  }
+
+  if (filters?.assigneeId) {
+    where.assignee_id = filters.assigneeId;
+  }
+
+  where.record_status = filters?.recordStatus ?? 'active';
+
+  const and = buildSearchAndClauses(filters, search);
   if (and.length > 0) {
     where.AND = and;
   }

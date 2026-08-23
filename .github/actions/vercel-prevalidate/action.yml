@@ -1,0 +1,49 @@
+name: Prevalidate Vercel Deploy
+description: >-
+  Fail fast if Vercel deploy secrets are missing, then write `.vercel/project.json`
+  so the CLI can pull/build without interactive linking. Expects VERCEL_TOKEN and
+  VERCEL_ORG_ID in the job environment. Call before `vercel pull` / build / deploy.
+
+inputs:
+  vercel-project-id:
+    description: Vercel project id (VERCEL_PROJECT_ID_API or VERCEL_PROJECT_ID_WEB).
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Verify Vercel deploy secrets
+      shell: bash
+      env:
+        VERCEL_PROJECT_ID: ${{ inputs.vercel-project-id }}
+      run: |
+        set -euo pipefail
+        missing=0
+        if [ -z "${VERCEL_TOKEN:-}" ]; then
+          echo "::error::VERCEL_TOKEN is empty. Create a team-scoped (or account-scoped) token in Vercel → Account Settings → Tokens and set the GitHub Actions secret."
+          missing=1
+        fi
+        if [ -z "${VERCEL_ORG_ID:-}" ]; then
+          echo "::error::VERCEL_ORG_ID is empty. Use the Team ID from Vercel → Team Settings → General (team_…), or your personal account id when you have no team."
+          missing=1
+        fi
+        if [ -z "${VERCEL_PROJECT_ID:-}" ]; then
+          echo "::error::VERCEL_PROJECT_ID input is empty. Set VERCEL_PROJECT_ID_API / VERCEL_PROJECT_ID_WEB from Project Settings → General (prj_…)."
+          missing=1
+        fi
+        if [ "$missing" -ne 0 ]; then
+          exit 1
+        fi
+        echo "Vercel secrets present (token/org/project ids are non-empty)."
+
+    - name: Link Vercel project for CLI
+      shell: bash
+      env:
+        VERCEL_PROJECT_ID: ${{ inputs.vercel-project-id }}
+      run: |
+        set -euo pipefail
+        rm -rf .vercel
+        mkdir -p .vercel
+        # Explicit link so `vercel pull` does not rely on interactive discovery.
+        printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > .vercel/project.json
+        echo "Wrote .vercel/project.json for org/project link."

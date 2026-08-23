@@ -1,27 +1,14 @@
 import { expectedUpdatedAtSchema } from '@repo/types';
 import { z } from 'zod';
 import { env } from '../../../config/env';
-import {
-  getPublicStorageUrl,
-  removeStorageObjects,
-  sanitizeFileName,
-  storagePathFromPublicUrl,
-  uploadToStorage,
-} from '../../../lib/file-helpers';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
 import { prisma } from '../../../lib/prisma';
 import {
   prismaAuditUpdate,
   prismaLockTimestamp,
 } from '../../../lib/prisma-audit';
+import { uploadPublicImageReplacingPrevious } from '../../../lib/public-image-upload';
 import { supabase } from '../../../lib/supabase';
-
-const ALLOWED_MIME_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/gif',
-]);
 
 export const updateOwnProfileSchema = z.object({
   name: z
@@ -40,11 +27,14 @@ export type ProfileUser = {
   email: string;
   role: string;
   profile_picture: string | null;
+  cover_picture: string | null;
   updated_at: string;
 };
 
+type ProfileImageField = 'profile_picture' | 'cover_picture';
+
 const PROFILE_USER_SELECT =
-  'id, name, email, role, profile_picture, updated_at' as const;
+  'id, name, email, role, profile_picture, cover_picture, updated_at' as const;
 
 export class ProfileService {
   private async findProfileUser(userId: string): Promise<ProfileUser | null> {
@@ -90,61 +80,73 @@ export class ProfileService {
     file: Express.Multer.File,
     expectedUpdatedAt: string
   ): Promise<{ success: true; url: string; path: string; user: ProfileUser }> {
-    if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
-      throw new Error('Invalid file type. Use JPEG, PNG, WebP, or GIF.');
-    }
+    return this.updateOwnImageField(userId, file, expectedUpdatedAt, {
+      bucket: env.STORAGE_BUCKET_PROFILE_PICTURES,
+      field: 'profile_picture',
+      fileNameFallback: 'avatar',
+    });
+  }
 
-    const bucket = env.STORAGE_BUCKET_PROFILE_PICTURES;
-    const safeName = sanitizeFileName(file.originalname, 'avatar');
-    const objectPath = `${userId}/${Date.now()}-${safeName}`;
+  async updateOwnCoverPicture(
+    userId: string,
+    file: Express.Multer.File,
+    expectedUpdatedAt: string
+  ): Promise<{ success: true; url: string; path: string; user: ProfileUser }> {
+    return this.updateOwnImageField(userId, file, expectedUpdatedAt, {
+      bucket: env.STORAGE_BUCKET_PROFILE_COVERS,
+      field: 'cover_picture',
+      fileNameFallback: 'cover',
+    });
+  }
+
+  private async updateOwnImageField(
+    userId: string,
+    file: Express.Multer.File,
+    expectedUpdatedAt: string,
+    options: {
+      bucket: string;
+      field: ProfileImageField;
+      fileNameFallback: string;
+    }
+  ): Promise<{ success: true; url: string; path: string; user: ProfileUser }> {
+    const { bucket, field, fileNameFallback } = options;
 
     const existing = await this.findProfileUser(userId);
     if (!existing) {
       throw new Error('User profile not found.');
     }
 
-    const uploaded = await uploadToStorage({
+    let resolvedUser!: ProfileUser;
+    const uploaded = await uploadPublicImageReplacingPrevious({
+      file,
       bucket,
-      path: objectPath,
-      buffer: file.buffer,
-      contentType: file.mimetype,
-    });
+      ownerKey: userId,
+      fileNameFallback,
+      previousPublicUrl: existing[field],
+      persistUrl: async (publicUrl) => {
+        const { count } = await prisma.users.updateMany({
+          where: {
+            id: userId,
+            updated_at: prismaLockTimestamp(expectedUpdatedAt),
+          },
+          data: {
+            [field]: publicUrl,
+            ...prismaAuditUpdate(userId),
+          },
+        });
 
-    const { count } = await prisma.users.updateMany({
-      where: {
-        id: userId,
-        updated_at: prismaLockTimestamp(expectedUpdatedAt),
+        resolvedUser = await resolveOptimisticPrismaUpdate({
+          count,
+          fetchUpdated: () => this.findProfileUser(userId),
+          fetchCurrent: () => this.findProfileUser(userId),
+          notFoundMessage: 'User profile not found.',
+        });
       },
-      data: {
-        profile_picture: getPublicStorageUrl(bucket, uploaded.path),
-        ...prismaAuditUpdate(userId),
-      },
     });
-
-    let resolvedUser: ProfileUser;
-    try {
-      resolvedUser = await resolveOptimisticPrismaUpdate({
-        count,
-        fetchUpdated: () => this.findProfileUser(userId),
-        fetchCurrent: () => this.findProfileUser(userId),
-        notFoundMessage: 'User profile not found.',
-      });
-    } catch (error) {
-      await removeStorageObjects(bucket, [uploaded.path]);
-      throw error;
-    }
-
-    const previousUrl = existing.profile_picture;
-    if (previousUrl) {
-      const previousPath = storagePathFromPublicUrl(previousUrl, bucket);
-      if (previousPath && previousPath !== uploaded.path) {
-        await removeStorageObjects(bucket, [previousPath]);
-      }
-    }
 
     return {
       success: true,
-      url: resolvedUser.profile_picture!,
+      url: resolvedUser[field]!,
       path: uploaded.path,
       user: resolvedUser,
     };

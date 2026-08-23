@@ -10,6 +10,7 @@ type BurndownWorkItem = {
   id: string;
   story_points: number | null;
   done_at: string | null;
+  record_status?: string | null;
 };
 
 type BurndownWorkLog = {
@@ -56,7 +57,7 @@ function toBurndownPayload(
 }
 
 const BURNDOWN_EMBED_SELECT =
-  'id, name, start_date, end_date, status, work_items(id, story_points, done_at, work_item_worklogs(logged_at, logged_hours))';
+  'id, name, start_date, end_date, status, work_items(id, story_points, done_at, record_status, work_item_worklogs(logged_at, logged_hours))';
 
 /**
  * RSC burndown reader — Supabase direct, no `web → api` hop.
@@ -93,7 +94,9 @@ export async function getSprintBurndownServer(
   }
 
   const sprintRow = data as unknown as BurndownSprintEmbed;
-  const workItems = sprintRow.work_items ?? [];
+  const workItems = (sprintRow.work_items ?? []).filter(
+    (item) => item.record_status !== 'archived'
+  );
   const workLogs = workItems.flatMap((item) => item.work_item_worklogs ?? []);
 
   return toBurndownPayload(sprintRow, workItems, workLogs);
@@ -123,7 +126,8 @@ async function getSprintBurndownServerSplit(
   const { data: items, error: itemsError } = await supabase
     .from('work_items')
     .select('id, story_points, done_at')
-    .eq('sprint_id', sprintId);
+    .eq('sprint_id', sprintId)
+    .eq('record_status', 'active');
 
   throwIfError(
     itemsError,

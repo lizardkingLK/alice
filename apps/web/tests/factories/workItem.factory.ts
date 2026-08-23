@@ -29,6 +29,7 @@ export const workItemFactory = {
       updated_by: null,
       jira_issue_key: null,
       labels: [],
+      record_status: 'active',
       assignee: defaultAssignee,
       reporter: null,
       ...overrides,

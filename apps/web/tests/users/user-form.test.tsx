@@ -20,6 +20,7 @@ const mockUser: User = {
   updated_at: '2026-07-09T10:00:00Z',
   created_by: null,
   profile_picture: null,
+  cover_picture: null,
   status: 'active',
   updated_by: null,
 };

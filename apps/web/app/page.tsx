@@ -25,6 +25,7 @@ export default async function Home({ searchParams }: Readonly<HomeProps>) {
         <HomeNavbar
           email={user?.email}
           profilePicture={dbUser?.profile_picture}
+          showDashboardButton
         />
         <HomeHero
           isSignedIn={isSignedIn}

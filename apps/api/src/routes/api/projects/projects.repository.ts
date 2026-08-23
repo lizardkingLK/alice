@@ -28,6 +28,8 @@ export type ProjectRow = {
   jira_project_key: string | null;
   github_repo: string | null;
   github_token: string | null;
+  logo_url: string | null;
+  cover_picture: string | null;
 };
 
 export type ProjectRowWithOwner = ProjectRow & {
@@ -45,6 +47,52 @@ export function withoutJiraToken<T extends { jira_token?: string | null }>(
   const safe = { ...project };
   delete safe.jira_token;
   return safe;
+}
+
+type ProjectUpdateInput = Partial<
+  Omit<ProjectRow, 'id' | 'created_at' | 'updated_at'>
+>;
+
+function applyOptionalProjectIntegrations(
+  patch: Record<string, unknown>,
+  data: ProjectUpdateInput
+): void {
+  if (data.jira_url !== undefined) patch.jira_url = data.jira_url;
+  if (data.jira_email !== undefined) patch.jira_email = data.jira_email;
+  if (data.jira_token !== undefined) patch.jira_token = data.jira_token;
+  if (data.jira_project_key !== undefined) {
+    patch.jira_project_key = data.jira_project_key;
+  }
+  if (data.github_repo !== undefined) patch.github_repo = data.github_repo;
+  if (data.github_token !== undefined) patch.github_token = data.github_token;
+  if (data.logo_url !== undefined) patch.logo_url = data.logo_url;
+  if (data.cover_picture !== undefined) {
+    patch.cover_picture = data.cover_picture;
+  }
+}
+
+function buildProjectUpdateData(data: ProjectUpdateInput, actorId: string) {
+  const patch: Record<string, unknown> = {
+    ...prismaAuditUpdate(actorId),
+  };
+
+  if (data.name !== undefined) patch.name = data.name;
+  if (data.key !== undefined) patch.key = data.key;
+  if (data.description !== undefined) patch.description = data.description;
+  if (data.status !== undefined) patch.status = data.status;
+  if (data.start_date !== undefined) {
+    patch.start_date = prismaOptionalDate(data.start_date);
+  }
+  if (data.end_date !== undefined) {
+    patch.end_date = prismaOptionalDate(data.end_date);
+  }
+  if (data.owner_id !== undefined) patch.owner_id = data.owner_id;
+  if (data.deleted_at !== undefined) {
+    patch.deleted_at = prismaOptionalDate(data.deleted_at);
+  }
+
+  applyOptionalProjectIntegrations(patch, data);
+  return patch;
 }
 
 export type ProjectMemberWithUser = {
@@ -174,7 +222,18 @@ export class ProjectsRepository {
   }
 
   async create(
-    data: Omit<ProjectRow, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>,
+    data: Omit<
+      ProjectRow,
+      | 'id'
+      | 'created_at'
+      | 'updated_at'
+      | 'deleted_at'
+      | 'logo_url'
+      | 'cover_picture'
+    > & {
+      logo_url?: string | null;
+      cover_picture?: string | null;
+    },
     actorId: string
   ): Promise<ProjectRow> {
     const created = await prisma.projects.create({
@@ -192,6 +251,8 @@ export class ProjectsRepository {
         jira_project_key: data.jira_project_key,
         github_repo: data.github_repo,
         github_token: data.github_token,
+        logo_url: data.logo_url ?? null,
+        cover_picture: data.cover_picture ?? null,
         deleted_at: null,
         ...prismaAuditCreateWithoutStatus(actorId),
       },
@@ -206,47 +267,13 @@ export class ProjectsRepository {
 
   async update(
     id: string,
-    data: Partial<Omit<ProjectRow, 'id' | 'created_at' | 'updated_at'>>,
+    data: ProjectUpdateInput,
     actorId: string,
     expectedUpdatedAt: string
   ): Promise<ProjectRow> {
     const { count } = await prisma.projects.updateMany({
       where: { id, updated_at: prismaLockTimestamp(expectedUpdatedAt) },
-      data: {
-        ...(data.name !== undefined ? { name: data.name } : {}),
-        ...(data.key !== undefined ? { key: data.key } : {}),
-        ...(data.description !== undefined
-          ? { description: data.description }
-          : {}),
-        ...(data.status !== undefined ? { status: data.status } : {}),
-        ...(data.start_date !== undefined
-          ? { start_date: prismaOptionalDate(data.start_date) }
-          : {}),
-        ...(data.end_date !== undefined
-          ? { end_date: prismaOptionalDate(data.end_date) }
-          : {}),
-        ...(data.owner_id !== undefined ? { owner_id: data.owner_id } : {}),
-        ...(data.deleted_at !== undefined
-          ? { deleted_at: prismaOptionalDate(data.deleted_at) }
-          : {}),
-        ...(data.jira_url !== undefined ? { jira_url: data.jira_url } : {}),
-        ...(data.jira_email !== undefined
-          ? { jira_email: data.jira_email }
-          : {}),
-        ...(data.jira_token !== undefined
-          ? { jira_token: data.jira_token }
-          : {}),
-        ...(data.jira_project_key !== undefined
-          ? { jira_project_key: data.jira_project_key }
-          : {}),
-        ...(data.github_repo !== undefined
-          ? { github_repo: data.github_repo }
-          : {}),
-        ...(data.github_token !== undefined
-          ? { github_token: data.github_token }
-          : {}),
-        ...prismaAuditUpdate(actorId),
-      },
+      data: buildProjectUpdateData(data, actorId),
     });
 
     return resolveOptimisticPrismaUpdate({

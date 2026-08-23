@@ -1,12 +1,20 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '@/lib/api/api';
 import {
   buildWorkItemsListSearchParams,
   getWorkItemFromApi,
   listWorkItemsPaginatedFromApi,
   mapWorkItemApiRow,
-} from '@/app/work-items/_helpers/work-item-api-reads';
+} from '@/app/work-items/_services/workItem.service.server.api';
 import { workItemFactory } from '../factories/workItem.factory';
+
+const { apiFetchMock } = vi.hoisted(() => ({
+  apiFetchMock: vi.fn(),
+}));
+
+vi.mock('@/lib/api/api-client.server', () => ({
+  apiFetch: apiFetchMock,
+}));
 
 describe('buildWorkItemsListSearchParams', () => {
   it('encodes pagination, search, backlog, hierarchy roots, and labels', () => {
@@ -56,11 +64,15 @@ describe('mapWorkItemApiRow', () => {
 });
 
 describe('listWorkItemsPaginatedFromApi / getWorkItemFromApi', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('GETs the list path and maps rows', async () => {
     const row = workItemFactory.build({
       due_date: '2026-08-17T00:00:00.000Z',
     });
-    const apiFetch = vi.fn().mockResolvedValue({
+    apiFetchMock.mockResolvedValue({
       workItems: [row],
       totalCount: 1,
       page: 1,
@@ -68,18 +80,12 @@ describe('listWorkItemsPaginatedFromApi / getWorkItemFromApi', () => {
       totalPages: 1,
     });
 
-    const result = await listWorkItemsPaginatedFromApi(
-      apiFetch,
-      1,
-      10,
-      'Ship',
-      {
-        projectId: row.project_id,
-      }
-    );
+    const result = await listWorkItemsPaginatedFromApi(1, 10, 'Ship', {
+      projectId: row.project_id,
+    });
 
-    expect(apiFetch).toHaveBeenCalledWith(
-      `/api/workItems?page=1&limit=10&search=Ship&projectId=${row.project_id}`
+    expect(apiFetchMock).toHaveBeenCalledWith(
+      `/api/workItems?page=1&limit=10&search=Ship&projectId=${row.project_id}&recordStatus=active`
     );
     expect(result.workItems[0]?.due_date).toBe('2026-08-17');
     expect(result.totalCount).toBe(1);
@@ -87,15 +93,14 @@ describe('listWorkItemsPaginatedFromApi / getWorkItemFromApi', () => {
 
   it('returns mapped detail and treats 404 as null', async () => {
     const row = workItemFactory.build();
-    const apiFetch = vi
-      .fn()
+    apiFetchMock
       .mockResolvedValueOnce({ data: row, error: null })
       .mockRejectedValueOnce(new ApiError('Work item not found', 404));
 
-    await expect(getWorkItemFromApi(apiFetch, row.id)).resolves.toMatchObject({
+    await expect(getWorkItemFromApi(row.id)).resolves.toMatchObject({
       id: row.id,
       title: row.title,
     });
-    await expect(getWorkItemFromApi(apiFetch, row.id)).resolves.toBeNull();
+    await expect(getWorkItemFromApi(row.id)).resolves.toBeNull();
   });
 });

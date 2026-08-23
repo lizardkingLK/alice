@@ -87,3 +87,35 @@ export function optimisticLockErrorFromResponseBody(
     ...context,
   });
 }
+
+export type ApiLockConflictMeta = {
+  /** Server `updated_at` when present on `serverEntity`; otherwise null. */
+  readonly updatedAt: string | null;
+};
+
+/**
+ * Lightweight 409 conflict read for simple upload flows that only need to
+ * refresh `expectedUpdatedAt` (no full conflict dialog).
+ */
+export function readApiLockConflict(
+  error: unknown
+): ApiLockConflictMeta | null {
+  if (
+    !(error instanceof ApiError) ||
+    error.status !== OPTIMISTIC_LOCK_HTTP_STATUS
+  ) {
+    return null;
+  }
+
+  const entity =
+    error.serverEntity &&
+    typeof error.serverEntity === 'object' &&
+    !Array.isArray(error.serverEntity)
+      ? (error.serverEntity as Record<string, unknown>)
+      : null;
+  const nextUpdatedAt = entity?.updated_at;
+
+  return {
+    updatedAt: typeof nextUpdatedAt === 'string' ? nextUpdatedAt : null,
+  };
+}

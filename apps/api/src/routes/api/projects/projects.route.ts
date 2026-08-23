@@ -1,10 +1,15 @@
 import { Router, type Response } from 'express';
+import multer, { type Multer } from 'multer';
 import { z } from 'zod';
 import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
 import { env } from '../../../config/env';
+import {
+  handleMultipartImageUpload,
+  MAX_PUBLIC_IMAGE_BYTES,
+} from '../../../lib/image-upload-route';
 import {
   sendRouteMutationError,
   runLockedStatusRoute,
@@ -22,6 +27,13 @@ import { supabase } from '../../../lib/supabase';
 import { type WorkItemType, mapToWorkItemType } from '@repo/types';
 
 const projectsRouter: Router = Router();
+
+const projectImageUpload: Multer = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: MAX_PUBLIC_IMAGE_BYTES,
+  },
+});
 
 type ProjectLockAction = (
   actorId: string,
@@ -594,6 +606,46 @@ projectsRouter.delete(
           : 'Failed to hard delete project';
       res.status(500).json({ error: message });
     }
+  }
+);
+
+projectsRouter.post(
+  '/:id/logo',
+  requireApiAuth,
+  projectImageUpload.single('file'),
+  async (req: AuthenticatedRequest, res) => {
+    await handleMultipartImageUpload(req, res, {
+      failureLabel: 'project logo',
+      requireParam: 'id',
+      missingParamMessage: 'Project ID is required',
+      update: (actorId, file, expectedUpdatedAt, params) =>
+        projectsService.updateProjectLogo(
+          actorId,
+          params.id!,
+          file,
+          expectedUpdatedAt
+        ),
+    });
+  }
+);
+
+projectsRouter.post(
+  '/:id/cover',
+  requireApiAuth,
+  projectImageUpload.single('file'),
+  async (req: AuthenticatedRequest, res) => {
+    await handleMultipartImageUpload(req, res, {
+      failureLabel: 'project cover',
+      requireParam: 'id',
+      missingParamMessage: 'Project ID is required',
+      update: (actorId, file, expectedUpdatedAt, params) =>
+        projectsService.updateProjectCover(
+          actorId,
+          params.id!,
+          file,
+          expectedUpdatedAt
+        ),
+    });
   }
 );
 

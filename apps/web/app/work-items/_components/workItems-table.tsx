@@ -18,10 +18,12 @@ import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form-
 import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { WorkItemWorkspaceProps } from '@/app/work-items/_components/workItems-workspace';
 import { useWorkItemHierarchy } from '@/app/work-items/_hooks/use-work-item-hierarchy';
+import { useWorkItemLifecycleActions } from '@/app/work-items/_hooks/use-work-item-lifecycle-actions';
 import { buildWorkItemColumns } from '@/app/work-items/_components/workItems-table-columns';
 import {
   applyWorkItemListViewParam,
   applyWorkItemsFilterDraftToSearchParams,
+  applyWorkItemRecordStatusParam,
   buildClearedWorkItemFilterParams,
   buildWorkItemDisplayRows,
   hasActiveWorkItemFilters,
@@ -45,6 +47,7 @@ import {
 import { Pagination } from '@/components/pagination';
 import { DataTable } from '@/components/data-table';
 import { DismissibleError } from '@/components/dismissible-error';
+import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { useQueryFilter } from '@/hooks/use-query-filter';
@@ -76,6 +79,8 @@ export default function WorkItemsTable({
   lockedProjectId,
   lockedAssigneeId,
   currentUserId,
+  currentUserRole = 'member',
+  tab = 'active',
   suggestedDefaults = null,
   needsClientBootstrap = false,
   initialColumnVisibility,
@@ -85,6 +90,8 @@ export default function WorkItemsTable({
     usePaginationNavigation(totalPages, limit);
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const isActiveView = tab === 'active';
+  const isAdmin = currentUserRole === 'admin';
   const { searchQuery, setSearchQuery } = useDebouncedSearch(search);
   const projectQuery = useQueryFilter('project', projectFilter);
   const sprintQuery = useQueryFilter('sprint', sprintFilter);
@@ -266,6 +273,11 @@ export default function WorkItemsTable({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<DbWorkItem | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const lifecycle = useWorkItemLifecycleActions({
+    currentUserId,
+    onError: setError,
+  });
+  const isBusy = lifecycle.isPending;
   const clearEditTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
@@ -323,6 +335,16 @@ export default function WorkItemsTable({
     [cancelPendingEditClear]
   );
 
+  const handleTabChange = useCallback(
+    (nextTab: 'active' | 'archived') => {
+      const params = new URLSearchParams(searchParams.toString());
+      applyWorkItemRecordStatusParam(params, nextTab);
+      params.set('page', '1');
+      router.push(`${pathname}?${params.toString()}`);
+    },
+    [pathname, router, searchParams]
+  );
+
   const handleDialogChange = (open: boolean) => {
     setDialogOpen(open);
     if (!open) {
@@ -356,15 +378,27 @@ export default function WorkItemsTable({
         lockedAssigneeId,
         isHierarchy,
         currentUserId,
+        isAdmin,
+        isActiveView,
+        isPending: isBusy,
         projects,
         sprints,
         onToggleExpand: handleToggleExpand,
         openEditDialog,
+        onArchive: lifecycle.handleArchiveRequest,
+        onRestore: lifecycle.handleRestore,
+        onPurge: lifecycle.handlePurgeRequest,
       }),
     [
       currentUserId,
+      lifecycle.handleArchiveRequest,
+      lifecycle.handlePurgeRequest,
+      lifecycle.handleRestore,
       handleToggleExpand,
+      isActiveView,
+      isAdmin,
       isHierarchy,
+      isBusy,
       lockedAssigneeId,
       lockedProjectId,
       openEditDialog,
@@ -393,6 +427,8 @@ export default function WorkItemsTable({
         isProjectLocked={isProjectLocked}
         isAssigneeLocked={isAssigneeLocked}
         isHierarchy={isHierarchy}
+        tab={tab}
+        onTabChange={handleTabChange}
         projects={projects}
         projectMembers={projectMembers}
         sprints={sprints}
@@ -412,6 +448,7 @@ export default function WorkItemsTable({
         hasActiveFilters={hasActiveFilters}
         onClearFilters={handleClearFilters}
         onCreate={openCreateDialog}
+        hideCreate={!isActiveView}
       />
 
       <WorkItemsSearchResultsPanel search={search} items={initialWorkItems} />
@@ -431,7 +468,7 @@ export default function WorkItemsTable({
             emptyState={
               <div className="flex flex-col items-center justify-center gap-2">
                 <ClipboardPenLine className="text-muted-foreground/50 size-8 stroke-1" />
-                <p>No work items found matching your search.</p>
+                <p>No available work items were found.</p>
               </div>
             }
           />
@@ -472,6 +509,20 @@ export default function WorkItemsTable({
         sprints={sprints}
         defaults={pickWorkspaceDefaultsDialogController(boardDefaults)}
       />
+
+      {lifecycle.itemToConfirm ? (
+        <RegistryConfirmDialog
+          title={lifecycle.confirmCopy.title}
+          subject={lifecycle.itemToConfirm.title}
+          detail={lifecycle.confirmCopy.detail}
+          confirmLabel={lifecycle.confirmCopy.confirmLabel}
+          isPending={isBusy}
+          isSoft={lifecycle.confirmCopy.isSoft}
+          actionVerb={lifecycle.confirmCopy.actionVerb}
+          onCancel={lifecycle.clearConfirm}
+          onConfirm={lifecycle.confirmLifecycleAction}
+        />
+      ) : null}
     </div>
   );
 }

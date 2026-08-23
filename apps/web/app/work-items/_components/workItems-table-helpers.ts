@@ -107,6 +107,25 @@ export function applyWorkItemListViewParam(
   params.delete('view');
 }
 
+/**
+ * Write Active/Archived lifecycle filter without clobbering page-level `tab`
+ * (project details uses `tab=work-items`, etc.).
+ */
+export function applyWorkItemRecordStatusParam(
+  params: URLSearchParams,
+  recordStatus: 'active' | 'archived'
+): void {
+  if (recordStatus === 'archived') {
+    params.set('recordStatus', 'archived');
+  } else {
+    params.delete('recordStatus');
+  }
+  const legacyTab = params.get('tab');
+  if (legacyTab === 'active' || legacyTab === 'archived') {
+    params.delete('tab');
+  }
+}
+
 export function buildClearedWorkItemFilterParams(options: {
   readonly searchParams: URLSearchParams;
   readonly listView: WorkItemListView;
@@ -116,11 +135,15 @@ export function buildClearedWorkItemFilterParams(options: {
   const next = new URLSearchParams();
   const limitParam = options.searchParams.get('limit');
   const tabParam = options.searchParams.get('tab');
+  const recordStatusParam = options.searchParams.get('recordStatus');
   if (limitParam) {
     next.set('limit', limitParam);
   }
   if (tabParam) {
     next.set('tab', tabParam);
+  }
+  if (recordStatusParam === 'archived' || recordStatusParam === 'active') {
+    next.set('recordStatus', recordStatusParam);
   }
   applyWorkItemListViewParam(next, options.listView);
   if (options.lockedProjectId) {

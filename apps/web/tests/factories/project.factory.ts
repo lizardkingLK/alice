@@ -20,6 +20,8 @@ export const projectFactory = {
       workflow_config: null,
       github_repo: null,
       github_token: null,
+      logo_url: null,
+      cover_picture: null,
       ...overrides,
     };
   },

@@ -103,11 +103,14 @@ The script should:
 Create or update these buckets via the [Storage Management API](https://supabase.com/docs/reference/api/v1-create-a-bucket)
 (or equivalent CLI) so uploads do not 404 on a fresh project:
 
-| Bucket                           | Public? | Used by                       |
-| -------------------------------- | ------- | ----------------------------- |
-| `alice_storage_attachments`      | No      | Work-item files               |
-| `alice_storage_profile_pictures` | Yes     | Avatars (`getPublicUrl`)      |
-| `alice_storage_chat_history`     | No      | Chat export / history objects |
+| Bucket                           | Public? | Used by                         |
+| -------------------------------- | ------- | ------------------------------- |
+| `alice_storage_attachments`      | No      | Work-item files                 |
+| `alice_storage_profile_pictures` | Yes     | Avatars (`getPublicUrl`)        |
+| `alice_storage_profile_covers`   | Yes     | Profile covers (`getPublicUrl`) |
+| `alice_storage_project_logos`    | Yes     | Project logos (`getPublicUrl`)  |
+| `alice_storage_project_covers`   | Yes     | Project covers (`getPublicUrl`) |
+| `alice_storage_chat_history`     | No      | Chat export / history objects   |
 
 Names must match `apps/api/src/config/env.ts`. After create: confirm Data API
 exposure and RLS/policies match existing prod (attachments private + signed

@@ -241,9 +241,15 @@ export function DashboardSidebar({
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton disabled tooltip="Coming soon">
-                  <Settings />
-                  <span>Settings</span>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isNavActive(pathname, '/settings')}
+                  tooltip="Settings"
+                >
+                  <Link href="/settings">
+                    <Settings />
+                    <span>Settings</span>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

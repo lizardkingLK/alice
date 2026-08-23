@@ -6,8 +6,10 @@ import {
 } from '../../src/routes/api/workItems/workItems.prisma-query';
 
 describe('buildWorkItemPrismaListWhere', () => {
-  it('returns empty where when there are no filters or search', () => {
-    expect(buildWorkItemPrismaListWhere()).toEqual({});
+  it('defaults record_status to active when there are no filters or search', () => {
+    expect(buildWorkItemPrismaListWhere()).toEqual({
+      record_status: 'active',
+    });
   });
 
   it('maps equality filters including backlog and hierarchy roots', () => {
@@ -25,6 +27,40 @@ describe('buildWorkItemPrismaListWhere', () => {
       parent_id: null,
       type: 'Task',
       assignee_id: 'user-1',
+      record_status: 'active',
+    });
+  });
+
+  it('maps projectIds when projectId is absent', () => {
+    const where = buildWorkItemPrismaListWhere({
+      projectIds: ['proj-1', 'proj-2'],
+    });
+
+    expect(where).toEqual({
+      project_id: { in: ['proj-1', 'proj-2'] },
+      record_status: 'active',
+    });
+  });
+
+  it('returns an empty project set when projectId is outside projectIds', () => {
+    const where = buildWorkItemPrismaListWhere({
+      projectId: 'proj-3',
+      projectIds: ['proj-1', 'proj-2'],
+    });
+
+    expect(where).toEqual({
+      project_id: { in: [] },
+      record_status: 'active',
+    });
+  });
+
+  it('honors explicit archived recordStatus', () => {
+    const where = buildWorkItemPrismaListWhere({
+      recordStatus: 'archived',
+    });
+
+    expect(where).toEqual({
+      record_status: 'archived',
     });
   });
 
@@ -33,27 +69,33 @@ describe('buildWorkItemPrismaListWhere', () => {
       labels: ['Mobile', 'auth'],
     });
 
-    expect(where.AND).toEqual([
-      {
-        OR: [
-          { labels: { array_contains: ['Mobile'] } },
-          { labels: { array_contains: ['auth'] } },
-        ],
-      },
-    ]);
+    expect(where).toEqual({
+      record_status: 'active',
+      AND: [
+        {
+          OR: [
+            { labels: { array_contains: ['Mobile'] } },
+            { labels: { array_contains: ['auth'] } },
+          ],
+        },
+      ],
+    });
   });
 
   it('searches title ilike (stripped) OR exact label containment', () => {
     const where = buildWorkItemPrismaListWhere(undefined, '  foo,bar(baz)  ');
 
-    expect(where.AND).toEqual([
-      {
-        OR: [
-          { title: { contains: 'foobarbaz', mode: 'insensitive' } },
-          { labels: { array_contains: ['foo,bar(baz)'] } },
-        ],
-      },
-    ]);
+    expect(where).toEqual({
+      record_status: 'active',
+      AND: [
+        {
+          OR: [
+            { title: { contains: 'foobarbaz', mode: 'insensitive' } },
+            { labels: { array_contains: ['foo,bar(baz)'] } },
+          ],
+        },
+      ],
+    });
   });
 });
 
@@ -78,6 +120,7 @@ describe('listWorkItemsQuerySchema', () => {
       expect(parsed.data.limit).toBe(10);
       expect(parsed.data.parentId).toBeNull();
       expect(parsed.data.includeDescription).toBe(false);
+      expect(parsed.data.recordStatus).toBe('active');
     }
   });
 

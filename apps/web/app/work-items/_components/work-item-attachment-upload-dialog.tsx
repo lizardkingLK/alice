@@ -17,7 +17,7 @@ import { Loader2, X } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { formatFileSize } from '@/app/_shared/utility';
 import type { AttachmentWithUploader } from '@repo/types';
-import { uploadWorkItemAttachment } from '@/app/work-items/_services/attachments.service';
+import { uploadWorkItemAttachment } from '@/app/work-items/_services/workItem-attachments.service.client';
 import { UploadStatusIcon } from '@/components/upload-status-icon';
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;

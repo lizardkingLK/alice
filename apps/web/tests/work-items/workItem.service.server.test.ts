@@ -38,6 +38,7 @@ function createPaginatedSupabase(
     select: vi.fn(() => chain),
     eq: vi.fn(() => chain),
     is: vi.fn(() => chain),
+    in: vi.fn(() => chain),
     or: vi.fn(() => chain),
     order: vi.fn(() => ({ range })),
   };
@@ -79,7 +80,7 @@ describe('work-item server reads retrieval toggle', () => {
     });
 
     expect(apiFetchMock).toHaveBeenCalledWith(
-      `/api/workItems?page=1&limit=10&search=Ship&projectId=${row.project_id}`
+      `/api/workItems?page=1&limit=10&search=Ship&projectId=${row.project_id}&recordStatus=active`
     );
     expect(createClientMock).not.toHaveBeenCalled();
     expect(result.totalCount).toBe(1);

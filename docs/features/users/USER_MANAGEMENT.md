@@ -41,7 +41,7 @@ User management lets workspace administrators register team members, assign role
 | `/users`          | Admin only (layout RBAC)          | User registry list + add-user modal |
 | `/auth/callback`  | Public (invite/reset links)       | Exchanges auth code for session     |
 | `/reset-password` | User with recovery/invite session | Set initial or new password         |
-| `/edit-profile`   | Signed-in user                    | Profile + self-deactivate           |
+| `/settings`       | Signed-in user                    | Account settings + self-deactivate  |
 
 **Navigation:** Dashboard sidebar → **Users** (`/users`).
 
