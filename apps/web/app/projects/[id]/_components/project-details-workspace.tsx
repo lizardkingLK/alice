@@ -883,11 +883,11 @@ function GithubSettingsCard({ project }: GithubSettingsCardProps) {
               </Label>
               <Input
                 id="githubToken"
-                type="password"
+                type="text"
                 value={githubToken}
                 onChange={(e) => setGithubToken(e.target.value)}
                 placeholder="e.g. ghp_xxxxxxxxxxxx"
-                className="bg-background/50 h-9 text-sm"
+                className="bg-background/50 custom-secret-text h-9 text-sm"
               />
             </div>
 
