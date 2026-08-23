@@ -42,6 +42,7 @@ export const workItemListSelect = {
   due_date: true,
   story_points: true,
   status: true,
+  record_status: true,
   done_at: true,
   created_by: true,
   created_at: true,
@@ -79,10 +80,14 @@ export type WorkItemDetailRow = work_itemsGetPayload<{
 export type WorkItemPrismaListFilters = {
   sprintId?: string | null;
   projectId?: string;
+  /** Restrict to these projects (membership scope). Intersects with `projectId` when both set. */
+  projectIds?: readonly string[];
   parentId?: string | null;
   type?: WorkItemType;
   assigneeId?: string;
   labels?: string[];
+  /** Lifecycle filter. Defaults to `active` on list endpoints. */
+  recordStatus?: 'active' | 'archived';
 };
 
 function emptyToUndefined(value: unknown): unknown {
@@ -141,6 +146,10 @@ export const listWorkItemsQuerySchema = z
       emptyToUndefined,
       z.enum(['true', 'false']).optional()
     ),
+    recordStatus: z.preprocess(
+      emptyToUndefined,
+      z.enum(['active', 'archived']).optional()
+    ),
   })
   .transform((query) => {
     const sprintId = query.sprintId === 'null' ? null : query.sprintId;
@@ -158,6 +167,7 @@ export const listWorkItemsQuerySchema = z
       assigneeId: query.assigneeId,
       labels: parseWorkItemLabelsFilterParam(query.labels),
       includeDescription: query.includeDescription === 'true',
+      recordStatus: query.recordStatus ?? 'active',
     };
   });
 

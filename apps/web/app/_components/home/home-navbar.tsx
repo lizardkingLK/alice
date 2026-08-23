@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Button } from '@repo/ui/components/ui/button';
 import { AuthControls } from '@/app/dashboard/_components/dashboard-auth';
 import { appTitle } from '@/app/_shared/values';
 import { cn } from '@repo/ui/lib/utils';
@@ -13,12 +14,17 @@ const NAV_LINKS = [
 type HomeNavbarProps = {
   readonly email?: string | null;
   readonly profilePicture?: string | null;
+  /** Home page only: green Dashboard CTA left of the profile control when signed in. */
+  readonly showDashboardButton?: boolean;
 };
 
 export function HomeNavbar({
   email,
   profilePicture,
+  showDashboardButton = false,
 }: Readonly<HomeNavbarProps>) {
+  const isSignedIn = Boolean(email);
+
   return (
     <header className="border-border/60 bg-background shrink-0 border-b">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-6">
@@ -55,7 +61,14 @@ export function HomeNavbar({
           ))}
         </nav>
 
-        <AuthControls email={email} profilePicture={profilePicture} />
+        <div className="flex items-center gap-3">
+          {showDashboardButton && isSignedIn ? (
+            <Button asChild size="sm" className="cursor-pointer">
+              <Link href="/dashboard">Dashboard</Link>
+            </Button>
+          ) : null}
+          <AuthControls email={email} profilePicture={profilePicture} />
+        </div>
       </div>
     </header>
   );

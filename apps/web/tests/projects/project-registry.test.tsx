@@ -81,6 +81,7 @@ const mockUsers: User[] = [
     updated_at: '',
     created_by: null,
     profile_picture: null,
+    cover_picture: null,
     status: 'active' as const,
     updated_by: null,
   },
@@ -105,6 +106,8 @@ const mockProjects: Project[] = [
     workflow_config: null,
     github_repo: null,
     github_token: null,
+    logo_url: null,
+    cover_picture: null,
     owner: {
       id: 'user-1',
       name: 'Bob Manager',
@@ -130,6 +133,8 @@ const mockProjects: Project[] = [
     workflow_config: null,
     github_repo: null,
     github_token: null,
+    logo_url: null,
+    cover_picture: null,
     owner: {
       id: 'user-1',
       name: 'Bob Manager',

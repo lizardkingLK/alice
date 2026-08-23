@@ -30,6 +30,9 @@ export interface WorkItemWorkspaceProps {
   /** When set, list is scoped to this assignee and create locks assignee. */
   lockedAssigneeId?: string;
   currentUserId?: string | null;
+  currentUserRole?: string;
+  /** Active vs archived lifecycle tab. */
+  tab?: 'active' | 'archived';
   suggestedDefaults?: BoardDefaultsPreference | null;
   needsClientBootstrap?: boolean;
   /**

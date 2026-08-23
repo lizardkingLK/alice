@@ -50,6 +50,7 @@ describe('WorkItemRepository Prisma reads', () => {
       where: {
         project_id: row.project_id,
         type: 'Task',
+        record_status: 'active',
         AND: [
           {
             OR: [
@@ -68,6 +69,7 @@ describe('WorkItemRepository Prisma reads', () => {
       where: {
         project_id: row.project_id,
         type: 'Task',
+        record_status: 'active',
         AND: [
           {
             OR: [

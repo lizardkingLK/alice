@@ -9,7 +9,7 @@ import {
   deleteWorkItemAttachment,
   mintAttachmentUrls,
   type AttachmentSignedUrls,
-} from '@/app/work-items/_services/attachments.service';
+} from '@/app/work-items/_services/workItem-attachments.service.client';
 import { WorkItemAttachmentUploadDialog } from '@/app/work-items/_components/work-item-attachment-upload-dialog';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card, CardContent } from '@repo/ui/components/ui/card';

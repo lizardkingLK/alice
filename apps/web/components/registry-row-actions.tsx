@@ -21,6 +21,16 @@ export interface RegistryRowActionsProps {
   readonly isAdmin: boolean;
   /** Active (non-archived) rows show Edit + Archive; archived show Restore + Purge. */
   readonly isActiveView: boolean;
+  /**
+   * When set, overrides the manager gate for Edit (work items: any member).
+   * Defaults to `isManagerOrAdmin`.
+   */
+  readonly canEdit?: boolean;
+  /**
+   * When set, overrides the manager gate for Archive/Restore.
+   * Defaults to `isManagerOrAdmin`.
+   */
+  readonly canArchive?: boolean;
   readonly onEdit: () => void;
   readonly onRestore: () => void;
   readonly onArchive: () => void;
@@ -33,14 +43,18 @@ export function RegistryRowActions({
   isManagerOrAdmin,
   isAdmin,
   isActiveView,
+  canEdit,
+  canArchive,
   onEdit,
   onRestore,
   onArchive,
   onPurge,
 }: Readonly<RegistryRowActionsProps>) {
-  const showEdit = isActiveView && isManagerOrAdmin;
-  const showArchive = isActiveView && isManagerOrAdmin;
-  const showRestore = !isActiveView && isManagerOrAdmin;
+  const allowEdit = canEdit ?? isManagerOrAdmin;
+  const allowArchive = canArchive ?? isManagerOrAdmin;
+  const showEdit = isActiveView && allowEdit;
+  const showArchive = isActiveView && allowArchive;
+  const showRestore = !isActiveView && allowArchive;
   const showPurge = !isActiveView && isAdmin;
 
   const hasActions = showEdit || showArchive || showRestore || showPurge;

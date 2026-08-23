@@ -137,6 +137,7 @@ export function SprintForm({
           .from('work_items')
           .select('*', { count: 'exact', head: true })
           .eq('sprint_id', sprintToEdit.id)
+          .eq('record_status', 'active')
           .then(({ count, error }) => {
             if (!error && count && count > 0) {
               setHasWorkItems(true);

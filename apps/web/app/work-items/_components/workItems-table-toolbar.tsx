@@ -9,8 +9,14 @@ import type { FilterQuery } from '@/app/work-items/_components/workItems-table-t
 import { WorkItemsColumnsDialog } from '@/app/work-items/_components/work-items-columns-dialog';
 import { WorkItemsFilterDialog } from '@/app/work-items/_components/work-items-filter-dialog';
 import type { WorkItemWorkspaceProps } from '@/app/work-items/_components/workItems-workspace';
+import { RegistryTabSwitcher } from '@/components/registry-tab-switcher';
 import { SearchInput } from '@/components/search-input';
 import type { WorkItemListView } from '@/lib/search-params';
+
+const WORK_ITEM_TABS = [
+  { id: 'active' as const, label: 'Active' },
+  { id: 'archived' as const, label: 'Archived' },
+] as const;
 
 const WORK_ITEM_LIST_VIEW_OPTIONS = [
   { view: 'flat' as const, label: 'Flat', Icon: List },
@@ -58,6 +64,8 @@ export function WorkItemsTableToolbar({
   isProjectLocked,
   isAssigneeLocked,
   isHierarchy,
+  tab,
+  onTabChange,
   projects,
   projectMembers,
   sprints,
@@ -77,6 +85,7 @@ export function WorkItemsTableToolbar({
   hasActiveFilters,
   onClearFilters,
   onCreate,
+  hideCreate = false,
 }: Readonly<{
   searchQuery: string;
   // eslint-disable-next-line no-unused-vars -- search change callback
@@ -85,6 +94,9 @@ export function WorkItemsTableToolbar({
   isProjectLocked: boolean;
   isAssigneeLocked: boolean;
   isHierarchy: boolean;
+  tab: 'active' | 'archived';
+  // eslint-disable-next-line no-unused-vars -- tab change callback
+  onTabChange: (tab: 'active' | 'archived') => void;
   projects: WorkItemWorkspaceProps['projects'];
   projectMembers: WorkItemWorkspaceProps['projectMembers'];
   sprints: WorkItemWorkspaceProps['sprints'];
@@ -107,6 +119,7 @@ export function WorkItemsTableToolbar({
   hasActiveFilters: boolean;
   onClearFilters: () => void;
   onCreate: () => void;
+  hideCreate?: boolean;
 }>) {
   return (
     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -166,10 +179,20 @@ export function WorkItemsTableToolbar({
         ) : null}
       </div>
 
-      <Button onClick={onCreate} className="shrink-0 self-start">
-        <Plus />
-        Add Work-Item
-      </Button>
+      <div className="flex flex-wrap items-center gap-3 self-start">
+        <RegistryTabSwitcher
+          tabs={WORK_ITEM_TABS}
+          value={tab}
+          onChange={onTabChange}
+        />
+
+        {hideCreate ? null : (
+          <Button onClick={onCreate} className="shrink-0">
+            <Plus />
+            Add Work-Item
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

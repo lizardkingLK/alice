@@ -44,6 +44,8 @@ export type ProjectsMinAggregateOutputType = {
   jira_project_key: string | null
   github_repo: string | null
   github_token: string | null
+  logo_url: string | null
+  cover_picture: string | null
 }
 
 export type ProjectsMaxAggregateOutputType = {
@@ -66,6 +68,8 @@ export type ProjectsMaxAggregateOutputType = {
   jira_project_key: string | null
   github_repo: string | null
   github_token: string | null
+  logo_url: string | null
+  cover_picture: string | null
 }
 
 export type ProjectsCountAggregateOutputType = {
@@ -90,6 +94,8 @@ export type ProjectsCountAggregateOutputType = {
   jira_project_key: number
   github_repo: number
   github_token: number
+  logo_url: number
+  cover_picture: number
   _all: number
 }
 
@@ -114,6 +120,8 @@ export type ProjectsMinAggregateInputType = {
   jira_project_key?: true
   github_repo?: true
   github_token?: true
+  logo_url?: true
+  cover_picture?: true
 }
 
 export type ProjectsMaxAggregateInputType = {
@@ -136,6 +144,8 @@ export type ProjectsMaxAggregateInputType = {
   jira_project_key?: true
   github_repo?: true
   github_token?: true
+  logo_url?: true
+  cover_picture?: true
 }
 
 export type ProjectsCountAggregateInputType = {
@@ -160,6 +170,8 @@ export type ProjectsCountAggregateInputType = {
   jira_project_key?: true
   github_repo?: true
   github_token?: true
+  logo_url?: true
+  cover_picture?: true
   _all?: true
 }
 
@@ -257,6 +269,8 @@ export type ProjectsGroupByOutputType = {
   jira_project_key: string | null
   github_repo: string | null
   github_token: string | null
+  logo_url: string | null
+  cover_picture: string | null
   _count: ProjectsCountAggregateOutputType | null
   _min: ProjectsMinAggregateOutputType | null
   _max: ProjectsMaxAggregateOutputType | null
@@ -302,6 +316,8 @@ export type projectsWhereInput = {
   jira_project_key?: Prisma.StringNullableFilter<"projects"> | string | null
   github_repo?: Prisma.StringNullableFilter<"projects"> | string | null
   github_token?: Prisma.StringNullableFilter<"projects"> | string | null
+  logo_url?: Prisma.StringNullableFilter<"projects"> | string | null
+  cover_picture?: Prisma.StringNullableFilter<"projects"> | string | null
   owner?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
   created_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   updated_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
@@ -334,6 +350,8 @@ export type projectsOrderByWithRelationInput = {
   jira_project_key?: Prisma.SortOrderInput | Prisma.SortOrder
   github_repo?: Prisma.SortOrderInput | Prisma.SortOrder
   github_token?: Prisma.SortOrderInput | Prisma.SortOrder
+  logo_url?: Prisma.SortOrderInput | Prisma.SortOrder
+  cover_picture?: Prisma.SortOrderInput | Prisma.SortOrder
   owner?: Prisma.usersOrderByWithRelationInput
   created_by_user?: Prisma.usersOrderByWithRelationInput
   updated_by_user?: Prisma.usersOrderByWithRelationInput
@@ -369,6 +387,8 @@ export type projectsWhereUniqueInput = Prisma.AtLeast<{
   jira_project_key?: Prisma.StringNullableFilter<"projects"> | string | null
   github_repo?: Prisma.StringNullableFilter<"projects"> | string | null
   github_token?: Prisma.StringNullableFilter<"projects"> | string | null
+  logo_url?: Prisma.StringNullableFilter<"projects"> | string | null
+  cover_picture?: Prisma.StringNullableFilter<"projects"> | string | null
   owner?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
   created_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   updated_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
@@ -401,6 +421,8 @@ export type projectsOrderByWithAggregationInput = {
   jira_project_key?: Prisma.SortOrderInput | Prisma.SortOrder
   github_repo?: Prisma.SortOrderInput | Prisma.SortOrder
   github_token?: Prisma.SortOrderInput | Prisma.SortOrder
+  logo_url?: Prisma.SortOrderInput | Prisma.SortOrder
+  cover_picture?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.projectsCountOrderByAggregateInput
   _max?: Prisma.projectsMaxOrderByAggregateInput
   _min?: Prisma.projectsMinOrderByAggregateInput
@@ -431,6 +453,8 @@ export type projectsScalarWhereWithAggregatesInput = {
   jira_project_key?: Prisma.StringNullableWithAggregatesFilter<"projects"> | string | null
   github_repo?: Prisma.StringNullableWithAggregatesFilter<"projects"> | string | null
   github_token?: Prisma.StringNullableWithAggregatesFilter<"projects"> | string | null
+  logo_url?: Prisma.StringNullableWithAggregatesFilter<"projects"> | string | null
+  cover_picture?: Prisma.StringNullableWithAggregatesFilter<"projects"> | string | null
 }
 
 export type projectsCreateInput = {
@@ -452,6 +476,8 @@ export type projectsCreateInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
@@ -484,6 +510,8 @@ export type projectsUncheckedCreateInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
   teams?: Prisma.teamsUncheckedCreateNestedManyWithoutProjectInput
   sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutProjectInput
@@ -510,6 +538,8 @@ export type projectsUpdateInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
@@ -542,6 +572,8 @@ export type projectsUncheckedUpdateInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
   teams?: Prisma.teamsUncheckedUpdateManyWithoutProjectNestedInput
   sprints?: Prisma.sprintsUncheckedUpdateManyWithoutProjectNestedInput
@@ -571,6 +603,8 @@ export type projectsCreateManyInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
 }
 
 export type projectsUpdateManyMutationInput = {
@@ -592,6 +626,8 @@ export type projectsUpdateManyMutationInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type projectsUncheckedUpdateManyInput = {
@@ -616,6 +652,8 @@ export type projectsUncheckedUpdateManyInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type ProjectsListRelationFilter = {
@@ -650,6 +688,8 @@ export type projectsCountOrderByAggregateInput = {
   jira_project_key?: Prisma.SortOrder
   github_repo?: Prisma.SortOrder
   github_token?: Prisma.SortOrder
+  logo_url?: Prisma.SortOrder
+  cover_picture?: Prisma.SortOrder
 }
 
 export type projectsMaxOrderByAggregateInput = {
@@ -672,6 +712,8 @@ export type projectsMaxOrderByAggregateInput = {
   jira_project_key?: Prisma.SortOrder
   github_repo?: Prisma.SortOrder
   github_token?: Prisma.SortOrder
+  logo_url?: Prisma.SortOrder
+  cover_picture?: Prisma.SortOrder
 }
 
 export type projectsMinOrderByAggregateInput = {
@@ -694,6 +736,8 @@ export type projectsMinOrderByAggregateInput = {
   jira_project_key?: Prisma.SortOrder
   github_repo?: Prisma.SortOrder
   github_token?: Prisma.SortOrder
+  logo_url?: Prisma.SortOrder
+  cover_picture?: Prisma.SortOrder
 }
 
 export type ProjectsScalarRelationFilter = {
@@ -933,6 +977,8 @@ export type projectsCreateWithoutOwnerInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
   members?: Prisma.project_membersCreateNestedManyWithoutProjectInput
@@ -963,6 +1009,8 @@ export type projectsUncheckedCreateWithoutOwnerInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
   teams?: Prisma.teamsUncheckedCreateNestedManyWithoutProjectInput
   sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutProjectInput
@@ -999,6 +1047,8 @@ export type projectsCreateWithoutCreated_by_userInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
   members?: Prisma.project_membersCreateNestedManyWithoutProjectInput
@@ -1029,6 +1079,8 @@ export type projectsUncheckedCreateWithoutCreated_by_userInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
   teams?: Prisma.teamsUncheckedCreateNestedManyWithoutProjectInput
   sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutProjectInput
@@ -1065,6 +1117,8 @@ export type projectsCreateWithoutUpdated_by_userInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
   members?: Prisma.project_membersCreateNestedManyWithoutProjectInput
@@ -1095,6 +1149,8 @@ export type projectsUncheckedCreateWithoutUpdated_by_userInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
   teams?: Prisma.teamsUncheckedCreateNestedManyWithoutProjectInput
   sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutProjectInput
@@ -1153,6 +1209,8 @@ export type projectsScalarWhereInput = {
   jira_project_key?: Prisma.StringNullableFilter<"projects"> | string | null
   github_repo?: Prisma.StringNullableFilter<"projects"> | string | null
   github_token?: Prisma.StringNullableFilter<"projects"> | string | null
+  logo_url?: Prisma.StringNullableFilter<"projects"> | string | null
+  cover_picture?: Prisma.StringNullableFilter<"projects"> | string | null
 }
 
 export type projectsUpsertWithWhereUniqueWithoutCreated_by_userInput = {
@@ -1206,6 +1264,8 @@ export type projectsCreateWithoutMembersInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
@@ -1237,6 +1297,8 @@ export type projectsUncheckedCreateWithoutMembersInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
   teams?: Prisma.teamsUncheckedCreateNestedManyWithoutProjectInput
   sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutProjectInput
   work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutProjectInput
@@ -1278,6 +1340,8 @@ export type projectsUpdateWithoutMembersInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
@@ -1309,6 +1373,8 @@ export type projectsUncheckedUpdateWithoutMembersInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   teams?: Prisma.teamsUncheckedUpdateManyWithoutProjectNestedInput
   sprints?: Prisma.sprintsUncheckedUpdateManyWithoutProjectNestedInput
   work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutProjectNestedInput
@@ -1334,6 +1400,8 @@ export type projectsCreateWithoutTeamsInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
@@ -1365,6 +1433,8 @@ export type projectsUncheckedCreateWithoutTeamsInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
   sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutProjectInput
   work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutProjectInput
@@ -1406,6 +1476,8 @@ export type projectsUpdateWithoutTeamsInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
@@ -1437,6 +1509,8 @@ export type projectsUncheckedUpdateWithoutTeamsInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
   sprints?: Prisma.sprintsUncheckedUpdateManyWithoutProjectNestedInput
   work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutProjectNestedInput
@@ -1462,6 +1536,8 @@ export type projectsCreateWithoutSprintsInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
@@ -1493,6 +1569,8 @@ export type projectsUncheckedCreateWithoutSprintsInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
   teams?: Prisma.teamsUncheckedCreateNestedManyWithoutProjectInput
   work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutProjectInput
@@ -1534,6 +1612,8 @@ export type projectsUpdateWithoutSprintsInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
@@ -1565,6 +1645,8 @@ export type projectsUncheckedUpdateWithoutSprintsInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
   teams?: Prisma.teamsUncheckedUpdateManyWithoutProjectNestedInput
   work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutProjectNestedInput
@@ -1590,6 +1672,8 @@ export type projectsCreateWithoutWork_itemsInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
@@ -1621,6 +1705,8 @@ export type projectsUncheckedCreateWithoutWork_itemsInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
   teams?: Prisma.teamsUncheckedCreateNestedManyWithoutProjectInput
   sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutProjectInput
@@ -1662,6 +1748,8 @@ export type projectsUpdateWithoutWork_itemsInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
@@ -1693,6 +1781,8 @@ export type projectsUncheckedUpdateWithoutWork_itemsInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
   teams?: Prisma.teamsUncheckedUpdateManyWithoutProjectNestedInput
   sprints?: Prisma.sprintsUncheckedUpdateManyWithoutProjectNestedInput
@@ -1718,6 +1808,8 @@ export type projectsCreateWithoutSaved_viewsInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
   owner: Prisma.usersCreateNestedOneWithoutOwned_projectsInput
   created_by_user?: Prisma.usersCreateNestedOneWithoutCreated_projectsInput
   updated_by_user?: Prisma.usersCreateNestedOneWithoutUpdated_projectsInput
@@ -1749,6 +1841,8 @@ export type projectsUncheckedCreateWithoutSaved_viewsInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
   members?: Prisma.project_membersUncheckedCreateNestedManyWithoutProjectInput
   teams?: Prisma.teamsUncheckedCreateNestedManyWithoutProjectInput
   sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutProjectInput
@@ -1790,6 +1884,8 @@ export type projectsUpdateWithoutSaved_viewsInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
@@ -1821,6 +1917,8 @@ export type projectsUncheckedUpdateWithoutSaved_viewsInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
   teams?: Prisma.teamsUncheckedUpdateManyWithoutProjectNestedInput
   sprints?: Prisma.sprintsUncheckedUpdateManyWithoutProjectNestedInput
@@ -1848,6 +1946,8 @@ export type projectsCreateManyOwnerInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
 }
 
 export type projectsCreateManyCreated_by_userInput = {
@@ -1871,6 +1971,8 @@ export type projectsCreateManyCreated_by_userInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
 }
 
 export type projectsCreateManyUpdated_by_userInput = {
@@ -1894,6 +1996,8 @@ export type projectsCreateManyUpdated_by_userInput = {
   jira_project_key?: string | null
   github_repo?: string | null
   github_token?: string | null
+  logo_url?: string | null
+  cover_picture?: string | null
 }
 
 export type projectsUpdateWithoutOwnerInput = {
@@ -1915,6 +2019,8 @@ export type projectsUpdateWithoutOwnerInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
   members?: Prisma.project_membersUpdateManyWithoutProjectNestedInput
@@ -1945,6 +2051,8 @@ export type projectsUncheckedUpdateWithoutOwnerInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
   teams?: Prisma.teamsUncheckedUpdateManyWithoutProjectNestedInput
   sprints?: Prisma.sprintsUncheckedUpdateManyWithoutProjectNestedInput
@@ -1973,6 +2081,8 @@ export type projectsUncheckedUpdateManyWithoutOwnerInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type projectsUpdateWithoutCreated_by_userInput = {
@@ -1994,6 +2104,8 @@ export type projectsUpdateWithoutCreated_by_userInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
   updated_by_user?: Prisma.usersUpdateOneWithoutUpdated_projectsNestedInput
   members?: Prisma.project_membersUpdateManyWithoutProjectNestedInput
@@ -2024,6 +2136,8 @@ export type projectsUncheckedUpdateWithoutCreated_by_userInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
   teams?: Prisma.teamsUncheckedUpdateManyWithoutProjectNestedInput
   sprints?: Prisma.sprintsUncheckedUpdateManyWithoutProjectNestedInput
@@ -2052,6 +2166,8 @@ export type projectsUncheckedUpdateManyWithoutCreated_by_userInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type projectsUpdateWithoutUpdated_by_userInput = {
@@ -2073,6 +2189,8 @@ export type projectsUpdateWithoutUpdated_by_userInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   owner?: Prisma.usersUpdateOneRequiredWithoutOwned_projectsNestedInput
   created_by_user?: Prisma.usersUpdateOneWithoutCreated_projectsNestedInput
   members?: Prisma.project_membersUpdateManyWithoutProjectNestedInput
@@ -2103,6 +2221,8 @@ export type projectsUncheckedUpdateWithoutUpdated_by_userInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   members?: Prisma.project_membersUncheckedUpdateManyWithoutProjectNestedInput
   teams?: Prisma.teamsUncheckedUpdateManyWithoutProjectNestedInput
   sprints?: Prisma.sprintsUncheckedUpdateManyWithoutProjectNestedInput
@@ -2131,6 +2251,8 @@ export type projectsUncheckedUpdateManyWithoutUpdated_by_userInput = {
   jira_project_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_repo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   github_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -2222,6 +2344,8 @@ export type projectsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   jira_project_key?: boolean
   github_repo?: boolean
   github_token?: boolean
+  logo_url?: boolean
+  cover_picture?: boolean
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   created_by_user?: boolean | Prisma.projects$created_by_userArgs<ExtArgs>
   updated_by_user?: boolean | Prisma.projects$updated_by_userArgs<ExtArgs>
@@ -2255,6 +2379,8 @@ export type projectsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   jira_project_key?: boolean
   github_repo?: boolean
   github_token?: boolean
+  logo_url?: boolean
+  cover_picture?: boolean
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   created_by_user?: boolean | Prisma.projects$created_by_userArgs<ExtArgs>
   updated_by_user?: boolean | Prisma.projects$updated_by_userArgs<ExtArgs>
@@ -2282,6 +2408,8 @@ export type projectsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   jira_project_key?: boolean
   github_repo?: boolean
   github_token?: boolean
+  logo_url?: boolean
+  cover_picture?: boolean
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   created_by_user?: boolean | Prisma.projects$created_by_userArgs<ExtArgs>
   updated_by_user?: boolean | Prisma.projects$updated_by_userArgs<ExtArgs>
@@ -2309,9 +2437,11 @@ export type projectsSelectScalar = {
   jira_project_key?: boolean
   github_repo?: boolean
   github_token?: boolean
+  logo_url?: boolean
+  cover_picture?: boolean
 }
 
-export type projectsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "key" | "description" | "owner_id" | "start_date" | "end_date" | "attributes_config" | "workflow_config" | "status" | "deleted_at" | "created_by" | "created_at" | "updated_by" | "updated_at" | "jira_url" | "jira_email" | "jira_token" | "jira_project_key" | "github_repo" | "github_token", ExtArgs["result"]["projects"]>
+export type projectsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "key" | "description" | "owner_id" | "start_date" | "end_date" | "attributes_config" | "workflow_config" | "status" | "deleted_at" | "created_by" | "created_at" | "updated_by" | "updated_at" | "jira_url" | "jira_email" | "jira_token" | "jira_project_key" | "github_repo" | "github_token" | "logo_url" | "cover_picture", ExtArgs["result"]["projects"]>
 export type projectsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   created_by_user?: boolean | Prisma.projects$created_by_userArgs<ExtArgs>
@@ -2368,6 +2498,8 @@ export type $projectsPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     jira_project_key: string | null
     github_repo: string | null
     github_token: string | null
+    logo_url: string | null
+    cover_picture: string | null
   }, ExtArgs["result"]["projects"]>
   composites: {}
 }
@@ -2820,6 +2952,8 @@ export interface projectsFieldRefs {
   readonly jira_project_key: Prisma.FieldRef<"projects", 'String'>
   readonly github_repo: Prisma.FieldRef<"projects", 'String'>
   readonly github_token: Prisma.FieldRef<"projects", 'String'>
+  readonly logo_url: Prisma.FieldRef<"projects", 'String'>
+  readonly cover_picture: Prisma.FieldRef<"projects", 'String'>
 }
     
 

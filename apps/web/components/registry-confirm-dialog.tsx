@@ -1,6 +1,7 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, Loader2 } from '@repo/ui/lib/icons';
 import { Button } from '@repo/ui/components/ui/button';
 
@@ -12,12 +13,19 @@ interface RegistryConfirmDialogProps {
   readonly pendingLabel?: string;
   readonly isPending: boolean;
   readonly isSoft: boolean;
+  /**
+   * Verb used in “Are you sure you want to …?”.
+   * Defaults to archive (soft) or permanently delete (hard).
+   */
+  readonly actionVerb?: string;
   readonly onCancel: () => void;
   readonly onConfirm: () => void;
 }
 
 /**
- * Shared archive / hard-delete confirmation modal used by project and team registries.
+ * Shared archive / restore / hard-delete confirmation modal used by registries.
+ * Portaled to `document.body` so the backdrop covers the full viewport even
+ * when opened from inside the dashboard scroll shell (`overflow-y-auto`).
  */
 export function RegistryConfirmDialog({
   title,
@@ -27,9 +35,16 @@ export function RegistryConfirmDialog({
   pendingLabel = 'Processing...',
   isPending,
   isSoft,
+  actionVerb,
   onCancel,
   onConfirm,
 }: Readonly<RegistryConfirmDialogProps>) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const confirmButtonText = isPending ? (
     <>
       <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
@@ -38,9 +53,14 @@ export function RegistryConfirmDialog({
   ) : (
     confirmLabel
   );
+  const verb = actionVerb ?? (isSoft ? 'archive' : 'permanently delete');
 
-  return (
-    <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
+  if (!mounted) {
+    return null;
+  }
+
+  return createPortal(
+    <div className="animate-in fade-in fixed inset-0 z-100 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
       <dialog
         open
         className="bg-card border-border animate-in fade-in zoom-in-95 relative block w-full max-w-md overflow-hidden rounded-xl border shadow-2xl duration-200"
@@ -55,10 +75,9 @@ export function RegistryConfirmDialog({
           </div>
 
           <p className="text-muted-foreground text-sm leading-relaxed">
-            Are you sure you want to
-            {isSoft ? ' archive ' : ' permanently delete '}
+            Are you sure you want to {verb}{' '}
             <strong className="text-foreground">{subject}</strong>
-            {' ?'}
+            {'?'}
           </p>
           <p className="text-muted-foreground/80 bg-muted/50 border-border/40 mt-2 rounded-lg border p-2.5 text-xs">
             {detail}
@@ -85,6 +104,7 @@ export function RegistryConfirmDialog({
           </Button>
         </div>
       </dialog>
-    </div>
+    </div>,
+    document.body
   );
 }

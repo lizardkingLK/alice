@@ -1,7 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import WorkItemsTable from '@/app/work-items/_components/workItems-table';
 import { loadWorkItemChildrenAction } from '@/app/work-items/_components/actions';
+import {
+  archiveWorkItem,
+  purgeWorkItem,
+  restoreWorkItem,
+} from '@/app/work-items/_services/workItem.service.client';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import { formatDate } from '@/app/_shared/utility';
 import {
@@ -48,6 +59,13 @@ vi.mock('@/app/work-items/_components/actions', () => ({
   loadWorkItemChildrenAction: vi.fn(),
 }));
 
+vi.mock('@/app/work-items/_services/workItem.service.client', () => ({
+  archiveWorkItem: vi.fn(),
+  restoreWorkItem: vi.fn(),
+  purgeWorkItem: vi.fn(),
+  countWorkItemDescendants: vi.fn().mockResolvedValue(0),
+}));
+
 vi.mock('@/app/work-items/_components/workItem-form', () => ({
   WorkItemForm: ({
     onClose,
@@ -84,6 +102,8 @@ async function renderTable(
   overrides: Partial<{
     initialWorkItems: DbWorkItem[];
     currentUserId: string | null;
+    currentUserRole: string;
+    tab: 'active' | 'archived';
     search: string;
     page: number;
     limit: number;
@@ -93,6 +113,7 @@ async function renderTable(
     typeFilter: string;
     assigneeFilter: string;
     listView: 'flat' | 'hierarchy';
+    lockedProjectId: string;
   }> = {}
 ) {
   const projects = projectFactory.buildList(1);
@@ -126,7 +147,10 @@ async function renderTable(
       typeFilter={overrides.typeFilter ?? ''}
       assigneeFilter={overrides.assigneeFilter ?? ''}
       listView={overrides.listView}
+      lockedProjectId={overrides.lockedProjectId}
       currentUserId={overrides.currentUserId}
+      currentUserRole={overrides.currentUserRole}
+      tab={overrides.tab}
     />
   );
   await waitForColumnsHydrated();
@@ -162,6 +186,9 @@ describe('WorkItemsTable', () => {
       searchParams: {},
     });
     vi.mocked(loadWorkItemChildrenAction).mockReset();
+    vi.mocked(archiveWorkItem).mockReset();
+    vi.mocked(restoreWorkItem).mockReset();
+    vi.mocked(purgeWorkItem).mockReset();
   });
 
   it('renders work item rows with core columns', async () => {
@@ -346,7 +373,7 @@ describe('WorkItemsTable', () => {
 
     // Assert
     expect(
-      screen.getByText(/No work items found matching your search/i)
+      screen.getByText(/No available work items were found/i)
     ).toBeInTheDocument();
   });
 
@@ -573,8 +600,8 @@ describe('WorkItemsTable', () => {
     // Assert
     await waitFor(() => {
       expect(loadWorkItemChildrenAction).toHaveBeenCalledWith('epic-1');
+      expect(screen.getByText('Child story')).toBeInTheDocument();
     });
-    expect(await screen.findByText('Child story')).toBeInTheDocument();
 
     // Act — collapse
     fireEvent.click(screen.getByRole('button', { name: /Collapse subtasks/i }));
@@ -615,5 +642,223 @@ describe('WorkItemsTable', () => {
     expect(
       await screen.findByRole('button', { name: /Expand subtasks/i })
     ).toBeInTheDocument();
+  });
+
+  it('switches to the archived tab via the toolbar', async () => {
+    await renderTable({ totalCount: 1, totalPages: 1 });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Archived' }));
+
+    expect(mockPush).toHaveBeenCalledWith(
+      '/work-items?recordStatus=archived&page=1'
+    );
+  });
+
+  it('keeps project details tab=work-items when opening archived work items', async () => {
+    configureNextNavigationMock({
+      pathname: '/projects/proj-1',
+      searchParams: { tab: 'work-items' },
+    });
+
+    await renderTable({
+      totalCount: 1,
+      totalPages: 1,
+      lockedProjectId: 'proj-1',
+      projectFilter: 'proj-1',
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Archived' }));
+
+    expect(mockPush).toHaveBeenCalledWith(
+      '/projects/proj-1?tab=work-items&recordStatus=archived&page=1'
+    );
+  });
+
+  it('archives a work item after confirmation', async () => {
+    const item = workItemFactory.build({
+      id: 'wi-archive',
+      title: 'Archive me',
+      updated_at: '2026-08-01T00:00:00Z',
+    });
+    vi.mocked(archiveWorkItem).mockResolvedValue(
+      workItemFactory.build({
+        ...item,
+        record_status: 'archived',
+      })
+    );
+
+    await renderTable({
+      initialWorkItems: [item],
+      currentUserId: 'user-1',
+      currentUserRole: 'member',
+      tab: 'active',
+      totalCount: 1,
+      totalPages: 1,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Archive' }));
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Archive',
+      })
+    );
+
+    await waitFor(() => {
+      expect(archiveWorkItem).toHaveBeenCalledWith(
+        'wi-archive',
+        '2026-08-01T00:00:00Z'
+      );
+      expect(mockRefresh).toHaveBeenCalled();
+    });
+  });
+
+  it('restores from the archived tab without a confirm dialog when it has no parent', async () => {
+    const item = workItemFactory.build({
+      id: 'wi-restore',
+      title: 'Restore me',
+      record_status: 'archived',
+      parent_id: null,
+      updated_at: '2026-08-01T00:00:00Z',
+    });
+    vi.mocked(restoreWorkItem).mockResolvedValue(
+      workItemFactory.build({
+        ...item,
+        record_status: 'active',
+      })
+    );
+
+    await renderTable({
+      initialWorkItems: [item],
+      currentUserId: 'user-1',
+      currentUserRole: 'member',
+      tab: 'archived',
+      totalCount: 1,
+      totalPages: 1,
+    });
+
+    expect(
+      screen.queryByRole('button', { name: /Add Work-Item/i })
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
+
+    await waitFor(() => {
+      expect(restoreWorkItem).toHaveBeenCalledWith(
+        'wi-restore',
+        '2026-08-01T00:00:00Z'
+      );
+      expect(mockRefresh).toHaveBeenCalled();
+    });
+  });
+
+  it('warns before restoring a child that will unlink from its parent', async () => {
+    const item = workItemFactory.build({
+      id: 'wi-restore-child',
+      title: 'Restore child',
+      record_status: 'archived',
+      parent_id: 'wi-parent',
+      updated_at: '2026-08-01T00:00:00Z',
+    });
+    vi.mocked(restoreWorkItem).mockResolvedValue(
+      workItemFactory.build({
+        ...item,
+        record_status: 'active',
+        parent_id: null,
+      })
+    );
+
+    await renderTable({
+      initialWorkItems: [item],
+      currentUserId: 'user-1',
+      currentUserRole: 'member',
+      tab: 'archived',
+      totalCount: 1,
+      totalPages: 1,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveTextContent(/unlink this work item from its parent/i);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Restore' }));
+
+    await waitFor(() => {
+      expect(restoreWorkItem).toHaveBeenCalledWith(
+        'wi-restore-child',
+        '2026-08-01T00:00:00Z'
+      );
+      expect(mockRefresh).toHaveBeenCalled();
+    });
+  });
+
+  it('purges an archived work item when the actor is admin', async () => {
+    const item = workItemFactory.build({
+      id: 'wi-purge',
+      title: 'Purge me',
+      record_status: 'archived',
+      parent_id: null,
+    });
+    vi.mocked(purgeWorkItem).mockResolvedValue(undefined);
+
+    await renderTable({
+      initialWorkItems: [item],
+      currentUserId: 'user-admin',
+      currentUserRole: 'admin',
+      tab: 'archived',
+      totalCount: 1,
+      totalPages: 1,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Purge' }));
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Delete permanently',
+      })
+    );
+
+    await waitFor(() => {
+      expect(purgeWorkItem).toHaveBeenCalledWith('wi-purge');
+      expect(mockRefresh).toHaveBeenCalled();
+    });
+  });
+
+  it('warns that purging a child unlinks it from its parent', async () => {
+    const item = workItemFactory.build({
+      id: 'wi-purge-child',
+      title: 'Purge child',
+      record_status: 'archived',
+      parent_id: 'wi-parent',
+    });
+    vi.mocked(purgeWorkItem).mockResolvedValue(undefined);
+
+    await renderTable({
+      initialWorkItems: [item],
+      currentUserId: 'user-admin',
+      currentUserRole: 'admin',
+      tab: 'archived',
+      totalCount: 1,
+      totalPages: 1,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Purge' }));
+
+    expect(screen.getByRole('dialog')).toHaveTextContent(
+      /unlinks it from its parent/i
+    );
+
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Delete permanently',
+      })
+    );
+
+    await waitFor(() => {
+      expect(purgeWorkItem).toHaveBeenCalledWith('wi-purge-child');
+    });
   });
 });

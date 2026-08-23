@@ -75,6 +75,7 @@ export async function listCommentWorkItemOptions(
     .select(
       `id, title, type, project_id, jira_issue_key, ${projectRelationSelect()}`
     )
+    .eq('record_status', 'active')
     .limit(limit);
 
   throwIfError(

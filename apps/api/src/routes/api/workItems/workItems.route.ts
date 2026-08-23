@@ -5,7 +5,10 @@ import {
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
 import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
-import { WorkItemValidationError } from './workItems.errors';
+import {
+  WorkItemAccessError,
+  WorkItemValidationError,
+} from './workItems.errors';
 import { type WorkItemService } from './workItems.service';
 import type { NotificationsService } from '../notifications/notifications.service';
 import {
@@ -19,9 +22,14 @@ import type { DbWorkItem } from './workItems.repository';
 import { coalescePatchField } from './workItems.patch-utils';
 import {
   coerceLabelsFormField,
+  expectedUpdatedAtSchema,
   listWorkItemsQuerySchema,
   parseWorkItemLabels,
 } from '@repo/types';
+
+const workItemLockActionSchema = z.object({
+  expectedUpdatedAt: expectedUpdatedAtSchema,
+});
 
 type PatchUpdateWorkItemPayload = z.infer<typeof patchUpdateWorkItemBodySchema>;
 
@@ -136,6 +144,9 @@ function sendWorkItemMutationError(
   }
 
   const message = error instanceof Error ? error.message : fallbackMessage;
+  if (error instanceof WorkItemAccessError) {
+    return res.status(403).json({ data: null, error: message });
+  }
   if (error instanceof WorkItemValidationError) {
     return res.status(400).json({ data: null, error: message });
   }
@@ -165,7 +176,45 @@ function listWorkItemsQueryFromRequest(query: Record<string, unknown>) {
     labels: firstQueryValue(query.labels),
     view: firstQueryValue(query.view),
     includeDescription: firstQueryValue(query.includeDescription),
+    recordStatus: firstQueryValue(query.recordStatus),
   });
+}
+
+type WorkItemLockAction = (
+  actorId: string,
+  workItemId: string,
+  expectedUpdatedAt: string
+) => Promise<DbWorkItem>;
+
+/** PATCH handlers that require `expectedUpdatedAt` and return `{ workItem }`. */
+function createWorkItemLockActionHandler(
+  action: WorkItemLockAction,
+  failureFallback: string
+) {
+  return async (
+    req: AuthenticatedRequest,
+    res: {
+      status: (code: number) => {
+        json: (body: Record<string, unknown>) => void;
+      };
+      json: (body: Record<string, unknown>) => void;
+    }
+  ) => {
+    const parsed = workItemLockActionSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: z.treeifyError(parsed.error) });
+    }
+    try {
+      const workItem = await action(
+        req.userId!,
+        req.params.id!,
+        parsed.data.expectedUpdatedAt
+      );
+      res.json({ workItem });
+    } catch (error) {
+      sendWorkItemMutationError(res, error, failureFallback);
+    }
+  };
 }
 
 export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
@@ -210,10 +259,14 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
 
       try {
         const result = await workItemService.listWorkItemsPaginated(
-          parsed.data
+          parsed.data,
+          req.userId!
         );
         res.json(result);
       } catch (error) {
+        if (error instanceof WorkItemAccessError) {
+          return res.status(403).json({ error: error.message });
+        }
         const message =
           error instanceof Error ? error.message : 'Failed to list work-items';
         res.status(500).json({ error: message });
@@ -299,7 +352,10 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
       }
 
       try {
-        const workItem = await workItemService.getWorkItemDetail(parsedId.data);
+        const workItem = await workItemService.getWorkItemDetail(
+          parsedId.data,
+          req.userId!
+        );
         if (!workItem) {
           return res
             .status(404)
@@ -307,6 +363,9 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
         }
         res.json({ data: workItem, error: null });
       } catch (error) {
+        if (error instanceof WorkItemAccessError) {
+          return res.status(403).json({ data: null, error: error.message });
+        }
         const message =
           error instanceof Error ? error.message : 'Failed to get work-item';
         res.status(500).json({ data: null, error: message });
@@ -404,7 +463,8 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
         }
 
         const existingWorkItem = await workItemService.getWorkItem(
-          req.params.id!
+          req.params.id!,
+          req.userId!
         );
         if (!existingWorkItem) {
           return res
@@ -442,6 +502,62 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
         res.status(200).json({ data: workItem, error: null });
       } catch (error) {
         sendWorkItemMutationError(res, error, 'Failed to update work-item');
+      }
+    }
+  );
+
+  workItemsRouter.get(
+    '/:id/descendant-count',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const descendantCount = await workItemService.countDescendants(
+          req.params.id!,
+          req.userId!
+        );
+        res.json({ descendantCount });
+      } catch (error) {
+        sendWorkItemMutationError(
+          res,
+          error,
+          'Failed to count work item descendants'
+        );
+      }
+    }
+  );
+
+  workItemsRouter.patch(
+    '/:id/archive',
+    requireApiAuth,
+    createWorkItemLockActionHandler(
+      (actorId, workItemId, expectedUpdatedAt) =>
+        workItemService.archiveWorkItem(actorId, workItemId, expectedUpdatedAt),
+      'Failed to archive work item'
+    )
+  );
+
+  workItemsRouter.patch(
+    '/:id/restore',
+    requireApiAuth,
+    createWorkItemLockActionHandler(
+      (actorId, workItemId, expectedUpdatedAt) =>
+        workItemService.restoreWorkItem(actorId, workItemId, expectedUpdatedAt),
+      'Failed to restore work item'
+    )
+  );
+
+  workItemsRouter.delete(
+    '/:id',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const result = await workItemService.purgeWorkItem(
+          req.userId!,
+          req.params.id!
+        );
+        res.json({ success: true, ...result });
+      } catch (error) {
+        sendWorkItemMutationError(res, error, 'Failed to delete work item');
       }
     }
   );

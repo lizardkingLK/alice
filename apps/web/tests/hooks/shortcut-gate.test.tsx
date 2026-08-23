@@ -83,6 +83,23 @@ describe('shortcut gate', () => {
     expect(isUnmodifiedKey(plainM, 'm')).toBe(true);
   });
 
+  it('ignores keydown events with a missing key', () => {
+    // Arrange — some browsers/extensions emit keydown without `key`
+    const broken = {
+      key: undefined,
+      metaKey: true,
+      ctrlKey: false,
+      altKey: false,
+      repeat: false,
+      shiftKey: false,
+    } as unknown as KeyboardEvent;
+
+    // Act / Assert
+    expect(isModKey(broken, 'b')).toBe(false);
+    expect(isShiftLetter(broken, 'f')).toBe(false);
+    expect(isUnmodifiedKey(broken, 'm')).toBe(false);
+  });
+
   it('does not run a global shortcut while a form dialog is open', () => {
     // Arrange
     render(<ShiftFHarness />);

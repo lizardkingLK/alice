@@ -4,19 +4,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { parseWorkItemLabels } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { Badge } from '@repo/ui/components/ui/badge';
-import {
-  ChevronDown,
-  ChevronRight,
-  Loader2,
-  MoreHorizontal,
-  Pencil,
-} from '@repo/ui/lib/icons';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@repo/ui/components/ui/dropdown-menu';
+import { ChevronDown, ChevronRight, Loader2 } from '@repo/ui/lib/icons';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { formatDate } from '@/app/_shared/utility';
 import type { Sprint } from '@/app/sprints/_services/sprints.service';
@@ -25,6 +13,10 @@ import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-prior
 import { WorkItemOverdueBadge } from '@/app/work-items/_components/workItem-badge-overdue';
 import { WorkItemTypeBadge } from '@/app/work-items/_components/workItem-badge-type';
 import { WorkItemLabelsTrain } from '@/app/work-items/_components/work-item-labels-train';
+import {
+  RegistryRowActions,
+  registryActionsHeader,
+} from '@/components/registry-row-actions';
 import type {
   DisplayRow,
   HierarchyRendererProps,
@@ -193,52 +185,81 @@ function nameFromMap(
   return namesById.get(id) ?? '—';
 }
 
-const actionsHeaderRenderer = () => <span className="sr-only">Actions</span>;
-
 const actionsRenderer = ({
   row,
+  isPending,
+  isAdmin,
+  isActiveView,
   openEditDialog,
+  onArchive,
+  onRestore,
+  onPurge,
 }: HierarchyRendererProps & {
+  readonly isPending: boolean;
+  readonly isAdmin: boolean;
+  readonly isActiveView: boolean;
   // eslint-disable-next-line no-unused-vars -- edit dialog opener
   openEditDialog: (workItem: DbWorkItem) => void;
-}) => (
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <Button variant="ghost" size="icon-sm" className="cursor-pointer">
-        <MoreHorizontal />
-        <span className="sr-only">Open menu</span>
-      </Button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="end">
-      <DropdownMenuItem onClick={() => openEditDialog(row.original.workItem)}>
-        <Pencil />
-        Edit
-      </DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
-);
+  // eslint-disable-next-line no-unused-vars -- archive opener
+  onArchive: (workItem: DbWorkItem) => void;
+  // eslint-disable-next-line no-unused-vars -- restore opener
+  onRestore: (workItem: DbWorkItem) => void;
+  // eslint-disable-next-line no-unused-vars -- purge opener
+  onPurge: (workItem: DbWorkItem) => void;
+}) => {
+  const workItem = row.original.workItem;
+  return (
+    <RegistryRowActions
+      isPending={isPending}
+      isManagerOrAdmin
+      isAdmin={isAdmin}
+      isActiveView={isActiveView}
+      canEdit
+      canArchive
+      onEdit={() => openEditDialog(workItem)}
+      onArchive={() => onArchive(workItem)}
+      onRestore={() => onRestore(workItem)}
+      onPurge={() => onPurge(workItem)}
+    />
+  );
+};
 
 export function buildWorkItemColumns(options: {
   readonly lockedProjectId?: string;
   readonly lockedAssigneeId?: string;
   readonly isHierarchy: boolean;
   readonly currentUserId?: string | null;
+  readonly isAdmin: boolean;
+  readonly isActiveView: boolean;
+  readonly isPending: boolean;
   readonly projects: WorkItemWorkspaceProps['projects'];
   readonly sprints: readonly Sprint[];
   // eslint-disable-next-line no-unused-vars -- expand toggle callback
   readonly onToggleExpand: (workItemId: string) => void;
   // eslint-disable-next-line no-unused-vars -- edit dialog opener
   readonly openEditDialog: (workItem: DbWorkItem) => void;
+  // eslint-disable-next-line no-unused-vars -- archive opener
+  readonly onArchive: (workItem: DbWorkItem) => void;
+  // eslint-disable-next-line no-unused-vars -- restore opener
+  readonly onRestore: (workItem: DbWorkItem) => void;
+  // eslint-disable-next-line no-unused-vars -- purge opener
+  readonly onPurge: (workItem: DbWorkItem) => void;
 }): ColumnDef<DisplayRow>[] {
   const {
     lockedProjectId,
     lockedAssigneeId,
     isHierarchy,
     currentUserId,
+    isAdmin,
+    isActiveView,
+    isPending,
     projects,
     sprints,
     onToggleExpand,
     openEditDialog,
+    onArchive,
+    onRestore,
+    onPurge,
   } = options;
 
   const projectNamesById = nameByIdMap(projects);
@@ -351,8 +372,18 @@ export function buildWorkItemColumns(options: {
     },
     {
       id: 'actions',
-      header: actionsHeaderRenderer,
-      cell: ({ row }) => actionsRenderer({ row, openEditDialog }),
+      header: registryActionsHeader,
+      cell: ({ row }) =>
+        actionsRenderer({
+          row,
+          isPending,
+          isAdmin,
+          isActiveView,
+          openEditDialog,
+          onArchive,
+          onRestore,
+          onPurge,
+        }),
     }
   );
 

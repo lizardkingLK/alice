@@ -64,6 +64,7 @@ export async function getProfileWorkedOn(
   const { data, error } = await supabase
     .from('work_items')
     .select(`id, title, status, updated_at, ${projectRelationSelect()}`)
+    .eq('record_status', 'active')
     .or(`assignee_id.eq.${userId},reporter_id.eq.${userId}`)
     .order('updated_at', { ascending: false })
     .limit(limit);

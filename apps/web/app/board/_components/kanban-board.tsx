@@ -478,7 +478,7 @@ export function KanbanBoard({
   };
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-1 flex-col gap-6">
+    <div className="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
       {needsClientBootstrap ? (
         <div className="text-muted-foreground shrink-0 rounded-lg border px-3 py-2 text-sm">
           Loading your board defaults…
@@ -503,142 +503,140 @@ export function KanbanBoard({
         </div>
       ) : null}
 
-      <Card className="shrink-0 shadow-none">
-        <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 flex-wrap items-center gap-3">
-            <SearchInput
-              value={search}
-              onValueChange={setSearch}
-              placeholder="Search work items..."
-              className="sm:w-64"
-            />
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
+          <SearchInput
+            value={search}
+            onValueChange={setSearch}
+            placeholder="Search work items..."
+            className="sm:w-64"
+          />
 
-            <AvatarGroup
-              className="*:data-[slot=avatar]:size-8"
-              role="group"
-              aria-label="Filter by assignee"
-            >
-              {visibleAssignees.map((assignee) => {
-                const isSelected = assigneeFilter === assignee.id;
-                return (
-                  <Tooltip key={assignee.id}>
-                    <TooltipTrigger asChild>
-                      <Avatar
-                        size="default"
-                        role="button"
-                        tabIndex={0}
-                        aria-pressed={isSelected}
-                        aria-label={`Filter by ${assignee.name}`}
-                        className={cn(
-                          'focus-visible:ring-ring cursor-pointer outline-none focus-visible:ring-2',
-                          isSelected &&
-                            'ring-primary ring-offset-background z-10 ring-2 ring-offset-2',
-                          assigneeFilter && !isSelected && 'opacity-40'
-                        )}
-                        onClick={() => toggleAssignee(assignee.id)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            toggleAssignee(assignee.id);
-                          }
-                        }}
-                      >
-                        {assignee.profilePicture ? (
-                          <AvatarImage
-                            src={assignee.profilePicture}
-                            alt={assignee.name}
-                          />
-                        ) : null}
-                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-                          {getInitials(assignee.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      {assignee.name}
-                      {isSelected ? ' · filtering' : ''}
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              })}
-
-              {overflowAssignees.length > 0 ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <AvatarGroupCount
+          <AvatarGroup
+            className="*:data-[slot=avatar]:size-8"
+            role="group"
+            aria-label="Filter by assignee"
+          >
+            {visibleAssignees.map((assignee) => {
+              const isSelected = assigneeFilter === assignee.id;
+              return (
+                <Tooltip key={assignee.id}>
+                  <TooltipTrigger asChild>
+                    <Avatar
+                      size="default"
                       role="button"
                       tabIndex={0}
-                      aria-label="Show more assignees"
+                      aria-pressed={isSelected}
+                      aria-label={`Filter by ${assignee.name}`}
                       className={cn(
-                        'focus-visible:ring-ring cursor-pointer text-xs font-medium outline-none focus-visible:ring-2',
-                        assigneeFilter &&
-                          !isOverflowAssigneeSelected &&
-                          'opacity-40',
-                        isOverflowAssigneeSelected &&
-                          'ring-primary ring-offset-background z-10 ring-2 ring-offset-2'
+                        'focus-visible:ring-ring cursor-pointer outline-none focus-visible:ring-2',
+                        isSelected &&
+                          'ring-primary ring-offset-background z-10 ring-2 ring-offset-2',
+                        assigneeFilter && !isSelected && 'opacity-40'
                       )}
+                      onClick={() => toggleAssignee(assignee.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          toggleAssignee(assignee.id);
+                        }
+                      }}
                     >
-                      +{overflowAssignees.length}
-                    </AvatarGroupCount>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-56">
-                    <DropdownMenuLabel>More assignees</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {overflowAssignees.map((assignee) => (
-                      <DropdownMenuCheckboxItem
-                        key={assignee.id}
-                        checked={assigneeFilter === assignee.id}
-                        onCheckedChange={() => toggleAssignee(assignee.id)}
-                      >
-                        {assignee.name}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : null}
-            </AvatarGroup>
-          </div>
+                      {assignee.profilePicture ? (
+                        <AvatarImage
+                          src={assignee.profilePicture}
+                          alt={assignee.name}
+                        />
+                      ) : null}
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                        {getInitials(assignee.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    {assignee.name}
+                    {isSelected ? ' · filtering' : ''}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
 
-          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-            <WorkItemsFilterDialog
-              projects={projects}
-              projectMembers={[]}
-              sprints={sprints}
-              projectQuery={projectQuery}
-              sprintQuery={sprintQuery}
-              typeQuery={IDLE_FILTER_QUERY}
-              assigneeQuery={IDLE_FILTER_QUERY}
-              labelsQuery={IDLE_FILTER_QUERY}
-              priorityQuery={priorityQuery}
-              visibleFieldIds={boardFilterFieldIds}
-              isProjectLocked={!allowAllFilters}
-              isAssigneeLocked
-              onApplyFilters={handleApplyFilters}
-              hasActiveFilters={hasDialogFilters}
+            {overflowAssignees.length > 0 ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <AvatarGroupCount
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Show more assignees"
+                    className={cn(
+                      'focus-visible:ring-ring cursor-pointer text-xs font-medium outline-none focus-visible:ring-2',
+                      assigneeFilter &&
+                        !isOverflowAssigneeSelected &&
+                        'opacity-40',
+                      isOverflowAssigneeSelected &&
+                        'ring-primary ring-offset-background z-10 ring-2 ring-offset-2'
+                    )}
+                  >
+                    +{overflowAssignees.length}
+                  </AvatarGroupCount>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuLabel>More assignees</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {overflowAssignees.map((assignee) => (
+                    <DropdownMenuCheckboxItem
+                      key={assignee.id}
+                      checked={assigneeFilter === assignee.id}
+                      onCheckedChange={() => toggleAssignee(assignee.id)}
+                    >
+                      {assignee.name}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
+          </AvatarGroup>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          <WorkItemsFilterDialog
+            projects={projects}
+            projectMembers={[]}
+            sprints={sprints}
+            projectQuery={projectQuery}
+            sprintQuery={sprintQuery}
+            typeQuery={IDLE_FILTER_QUERY}
+            assigneeQuery={IDLE_FILTER_QUERY}
+            labelsQuery={IDLE_FILTER_QUERY}
+            priorityQuery={priorityQuery}
+            visibleFieldIds={boardFilterFieldIds}
+            isProjectLocked={!allowAllFilters}
+            isAssigneeLocked
+            onApplyFilters={handleApplyFilters}
+            hasActiveFilters={hasDialogFilters}
+          />
+
+          {hasActiveFilters ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleClearFilters}
+              className="text-muted-foreground hover:text-foreground h-9 px-3 text-xs"
+            >
+              Clear filters
+              <X className="size-3.5" />
+            </Button>
+          ) : null}
+
+          {userId ? (
+            <WorkspaceDefaultsControls
+              onOpenDefaultsDialog={openDefaultsDialog}
+              savedDefaultsApplied={savedDefaultsApplied}
             />
-
-            {hasActiveFilters ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleClearFilters}
-                className="text-muted-foreground hover:text-foreground h-9 px-3 text-xs"
-              >
-                Clear filters
-                <X className="size-3.5" />
-              </Button>
-            ) : null}
-
-            {userId ? (
-              <WorkspaceDefaultsControls
-                onOpenDefaultsDialog={openDefaultsDialog}
-                savedDefaultsApplied={savedDefaultsApplied}
-              />
-            ) : null}
-          </div>
-        </CardContent>
-      </Card>
+          ) : null}
+        </div>
+      </div>
 
       <div className="flex min-h-0 flex-1 gap-4 overflow-x-auto pb-1">
         {COLUMNS.map((column) => {

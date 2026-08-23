@@ -74,6 +74,10 @@ const mockProject = {
   jira_email: null,
   jira_token: null,
   jira_project_key: null,
+  github_repo: null,
+  github_token: null,
+  logo_url: null,
+  cover_picture: null,
 };
 
 describe('ProjectsService backend tests', () => {
