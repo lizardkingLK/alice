@@ -27,8 +27,7 @@ export type {
   WorkItemListFilters,
 } from '@/app/work-items/_services/workItem.service.server.types';
 
-export { applyWorkItemFilters };
-
+export { applyWorkItemFilters } from '@/app/work-items/_services/workItem.service.server.supabase';
 /**
  * Strategy facade for server-only work-item reads.
  * Mutations still go through the API (`workItem.service.client.ts`).
