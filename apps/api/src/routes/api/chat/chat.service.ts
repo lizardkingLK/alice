@@ -400,9 +400,15 @@ export class ChatService {
           delay *= 2;
           continue;
         }
-        throw new Error(
-          `Alice AI service is temporarily unavailable due to Gemini error ${response.status}: ${errorText}`
-        );
+        if (response.status === 429) {
+          throw new Error(
+            'Alice AI service is temporarily unavailable because the rate limit has been exceeded. Please try again in a few moments.'
+          );
+        } else {
+          throw new Error(
+            'Alice AI service is temporarily unavailable due to a remote server issue. Please try again in a few moments.'
+          );
+        }
       }
 
       if (!response.ok) {
@@ -415,14 +421,16 @@ export class ChatService {
           attempt: i + 1,
           messagesCount: contents.length,
         });
-        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+        throw new Error(
+          'Alice AI service encountered an error while processing your request. Please try again in a few moments.'
+        );
       }
 
       return response.json() as Promise<GeminiResponse>;
     }
 
     throw new Error(
-      'Failed to contact Gemini API due to repeated rate limits.'
+      'Alice AI service is temporarily unavailable because the API rate limit has been exceeded. Please try again in a few moments.'
     );
   }
 
@@ -537,6 +545,79 @@ export class ChatService {
     return { users, activeSprints };
   }
 
+  async generateGeminiResponse(
+    userId: string,
+    history: StoredChatMessage[],
+    modelValue: ChatModelValue
+  ): Promise<{ responseText: string; toolActionsPerformed: ToolAction[] }> {
+    const contents: ContentTurn[] = history.map((msg) => {
+      const role = toGeminiRole(msg.role);
+      const parts = [{ text: msg.content }];
+      return { role, parts };
+    });
+
+    const [projectsRaw, workspace] = await Promise.all([
+      projectsRepository.listAll().catch(() => []),
+      this.loadWorkspaceContext(),
+    ]);
+
+    const projects = (projectsRaw || []) as ProjectRowWithOwner[];
+    const { users, activeSprints: sprints } = workspace;
+
+    const contextInstruction = `
+Current Workspace State:
+- Active Projects: ${JSON.stringify(projects.map((p) => ({ id: p.id, name: p.name, key: p.key })))}
+- System Users: ${JSON.stringify(users.map((u) => ({ id: u.id, name: u.name, email: u.email })))}
+- Ongoing Sprints (Active Status Only): ${JSON.stringify(sprints.map((s) => ({ id: s.id, name: s.name, projectId: s.project_id })))}
+`;
+
+    let responseText = '';
+    const toolActionsPerformed: ToolAction[] = [];
+    let loopCount = 0;
+    const maxLoops = 5;
+
+    while (loopCount < maxLoops) {
+      const geminiResponse = await this.callGeminiAPI(
+        contents,
+        contextInstruction,
+        modelValue
+      );
+      const candidate = geminiResponse.candidates?.[0];
+      const modelContent = candidate?.content;
+
+      if (!modelContent) {
+        throw new Error('No response content returned from Gemini API');
+      }
+
+      contents.push(modelContent);
+
+      const functionCalls = modelContent.parts?.filter(
+        (p: ContentPart) => p.functionCall
+      );
+      if (!functionCalls || functionCalls.length === 0) {
+        responseText =
+          modelContent.parts
+            ?.map((p: ContentPart) => p.text || '')
+            .join('\n') || '';
+        break;
+      }
+
+      const functionResponseParts = await this.processFunctionCalls(
+        userId,
+        functionCalls,
+        toolActionsPerformed
+      );
+      contents.push({
+        role: GeminiRoles.User,
+        parts: functionResponseParts,
+      });
+
+      loopCount++;
+    }
+
+    return { responseText, toolActionsPerformed };
+  }
+
   async processChatAsync(
     userId: string,
     conversationId: string,
@@ -544,70 +625,11 @@ export class ChatService {
     modelValue: ChatModelValue
   ): Promise<void> {
     try {
-      const contents: ContentTurn[] = history.map((msg) => {
-        const role = toGeminiRole(msg.role);
-        const parts = [{ text: msg.content }];
-        return { role, parts };
-      });
-
-      const [projectsRaw, workspace] = await Promise.all([
-        projectsRepository.listAll().catch(() => []),
-        this.loadWorkspaceContext(),
-      ]);
-
-      const projects = (projectsRaw || []) as ProjectRowWithOwner[];
-      const { users, activeSprints: sprints } = workspace;
-
-      const contextInstruction = `
-Current Workspace State:
-- Active Projects: ${JSON.stringify(projects.map((p) => ({ id: p.id, name: p.name, key: p.key })))}
-- System Users: ${JSON.stringify(users.map((u) => ({ id: u.id, name: u.name, email: u.email })))}
-- Ongoing Sprints (Active Status Only): ${JSON.stringify(sprints.map((s) => ({ id: s.id, name: s.name, projectId: s.project_id })))}
-`;
-
-      let responseText = '';
-      const toolActionsPerformed: ToolAction[] = [];
-      let loopCount = 0;
-      const maxLoops = 5;
-
-      while (loopCount < maxLoops) {
-        const geminiResponse = await this.callGeminiAPI(
-          contents,
-          contextInstruction,
-          modelValue
-        );
-        const candidate = geminiResponse.candidates?.[0];
-        const modelContent = candidate?.content;
-
-        if (!modelContent) {
-          throw new Error('No response content returned from Gemini API');
-        }
-
-        contents.push(modelContent);
-
-        const functionCalls = modelContent.parts?.filter(
-          (p: ContentPart) => p.functionCall
-        );
-        if (!functionCalls || functionCalls.length === 0) {
-          responseText =
-            modelContent.parts
-              ?.map((p: ContentPart) => p.text || '')
-              .join('\n') || '';
-          break;
-        }
-
-        const functionResponseParts = await this.processFunctionCalls(
-          userId,
-          functionCalls,
-          toolActionsPerformed
-        );
-        contents.push({
-          role: GeminiRoles.User,
-          parts: functionResponseParts,
-        });
-
-        loopCount++;
-      }
+      const { responseText, toolActionsPerformed } = await this.generateGeminiResponse(
+        userId,
+        history,
+        modelValue
+      );
 
       const newAssistantMessage: StoredChatMessage = {
         id: `msg-${Date.now()}`,

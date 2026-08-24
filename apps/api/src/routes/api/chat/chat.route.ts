@@ -4,6 +4,7 @@ import {
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
 import {
+  ChatRoles,
   parseChatRole,
   DEFAULT_CHAT_MODEL_VALUE,
   resolveChatModel,
@@ -128,6 +129,13 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
         let title = 'New Chat';
 
         if (!conversationId) {
+          // Process first message synchronously to ensure Gemini succeeds before database/sidebar creation
+          const { responseText, toolActionsPerformed } = await chatService.generateGeminiResponse(
+            req.userId!,
+            sanitizedInputMessages,
+            resolvedModelValue
+          );
+
           const firstMsgText =
             messages[0]?.content || messages[0]?.text || 'New Chat';
           title = firstMsgText.slice(0, 30);
@@ -135,33 +143,51 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
           conversationId = await chatService.createConversation(
             req.userId!,
             title,
-            true
+            false
           );
+
+          const newAssistantMessage: StoredChatMessage = {
+            id: `msg-${Date.now()}`,
+            role: ChatRoles.Assistant,
+            content: responseText,
+            actions: toolActionsPerformed,
+          };
+          const fullHistory = [...sanitizedInputMessages, newAssistantMessage];
+          await chatService.saveChatHistory(conversationId, fullHistory);
+
+          return res.json({
+            reply: responseText,
+            history: fullHistory,
+            actions: toolActionsPerformed,
+            conversationId,
+            title,
+            is_processing: false,
+          });
         } else {
           await chatService.setProcessingStatus(conversationId, true);
+
+          // Save the user's incoming message immediately to history
+          await chatService.saveChatHistory(conversationId, sanitizedInputMessages);
+
+          // Start background processing
+          chatService.processChatAsync(
+            req.userId!,
+            conversationId,
+            sanitizedInputMessages,
+            resolvedModelValue
+          ).catch((err) => {
+            console.error('Error starting async process:', err);
+          });
+
+          return res.json({
+            reply: 'Processing request...',
+            history: sanitizedInputMessages,
+            actions: [],
+            conversationId,
+            title,
+            is_processing: true,
+          });
         }
-
-        // Save the user's incoming message immediately to history
-        await chatService.saveChatHistory(conversationId, sanitizedInputMessages);
-
-        // Start background processing
-        chatService.processChatAsync(
-          req.userId!,
-          conversationId,
-          sanitizedInputMessages,
-          resolvedModelValue
-        ).catch((err) => {
-          console.error('Error starting async process:', err);
-        });
-
-        res.json({
-          reply: 'Processing request...',
-          history: sanitizedInputMessages,
-          actions: [],
-          conversationId,
-          title,
-          is_processing: true,
-        });
       } catch (error: unknown) {
         sendChatError(
           res,
