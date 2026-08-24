@@ -505,6 +505,18 @@ export class ChatService {
     // Clear from in-memory cache
     this.historyCache.delete(conversationId);
 
+    // Delete associated notifications in the database
+    await prisma.notifications.deleteMany({
+      where: {
+        related_item_id: conversationId,
+      },
+    }).catch((err) => {
+      console.error(
+        `Failed to delete notifications for conversation ${sanitizeLog(conversationId)}:`,
+        sanitizeLog(err)
+      );
+    });
+
     await this.chat.deleteConversation(userId, conversationId);
 
     try {

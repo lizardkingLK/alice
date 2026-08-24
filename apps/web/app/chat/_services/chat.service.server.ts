@@ -70,8 +70,7 @@ const getCachedChatConversationsForUser = unstable_cache(
   ['chat-conversations'],
   {
     revalidate: 30,
-    // Keep it simple for now; if we later add read-your-writes invalidation,
-    // we can add updateTag + tags here.
+    tags: ['chat-conversations'],
   }
 );
 

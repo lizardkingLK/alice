@@ -29,7 +29,7 @@ import {
   bootstrapLatestChat,
   loadConversationHistory,
 } from './chat-client-bootstrap';
-import { listChatConversationsAction } from '../_services/chat-read-actions';
+import { listChatConversationsAction, revalidateChatConversations } from '../_services/chat-read-actions';
 import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import ChatClientSidebar from '@/app/chat/_components/chat-client-sidebar';
 import ChatClientHeaderActions from '@/app/chat/_components/chat-client-header-actions';
@@ -183,10 +183,11 @@ export function ChatClient({
 
   const handleNewChat = useCallback(() => {
     if (isPending) return;
+    router.replace('/chat');
     setActiveConversationId(undefined);
     setMessages([]);
     setError(null);
-  }, [isPending]);
+  }, [isPending, router]);
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -289,6 +290,8 @@ export function ChatClient({
     if (isPending) return;
     if (id === activeConversationId && messages.length > 0) return;
 
+    router.replace(`/chat?conversationId=${id}`);
+
     setIsLoadingHistory(true);
     setActiveConversationId(id);
     setError(null);
@@ -315,9 +318,15 @@ export function ChatClient({
     try {
       const response = await deleteConversation(conversationToDelete.id);
       if (response.success) {
+        await revalidateChatConversations();
+        router.refresh();
+
         setConversations((prev) =>
           prev.filter((c) => c.id !== conversationToDelete.id)
         );
+
+        router.replace('/chat');
+
         if (activeConversationId === conversationToDelete.id) {
           handleNewChat();
         }
@@ -367,6 +376,7 @@ export function ChatClient({
       }
 
       if (!activeConversationId && response.conversationId) {
+        router.replace(`/chat?conversationId=${response.conversationId}`);
         setActiveConversationId(response.conversationId);
         setConversations((prev) => [
           {
