@@ -44,6 +44,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   sprint: Calendar,
   due_date: AlertCircle,
   view_shared: Layers,
+  chat_processed: MessageSquare,
   default: Bell,
 };
 
@@ -60,6 +61,8 @@ const iconColorMap: Record<string, string> = {
     'text-rose-500 bg-rose-500/10 border-rose-500/20 dark:bg-rose-500/20',
   view_shared:
     'text-amber-500 bg-amber-500/10 border-amber-500/20 dark:bg-amber-500/20',
+  chat_processed:
+    'text-indigo-500 bg-indigo-500/10 border-indigo-500/20 dark:bg-indigo-500/20',
   default: 'text-muted-foreground bg-muted border-border',
 };
 

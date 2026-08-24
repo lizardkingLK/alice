@@ -50,7 +50,7 @@ async function fetchChatConversationsForUser(
 
   const { data, error } = await supabase
     .from('chat_conversations')
-    .select('id, title, created_at, updated_at')
+    .select('id, title, created_at, updated_at, is_processing')
     .eq('user_id', userId)
     .order('updated_at', { ascending: false });
 
@@ -96,19 +96,21 @@ export async function getChatHistoryServer(
 }
 
 /**
- * Prefetch conversations + latest thread for `/chat` in one RSC pass.
+ * Prefetch conversations + selected thread for `/chat` in one RSC pass.
  */
-export async function getChatPageBootstrap(): Promise<ChatPageBootstrap> {
+export async function getChatPageBootstrap(activeId?: string): Promise<ChatPageBootstrap> {
   const conversations = await listChatConversations();
-  const latest = conversations[0];
+  const selected = activeId
+    ? (conversations.find((c) => c.id === activeId) || conversations[0])
+    : conversations[0];
 
-  if (!latest) {
+  if (!selected) {
     return { conversations: [], messages: [] };
   }
 
   let messages: ChatMessage[] = [];
   try {
-    messages = await getChatHistoryServer(latest.id);
+    messages = await getChatHistoryServer(selected.id);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('error. failed to prefetch chat history:', message);
@@ -116,7 +118,7 @@ export async function getChatPageBootstrap(): Promise<ChatPageBootstrap> {
 
   return {
     conversations,
-    activeConversationId: latest.id,
+    activeConversationId: selected.id,
     messages,
   };
 }

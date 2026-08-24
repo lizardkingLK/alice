@@ -10,10 +10,10 @@ export const metadata = {
   title: 'Alice',
 };
 
-async function ChatPageData() {
+async function ChatPageData({ conversationId }: { conversationId?: string }) {
   const [bootstrap, dbUser] = await Promise.all([
     safeServerFetch(
-      getChatPageBootstrap(),
+      getChatPageBootstrap(conversationId),
       { conversations: [], messages: [] },
       'fetch chat page bootstrap'
     ),
@@ -27,11 +27,18 @@ async function ChatPageData() {
       initialMessages={bootstrap.messages}
       currentUserName={dbUser?.name}
       currentUserImageUrl={dbUser?.profile_picture}
+      currentUserId={dbUser?.id}
     />
   );
 }
 
-export default function ChatPage() {
+export default async function ChatPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ conversationId?: string }>;
+}) {
+  const { conversationId } = await searchParams;
+
   return (
     <DashboardShell
       description="Chat with the Alice AI assistant to create projects, sprints, and work items."
@@ -40,7 +47,7 @@ export default function ChatPage() {
       contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
       <Suspense fallback={<ChatPageSkeleton />}>
-        <ChatPageData />
+        <ChatPageData conversationId={conversationId} />
       </Suspense>
     </DashboardShell>
   );

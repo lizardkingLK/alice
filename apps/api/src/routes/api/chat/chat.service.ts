@@ -10,14 +10,18 @@ import {
   WORK_ITEM_PRIORITIES,
   ProjectStatusEnum,
   mapToWorkItemType,
+  ChatRoles,
+  GeminiRoles,
+  toGeminiRole,
 } from '@repo/types';
 import { projectsService } from '../projects/projects.service';
-import { projectsRepository } from '../projects/projects.repository';
+import { projectsRepository, type ProjectRowWithOwner } from '../projects/projects.repository';
 import type { WorkItemService } from '../workItems/workItems.service';
 import type { SprintsService } from '../sprints/sprints.service';
 import { systemInstruction, geminiTools } from './chat.route.data';
 import type { ChatRepository } from './chat.repository';
 import { sanitizeLog } from './chat.utils';
+import { prisma } from '../../../lib/prisma';
 import type {
   ContentPart,
   ContentTurn,
@@ -140,6 +144,8 @@ function logGeminiError(errorDetails: {
 }
 
 export class ChatService {
+  private readonly historyCache = new Map<string, StoredChatMessage[]>();
+
   constructor(private readonly deps: ChatServiceDeps) {}
 
   private get chat() {
@@ -424,24 +430,45 @@ export class ChatService {
     conversationId: string,
     messages: StoredChatMessage[]
   ): Promise<void> {
+    // 1. Cache the history locally immediately
+    this.historyCache.set(conversationId, messages);
+
     try {
-      const mdContent = chatHistoryToMarkdown(conversationId, messages);
-      await this.chat.uploadHistoryMarkdown(conversationId, mdContent);
+      // 2. Touch the conversation record in the database immediately (fast DB query)
       await this.chat.touchConversationUpdatedAt(conversationId);
+
+      // 3. Upload history to storage asynchronously in the background
+      const mdContent = chatHistoryToMarkdown(conversationId, messages);
+      this.chat.uploadHistoryMarkdown(conversationId, mdContent).catch((error: unknown) => {
+        const msg = error instanceof Error ? error.message : String(error);
+        console.error(
+          `Failed to upload chat history in background for conversation ${sanitizeLog(conversationId)}:`,
+          sanitizeLog(msg)
+        );
+      });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error(
-        `Failed to save chat history for conversation ${sanitizeLog(conversationId)}:`,
+        `Failed to touch/save chat history for conversation ${sanitizeLog(conversationId)}:`,
         sanitizeLog(msg)
       );
     }
   }
 
   async loadChatHistory(conversationId: string): Promise<StoredChatMessage[]> {
+    // 1. Check in-memory cache first
+    const cached = this.historyCache.get(conversationId);
+    if (cached) {
+      return cached;
+    }
+
     try {
+      // 2. If not cached, fetch from storage and update cache
       const mdText = await this.chat.downloadHistoryMarkdown(conversationId);
       if (!mdText) return [];
-      return markdownToChatHistory(mdText);
+      const messages = markdownToChatHistory(mdText);
+      this.historyCache.set(conversationId, messages);
+      return messages;
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error(
@@ -458,15 +485,26 @@ export class ChatService {
 
   async createConversation(
     userId: string,
-    title = 'New Chat'
+    title = 'New Chat',
+    isProcessing = false
   ): Promise<string> {
-    return this.chat.createConversation(userId, title);
+    return this.chat.createConversation(userId, title, isProcessing);
+  }
+
+  async setProcessingStatus(
+    conversationId: string,
+    isProcessing: boolean
+  ): Promise<void> {
+    await this.chat.setProcessingStatus(conversationId, isProcessing);
   }
 
   async deleteConversation(
     userId: string,
     conversationId: string
   ): Promise<void> {
+    // Clear from in-memory cache
+    this.historyCache.delete(conversationId);
+
     await this.chat.deleteConversation(userId, conversationId);
 
     try {
@@ -485,5 +523,129 @@ export class ChatService {
       this.chat.listActiveSprintsSnapshot(),
     ]);
     return { users, activeSprints };
+  }
+
+  async processChatAsync(
+    userId: string,
+    conversationId: string,
+    history: StoredChatMessage[],
+    modelValue: ChatModelValue
+  ): Promise<void> {
+    try {
+      const contents: ContentTurn[] = history.map((msg) => {
+        const role = toGeminiRole(msg.role);
+        const parts = [{ text: msg.content }];
+        return { role, parts };
+      });
+
+      const [projectsRaw, workspace] = await Promise.all([
+        projectsRepository.listAll().catch(() => []),
+        this.loadWorkspaceContext(),
+      ]);
+
+      const projects = (projectsRaw || []) as ProjectRowWithOwner[];
+      const { users, activeSprints: sprints } = workspace;
+
+      const contextInstruction = `
+Current Workspace State:
+- Active Projects: ${JSON.stringify(projects.map((p) => ({ id: p.id, name: p.name, key: p.key })))}
+- System Users: ${JSON.stringify(users.map((u) => ({ id: u.id, name: u.name, email: u.email })))}
+- Ongoing Sprints (Active Status Only): ${JSON.stringify(sprints.map((s) => ({ id: s.id, name: s.name, projectId: s.project_id })))}
+`;
+
+      let responseText = '';
+      const toolActionsPerformed: ToolAction[] = [];
+      let loopCount = 0;
+      const maxLoops = 5;
+
+      while (loopCount < maxLoops) {
+        const geminiResponse = await this.callGeminiAPI(
+          contents,
+          contextInstruction,
+          modelValue
+        );
+        const candidate = geminiResponse.candidates?.[0];
+        const modelContent = candidate?.content;
+
+        if (!modelContent) {
+          throw new Error('No response content returned from Gemini API');
+        }
+
+        contents.push(modelContent);
+
+        const functionCalls = modelContent.parts?.filter(
+          (p: ContentPart) => p.functionCall
+        );
+        if (!functionCalls || functionCalls.length === 0) {
+          responseText =
+            modelContent.parts
+              ?.map((p: ContentPart) => p.text || '')
+              .join('\n') || '';
+          break;
+        }
+
+        const functionResponseParts = await this.processFunctionCalls(
+          userId,
+          functionCalls,
+          toolActionsPerformed
+        );
+        contents.push({
+          role: GeminiRoles.User,
+          parts: functionResponseParts,
+        });
+
+        loopCount++;
+      }
+
+      const newAssistantMessage: StoredChatMessage = {
+        id: `msg-${Date.now()}`,
+        role: ChatRoles.Assistant,
+        content: responseText,
+        actions: toolActionsPerformed,
+      };
+
+      const updatedMessages = [...history, newAssistantMessage];
+      await this.saveChatHistory(conversationId, updatedMessages);
+
+      const conversation = await prisma.chat_conversations.findUnique({
+        where: { id: conversationId },
+        select: { title: true },
+      });
+      const convTitle = conversation?.title || 'Chat';
+
+      await prisma.notifications.create({
+        data: {
+          user_id: userId,
+          type: 'chat_processed',
+          message: `Your request in "${convTitle}" has been processed.`,
+          related_item_id: conversationId,
+          created_by: userId,
+        },
+      });
+    } catch (error: unknown) {
+      console.error('Failed to process chat asynchronously:', error);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      const errorAssistantMessage: StoredChatMessage = {
+        id: `msg-${Date.now()}`,
+        role: ChatRoles.Assistant,
+        content: `Error: Failed to process your request. ${errMsg}`,
+        actions: [],
+      };
+      await this.saveChatHistory(conversationId, [...history, errorAssistantMessage]).catch(() => {});
+
+      await prisma.notifications.create({
+        data: {
+          user_id: userId,
+          type: 'chat_processed',
+          message: `Your chat request failed to process.`,
+          related_item_id: conversationId,
+          created_by: userId,
+        },
+      }).catch(() => {});
+    } finally {
+      await this.chat.setProcessingStatus(conversationId, false).catch((err) => {
+        console.error('Failed to reset processing status:', err);
+      });
+    }
   }
 }

@@ -21,5 +21,5 @@ export type ChatMessage = {
 /** Conversation list row shared by client API + RSC bootstrap. */
 export type ChatConversation = Pick<
   Tables<'chat_conversations'>,
-  'id' | 'title' | 'created_at' | 'updated_at'
+  'id' | 'title' | 'created_at' | 'updated_at' | 'is_processing'
 >;
