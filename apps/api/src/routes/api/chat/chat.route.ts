@@ -10,6 +10,7 @@ import {
   resolveChatModel,
 } from '@repo/types';
 import { type ChatService, sanitizeLog } from './chat.service';
+import { prisma } from '../../../lib/prisma';
 import type {
   InputMessage,
   StoredChatMessage,
@@ -154,6 +155,20 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
           };
           const fullHistory = [...sanitizedInputMessages, newAssistantMessage];
           await chatService.saveChatHistory(conversationId, fullHistory);
+
+          try {
+            await prisma.notifications.create({
+              data: {
+                user_id: req.userId!,
+                type: 'chat_processed',
+                message: `Your request in "${title}" has been processed.`,
+                related_item_id: conversationId,
+                created_by: req.userId!,
+              },
+            });
+          } catch (error) {
+            console.error('Failed to create notification for synchronous chat:', error);
+          }
 
           return res.json({
             reply: responseText,

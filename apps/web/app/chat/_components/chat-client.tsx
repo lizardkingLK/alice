@@ -171,23 +171,27 @@ export function ChatClient({
     (
       deletedId: string,
       activeId?: string,
-      onNewChat?: () => void
+      // eslint-disable-next-line no-unused-vars
+      onNewChat?: (force?: boolean) => void
     ) => {
       setConversations((prev) => prev.filter((c) => c.id !== deletedId));
       if (activeId === deletedId && onNewChat) {
-        onNewChat();
+        onNewChat(true);
       }
     },
     []
   );
 
-  const handleNewChat = useCallback(() => {
-    if (isPending) return;
-    router.replace('/chat');
-    setActiveConversationId(undefined);
-    setMessages([]);
-    setError(null);
-  }, [isPending, router]);
+  const handleNewChat = useCallback(
+    (force = false) => {
+      if (isPending && !force) return;
+      router.replace('/chat');
+      setActiveConversationId(undefined);
+      setMessages([]);
+      setError(null);
+    },
+    [isPending, router]
+  );
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -325,10 +329,8 @@ export function ChatClient({
           prev.filter((c) => c.id !== conversationToDelete.id)
         );
 
-        router.replace('/chat');
-
         if (activeConversationId === conversationToDelete.id) {
-          handleNewChat();
+          handleNewChat(true);
         }
         setConversationToDelete(null);
       } else if (response.error) {
@@ -376,6 +378,9 @@ export function ChatClient({
       }
 
       if (!activeConversationId && response.conversationId) {
+        if (!response.is_processing) {
+          hydratedRef.current = response.conversationId;
+        }
         router.replace(`/chat?conversationId=${response.conversationId}`);
         setActiveConversationId(response.conversationId);
         setConversations((prev) => [
@@ -384,16 +389,25 @@ export function ChatClient({
             title: response.title || 'New Chat',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-            is_processing: true,
+            is_processing: response.is_processing ?? false,
           },
           ...prev,
         ]);
       } else if (activeConversationId) {
+        if (!response.is_processing) {
+          hydratedRef.current = activeConversationId;
+        }
         setConversations((prev) => {
           const others = prev.filter((c) => c.id !== activeConversationId);
           const activeConv = prev.find((c) => c.id === activeConversationId);
           if (activeConv) {
-            return [{ ...activeConv, is_processing: true }, ...others];
+            return [
+              {
+                ...activeConv,
+                is_processing: response.is_processing ?? true,
+              },
+              ...others,
+            ];
           }
           return prev;
         });

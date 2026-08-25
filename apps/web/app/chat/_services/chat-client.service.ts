@@ -18,6 +18,7 @@ export async function sendChatMessage(
     actions?: ActionItem[];
     conversationId: string;
     title: string;
+    is_processing?: boolean;
     error?: string;
   }>('/api/chat', {
     method: 'POST',
