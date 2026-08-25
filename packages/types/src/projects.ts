@@ -21,7 +21,7 @@ export function projectRelationSelect(
   return `${alias}:projects(${projection})`;
 }
 
-export const createProjectSchema = z.object({
+const baseCreateProjectSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   key: z
     .string()
@@ -45,4 +45,63 @@ export const createProjectSchema = z.object({
   github_token: z.string().nullable().optional(),
 });
 
-export const updateProjectSchema = createProjectSchema.partial();
+export const createProjectSchema = baseCreateProjectSchema
+  .refine(
+    (data) => {
+      if (data.start_date && data.end_date) {
+        const start = data.start_date.split('T')[0] ?? '';
+        const end = data.end_date.split('T')[0] ?? '';
+        return end >= start;
+      }
+      return true;
+    },
+    {
+      message: 'End date must be on or after the start date.',
+      path: ['end_date'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.start_date) {
+        const today = new Date().toISOString().split('T')[0] ?? '';
+        const start = data.start_date.split('T')[0] ?? '';
+        return start >= today;
+      }
+      return true;
+    },
+    {
+      message: 'Start date cannot be a past date.',
+      path: ['start_date'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.end_date) {
+        const today = new Date().toISOString().split('T')[0] ?? '';
+        const end = data.end_date.split('T')[0] ?? '';
+        return end >= today;
+      }
+      return true;
+    },
+    {
+      message: 'End date cannot be a past date.',
+      path: ['end_date'],
+    }
+  );
+
+export const updateProjectSchema = baseCreateProjectSchema
+  .partial()
+  .refine(
+    (data) => {
+      if (data.start_date && data.end_date) {
+        const start = data.start_date.split('T')[0] ?? '';
+        const end = data.end_date.split('T')[0] ?? '';
+        return end >= start;
+      }
+      return true;
+    },
+    {
+      message: 'End date must be on or after the start date.',
+      path: ['end_date'],
+    }
+  );
