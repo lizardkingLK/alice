@@ -63,6 +63,10 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
     async (req: AuthenticatedRequest, res) => {
       try {
         const { conversationId } = req.params;
+        const isOwner = await chatService.verifyConversationOwner(req.userId!, conversationId!);
+        if (!isOwner) {
+          return res.status(403).json({ error: 'Access denied: You do not own this conversation.' });
+        }
         const history = await chatService.loadChatHistory(conversationId!);
         res.json({ history });
       } catch (error: unknown) {
@@ -82,6 +86,10 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
     async (req: AuthenticatedRequest, res) => {
       try {
         const { conversationId } = req.params;
+        const isOwner = await chatService.verifyConversationOwner(req.userId!, conversationId!);
+        if (!isOwner) {
+          return res.status(403).json({ error: 'Access denied: You do not own this conversation.' });
+        }
         await chatService.deleteConversation(req.userId!, conversationId!);
         res.json({ success: true });
       } catch (error: unknown) {
@@ -179,6 +187,11 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
             is_processing: false,
           });
         } else {
+          const isOwner = await chatService.verifyConversationOwner(req.userId!, conversationId);
+          if (!isOwner) {
+            return res.status(403).json({ error: 'Access denied: You do not own this conversation.' });
+          }
+
           await chatService.setProcessingStatus(conversationId, true);
 
           // Save the user's incoming message immediately to history

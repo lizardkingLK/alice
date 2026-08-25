@@ -487,6 +487,17 @@ export class ChatService {
     }
   }
 
+  async verifyConversationOwner(
+    userId: string,
+    conversationId: string
+  ): Promise<boolean> {
+    const conversation = await prisma.chat_conversations.findUnique({
+      where: { id: conversationId },
+      select: { user_id: true },
+    });
+    return conversation?.user_id === userId;
+  }
+
   async listConversations(userId: string) {
     return this.chat.listConversations(userId);
   }
@@ -513,6 +524,13 @@ export class ChatService {
     // Clear from in-memory cache
     this.historyCache.delete(conversationId);
 
+    // Get the conversation title before deleting it
+    const conversation = await prisma.chat_conversations.findUnique({
+      where: { id: conversationId },
+      select: { title: true },
+    }).catch(() => null);
+    const convTitle = conversation?.title || 'Chat';
+
     // Delete associated notifications in the database
     await prisma.notifications.deleteMany({
       where: {
@@ -526,6 +544,22 @@ export class ChatService {
     });
 
     await this.chat.deleteConversation(userId, conversationId);
+
+    // Create the deleted notification in database
+    await prisma.notifications.create({
+      data: {
+        user_id: userId,
+        type: 'chat_processed',
+        message: `Your chat "${convTitle}" has been deleted.`,
+        related_item_id: null,
+        created_by: userId,
+      },
+    }).catch((err) => {
+      console.error(
+        `Failed to create delete notification for conversation ${sanitizeLog(conversationId)}:`,
+        sanitizeLog(err)
+      );
+    });
 
     try {
       await this.chat.removeHistoryMarkdown(conversationId);
