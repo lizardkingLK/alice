@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   type CellContext,
   type ColumnDef,
@@ -52,7 +52,7 @@ import { Pagination } from '@/components/pagination';
 import { SearchInput } from '@/components/search-input';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   isActorOwnAllowlistDomain,
   OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE,
@@ -273,6 +273,10 @@ export function AccessAllowlistRegistry({
   currentUserEmail = null,
 }: Readonly<AccessAllowlistRegistryProps>) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const addEmailParam = searchParams.get('addEmail');
+
   const { handlePageChange, handleLimitChange } = usePaginationNavigation(
     totalPages,
     limit
@@ -286,6 +290,33 @@ export function AccessAllowlistRegistry({
     useState<AccessAllowlistEntry | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
+
+  useEffect(() => {
+    if (addEmailParam) {
+      setIsAddOpen(true);
+    }
+  }, [addEmailParam]);
+
+  const handleCloseAdd = useCallback(() => {
+    setIsAddOpen(false);
+    if (addEmailParam) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('addEmail');
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname);
+    }
+  }, [searchParams, addEmailParam, pathname, router]);
+
+  const handleSuccessAdd = useCallback(() => {
+    setIsAddOpen(false);
+    if (addEmailParam) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('addEmail');
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname);
+    }
+    router.refresh();
+  }, [searchParams, addEmailParam, pathname, router]);
 
   const openEditDialog = useCallback((entry: AccessAllowlistEntry) => {
     setEditingEntry(entry);
@@ -390,7 +421,14 @@ export function AccessAllowlistRegistry({
         </CardContent>
       </Card>
 
-      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+      <Dialog
+        open={isAddOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            handleCloseAdd();
+          }
+        }}
+      >
         <DialogContent
           showCloseButton={false}
           className="border-0 bg-transparent p-0 shadow-none ring-0 sm:max-w-lg"
@@ -400,11 +438,10 @@ export function AccessAllowlistRegistry({
             Create a domain or email admission rule.
           </DialogDescription>
           <AccessAllowlistForm
-            onClose={() => setIsAddOpen(false)}
-            onSuccess={() => {
-              setIsAddOpen(false);
-              router.refresh();
-            }}
+            onClose={handleCloseAdd}
+            onSuccess={handleSuccessAdd}
+            initialKind={addEmailParam ? 'email' : undefined}
+            initialValue={addEmailParam ?? undefined}
           />
         </DialogContent>
       </Dialog>

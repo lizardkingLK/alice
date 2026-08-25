@@ -42,6 +42,8 @@ interface AccessAllowlistFormProps {
   readonly currentUserEmail?: string | null;
   readonly onClose?: () => void;
   readonly onSuccess?: () => void;
+  readonly initialKind?: AccessAllowlistKind;
+  readonly initialValue?: string;
 }
 
 function toDateInputValue(iso: string | null): string {
@@ -82,6 +84,8 @@ export function AccessAllowlistForm({
   currentUserEmail = null,
   onClose,
   onSuccess,
+  initialKind,
+  initialValue,
 }: Readonly<AccessAllowlistFormProps>) {
   const isEdit = Boolean(entry);
   const lockOwnDomainStatus = Boolean(
@@ -94,9 +98,9 @@ export function AccessAllowlistForm({
   const [isSuccess, setIsSuccess] = useState(false);
 
   const [kind, setKind] = useState<AccessAllowlistKind>(
-    entry?.kind ?? 'domain'
+    entry?.kind ?? initialKind ?? 'domain'
   );
-  const [value, setValue] = useState(entry?.value ?? '');
+  const [value, setValue] = useState(entry?.value ?? initialValue ?? '');
   const [label, setLabel] = useState(entry?.label ?? '');
   const [expiresAt, setExpiresAt] = useState(
     toDateInputValue(entry?.expires_at ?? null)

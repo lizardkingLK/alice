@@ -131,6 +131,11 @@ function removeNotificationFromList(
   return result;
 }
 
+function extractEmailFromNotification(message: string): string | null {
+  const match = /From:\s*([^\s()]+)/i.exec(message);
+  return match?.[1] ?? null;
+}
+
 export function NotificationInbox({
   userId,
   initialNotifications = [],
@@ -378,7 +383,7 @@ export function NotificationInbox({
         iconMap.default ||
         Bell) as React.ComponentType<{ className?: string }>;
       const iconStyles = notif.read_status
-        ? 'text-muted-foreground bg-muted border-border'
+        ? cn('text-muted-foreground', 'bg-muted', 'border-border')
         : iconColorMap[notif.type] || iconColorMap.default || '';
 
       return (
@@ -523,8 +528,17 @@ export function NotificationInbox({
               <Button
                 type="button"
                 onClick={() => {
+                  const email = extractEmailFromNotification(
+                    selectedAccessRequest.message
+                  );
                   setSelectedAccessRequest(null);
-                  router.push('/users?tab=allowlist');
+                  if (email) {
+                    router.push(
+                      `/users?tab=allowlist&addEmail=${encodeURIComponent(email)}`
+                    );
+                  } else {
+                    router.push('/users?tab=allowlist');
+                  }
                 }}
               >
                 Allow
