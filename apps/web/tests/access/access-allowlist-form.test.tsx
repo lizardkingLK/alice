@@ -39,6 +39,20 @@ describe('AccessAllowlistForm', () => {
     expect(screen.getByLabelText(/^Domain$/i)).not.toBeRequired();
   });
 
+  it('renders kind and value from initialKind and initialValue props', () => {
+    render(
+      <AccessAllowlistForm
+        initialKind="email"
+        initialValue="test@example.com"
+      />
+    );
+
+    expect(screen.getByText(/^Kind$/i)).toBeInTheDocument();
+    const valueInput = screen.getByLabelText(/^Email$/i);
+    expect(valueInput).toBeInTheDocument();
+    expect(valueInput).toHaveValue('test@example.com');
+  });
+
   it('rejects a bare hostname without a TLD via Zod alert', async () => {
     // Arrange
     render(<AccessAllowlistForm />);

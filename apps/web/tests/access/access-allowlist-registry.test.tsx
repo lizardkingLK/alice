@@ -6,23 +6,19 @@ import { accessAllowlistFactory } from '../factories/accessAllowlist.factory';
 
 const mockPush = vi.fn();
 const mockRefresh = vi.fn();
+const mockReplace = vi.fn();
+let mockSearchParams = new URLSearchParams('tab=allowlist');
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
     refresh: mockRefresh,
-    replace: vi.fn(),
+    replace: mockReplace,
   }),
   usePathname: () => '/users',
   useSearchParams: () => ({
-    get: (key: string) => {
-      if (key === 'search') return '';
-      if (key === 'page') return '1';
-      if (key === 'limit') return '10';
-      if (key === 'tab') return 'allowlist';
-      return null;
-    },
-    toString: () => 'tab=allowlist',
+    get: (key: string) => mockSearchParams.get(key),
+    toString: () => mockSearchParams.toString(),
   }),
 }));
 
@@ -39,11 +35,17 @@ vi.mock('@/app/access-allowlist/_components/access-allowlist-form', () => ({
   AccessAllowlistForm: ({
     onClose,
     onSuccess,
+    initialKind,
+    initialValue,
   }: {
     onClose?: () => void;
     onSuccess?: () => void;
+    initialKind?: string;
+    initialValue?: string;
   }) => (
     <div data-testid="mock-allowlist-form">
+      <span data-testid="mock-kind">{initialKind}</span>
+      <span data-testid="mock-value">{initialValue}</span>
       <button type="button" onClick={onClose}>
         Close Form
       </button>
@@ -69,6 +71,7 @@ const entries = [
 describe('AccessAllowlistRegistry', () => {
   afterEach(() => {
     vi.clearAllMocks();
+    mockSearchParams = new URLSearchParams('tab=allowlist');
   });
 
   it('renders allowlist rows and search controls', () => {
@@ -213,5 +216,70 @@ describe('AccessAllowlistRegistry', () => {
     const deleteButtons = screen.getAllByRole('button', { name: /^Delete$/i });
     expect(deleteButtons[0]).toBeDisabled();
     expect(deleteButtons[1]).toBeEnabled();
+  });
+
+  it('automatically opens the add entry dialog and populates it when addEmail query param is present', () => {
+    // Arrange
+    mockSearchParams = new URLSearchParams('tab=allowlist&addEmail=user@example.com');
+
+    // Act
+    render(
+      <AccessAllowlistRegistry
+        entries={entries}
+        totalCount={2}
+        page={1}
+        limit={10}
+        totalPages={1}
+        search=""
+      />
+    );
+
+    // Assert
+    expect(screen.getByTestId('mock-allowlist-form')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-kind')).toHaveTextContent('email');
+    expect(screen.getByTestId('mock-value')).toHaveTextContent('user@example.com');
+  });
+
+  it('clears the addEmail query parameter from the URL when close is triggered', async () => {
+    // Arrange
+    mockSearchParams = new URLSearchParams('tab=allowlist&addEmail=user@example.com');
+    render(
+      <AccessAllowlistRegistry
+        entries={entries}
+        totalCount={2}
+        page={1}
+        limit={10}
+        totalPages={1}
+        search=""
+      />
+    );
+
+    // Act (Close)
+    fireEvent.click(screen.getByRole('button', { name: /Close Form/i }));
+
+    // Assert (replace was called with url omitting addEmail)
+    expect(mockReplace).toHaveBeenCalledWith('/users?tab=allowlist');
+  });
+
+  it('clears the addEmail query parameter from the URL and refreshes when success is triggered', async () => {
+    // Arrange
+    mockSearchParams = new URLSearchParams('tab=allowlist&addEmail=user@example.com');
+    render(
+      <AccessAllowlistRegistry
+        entries={entries}
+        totalCount={2}
+        page={1}
+        limit={10}
+        totalPages={1}
+        search=""
+      />
+    );
+
+    // Act (Success)
+    fireEvent.click(screen.getByRole('button', { name: /Success Form/i }));
+
+    // Assert (replace was called again, and refresh was called)
+    expect(mockReplace).toHaveBeenCalledWith('/users?tab=allowlist');
+    expect(mockRefresh).toHaveBeenCalled();
   });
 });
