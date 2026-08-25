@@ -95,7 +95,8 @@ export const NotificationType = {
   mention: 'mention',
   sprint: 'sprint',
   due_date: 'due_date',
-  view_shared: 'view_shared'
+  view_shared: 'view_shared',
+  chat_processed: 'chat_processed'
 } as const
 
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType]

@@ -33,5 +33,9 @@ export function resolveNotificationHref(
     return VIEW_SHARED_FALLBACK_HREF;
   }
 
+  if (notif.type === 'chat_processed') {
+    return `/chat?conversationId=${notif.related_item_id}`;
+  }
+
   return `/work-items/${notif.related_item_id}`;
 }
