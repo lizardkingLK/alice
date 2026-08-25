@@ -167,10 +167,10 @@ describe('ProjectForm Component', () => {
     });
     await pickComboboxOption(/Project Owner/i, 'Manager One (mgr1@alice.dev)');
     fireEvent.change(screen.getByLabelText(/Start Date/i), {
-      target: { value: '2026-07-10' },
+      target: { value: '2026-09-10' },
     });
     fireEvent.change(screen.getByLabelText(/End Date/i), {
-      target: { value: '2026-08-10' },
+      target: { value: '2026-10-10' },
     });
 
     // Advance to Step 2 (Jira)
@@ -188,8 +188,8 @@ describe('ProjectForm Component', () => {
         key: 'ALICE',
         description: 'Project description details',
         owner_id: 'user-mgr-1',
-        start_date: '2026-07-10',
-        end_date: '2026-08-10',
+        start_date: '2026-09-10',
+        end_date: '2026-10-10',
         status: 'active',
         attributes_config: null,
         workflow_config: null,
@@ -458,6 +458,153 @@ describe('ProjectForm Component', () => {
           github_token: 'ghp_secret_token_123',
         })
       );
+    });
+  });
+
+  it('validates that end date cannot be a past date during creation', async () => {
+    render(<ProjectForm users={mockUsers} />);
+
+    fireEvent.change(screen.getByLabelText(/Project Name/i), {
+      target: { value: 'Project Alice' },
+    });
+    fireEvent.change(screen.getByLabelText(/Project Key/i), {
+      target: { value: 'ALICE' },
+    });
+    await pickComboboxOption(/Project Owner/i, 'Manager One (mgr1@alice.dev)');
+    
+    const pastDate = new Date();
+    pastDate.setFullYear(pastDate.getFullYear() - 1);
+    const pastDateStr = pastDate.toISOString().split('T')[0];
+
+    fireEvent.change(screen.getByLabelText(/End Date/i), {
+      target: { value: pastDateStr },
+    });
+
+    const nextBtn = screen.getByRole('button', { name: /Next/i });
+    fireEvent.click(nextBtn);
+
+    expect(
+      await screen.findByText(/End Date cannot be a past date/i)
+    ).toBeInTheDocument();
+  });
+
+  it('validates that end date cannot be before start date', async () => {
+    render(<ProjectForm users={mockUsers} />);
+
+    fireEvent.change(screen.getByLabelText(/Project Name/i), {
+      target: { value: 'Project Alice' },
+    });
+    fireEvent.change(screen.getByLabelText(/Project Key/i), {
+      target: { value: 'ALICE' },
+    });
+    await pickComboboxOption(/Project Owner/i, 'Manager One (mgr1@alice.dev)');
+    
+    const futureDate = new Date();
+    futureDate.setFullYear(futureDate.getFullYear() + 1);
+    const futureDateStr = futureDate.toISOString().split('T')[0];
+
+    const earlierDate = new Date(futureDate);
+    earlierDate.setDate(futureDate.getDate() - 1);
+    const earlierDateStr = earlierDate.toISOString().split('T')[0];
+
+    fireEvent.change(screen.getByLabelText(/Start Date/i), {
+      target: { value: futureDateStr },
+    });
+    fireEvent.change(screen.getByLabelText(/End Date/i), {
+      target: { value: earlierDateStr },
+    });
+
+    const nextBtn = screen.getByRole('button', { name: /Next/i });
+    fireEvent.click(nextBtn);
+
+    expect(
+      await screen.findByText(/End Date must be on or after the Start Date/i)
+    ).toBeInTheDocument();
+  });
+
+  it('validates that changed start date in edit mode cannot be a past date', async () => {
+    const onProjectUpdated = vi.fn();
+    render(
+      <ProjectForm
+        projectToEdit={mockProject}
+        users={mockUsers}
+        onProjectUpdated={onProjectUpdated}
+      />
+    );
+
+    const pastDate = new Date();
+    pastDate.setFullYear(pastDate.getFullYear() - 1);
+    const pastDateStr = pastDate.toISOString().split('T')[0];
+
+    fireEvent.change(screen.getByLabelText(/Start Date/i), {
+      target: { value: pastDateStr },
+    });
+
+    const nextBtn = screen.getByRole('button', { name: /Next/i });
+    fireEvent.click(nextBtn);
+
+    expect(
+      await screen.findByText(/Start Date cannot be a past date/i)
+    ).toBeInTheDocument();
+  });
+
+  it('validates that changed end date in edit mode cannot be a past date', async () => {
+    const onProjectUpdated = vi.fn();
+    render(
+      <ProjectForm
+        projectToEdit={mockProject}
+        users={mockUsers}
+        onProjectUpdated={onProjectUpdated}
+      />
+    );
+
+    const pastDate = new Date();
+    pastDate.setFullYear(pastDate.getFullYear() - 1);
+    const pastDateStr = pastDate.toISOString().split('T')[0];
+
+    fireEvent.change(screen.getByLabelText(/End Date/i), {
+      target: { value: pastDateStr },
+    });
+
+    const nextBtn = screen.getByRole('button', { name: /Next/i });
+    fireEvent.click(nextBtn);
+
+    expect(
+      await screen.findByText(/End Date cannot be a past date/i)
+    ).toBeInTheDocument();
+  });
+
+  it('allows saving in edit mode if existing past dates are not changed', async () => {
+    const onProjectUpdated = vi.fn();
+    vi.mocked(updateProject).mockResolvedValue({
+      ...mockProject,
+      name: 'Project Alice Updated',
+    });
+
+    const oldProject = {
+      ...mockProject,
+      start_date: '2020-01-01',
+      end_date: '2020-02-01',
+    };
+
+    render(
+      <ProjectForm
+        projectToEdit={oldProject}
+        users={mockUsers}
+        onProjectUpdated={onProjectUpdated}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/Project Name/i), {
+      target: { value: 'Project Alice Updated' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Save Changes/i }));
+
+    await waitFor(() => {
+      expect(updateProject).toHaveBeenCalled();
     });
   });
 });

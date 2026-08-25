@@ -58,18 +58,91 @@ function getTodayDateString() {
   return `${year}-${month}-${day}`;
 }
 
-function validateStep1(
-  name: string,
-  key: string,
-  selectedOwnerId: string
-): string | null {
+function validateProjectName(name: string): string | null {
   if (!name.trim()) return 'Project Name is required.';
+  return null;
+}
+
+function validateProjectKey(key: string): string | null {
   if (!key.trim()) return 'Project Key is required.';
   if (!/^[A-Z0-9]+$/i.test(key))
     return 'Project Key must contain only letters and numbers.';
   if (key.length < 2 || key.length > 10)
     return 'Project Key must be between 2 and 10 characters.';
+  return null;
+}
+
+function validateDateField(
+  label: 'Start' | 'End',
+  date: string,
+  originalDate: string | undefined,
+  isEditMode: boolean,
+  todayStr: string,
+  startDate?: string
+): string | null {
+  if (!date) return null;
+
+  const isDateChanged = !isEditMode || date !== originalDate;
+
+  if (isDateChanged && date < todayStr) {
+    return `${label} Date cannot be a past date.`;
+  }
+
+  if (label === 'End' && startDate && date < startDate) {
+    return 'End Date must be on or after the Start Date.';
+  }
+
+  return null;
+}
+
+function validateStep1({
+  name,
+  key,
+  selectedOwnerId,
+  startDate,
+  endDate,
+  isEditMode,
+  todayStr,
+  originalStartDate,
+  originalEndDate,
+}: {
+  name: string;
+  key: string;
+  selectedOwnerId: string;
+  startDate: string;
+  endDate: string;
+  isEditMode: boolean;
+  todayStr: string;
+  originalStartDate?: string;
+  originalEndDate?: string;
+}): string | null {
+  const projectNameError = validateProjectName(name);
+  if (projectNameError) return projectNameError;
+
+  const projectKeyError = validateProjectKey(key);
+  if (projectKeyError) return projectKeyError;
+
   if (!selectedOwnerId) return 'Project Owner is required.';
+
+  const startDateError = validateDateField(
+    'Start',
+    startDate,
+    originalStartDate,
+    isEditMode,
+    todayStr
+  );
+  if (startDateError) return startDateError;
+
+  const endDateError = validateDateField(
+    'End',
+    endDate,
+    originalEndDate,
+    isEditMode,
+    todayStr,
+    startDate
+  );
+  if (endDateError) return endDateError;
+
   return null;
 }
 
@@ -110,6 +183,12 @@ function getStepError(
     name: string;
     key: string;
     selectedOwnerId: string;
+    startDate: string;
+    endDate: string;
+    isEditMode: boolean;
+    todayStr: string;
+    originalStartDate?: string;
+    originalEndDate?: string;
     importFromJira: boolean;
     jiraUrl: string;
     jiraProjectKey: string;
@@ -119,7 +198,17 @@ function getStepError(
   }
 ): string | null {
   if (currentStep === 1) {
-    return validateStep1(fields.name, fields.key, fields.selectedOwnerId);
+    return validateStep1({
+      name: fields.name,
+      key: fields.key,
+      selectedOwnerId: fields.selectedOwnerId,
+      startDate: fields.startDate,
+      endDate: fields.endDate,
+      isEditMode: fields.isEditMode,
+      todayStr: fields.todayStr,
+      originalStartDate: fields.originalStartDate,
+      originalEndDate: fields.originalEndDate,
+    });
   }
   if (currentStep === 2) {
     return validateStep2(
@@ -176,7 +265,6 @@ function Step1BasicDetails({
   endDate,
   setEndDate,
   users,
-  isEditMode,
   getTodayDateString,
 }: Readonly<Step1Props>) {
   return (
@@ -289,7 +377,7 @@ function Step1BasicDetails({
             onChange={(e: ChangeEvent<HTMLInputElement>) =>
               setStartDate(e.target.value)
             }
-            min={isEditMode ? undefined : getTodayDateString()}
+            min={getTodayDateString()}
             className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
           />
         </div>
@@ -306,6 +394,7 @@ function Step1BasicDetails({
             onChange={(e: ChangeEvent<HTMLInputElement>) =>
               setEndDate(e.target.value)
             }
+            min={startDate && startDate > getTodayDateString() ? startDate : getTodayDateString()}
             className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
           />
         </div>
@@ -656,6 +745,12 @@ export function ProjectForm({
       name,
       key,
       selectedOwnerId,
+      startDate,
+      endDate,
+      isEditMode,
+      todayStr: getTodayDateString(),
+      originalStartDate: projectToEdit ? formatDateForInput(projectToEdit.start_date) : undefined,
+      originalEndDate: projectToEdit ? formatDateForInput(projectToEdit.end_date) : undefined,
       importFromJira,
       jiraUrl,
       jiraProjectKey,
