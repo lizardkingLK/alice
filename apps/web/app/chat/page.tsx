@@ -10,7 +10,7 @@ export const metadata = {
   title: 'Alice',
 };
 
-async function ChatPageData({ conversationId }: { conversationId?: string }) {
+async function ChatPageData({ conversationId }: Readonly<{ conversationId?: string }>) {
   const [bootstrap, dbUser] = await Promise.all([
     safeServerFetch(
       getChatPageBootstrap(conversationId),
@@ -34,9 +34,9 @@ async function ChatPageData({ conversationId }: { conversationId?: string }) {
 
 export default async function ChatPage({
   searchParams,
-}: {
+}: Readonly<{
   searchParams: Promise<{ conversationId?: string }>;
-}) {
+}>) {
   const { conversationId } = await searchParams;
 
   return (
