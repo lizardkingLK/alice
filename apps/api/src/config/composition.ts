@@ -36,6 +36,9 @@ import {
   createHealthV2Router,
 } from '../routes/api/health/health.route';
 import { createRootRouter } from '../routes';
+import { ProfileService } from '../routes/api/profile/profile.service';
+import { ProfileRepository } from '../routes/api/profile/profile.repository';
+import { createProfileRouter } from '../routes/api/profile/profile.route';
 
 function createRootConfig() {
   const router = createRootRouter();
@@ -179,6 +182,18 @@ function createHealthConfig() {
   };
 }
 
+function createProfileConfig() {
+  const profileRepository = new ProfileRepository(supabase);
+  const profileService = new ProfileService(profileRepository);
+  const router = createProfileRouter({ profileService });
+
+  return {
+    profileRepository,
+    profileService,
+    router,
+  };
+}
+
 /** Production configs graph (repo → service → router). */
 export const root = createRootConfig();
 export const health = createHealthConfig();
@@ -192,6 +207,7 @@ export const workItems = createWorkItemsConfig(
   notifications.notificationsService
 );
 export const sprints = createSprintsConfig();
+export const profile = createProfileConfig();
 export const chat = createChatConfig(
   workItems.workItemService,
   sprints.sprintsService

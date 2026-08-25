@@ -10,9 +10,7 @@ import {
   MAX_PUBLIC_IMAGE_BYTES,
 } from '../../../lib/image-upload-route';
 import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
-import { profileService, updateOwnProfileSchema } from './profile.service';
-
-const profileRouter: Router = Router();
+import { ProfileService, updateOwnProfileSchema } from './profile.service';
 
 const upload: Multer = multer({
   storage: multer.memoryStorage(),
@@ -21,78 +19,92 @@ const upload: Multer = multer({
   },
 });
 
-/**
- * Self-service cover photo upload for the signed-in user.
- * Multipart field: `file`. Persists forever public URL on `public.users.cover_picture`.
- */
-profileRouter.post(
-  '/cover',
-  requireApiAuth,
-  upload.single('file'),
-  async (req: AuthenticatedRequest, res) => {
-    await handleMultipartImageUpload(req, res, {
-      failureLabel: 'cover picture',
-      update: (actorId, file, expectedUpdatedAt) =>
-        profileService.updateOwnCoverPicture(actorId, file, expectedUpdatedAt),
-    });
-  }
-);
+export type ProfileRouterDeps = {
+  profileService: ProfileService;
+};
 
-/**
- * Self-service profile picture upload for the signed-in user.
- * Multipart field: `file`. Persists forever public URL on `public.users`.
- */
-profileRouter.post(
-  '/',
-  requireApiAuth,
-  upload.single('file'),
-  async (req: AuthenticatedRequest, res) => {
-    await handleMultipartImageUpload(req, res, {
-      failureLabel: 'profile picture',
-      update: (actorId, file, expectedUpdatedAt) =>
-        profileService.updateOwnProfilePicture(
-          actorId,
-          file,
-          expectedUpdatedAt
-        ),
-    });
-  }
-);
+export function createProfileRouter(deps: ProfileRouterDeps) {
+  const { profileService } = deps;
 
-/**
- * Self-service profile field update (name today).
- * Does not reuse admin-gated `/api/users/:id`.
- */
-profileRouter.patch(
-  '/',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    const userId = req.userId;
-    if (!userId) {
-      res.status(401).json({ error: 'Unauthorized' });
-      return;
+  const profileRouter: Router = Router();
+
+  /**
+   * Self-service cover photo upload for the signed-in user.
+   * Multipart field: `file`. Persists forever public URL on `public.users.cover_picture`.
+   */
+  profileRouter.post(
+    '/cover',
+    requireApiAuth,
+    upload.single('file'),
+    async (req: AuthenticatedRequest, res) => {
+      await handleMultipartImageUpload(req, res, {
+        failureLabel: 'cover picture',
+        update: (actorId, file, expectedUpdatedAt) =>
+          profileService.updateOwnCoverPicture(
+            actorId,
+            file,
+            expectedUpdatedAt
+          ),
+      });
     }
+  );
 
-    const parsed = updateOwnProfileSchema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: z.treeifyError(parsed.error) });
-      return;
+  /**
+   * Self-service profile picture upload for the signed-in user.
+   * Multipart field: `file`. Persists forever public URL on `public.users`.
+   */
+  profileRouter.post(
+    '/',
+    requireApiAuth,
+    upload.single('file'),
+    async (req: AuthenticatedRequest, res) => {
+      await handleMultipartImageUpload(req, res, {
+        failureLabel: 'profile picture',
+        update: (actorId, file, expectedUpdatedAt) =>
+          profileService.updateOwnProfilePicture(
+            actorId,
+            file,
+            expectedUpdatedAt
+          ),
+      });
     }
+  );
 
-    try {
-      const user = await profileService.updateOwnName(userId, parsed.data);
-      res.json({ user });
-    } catch (error) {
-      if (trySendOptimisticLockError(res, error)) return;
-      const message =
-        error instanceof Error ? error.message : 'Failed to update profile.';
-      const status = message.includes('not found') ? 404 : 500;
-      if (status >= 500) {
-        console.error('error. profile update:', message);
+  /**
+   * Self-service profile field update (name today).
+   * Does not reuse admin-gated `/api/users/:id`.
+   */
+  profileRouter.patch(
+    '/',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const userId = req.userId;
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
       }
-      res.status(status).json({ error: message });
-    }
-  }
-);
 
-export default profileRouter;
+      const parsed = updateOwnProfileSchema.safeParse(req.body);
+      if (!parsed.success) {
+        res.status(400).json({ error: z.treeifyError(parsed.error) });
+        return;
+      }
+
+      try {
+        const user = await profileService.updateOwnName(userId, parsed.data);
+        res.json({ user });
+      } catch (error) {
+        if (trySendOptimisticLockError(res, error)) return;
+        const message =
+          error instanceof Error ? error.message : 'Failed to update profile.';
+        const status = message.includes('not found') ? 404 : 500;
+        if (status >= 500) {
+          console.error('error. profile update:', message);
+        }
+        res.status(status).json({ error: message });
+      }
+    }
+  );
+
+  return profileRouter;
+}
