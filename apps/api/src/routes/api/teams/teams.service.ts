@@ -23,6 +23,11 @@ export type CreateTeamInput = Omit<
   'id' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'
 > & {
   member_ids?: string[];
+  members?: {
+    user_id: string;
+    capacity?: number | null;
+    allocation?: number | null;
+  }[];
 };
 
 export type UpdateTeamInput = Partial<CreateTeamInput>;

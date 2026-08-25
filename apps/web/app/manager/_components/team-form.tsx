@@ -88,6 +88,26 @@ export function TeamForm({
         .map((member) => member.user_id) ?? []
   );
 
+  const [memberCapacities, setMemberCapacities] = useState<Record<string, number>>(() => {
+    const capacities: Record<string, number> = {};
+    if (teamToEdit?.members) {
+      for (const m of teamToEdit.members) {
+        capacities[m.user_id] = m.capacity ?? 40;
+      }
+    }
+    return capacities;
+  });
+
+  const [memberAllocations, setMemberAllocations] = useState<Record<string, number>>(() => {
+    const allocations: Record<string, number> = {};
+    if (teamToEdit?.members) {
+      for (const m of teamToEdit.members) {
+        allocations[m.user_id] = m.allocation ?? 100;
+      }
+    }
+    return allocations;
+  });
+
   const projectOptions = useMemo(() => {
     if (
       !projectLocked ||
@@ -190,6 +210,12 @@ export function TeamForm({
     }
 
     try {
+      const membersPayload = selectedMemberIds.map((userId) => ({
+        user_id: userId,
+        capacity: memberCapacities[userId] ?? 40,
+        allocation: memberAllocations[userId] ?? 100,
+      }));
+
       const teamData = {
         name: name.trim(),
         tech_stack: techStack.trim() || null,
@@ -198,6 +224,7 @@ export function TeamForm({
         project_id: selectedProjectId,
         status: status,
         member_ids: selectedMemberIds,
+        members: membersPayload,
       };
 
       if (editActionActive && teamToEdit) {
@@ -208,6 +235,7 @@ export function TeamForm({
           manager_id: teamData.manager_id,
           status: teamData.status,
           member_ids: teamData.member_ids,
+          members: teamData.members,
           ...(teamToEdit.project_id ? {} : { project_id: teamData.project_id }),
         };
         const expectedUpdatedAt = teamToEdit.updated_at;
@@ -453,6 +481,64 @@ export function TeamForm({
                   selectedUserIds={selectedMemberIds}
                   onSelectedUserIdsChange={setSelectedMemberIds}
                 />
+              </div>
+            )}
+
+            {showMembersSection && selectedMemberIds.length > 0 && (
+              <div className="space-y-3 sm:col-span-2 border-t border-border/50 pt-4 mt-2">
+                <Label className="text-sm font-semibold">
+                  Configure Member Capacity & Allocation
+                </Label>
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                  {selectedMemberIds.map((userId) => {
+                    const memberObj = memberCheckboxOptions.find((m) => m.userId === userId);
+                    if (!memberObj) return null;
+
+                    const currentCapacity = memberCapacities[userId] ?? 40;
+                    const currentAllocation = memberAllocations[userId] ?? 100;
+
+                    return (
+                      <div key={userId} className="flex items-center justify-between gap-4 p-2 bg-muted/40 rounded-lg border border-border/40">
+                        <span className="text-sm font-medium truncate flex-1">{memberObj.name} ({memberObj.email})</span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-muted-foreground">Capacity:</span>
+                            <Input
+                              type="number"
+                              min={0}
+                              className="h-8 w-16 text-center text-xs p-1"
+                              value={currentCapacity}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value, 10);
+                                setMemberCapacities((prev) => ({
+                                  ...prev,
+                                  [userId]: isNaN(val) ? 0 : val,
+                                }));
+                              }}
+                            />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-muted-foreground">Allocation %:</span>
+                            <Input
+                              type="number"
+                              min={0}
+                              max={100}
+                              className="h-8 w-16 text-center text-xs p-1"
+                              value={currentAllocation}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value, 10);
+                                setMemberAllocations((prev) => ({
+                                  ...prev,
+                                  [userId]: isNaN(val) ? 0 : val,
+                                }));
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>

@@ -16,8 +16,9 @@ import {
   type WorkItemListRowWithDescription,
   type WorkItemPrismaListFilters,
   paginationMeta,
+  RecordStatusEnum,
 } from '@repo/types';
-import { Prisma } from '@repo/types/prisma';
+import { Prisma, AccessAllowlistKind as AccessAllowlistKindEnum } from '@repo/types/prisma';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { prisma } from '../../../lib/prisma';
 import {
@@ -75,7 +76,7 @@ export class WorkItemRepository {
   async listAccessibleProjectIds(actorId: string): Promise<'all' | string[]> {
     const { data: systemUser } = await this.db
       .from('users')
-      .select('role')
+      .select('role, email')
       .eq('id', actorId)
       .maybeSingle();
 
@@ -111,10 +112,37 @@ export class WorkItemRepository {
       throw new Error('Failed to authorize work-item access');
     }
 
-    const ids = [
+    let allowedProjectIdsFromAcl: string[] | null = null;
+    if (systemUser?.email) {
+      const { data: allowlistRecord } = await this.db
+        .from('access_allowlist')
+        .select('allowed_project_ids')
+        .eq('status', RecordStatusEnum.active)
+        .eq('kind', AccessAllowlistKindEnum.email)
+        .eq('value', systemUser.email.trim().toLowerCase())
+        .maybeSingle();
+
+      if (allowlistRecord?.allowed_project_ids) {
+        try {
+          const acl = allowlistRecord.allowed_project_ids;
+          if (Array.isArray(acl)) {
+            allowedProjectIdsFromAcl = acl.map(id => String(id));
+          }
+        } catch (e) {
+          console.error('Failed to parse allowed_project_ids ACL:', e);
+        }
+      }
+    }
+
+    let ids = [
       ...(memberships ?? []).map((row) => row.project_id),
       ...(owned ?? []).map((row) => row.id),
     ];
+
+    if (allowedProjectIdsFromAcl !== null) {
+      ids = ids.filter(id => allowedProjectIdsFromAcl!.includes(id));
+    }
+
     return [...new Set(ids)];
   }
 

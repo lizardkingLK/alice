@@ -62,6 +62,7 @@ teamsRouter.post(
         tech_stack: validation.data.tech_stack ?? null,
         status: validation.data.status ?? 'active',
         member_ids: validation.data.member_ids,
+        members: validation.data.members,
       });
       res.status(201).json({ team: createdRecord });
     } catch (error) {

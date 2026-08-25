@@ -10,6 +10,15 @@ export const createTeamSchema = z.object({
     .enum(['active', 'inactive', 'archived', 'deleted'])
     .default('active'),
   member_ids: z.array(z.uuid()).optional(),
+  members: z
+    .array(
+      z.object({
+        user_id: z.uuid(),
+        capacity: z.number().int().min(0).nullable().optional(),
+        allocation: z.number().int().min(0).max(100).nullable().optional(),
+      })
+    )
+    .optional(),
 });
 
 export const updateTeamSchema = createTeamSchema.partial();

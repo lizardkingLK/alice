@@ -27,19 +27,21 @@ export type TeamRow = {
 
 async function insertTeamMembers(
   teamId: string,
-  memberIds: string[],
+  members: { user_id: string; capacity?: number | null; allocation?: number | null; }[],
   userId: string,
   failureMessage: string
 ): Promise<void> {
-  if (memberIds.length === 0) {
+  if (members.length === 0) {
     return;
   }
 
   try {
     await prisma.team_members.createMany({
-      data: memberIds.map((memberId) => ({
+      data: members.map((member) => ({
         team_id: teamId,
-        user_id: memberId,
+        user_id: member.user_id,
+        capacity: member.capacity ?? null,
+        allocation: member.allocation ?? null,
         status: RecordStatus.active,
         created_by: userId,
         updated_by: userId,
@@ -83,10 +85,17 @@ export class TeamsRepository {
     teamInput: Omit<
       TeamRow,
       'id' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'
-    > & { member_ids?: string[] },
+    > & {
+      member_ids?: string[];
+      members?: {
+        user_id: string;
+        capacity?: number | null;
+        allocation?: number | null;
+      }[];
+    },
     userId: string
   ): Promise<TeamRow> {
-    const { member_ids, ...teamData } = teamInput;
+    const { member_ids, members, ...teamData } = teamInput;
     const createdTeam = await prisma.teams.create({
       data: {
         ...teamData,
@@ -94,11 +103,15 @@ export class TeamsRepository {
       },
     });
 
-    if (member_ids && member_ids.length > 0) {
+    const parsedMembers = members 
+      ? members 
+      : (member_ids || []).map(id => ({ user_id: id }));
+
+    if (parsedMembers.length > 0) {
       try {
         await insertTeamMembers(
           createdTeam.id,
-          member_ids,
+          parsedMembers,
           userId,
           'Failed to add team members'
         );
@@ -122,11 +135,18 @@ export class TeamsRepository {
         TeamRow,
         'id' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'
       >
-    > & { member_ids?: string[] },
+    > & {
+      member_ids?: string[];
+      members?: {
+        user_id: string;
+        capacity?: number | null;
+        allocation?: number | null;
+      }[];
+    },
     userId: string,
     expectedUpdatedAt: string
   ): Promise<TeamRow> {
-    const { member_ids, ...teamData } = teamInput;
+    const { member_ids, members, ...teamData } = teamInput;
     const { count } = await prisma.teams.updateMany({
       where: { id: teamId, updated_at: prismaLockTimestamp(expectedUpdatedAt) },
       data: {
@@ -142,12 +162,16 @@ export class TeamsRepository {
       notFoundMessage: 'Team not found',
     });
 
-    if (member_ids) {
+    if (members || member_ids) {
+      const parsedMembers = members 
+        ? members 
+        : (member_ids || []).map(id => ({ user_id: id }));
+
       try {
         await prisma.team_members.deleteMany({ where: { team_id: teamId } });
         await insertTeamMembers(
           teamId,
-          member_ids,
+          parsedMembers,
           userId,
           'Failed to update team members'
         );

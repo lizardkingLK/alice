@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin';
-import { emailDomainFromAddress } from '@repo/types';
+import { emailDomainFromAddress, RecordStatusEnum } from '@repo/types';
 
 /**
  * Paths that do not require an allowlisted identity.
@@ -103,7 +103,10 @@ async function findActiveAllowlistHit(params: {
  * Allows when an active, non-expired **email** row or **domain** row matches.
  * Uses the service-role client (server-only) — do not call from the browser.
  */
-export async function isEmailAllowed(email: string): Promise<boolean> {
+export async function isEmailAllowed(
+  email: string,
+  options?: { enforceGuestChecks?: boolean }
+): Promise<boolean> {
   const normalized = normalizeEmail(email);
   if (!normalized) {
     return false;
@@ -119,13 +122,47 @@ export async function isEmailAllowed(email: string): Promise<boolean> {
     findActiveAllowlistHit({ kind: 'domain', value: domain }),
   ]);
 
+  let isAllowed = false;
+  let isGuest = false;
+
   if (emailHit && !isAllowlistExpired(emailHit.expires_at)) {
-    return true;
+    isAllowed = true;
+    isGuest = true;
+  } else if (domainHit && !isAllowlistExpired(domainHit.expires_at)) {
+    isAllowed = true;
   }
 
-  if (domainHit && !isAllowlistExpired(domainHit.expires_at)) {
-    return true;
+  if (!isAllowed) {
+    return false;
   }
 
-  return false;
+  if (isGuest && options?.enforceGuestChecks) {
+    const supabase = createAdminClient();
+
+    // 1. "An allowlisted email must belong to an existing user."
+    const { data: userRecord, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', normalized)
+      .maybeSingle();
+
+    if (userError || !userRecord) {
+      console.warn('Guest access denied: User record does not exist for email:', normalized);
+      return false;
+    }
+
+    // 2. "That user must have 1 or more projects configured."
+    const { data: memberships, error: memberError } = await supabase
+      .from('project_members')
+      .select('project_id')
+      .eq('user_id', userRecord.id)
+      .eq('status', RecordStatusEnum.active);
+
+    if (memberError || !memberships || memberships.length === 0) {
+      console.warn('Guest access denied: User has 0 projects configured:', normalized);
+      return false;
+    }
+  }
+
+  return true;
 }

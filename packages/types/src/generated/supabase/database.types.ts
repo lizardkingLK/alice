@@ -44,6 +44,7 @@ export type Database = {
       }
       access_allowlist: {
         Row: {
+          allowed_project_ids: Json | null
           created_at: string
           created_by: string | null
           expires_at: string | null
@@ -56,6 +57,7 @@ export type Database = {
           value: string
         }
         Insert: {
+          allowed_project_ids?: Json | null
           created_at?: string
           created_by?: string | null
           expires_at?: string | null
@@ -68,6 +70,7 @@ export type Database = {
           value: string
         }
         Update: {
+          allowed_project_ids?: Json | null
           created_at?: string
           created_by?: string | null
           expires_at?: string | null
@@ -1350,7 +1353,7 @@ export type Enums<
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
+    | keyof DefaultSchema["CompositeTypes"] // NOSONAR
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
