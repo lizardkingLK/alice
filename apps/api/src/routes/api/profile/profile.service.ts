@@ -1,3 +1,5 @@
+import type { Database } from '@repo/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { expectedUpdatedAtSchema } from '@repo/types';
 import { z } from 'zod';
 import { env } from '../../../config/env';
@@ -8,7 +10,6 @@ import {
   prismaLockTimestamp,
 } from '../../../lib/prisma-audit';
 import { uploadPublicImageReplacingPrevious } from '../../../lib/public-image-upload';
-import { supabase } from '../../../lib/supabase';
 
 export const updateOwnProfileSchema = z.object({
   name: z
@@ -37,8 +38,10 @@ const PROFILE_USER_SELECT =
   'id, name, email, role, profile_picture, cover_picture, updated_at' as const;
 
 export class ProfileService {
+  constructor(private readonly db: SupabaseClient<Database>) {}
+
   private async findProfileUser(userId: string): Promise<ProfileUser | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('users')
       .select(PROFILE_USER_SELECT)
       .eq('id', userId)
@@ -152,5 +155,3 @@ export class ProfileService {
     };
   }
 }
-
-export const profileService = new ProfileService();

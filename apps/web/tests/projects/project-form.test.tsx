@@ -471,7 +471,7 @@ describe('ProjectForm Component', () => {
       target: { value: 'ALICE' },
     });
     await pickComboboxOption(/Project Owner/i, 'Manager One (mgr1@alice.dev)');
-    
+
     const pastDate = new Date();
     pastDate.setFullYear(pastDate.getFullYear() - 1);
     const pastDateStr = pastDate.toISOString().split('T')[0];
@@ -498,7 +498,7 @@ describe('ProjectForm Component', () => {
       target: { value: 'ALICE' },
     });
     await pickComboboxOption(/Project Owner/i, 'Manager One (mgr1@alice.dev)');
-    
+
     const futureDate = new Date();
     futureDate.setFullYear(futureDate.getFullYear() + 1);
     const futureDateStr = futureDate.toISOString().split('T')[0];

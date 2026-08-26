@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createProjectSchema, updateProjectSchema } from '../../src/routes/api/projects/projects.schemas';
+import {
+  createProjectSchema,
+  updateProjectSchema,
+} from '../../src/routes/api/projects/projects.schemas';
 
 const validCreateInput = {
   name: 'Alice Project',
@@ -31,7 +34,9 @@ describe('projects schemas', () => {
       });
       expect(parsed.success).toBe(false);
       if (!parsed.success) {
-        expect(parsed.error.issues[0]?.message).toBe('End date cannot be a past date.');
+        expect(parsed.error.issues[0]?.message).toBe(
+          'End date cannot be a past date.'
+        );
       }
     });
 
@@ -43,7 +48,9 @@ describe('projects schemas', () => {
       });
       expect(parsed.success).toBe(false);
       if (!parsed.success) {
-        expect(parsed.error.issues[0]?.message).toBe('End date must be on or after the start date.');
+        expect(parsed.error.issues[0]?.message).toBe(
+          'End date must be on or after the start date.'
+        );
       }
     });
 
@@ -63,7 +70,9 @@ describe('projects schemas', () => {
       });
       expect(parsed.success).toBe(false);
       if (!parsed.success) {
-        expect(parsed.error.issues[0]?.message).toBe('Start date cannot be a past date.');
+        expect(parsed.error.issues[0]?.message).toBe(
+          'Start date cannot be a past date.'
+        );
       }
     });
   });
@@ -101,7 +110,9 @@ describe('projects schemas', () => {
       });
       expect(parsed.success).toBe(false);
       if (!parsed.success) {
-        expect(parsed.error.issues[0]?.message).toBe('End date must be on or after the start date.');
+        expect(parsed.error.issues[0]?.message).toBe(
+          'End date must be on or after the start date.'
+        );
       }
     });
   });

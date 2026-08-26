@@ -394,7 +394,11 @@ function Step1BasicDetails({
             onChange={(e: ChangeEvent<HTMLInputElement>) =>
               setEndDate(e.target.value)
             }
-            min={startDate && startDate > getTodayDateString() ? startDate : getTodayDateString()}
+            min={
+              startDate && startDate > getTodayDateString()
+                ? startDate
+                : getTodayDateString()
+            }
             className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
           />
         </div>
@@ -749,8 +753,12 @@ export function ProjectForm({
       endDate,
       isEditMode,
       todayStr: getTodayDateString(),
-      originalStartDate: projectToEdit ? formatDateForInput(projectToEdit.start_date) : undefined,
-      originalEndDate: projectToEdit ? formatDateForInput(projectToEdit.end_date) : undefined,
+      originalStartDate: projectToEdit
+        ? formatDateForInput(projectToEdit.start_date)
+        : undefined,
+      originalEndDate: projectToEdit
+        ? formatDateForInput(projectToEdit.end_date)
+        : undefined,
       importFromJira,
       jiraUrl,
       jiraProjectKey,

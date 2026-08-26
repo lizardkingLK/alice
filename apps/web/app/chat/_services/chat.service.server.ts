@@ -97,10 +97,12 @@ export async function getChatHistoryServer(
 /**
  * Prefetch conversations + selected thread for `/chat` in one RSC pass.
  */
-export async function getChatPageBootstrap(activeId?: string): Promise<ChatPageBootstrap> {
+export async function getChatPageBootstrap(
+  activeId?: string
+): Promise<ChatPageBootstrap> {
   const conversations = await listChatConversations();
   const selected = activeId
-    ? (conversations.find((c) => c.id === activeId) || conversations[0])
+    ? conversations.find((c) => c.id === activeId) || conversations[0]
     : conversations[0];
 
   if (!selected) {

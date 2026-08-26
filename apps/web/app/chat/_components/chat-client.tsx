@@ -29,7 +29,10 @@ import {
   bootstrapLatestChat,
   loadConversationHistory,
 } from './chat-client-bootstrap';
-import { listChatConversationsAction, revalidateChatConversations } from '../_services/chat-read-actions';
+import {
+  listChatConversationsAction,
+  revalidateChatConversations,
+} from '../_services/chat-read-actions';
 import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import ChatClientSidebar from '@/app/chat/_components/chat-client-sidebar';
 import ChatClientHeaderActions from '@/app/chat/_components/chat-client-header-actions';
@@ -439,7 +442,8 @@ export function ChatClient({
   const isActiveConversationProcessing = Boolean(
     conversations.find((c) => c.id === activeConversationId)?.is_processing
   );
-  const isInputDisabled = isPending || isLoadingHistory || isActiveConversationProcessing;
+  const isInputDisabled =
+    isPending || isLoadingHistory || isActiveConversationProcessing;
 
   const handleComposerKeyDown = (
     e: React.KeyboardEvent<HTMLTextAreaElement>
