@@ -90,7 +90,7 @@ function verifyState(state: string): OAuthStatePayload {
     typeof payload.nonce !== 'string' ||
     typeof payload.exp !== 'number'
   ) {
-    throw new Error('Invalid OAuth state payload.');
+    throw new TypeError('Invalid OAuth state payload.');
   }
 
   if (Date.now() > payload.exp) {
