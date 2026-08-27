@@ -60,6 +60,10 @@ export interface WorkItemFormProps {
   lockStatus?: boolean;
   /** Optional sprint for create (e.g. board sprint filter). */
   defaultSprintId?: string | null;
+  /** Pre-filled due date for create (YYYY-MM-DD). */
+  defaultDueDate?: string;
+  /** When true, due date is fixed on create (value still submitted). */
+  lockDueDate?: boolean;
   /**
    * Form layout preference (classic | modern). Applies to create and edit.
    * Defaults to classic when omitted.
@@ -128,6 +132,8 @@ export function WorkItemForm({
   defaultStatus,
   lockStatus = false,
   defaultSprintId = null,
+  defaultDueDate,
+  lockDueDate = false,
   createFormMode = 'classic',
 }: Readonly<WorkItemFormProps>) {
   const { handleMutationError } = useOptimisticLock();
@@ -170,6 +176,8 @@ export function WorkItemForm({
   const lockAssignee = Boolean(lockAssigneeId);
   const statusValue: WorkItemStatus | '' =
     itemToEdit?.status ?? defaultStatus ?? '';
+  const dueDateDefault =
+    itemToEdit?.due_date?.split('T')[0] ?? defaultDueDate ?? '';
 
   const currentMembers = useProjectMembers({
     projectId,
@@ -321,7 +329,8 @@ export function WorkItemForm({
         <WorkItemFormModernFields
           {...fieldProps}
           titleDefault={itemToEdit?.title ?? ''}
-          dueDateDefault={itemToEdit?.due_date ?? ''}
+          dueDateDefault={dueDateDefault}
+          lockDueDate={!isEditMode && lockDueDate}
           storyPointsDefault={itemToEdit?.story_points ?? null}
           labelsDefault={parseWorkItemLabels(itemToEdit?.labels)}
           descriptionDefault={itemToEdit?.description ?? null}
@@ -330,7 +339,8 @@ export function WorkItemForm({
         <WorkItemFormClassicFields
           {...fieldProps}
           titleDefault={itemToEdit?.title ?? ''}
-          dueDateDefault={itemToEdit?.due_date ?? ''}
+          dueDateDefault={dueDateDefault}
+          lockDueDate={!isEditMode && lockDueDate}
           storyPointsDefault={itemToEdit?.story_points ?? null}
           labelsDefault={parseWorkItemLabels(itemToEdit?.labels)}
         />

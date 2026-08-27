@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { ChevronLeft, ChevronRight } from '@repo/ui/lib/icons';
+import { ChevronLeft, ChevronRight, ListTodo } from '@repo/ui/lib/icons';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   pickWorkspaceDefaultsDialogController,
@@ -33,10 +33,16 @@ import {
 import { CalendarDaySheet } from '@/app/calendar/_components/calendar-day-sheet';
 import { CalendarDueDateWarningDialog } from '@/app/calendar/_components/calendar-due-date-warning-dialog';
 import { CalendarMonthGrid } from '@/app/calendar/_components/calendar-month-grid';
+import { CalendarUnscheduledPanel } from '@/app/calendar/_components/calendar-unscheduled-panel';
 import { useCalendarDueDateDrag } from '@/app/calendar/_components/use-calendar-due-date-drag';
+import {
+  readCalendarUnscheduledPanelOpen,
+  writeCalendarUnscheduledPanelOpen,
+} from '@/app/calendar/_helpers/calendar-unscheduled-panel-storage';
 import {
   buildCalendarDays,
   filterCalendarWorkItems,
+  filterUnscheduledWorkItems,
   groupWorkItemsByDueDate,
   toLocalYYYYMMDD,
 } from '@/app/calendar/_components/calendar-utils';
@@ -83,6 +89,8 @@ export function CalendarRegistry({
   const [selectedAssigneeId, setSelectedAssigneeId] =
     useState<string>(ALL_OPTION);
   const [selectedType, setSelectedType] = useState<string>(ALL_OPTION);
+  const [showUnscheduledPanel, setShowUnscheduledPanel] = useState(false);
+  const suppressDaySheetCloseRef = useRef(false);
 
   const projectQuery = useQueryFilter('project', projectFilter);
   const sprintQuery = useQueryFilter('sprint', sprintFilter);
@@ -111,6 +119,18 @@ export function CalendarRegistry({
   useEffect(() => {
     setTodayDateString(toLocalYYYYMMDD(new Date()));
   }, []);
+
+  useEffect(() => {
+    setShowUnscheduledPanel(readCalendarUnscheduledPanelOpen(userId));
+  }, [userId]);
+
+  const setUnscheduledPanelOpen = useCallback(
+    (next: boolean) => {
+      setShowUnscheduledPanel(next);
+      writeCalendarUnscheduledPanelOpen(userId, next);
+    },
+    [userId]
+  );
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -203,6 +223,31 @@ export function CalendarRegistry({
     });
   };
 
+  const handleDaySheetOpenChange = useCallback((open: boolean) => {
+    if (open || suppressDaySheetCloseRef.current) {
+      return;
+    }
+    setSelectedDateStr(null);
+  }, []);
+
+  const closeEditDialog = useCallback(() => {
+    suppressDaySheetCloseRef.current = true;
+    setItemToEdit(null);
+    queueMicrotask(() => {
+      suppressDaySheetCloseRef.current = false;
+    });
+  }, []);
+
+  const handleEditDialogOpenChange = useCallback(
+    (open: boolean) => {
+      if (open) {
+        return;
+      }
+      closeEditDialog();
+    },
+    [closeEditDialog]
+  );
+
   const navigateMonth = (direction: 'prev' | 'next' | 'today') => {
     let d: Date;
     let id: 'prev' | 'next' | 'today';
@@ -250,26 +295,29 @@ export function CalendarRegistry({
     [year, month, todayDateString]
   );
 
+  const calendarFilterOptions = useMemo(
+    () => ({
+      projectValue: projectQuery.value,
+      sprintValue: sprintQuery.value,
+      assigneeId: selectedAssigneeId,
+      type: selectedType,
+    }),
+    [projectQuery.value, sprintQuery.value, selectedAssigneeId, selectedType]
+  );
+
   const filteredWorkItems = useMemo(
-    () =>
-      filterCalendarWorkItems(localWorkItems, {
-        projectValue: projectQuery.value,
-        sprintValue: sprintQuery.value,
-        assigneeId: selectedAssigneeId,
-        type: selectedType,
-      }),
-    [
-      localWorkItems,
-      projectQuery.value,
-      sprintQuery.value,
-      selectedAssigneeId,
-      selectedType,
-    ]
+    () => filterCalendarWorkItems(localWorkItems, calendarFilterOptions),
+    [localWorkItems, calendarFilterOptions]
   );
 
   const itemsByDate = useMemo(
     () => groupWorkItemsByDueDate(filteredWorkItems),
     [filteredWorkItems]
+  );
+
+  const unscheduledWorkItems = useMemo(
+    () => filterUnscheduledWorkItems(localWorkItems, calendarFilterOptions),
+    [localWorkItems, calendarFilterOptions]
   );
 
   return (
@@ -304,6 +352,21 @@ export function CalendarRegistry({
             className="h-8 px-2.5 text-xs"
           >
             Today
+          </Button>
+          <Button
+            variant={showUnscheduledPanel ? 'secondary' : 'outline'}
+            size="sm"
+            aria-pressed={showUnscheduledPanel}
+            onClick={() => setUnscheduledPanelOpen(!showUnscheduledPanel)}
+            className="h-8 gap-1.5 px-2.5 text-xs"
+          >
+            <ListTodo className="size-4 shrink-0" />
+            <span className="hidden sm:inline">Unscheduled</span>
+            {unscheduledWorkItems.length > 0 ? (
+              <span className="bg-muted text-muted-foreground rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums">
+                {unscheduledWorkItems.length}
+              </span>
+            ) : null}
           </Button>
         </div>
 
@@ -348,30 +411,43 @@ export function CalendarRegistry({
         </div>
       </div>
 
-      <CalendarMonthGrid
-        calendarDays={calendarDays}
-        itemsByDate={itemsByDate}
-        projects={projects}
-        activeDropDate={dueDateDrag.activeDropDate}
-        draggedItemId={dueDateDrag.draggedItemId}
-        pendingDueDateIds={dueDateDrag.pendingDueDateIds}
-        onOpenDay={openDaySheet}
-        onItemDragStart={dueDateDrag.handleItemDragStart}
-        onItemDragEnd={dueDateDrag.handleItemDragEnd}
-        onDayDragOver={dueDateDrag.handleDayDragOver}
-        onDayDragLeave={dueDateDrag.handleDayDragLeave}
-        onDayDrop={dueDateDrag.handleDayDrop}
-        onOpenItem={openEditDialog}
-      />
+      <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
+        <CalendarMonthGrid
+          className="min-h-0 flex-1"
+          calendarDays={calendarDays}
+          itemsByDate={itemsByDate}
+          projects={projects}
+          activeDropDate={dueDateDrag.activeDropDate}
+          draggedItemId={dueDateDrag.draggedItemId}
+          pendingDueDateIds={dueDateDrag.pendingDueDateIds}
+          onOpenDay={openDaySheet}
+          onItemDragStart={dueDateDrag.handleItemDragStart}
+          onItemDragEnd={dueDateDrag.handleItemDragEnd}
+          onDayDragOver={dueDateDrag.handleDayDragOver}
+          onDayDragLeave={dueDateDrag.handleDayDragLeave}
+          onDayDrop={dueDateDrag.handleDayDrop}
+          onOpenItem={openEditDialog}
+        />
+        {showUnscheduledPanel ? (
+          <CalendarUnscheduledPanel
+            className="min-h-48 w-full shrink-0 lg:min-h-0 lg:w-[28rem] xl:w-[32rem]"
+            items={unscheduledWorkItems}
+            projects={projects}
+            draggedItemId={dueDateDrag.draggedItemId}
+            pendingDueDateIds={dueDateDrag.pendingDueDateIds}
+            onClose={() => setUnscheduledPanelOpen(false)}
+            onDragStart={dueDateDrag.handleItemDragStart}
+            onDragEnd={dueDateDrag.handleItemDragEnd}
+            onOpenItem={openEditDialog}
+          />
+        ) : null}
+      </div>
 
       <CalendarDaySheet
         key={selectedDateStr ?? 'closed'}
         selectedDateStr={selectedDateStr}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSelectedDateStr(null);
-          }
-        }}
+        blockOutsideClose={itemToEdit !== null}
+        onOpenChange={handleDaySheetOpenChange}
         itemsByDate={itemsByDate}
         projects={projects}
         users={users}
@@ -385,22 +461,18 @@ export function CalendarRegistry({
 
       <WorkItemFormDialog
         open={itemToEdit !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setItemToEdit(null);
-          }
-        }}
+        onOpenChange={handleEditDialogOpenChange}
         title="Edit Work Item"
         description="Update the details for this work item."
         projects={projects}
         projectMembers={users}
         itemToEdit={itemToEdit}
-        onClose={() => setItemToEdit(null)}
+        onClose={closeEditDialog}
         onSuccess={(updated) => {
           setLocalWorkItems((prev) =>
             prev.map((item) => (item.id === updated.id ? updated : item))
           );
-          setItemToEdit(null);
+          closeEditDialog();
           router.refresh();
         }}
       />

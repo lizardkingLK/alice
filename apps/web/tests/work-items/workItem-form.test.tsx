@@ -139,6 +139,27 @@ describe('WorkItemForm', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('pre-fills and locks due date in modern create when defaultDueDate is set', () => {
+    render(
+      <WorkItemForm
+        projects={projects}
+        projectMembers={projectMembers}
+        onSuccess={vi.fn()}
+        createFormMode="modern"
+        defaultDueDate="2026-08-27"
+        lockDueDate
+      />
+    );
+
+    const dueDateInput = screen.getByLabelText(/^Due date$/i);
+    expect(dueDateInput).toBeInTheDocument();
+    expect(dueDateInput).toHaveValue('2026-08-27');
+    expect(dueDateInput).toBeDisabled();
+    expect(
+      screen.queryByRole('menuitem', { name: /^Due date$/i })
+    ).not.toBeInTheDocument();
+  });
+
   it('uses modern fields in edit mode when createFormMode is modern', () => {
     const itemToEdit = workItemFactory.build({
       title: 'Existing item',

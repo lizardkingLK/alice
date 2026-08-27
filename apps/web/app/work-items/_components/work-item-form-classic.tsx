@@ -17,6 +17,7 @@ import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge
 export type WorkItemFormClassicFieldsProps = WorkItemFormSharedFieldProps & {
   readonly titleDefault?: string;
   readonly dueDateDefault?: string;
+  readonly lockDueDate?: boolean;
   readonly storyPointsDefault?: number | null;
   readonly labelsDefault?: readonly string[];
 };
@@ -45,6 +46,7 @@ export function WorkItemFormClassicFields({
   status,
   titleDefault = '',
   dueDateDefault = '',
+  lockDueDate = false,
   storyPointsDefault = null,
   labelsDefault = [],
   onProjectIdChange,
@@ -154,6 +156,7 @@ export function WorkItemFormClassicFields({
           name="due_date"
           type="date"
           defaultValue={dueDateDefault}
+          disabled={lockDueDate}
         />
       </div>
 

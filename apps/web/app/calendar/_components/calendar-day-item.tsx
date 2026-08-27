@@ -6,6 +6,7 @@ import { cn } from '@repo/ui/lib/utils';
 import { WorkItemTypeEnum } from '@repo/types';
 import type { Project } from '@/app/projects/_services/projects.service';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import { formatCalendarWorkItemDisplayKey } from '@/app/calendar/_components/calendar-utils';
 import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
 import { WorkItemTypeBadge } from '@/app/work-items/_components/workItem-badge-type';
@@ -14,6 +15,8 @@ import { UserAvatar } from '@/components/user-avatar';
 type CalendarDayItemProps = {
   readonly item: DbWorkItem;
   readonly compact: boolean;
+  /** Enables HTML5 drag on the full (non-compact) card layout. */
+  readonly enableDrag?: boolean;
   readonly projects: readonly Project[];
   readonly isDragging: boolean;
   readonly isPending: boolean;
@@ -27,6 +30,7 @@ type CalendarDayItemProps = {
 export function CalendarDayItem({
   item,
   compact,
+  enableDrag = false,
   projects,
   isDragging,
   isPending,
@@ -67,25 +71,35 @@ export function CalendarDayItem({
     );
   }
 
-  const projectKey =
-    item.project?.key ??
-    projects.find((p) => p.id === item.project_id)?.key ??
-    'ITEM';
-  const displayKey = `${projectKey}-${item.id.slice(-4)}`;
+  const displayKey = formatCalendarWorkItemDisplayKey(item, projects);
 
   return (
     <button
       type="button"
-      onClick={() => onOpen(item)}
+      draggable={enableDrag && !isPending}
+      onDragStart={
+        enableDrag ? (event) => onDragStart(event, item.id) : undefined
+      }
+      onDragEnd={enableDrag ? onDragEnd : undefined}
+      onClick={(event) => {
+        event.stopPropagation();
+        if (isPending) {
+          return;
+        }
+        onOpen(item);
+      }}
       className={cn(
-        'border-border bg-card flex w-full min-w-0 items-center justify-between gap-3 rounded-lg border p-3 text-left shadow-sm transition-all duration-150 select-none',
+        'border-border bg-card flex w-full min-w-0 flex-col gap-2 rounded-lg border p-3 text-left shadow-sm transition-all duration-150 select-none sm:flex-row sm:items-center sm:justify-between sm:gap-3',
         'hover:border-primary/30 hover:translate-x-0.5 hover:shadow-md',
+        enableDrag && 'cursor-grab active:cursor-grabbing',
         isIssue && 'border-red-500/20 bg-red-500/5 hover:bg-red-500/10',
         isStory &&
           'border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10',
         !isIssue &&
           !isStory &&
-          'border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10'
+          'border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10',
+        (isDragging || isPending) && 'opacity-40',
+        isPending && enableDrag && 'cursor-wait'
       )}
     >
       <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -93,11 +107,11 @@ export function CalendarDayItem({
         <span className="text-muted-foreground shrink-0 font-mono text-xs font-semibold">
           {displayKey}
         </span>
-        <span className="text-foreground truncate text-sm font-medium">
+        <TruncatedText className="text-foreground min-w-0 text-sm font-medium">
           {item.title}
-        </span>
+        </TruncatedText>
       </div>
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
         <WorkItemStatusBadge status={item.status} />
         <PriorityBadge priority={item.priority} />
         <UserAvatar
