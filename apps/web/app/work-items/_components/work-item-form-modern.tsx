@@ -469,9 +469,7 @@ function ModernOptionalFieldPills({
               step="1"
               placeholder="Points"
               aria-label="Story points"
-              defaultValue={
-                storyPointsDefault == null ? undefined : storyPointsDefault
-              }
+              defaultValue={storyPointsDefault ?? undefined}
               className={cn(pillTriggerClassName(false), 'w-26 pr-2 pl-8')}
             />
           </div>
