@@ -76,22 +76,31 @@ export function CalendarMonthGrid({
           const overflowCount = dayItems.length - visibleItems.length;
           const isDropTarget = activeDropDate === dayCell.dateString;
 
+          const dayLabel = new Date(
+            `${dayCell.dateString}T00:00:00`
+          ).toLocaleDateString(undefined, { dateStyle: 'full' });
+
           return (
             <div
               key={dayCell.dateString}
-              onClick={() => onOpenDay(dayCell.dateString)}
               onDragOver={(event) => onDayDragOver(event, dayCell.dateString)}
               onDragLeave={() => onDayDragLeave(dayCell.dateString)}
               onDrop={(event) => onDayDrop(event, dayCell.dateString)}
               className={cn(
-                'bg-card group hover:bg-accent/15 flex h-full min-h-0 w-full cursor-pointer flex-col gap-1 p-1.5 text-left transition-colors duration-150 sm:p-2',
+                'bg-card group relative flex h-full min-h-0 w-full flex-col gap-1 p-1.5 text-left transition-colors duration-150 sm:p-2',
                 !dayCell.isCurrentMonth &&
                   'bg-muted/30 text-muted-foreground/50',
                 isDropTarget &&
                   'bg-primary/10 ring-primary/40 ring-2 ring-inset'
               )}
             >
-              <div className="flex w-full shrink-0 items-center justify-between">
+              <button
+                type="button"
+                aria-label={`Open ${dayLabel}`}
+                onClick={() => onOpenDay(dayCell.dateString)}
+                className="hover:bg-accent/15 absolute inset-0 z-0 cursor-pointer rounded-none border-0 bg-transparent p-0"
+              />
+              <div className="pointer-events-none relative z-10 flex w-full shrink-0 items-center justify-between">
                 <span
                   className={cn(
                     'flex size-5 items-center justify-center rounded-full text-[10px] font-bold select-none sm:size-6 sm:text-xs',
@@ -110,11 +119,11 @@ export function CalendarMonthGrid({
                 ) : null}
               </div>
 
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <div className="pointer-events-none relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden">
                 <CalendarWorkItemList
                   items={visibleItems}
                   projects={projects}
-                  className="gap-0.5"
+                  className="pointer-events-auto gap-0.5"
                   draggedItemId={draggedItemId}
                   pendingDueDateIds={pendingDueDateIds}
                   onDragStart={onItemDragStart}
@@ -122,7 +131,7 @@ export function CalendarMonthGrid({
                   onOpenItem={onOpenItem}
                 />
                 {overflowCount > 0 ? (
-                  <div onClick={(event) => event.stopPropagation()}>
+                  <div className="pointer-events-auto">
                     <CalendarDayOverflowPopover
                       dateString={dayCell.dateString}
                       items={dayItems}
