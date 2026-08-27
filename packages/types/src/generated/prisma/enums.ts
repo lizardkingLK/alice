@@ -108,3 +108,12 @@ export const AccessAllowlistKind = {
 } as const
 
 export type AccessAllowlistKind = (typeof AccessAllowlistKind)[keyof typeof AccessAllowlistKind]
+
+
+export const JiraConnectionStatus = {
+  active: 'active',
+  revoked: 'revoked',
+  expired: 'expired'
+} as const
+
+export type JiraConnectionStatus = (typeof JiraConnectionStatus)[keyof typeof JiraConnectionStatus]

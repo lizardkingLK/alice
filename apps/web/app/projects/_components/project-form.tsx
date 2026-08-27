@@ -41,12 +41,16 @@ import {
   type Project,
   type CreateProjectInput,
 } from '../_services/projects.service';
-import { apiFetch } from '@/lib/api/api-client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 import { cn } from '@repo/ui/lib/utils';
 import { FormAlertMessage } from '@/components/form-alert-message';
 import { toLocalYYYYMMDD } from '@/app/_shared/utility';
+import { importJiraIssues } from '../_services/jira.service';
+import {
+  formatGithubRepoPath,
+  parseGithubRepoPath,
+} from '@/lib/projects/github-repo-path';
 import {
   Step2Imports,
   Step3SourceControl,
@@ -164,14 +168,16 @@ function validateStep1({
 
 function validateStep2(
   importFromJira: boolean,
-  jiraUrl: string,
+  jiraConnectionId: string,
   jiraProjectKey: string
 ): string | null {
   if (importFromJira) {
-    if (!jiraUrl.trim())
-      return 'Jira URL is required when Jira integration is enabled.';
-    if (!jiraProjectKey.trim())
+    if (!jiraConnectionId.trim()) {
+      return 'Select a Jira connection when Jira integration is enabled.';
+    }
+    if (!jiraProjectKey.trim()) {
       return 'Jira Project Key is required when Jira integration is enabled.';
+    }
   }
   return null;
 }
@@ -206,7 +212,7 @@ function getStepError(
     originalStartDate?: string;
     originalEndDate?: string;
     importFromJira: boolean;
-    jiraUrl: string;
+    jiraConnectionId: string;
     jiraProjectKey: string;
     enableGithub: boolean;
     githubOwner: string;
@@ -229,7 +235,7 @@ function getStepError(
   if (currentStep === 2) {
     return validateStep2(
       fields.importFromJira,
-      fields.jiraUrl,
+      fields.jiraConnectionId,
       fields.jiraProjectKey
     );
   }
@@ -561,7 +567,6 @@ function ProjectFormNavButtons({
   isMaximized,
   onClose,
   onBack,
-  onNext,
   submitLabel,
 }: Readonly<{
   step: number;
@@ -569,7 +574,6 @@ function ProjectFormNavButtons({
   isMaximized: boolean;
   onClose?: () => void;
   onBack: () => void;
-  onNext: () => void;
   submitLabel: ReactNode;
 }>) {
   const showBack = step > 1;
@@ -611,20 +615,14 @@ function ProjectFormNavButtons({
           Cancel
         </Button>
       ) : null}
-      {step < 3 ? (
-        <Button
-          type="button"
-          disabled={isBusy}
-          onClick={onNext}
-          className={primaryClass}
-        >
-          Next
-        </Button>
-      ) : (
-        <Button type="submit" disabled={isBusy} className={primaryClass}>
-          {submitLabel}
-        </Button>
-      )}
+      {/*
+        Always type="submit" (label Next vs Create). Swapping a type="button"
+        Next for a type="submit" Create under the same click submits the form
+        on step 3 immediately and skips Source Control.
+      */}
+      <Button type="submit" disabled={isBusy} className={primaryClass}>
+        {step < 3 ? 'Next' : submitLabel}
+      </Button>
     </div>
   );
 }
@@ -694,58 +692,14 @@ export function ProjectForm({
     setImportFromJira(checked);
     onJiraImportToggle?.(checked);
   };
-  const [jiraUrl, setJiraUrl] = useState('');
+  const [jiraConnectionId, setJiraConnectionId] = useState('');
   const [jiraProjectKey, setJiraProjectKey] = useState('');
-  const [isTestingJira, setIsTestingJira] = useState(false);
-  const [jiraTestMessage, setJiraTestMessage] = useState<string | null>(null);
-  const [jiraTestError, setJiraTestError] = useState(false);
-  const [previewIssues, setPreviewIssues] = useState<
-    Array<{ key: string; title: string; type: string }>
-  >([]);
 
   // GitHub Integration States
   const [enableGithub, setEnableGithub] = useState(false);
   const [githubOwner, setGithubOwner] = useState('');
   const [githubRepoName, setGithubRepoName] = useState('');
   const [githubToken, setGithubToken] = useState('');
-
-  const handleTestConnection = async () => {
-    if (!jiraUrl.trim() || !jiraProjectKey.trim()) {
-      setJiraTestMessage('Please enter both Jira Domain and Project Key.');
-      setJiraTestError(true);
-      return;
-    }
-
-    setIsTestingJira(true);
-    setJiraTestMessage(null);
-    setJiraTestError(false);
-    setPreviewIssues([]);
-
-    try {
-      const response = await apiFetch<{
-        issues: Array<{ key: string; title: string; type: string }>;
-      }>('/api/projects/jira/preview', {
-        method: 'POST',
-        body: JSON.stringify({
-          jiraUrl: jiraUrl.trim(),
-          jiraProjectKey: jiraProjectKey.toUpperCase().trim(),
-        }),
-      });
-      setPreviewIssues(response.issues);
-      setJiraTestMessage(
-        `Successfully connected! Found ${response.issues.length} tasks ready to import.`
-      );
-      setJiraTestError(false);
-    } catch (err) {
-      console.error('Jira preview error:', err);
-      setJiraTestMessage(
-        err instanceof Error ? err.message : 'Jira connection test failed.'
-      );
-      setJiraTestError(true);
-    } finally {
-      setIsTestingJira(false);
-    }
-  };
 
   const validateStep = (currentStep: number): boolean => {
     setMessage(null);
@@ -765,7 +719,7 @@ export function ProjectForm({
         ? formatDateForInput(projectToEdit.end_date)
         : undefined,
       importFromJira,
-      jiraUrl,
+      jiraConnectionId,
       jiraProjectKey,
       enableGithub,
       githubOwner,
@@ -793,44 +747,34 @@ export function ProjectForm({
     setStartDate(formatDateForInput(projectToEdit.start_date));
     setEndDate(formatDateForInput(projectToEdit.end_date));
 
-    // Initialize Jira Settings
-    const hasJira = !!projectToEdit.jira_url;
+    const hasJira = Boolean(
+      projectToEdit.jira_connection_id && projectToEdit.jira_project_key
+    );
     setImportFromJira(hasJira);
-    setJiraUrl(projectToEdit.jira_url ?? '');
+    setJiraConnectionId(projectToEdit.jira_connection_id ?? '');
     setJiraProjectKey(projectToEdit.jira_project_key ?? '');
 
-    // Initialize GitHub Settings
     const hasGithub = !!projectToEdit.github_repo;
     setEnableGithub(hasGithub);
-    if (projectToEdit.github_repo) {
-      const parts = projectToEdit.github_repo.split('/');
-      setGithubOwner(parts[0] ?? '');
-      setGithubRepoName(parts[1] ?? '');
-    } else {
-      setGithubOwner('');
-      setGithubRepoName('');
-    }
-    setGithubToken(projectToEdit.github_token ?? '');
+    const { owner, repoName } = parseGithubRepoPath(projectToEdit.github_repo);
+    setGithubOwner(owner);
+    setGithubRepoName(repoName);
+    setGithubToken('');
   }, [projectToEdit]);
 
   const handleJiraImport = async (projectId: string, projectName: string) => {
     try {
-      const importRes = await apiFetch<{ importedCount: number }>(
-        '/api/projects/jira/import',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            projectId,
-            jiraUrl: jiraUrl.trim(),
-            jiraProjectKey: jiraProjectKey.toUpperCase().trim(),
-          }),
-        }
-      );
+      const importRes = await importJiraIssues(projectId);
       setMessage(
         `Project "${projectName}" created and ${importRes.importedCount} tasks successfully imported from Jira!`
       );
     } catch (err) {
-      console.error('Jira import failed:', err);
+      // Log message only — passing an Error to console.error triggers Next's
+      // "Console Error" overlay in development.
+      console.error(
+        'Jira import failed:',
+        err instanceof Error ? err.message : err
+      );
       setMessage(
         `Project created, but task import failed: ${
           err instanceof Error ? err.message : 'Unknown error'
@@ -853,7 +797,7 @@ export function ProjectForm({
       status: projectData.status,
       attributes_config: projectData.attributes_config,
       workflow_config: projectData.workflow_config,
-      jira_url: projectData.jira_url,
+      jira_connection_id: projectData.jira_connection_id,
       jira_project_key: projectData.jira_project_key,
       github_repo: projectData.github_repo,
       github_token: projectData.github_token,
@@ -877,12 +821,26 @@ export function ProjectForm({
     const result = await createProject(projectData);
     setMessage(`Project "${result.name}" created.`);
 
-    const hasJiraConfig = jiraUrl && jiraProjectKey;
+    const hasJiraConfig = jiraConnectionId && jiraProjectKey;
     if (importFromJira && hasJiraConfig) {
       setMessage(`Project created. Importing tasks from Jira...`);
       await handleJiraImport(result.id, result.name);
     }
     onProjectUpdated?.(result as Project);
+  };
+
+  const resolveGithubToken = (): string | null | undefined => {
+    if (!enableGithub) {
+      return null;
+    }
+    if (githubToken.trim()) {
+      return githubToken.trim();
+    }
+    // Edit: omit blank token so existing encrypted PAT is unchanged.
+    if (projectToEdit) {
+      return undefined;
+    }
+    return null;
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -907,7 +865,8 @@ export function ProjectForm({
     }
 
     try {
-      const projectData = {
+      const linkedJira = importFromJira && jiraConnectionId && jiraProjectKey;
+      const projectData: CreateProjectInput = {
         name: name.trim(),
         key: key.toUpperCase().trim(),
         description: description.trim() || null,
@@ -917,14 +876,14 @@ export function ProjectForm({
         status: status,
         attributes_config: null,
         workflow_config: null,
-        jira_url: importFromJira ? jiraUrl.trim() || null : null,
-        jira_project_key: importFromJira
-          ? jiraProjectKey.toUpperCase().trim() || null
+        jira_connection_id: linkedJira ? jiraConnectionId : null,
+        jira_project_key: linkedJira
+          ? jiraProjectKey.toUpperCase().trim()
           : null,
         github_repo: enableGithub
-          ? `${githubOwner.trim()}/${githubRepoName.trim()}`
+          ? formatGithubRepoPath(githubOwner, githubRepoName)
           : null,
-        github_token: enableGithub ? githubToken.trim() || null : null,
+        github_token: resolveGithubToken(),
       };
 
       if (projectToEdit) {
@@ -1000,6 +959,7 @@ export function ProjectForm({
         )}
       >
         <form
+          noValidate
           onSubmit={handleSubmit}
           className={cn(
             'space-y-4',
@@ -1037,15 +997,10 @@ export function ProjectForm({
               step2={{
                 importFromJira,
                 handleJiraCheckboxChange,
-                jiraUrl,
-                setJiraUrl,
+                jiraConnectionId,
+                setJiraConnectionId,
                 jiraProjectKey,
                 setJiraProjectKey,
-                handleTestConnection,
-                isTestingJira,
-                jiraTestMessage,
-                jiraTestError,
-                previewIssues,
               }}
               step3={{
                 enableGithub,
@@ -1074,11 +1029,6 @@ export function ProjectForm({
               isMaximized={isMaximized}
               onClose={onClose}
               onBack={() => setStep((s) => s - 1)}
-              onNext={() => {
-                if (validateStep(step)) {
-                  setStep((s) => s + 1);
-                }
-              }}
               submitLabel={getSubmitButtonContent(isSubmitting, isEditMode)}
             />
           </div>

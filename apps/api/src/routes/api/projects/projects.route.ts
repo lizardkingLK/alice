@@ -5,7 +5,6 @@ import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
-import { env } from '../../../config/env';
 import {
   handleMultipartImageUpload,
   MAX_PUBLIC_IMAGE_BYTES,
@@ -14,32 +13,28 @@ import {
   sendRouteMutationError,
   registerLockedStatusPatch,
 } from '../../../lib/optimistic-lock';
+import { jsonErrorFromCaught } from '../../../lib/http-error-status';
 import { ProjectsService } from './projects.service';
 import {
   createProjectSchema,
   projectLockActionSchema,
   updateProjectSchema,
 } from './projects.schemas';
-import { withoutJiraToken } from './projects.repository';
+import { withoutIntegrationSecrets } from './projects.repository';
 import { type WorkItemBody } from '../workItems/workItems.schemas';
 import type { WorkItemService } from '../workItems/workItems.service';
 import { supabase } from '../../../lib/supabase';
-import { mapToWorkItemType } from '@repo/types';
-import type {
-  CredentialSeed,
-  JiraNode,
-  JiraSearchResponse,
-  ParsedJiraIssue,
-  ResolvedJiraCredentials,
-} from './projects.types';
+import type { JiraService } from '../jira/jira.service';
+import type { ParsedJiraIssue } from '../jira/jira.types';
 
 export type ProjectsRouterDeps = {
   projectsService: ProjectsService;
   workItemService: Pick<WorkItemService, 'createWorkItem'>;
+  jiraService: Pick<JiraService, 'fetchIssuesForProjectLink'>;
 };
 
 export function createProjectsRouter(deps: ProjectsRouterDeps) {
-  const { projectsService, workItemService } = deps;
+  const { projectsService, workItemService, jiraService } = deps;
   const projectsRouter: Router = Router();
 
   const projectImageUpload: Multer = multer({
@@ -73,98 +68,6 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
         });
       }
     );
-  }
-
-  const jiraSettingsBodySchema = z.object({
-    jiraUrl: z.url({ message: 'Jira URL must be a valid URL' }),
-    jiraEmail: z.email({ message: 'Jira email must be a valid email' }),
-    jiraToken: z.string().trim().min(1, { message: 'Jira token is required' }),
-  });
-
-  function mergeCredentialSeed(
-    current: CredentialSeed,
-    next: {
-      jira_url?: string | null;
-      jira_token?: string | null;
-      jira_project_key?: string | null;
-      jira_email?: string | null;
-    }
-  ): CredentialSeed {
-    return {
-      jiraUrl: current.jiraUrl || next.jira_url || undefined,
-      jiraToken: current.jiraToken || next.jira_token || undefined,
-      jiraProjectKey:
-        current.jiraProjectKey || next.jira_project_key || undefined,
-      jiraEmail: current.jiraEmail || next.jira_email || undefined,
-    };
-  }
-
-  function credentialsIncomplete(seed: CredentialSeed): boolean {
-    return !seed.jiraUrl || !seed.jiraToken || !seed.jiraProjectKey;
-  }
-
-  /**
-   * Resolve Jira credentials from request body → project row → global settings → env.
-   * `requireProject` controls 404 vs soft-skip when projectId is missing/not found.
-   */
-  async function resolveJiraCredentials(params: {
-    actorId: string;
-    projectId?: string;
-    jiraUrl?: string | null;
-    jiraToken?: string | null;
-    jiraProjectKey?: string | null;
-    jiraEmail?: string | null;
-    requireProject: boolean;
-  }): Promise<
-    | { ok: true; credentials: ResolvedJiraCredentials }
-    | { ok: false; status: 400 | 404; error: string }
-  > {
-    let seed: CredentialSeed = {
-      jiraUrl: params.jiraUrl || undefined,
-      jiraToken: params.jiraToken || env.JIRA_API_TOKEN || undefined,
-      jiraProjectKey: params.jiraProjectKey || undefined,
-      jiraEmail: params.jiraEmail || env.JIRA_EMAIL || undefined,
-    };
-
-    if (params.projectId && credentialsIncomplete(seed)) {
-      try {
-        const project = await projectsService.getProjectById(params.projectId);
-        seed = mergeCredentialSeed(seed, project);
-      } catch {
-        if (params.requireProject) {
-          return { ok: false, status: 404, error: 'Project not found' };
-        }
-      }
-    }
-
-    if (!seed.jiraUrl || !seed.jiraToken) {
-      const globalSettings = await projectsService.getJiraSettings(
-        params.actorId
-      );
-      if (globalSettings) {
-        seed = mergeCredentialSeed(seed, globalSettings);
-      }
-    }
-
-    if (credentialsIncomplete(seed)) {
-      return {
-        ok: false,
-        status: 400,
-        error: params.requireProject
-          ? 'Jira integration is not configured. Please provide credentials or set up global settings.'
-          : 'Jira URL, Token, and Project Key are required',
-      };
-    }
-
-    return {
-      ok: true,
-      credentials: {
-        jiraUrl: seed.jiraUrl!,
-        jiraToken: seed.jiraToken!,
-        jiraProjectKey: seed.jiraProjectKey!,
-        jiraEmail: seed.jiraEmail || 'integration@example.com',
-      },
-    };
   }
 
   async function loadExistingJiraKeys(projectId: string): Promise<Set<string>> {
@@ -228,103 +131,35 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
     return importedCount;
   }
 
-  function extractText(node: JiraNode | null | undefined): string {
-    if (!node) return '';
-    if (node.type === 'text') return node.text || '';
-    let text = '';
-    if (Array.isArray(node.content)) {
-      for (const child of node.content) {
-        text += extractText(child);
+  async function resolveProjectJiraLink(projectId: string): Promise<
+    | {
+        ok: true;
+        connectionId: string;
+        projectKey: string;
       }
-    }
-    return text;
-  }
-
-  function parseJiraDescription(descObj: unknown): string {
-    if (!descObj) return '';
-    if (typeof descObj === 'string') {
-      return descObj;
-    }
-    if (typeof descObj === 'object') {
-      return extractText(descObj as JiraNode);
-    }
-    return '';
-  }
-
-  async function fetchAndParseJiraIssues(
-    jiraUrl: string,
-    jiraToken: string,
-    jiraProjectKey: string,
-    jiraEmail: string
-  ): Promise<ParsedJiraIssue[]> {
-    let url = jiraUrl.trim();
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      url = `https://${url}`;
-    }
-
-    let parsedUrl: URL;
+    | { ok: false; status: 400 | 404; error: string }
+  > {
+    let project;
     try {
-      parsedUrl = new URL(url); // NOSONAR
+      project = await projectsService.getProjectById(projectId);
     } catch {
-      throw new Error('Invalid Jira URL format');
+      return { ok: false, status: 404, error: 'Project not found' };
     }
 
-    const hostname = parsedUrl.hostname.toLowerCase();
-
-    // Whitelist check: Must end with .atlassian.net to prevent SSRF
-    if (!hostname.endsWith('.atlassian.net')) {
-      throw new Error('Only Jira Cloud domains (*.atlassian.net) are allowed');
-    }
-
-    // Extract the subdomain and validate it is alphanumeric + hyphens only
-    const subdomain = hostname.slice(0, -'.atlassian.net'.length);
-    if (!/^[a-zA-Z0-9-]+$/.test(subdomain)) {
-      throw new Error('Invalid Jira Cloud subdomain format');
-    }
-
-    // Reconstruct the URL from the safe, validated components
-    // This breaks the taint chain and guarantees that only public Jira Cloud domains are requested.
-    const cleanUrl = `https://${subdomain}.atlassian.net`;
-
-    const credentials = `${jiraEmail.trim()}:${jiraToken.trim()}`;
-    const authHeader = `Basic ${Buffer.from(credentials).toString('base64')}`;
-    const jql = encodeURIComponent(`project="${jiraProjectKey.trim()}"`);
-    const response = await fetch(
-      `${cleanUrl}/rest/api/3/search/jql?jql=${jql}&fields=summary,description,issuetype,parent`,
-      {
-        // NOSONAR
-        headers: {
-          Authorization: authHeader,
-          Accept: 'application/json',
-        },
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Jira API request failed with status ${response.status}: ${errorText}`
-      );
-    }
-
-    const data = (await response.json()) as JiraSearchResponse;
-    if (!data.issues || !Array.isArray(data.issues)) {
-      throw new Error('Invalid response format from Jira API');
-    }
-
-    return data.issues.map((issue) => {
-      const jiraType = issue.fields?.issuetype?.name || '';
-      const type = mapToWorkItemType(jiraType);
-      const parentKey = issue.fields?.parent?.key || null;
-
+    if (!project.jira_connection_id || !project.jira_project_key) {
       return {
-        key: issue.key,
-        title: issue.fields?.summary || 'Untitled',
-        description: parseJiraDescription(issue.fields?.description),
-        type,
-        parentKey,
+        ok: false,
+        status: 400,
+        error:
+          'Jira is not linked on this project. Set jira_connection_id and jira_project_key first.',
       };
-    });
+    }
+
+    return {
+      ok: true,
+      connectionId: project.jira_connection_id,
+      projectKey: project.jira_project_key,
+    };
   }
 
   projectsRouter.post(
@@ -345,101 +180,79 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
           start_date: parsed.data.start_date ?? null,
           end_date: parsed.data.end_date ?? null,
           status: parsed.data.status ?? 'active',
-          jira_url: parsed.data.jira_url ?? null,
-          jira_email: parsed.data.jira_email ?? null,
-          jira_token: parsed.data.jira_token ?? null,
           jira_project_key: parsed.data.jira_project_key ?? null,
+          jira_connection_id: parsed.data.jira_connection_id ?? null,
           github_repo: parsed.data.github_repo ?? null,
           github_token: parsed.data.github_token ?? null,
         });
-        res.status(201).json({ project: withoutJiraToken(project) });
+        res.status(201).json({ project: withoutIntegrationSecrets(project) });
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to create project';
-        const status = message.startsWith('Unauthorized') ? 403 : 500;
+        const { status, error: message } = jsonErrorFromCaught(
+          error,
+          'Failed to create project'
+        );
         res.status(status).json({ error: message });
       }
     }
   );
 
   projectsRouter.post(
-    '/jira/preview',
+    '/:id/jira/preview',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
-      const { projectId, jiraUrl, jiraToken, jiraProjectKey, jiraEmail } =
-        req.body;
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ error: 'Project ID is required' });
+      }
 
       try {
-        const resolved = await resolveJiraCredentials({
-          actorId: req.userId!,
-          projectId,
-          jiraUrl,
-          jiraToken,
-          jiraProjectKey,
-          jiraEmail,
-          requireProject: false,
-        });
-
-        if (!resolved.ok) {
-          return res.status(resolved.status).json({ error: resolved.error });
+        const link = await resolveProjectJiraLink(id);
+        if (!link.ok) {
+          return res.status(link.status).json({ error: link.error });
         }
 
-        const { credentials } = resolved;
-        const issues = await fetchAndParseJiraIssues(
-          credentials.jiraUrl,
-          credentials.jiraToken,
-          credentials.jiraProjectKey,
-          credentials.jiraEmail
+        const issues = await jiraService.fetchIssuesForProjectLink(
+          req.userId!,
+          link.connectionId,
+          link.projectKey
         );
         res.json({ issues });
       } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : 'Jira connection test failed';
-        res.status(500).json({ error: message });
+        const { status, error: message } = jsonErrorFromCaught(
+          error,
+          'Jira connection preview failed'
+        );
+        res.status(status).json({ error: message });
       }
     }
   );
 
   projectsRouter.post(
-    '/jira/import',
+    '/:id/jira/import',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
-      const { projectId, jiraUrl, jiraToken, jiraProjectKey, jiraEmail } =
-        req.body;
-      if (!projectId) {
+      const { id } = req.params;
+      if (!id) {
         return res.status(400).json({ error: 'Project ID is required' });
       }
 
       let importedCount = 0;
       try {
-        const resolved = await resolveJiraCredentials({
-          actorId: req.userId!,
-          projectId,
-          jiraUrl,
-          jiraToken,
-          jiraProjectKey,
-          jiraEmail,
-          requireProject: true,
-        });
-
-        if (!resolved.ok) {
-          return res.status(resolved.status).json({ error: resolved.error });
+        const link = await resolveProjectJiraLink(id);
+        if (!link.ok) {
+          return res.status(link.status).json({ error: link.error });
         }
 
-        const { credentials } = resolved;
-        const existingKeys = await loadExistingJiraKeys(projectId);
-        const issues = await fetchAndParseJiraIssues(
-          credentials.jiraUrl,
-          credentials.jiraToken,
-          credentials.jiraProjectKey,
-          credentials.jiraEmail
+        const existingKeys = await loadExistingJiraKeys(id);
+        const issues = await jiraService.fetchIssuesForProjectLink(
+          req.userId!,
+          link.connectionId,
+          link.projectKey
         );
 
         importedCount = await importParsedJiraIssues({
           actorId: req.userId!,
-          projectId,
+          projectId: id,
           issues,
           existingKeys,
         });
@@ -447,7 +260,7 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
         try {
           await projectsService.linkImportedJiraParents(
             req.userId!,
-            projectId,
+            id,
             issues
           );
         } catch (linkError) {
@@ -459,40 +272,15 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
 
         res.json({ success: true, importedCount });
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Jira import failed';
-        res.status(500).json({
+        const { status, error: message } = jsonErrorFromCaught(
+          error,
+          'Jira import failed'
+        );
+        res.status(status).json({
           error: message,
           importedCount,
           partial: importedCount > 0,
         });
-      }
-    }
-  );
-
-  projectsRouter.put(
-    '/jira/settings',
-    requireApiAuth,
-    async (req: AuthenticatedRequest, res) => {
-      const parsed = jiraSettingsBodySchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({ error: z.treeifyError(parsed.error) });
-      }
-
-      const { jiraUrl, jiraEmail, jiraToken } = parsed.data;
-
-      try {
-        await projectsService.saveJiraSettings(
-          req.userId!,
-          jiraUrl,
-          jiraEmail,
-          jiraToken
-        );
-        res.json({ success: true, jiraUrl, jiraEmail });
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to save settings';
-        res.status(500).json({ error: message });
       }
     }
   );
@@ -519,7 +307,7 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
           input,
           expectedUpdatedAt
         );
-        res.json({ project: withoutJiraToken(project) });
+        res.json({ project: withoutIntegrationSecrets(project) });
       } catch (error) {
         sendRouteMutationError(res, error, 'Failed to update project');
       }
@@ -535,7 +323,9 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
     treeifyError: (error) => z.treeifyError(error as z.ZodError),
     action: (actorId, projectId, expectedUpdatedAt) =>
       projectsService.softDeleteProject(actorId, projectId, expectedUpdatedAt),
-    toResponseBody: (project) => ({ project: withoutJiraToken(project) }),
+    toResponseBody: (project) => ({
+      project: withoutIntegrationSecrets(project),
+    }),
     failureMessage: 'Failed to soft delete project',
   });
 
@@ -548,7 +338,9 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
     treeifyError: (error) => z.treeifyError(error as z.ZodError),
     action: (actorId, projectId, expectedUpdatedAt) =>
       projectsService.restoreProject(actorId, projectId, expectedUpdatedAt),
-    toResponseBody: (project) => ({ project: withoutJiraToken(project) }),
+    toResponseBody: (project) => ({
+      project: withoutIntegrationSecrets(project),
+    }),
     failureMessage: 'Failed to restore project',
   });
 
@@ -565,11 +357,11 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
         await projectsService.hardDeleteProject(req.userId!, id);
         res.json({ success: true });
       } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : 'Failed to hard delete project';
-        res.status(500).json({ error: message });
+        const { status, error: message } = jsonErrorFromCaught(
+          error,
+          'Failed to hard delete project'
+        );
+        return res.status(status).json({ error: message });
       }
     }
   );
@@ -614,11 +406,11 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
         await projectsService.addMember(req.userId!, id, userId);
         res.json({ success: true });
       } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : 'Failed to add project member';
-        res.status(500).json({ error: message });
+        const { status, error: message } = jsonErrorFromCaught(
+          error,
+          'Failed to add project member'
+        );
+        return res.status(status).json({ error: message });
       }
     }
   );
@@ -637,11 +429,11 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
         await projectsService.removeMember(req.userId!, id, userId);
         res.json({ success: true });
       } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : 'Failed to remove project member';
-        res.status(500).json({ error: message });
+        const { status, error: message } = jsonErrorFromCaught(
+          error,
+          'Failed to remove project member'
+        );
+        return res.status(status).json({ error: message });
       }
     }
   );

@@ -6,25 +6,26 @@ const {
   findByKeyMock,
   listMembersMock,
   addMemberMock,
+  ensureOwnerIsMemberMock,
   removeMemberMock,
   createMock,
   updateMock,
   deleteMock,
-  getJiraSettingsMock,
-  saveJiraSettingsMock,
-} = vi.hoisted(() => ({
-  selectSingleMock: vi.fn(),
-  findByIdMock: vi.fn(),
-  findByKeyMock: vi.fn(),
-  listMembersMock: vi.fn(),
-  addMemberMock: vi.fn(),
-  removeMemberMock: vi.fn(),
-  createMock: vi.fn(),
-  updateMock: vi.fn(),
-  deleteMock: vi.fn(),
-  getJiraSettingsMock: vi.fn(),
-  saveJiraSettingsMock: vi.fn(),
-}));
+} = vi.hoisted(() => {
+  process.env.GITHUB_ACTIONS = 'true';
+  return {
+    selectSingleMock: vi.fn(),
+    findByIdMock: vi.fn(),
+    findByKeyMock: vi.fn(),
+    listMembersMock: vi.fn(),
+    addMemberMock: vi.fn(),
+    ensureOwnerIsMemberMock: vi.fn(),
+    removeMemberMock: vi.fn(),
+    createMock: vi.fn(),
+    updateMock: vi.fn(),
+    deleteMock: vi.fn(),
+  };
+});
 
 vi.mock('../../src/lib/supabase', () => ({
   supabase: {
@@ -56,10 +57,8 @@ const mockProject = {
   created_at: '2026-01-01T00:00:00.000Z',
   updated_at: '2026-01-01T00:00:00.000Z',
   deleted_at: null,
-  jira_url: null,
-  jira_email: null,
-  jira_token: null,
   jira_project_key: null,
+  jira_connection_id: null,
   github_repo: null,
   github_token: null,
   logo_url: null,
@@ -72,12 +71,11 @@ describe('ProjectsService backend tests', () => {
     findByKey: findByKeyMock,
     listMembers: listMembersMock,
     addMember: addMemberMock,
+    ensureOwnerIsMember: ensureOwnerIsMemberMock,
     removeMember: removeMemberMock,
     create: createMock,
     update: updateMock,
     delete: deleteMock,
-    getJiraSettings: getJiraSettingsMock,
-    saveJiraSettings: saveJiraSettingsMock,
   } as unknown as ProjectsRepository;
 
   const service = new ProjectsService(projectsRepository);
@@ -92,10 +90,8 @@ describe('ProjectsService backend tests', () => {
     start_date: '2026-01-01',
     end_date: '2026-12-31',
     owner_id: 'user-manager',
-    jira_url: null,
-    jira_email: null,
-    jira_token: null,
     jira_project_key: null,
+    jira_connection_id: null,
     github_repo: null,
     github_token: null,
     ...overrides,
@@ -159,7 +155,7 @@ describe('ProjectsService backend tests', () => {
 
     it('validates key uniqueness on creation', async () => {
       mockActorRole('admin');
-      findByKeyMock.mockResolvedValue(mockProject); // Duplicate exists
+      findByKeyMock.mockResolvedValue(mockProject);
 
       const input = createProjectInput();
 
@@ -198,7 +194,6 @@ describe('ProjectsService backend tests', () => {
 
     it('validates key uniqueness on update', async () => {
       mockActorRole('manager');
-      // Duplicate key found belonging to another project
       findByKeyMock.mockResolvedValue({ id: 'project-2', key: 'ALICE' });
 
       const input = { key: 'ALICE' };
@@ -213,6 +208,30 @@ describe('ProjectsService backend tests', () => {
       ).rejects.toThrow('Another project with the key "ALICE" already exists.');
 
       expect(updateMock).not.toHaveBeenCalled();
+    });
+
+    it('adds the new owner as a member when ownership changes', async () => {
+      mockActorRole('manager');
+      findByKeyMock.mockResolvedValue(null);
+      findByIdMock.mockResolvedValue(mockProject);
+      updateMock.mockResolvedValue({
+        ...mockProject,
+        owner_id: 'user-new-owner',
+      });
+      ensureOwnerIsMemberMock.mockResolvedValue(undefined);
+
+      await service.updateProject(
+        'user-manager',
+        'project-1',
+        { owner_id: 'user-new-owner' },
+        mockProject.updated_at
+      );
+
+      expect(ensureOwnerIsMemberMock).toHaveBeenCalledWith(
+        'project-1',
+        'user-new-owner',
+        'user-manager'
+      );
     });
 
     it('rejects updates for standard members', async () => {
@@ -320,6 +339,31 @@ describe('ProjectsService backend tests', () => {
       );
 
       expect(updateMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('removeMember', () => {
+    it('removes a non-owner member', async () => {
+      mockActorRole('manager');
+      findByIdMock.mockResolvedValue(mockProject);
+      removeMemberMock.mockResolvedValue(undefined);
+
+      await service.removeMember('user-manager', 'project-1', 'user-member');
+
+      expect(removeMemberMock).toHaveBeenCalledWith('project-1', 'user-member');
+    });
+
+    it('rejects removing the project owner', async () => {
+      mockActorRole('manager');
+      findByIdMock.mockResolvedValue(mockProject);
+
+      await expect(
+        service.removeMember('user-manager', 'project-1', 'user-manager')
+      ).rejects.toThrow(
+        'Cannot remove the project owner from members. Change the project owner first.'
+      );
+
+      expect(removeMemberMock).not.toHaveBeenCalled();
     });
   });
 

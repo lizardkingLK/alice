@@ -1,6 +1,7 @@
 import {
   USER_PROJECTION_WITH_ROLE,
   userRelationSelect,
+  withoutIntegrationSecrets,
   type Database,
 } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -30,24 +31,17 @@ export type {
   UpdateProjectInput,
 } from './projects.types';
 
-/** Strip Jira API token before serializing project DTOs to clients. */
-export function withoutJiraToken<T extends { jira_token?: string | null }>(
-  project: T
-): Omit<T, 'jira_token'> {
-  const safe = { ...project };
-  delete safe.jira_token;
-  return safe;
-}
+export { withoutIntegrationSecrets };
 
 function applyOptionalProjectIntegrations(
   patch: Record<string, unknown>,
   data: ProjectUpdateInput
 ): void {
-  if (data.jira_url !== undefined) patch.jira_url = data.jira_url;
-  if (data.jira_email !== undefined) patch.jira_email = data.jira_email;
-  if (data.jira_token !== undefined) patch.jira_token = data.jira_token;
   if (data.jira_project_key !== undefined) {
     patch.jira_project_key = data.jira_project_key;
+  }
+  if (data.jira_connection_id !== undefined) {
+    patch.jira_connection_id = data.jira_connection_id;
   }
   if (data.github_repo !== undefined) patch.github_repo = data.github_repo;
   if (data.github_token !== undefined) patch.github_token = data.github_token;
@@ -118,7 +112,7 @@ export class ProjectsRepository {
       console.error('error. failed to find project by key:', error.message);
       throw new Error('Failed to find duplicate project key');
     }
-    return data;
+    return unsafeCast<ProjectRow | null>(data);
   }
 
   async findById(id: string): Promise<ProjectRowWithOwner | null> {
@@ -164,6 +158,27 @@ export class ProjectsRepository {
     });
   }
 
+  /**
+   * Idempotent: insert project_members for owner when missing.
+   * Used after ownership reassignment (create inserts inside its transaction).
+   */
+  async ensureOwnerIsMember(
+    projectId: string,
+    ownerId: string,
+    actorId: string
+  ): Promise<void> {
+    const existing = await prisma.project_members.findUnique({
+      where: {
+        project_id_user_id: { project_id: projectId, user_id: ownerId },
+      },
+      select: { user_id: true },
+    });
+    if (existing) {
+      return;
+    }
+    await this.addMember(projectId, ownerId, actorId);
+  }
+
   async removeMember(projectId: string, userId: string): Promise<void> {
     const { data: projectTeams, error: teamsError } = await this.db
       .from('teams')
@@ -196,26 +211,37 @@ export class ProjectsRepository {
   }
 
   async create(data: CreateProjectInput, actorId: string): Promise<ProjectRow> {
-    const created = await prisma.projects.create({
-      data: {
-        name: data.name,
-        key: data.key,
-        description: data.description,
-        status: data.status,
-        start_date: prismaOptionalDate(data.start_date) ?? null,
-        end_date: prismaOptionalDate(data.end_date) ?? null,
-        owner_id: data.owner_id,
-        jira_url: data.jira_url,
-        jira_email: data.jira_email,
-        jira_token: data.jira_token,
-        jira_project_key: data.jira_project_key,
-        github_repo: data.github_repo,
-        github_token: data.github_token,
-        logo_url: data.logo_url ?? null,
-        cover_picture: data.cover_picture ?? null,
-        deleted_at: null,
-        ...prismaAuditCreateWithoutStatus(actorId),
-      },
+    const created = await prisma.$transaction(async (tx) => {
+      const project = await tx.projects.create({
+        data: {
+          name: data.name,
+          key: data.key,
+          description: data.description,
+          status: data.status,
+          start_date: prismaOptionalDate(data.start_date) ?? null,
+          end_date: prismaOptionalDate(data.end_date) ?? null,
+          owner_id: data.owner_id,
+          jira_project_key: data.jira_project_key,
+          jira_connection_id: data.jira_connection_id,
+          github_repo: data.github_repo,
+          github_token: data.github_token,
+          logo_url: data.logo_url ?? null,
+          cover_picture: data.cover_picture ?? null,
+          deleted_at: null,
+          ...prismaAuditCreateWithoutStatus(actorId),
+        },
+      });
+
+      // Owner is always a project member so ACL and Members UI stay consistent.
+      await tx.project_members.create({
+        data: {
+          project_id: project.id,
+          user_id: data.owner_id,
+          ...prismaAuditCreate(actorId),
+        },
+      });
+
+      return project;
     });
 
     const row = await this.findById(created.id);
@@ -241,13 +267,13 @@ export class ProjectsRepository {
       fetchUpdated: async () => {
         const current = await this.findById(id);
         return current
-          ? (withoutJiraToken(current) as unknown as ProjectRow)
+          ? (withoutIntegrationSecrets(current) as unknown as ProjectRow)
           : null;
       },
       fetchCurrent: async () => {
         const current = await this.findById(id);
         return current
-          ? (withoutJiraToken(current) as unknown as ProjectRow)
+          ? (withoutIntegrationSecrets(current) as unknown as ProjectRow)
           : null;
       },
       notFoundMessage: 'Project not found',
@@ -256,45 +282,6 @@ export class ProjectsRepository {
 
   async delete(id: string): Promise<void> {
     await prisma.projects.deleteMany({ where: { id } });
-  }
-
-  async getJiraSettings(): Promise<{
-    jira_url: string;
-    jira_email: string;
-    jira_token: string;
-  } | null> {
-    const { data, error } = await this.db
-      .from('jira_settings')
-      .select('jira_url, jira_email, jira_token')
-      .limit(1)
-      .maybeSingle();
-
-    if (error) {
-      console.error('error. failed to fetch Jira settings:', error.message);
-      throw new Error('Failed to fetch Jira settings');
-    }
-    return data;
-  }
-
-  async saveJiraSettings(
-    url: string,
-    email: string,
-    token: string
-  ): Promise<void> {
-    await prisma.jira_settings.upsert({
-      where: { singleton: true },
-      create: {
-        singleton: true,
-        jira_url: url,
-        jira_email: email,
-        jira_token: token,
-      },
-      update: {
-        jira_url: url,
-        jira_email: email,
-        jira_token: token,
-      },
-    });
   }
 
   async linkImportedJiraParents(

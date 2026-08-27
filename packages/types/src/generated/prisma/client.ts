@@ -100,10 +100,10 @@ export type notifications = Prisma.notificationsModel
  */
 export type access_allowlist = Prisma.access_allowlistModel
 /**
- * Model jira_settings
+ * Model jira_connections
  * 
  */
-export type jira_settings = Prisma.jira_settingsModel
+export type jira_connections = Prisma.jira_connectionsModel
 /**
  * Model chat_conversations
  * 

@@ -1,15 +1,15 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { Button } from '@repo/ui/components/ui/button';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
-import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
-import { Loader2 } from '@repo/ui/lib/icons';
 import {
   GitHubLogo,
   JiraLogo,
 } from '@/app/projects/[id]/_components/integration-brand-logos';
+import { useJiraConnectionPicker } from '../_hooks/use-jira-connection-picker';
+import { GithubRepoFields } from './github-repo-fields';
+import { JiraConnectionFields } from './jira-connection-fields';
 
 function IntegrationProviderOption({
   id,
@@ -62,31 +62,36 @@ function IntegrationProviderOption({
 export interface Step2ImportsProps {
   importFromJira: boolean;
   handleJiraCheckboxChange: (_checked: boolean) => void;
-  jiraUrl: string;
-  setJiraUrl: (_url: string) => void;
+  jiraConnectionId: string;
+  setJiraConnectionId: (_id: string) => void;
   jiraProjectKey: string;
   setJiraProjectKey: (_key: string) => void;
-  handleTestConnection: () => Promise<void>;
-  isTestingJira: boolean;
-  jiraTestMessage: string | null;
-  jiraTestError: boolean;
-  previewIssues: Array<{ key: string; title: string; type: string }>;
 }
 /* eslint-enable no-unused-vars */
 
 export function Step2Imports({
   importFromJira,
   handleJiraCheckboxChange,
-  jiraUrl,
-  setJiraUrl,
+  jiraConnectionId,
+  setJiraConnectionId,
   jiraProjectKey,
   setJiraProjectKey,
-  handleTestConnection,
-  isTestingJira,
-  jiraTestMessage,
-  jiraTestError,
-  previewIssues,
 }: Readonly<Step2ImportsProps>) {
+  const {
+    connections,
+    jiraProjects,
+    isLoadingConnections,
+    isLoadingProjects,
+    isConnecting,
+    loadError,
+    handleConnectJira,
+  } = useJiraConnectionPicker(jiraConnectionId);
+
+  const handleConnectionChange = (id: string) => {
+    setJiraConnectionId(id);
+    setJiraProjectKey('');
+  };
+
   return (
     <div className="animate-in fade-in slide-in-from-left-2 space-y-4 duration-300">
       <div className="space-y-1">
@@ -97,6 +102,10 @@ export function Step2Imports({
         </p>
       </div>
 
+      {loadError ? (
+        <p className="text-destructive text-xs font-medium">{loadError}</p>
+      ) : null}
+
       <ul className="space-y-3">
         <li>
           <IntegrationProviderOption
@@ -105,93 +114,28 @@ export function Step2Imports({
             onCheckedChange={handleJiraCheckboxChange}
             logo={<JiraLogo />}
             title="Jira"
-            description="Import active issues and configure tracking from Atlassian Jira Cloud."
+            description="Import active issues from an Atlassian site you have connected via OAuth."
           >
-            <div className="border-border/60 bg-muted/30 flex flex-col justify-start space-y-4 rounded-lg border p-4">
-              <div className="space-y-2">
-                <Label htmlFor="jiraUrl" className="text-xs font-medium">
-                  Jira Cloud URL / Domain
-                </Label>
-                <Input
-                  id="jiraUrl"
-                  value={jiraUrl}
-                  onChange={(e) => setJiraUrl(e.target.value)}
-                  placeholder="e.g. company.atlassian.net"
-                  className="h-9 text-sm"
+            <div className="border-border/60 bg-muted/30 rounded-lg border p-4">
+              {isLoadingConnections ? (
+                <p className="text-muted-foreground text-xs">
+                  Loading Jira connections...
+                </p>
+              ) : (
+                <JiraConnectionFields
+                  connections={connections}
+                  jiraConnectionId={jiraConnectionId}
+                  setJiraConnectionId={handleConnectionChange}
+                  jiraProjects={jiraProjects}
+                  isLoadingProjects={isLoadingProjects}
+                  jiraProjectKey={jiraProjectKey}
+                  setJiraProjectKey={setJiraProjectKey}
+                  isConnecting={isConnecting}
+                  onConnect={handleConnectJira}
+                  emptyHint="Authorize Atlassian once, then pick a Jira project to link on create."
+                  footerHint="Issues import after the Alice project is created when this step is enabled."
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="jiraProjectKey" className="text-xs font-medium">
-                  Jira Project Key
-                </Label>
-                <Input
-                  id="jiraProjectKey"
-                  value={jiraProjectKey}
-                  onChange={(e) => setJiraProjectKey(e.target.value)}
-                  placeholder="e.g. PROJ"
-                  className="h-9 text-sm uppercase"
-                />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleTestConnection}
-                  disabled={isTestingJira}
-                  className="w-full self-start sm:w-auto"
-                >
-                  {isTestingJira ? (
-                    <>
-                      <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                      Testing Connection...
-                    </>
-                  ) : (
-                    'Test Connection & Preview'
-                  )}
-                </Button>
-
-                {jiraTestMessage ? (
-                  <p
-                    className={`text-xs font-medium ${jiraTestError ? 'text-red-500' : 'text-green-600'}`}
-                  >
-                    {jiraTestMessage}
-                  </p>
-                ) : null}
-              </div>
-
-              {previewIssues.length > 0 ? (
-                <div className="mt-2 flex min-h-0 flex-1 flex-col space-y-1">
-                  <Label className="text-muted-foreground text-xs font-semibold">
-                    Tasks Preview (to be imported):
-                  </Label>
-                  <div className="border-border/40 bg-background/50 divide-border/20 max-h-48 flex-1 divide-y overflow-y-auto rounded border p-2 text-xs">
-                    {previewIssues.slice(0, 10).map((issue) => (
-                      <div
-                        key={issue.key}
-                        className="flex justify-between gap-4 py-1.5"
-                      >
-                        <span className="text-muted-foreground shrink-0 font-mono">
-                          {issue.key}
-                        </span>
-                        <span className="flex-1 truncate font-medium">
-                          {issue.title}
-                        </span>
-                        <span className="text-muted-foreground bg-secondary/80 shrink-0 rounded px-1">
-                          {issue.type}
-                        </span>
-                      </div>
-                    ))}
-                    {previewIssues.length > 10 ? (
-                      <div className="text-muted-foreground py-1 text-center">
-                        ... and {previewIssues.length - 10} more tasks.
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              ) : null}
+              )}
             </div>
           </IntegrationProviderOption>
         </li>
@@ -243,54 +187,15 @@ export function Step3SourceControl({
             title="GitHub"
             description="Link pull requests, view commits, and track branches inside your tasks."
           >
-            <div className="border-border/60 bg-muted/30 flex flex-col justify-start space-y-4 rounded-lg border p-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="githubOwner"
-                    className="text-xs font-semibold"
-                  >
-                    GitHub Owner / Organization
-                  </Label>
-                  <Input
-                    id="githubOwner"
-                    value={githubOwner}
-                    onChange={(e) => setGithubOwner(e.target.value)}
-                    placeholder="e.g. facebook"
-                    className="bg-background/50 h-9 text-sm"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="githubRepoName"
-                    className="text-xs font-semibold"
-                  >
-                    GitHub Repository Name
-                  </Label>
-                  <Input
-                    id="githubRepoName"
-                    value={githubRepoName}
-                    onChange={(e) => setGithubRepoName(e.target.value)}
-                    placeholder="e.g. react"
-                    className="bg-background/50 h-9 text-sm"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="githubToken" className="text-xs font-semibold">
-                  Personal Access Token (optional)
-                </Label>
-                <Input
-                  id="githubToken"
-                  type="text"
-                  value={githubToken}
-                  onChange={(e) => setGithubToken(e.target.value)}
-                  placeholder="e.g. ghp_xxxxxxxxxxxx"
-                  className="bg-background/50 custom-secret-text h-9 text-sm"
-                />
-              </div>
+            <div className="border-border/60 bg-muted/30 rounded-lg border p-4">
+              <GithubRepoFields
+                githubOwner={githubOwner}
+                setGithubOwner={setGithubOwner}
+                githubRepoName={githubRepoName}
+                setGithubRepoName={setGithubRepoName}
+                githubToken={githubToken}
+                setGithubToken={setGithubToken}
+              />
             </div>
           </IntegrationProviderOption>
         </li>

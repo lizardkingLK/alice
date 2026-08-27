@@ -57,19 +57,18 @@ import {
   RegistryRowActions,
   registryActionsHeader,
 } from '@/components/registry-row-actions';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@repo/ui/components/ui/select';
+import { RegistryTabSwitcher } from '@/components/registry-tab-switcher';
 import type { Project } from '../_services/projects.service';
 import type { User } from '@/app/users/_services/users.service';
 import { cn } from '@repo/ui/lib/utils';
 import { formatMonthYear } from '@/app/_shared/utility';
 
 type ProjectTab = 'active' | 'archived';
+
+const PROJECT_STATUS_TABS = [
+  { id: 'active' as const, label: 'Active' },
+  { id: 'archived' as const, label: 'Archived' },
+] as const;
 
 interface ProjectRegistryProps {
   readonly projects: Project[];
@@ -395,23 +394,12 @@ export function ProjectRegistry({
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <Select
+        <div className="flex flex-wrap items-center gap-3 self-start">
+          <RegistryTabSwitcher
+            tabs={PROJECT_STATUS_TABS}
             value={tab}
-            onValueChange={(val) => handleTabChange(val as ProjectTab)}
-          >
-            <SelectTrigger
-              id="project-status-filter"
-              aria-label="Filter by Status"
-              className="bg-background/50 h-10 w-40"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active">Active Projects</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
-            </SelectContent>
-          </Select>
+            onChange={handleTabChange}
+          />
 
           {isAdmin ? (
             <Button
@@ -419,7 +407,7 @@ export function ProjectRegistry({
                 setProjectToEdit(null);
                 setIsAddProjectOpen(true);
               }}
-              className="flex h-10 w-32 shrink-0 items-center justify-center px-6 text-xs font-semibold shadow-md duration-300 hover:shadow-lg"
+              className="flex h-10 shrink-0 items-center justify-center px-6 text-xs font-semibold shadow-md duration-300 hover:shadow-lg"
             >
               <Plus className="mr-1.5 h-4 w-4 shrink-0" />
               Add Project

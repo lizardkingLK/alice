@@ -1,6 +1,7 @@
 import { requireUserWithRole } from '../../../lib/auth-helpers';
 import { ProjectStatusEnum, UserRoleEnum } from '@repo/types';
 import { uploadPublicImageReplacingPrevious } from '../../../lib/public-image-upload';
+import { encryptSecretIfPresent } from '../../../lib/secrets/token-crypto';
 import type { ProjectsRepository } from './projects.repository';
 import type {
   CreateProjectInput,
@@ -26,6 +27,35 @@ async function requireAdmin(actorId: string) {
     [UserRoleEnum.admin],
     'Unauthorized. Only administrators can create or permanently delete projects.'
   );
+}
+
+/**
+ * Write-only GitHub PAT semantics:
+ * - create: encrypt non-empty; null clears
+ * - update: omit / empty string → leave unchanged; null → clear; non-empty → encrypt
+ */
+function prepareGithubTokenForPersist(
+  input: CreateProjectInput | UpdateProjectInput,
+  mode: 'create' | 'update'
+): CreateProjectInput | UpdateProjectInput {
+  if (!('github_token' in input) || input.github_token === undefined) {
+    return input;
+  }
+
+  if (mode === 'update' && input.github_token === '') {
+    const rest = { ...input };
+    delete rest.github_token;
+    return rest;
+  }
+
+  if (input.github_token === null || input.github_token === '') {
+    return { ...input, github_token: null };
+  }
+
+  return {
+    ...input,
+    github_token: encryptSecretIfPresent(input.github_token) ?? null,
+  };
 }
 
 type ProjectImageField = 'logo_url' | 'cover_picture';
@@ -74,6 +104,16 @@ export class ProjectsService {
   ): Promise<void> {
     await requireProjectManager(actorId);
 
+    const project = await this.projectsRepository.findById(projectId);
+    if (!project) {
+      throw new Error('Project not found');
+    }
+    if (project.owner_id === userId) {
+      throw new Error(
+        'Cannot remove the project owner from members. Change the project owner first.'
+      );
+    }
+
     await this.projectsRepository.removeMember(projectId, userId);
   }
 
@@ -88,7 +128,12 @@ export class ProjectsService {
       throw new Error(`A project with the key "${input.key}" already exists.`);
     }
 
-    return await this.projectsRepository.create(input, actorId);
+    const prepared = prepareGithubTokenForPersist(
+      input,
+      'create'
+    ) as CreateProjectInput;
+
+    return await this.projectsRepository.create(prepared, actorId);
   }
 
   async updateProject(
@@ -111,12 +156,37 @@ export class ProjectsService {
       }
     }
 
-    return await this.projectsRepository.update(
-      projectId,
+    const prepared = prepareGithubTokenForPersist(
       input,
+      'update'
+    ) as UpdateProjectInput;
+
+    const previous =
+      prepared.owner_id !== undefined
+        ? await this.projectsRepository.findById(projectId)
+        : null;
+
+    const updated = await this.projectsRepository.update(
+      projectId,
+      prepared,
       actorId,
       expectedUpdatedAt
     );
+
+    // Keep membership in sync when ownership is reassigned.
+    if (
+      prepared.owner_id &&
+      previous &&
+      prepared.owner_id !== previous.owner_id
+    ) {
+      await this.projectsRepository.ensureOwnerIsMember(
+        projectId,
+        prepared.owner_id,
+        actorId
+      );
+    }
+
+    return updated;
   }
 
   async softDeleteProject(
@@ -159,21 +229,6 @@ export class ProjectsService {
     await requireAdmin(actorId);
 
     await this.projectsRepository.delete(projectId);
-  }
-
-  async getJiraSettings(actorId: string) {
-    await requireProjectManager(actorId);
-    return await this.projectsRepository.getJiraSettings();
-  }
-
-  async saveJiraSettings(
-    actorId: string,
-    url: string,
-    email: string,
-    token: string
-  ) {
-    await requireProjectManager(actorId);
-    await this.projectsRepository.saveJiraSettings(url, email, token);
   }
 
   async linkImportedJiraParents(

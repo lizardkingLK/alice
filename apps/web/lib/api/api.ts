@@ -126,7 +126,10 @@ function isNetworkConnectivityError(error: unknown): boolean {
 const FETCH_TIMEOUT_MS = 20_000;
 
 export type GetResponseInit = RequestInit & {
-  /** Overrides the default 20s abort. Chat needs longer for Gemini tool loops. */
+  /**
+   * Overrides the default 20s abort. Long-running calls (chat Gemini tool
+   * loops, Jira import) pass a higher `timeoutMs`.
+   */
   timeoutMs?: number;
 };
 
