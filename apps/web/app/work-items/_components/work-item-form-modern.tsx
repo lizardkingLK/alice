@@ -47,9 +47,41 @@ import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge
 import { WORK_ITEM_TYPE_ICONS } from '@/app/work-items/_helpers/work-item-type';
 import { MODERN_BORDERLESS_FOCUS_CLASSES } from '@/lib/editor/compact-editor-attrs';
 
-export type WorkItemFormModernFieldsProps = WorkItemFormSharedFieldProps;
+export type WorkItemFormModernFieldsProps = WorkItemFormSharedFieldProps & {
+  readonly titleDefault?: string;
+  readonly dueDateDefault?: string;
+  readonly storyPointsDefault?: number | null;
+  readonly labelsDefault?: readonly string[];
+  readonly descriptionDefault?: unknown;
+};
 
 type OptionalField = 'priority' | 'due_date' | 'story_points' | 'labels';
+
+function toDateInputValue(value: string): string {
+  return value.split('T')[0] ?? '';
+}
+
+function initialOptionalFields(options: {
+  readonly dueDateDefault: string;
+  readonly storyPointsDefault: number | null;
+  readonly labelsDefault: readonly string[];
+  readonly hasExplicitPriority: boolean;
+}): Set<OptionalField> {
+  const fields = new Set<OptionalField>();
+  if (options.hasExplicitPriority) {
+    fields.add('priority');
+  }
+  if (toDateInputValue(options.dueDateDefault)) {
+    fields.add('due_date');
+  }
+  if (options.storyPointsDefault != null) {
+    fields.add('story_points');
+  }
+  if (options.labelsDefault.length > 0) {
+    fields.add('labels');
+  }
+  return fields;
+}
 
 const OPTIONAL_FIELD_OPTIONS: ReadonlyArray<{
   readonly id: OptionalField;
@@ -156,12 +188,25 @@ export function WorkItemFormModernFields({
   onTypeChange,
   onPriorityChange,
   onParentIdChange,
+  titleDefault = '',
+  dueDateDefault = '',
+  storyPointsDefault = null,
+  labelsDefault = [],
+  descriptionDefault = null,
 }: Readonly<WorkItemFormModernFieldsProps>) {
+  const dueDateValue = toDateInputValue(dueDateDefault);
   const [descriptionJson, setDescriptionJson] = useState<string | null>(null);
-  const [labels, setLabels] = useState<string[]>([]);
+  const [labels, setLabels] = useState<string[]>(() => [...labelsDefault]);
   const [optionalFields, setOptionalFields] = useState<
     ReadonlySet<OptionalField>
-  >(() => new Set());
+  >(() =>
+    initialOptionalFields({
+      dueDateDefault,
+      storyPointsDefault,
+      labelsDefault,
+      hasExplicitPriority: Boolean(titleDefault),
+    })
+  );
   const showParentPicker = resolveShowParentPicker(lockParent, parentTypeLabel);
 
   const handleDescriptionChange = useCallback((json: string | null) => {
@@ -225,13 +270,17 @@ export function WorkItemFormModernFields({
           name="title"
           placeholder="Title"
           aria-label="Title"
+          defaultValue={titleDefault}
           className={cn(
             'placeholder:text-muted-foreground/70 h-auto rounded-md bg-transparent! pr-10 pl-3 text-2xl! font-semibold',
             MODERN_BORDERLESS_FOCUS_CLASSES
           )}
         />
 
-        <WorkItemFormModernDescription onJsonChange={handleDescriptionChange} />
+        <WorkItemFormModernDescription
+          initialContent={descriptionDefault}
+          onJsonChange={handleDescriptionChange}
+        />
         {descriptionJson ? (
           <input type="hidden" name="description" value={descriptionJson} />
         ) : null}
@@ -332,6 +381,8 @@ export function WorkItemFormModernFields({
             priority={priority}
             onPriorityChange={onPriorityChange}
             onAddOptionalField={addOptionalField}
+            dueDateDefault={dueDateValue}
+            storyPointsDefault={storyPointsDefault}
           />
         </div>
 
@@ -357,6 +408,8 @@ type ModernOptionalFieldPillsProps = {
   readonly onPriorityChange: (value: WorkItemPriority) => void;
   // eslint-disable-next-line no-unused-vars -- controlled setter
   readonly onAddOptionalField: (field: OptionalField) => void;
+  readonly dueDateDefault: string;
+  readonly storyPointsDefault: number | null;
 };
 
 function ModernOptionalFieldPills({
@@ -365,6 +418,8 @@ function ModernOptionalFieldPills({
   priority,
   onPriorityChange,
   onAddOptionalField,
+  dueDateDefault,
+  storyPointsDefault,
 }: Readonly<ModernOptionalFieldPillsProps>) {
   return (
     <>
@@ -395,6 +450,7 @@ function ModernOptionalFieldPills({
               name="due_date"
               type="date"
               aria-label="Due date"
+              defaultValue={dueDateDefault}
               className={cn(pillTriggerClassName(false), 'w-38 pr-2 pl-8')}
             />
           </div>
@@ -413,6 +469,9 @@ function ModernOptionalFieldPills({
               step="1"
               placeholder="Points"
               aria-label="Story points"
+              defaultValue={
+                storyPointsDefault == null ? undefined : storyPointsDefault
+              }
               className={cn(pillTriggerClassName(false), 'w-26 pr-2 pl-8')}
             />
           </div>

@@ -24,7 +24,7 @@ async function requireAdmin(actorId: string) {
   return await requireUserWithRole(
     actorId,
     [UserRoleEnum.admin],
-    'Unauthorized. Only administrators can permanently delete projects.'
+    'Unauthorized. Only administrators can create or permanently delete projects.'
   );
 }
 
@@ -81,7 +81,7 @@ export class ProjectsService {
     actorId: string,
     input: CreateProjectInput
   ): Promise<ProjectRow> {
-    await requireProjectManager(actorId);
+    await requireAdmin(actorId);
 
     const duplicate = await this.projectsRepository.findByKey(input.key);
     if (duplicate) {

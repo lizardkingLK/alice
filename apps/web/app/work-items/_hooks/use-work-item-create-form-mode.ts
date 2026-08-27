@@ -8,7 +8,8 @@ import {
 } from '@/app/work-items/_helpers/work-item-create-form-preference';
 
 /**
- * Live create-form layout preference (classic | modern) from localStorage.
+ * Live form layout preference (classic | modern) from localStorage.
+ * Used for work-item create and edit surfaces.
  */
 export function useWorkItemCreateFormMode(): WorkItemCreateFormMode {
   const [mode, setMode] = useState<WorkItemCreateFormMode>('classic');

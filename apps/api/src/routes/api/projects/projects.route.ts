@@ -356,7 +356,8 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Failed to create project';
-        res.status(500).json({ error: message });
+        const status = message.startsWith('Unauthorized') ? 403 : 500;
+        res.status(status).json({ error: message });
       }
     }
   );
