@@ -12,20 +12,21 @@ import {
 import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
 import { ProfileService, updateOwnProfileSchema } from './profile.service';
 
+const upload: Multer = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: MAX_PUBLIC_IMAGE_BYTES,
+  },
+});
+
 export type ProfileRouterDeps = {
   profileService: ProfileService;
 };
 
 export function createProfileRouter(deps: ProfileRouterDeps) {
   const { profileService } = deps;
-  const profileRouter: Router = Router();
 
-  const upload: Multer = multer({
-    storage: multer.memoryStorage(),
-    limits: {
-      fileSize: MAX_PUBLIC_IMAGE_BYTES,
-    },
-  });
+  const profileRouter: Router = Router();
 
   /**
    * Self-service cover photo upload for the signed-in user.

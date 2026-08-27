@@ -46,6 +46,7 @@ import { TeamsRepository } from '../routes/api/teams/teams.repository';
 import { TeamsService } from '../routes/api/teams/teams.service';
 import { createTeamsRouter } from '../routes/api/teams/teams.route';
 import { ProfileService } from '../routes/api/profile/profile.service';
+import { ProfileRepository } from '../routes/api/profile/profile.repository';
 import { createProfileRouter } from '../routes/api/profile/profile.route';
 import { SavedViewsRepository } from '../routes/api/savedViews/savedViews.repository';
 import { SavedViewsService } from '../routes/api/savedViews/savedViews.service';
@@ -198,10 +199,12 @@ function createTeamsConfig() {
 }
 
 function createProfileConfig() {
-  const profileService = new ProfileService(supabase);
+  const profileRepository = new ProfileRepository(supabase);
+  const profileService = new ProfileService(profileRepository);
   const router = createProfileRouter({ profileService });
 
   return {
+    profileRepository,
     profileService,
     router,
   };
