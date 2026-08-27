@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { selectSingleMock, upsertMock, findByIdForUserMock, updateTokensMock } =
@@ -30,6 +31,18 @@ vi.mock('../../src/lib/prisma', () => ({
 import { encryptSecret } from '../../src/lib/secrets/token-crypto';
 import { JiraService } from '../../src/routes/api/jira/jira.service';
 import type { JiraRepository } from '../../src/routes/api/jira/jira.repository';
+
+/** Matches `INTEGRATION_TOKEN_ENCRYPTION_KEY` in CI (`env.ts` GITHUB_ACTIONS defaults). */
+const TEST_OAUTH_HMAC_KEY = Buffer.alloc(32, 1);
+
+function signOAuthStateForTest(payload: Record<string, unknown>): string {
+  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const sig = createHmac('sha256', TEST_OAUTH_HMAC_KEY)
+    .update(body)
+    .digest()
+    .toString('base64url');
+  return `${body}.${sig}`;
+}
 
 describe('JiraService', () => {
   const repository = {
@@ -126,6 +139,21 @@ describe('JiraService', () => {
       })
     );
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('throws TypeError when OAuth state payload field types are invalid', async () => {
+    const state = signOAuthStateForTest({
+      userId: 123,
+      nonce: 'nonce-1',
+      exp: Date.now() + 60_000,
+    });
+
+    await expect(service.handleOAuthCallback('auth-code', state)).rejects.toThrow(
+      TypeError
+    );
+    await expect(service.handleOAuthCallback('auth-code', state)).rejects.toThrow(
+      'Invalid OAuth state payload.'
+    );
   });
 
   it('fetches issues for import with a Bearer token', async () => {
