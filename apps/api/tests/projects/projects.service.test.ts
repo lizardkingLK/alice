@@ -117,18 +117,32 @@ describe('ProjectsService backend tests', () => {
   }
 
   describe('createProject', () => {
-    it('creates project successfully as manager/admin', async () => {
-      mockActorRole('manager');
+    it('creates project successfully as administrator', async () => {
+      mockActorRole('admin');
       findByKeyMock.mockResolvedValue(null);
       createMock.mockResolvedValue(mockProject);
 
       const input = createProjectInput();
 
-      const result = await service.createProject('user-manager', input);
+      const result = await service.createProject('user-admin', input);
 
       expect(findByKeyMock).toHaveBeenCalledWith('ALICE');
-      expect(createMock).toHaveBeenCalledWith(input, 'user-manager');
+      expect(createMock).toHaveBeenCalledWith(input, 'user-admin');
       expect(result).toEqual(mockProject);
+    });
+
+    it('rejects creation for managers', async () => {
+      mockActorRole('manager');
+
+      const input = createProjectInput();
+
+      await expect(
+        service.createProject('user-manager', input)
+      ).rejects.toThrow(
+        'Unauthorized. Only administrators can create or permanently delete projects.'
+      );
+
+      expect(createMock).not.toHaveBeenCalled();
     });
 
     it('rejects creation for standard members', async () => {
@@ -137,21 +151,21 @@ describe('ProjectsService backend tests', () => {
       const input = createProjectInput();
 
       await expect(service.createProject('user-member', input)).rejects.toThrow(
-        'Unauthorized. Only admins and managers can manage projects.'
+        'Unauthorized. Only administrators can create or permanently delete projects.'
       );
 
       expect(createMock).not.toHaveBeenCalled();
     });
 
     it('validates key uniqueness on creation', async () => {
-      mockActorRole('manager');
+      mockActorRole('admin');
       findByKeyMock.mockResolvedValue(mockProject); // Duplicate exists
 
       const input = createProjectInput();
 
-      await expect(
-        service.createProject('user-manager', input)
-      ).rejects.toThrow('A project with the key "ALICE" already exists.');
+      await expect(service.createProject('user-admin', input)).rejects.toThrow(
+        'A project with the key "ALICE" already exists.'
+      );
 
       expect(createMock).not.toHaveBeenCalled();
     });
@@ -325,7 +339,7 @@ describe('ProjectsService backend tests', () => {
       await expect(
         service.hardDeleteProject('user-manager', 'project-1')
       ).rejects.toThrow(
-        'Unauthorized. Only administrators can permanently delete projects.'
+        'Unauthorized. Only administrators can create or permanently delete projects.'
       );
 
       expect(deleteMock).not.toHaveBeenCalled();

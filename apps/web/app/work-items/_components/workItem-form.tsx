@@ -61,7 +61,7 @@ export interface WorkItemFormProps {
   /** Optional sprint for create (e.g. board sprint filter). */
   defaultSprintId?: string | null;
   /**
-   * Create layout preference. Edit mode always uses classic.
+   * Form layout preference (classic | modern). Applies to create and edit.
    * Defaults to classic when omitted.
    */
   createFormMode?: WorkItemCreateFormMode;
@@ -135,7 +135,7 @@ export function WorkItemForm({
     allowedTypes && allowedTypes.length > 0 ? allowedTypes : taskTypes;
   const typeLocked = lockType || availableTypes.length === 1;
   const isEditMode = itemToEdit !== null;
-  const useModernCreate = !isEditMode && createFormMode === 'modern';
+  const useModernLayout = createFormMode === 'modern';
   const parentLocked = lockParent;
   const initialParentId = lockParent
     ? (lockedParentId ?? '')
@@ -230,14 +230,14 @@ export function WorkItemForm({
   }, [allowedParentType, itemToEdit?.id, parentLocked, projectId, type]);
 
   useEffect(() => {
-    if (!useModernCreate || !state?.error) {
+    if (!useModernLayout || !state?.error) {
       return;
     }
     const timer = globalThis.setTimeout(() => {
       setState((current) => (current ? { ...current, error: null } : current));
     }, ALERT_DISMISS_MS);
     return () => globalThis.clearTimeout(timer);
-  }, [useModernCreate, state?.error]);
+  }, [useModernLayout, state?.error]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -317,8 +317,15 @@ export function WorkItemForm({
         <input type="hidden" name="sprint_id" value={defaultSprintId} />
       ) : null}
 
-      {useModernCreate ? (
-        <WorkItemFormModernFields {...fieldProps} />
+      {useModernLayout ? (
+        <WorkItemFormModernFields
+          {...fieldProps}
+          titleDefault={itemToEdit?.title ?? ''}
+          dueDateDefault={itemToEdit?.due_date ?? ''}
+          storyPointsDefault={itemToEdit?.story_points ?? null}
+          labelsDefault={parseWorkItemLabels(itemToEdit?.labels)}
+          descriptionDefault={itemToEdit?.description ?? null}
+        />
       ) : (
         <WorkItemFormClassicFields
           {...fieldProps}
@@ -346,7 +353,7 @@ export function WorkItemForm({
           <SubmitButtonText
             isPending={isPending}
             isEditMode={isEditMode}
-            modernCreate={useModernCreate}
+            modernCreate={useModernLayout}
           />
         </Button>
       </DialogFooter>

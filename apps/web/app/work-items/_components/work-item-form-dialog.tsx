@@ -26,6 +26,21 @@ type WorkItemFormDialogProps = WorkItemFormProps & {
   descriptionClassName?: string;
 };
 
+/**
+ * Keeps the last non-null edit item while the dialog is open so parents can
+ * clear `itemToEdit` on close without flashing create (modern) layout mid-exit.
+ */
+function useStableItemToEdit(
+  open: boolean,
+  itemToEdit: WorkItemFormProps['itemToEdit']
+) {
+  const itemRef = useRef(itemToEdit ?? null);
+  if (open || itemToEdit != null) {
+    itemRef.current = itemToEdit ?? null;
+  }
+  return itemRef.current;
+}
+
 export function WorkItemFormDialog({
   open,
   onOpenChange,
@@ -43,6 +58,7 @@ export function WorkItemFormDialog({
     () => createFormModeProp ?? preferredMode
   );
   const wasOpenRef = useRef(open);
+  const stableItemToEdit = useStableItemToEdit(open, itemToEdit);
 
   useEffect(() => {
     if (open && !wasOpenRef.current) {
@@ -52,19 +68,19 @@ export function WorkItemFormDialog({
   }, [open, createFormModeProp, preferredMode]);
 
   const createFormMode = createFormModeProp ?? sessionMode;
-  const useModernCreate = itemToEdit == null && createFormMode === 'modern';
+  const useModernLayout = createFormMode === 'modern';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          useModernCreate ? 'sm:max-w-4xl' : 'sm:max-w-xl',
-          contentClassName
+          contentClassName,
+          useModernLayout ? 'sm:max-w-4xl' : 'sm:max-w-xl'
         )}
         onPointerDownOutside={(event) => event.preventDefault()}
         onInteractOutside={(event) => event.preventDefault()}
       >
-        <DialogHeader className={useModernCreate ? 'sr-only' : undefined}>
+        <DialogHeader className={useModernLayout ? 'sr-only' : undefined}>
           <DialogTitle className={titleClassName}>{title}</DialogTitle>
           <DialogDescription className={descriptionClassName}>
             {description}
@@ -72,7 +88,7 @@ export function WorkItemFormDialog({
         </DialogHeader>
         <WorkItemForm
           {...formProps}
-          itemToEdit={itemToEdit}
+          itemToEdit={stableItemToEdit}
           createFormMode={createFormMode}
         />
       </DialogContent>

@@ -19,6 +19,7 @@ import type { Project } from '@/app/projects/_services/projects.service';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
 import type { User } from '@/app/users/_services/users.service';
 import { WorkItemForm } from '@/app/work-items/_components/workItem-form';
+import { useWorkItemCreateFormMode } from '@/app/work-items/_hooks/use-work-item-create-form-mode';
 import { Pagination } from '@/components/pagination';
 import { QUERY_FILTER_ALL_VALUE } from '@/hooks/use-query-filter';
 import { CalendarDayItem } from '@/app/calendar/_components/calendar-day-item';
@@ -49,6 +50,7 @@ export function CalendarDaySheet({
   onOpenItem,
   onCreated,
 }: Readonly<CalendarDaySheetProps>) {
+  const createFormMode = useWorkItemCreateFormMode();
   const [activeTab, setActiveTab] = useState('due');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
@@ -149,6 +151,7 @@ export function CalendarDaySheet({
                 <WorkItemForm
                   projects={scopedProjects}
                   projectMembers={users}
+                  createFormMode={createFormMode}
                   defaultSprintId={
                     sprintValue && sprintValue !== QUERY_FILTER_ALL_VALUE
                       ? sprintValue

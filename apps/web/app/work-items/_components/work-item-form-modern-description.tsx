@@ -12,14 +12,16 @@ import { CompactEditorBubbleToolbar } from '@/lib/editor/compact-editor-bubble-t
 type WorkItemFormModernDescriptionProps = {
   // eslint-disable-next-line no-unused-vars -- callback for FormData sync
   readonly onJsonChange: (json: string | null) => void;
+  readonly initialContent?: unknown;
 };
 
 /**
- * Compact TipTap description for modern create. Toolbar floats only when text
- * is selected (BubbleMenu).
+ * Compact TipTap description for modern create/edit. Toolbar floats only when
+ * text is selected (BubbleMenu).
  */
 export function WorkItemFormModernDescription({
   onJsonChange,
+  initialContent = null,
 }: Readonly<WorkItemFormModernDescriptionProps>) {
   const editor = useEditor({
     immediatelyRender: false,
@@ -27,7 +29,7 @@ export function WorkItemFormModernDescription({
       mode: 'compact',
       placeholder: 'Add a description…',
     }),
-    content: '',
+    content: initialContent ?? '',
     editorProps: {
       attributes: getCompactEditorAttributes({
         ariaLabel: 'Description',

@@ -312,9 +312,7 @@ describe('ProjectForm Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
 
     // Toggle Checkbox
-    const checkbox = screen.getByLabelText(
-      /Enable Jira Integration & Task Import/i
-    );
+    const checkbox = screen.getByRole('checkbox', { name: /^Jira$/i });
     fireEvent.click(checkbox);
 
     // Verify Jira input fields are rendered
@@ -375,9 +373,7 @@ describe('ProjectForm Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
 
     // Toggle Jira checkbox
-    fireEvent.click(
-      screen.getByLabelText(/Enable Jira Integration & Task Import/i)
-    );
+    fireEvent.click(screen.getByRole('checkbox', { name: /^Jira$/i }));
 
     // Fill integration details
     fireEvent.change(screen.getByLabelText(/Jira Cloud URL \/ Domain/i), {
@@ -432,7 +428,7 @@ describe('ProjectForm Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
 
     // Toggle GitHub integration checkbox
-    fireEvent.click(screen.getByLabelText(/Enable GitHub Integration/i));
+    fireEvent.click(screen.getByRole('checkbox', { name: /^GitHub$/i }));
 
     // Fill in split owner and repo inputs
     fireEvent.change(screen.getByLabelText(/GitHub Owner \/ Organization/i), {
