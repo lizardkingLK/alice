@@ -22,6 +22,7 @@ import {
   WorkItemUpdateBody,
 } from './workItems.schemas';
 import { WorkItemValidationError } from './workItems.errors';
+import { decryptSecretIfPresent } from '../../../lib/secrets/token-crypto';
 
 async function requireAdmin(actorId: string) {
   return await requireUserWithRole(
@@ -29,6 +30,18 @@ async function requireAdmin(actorId: string) {
     [UserRoleEnum.admin],
     'Unauthorized. Only administrators can permanently delete work items.'
   );
+}
+
+function githubApiHeaders(encryptedOrPlainToken: string | null | undefined) {
+  const headers: Record<string, string> = {
+    'User-Agent': 'Alice-App',
+    Accept: 'application/vnd.github.v3+json',
+  };
+  const token = decryptSecretIfPresent(encryptedOrPlainToken);
+  if (token) {
+    headers.Authorization = `token ${token}`;
+  }
+  return headers;
 }
 
 interface GithubPRApiResponse {
@@ -556,13 +569,7 @@ export class WorkItemService {
     const settings =
       await this.workItems.getProjectGithubSettingsByWorkItem(workItemId);
 
-    const headers: Record<string, string> = {
-      'User-Agent': 'Alice-App',
-      Accept: 'application/vnd.github.v3+json',
-    };
-    if (settings?.github_token) {
-      headers['Authorization'] = `token ${settings.github_token}`;
-    }
+    const headers = githubApiHeaders(settings?.github_token);
 
     const result = [];
     for (const pr of prs) {
@@ -661,13 +668,7 @@ export class WorkItemService {
     let status = 'open';
 
     try {
-      const headers: Record<string, string> = {
-        'User-Agent': 'Alice-App',
-        Accept: 'application/vnd.github.v3+json',
-      };
-      if (settings.github_token) {
-        headers['Authorization'] = `token ${settings.github_token}`;
-      }
+      const headers = githubApiHeaders(settings.github_token);
 
       const res = await fetch(
         `https://api.github.com/repos/${configOwner}/${configRepo}/pulls/${prNumber}`,

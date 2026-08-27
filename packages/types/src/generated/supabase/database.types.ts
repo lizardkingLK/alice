@@ -333,35 +333,58 @@ export type Database = {
           },
         ]
       }
-      jira_settings: {
+      jira_connections: {
         Row: {
-          created_at: string
           id: string
-          jira_email: string
-          jira_token: string
-          jira_url: string
-          singleton: boolean
+          user_id: string
+          cloud_id: string
+          site_url: string
+          account_email: string | null
+          refresh_token_enc: string
+          access_token_enc: string | null
+          access_token_expires_at: string | null
+          scopes: string
+          status: Database["public"]["Enums"]["JiraConnectionStatus"]
+          created_at: string
           updated_at: string
         }
         Insert: {
-          created_at?: string
           id?: string
-          jira_email: string
-          jira_token: string
-          jira_url: string
-          singleton?: boolean
-          updated_at: string
-        }
-        Update: {
+          user_id: string
+          cloud_id: string
+          site_url: string
+          account_email?: string | null
+          refresh_token_enc: string
+          access_token_enc?: string | null
+          access_token_expires_at?: string | null
+          scopes: string
+          status?: Database["public"]["Enums"]["JiraConnectionStatus"]
           created_at?: string
-          id?: string
-          jira_email?: string
-          jira_token?: string
-          jira_url?: string
-          singleton?: boolean
           updated_at?: string
         }
-        Relationships: []
+        Update: {
+          id?: string
+          user_id?: string
+          cloud_id?: string
+          site_url?: string
+          account_email?: string | null
+          refresh_token_enc?: string
+          access_token_enc?: string | null
+          access_token_expires_at?: string | null
+          scopes?: string
+          status?: Database["public"]["Enums"]["JiraConnectionStatus"]
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jira_connections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
@@ -497,10 +520,8 @@ export type Database = {
           github_repo: string | null
           github_token: string | null
           id: string
-          jira_email: string | null
+          jira_connection_id: string | null
           jira_project_key: string | null
-          jira_token: string | null
-          jira_url: string | null
           key: string
           logo_url: string | null
           cover_picture: string | null
@@ -522,10 +543,8 @@ export type Database = {
           github_repo?: string | null
           github_token?: string | null
           id?: string
-          jira_email?: string | null
+          jira_connection_id?: string | null
           jira_project_key?: string | null
-          jira_token?: string | null
-          jira_url?: string | null
           key: string
           logo_url?: string | null
           cover_picture?: string | null
@@ -547,10 +566,8 @@ export type Database = {
           github_repo?: string | null
           github_token?: string | null
           id?: string
-          jira_email?: string | null
+          jira_connection_id?: string | null
           jira_project_key?: string | null
-          jira_token?: string | null
-          jira_url?: string | null
           key?: string
           logo_url?: string | null
           cover_picture?: string | null
@@ -568,6 +585,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_jira_connection_id_fkey"
+            columns: ["jira_connection_id"]
+            isOneToOne: false
+            referencedRelation: "jira_connections"
             referencedColumns: ["id"]
           },
           {
@@ -1227,6 +1251,7 @@ export type Database = {
         | "sprint"
         | "due_date"
         | "view_shared"
+      JiraConnectionStatus: "active" | "revoked" | "expired"
       ProjectStatus: "active" | "archived"
       RecordStatus: "active" | "inactive" | "archived" | "deleted"
       SprintStatus: "planned" | "active" | "closed" | "archived"
@@ -1378,6 +1403,7 @@ export const Constants = {
         "due_date",
         "view_shared",
       ],
+      JiraConnectionStatus: ["active", "revoked", "expired"],
       ProjectStatus: ["active", "archived"],
       RecordStatus: ["active", "inactive", "archived", "deleted"],
       SprintStatus: ["planned", "active", "closed", "archived"],

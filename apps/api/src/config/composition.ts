@@ -39,6 +39,9 @@ import { createRootRouter } from '../routes';
 import { ProjectsRepository } from '../routes/api/projects/projects.repository';
 import { ProjectsService } from '../routes/api/projects/projects.service';
 import { createProjectsRouter } from '../routes/api/projects/projects.route';
+import { JiraRepository } from '../routes/api/jira/jira.repository';
+import { JiraService } from '../routes/api/jira/jira.service';
+import { createJiraRouter } from '../routes/api/jira/jira.route';
 import { UsersRepository } from '../routes/api/users/users.repository';
 import { UsersService } from '../routes/api/users/users.service';
 import { createUsersRouter } from '../routes/api/users/users.route';
@@ -159,12 +162,28 @@ function createSprintsConfig() {
   };
 }
 
-function createProjectsConfig(workItemService: WorkItemService) {
+function createJiraConfig() {
+  const jiraRepository = new JiraRepository();
+  const jiraService = new JiraService(jiraRepository);
+  const router = createJiraRouter({ jiraService });
+
+  return {
+    jiraRepository,
+    jiraService,
+    router,
+  };
+}
+
+function createProjectsConfig(
+  workItemService: WorkItemService,
+  jiraService: JiraService
+) {
   const projectsRepository = new ProjectsRepository(supabase);
   const projectsService = new ProjectsService(projectsRepository);
   const router = createProjectsRouter({
     projectsService,
     workItemService,
+    jiraService,
   });
 
   return {
@@ -279,7 +298,11 @@ export const workItems = createWorkItemsConfig(
   notifications.notificationsService
 );
 export const sprints = createSprintsConfig();
-export const projects = createProjectsConfig(workItems.workItemService);
+export const jira = createJiraConfig();
+export const projects = createProjectsConfig(
+  workItems.workItemService,
+  jira.jiraService
+);
 export const users = createUsersConfig();
 export const teams = createTeamsConfig();
 export const profile = createProfileConfig();

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 type SelectProps = {
   readonly children: ReactNode;
-  readonly value: string;
+  readonly value?: string;
   // eslint-disable-next-line no-unused-vars
   readonly onValueChange: (val: string) => void;
   readonly disabled?: boolean;
@@ -37,7 +37,7 @@ export function Select({
 }: Readonly<SelectProps>) {
   return (
     <select
-      value={value}
+      value={value ?? ''}
       onChange={(event) => onValueChange(event.target.value)}
       disabled={disabled}
       data-testid={testId}

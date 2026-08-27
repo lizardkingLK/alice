@@ -1,5 +1,3 @@
-import type { WorkItemType } from '@repo/types';
-
 export type ProjectRow = {
   id: string;
   name: string;
@@ -12,10 +10,8 @@ export type ProjectRow = {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
-  jira_url: string | null;
-  jira_email: string | null;
-  jira_token: string | null;
   jira_project_key: string | null;
+  jira_connection_id: string | null;
   github_repo: string | null;
   github_token: string | null;
   logo_url: string | null;
@@ -29,54 +25,6 @@ export type ProjectRowWithOwner = ProjectRow & {
     email: string;
   } | null;
 };
-
-export type ResolvedJiraCredentials = {
-  jiraUrl: string;
-  jiraToken: string;
-  jiraProjectKey: string;
-  jiraEmail: string;
-};
-
-export type CredentialSeed = {
-  jiraUrl?: string;
-  jiraToken?: string;
-  jiraProjectKey?: string;
-  jiraEmail?: string;
-};
-
-export interface JiraIssueField {
-  summary?: string;
-  issuetype?: {
-    name?: string;
-  };
-  description?: unknown;
-  parent?: {
-    key?: string;
-  };
-}
-
-export interface JiraIssue {
-  key: string;
-  fields?: JiraIssueField;
-}
-
-export interface JiraSearchResponse {
-  issues?: JiraIssue[];
-}
-
-export interface JiraNode {
-  type?: string;
-  text?: string;
-  content?: JiraNode[];
-}
-
-export interface ParsedJiraIssue {
-  key: string;
-  title: string;
-  description: string;
-  type: WorkItemType;
-  parentKey?: string | null;
-}
 
 export type ProjectUpdateInput = Partial<
   Omit<ProjectRow, 'id' | 'created_at' | 'updated_at'>

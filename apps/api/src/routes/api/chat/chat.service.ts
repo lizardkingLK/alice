@@ -243,10 +243,8 @@ export class ChatService {
       start_date: null,
       end_date: null,
       owner_id: userId,
-      jira_url: null,
-      jira_email: null,
-      jira_token: null,
       jira_project_key: null,
+      jira_connection_id: null,
       github_repo: null,
       github_token: null,
     });

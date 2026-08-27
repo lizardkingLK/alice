@@ -13,6 +13,7 @@ import {
 } from '@/lib/db/query';
 import { getCachedProjectList } from '@/lib/cache/dropdown-cache';
 import { listAccessibleProjectIds } from '@/lib/projects/project-workspace-access';
+import { withoutGithubToken } from '@/lib/projects/sanitize-project-secrets';
 import { createProjectsService } from './projects.service.base';
 import type {
   GetProjectsPaginatedResponse,
@@ -29,6 +30,14 @@ const PROJECT_MEMBER_USER_SELECT = userRelationSelect(
   'project_members_user_id_fkey',
   USER_PROJECTION_WITH_ROLE
 );
+
+type ProjectRowWithSecrets = Project & {
+  github_token?: string | null;
+};
+
+function sanitizeProjectRow(row: ProjectRowWithSecrets): Project {
+  return withoutGithubToken(row) as Project;
+}
 
 /**
  * Reads query Supabase directly from the RSC layer to skip the `web → api`
@@ -94,7 +103,7 @@ export async function getProjectListPaginated(
 
   return {
     projects: projects.map((project) => ({
-      ...project,
+      ...sanitizeProjectRow(project as ProjectRowWithSecrets),
       team_count: teamCounts[project.id] ?? 0,
     })),
     ...meta,
@@ -112,7 +121,7 @@ async function findProjectById(id: string): Promise<Project> {
 
   throwIfError(error, 'failed to find project by id', 'Failed to find project');
 
-  return data as unknown as Project;
+  return sanitizeProjectRow(data as unknown as ProjectRowWithSecrets);
 }
 
 export async function getProjectDetails(id: string): Promise<Project> {

@@ -409,7 +409,7 @@ export const ModelName = {
   attachments: 'attachments',
   notifications: 'notifications',
   access_allowlist: 'access_allowlist',
-  jira_settings: 'jira_settings',
+  jira_connections: 'jira_connections',
   chat_conversations: 'chat_conversations',
   saved_views: 'saved_views',
   saved_view_shares: 'saved_view_shares',
@@ -429,7 +429,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "jira_settings" | "chat_conversations" | "saved_views" | "saved_view_shares" | "github_pull_requests"
+    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "jira_connections" | "chat_conversations" | "saved_views" | "saved_view_shares" | "github_pull_requests"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1321,77 +1321,77 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    jira_settings: {
-      payload: Prisma.$jira_settingsPayload<ExtArgs>
-      fields: Prisma.jira_settingsFieldRefs
+    jira_connections: {
+      payload: Prisma.$jira_connectionsPayload<ExtArgs>
+      fields: Prisma.jira_connectionsFieldRefs
       operations: {
         findUnique: {
-          args: Prisma.jira_settingsFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_settingsPayload> | null
+          args: Prisma.jira_connectionsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload> | null
         }
         findUniqueOrThrow: {
-          args: Prisma.jira_settingsFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_settingsPayload>
+          args: Prisma.jira_connectionsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload>
         }
         findFirst: {
-          args: Prisma.jira_settingsFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_settingsPayload> | null
+          args: Prisma.jira_connectionsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload> | null
         }
         findFirstOrThrow: {
-          args: Prisma.jira_settingsFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_settingsPayload>
+          args: Prisma.jira_connectionsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload>
         }
         findMany: {
-          args: Prisma.jira_settingsFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_settingsPayload>[]
+          args: Prisma.jira_connectionsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload>[]
         }
         create: {
-          args: Prisma.jira_settingsCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_settingsPayload>
+          args: Prisma.jira_connectionsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload>
         }
         createMany: {
-          args: Prisma.jira_settingsCreateManyArgs<ExtArgs>
+          args: Prisma.jira_connectionsCreateManyArgs<ExtArgs>
           result: BatchPayload
         }
         createManyAndReturn: {
-          args: Prisma.jira_settingsCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_settingsPayload>[]
+          args: Prisma.jira_connectionsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload>[]
         }
         delete: {
-          args: Prisma.jira_settingsDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_settingsPayload>
+          args: Prisma.jira_connectionsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload>
         }
         update: {
-          args: Prisma.jira_settingsUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_settingsPayload>
+          args: Prisma.jira_connectionsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload>
         }
         deleteMany: {
-          args: Prisma.jira_settingsDeleteManyArgs<ExtArgs>
+          args: Prisma.jira_connectionsDeleteManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateMany: {
-          args: Prisma.jira_settingsUpdateManyArgs<ExtArgs>
+          args: Prisma.jira_connectionsUpdateManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateManyAndReturn: {
-          args: Prisma.jira_settingsUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_settingsPayload>[]
+          args: Prisma.jira_connectionsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload>[]
         }
         upsert: {
-          args: Prisma.jira_settingsUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_settingsPayload>
+          args: Prisma.jira_connectionsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$jira_connectionsPayload>
         }
         aggregate: {
-          args: Prisma.Jira_settingsAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateJira_settings>
+          args: Prisma.Jira_connectionsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateJira_connections>
         }
         groupBy: {
-          args: Prisma.jira_settingsGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.Jira_settingsGroupByOutputType>[]
+          args: Prisma.jira_connectionsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Jira_connectionsGroupByOutputType>[]
         }
         count: {
-          args: Prisma.jira_settingsCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.Jira_settingsCountAggregateOutputType> | number
+          args: Prisma.jira_connectionsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Jira_connectionsCountAggregateOutputType> | number
         }
       }
     }
@@ -1765,10 +1765,8 @@ export const ProjectsScalarFieldEnum = {
   created_at: 'created_at',
   updated_by: 'updated_by',
   updated_at: 'updated_at',
-  jira_url: 'jira_url',
-  jira_email: 'jira_email',
-  jira_token: 'jira_token',
   jira_project_key: 'jira_project_key',
+  jira_connection_id: 'jira_connection_id',
   github_repo: 'github_repo',
   github_token: 'github_token',
   logo_url: 'logo_url',
@@ -1956,17 +1954,22 @@ export const Access_allowlistScalarFieldEnum = {
 export type Access_allowlistScalarFieldEnum = (typeof Access_allowlistScalarFieldEnum)[keyof typeof Access_allowlistScalarFieldEnum]
 
 
-export const Jira_settingsScalarFieldEnum = {
+export const Jira_connectionsScalarFieldEnum = {
   id: 'id',
-  jira_url: 'jira_url',
-  jira_email: 'jira_email',
-  jira_token: 'jira_token',
-  singleton: 'singleton',
+  user_id: 'user_id',
+  cloud_id: 'cloud_id',
+  site_url: 'site_url',
+  account_email: 'account_email',
+  refresh_token_enc: 'refresh_token_enc',
+  access_token_enc: 'access_token_enc',
+  access_token_expires_at: 'access_token_expires_at',
+  scopes: 'scopes',
+  status: 'status',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
 
-export type Jira_settingsScalarFieldEnum = (typeof Jira_settingsScalarFieldEnum)[keyof typeof Jira_settingsScalarFieldEnum]
+export type Jira_connectionsScalarFieldEnum = (typeof Jira_connectionsScalarFieldEnum)[keyof typeof Jira_connectionsScalarFieldEnum]
 
 
 export const Chat_conversationsScalarFieldEnum = {
@@ -2300,6 +2303,20 @@ export type EnumAccessAllowlistKindFieldRefInput<$PrismaModel> = FieldRefInputTy
 export type ListEnumAccessAllowlistKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AccessAllowlistKind[]'>
     
 
+
+/**
+ * Reference to a field of type 'JiraConnectionStatus'
+ */
+export type EnumJiraConnectionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'JiraConnectionStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'JiraConnectionStatus[]'
+ */
+export type ListEnumJiraConnectionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'JiraConnectionStatus[]'>
+    
+
 /**
  * Batch Payload for updateMany & deleteMany & createMany
  */
@@ -2463,7 +2480,7 @@ export type GlobalOmitConfig = {
   attachments?: Prisma.attachmentsOmit
   notifications?: Prisma.notificationsOmit
   access_allowlist?: Prisma.access_allowlistOmit
-  jira_settings?: Prisma.jira_settingsOmit
+  jira_connections?: Prisma.jira_connectionsOmit
   chat_conversations?: Prisma.chat_conversationsOmit
   saved_views?: Prisma.saved_viewsOmit
   saved_view_shares?: Prisma.saved_view_sharesOmit

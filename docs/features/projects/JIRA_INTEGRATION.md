@@ -1,7 +1,7 @@
 # Jira Cloud integration — Design & Implementation Plan
 
-**Status:** Plan (not started)  
-**Related:** [Projects README](./README.md), work items (`jira_issue_key`), [PR #191](https://github.com/lizardkingLK/alice/pull/191) interim API-token import
+**Status:** Implemented (Phase 0–2); Phase 3 hardening remaining  
+**Related:** [Projects README](./README.md), work items (`jira_issue_key`), [GITHUB_INTEGRATION.md](./GITHUB_INTEGRATION.md) (shared `INTEGRATION_TOKEN_ENCRYPTION_KEY`)
 
 This document replaces the interim “paste API token / global `jira_settings`” approach with **manager-authorized Atlassian OAuth (3LO)** and a **persisted project↔Jira link**. Implement later; do **not** extend the current token UX further except for security hotfixes.
 
@@ -115,7 +115,7 @@ sequenceDiagram
 
 Remove: `GET/PUT /api/projects/jira/settings`, body/env API-token import paths.
 
-Env (target): `ATLASSIAN_CLIENT_ID`, `ATLASSIAN_CLIENT_SECRET`, `ATLASSIAN_REDIRECT_URI`, `JIRA_TOKEN_ENCRYPTION_KEY` (or reuse existing secret). Remove reliance on `JIRA_API_TOKEN` / `JIRA_EMAIL` for product flows.
+Env (target): `ATLASSIAN_CLIENT_ID`, `ATLASSIAN_CLIENT_SECRET`, `ATLASSIAN_REDIRECT_URI`, `INTEGRATION_TOKEN_ENCRYPTION_KEY` (shared with GitHub PAT encryption — see [GITHUB_INTEGRATION.md](./GITHUB_INTEGRATION.md)). Remove reliance on `JIRA_API_TOKEN` / `JIRA_EMAIL` for product flows.
 
 ### 3.3 UX (target)
 
@@ -169,7 +169,8 @@ Do this **first**, in one PR (or a stacked pair: “remove UI” then “remove 
 1. Add `projects.jira_connection_id` (+ `jira_project_key` / `jira_cloud_id` as needed).
 2. Project picker UI using connection.
 3. Preview + import using refreshed access token; reuse unique `jira_issue_key` skip behavior.
-4. Prefer background job for import if issue count is large; return `importedCount` / job id.
+4. **Client fetch timeout:** `importJiraIssues` must pass `timeoutMs` (90s, same pattern as chat `CHAT_FETCH_TIMEOUT_MS`) so default `apiFetch` 20s abort does not fail mid-import and surface as `BackendUnreachableError` (“Could not connect to the backend”).
+5. Prefer background job for import if issue count is large; return `importedCount` / job id (still needed when imports regularly exceed ~90s).
 
 ### Phase 3 — Hardening
 
@@ -194,13 +195,51 @@ Do this **first**, in one PR (or a stacked pair: “remove UI” then “remove 
 - [ ] Sweep: no interim Jira UI/routes; projects CRUD green.
 - [ ] OAuth happy path + denied consent.
 - [ ] Link project → preview → import; second import skips duplicates.
+- [ ] Import lasting >20s completes (client `timeoutMs` ≥ 90s); does not show false “Could not connect to the backend”.
 - [ ] Concurrent import respects unique `(project_id, jira_issue_key)`.
 - [ ] Revoke connection → import returns 4xx; no token leakage in JSON.
 
 ---
 
-## 7. References
+## 7. How it works (implemented)
+
+### OAuth (3LO) flow
+
+1. Manager clicks **Connect Jira** → web calls `GET /api/jira/oauth/start` → `{ url }`.
+2. Alice opens Atlassian authorize in a **new tab** (`window.open`) so create/edit **dialogs stay open** in the original tab (scopes: `read:jira-work read:jira-user offline_access`).
+3. `state` is an HMAC-signed payload (`userId`, nonce, expiry) using the same **32-byte Base64** key as GitHub encryption — see [GITHUB_INTEGRATION.md](./GITHUB_INTEGRATION.md#what-is-a-32-byte-base64-key) (`resolveIntegrationEncryptionKey`).
+4. Callback `GET /api/jira/oauth/callback` verifies `state`, exchanges `code` for tokens, loads accessible resources, upserts `jira_connections` with **encrypted** refresh/access tokens.
+5. Redirects the OAuth tab to `/integrations/jira/done?jira=connected` (auto-close / “Close tab”); the original tab refreshes connections on focus / when the OAuth tab closes.
+
+### Linking + import
+
+1. Create wizard **Imports** or details **Integrations** pick `jira_connection_id` + Jira project key.
+2. Project row stores those IDs (no API email/token columns).
+3. `POST /api/projects/:id/jira/preview|import` loads the connection, refreshes access token if needed, calls  
+   `https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/…` with Bearer auth.
+4. Import creates work items with `jira_issue_key`; duplicates skipped via unique `(project_id, jira_issue_key)`.
+5. Web `importJiraIssues` uses `timeoutMs: 90_000` (mirrors chat) so the shared `getResponse` abort does not cancel a healthy long import.
+
+### Shared web pieces (deduped)
+
+| Piece                                                | Role                                                                  |
+| ---------------------------------------------------- | --------------------------------------------------------------------- |
+| `useJiraConnectionPicker`                            | Loads connections + projects for a site; starts OAuth                 |
+| `JiraConnectionFields`                               | Site + project selects (+ optional Connect chrome)                    |
+| `jsonErrorFromCaught` / `httpStatusFromErrorMessage` | Maps `Unauthorized…` → 403, `not found` → 404 on Jira/projects routes |
+
+### Env
+
+| Variable                                            | Purpose                                                             |
+| --------------------------------------------------- | ------------------------------------------------------------------- |
+| `ATLASSIAN_CLIENT_ID` / `_SECRET` / `_REDIRECT_URI` | Atlassian OAuth app                                                 |
+| `INTEGRATION_TOKEN_ENCRYPTION_KEY`                  | Encrypt OAuth tokens + HMAC OAuth `state` (shared with GitHub PATs) |
+
+---
+
+## 8. References
 
 - [Atlassian OAuth 2.0 (3LO) apps](https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/)
 - [Jira Cloud REST APIs](https://developer.atlassian.com/cloud/jira/platform/rest/v3/)
+- [GITHUB_INTEGRATION.md](./GITHUB_INTEGRATION.md) — encryption key format and write-only PAT contract
 - Existing Alice patterns: Express routers under `apps/api/src/routes/api/`, SSR reads vs API mutations, `@repo/types` for shared DTOs.

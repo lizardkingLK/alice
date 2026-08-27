@@ -29,12 +29,6 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-vi.mock('@repo/ui/components/ui/select', () =>
-  import('../mocks/select').then((module) =>
-    module.createSelectMock('status-select')
-  )
-);
-
 vi.mock(
   '@repo/ui/components/ui/dropdown-menu',
   () => import('../mocks/dropdown-menu')
@@ -105,7 +99,9 @@ const mockProjects: Project[] = [
     attributes_config: null,
     workflow_config: null,
     github_repo: null,
-    github_token: null,
+    jira_connection_id: null,
+    jira_project_key: null,
+    has_github_token: false,
     logo_url: null,
     cover_picture: null,
     owner: {
@@ -132,7 +128,9 @@ const mockProjects: Project[] = [
     attributes_config: null,
     workflow_config: null,
     github_repo: null,
-    github_token: null,
+    jira_connection_id: null,
+    jira_project_key: null,
+    has_github_token: false,
     logo_url: null,
     cover_picture: null,
     owner: {
@@ -208,8 +206,7 @@ describe('ProjectRegistry Component', () => {
       />
     );
 
-    const select = screen.getAllByTestId('status-select')[0]!;
-    fireEvent.change(select, { target: { value: 'archived' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Archived$/i }));
 
     expect(mockPush).toHaveBeenCalledWith('/projects?tab=archived&page=1');
   });
