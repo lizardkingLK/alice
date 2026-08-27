@@ -33,6 +33,7 @@ import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 import { cn } from '@repo/ui/lib/utils';
 import { FormAlertMessage } from '@/components/form-alert-message';
+import { toLocalYYYYMMDD } from '@/app/_shared/utility';
 
 interface ProjectFormProps {
   readonly onClose?: () => void;
@@ -51,11 +52,7 @@ function formatDateForInput(dateString?: string | null) {
 }
 
 function getTodayDateString() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return toLocalYYYYMMDD(new Date());
 }
 
 function validateProjectName(name: string): string | null {

@@ -11,6 +11,7 @@ export default function BoardLoading() {
     <DashboardShell
       description="Track progress, update task statuses, and organize work-items in real-time."
       breadcrumbOverrides={[...BOARD_BREADCRUMBS]}
+      contentScrollable={false}
     >
       <BoardPageSkeleton />
     </DashboardShell>

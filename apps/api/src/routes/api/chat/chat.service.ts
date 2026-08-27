@@ -522,6 +522,22 @@ export class ChatService {
     await this.chat.setProcessingStatus(conversationId, isProcessing);
   }
 
+  async notifyChatProcessed(options: {
+    readonly userId: string;
+    readonly message: string;
+    readonly relatedItemId: string | null;
+  }): Promise<void> {
+    await prisma.notifications.create({
+      data: {
+        user_id: options.userId,
+        type: 'chat_processed',
+        message: options.message,
+        related_item_id: options.relatedItemId,
+        created_by: options.userId,
+      },
+    });
+  }
+
   async deleteConversation(
     userId: string,
     conversationId: string
@@ -555,22 +571,16 @@ export class ChatService {
     await this.chat.deleteConversation(userId, conversationId);
 
     // Create the deleted notification in database
-    await prisma.notifications
-      .create({
-        data: {
-          user_id: userId,
-          type: 'chat_processed',
-          message: `Your chat "${convTitle}" has been deleted.`,
-          related_item_id: null,
-          created_by: userId,
-        },
-      })
-      .catch((err) => {
-        console.error(
-          `Failed to create delete notification for conversation ${sanitizeLog(conversationId)}:`,
-          sanitizeLog(err)
-        );
-      });
+    await this.notifyChatProcessed({
+      userId,
+      message: `Your chat "${convTitle}" has been deleted.`,
+      relatedItemId: null,
+    }).catch((err) => {
+      console.error(
+        `Failed to create delete notification for conversation ${sanitizeLog(conversationId)}:`,
+        sanitizeLog(err)
+      );
+    });
 
     try {
       await this.chat.removeHistoryMarkdown(conversationId);
@@ -689,14 +699,10 @@ Current Workspace State:
       });
       const convTitle = conversation?.title || 'Chat';
 
-      await prisma.notifications.create({
-        data: {
-          user_id: userId,
-          type: 'chat_processed',
-          message: `Your request in "${convTitle}" has been processed.`,
-          related_item_id: conversationId,
-          created_by: userId,
-        },
+      await this.notifyChatProcessed({
+        userId,
+        message: `Your request in "${convTitle}" has been processed.`,
+        relatedItemId: conversationId,
       });
     } catch (error: unknown) {
       console.error('Failed to process chat asynchronously:', error);
@@ -712,17 +718,11 @@ Current Workspace State:
         errorAssistantMessage,
       ]).catch(() => {});
 
-      await prisma.notifications
-        .create({
-          data: {
-            user_id: userId,
-            type: 'chat_processed',
-            message: `Your chat request failed to process.`,
-            related_item_id: conversationId,
-            created_by: userId,
-          },
-        })
-        .catch(() => {});
+      await this.notifyChatProcessed({
+        userId,
+        message: `Your chat request failed to process.`,
+        relatedItemId: conversationId,
+      }).catch(() => {});
     } finally {
       await this.chat
         .setProcessingStatus(conversationId, false)

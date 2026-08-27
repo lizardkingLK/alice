@@ -33,6 +33,7 @@ import {
 } from '@/app/_shared/utility';
 import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
 import { ProfileCoverBanner } from '@/app/profile/_components/profile-cover-banner';
+import { SETTINGS_GENERAL_HREF } from '@/app/settings/_components/settings-page-meta';
 import type {
   ProfileTeam,
   ProfileWorkedOn,
@@ -145,7 +146,7 @@ export function ProfileView({
               </div>
 
               <Button asChild variant="secondary" className="w-full">
-                <Link href="/settings?tab=general">Manage your account</Link>
+                <Link href={SETTINGS_GENERAL_HREF}>Manage your account</Link>
               </Button>
             </div>
 
