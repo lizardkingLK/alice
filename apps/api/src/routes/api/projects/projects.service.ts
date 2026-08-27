@@ -1,12 +1,16 @@
 import { requireUserWithRole } from '../../../lib/auth-helpers';
 import { ProjectStatusEnum, UserRoleEnum } from '@repo/types';
 import { uploadPublicImageReplacingPrevious } from '../../../lib/public-image-upload';
-import {
-  projectsRepository,
-  type ProjectRow,
-  type ProjectRowWithOwner,
-  type ProjectMemberWithUser,
-} from './projects.repository';
+import type { ProjectsRepository } from './projects.repository';
+import type {
+  CreateProjectInput,
+  ProjectMemberWithUser,
+  ProjectRow,
+  ProjectRowWithOwner,
+  UpdateProjectInput,
+} from './projects.types';
+
+export type { CreateProjectInput, UpdateProjectInput } from './projects.types';
 
 async function requireProjectManager(actorId: string) {
   return await requireUserWithRole(
@@ -24,26 +28,20 @@ async function requireAdmin(actorId: string) {
   );
 }
 
-export type CreateProjectInput = Omit<
-  ProjectRow,
-  | 'id'
-  | 'created_at'
-  | 'updated_at'
-  | 'deleted_at'
-  | 'logo_url'
-  | 'cover_picture'
-> & {
-  logo_url?: string | null;
-  cover_picture?: string | null;
-};
-
-export type UpdateProjectInput = Partial<CreateProjectInput>;
-
 type ProjectImageField = 'logo_url' | 'cover_picture';
 
+type ProjectImageUploadResult = {
+  readonly success: true;
+  readonly url: string;
+  readonly path: string;
+  readonly project: ProjectRow;
+};
+
 export class ProjectsService {
+  constructor(private readonly projectsRepository: ProjectsRepository) {}
+
   async getProjectById(projectId: string): Promise<ProjectRowWithOwner> {
-    const project = await projectsRepository.findById(projectId);
+    const project = await this.projectsRepository.findById(projectId);
     if (!project) {
       throw new Error('Project not found.');
     }
@@ -51,7 +49,7 @@ export class ProjectsService {
   }
 
   async listMembers(projectId: string): Promise<ProjectMemberWithUser[]> {
-    return await projectsRepository.listMembers(projectId);
+    return await this.projectsRepository.listMembers(projectId);
   }
 
   async addMember(
@@ -61,12 +59,12 @@ export class ProjectsService {
   ): Promise<void> {
     await requireProjectManager(actorId);
 
-    const currentMembers = await projectsRepository.listMembers(projectId);
+    const currentMembers = await this.projectsRepository.listMembers(projectId);
     if (currentMembers.some((m) => m.user_id === userId)) {
       throw new Error('User is already a member of this project.');
     }
 
-    await projectsRepository.addMember(projectId, userId, actorId);
+    await this.projectsRepository.addMember(projectId, userId, actorId);
   }
 
   async removeMember(
@@ -76,7 +74,7 @@ export class ProjectsService {
   ): Promise<void> {
     await requireProjectManager(actorId);
 
-    await projectsRepository.removeMember(projectId, userId);
+    await this.projectsRepository.removeMember(projectId, userId);
   }
 
   async createProject(
@@ -85,12 +83,12 @@ export class ProjectsService {
   ): Promise<ProjectRow> {
     await requireProjectManager(actorId);
 
-    const duplicate = await projectsRepository.findByKey(input.key);
+    const duplicate = await this.projectsRepository.findByKey(input.key);
     if (duplicate) {
       throw new Error(`A project with the key "${input.key}" already exists.`);
     }
 
-    return await projectsRepository.create(input, actorId);
+    return await this.projectsRepository.create(input, actorId);
   }
 
   async updateProject(
@@ -102,7 +100,7 @@ export class ProjectsService {
     await requireProjectManager(actorId);
 
     if (input.key) {
-      const duplicate = await projectsRepository.findByKey(
+      const duplicate = await this.projectsRepository.findByKey(
         input.key,
         projectId
       );
@@ -113,7 +111,7 @@ export class ProjectsService {
       }
     }
 
-    return await projectsRepository.update(
+    return await this.projectsRepository.update(
       projectId,
       input,
       actorId,
@@ -128,7 +126,7 @@ export class ProjectsService {
   ): Promise<ProjectRow> {
     await requireProjectManager(actorId);
 
-    return await projectsRepository.update(
+    return await this.projectsRepository.update(
       projectId,
       {
         deleted_at: new Date().toISOString(),
@@ -146,7 +144,7 @@ export class ProjectsService {
   ): Promise<ProjectRow> {
     await requireProjectManager(actorId);
 
-    return await projectsRepository.update(
+    return await this.projectsRepository.update(
       projectId,
       {
         deleted_at: null,
@@ -160,12 +158,12 @@ export class ProjectsService {
   async hardDeleteProject(actorId: string, projectId: string): Promise<void> {
     await requireAdmin(actorId);
 
-    await projectsRepository.delete(projectId);
+    await this.projectsRepository.delete(projectId);
   }
 
   async getJiraSettings(actorId: string) {
     await requireProjectManager(actorId);
-    return await projectsRepository.getJiraSettings();
+    return await this.projectsRepository.getJiraSettings();
   }
 
   async saveJiraSettings(
@@ -175,7 +173,7 @@ export class ProjectsService {
     token: string
   ) {
     await requireProjectManager(actorId);
-    await projectsRepository.saveJiraSettings(url, email, token);
+    await this.projectsRepository.saveJiraSettings(url, email, token);
   }
 
   async linkImportedJiraParents(
@@ -184,7 +182,7 @@ export class ProjectsService {
     issues: { key: string; parentKey?: string | null }[]
   ): Promise<void> {
     await requireProjectManager(actorId);
-    await projectsRepository.linkImportedJiraParents(projectId, issues);
+    await this.projectsRepository.linkImportedJiraParents(projectId, issues);
   }
 
   async updateProjectLogo(
@@ -192,12 +190,7 @@ export class ProjectsService {
     projectId: string,
     file: Express.Multer.File,
     expectedUpdatedAt: string
-  ): Promise<{
-    success: true;
-    url: string;
-    path: string;
-    project: ProjectRow;
-  }> {
+  ): Promise<ProjectImageUploadResult> {
     return this.updateProjectImageField(
       actorId,
       projectId,
@@ -215,12 +208,7 @@ export class ProjectsService {
     projectId: string,
     file: Express.Multer.File,
     expectedUpdatedAt: string
-  ): Promise<{
-    success: true;
-    url: string;
-    path: string;
-    project: ProjectRow;
-  }> {
+  ): Promise<ProjectImageUploadResult> {
     return this.updateProjectImageField(
       actorId,
       projectId,
@@ -242,15 +230,10 @@ export class ProjectsService {
       field: ProjectImageField;
       fileNameFallback: string;
     }
-  ): Promise<{
-    success: true;
-    url: string;
-    path: string;
-    project: ProjectRow;
-  }> {
+  ): Promise<ProjectImageUploadResult> {
     await requireProjectManager(actorId);
 
-    const existing = await projectsRepository.findById(projectId);
+    const existing = await this.projectsRepository.findById(projectId);
     if (!existing) {
       throw new Error('Project not found.');
     }
@@ -270,7 +253,7 @@ export class ProjectsService {
       fileNameFallback,
       previousPublicUrl: existing[field],
       persistUrl: async (publicUrl) => {
-        project = await projectsRepository.update(
+        project = await this.projectsRepository.update(
           projectId,
           { [field]: publicUrl },
           actorId,
@@ -287,5 +270,3 @@ export class ProjectsService {
     };
   }
 }
-
-export const projectsService = new ProjectsService();

@@ -1,5 +1,9 @@
-import { USER_PROJECTION_WITH_ROLE, userRelationSelect } from '@repo/types';
-import { supabase } from '../../../lib/supabase';
+import {
+  USER_PROJECTION_WITH_ROLE,
+  userRelationSelect,
+  type Database,
+} from '@repo/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { prisma } from '../../../lib/prisma';
 import {
   prismaAuditCreate,
@@ -9,36 +13,22 @@ import {
   prismaOptionalDate,
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
+import type {
+  ProjectMemberWithUser,
+  ProjectRow,
+  ProjectRowWithOwner,
+  ProjectUpdateInput,
+  CreateProjectInput,
+} from './projects.types';
 
-export type ProjectRow = {
-  id: string;
-  name: string;
-  key: string;
-  description: string | null;
-  status: 'active' | 'archived';
-  start_date: string | null;
-  end_date: string | null;
-  owner_id: string;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-  jira_url: string | null;
-  jira_email: string | null;
-  jira_token: string | null;
-  jira_project_key: string | null;
-  github_repo: string | null;
-  github_token: string | null;
-  logo_url: string | null;
-  cover_picture: string | null;
-};
-
-export type ProjectRowWithOwner = ProjectRow & {
-  owner?: {
-    id: string;
-    name: string;
-    email: string;
-  } | null;
-};
+export type {
+  CreateProjectInput,
+  ProjectMemberWithUser,
+  ProjectRow,
+  ProjectRowWithOwner,
+  ProjectUpdateInput,
+  UpdateProjectInput,
+} from './projects.types';
 
 /** Strip Jira API token before serializing project DTOs to clients. */
 export function withoutJiraToken<T extends { jira_token?: string | null }>(
@@ -48,10 +38,6 @@ export function withoutJiraToken<T extends { jira_token?: string | null }>(
   delete safe.jira_token;
   return safe;
 }
-
-type ProjectUpdateInput = Partial<
-  Omit<ProjectRow, 'id' | 'created_at' | 'updated_at'>
->;
 
 function applyOptionalProjectIntegrations(
   patch: Record<string, unknown>,
@@ -95,20 +81,6 @@ function buildProjectUpdateData(data: ProjectUpdateInput, actorId: string) {
   return patch;
 }
 
-export type ProjectMemberWithUser = {
-  project_id: string;
-  user_id: string;
-  status: 'active' | 'inactive' | 'archived' | 'deleted';
-  created_at: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-    profile_picture?: string | null;
-  } | null;
-};
-
 const PROJECT_MEMBER_USER_SELECT = userRelationSelect(
   'user',
   'project_members_user_id_fkey',
@@ -120,8 +92,10 @@ function unsafeCast<T>(val: unknown): T {
 }
 
 export class ProjectsRepository {
+  constructor(private readonly db: SupabaseClient<Database>) {}
+
   async listAll(): Promise<ProjectRowWithOwner[]> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('projects')
       .select('*, owner:users!projects_owner_id_fkey(id, name, email)')
       .order('created_at', { ascending: false });
@@ -135,7 +109,7 @@ export class ProjectsRepository {
   }
 
   async findByKey(key: string, excludeId?: string): Promise<ProjectRow | null> {
-    let query = supabase.from('projects').select('*').eq('key', key);
+    let query = this.db.from('projects').select('*').eq('key', key);
     if (excludeId) {
       query = query.neq('id', excludeId);
     }
@@ -148,7 +122,7 @@ export class ProjectsRepository {
   }
 
   async findById(id: string): Promise<ProjectRowWithOwner | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('projects')
       .select('*, owner:users!projects_owner_id_fkey(id, name, email)')
       .eq('id', id)
@@ -162,7 +136,7 @@ export class ProjectsRepository {
   }
 
   async listMembers(projectId: string): Promise<ProjectMemberWithUser[]> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('project_members')
       .select(`*, ${PROJECT_MEMBER_USER_SELECT}`)
       .eq('project_id', projectId)
@@ -191,7 +165,7 @@ export class ProjectsRepository {
   }
 
   async removeMember(projectId: string, userId: string): Promise<void> {
-    const { data: projectTeams, error: teamsError } = await supabase
+    const { data: projectTeams, error: teamsError } = await this.db
       .from('teams')
       .select('id')
       .eq('project_id', projectId);
@@ -221,21 +195,7 @@ export class ProjectsRepository {
     });
   }
 
-  async create(
-    data: Omit<
-      ProjectRow,
-      | 'id'
-      | 'created_at'
-      | 'updated_at'
-      | 'deleted_at'
-      | 'logo_url'
-      | 'cover_picture'
-    > & {
-      logo_url?: string | null;
-      cover_picture?: string | null;
-    },
-    actorId: string
-  ): Promise<ProjectRow> {
+  async create(data: CreateProjectInput, actorId: string): Promise<ProjectRow> {
     const created = await prisma.projects.create({
       data: {
         name: data.name,
@@ -303,7 +263,7 @@ export class ProjectsRepository {
     jira_email: string;
     jira_token: string;
   } | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('jira_settings')
       .select('jira_url, jira_email, jira_token')
       .limit(1)
@@ -371,5 +331,3 @@ export class ProjectsRepository {
     }
   }
 }
-
-export const projectsRepository = new ProjectsRepository();

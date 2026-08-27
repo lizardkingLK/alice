@@ -1,8 +1,8 @@
 # API dependency injection (composition root)
 
-**Status:** Plan (Living for work-items, sprints, and chat slices)  
+**Status:** Plan (Living for work-items, sprints, chat, projects, users, teams, profile, and savedViews slices)  
 **Scope:** `apps/api` only — Express routers, services, repositories  
-**Last updated:** August 17, 2026
+**Last updated:** August 26, 2026
 
 Related: [TRD.md](./TRD.md), [API_VERSIONING.md](./API_VERSIONING.md) (composition prerequisite, unused Express GETs, `/api/v1`).
 
@@ -165,11 +165,63 @@ PostgREST reads (admins, actor name, due work items, existing due-date rows) use
 | Injection config | `composition.ts` → `chat`                                      |
 | Route mount      | `routing.ts` → `chat.router`                                   |
 
-Chat receives `workItemService` and `sprintsService` from the composition root for tool mutations (avoids importing `composition.ts` from the service). Projects create/list still use the projects module singletons until that domain is migrated. Pure helpers (`chatHistoryToMarkdown`, `markdownToChatHistory`, `sanitizeLog`) stay module-level.
+Chat receives `workItemService`, `sprintsService`, and projects (`projectsService` /
+`projectsRepository`) from the composition root for tool mutations. Pure helpers
+(`chatHistoryToMarkdown`, `markdownToChatHistory`, `sanitizeLog`) stay module-level.
+
+### Projects
+
+| Piece            | Path                                                                       |
+| ---------------- | -------------------------------------------------------------------------- |
+| Repository       | `apps/api/src/routes/api/projects/projects.repository.ts`                  |
+| Service          | `apps/api/src/routes/api/projects/projects.service.ts` → `ProjectsService` |
+| Route factory    | `createProjectsRouter` (`workItemService` for Jira import)                 |
+| Types            | `projects.types.ts`                                                        |
+| Injection config | `composition.ts` → `projects`                                              |
+| Route mount      | `routing.ts` → `projects.router`                                           |
+
+### Users
+
+| Piece            | Path                                                         |
+| ---------------- | ------------------------------------------------------------ |
+| Repository       | `users.repository.ts` (`db` for PostgREST + Auth admin RPCs) |
+| Service          | `UsersService` — also receives `db` for `auth.admin`         |
+| Route factory    | `createUsersRouter`                                          |
+| Injection config | `composition.ts` → `users`                                   |
+| Route mount      | `routing.ts` → `users.router`                                |
+
+### Teams
+
+| Piece            | Path                          |
+| ---------------- | ----------------------------- |
+| Repository       | `teams.repository.ts`         |
+| Service          | `TeamsService`                |
+| Route factory    | `createTeamsRouter`           |
+| Injection config | `composition.ts` → `teams`    |
+| Route mount      | `routing.ts` → `teams.router` |
+
+### Profile
+
+| Piece            | Path                                                    |
+| ---------------- | ------------------------------------------------------- |
+| Service          | `ProfileService(db)` — no repository; Prisma for writes |
+| Route factory    | `createProfileRouter`                                   |
+| Injection config | `composition.ts` → `profile`                            |
+| Route mount      | `routing.ts` → `profile.router`                         |
+
+### Saved views
+
+| Piece            | Path                                                                                   |
+| ---------------- | -------------------------------------------------------------------------------------- |
+| Repository       | `savedViews.repository.ts`                                                             |
+| Service          | `SavedViewsService` — injects `NotificationsRepository` (`getUserName` / `insertMany`) |
+| Route factory    | `createSavedViewsRouter`                                                               |
+| Injection config | `composition.ts` → `savedViews` (after `notifications`)                                |
+| Route mount      | `routing.ts` → `savedViews.router`                                                     |
 
 ## 5. Migration checklist (next domain)
 
-When converting e.g. projects or users:
+When converting e.g. remaining singleton domains:
 
 1. Add a constructor to the repository (`db: SupabaseClient<Database>`).
 2. Add a constructor to the service (inject repository).

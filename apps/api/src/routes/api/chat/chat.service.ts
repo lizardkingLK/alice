@@ -14,10 +14,11 @@ import {
   GeminiRoles,
   toGeminiRole,
 } from '@repo/types';
-import { projectsService } from '../projects/projects.service';
-import { projectsRepository, type ProjectRowWithOwner } from '../projects/projects.repository';
 import type { WorkItemService } from '../workItems/workItems.service';
 import type { SprintsService } from '../sprints/sprints.service';
+import type { ProjectsService } from '../projects/projects.service';
+import type { ProjectsRepository } from '../projects/projects.repository';
+import type { ProjectRowWithOwner } from '../projects/projects.types';
 import { systemInstruction, geminiTools } from './chat.route.data';
 import type { ChatRepository } from './chat.repository';
 import { sanitizeLog } from './chat.utils';
@@ -36,6 +37,8 @@ export type ChatServiceDeps = {
   chat: ChatRepository;
   workItemService: Pick<WorkItemService, 'createWorkItem'>;
   sprintsService: Pick<SprintsService, 'createSprint'>;
+  projectsService: Pick<ProjectsService, 'createProject'>;
+  projectsRepository: Pick<ProjectsRepository, 'listAll' | 'findById'>;
 };
 
 function textToProseMirrorJson(text: string | null | undefined) {
@@ -219,7 +222,7 @@ export class ChatService {
   }
 
   private async handleListProjects(): Promise<unknown> {
-    const projects = await projectsRepository.listAll();
+    const projects = await this.deps.projectsRepository.listAll();
     return projects.map((p) => ({ id: p.id, name: p.name, key: p.key }));
   }
 
@@ -232,7 +235,7 @@ export class ChatService {
     const projKey = typeof args.key === 'string' ? args.key : '';
     const description =
       typeof args.description === 'string' ? args.description : null;
-    const project = await projectsService.createProject(userId, {
+    const project = await this.deps.projectsService.createProject(userId, {
       name: projName,
       key: projKey.toUpperCase(),
       description,
@@ -333,7 +336,7 @@ export class ChatService {
       description: textToProseMirrorJson(description),
       due_date: null,
     });
-    const project = await projectsRepository.findById(projectId);
+    const project = await this.deps.projectsRepository.findById(projectId);
     const projectKey = project?.key || 'TASK';
     const workItemKey = `${projectKey}-${workItem.id.slice(0, 4).toUpperCase()}`;
     const result = { id: workItem.id, key: workItemKey, title: workItem.title };
@@ -447,13 +450,15 @@ export class ChatService {
 
       // 3. Upload history to storage asynchronously in the background
       const mdContent = chatHistoryToMarkdown(conversationId, messages);
-      this.chat.uploadHistoryMarkdown(conversationId, mdContent).catch((error: unknown) => {
-        const msg = error instanceof Error ? error.message : String(error);
-        console.error(
-          `Failed to upload chat history in background for conversation ${sanitizeLog(conversationId)}:`,
-          sanitizeLog(msg)
-        );
-      });
+      this.chat
+        .uploadHistoryMarkdown(conversationId, mdContent)
+        .catch((error: unknown) => {
+          const msg = error instanceof Error ? error.message : String(error);
+          console.error(
+            `Failed to upload chat history in background for conversation ${sanitizeLog(conversationId)}:`,
+            sanitizeLog(msg)
+          );
+        });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error(
@@ -525,41 +530,47 @@ export class ChatService {
     this.historyCache.delete(conversationId);
 
     // Get the conversation title before deleting it
-    const conversation = await prisma.chat_conversations.findUnique({
-      where: { id: conversationId },
-      select: { title: true },
-    }).catch(() => null);
+    const conversation = await prisma.chat_conversations
+      .findUnique({
+        where: { id: conversationId },
+        select: { title: true },
+      })
+      .catch(() => null);
     const convTitle = conversation?.title || 'Chat';
 
     // Delete associated notifications in the database
-    await prisma.notifications.deleteMany({
-      where: {
-        related_item_id: conversationId,
-      },
-    }).catch((err) => {
-      console.error(
-        `Failed to delete notifications for conversation ${sanitizeLog(conversationId)}:`,
-        sanitizeLog(err)
-      );
-    });
+    await prisma.notifications
+      .deleteMany({
+        where: {
+          related_item_id: conversationId,
+        },
+      })
+      .catch((err) => {
+        console.error(
+          `Failed to delete notifications for conversation ${sanitizeLog(conversationId)}:`,
+          sanitizeLog(err)
+        );
+      });
 
     await this.chat.deleteConversation(userId, conversationId);
 
     // Create the deleted notification in database
-    await prisma.notifications.create({
-      data: {
-        user_id: userId,
-        type: 'chat_processed',
-        message: `Your chat "${convTitle}" has been deleted.`,
-        related_item_id: null,
-        created_by: userId,
-      },
-    }).catch((err) => {
-      console.error(
-        `Failed to create delete notification for conversation ${sanitizeLog(conversationId)}:`,
-        sanitizeLog(err)
-      );
-    });
+    await prisma.notifications
+      .create({
+        data: {
+          user_id: userId,
+          type: 'chat_processed',
+          message: `Your chat "${convTitle}" has been deleted.`,
+          related_item_id: null,
+          created_by: userId,
+        },
+      })
+      .catch((err) => {
+        console.error(
+          `Failed to create delete notification for conversation ${sanitizeLog(conversationId)}:`,
+          sanitizeLog(err)
+        );
+      });
 
     try {
       await this.chat.removeHistoryMarkdown(conversationId);
@@ -591,7 +602,7 @@ export class ChatService {
     });
 
     const [projectsRaw, workspace] = await Promise.all([
-      projectsRepository.listAll().catch(() => []),
+      this.deps.projectsRepository.listAll().catch(() => []),
       this.loadWorkspaceContext(),
     ]);
 
@@ -659,11 +670,8 @@ Current Workspace State:
     modelValue: ChatModelValue
   ): Promise<void> {
     try {
-      const { responseText, toolActionsPerformed } = await this.generateGeminiResponse(
-        userId,
-        history,
-        modelValue
-      );
+      const { responseText, toolActionsPerformed } =
+        await this.generateGeminiResponse(userId, history, modelValue);
 
       const newAssistantMessage: StoredChatMessage = {
         id: `msg-${Date.now()}`,
@@ -699,21 +707,28 @@ Current Workspace State:
         content: `Error: Failed to process your request. ${errMsg}`,
         actions: [],
       };
-      await this.saveChatHistory(conversationId, [...history, errorAssistantMessage]).catch(() => {});
+      await this.saveChatHistory(conversationId, [
+        ...history,
+        errorAssistantMessage,
+      ]).catch(() => {});
 
-      await prisma.notifications.create({
-        data: {
-          user_id: userId,
-          type: 'chat_processed',
-          message: `Your chat request failed to process.`,
-          related_item_id: conversationId,
-          created_by: userId,
-        },
-      }).catch(() => {});
+      await prisma.notifications
+        .create({
+          data: {
+            user_id: userId,
+            type: 'chat_processed',
+            message: `Your chat request failed to process.`,
+            related_item_id: conversationId,
+            created_by: userId,
+          },
+        })
+        .catch(() => {});
     } finally {
-      await this.chat.setProcessingStatus(conversationId, false).catch((err) => {
-        console.error('Failed to reset processing status:', err);
-      });
+      await this.chat
+        .setProcessingStatus(conversationId, false)
+        .catch((err) => {
+          console.error('Failed to reset processing status:', err);
+        });
     }
   }
 }
