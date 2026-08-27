@@ -1,8 +1,4 @@
 import { Router } from 'express';
-import usersRouter from '../routes/api/users/users.route';
-import projectsRouter from '../routes/api/projects/projects.route';
-import teamsRouter from '../routes/api/teams/teams.route';
-import savedViewsRouter from '../routes/api/savedViews/savedViews.route';
 import {
   accessAllowlist,
   attachments,
@@ -11,8 +7,12 @@ import {
   health,
   notifications,
   profile,
+  projects,
   root,
+  savedViews,
   sprints,
+  teams,
+  users,
   workItems,
 } from './composition';
 
@@ -30,11 +30,11 @@ routesConfig.use('/api/chat', chat.router);
 routesConfig.use('/api/comments', comments.router);
 routesConfig.use('/api/notifications', notifications.router);
 routesConfig.use('/api/profile', profile.router);
-routesConfig.use('/api/projects', projectsRouter);
-routesConfig.use('/api/saved-views', savedViewsRouter);
+routesConfig.use('/api/projects', projects.router);
+routesConfig.use('/api/saved-views', savedViews.router);
 routesConfig.use('/api/sprints', sprints.router);
-routesConfig.use('/api/teams', teamsRouter);
-routesConfig.use('/api/users', usersRouter);
+routesConfig.use('/api/teams', teams.router);
+routesConfig.use('/api/users', users.router);
 routesConfig.use('/api/workItems', workItems.router);
 
 export default routesConfig;

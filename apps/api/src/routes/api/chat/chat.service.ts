@@ -14,13 +14,11 @@ import {
   GeminiRoles,
   toGeminiRole,
 } from '@repo/types';
-import { projectsService } from '../projects/projects.service';
-import {
-  projectsRepository,
-  type ProjectRowWithOwner,
-} from '../projects/projects.repository';
 import type { WorkItemService } from '../workItems/workItems.service';
 import type { SprintsService } from '../sprints/sprints.service';
+import type { ProjectsService } from '../projects/projects.service';
+import type { ProjectsRepository } from '../projects/projects.repository';
+import type { ProjectRowWithOwner } from '../projects/projects.types';
 import { systemInstruction, geminiTools } from './chat.route.data';
 import type { ChatRepository } from './chat.repository';
 import { sanitizeLog } from './chat.utils';
@@ -39,6 +37,8 @@ export type ChatServiceDeps = {
   chat: ChatRepository;
   workItemService: Pick<WorkItemService, 'createWorkItem'>;
   sprintsService: Pick<SprintsService, 'createSprint'>;
+  projectsService: Pick<ProjectsService, 'createProject'>;
+  projectsRepository: Pick<ProjectsRepository, 'listAll' | 'findById'>;
 };
 
 function textToProseMirrorJson(text: string | null | undefined) {
@@ -222,7 +222,7 @@ export class ChatService {
   }
 
   private async handleListProjects(): Promise<unknown> {
-    const projects = await projectsRepository.listAll();
+    const projects = await this.deps.projectsRepository.listAll();
     return projects.map((p) => ({ id: p.id, name: p.name, key: p.key }));
   }
 
@@ -235,7 +235,7 @@ export class ChatService {
     const projKey = typeof args.key === 'string' ? args.key : '';
     const description =
       typeof args.description === 'string' ? args.description : null;
-    const project = await projectsService.createProject(userId, {
+    const project = await this.deps.projectsService.createProject(userId, {
       name: projName,
       key: projKey.toUpperCase(),
       description,
@@ -336,7 +336,7 @@ export class ChatService {
       description: textToProseMirrorJson(description),
       due_date: null,
     });
-    const project = await projectsRepository.findById(projectId);
+    const project = await this.deps.projectsRepository.findById(projectId);
     const projectKey = project?.key || 'TASK';
     const workItemKey = `${projectKey}-${workItem.id.slice(0, 4).toUpperCase()}`;
     const result = { id: workItem.id, key: workItemKey, title: workItem.title };
@@ -612,7 +612,7 @@ export class ChatService {
     });
 
     const [projectsRaw, workspace] = await Promise.all([
-      projectsRepository.listAll().catch(() => []),
+      this.deps.projectsRepository.listAll().catch(() => []),
       this.loadWorkspaceContext(),
     ]);
 

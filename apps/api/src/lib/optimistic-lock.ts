@@ -2,6 +2,7 @@ import {
   OPTIMISTIC_LOCK_ERROR_CODE,
   OPTIMISTIC_LOCK_HTTP_STATUS,
 } from '@repo/types';
+import type { RequestHandler, Router } from 'express';
 
 /**
  * Thrown from repositories/services when a conditional update matched 0 rows
@@ -185,4 +186,53 @@ export async function runLockedStatusRoute<TRecord>(
     sendRouteMutationError(options.res, error, options.failureMessage);
     return undefined;
   }
+}
+
+type LockedStatusPatchAction<TRecord> = (
+  actorId: string,
+  id: string,
+  expectedUpdatedAt: string
+) => Promise<TRecord>;
+
+type LockedStatusPatchRequest = {
+  readonly body: unknown;
+  readonly params: { readonly id?: string };
+  readonly userId?: string;
+};
+
+type RegisterLockedStatusPatchOptions<TRecord> = {
+  readonly router: Router;
+  readonly path: string;
+  readonly auth: RequestHandler;
+  readonly missingIdMessage: string;
+  readonly parseBody: (req: LockedStatusPatchRequest) => LockActionParseResult;
+  readonly treeifyError: (error: unknown) => unknown;
+  readonly action: LockedStatusPatchAction<TRecord>;
+  readonly toResponseBody: (record: TRecord) => Record<string, unknown>;
+  readonly failureMessage: string;
+};
+
+/**
+ * Register PATCH soft-delete / restore routes that share `runLockedStatusRoute`.
+ */
+export function registerLockedStatusPatch<TRecord>(
+  options: RegisterLockedStatusPatchOptions<TRecord>
+): void {
+  options.router.patch(
+    options.path,
+    options.auth,
+    async (req: LockedStatusPatchRequest, res: JsonResponder) => {
+      await runLockedStatusRoute({
+        res,
+        actorId: req.userId!,
+        id: req.params.id,
+        missingIdMessage: options.missingIdMessage,
+        parseBody: () => options.parseBody(req),
+        treeifyError: options.treeifyError,
+        action: options.action,
+        toResponseBody: options.toResponseBody,
+        failureMessage: options.failureMessage,
+      });
+    }
+  );
 }

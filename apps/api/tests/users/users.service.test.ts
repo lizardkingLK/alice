@@ -1,4 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Database } from '@repo/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { UsersService } from '../../src/routes/api/users/users.service';
+import type { UsersRepository } from '../../src/routes/api/users/users.repository';
 
 const {
   findByIdMock,
@@ -14,32 +18,26 @@ const {
   selectSingleMock: vi.fn(),
 }));
 
-vi.mock('../../src/lib/supabase', () => ({
-  supabase: {
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          single: selectSingleMock,
-        })),
+const usersRepository = {
+  findById: findByIdMock,
+  deactivateGuarded: deactivateGuardedMock,
+  update: updateMock,
+} as unknown as UsersRepository;
+
+const mockDb = {
+  from: vi.fn(() => ({
+    select: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        single: selectSingleMock,
       })),
     })),
-    auth: {
-      admin: {
-        updateUserById: updateUserByIdMock,
-      },
+  })),
+  auth: {
+    admin: {
+      updateUserById: updateUserByIdMock,
     },
   },
-}));
-
-vi.mock('../../src/routes/api/users/users.repository', () => ({
-  usersRepository: {
-    findById: findByIdMock,
-    deactivateGuarded: deactivateGuardedMock,
-    update: updateMock,
-  },
-}));
-
-import { UsersService } from '../../src/routes/api/users/users.service';
+} as unknown as SupabaseClient<Database>;
 
 const baseUser = {
   id: 'user-1',
@@ -53,7 +51,7 @@ const baseUser = {
 };
 
 describe('UsersService.deactivateUser / toggleUserActive', () => {
-  const service = new UsersService();
+  const service = new UsersService(usersRepository, mockDb);
 
   beforeEach(() => {
     vi.clearAllMocks();

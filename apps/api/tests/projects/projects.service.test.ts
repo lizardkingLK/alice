@@ -38,25 +38,11 @@ vi.mock('../../src/lib/supabase', () => ({
   },
 }));
 
-vi.mock('../../src/routes/api/projects/projects.repository', () => ({
-  projectsRepository: {
-    findById: findByIdMock,
-    findByKey: findByKeyMock,
-    listMembers: listMembersMock,
-    addMember: addMemberMock,
-    removeMember: removeMemberMock,
-    create: createMock,
-    update: updateMock,
-    delete: deleteMock,
-    getJiraSettings: getJiraSettingsMock,
-    saveJiraSettings: saveJiraSettingsMock,
-  },
-}));
-
 import {
   CreateProjectInput,
   ProjectsService,
 } from '../../src/routes/api/projects/projects.service';
+import type { ProjectsRepository } from '../../src/routes/api/projects/projects.repository';
 
 const mockProject = {
   id: 'project-1',
@@ -81,7 +67,39 @@ const mockProject = {
 };
 
 describe('ProjectsService backend tests', () => {
-  const service = new ProjectsService();
+  const projectsRepository = {
+    findById: findByIdMock,
+    findByKey: findByKeyMock,
+    listMembers: listMembersMock,
+    addMember: addMemberMock,
+    removeMember: removeMemberMock,
+    create: createMock,
+    update: updateMock,
+    delete: deleteMock,
+    getJiraSettings: getJiraSettingsMock,
+    saveJiraSettings: saveJiraSettingsMock,
+  } as unknown as ProjectsRepository;
+
+  const service = new ProjectsService(projectsRepository);
+
+  const createProjectInput = (
+    overrides: Partial<CreateProjectInput> = {}
+  ): CreateProjectInput => ({
+    name: 'Alice Project',
+    key: 'ALICE',
+    description: 'A project description',
+    status: 'active',
+    start_date: '2026-01-01',
+    end_date: '2026-12-31',
+    owner_id: 'user-manager',
+    jira_url: null,
+    jira_email: null,
+    jira_token: null,
+    jira_project_key: null,
+    github_repo: null,
+    github_token: null,
+    ...overrides,
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -104,21 +122,7 @@ describe('ProjectsService backend tests', () => {
       findByKeyMock.mockResolvedValue(null);
       createMock.mockResolvedValue(mockProject);
 
-      const input: CreateProjectInput = {
-        name: 'Alice Project',
-        key: 'ALICE',
-        description: 'A project description',
-        status: 'active' as const,
-        start_date: '2026-01-01',
-        end_date: '2026-12-31',
-        owner_id: 'user-manager',
-        jira_url: null,
-        jira_email: null,
-        jira_token: null,
-        jira_project_key: null,
-        github_repo: null,
-        github_token: null,
-      };
+      const input = createProjectInput();
 
       const result = await service.createProject('user-manager', input);
 
@@ -130,21 +134,7 @@ describe('ProjectsService backend tests', () => {
     it('rejects creation for standard members', async () => {
       mockActorRole('member');
 
-      const input: CreateProjectInput = {
-        name: 'Alice Project',
-        key: 'ALICE',
-        description: 'A project description',
-        status: 'active' as const,
-        start_date: '2026-01-01',
-        end_date: '2026-12-31',
-        owner_id: 'user-manager',
-        jira_url: null,
-        jira_email: null,
-        jira_token: null,
-        jira_project_key: null,
-        github_repo: null,
-        github_token: null,
-      };
+      const input = createProjectInput();
 
       await expect(service.createProject('user-member', input)).rejects.toThrow(
         'Unauthorized. Only admins and managers can manage projects.'
@@ -157,21 +147,7 @@ describe('ProjectsService backend tests', () => {
       mockActorRole('manager');
       findByKeyMock.mockResolvedValue(mockProject); // Duplicate exists
 
-      const input: CreateProjectInput = {
-        name: 'Alice Project',
-        key: 'ALICE',
-        description: 'A project description',
-        status: 'active' as const,
-        start_date: '2026-01-01',
-        end_date: '2026-12-31',
-        owner_id: 'user-manager',
-        jira_url: null,
-        jira_email: null,
-        jira_token: null,
-        jira_project_key: null,
-        github_repo: null,
-        github_token: null,
-      };
+      const input = createProjectInput();
 
       await expect(
         service.createProject('user-manager', input)

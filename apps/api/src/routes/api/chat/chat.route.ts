@@ -27,6 +27,7 @@ function sendChatError(
   res.status(500).json({ error: message });
 }
 
+/** Returns false after sending 403 when the user does not own the conversation. */
 async function requireConversationOwner(
   chatService: ChatService,
   res: Response,
