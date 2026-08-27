@@ -18,7 +18,7 @@ const BOARD_BREADCRUMBS = [
   { label: 'Board', url: '/board' },
 ] as const;
 
-export default function BoardPage({
+export default async function BoardPage({
   searchParams,
 }: Readonly<{
   searchParams: Promise<RawSearchParams>;
@@ -27,6 +27,7 @@ export default function BoardPage({
     <DashboardShell
       description="Track progress, update task statuses, and organize work-items in real-time."
       breadcrumbOverrides={[...BOARD_BREADCRUMBS]}
+      contentScrollable={false}
     >
       <Suspense fallback={<BoardPageSkeleton />}>
         <BoardData searchParams={searchParams} />

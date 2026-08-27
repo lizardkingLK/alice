@@ -168,6 +168,13 @@ export function parseUsersPageTab(tab?: string | null): UsersPageTab {
   return tab === 'allowlist' ? 'allowlist' : 'users';
 }
 
+/** Board page tabs (`/board?tab=`). Default `board` omits the query param. */
+export type BoardPageTab = 'board' | 'calendar';
+
+export function parseBoardPageTab(tab?: string | null): BoardPageTab {
+  return tab === 'calendar' ? 'calendar' : 'board';
+}
+
 /** Account settings page tabs (`/settings?tab=`). */
 export type SettingsTab =
   'general' | 'security' | 'notifications' | 'preferences';

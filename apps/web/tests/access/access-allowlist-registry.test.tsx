@@ -220,7 +220,9 @@ describe('AccessAllowlistRegistry', () => {
 
   it('automatically opens the add entry dialog and populates it when addEmail query param is present', () => {
     // Arrange
-    mockSearchParams = new URLSearchParams('tab=allowlist&addEmail=user@example.com');
+    mockSearchParams = new URLSearchParams(
+      'tab=allowlist&addEmail=user@example.com'
+    );
 
     // Act
     render(
@@ -237,12 +239,16 @@ describe('AccessAllowlistRegistry', () => {
     // Assert
     expect(screen.getByTestId('mock-allowlist-form')).toBeInTheDocument();
     expect(screen.getByTestId('mock-kind')).toHaveTextContent('email');
-    expect(screen.getByTestId('mock-value')).toHaveTextContent('user@example.com');
+    expect(screen.getByTestId('mock-value')).toHaveTextContent(
+      'user@example.com'
+    );
   });
 
   it('clears the addEmail query parameter from the URL when close is triggered', async () => {
     // Arrange
-    mockSearchParams = new URLSearchParams('tab=allowlist&addEmail=user@example.com');
+    mockSearchParams = new URLSearchParams(
+      'tab=allowlist&addEmail=user@example.com'
+    );
     render(
       <AccessAllowlistRegistry
         entries={entries}
@@ -263,7 +269,9 @@ describe('AccessAllowlistRegistry', () => {
 
   it('clears the addEmail query parameter from the URL and refreshes when success is triggered', async () => {
     // Arrange
-    mockSearchParams = new URLSearchParams('tab=allowlist&addEmail=user@example.com');
+    mockSearchParams = new URLSearchParams(
+      'tab=allowlist&addEmail=user@example.com'
+    );
     render(
       <AccessAllowlistRegistry
         entries={entries}

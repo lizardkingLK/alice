@@ -10,7 +10,9 @@ export const metadata = {
   title: 'Alice',
 };
 
-async function ChatPageData({ conversationId }: Readonly<{ conversationId?: string }>) {
+async function ChatPageData({
+  conversationId,
+}: Readonly<{ conversationId?: string }>) {
   const [bootstrap, dbUser] = await Promise.all([
     safeServerFetch(
       getChatPageBootstrap(conversationId),

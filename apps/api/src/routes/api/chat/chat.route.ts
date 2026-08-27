@@ -10,11 +10,7 @@ import {
   resolveChatModel,
 } from '@repo/types';
 import { type ChatService, sanitizeLog } from './chat.service';
-import { prisma } from '../../../lib/prisma';
-import type {
-  InputMessage,
-  StoredChatMessage,
-} from './chat.route.types';
+import type { InputMessage, StoredChatMessage } from './chat.route.types';
 
 export type ChatRouterDeps = {
   chatService: ChatService;
@@ -29,6 +25,25 @@ function sendChatError(
   const message = error instanceof Error ? error.message : fallback;
   console.error(`${logLabel}:`, sanitizeLog(message));
   res.status(500).json({ error: message });
+}
+
+async function requireConversationOwner(
+  chatService: ChatService,
+  res: Response,
+  userId: string,
+  conversationId: string
+): Promise<boolean> {
+  const isOwner = await chatService.verifyConversationOwner(
+    userId,
+    conversationId
+  );
+  if (!isOwner) {
+    res.status(403).json({
+      error: 'Access denied: You do not own this conversation.',
+    });
+    return false;
+  }
+  return true;
 }
 
 export function createChatRouter(deps: ChatRouterDeps): Router {
@@ -63,9 +78,15 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
     async (req: AuthenticatedRequest, res) => {
       try {
         const { conversationId } = req.params;
-        const isOwner = await chatService.verifyConversationOwner(req.userId!, conversationId!);
-        if (!isOwner) {
-          return res.status(403).json({ error: 'Access denied: You do not own this conversation.' });
+        if (
+          !(await requireConversationOwner(
+            chatService,
+            res,
+            req.userId!,
+            conversationId!
+          ))
+        ) {
+          return;
         }
         const history = await chatService.loadChatHistory(conversationId!);
         res.json({ history });
@@ -86,9 +107,15 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
     async (req: AuthenticatedRequest, res) => {
       try {
         const { conversationId } = req.params;
-        const isOwner = await chatService.verifyConversationOwner(req.userId!, conversationId!);
-        if (!isOwner) {
-          return res.status(403).json({ error: 'Access denied: You do not own this conversation.' });
+        if (
+          !(await requireConversationOwner(
+            chatService,
+            res,
+            req.userId!,
+            conversationId!
+          ))
+        ) {
+          return;
         }
         await chatService.deleteConversation(req.userId!, conversationId!);
         res.json({ success: true });
@@ -139,11 +166,12 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
 
         if (!conversationId) {
           // Process first message synchronously to ensure Gemini succeeds before database/sidebar creation
-          const { responseText, toolActionsPerformed } = await chatService.generateGeminiResponse(
-            req.userId!,
-            sanitizedInputMessages,
-            resolvedModelValue
-          );
+          const { responseText, toolActionsPerformed } =
+            await chatService.generateGeminiResponse(
+              req.userId!,
+              sanitizedInputMessages,
+              resolvedModelValue
+            );
 
           const firstMsgText =
             messages[0]?.content || messages[0]?.text || 'New Chat';
@@ -165,17 +193,16 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
           await chatService.saveChatHistory(conversationId, fullHistory);
 
           try {
-            await prisma.notifications.create({
-              data: {
-                user_id: req.userId!,
-                type: 'chat_processed',
-                message: `Your request in "${title}" has been processed.`,
-                related_item_id: conversationId,
-                created_by: req.userId!,
-              },
+            await chatService.notifyChatProcessed({
+              userId: req.userId!,
+              message: `Your request in "${title}" has been processed.`,
+              relatedItemId: conversationId,
             });
           } catch (error) {
-            console.error('Failed to create notification for synchronous chat:', error);
+            console.error(
+              'Failed to create notification for synchronous chat:',
+              error
+            );
           }
 
           return res.json({
@@ -187,25 +214,36 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
             is_processing: false,
           });
         } else {
-          const isOwner = await chatService.verifyConversationOwner(req.userId!, conversationId);
-          if (!isOwner) {
-            return res.status(403).json({ error: 'Access denied: You do not own this conversation.' });
+          if (
+            !(await requireConversationOwner(
+              chatService,
+              res,
+              req.userId!,
+              conversationId
+            ))
+          ) {
+            return;
           }
 
           await chatService.setProcessingStatus(conversationId, true);
 
           // Save the user's incoming message immediately to history
-          await chatService.saveChatHistory(conversationId, sanitizedInputMessages);
+          await chatService.saveChatHistory(
+            conversationId,
+            sanitizedInputMessages
+          );
 
           // Start background processing
-          chatService.processChatAsync(
-            req.userId!,
-            conversationId,
-            sanitizedInputMessages,
-            resolvedModelValue
-          ).catch((err) => {
-            console.error('Error starting async process:', err);
-          });
+          chatService
+            .processChatAsync(
+              req.userId!,
+              conversationId,
+              sanitizedInputMessages,
+              resolvedModelValue
+            )
+            .catch((err) => {
+              console.error('Error starting async process:', err);
+            });
 
           return res.json({
             reply: 'Processing request...',

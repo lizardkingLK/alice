@@ -44,14 +44,14 @@ function ConversationButton({
       onClick={onClick}
       disabled={isProcessing}
       className={cn(
-        'h-auto w-full justify-start px-3 py-2.5 pr-10 text-left text-xs font-normal gap-2 flex items-center',
+        'flex h-auto w-full items-center justify-start gap-2 px-3 py-2.5 pr-10 text-left text-xs font-normal',
         isActive
           ? 'bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary font-medium'
           : 'text-muted-foreground'
       )}
     >
       {isProcessing && (
-        <Loader2 className="size-3.5 animate-spin shrink-0 text-primary" />
+        <Loader2 className="text-primary size-3.5 shrink-0 animate-spin" />
       )}
       <span className="block w-full truncate" title={title}>
         {title}

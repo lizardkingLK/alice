@@ -27,6 +27,11 @@ import { Button } from '@repo/ui/components/ui/button';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Input } from '@repo/ui/components/ui/input';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@repo/ui/components/ui/avatar';
 import { ProjectForm } from './project-form';
 import { hardDeleteProject } from './actions';
 import {
@@ -110,6 +115,7 @@ function getProjectTableMeta(table: CellContext<Project, unknown>['table']) {
 
 function ProjectNameCell({ proj }: Readonly<{ proj: Project }>) {
   const teamCount = proj.team_count ?? 0;
+  const keyLetters = proj.key.slice(0, 2).toUpperCase();
 
   return (
     <div className="flex items-center gap-3">
@@ -117,9 +123,18 @@ function ProjectNameCell({ proj }: Readonly<{ proj: Project }>) {
         href={`/projects/${proj.id}`}
         className="group/row flex min-w-0 flex-1 items-center gap-3 transition-opacity hover:opacity-85"
       >
-        <div className="bg-primary/10 text-primary border-primary/20 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-bold shadow-sm transition-all duration-300 group-hover/row:scale-105">
-          {proj.key.slice(0, 2)}
-        </div>
+        <Avatar
+          size="sm"
+          className="border-primary/20 size-9 border shadow-sm transition-all duration-300 group-hover/row:scale-105"
+          title={proj.name}
+        >
+          {proj.logo_url ? (
+            <AvatarImage src={proj.logo_url} alt={`${proj.name} logo`} />
+          ) : null}
+          <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+            {keyLetters}
+          </AvatarFallback>
+        </Avatar>
         <div className="min-w-0">
           <div className="text-foreground group-hover/row:text-primary flex min-w-0 items-center gap-2 text-sm font-semibold transition-colors">
             <TruncatedText className="min-w-0">{proj.name}</TruncatedText>

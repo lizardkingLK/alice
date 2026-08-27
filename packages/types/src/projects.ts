@@ -89,19 +89,17 @@ export const createProjectSchema = baseCreateProjectSchema
     }
   );
 
-export const updateProjectSchema = baseCreateProjectSchema
-  .partial()
-  .refine(
-    (data) => {
-      if (data.start_date && data.end_date) {
-        const start = data.start_date.split('T')[0] ?? '';
-        const end = data.end_date.split('T')[0] ?? '';
-        return end >= start;
-      }
-      return true;
-    },
-    {
-      message: 'End date must be on or after the start date.',
-      path: ['end_date'],
+export const updateProjectSchema = baseCreateProjectSchema.partial().refine(
+  (data) => {
+    if (data.start_date && data.end_date) {
+      const start = data.start_date.split('T')[0] ?? '';
+      const end = data.end_date.split('T')[0] ?? '';
+      return end >= start;
     }
-  );
+    return true;
+  },
+  {
+    message: 'End date must be on or after the start date.',
+    path: ['end_date'],
+  }
+);
