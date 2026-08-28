@@ -27,7 +27,6 @@ import {
   type SprintPaginatedList,
 } from './sprints.prisma-query';
 
-
 export type SprintRow = Tables<'sprints'>;
 
 const SPRINT_WITH_PROJECT = `*, ${projectRelationSelect()}`;

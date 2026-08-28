@@ -27,7 +27,9 @@ export type WorkItemWorkLogRowRaw = Omit<WorkItemWorkLog, 'user'> & {
   user?: unknown;
 };
 
-/** Shared PostgREST select for work log + author embed. */
+/** Shared PostgREST select for work log + author embed.
+ * Field list must stay aligned with `workLogListSelect` in `api/v1/work-item-worklogs.ts`.
+ */
 export const WORK_ITEM_WORKLOG_SELECT = [
   'id',
   'work_item_id',
