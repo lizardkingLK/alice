@@ -26,6 +26,28 @@ import type { WorkItemService } from '../workItems/workItems.service';
 import { supabase } from '../../../lib/supabase';
 import type { JiraService } from '../jira/jira.service';
 import type { ParsedJiraIssue } from '../jira/jira.types';
+import { listProjectsQuerySchema } from '@repo/types';
+
+const TYPE_STRING = 'string';
+
+function firstQueryValue(value: unknown): string | undefined {
+  if (typeof value === TYPE_STRING) {
+    return value as string;
+  }
+  if (Array.isArray(value) && typeof value[0] === TYPE_STRING) {
+    return value[0] as string;
+  }
+  return undefined;
+}
+
+function listProjectsQueryFromRequest(query: Record<string, unknown>) {
+  return listProjectsQuerySchema.safeParse({
+    page: firstQueryValue(query.page),
+    limit: firstQueryValue(query.limit),
+    status: firstQueryValue(query.status),
+    search: firstQueryValue(query.search),
+  });
+}
 
 export type ProjectsRouterDeps = {
   projectsService: ProjectsService;
@@ -36,6 +58,87 @@ export type ProjectsRouterDeps = {
 export function createProjectsRouter(deps: ProjectsRouterDeps) {
   const { projectsService, workItemService, jiraService } = deps;
   const projectsRouter: Router = Router();
+
+  projectsRouter.get(
+    '/',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsed = listProjectsQueryFromRequest(
+        req.query as Record<string, unknown>
+      );
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+
+      try {
+        const result = await projectsService.listProjectsPaginated(
+          parsed.data,
+          req.userId!
+        );
+        res.json(result);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to list projects';
+        res.status(500).json({ error: message });
+      }
+    }
+  );
+
+  projectsRouter.get(
+    '/:id',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsedId = z.uuid().safeParse(req.params.id);
+      if (!parsedId.success) {
+        return res
+          .status(400)
+          .json({ data: null, error: 'Invalid project id' });
+      }
+
+      try {
+        const project = await projectsService.getProjectDetail(
+          parsedId.data,
+          req.userId!
+        );
+        if (!project) {
+          return res
+            .status(404)
+            .json({ data: null, error: 'Project not found' });
+        }
+        const sanitized = withoutIntegrationSecrets(project);
+        res.json({ data: sanitized, error: null });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to get project';
+        res.status(500).json({ data: null, error: message });
+      }
+    }
+  );
+
+  projectsRouter.get(
+    '/:id/members',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsedId = z.uuid().safeParse(req.params.id);
+      if (!parsedId.success) {
+        return res
+          .status(400)
+          .json({ error: 'Invalid project id' });
+      }
+
+      try {
+        const members = await projectsService.listProjectMembersPrisma(
+          parsedId.data,
+          req.userId!
+        );
+        res.json({ members });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to list project members';
+        res.status(500).json({ error: message });
+      }
+    }
+  );
 
   const projectImageUpload: Multer = multer({
     storage: multer.memoryStorage(),

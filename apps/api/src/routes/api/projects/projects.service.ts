@@ -1,5 +1,13 @@
 import { requireUserWithRole } from '../../../lib/auth-helpers';
-import { ProjectStatusEnum, UserRoleEnum } from '@repo/types';
+import { ALL_PROJECTS } from '../../../lib/project-access';
+import {
+  ProjectStatusEnum,
+  UserRoleEnum,
+  type ListProjectsQuery,
+  type ProjectListRow,
+  type ProjectDetailRow,
+  type ProjectMemberRow,
+} from '@repo/types';
 import { uploadPublicImageReplacingPrevious } from '../../../lib/public-image-upload';
 import { encryptSecretIfPresent } from '../../../lib/secrets/token-crypto';
 import type { ProjectsRepository } from './projects.repository';
@@ -69,6 +77,60 @@ type ProjectImageUploadResult = {
 
 export class ProjectsService {
   constructor(private readonly projectsRepository: ProjectsRepository) {}
+
+  async listProjectsPaginated(
+    query: ListProjectsQuery,
+    actorId: string
+  ): Promise<{
+    projects: (ProjectListRow & { team_count: number })[];
+    totalCount: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const accessible = await this.projectsRepository.listAccessibleProjectIds(actorId);
+    if (accessible !== ALL_PROJECTS && accessible.length === 0) {
+      return {
+        projects: [],
+        totalCount: 0,
+        page: query.page,
+        limit: query.limit,
+        totalPages: 0,
+      };
+    }
+
+    return await this.projectsRepository.listPaginated({
+      accessibleIds: accessible,
+      filters: {
+        status: query.status,
+        search: query.search,
+      },
+      page: query.page,
+      limit: query.limit,
+    });
+  }
+
+  async getProjectDetail(
+    projectId: string,
+    actorId: string
+  ): Promise<ProjectDetailRow | null> {
+    const accessible = await this.projectsRepository.listAccessibleProjectIds(actorId);
+    if (accessible !== ALL_PROJECTS && !accessible.includes(projectId)) {
+      throw new Error('Unauthorized project workspace access.');
+    }
+    return await this.projectsRepository.getDetailById(projectId);
+  }
+
+  async listProjectMembersPrisma(
+    projectId: string,
+    actorId: string
+  ): Promise<ProjectMemberRow[]> {
+    const accessible = await this.projectsRepository.listAccessibleProjectIds(actorId);
+    if (accessible !== ALL_PROJECTS && !accessible.includes(projectId)) {
+      throw new Error('Unauthorized project workspace access.');
+    }
+    return await this.projectsRepository.listMembersPrisma(projectId);
+  }
 
   async getProjectById(projectId: string): Promise<ProjectRowWithOwner> {
     const project = await this.projectsRepository.findById(projectId);
