@@ -4,10 +4,10 @@ import { ProjectRegistry } from '@/app/projects/_components/project-registry';
 import {
   softDeleteProject as clientSoftDeleteProject,
   restoreProject as clientRestoreProject,
-} from '@/app/projects/_services/projects.service';
+} from '@/app/projects/_services/projects.mutations.client';
 import { hardDeleteProject } from '@/app/projects/_components/actions';
-import type { Project } from '@/app/projects/_services/projects.service';
-import type { User } from '@/app/users/_services/users.service';
+import type { Project } from '@/app/projects/_services/projects.mutations.client';
+import type { User } from '@/app/users/_services/users.mutations.client';
 import { assertDebouncedSearchRedirect } from '../helpers/assert-debounced-search';
 
 const mockPush = vi.fn();
@@ -34,7 +34,7 @@ vi.mock(
   () => import('../mocks/dropdown-menu')
 );
 
-vi.mock('@/app/projects/_services/projects.service', () => ({
+vi.mock('@/app/projects/_services/projects.mutations.client', () => ({
   softDeleteProject: vi.fn(),
   restoreProject: vi.fn(),
 }));

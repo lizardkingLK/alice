@@ -8,7 +8,7 @@ import {
   invalidateDropdownCache,
 } from '@/lib/cache/dropdown-cache';
 import { createClient } from '@/lib/supabase/server';
-import { toggleUserActive as apiToggleUserActive } from '@/app/users/_services/users.service.server';
+import { toggleUserActive as apiToggleUserActive } from '@/app/users/_services/users.reads.server';
 import { ApiError } from '@/lib/api/api';
 
 export type DeactivateAccountState = {

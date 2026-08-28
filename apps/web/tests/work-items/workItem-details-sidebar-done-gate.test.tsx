@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import WorkItemSidebar from '@/app/work-items/_components/workItem-details-sidebar';
+import WorkItemSidebar from '@/app/work-items/_components/work-item-details/work-item-details-sidebar';
 import { workItemFactory } from '../factories/workItem.factory';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import type { WorkItemStatus } from '@repo/types';
-import { linkPR } from '@/app/work-items/_services/workItem.service.client';
+import { linkPR } from '@/app/work-items/_services/work-items.mutations.client';
 
 vi.mock(
   '@repo/ui/components/ui/dropdown-menu',
@@ -19,11 +19,13 @@ vi.mock('@repo/ui/components/ui/sonner', () => ({
 }));
 
 vi.mock(
-  '@/app/work-items/_components/workItem-field-patch-dialog',
+  '@/app/work-items/_components/work-item-details/work-item-field-patch-dialog',
   async () => {
     const actual = await vi.importActual<
-      typeof import('@/app/work-items/_components/workItem-field-patch-dialog')
-    >('@/app/work-items/_components/workItem-field-patch-dialog');
+      typeof import('@/app/work-items/_components/work-item-details/work-item-field-patch-dialog')
+    >(
+      '@/app/work-items/_components/work-item-details/work-item-field-patch-dialog'
+    );
     return {
       ...actual,
       WorkItemFieldPatchDialog: ({
@@ -44,7 +46,7 @@ vi.mock('@/app/work-items/_components/work-item-time-tracking', () => ({
   WorkItemTimeTracking: () => <div data-testid="time-tracking" />,
 }));
 
-vi.mock('@/app/work-items/_services/workItem.service.client', () => ({
+vi.mock('@/app/work-items/_services/work-items.mutations.client', () => ({
   getLinkedPRs: vi.fn().mockResolvedValue({
     prs: [
       {

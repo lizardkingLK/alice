@@ -35,7 +35,7 @@ import type {
   CommentItem,
   CommentUser,
   CommentWorkItemOption,
-} from '@/app/comments/_services/comments.service.base';
+} from '@/app/comments/_services/comments.mutations.shared';
 
 const ISSUE_BADGE_CLASS =
   'border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400';

@@ -6,7 +6,7 @@ import {
   createUser as apiCreateUser,
   updateUser as apiUpdateUser,
   toggleUserActive as apiToggleUserActive,
-} from '../_services/users.service.server';
+} from '../_services/users.reads.server';
 import { buildAuthCallbackUrl } from '@/lib/auth-redirect';
 import { resolveRequestOrigin } from '@/lib/auth-redirect.server';
 import {

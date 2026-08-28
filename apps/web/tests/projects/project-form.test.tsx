@@ -4,8 +4,8 @@ import { ProjectForm } from '@/app/projects/_components/project-form';
 import {
   createProject,
   updateProject,
-} from '@/app/projects/_services/projects.service';
-import type { User } from '@/app/users/_services/users.service';
+} from '@/app/projects/_services/projects.mutations.client';
+import type { User } from '@/app/users/_services/users.mutations.client';
 import { apiFetch } from '@/lib/api/api-client';
 import {
   getComboboxOptions,
@@ -16,7 +16,7 @@ vi.mock('@/lib/api/api-client', () => ({
   apiFetch: vi.fn(),
 }));
 
-vi.mock('@/app/projects/_services/projects.service', () => ({
+vi.mock('@/app/projects/_services/projects.mutations.client', () => ({
   createProject: vi.fn(),
   updateProject: vi.fn(),
 }));

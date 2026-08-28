@@ -11,11 +11,11 @@ import {
 } from '@repo/ui/components/ui/breadcrumb';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { toShortId } from '@/app/_shared/utility';
-import { WorkItemTypeBadge } from '@/app/work-items/_components/workItem-badge-type';
+import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-type';
 import type {
   DbWorkItem,
   WorkItemAncestor,
-} from '@/app/work-items/_services/workItem.service.server';
+} from '@/app/work-items/_services/work-items.reads.server';
 import type { WorkItemType } from '@repo/types';
 
 type WorkItemPathBreadcrumbProps = {

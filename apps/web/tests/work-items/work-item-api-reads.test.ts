@@ -5,7 +5,7 @@ import {
   getWorkItemFromApi,
   listWorkItemsPaginatedFromApi,
   mapWorkItemApiRow,
-} from '@/app/work-items/_services/workItem.service.server.api';
+} from '@/app/work-items/_services/reads/api.server';
 import { workItemFactory } from '../factories/workItem.factory';
 
 const { apiFetchMock } = vi.hoisted(() => ({

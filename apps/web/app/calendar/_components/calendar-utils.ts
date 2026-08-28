@@ -1,4 +1,4 @@
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { toLocalYYYYMMDD } from '@/app/_shared/utility';
 import { ALL_OPTION } from '@/app/_shared/values';
 import { QUERY_FILTER_ALL_VALUE } from '@/hooks/use-query-filter';

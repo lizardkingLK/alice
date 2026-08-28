@@ -10,7 +10,7 @@ import {
   Underline as UnderlineIcon,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
-import EditorCommand from '@/app/work-items/_components/workItem-description-editor-command';
+import EditorCommand from '@/app/work-items/_components/work-item-description/work-item-description-editor-command';
 import { toggleListPreservingLines } from '@/lib/editor/toggle-list-preserving-lines';
 
 export type EditorFormatCommandState = {

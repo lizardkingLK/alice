@@ -23,15 +23,15 @@ import {
 import { mapPriority } from '@/app/backlog/_helpers/backlog-item-utils';
 import { formatLabelWithSpace } from '@/app/_shared/utility';
 import { buildMemberSelectOptions } from '@/app/work-items/_components/member-select-items';
-import { WorkItemTypeBadge } from '@/app/work-items/_components/workItem-badge-type';
+import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-type';
 import { SearchableSelect } from '@/components/searchable-select';
 import { workItemDetailHref } from '@/app/work-items/_helpers/work-item-links';
 import { WORK_ITEM_STATUSES } from '@/app/work-items/_helpers/work-item-status';
 import { BACKLOG_PRIORITY_OPTIONS } from '@/app/work-items/_helpers/work-item-priority-ui';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
-import type { Project as DbProject } from '@/app/projects/_services/projects.service';
-import type { Sprint } from '@/app/sprints/_services/sprints.service';
-import type { User as DbUser } from '@/app/users/_services/users.service';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
+import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
+import type { User as DbUser } from '@/app/users/_services/users.mutations.client';
 import { SprintStatusEnum } from '@repo/types';
 import { ExternalLink } from '@repo/ui/lib/icons';
 

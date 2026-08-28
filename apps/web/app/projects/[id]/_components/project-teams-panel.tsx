@@ -3,12 +3,12 @@
 import Link from 'next/link';
 import { AlertTriangle } from '@repo/ui/lib/icons';
 import { TeamRegistry } from '@/app/manager/_components/team-registry';
-import type { Team } from '@/app/manager/_services/teams.service';
+import type { Team } from '@/app/manager/_services/teams.mutations.client';
 import type {
   Project,
   ProjectMemberWithUser,
-} from '@/app/projects/_services/projects.service';
-import type { User } from '@/app/users/_services/users.service';
+} from '@/app/projects/_services/projects.mutations.client';
+import type { User } from '@/app/users/_services/users.mutations.client';
 
 type ProjectTeamsPanelProps = {
   readonly project: Project;

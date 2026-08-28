@@ -10,8 +10,8 @@ import {
   PopoverTrigger,
 } from '@repo/ui/components/ui/popover';
 import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
-import type { Project } from '@/app/projects/_services/projects.service';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import type { Project } from '@/app/projects/_services/projects.mutations.client';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { CalendarWorkItemList } from '@/app/calendar/_components/calendar-work-item-list';
 
 type CalendarDayOverflowPopoverProps = {

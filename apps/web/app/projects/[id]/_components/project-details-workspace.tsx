@@ -22,11 +22,11 @@ import { ProjectIntegrationsTab } from '@/app/projects/[id]/_components/project-
 import type {
   Project,
   ProjectMemberWithUser,
-} from '../../_services/projects.service';
-import type { Team } from '@/app/manager/_services/teams.service';
-import type { User } from '@/app/users/_services/users.service';
-import WorkItemsWorkspace from '@/app/work-items/_components/workItems-workspace';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+} from '../../_services/projects.mutations.client';
+import type { Team } from '@/app/manager/_services/teams.mutations.client';
+import type { User } from '@/app/users/_services/users.mutations.client';
+import WorkItemsWorkspace from '@/app/work-items/_components/work-items-workspace';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import {
   parseProjectDetailsTab,
   type ProjectDetailsTab as ProjectDetailsTabId,

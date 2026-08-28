@@ -12,11 +12,11 @@ import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults
 import {
   applyProjectFilterToSearchParams,
   buildSprintFilterOptionsForQuery,
-} from '@/app/board/_services/board-defaults';
-import type { Project } from '@/app/projects/_services/projects.service';
-import type { Sprint } from '@/app/sprints/_services/sprints.service';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
-import type { User } from '@/app/users/_services/users.service';
+} from '@/app/board/_services/board.defaults.shared';
+import type { Project } from '@/app/projects/_services/projects.mutations.client';
+import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import type { User } from '@/app/users/_services/users.mutations.client';
 import { toNameCase, WORK_ITEM_TYPES } from '@repo/types';
 import { ALL_OPTION } from '@/app/_shared/values';
 import { type CalendarActionItem } from './calendar-client.types';
@@ -25,7 +25,7 @@ import {
   CalendarFilterSelect,
 } from './calendar-filter-controls';
 import { MONTHS } from './calendar-constants';
-import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form-dialog';
+import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form/work-item-form-dialog';
 import {
   QUERY_FILTER_ALL_VALUE,
   useQueryFilter,

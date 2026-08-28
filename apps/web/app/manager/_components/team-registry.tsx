@@ -29,7 +29,7 @@ import { hardDeleteTeam } from './actions';
 import {
   softDeleteTeam as clientSoftDeleteTeam,
   restoreTeam as clientRestoreTeam,
-} from '../_services/teams.service';
+} from '../_services/teams.mutations.client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runRegistryLockedAction } from '@/lib/optimistic-lock/run-locked-mutation';
 import { Users, Shield, Plus, Search, FolderOpen } from '@repo/ui/lib/icons';
@@ -48,12 +48,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@repo/ui/components/ui/select';
-import type { Team } from '../_services/teams.service';
-import type { User } from '@/app/users/_services/users.service';
+import type { Team } from '../_services/teams.mutations.client';
+import type { User } from '@/app/users/_services/users.mutations.client';
 import type {
   Project,
   ProjectMembersByProjectId,
-} from '@/app/projects/_services/projects.service.base';
+} from '@/app/projects/_services/projects.mutations.shared';
 
 type TeamTab = 'active' | 'inactive' | 'archived';
 

@@ -2,7 +2,7 @@ import { commentContentToPlainText, type Json } from '@repo/types';
 import type {
   CommentItem,
   CommentWorkItemOption,
-} from '@/app/comments/_services/comments.service.base';
+} from '@/app/comments/_services/comments.mutations.shared';
 
 export type CommentsSortOrder = 'newest' | 'oldest';
 

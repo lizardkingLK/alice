@@ -10,8 +10,8 @@ import {
 import { Shield, Users } from '@repo/ui/lib/icons';
 import { UserRegistry } from '@/app/users/_components/user-registry';
 import { AccessAllowlistRegistry } from '@/app/access-allowlist/_components/access-allowlist-registry';
-import type { User } from '@/app/users/_services/users.service';
-import type { AccessAllowlistEntry } from '@/app/access-allowlist/_services/accessAllowlist.service';
+import type { User } from '@/app/users/_services/users.mutations.client';
+import type { AccessAllowlistEntry } from '@/app/access-allowlist/_services/access-allowlist.mutations.client';
 import { parseUsersPageTab, type UsersPageTab } from '@/lib/search-params';
 import { UNDERLINE_TAB_TRIGGER_CLASS } from '@/components/underline-tab-trigger';
 

@@ -20,7 +20,6 @@ import {
   type DeactivateAccountState,
 } from '@/app/edit-profile/_components/actions';
 import { EditProfilePreferencesCard } from '@/app/edit-profile/_components/edit-profile-preferences-card';
-import { FormStatusAlerts } from '@/app/work-items/_components/workItem-form-alerts';
 import { ImagePositionUploadDialog } from '@/components/image-position-upload-dialog';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { apiFetch } from '@/lib/api/api-client';
@@ -54,6 +53,7 @@ import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { Separator } from '@repo/ui/components/ui/separator';
 import { Switch } from '@repo/ui/components/ui/switch';
+import { FormStatusAlerts } from '@/app/work-items/_components/work-item-form/work-item-form-alerts';
 
 type EditProfileViewProps = {
   readonly section: SettingsTab;

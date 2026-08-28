@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildWorkspaceNavHref,
   isWorkspaceDefaultQueryPath,
-} from '@/app/board/_services/board-defaults';
+} from '@/app/board/_services/board.defaults.shared';
 import { ALL_PROJECTS_ID } from '@/app/board/_helpers/board-defaults-storage';
 
 describe('buildWorkspaceNavHref', () => {

@@ -2,16 +2,16 @@
 
 import { useEffect } from 'react';
 import { toast } from '@repo/ui/components/ui/sonner';
-import { forceUpdateComment } from '@/app/comments/_services/comments.service';
-import { forceUpdateProject } from '@/app/projects/_services/projects.service';
+import { forceUpdateComment } from '@/app/comments/_services/comments.mutations.client';
+import { forceUpdateProject } from '@/app/projects/_services/projects.mutations.client';
 import {
   forceUpdateSprint,
   forceUpdateSprintStatus,
-} from '@/app/sprints/_services/sprints.service';
-import { forceUpdateTeam } from '@/app/manager/_services/teams.service';
-import { forceUpdateUser } from '@/app/users/_services/users.service';
-import { forceUpdateAccessAllowlistEntry } from '@/app/access-allowlist/_services/accessAllowlist.service';
-import { forceUpdateWorkItemFields } from '@/app/work-items/_services/workItem.service.client';
+} from '@/app/sprints/_services/sprints.mutations.client';
+import { forceUpdateTeam } from '@/app/manager/_services/teams.mutations.client';
+import { forceUpdateUser } from '@/app/users/_services/users.mutations.client';
+import { forceUpdateAccessAllowlistEntry } from '@/app/access-allowlist/_services/access-allowlist.mutations.client';
+import { forceUpdateWorkItemFields } from '@/app/work-items/_services/work-items.mutations.client';
 import { apiFetch } from '@/lib/api/api-client';
 import { clearOptimisticPending } from '@/lib/optimistic-lock/pending-storage';
 import type { OptimisticLockEntityType } from '@repo/types';

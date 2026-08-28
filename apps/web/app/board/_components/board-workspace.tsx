@@ -11,10 +11,10 @@ import { Calendar, Kanban } from '@repo/ui/lib/icons';
 import { UNDERLINE_TAB_TRIGGER_CLASS } from '@/components/underline-tab-trigger';
 import { KanbanBoard } from '@/app/board/_components/kanban-board';
 import { CalendarRegistry } from '@/app/calendar/_components/calendar-registry';
-import type { Project } from '@/app/projects/_services/projects.service.base';
-import type { Sprint } from '@/app/sprints/_services/sprints.service';
-import type { User } from '@/app/users/_services/users.service';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import type { Project } from '@/app/projects/_services/projects.mutations.shared';
+import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
+import type { User } from '@/app/users/_services/users.mutations.client';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { parseBoardPageTab, type BoardPageTab } from '@/lib/search-params';
 
 type BoardWorkspaceProps = {

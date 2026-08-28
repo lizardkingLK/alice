@@ -21,7 +21,7 @@ import {
 import {
   shareSavedView,
   type SavedView,
-} from '@/app/views/_services/saved-views.client';
+} from '@/app/views/_services/saved-views.mutations.client';
 
 type ProjectOption = {
   readonly id: string;

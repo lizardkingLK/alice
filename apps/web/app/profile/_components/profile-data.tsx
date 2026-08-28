@@ -3,7 +3,7 @@ import { ProfileView } from '@/app/profile/_components/profile-view';
 import {
   getProfileTeams,
   getProfileWorkedOn,
-} from '@/app/profile/_services/profile.service.server';
+} from '@/app/profile/_services/profile.reads.server';
 import {
   displayHandleFromEmail,
   metadataString,
