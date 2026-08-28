@@ -10,7 +10,7 @@ import {
   type ProjectDetailRow,
   type ProjectMemberRow,
 } from '@repo/types';
-import { Prisma, ProjectStatus } from '@repo/types/prisma';
+import { Prisma, ProjectStatus, RecordStatus } from '@repo/types/prisma';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { prisma } from '../../../lib/prisma';
 import {
@@ -206,7 +206,7 @@ export class ProjectsRepository {
   async listMembersPrisma(projectId: string): Promise<ProjectMemberRow[]> {
     try {
       return await prisma.project_members.findMany({
-        where: { project_id: projectId, status: 'active' },
+        where: { project_id: projectId, status: RecordStatus.active },
         select: projectMemberSelect,
       });
     } catch (error) {

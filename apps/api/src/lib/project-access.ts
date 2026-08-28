@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@repo/types';
+import { UserRoleEnum, type Database } from '@repo/types';
 
 export const ALL_PROJECTS = 'all';
 
@@ -13,7 +13,7 @@ export async function listAccessibleProjectIds(
     .eq('id', actorId)
     .maybeSingle();
 
-  if (systemUser?.role === 'admin') {
+  if (systemUser?.role === UserRoleEnum.admin) {
     return ALL_PROJECTS;
   }
 
