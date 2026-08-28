@@ -1,6 +1,7 @@
 import multer, { Multer } from 'multer';
 import { Router } from 'express';
 import { z } from 'zod';
+import { updateOwnProfileSchema } from '@repo/types';
 import {
   requireApiAuth,
   type AuthenticatedRequest,
@@ -10,7 +11,7 @@ import {
   MAX_PUBLIC_IMAGE_BYTES,
 } from '../../../lib/image-upload-route';
 import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
-import { ProfileService, updateOwnProfileSchema } from './profile.service';
+import { ProfileService } from './profile.service';
 
 const upload: Multer = multer({
   storage: multer.memoryStorage(),
@@ -27,6 +28,35 @@ export function createProfileRouter(deps: ProfileRouterDeps) {
   const { profileService } = deps;
 
   const profileRouter: Router = Router();
+
+  /**
+   * Unused Express self-profile GET (Prisma). Next still reads via RSC supabase-js.
+   */
+  profileRouter.get(
+    '/',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const userId = req.userId;
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      try {
+        const user = await profileService.getOwnProfile(userId);
+        if (!user) {
+          res.status(404).json({ error: 'User profile not found.' });
+          return;
+        }
+        res.json(user);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to load profile.';
+        console.error('error. profile get:', message);
+        res.status(500).json({ error: message });
+      }
+    }
+  );
 
   /**
    * Self-service cover photo upload for the signed-in user.

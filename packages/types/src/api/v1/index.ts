@@ -55,6 +55,19 @@ export {
   type SprintPrismaListFilters,
 } from './sprints.js';
 export {
+  PROFILE_USER_POSTGREST_SELECT,
+  profileDetailSelect,
+  profileImageUploadResultSchema,
+  profilePatchResponseSchema,
+  profileUserWireSchema,
+  updateOwnProfileSchema,
+  type ProfileDetailRow,
+  type ProfileImageUploadResult,
+  type ProfilePatchResponse,
+  type ProfileUserWire,
+  type UpdateOwnProfileBody,
+} from './profile.js';
+export {
   createWorkLogResponseSchema,
   createWorkLogSchema,
   listWorkLogsQuerySchema,
