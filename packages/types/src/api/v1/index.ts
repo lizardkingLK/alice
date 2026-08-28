@@ -67,3 +67,16 @@ export {
   type ProfileUserWire,
   type UpdateOwnProfileBody,
 } from './profile.js';
+export {
+  createWorkLogResponseSchema,
+  createWorkLogSchema,
+  listWorkLogsQuerySchema,
+  workLogAuthorSelect,
+  workLogListSelect,
+  workLogWireSchema,
+  type CreateWorkLogBody,
+  type CreateWorkLogResponse,
+  type ListWorkLogsQuery,
+  type WorkLogListRow,
+  type WorkLogWire,
+} from './work-item-worklogs.js';

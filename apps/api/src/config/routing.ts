@@ -15,6 +15,7 @@ import {
   teams,
   users,
   workItems,
+  worklogs,
 } from './composition';
 
 const routesConfig: Router = Router();
@@ -42,5 +43,7 @@ routesConfig.use('/api/teams', teams.router);
 routesConfig.use('/api/users', users.router);
 routesConfig.use('/api/workItems', workItems.router);
 routesConfig.use('/api/v1/workItems', workItems.router);
+routesConfig.use('/api/worklogs', worklogs.router);
+routesConfig.use('/api/v1/worklogs', worklogs.router);
 
 export default routesConfig;

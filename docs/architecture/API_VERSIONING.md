@@ -156,7 +156,7 @@ export type WorkItemListRow = Prisma.work_itemsGetPayload<{
 }>;
 ```
 
-Work-items first cut lives in `packages/types/src/api/v1/work-items.ts` (`workItemListSelect`, `workItemDetailSelect`, `listWorkItemsQuerySchema`). Attachments v1 wire DTOs and `attachmentListSelect` live in `packages/types/src/api/v1/attachments.ts`. Profile v1 wire DTOs and `profileDetailSelect` live in `packages/types/src/api/v1/profile.ts` (self detail only — no list).
+Work-items first cut lives in `packages/types/src/api/v1/work-items.ts`. Attachments, sprint, work-log, and profile v1 wire DTOs live in `packages/types/src/api/v1/attachments.ts`, `sprints.ts`, `work-item-worklogs.ts`, and `profile.ts` (profile is self detail only — no list).
 
 Mutation example (unchanged rule):
 
@@ -433,10 +433,10 @@ Anti-pattern: `WorkItemServiceV1` and `V2` that both `findMany` the same table.
 | 0    | This plan                                                                                               | **Now**                                                                                                                                                                                      |
 | 1    | Composition root for remaining domains (users, projects, teams, saved-views)                            | In progress (profile composition **done**)                                                                                                                                                   |
 | 2    | `packages/types/src/api/v1/` directory tree (~1h)                                                       | **Started** (work-items selects + list query Zod)                                                                                                                                            |
-| 3    | Per feature: unused Prisma GETs (~4h) + Zod isolation (~2h)                                             | **Started** (work-items list/detail; **attachments** list GET; **profile** self GET + v1 Zod in `@repo/types`; work-items mutation Zod stays in `workItems.schemas.ts` until web imports it) |
+| 3    | Per feature: unused Prisma GETs (~4h) + Zod isolation (~2h)                                             | **Started** (work-items, sprints, **attachments** + **worklogs** list GET; **profile** self GET + v1 Zod in `@repo/types`; work-items mutation Zod stays in `workItems.schemas.ts` until web imports it) |
 | 4    | Health v1 as `/api/v1/health` (~1h)                                                                     | **Done** (alias `/api/health`; `GET /` is root status)                                                                                                                                       |
 | 4b   | Health v2 reference (`/api/v2/health`, shared repo, `HealthServiceV2`)                                  | **Done** (template for product v2)                                                                                                                                                           |
-| 5    | Product `/api/v1` aliases once GETs exist                                                               | **Started** (`/api/v1/attachments`, `/api/v1/profile` aliases mounted)                                                                                                                       |
+| 5    | Product `/api/v1` aliases once GETs exist                                                               | **Started** (`/api/v1/attachments`, `/api/v1/worklogs`, `/api/v1/profile` aliases mounted)                                                                                                   |
 | 6    | Optional: point RSC at Express GETs via [DATA_RETRIEVAL.md](./DATA_RETRIEVAL.md) (`DATA_READS_VIA_API`) | Plan (default off)                                                                                                                                                                           |
 | 7    | Mark this doc **Living**                                                                                | After 4                                                                                                                                                                                      |
 
