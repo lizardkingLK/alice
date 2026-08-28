@@ -191,25 +191,3 @@ export type WorkItemStatus = z.infer<typeof workItemStatusSchema>;
 export type WorkItemUpdateBody = WorkItemBody & {
   status: WorkItemStatus;
 };
-
-const workLogDateOnlySchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format');
-
-export const createWorkLogSchema = z.object({
-  logged_hours: z.preprocess(
-    (v) => (typeof v === 'string' ? Number(v) : v),
-    z
-      .number()
-      .positive()
-      .max(1000)
-      .refine((n) => Number.isFinite(n), {
-        message: 'Logged hours must be a finite number',
-      })
-  ),
-  // Jira-like: date the work was done (defaults to today in the route).
-  logged_at: workLogDateOnlySchema.optional(),
-  comment: z.string().trim().max(2000).nullable().optional(),
-});
-
-export type CreateWorkLogBody = z.infer<typeof createWorkLogSchema>;

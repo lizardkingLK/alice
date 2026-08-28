@@ -1,9 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import express from 'express';
-import type { Server } from 'node:http';
-import { AddressInfo } from 'node:net';
 import { createWorkItemsRouter } from '../../src/routes/api/workItems/workItems.route';
 import type { WorkItemService } from '../../src/routes/api/workItems/workItems.service';
+import { MOCK_AUTH_USER_ID } from '../helpers/mock-api-auth';
+import { withMountedRouter } from '../helpers/route-test.harness';
 import { createWorkItemListRow } from '../factories/work-item.factory';
 
 const { listWorkItemsPaginatedMock, getWorkItemDetailMock } = vi.hoisted(
@@ -13,16 +12,10 @@ const { listWorkItemsPaginatedMock, getWorkItemDetailMock } = vi.hoisted(
   })
 );
 
-vi.mock('../../src/middlewares/auth', () => ({
-  requireApiAuth: (
-    req: { userId?: string },
-    _res: unknown,
-    next: () => void
-  ) => {
-    req.userId = 'user-1';
-    next();
-  },
-}));
+vi.mock('../../src/middlewares/auth', async () => {
+  const { mockRequireApiAuth } = await import('../helpers/mock-api-auth.js');
+  return { requireApiAuth: mockRequireApiAuth };
+});
 
 const workItemService = {
   listWorkItemsPaginated: listWorkItemsPaginatedMock,
@@ -33,27 +26,10 @@ const notificationsService = {
   createAssignNotification: vi.fn(),
 };
 
-async function withApp(run: (baseUrl: string) => Promise<void>): Promise<void> {
-  const app = express();
-  app.disable('x-powered-by');
-  app.use(
-    '/api/workItems',
-    createWorkItemsRouter({ workItemService, notificationsService })
-  );
-
-  const server: Server = await new Promise((resolve) => {
-    const next = app.listen(0, '127.0.0.1', () => resolve(next));
-  });
-
-  try {
-    const address = server.address() as AddressInfo;
-    await run(`http://127.0.0.1:${address.port}`);
-  } finally {
-    await new Promise<void>((resolve, reject) => {
-      server.close((error) => (error ? reject(error) : resolve()));
-    });
-  }
-}
+const workItemsRouter = createWorkItemsRouter({
+  workItemService,
+  notificationsService,
+});
 
 describe('work-items unused Prisma GET routes', () => {
   beforeEach(() => {
@@ -70,62 +46,81 @@ describe('work-items unused Prisma GET routes', () => {
     };
     listWorkItemsPaginatedMock.mockResolvedValue(page);
 
-    await withApp(async (baseUrl) => {
-      const response = await fetch(
-        `${baseUrl}/api/workItems?projectId=${page.workItems[0]!.project_id}&view=hierarchy`
-      );
-      const body = await response.json();
+    await withMountedRouter(
+      '/api/workItems',
+      workItemsRouter,
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/api/workItems?projectId=${page.workItems[0]!.project_id}&view=hierarchy`
+        );
+        const body = await response.json();
 
-      expect(response.status).toBe(200);
-      expect(body.totalCount).toBe(1);
-      expect(body.workItems[0].id).toBe(page.workItems[0]!.id);
-      expect(listWorkItemsPaginatedMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          projectId: page.workItems[0]!.project_id,
-          parentId: null,
-          page: 1,
-          limit: 10,
-        }),
-        'user-1'
-      );
-    });
+        expect(response.status).toBe(200);
+        expect(body.totalCount).toBe(1);
+        expect(body.workItems[0].id).toBe(page.workItems[0]!.id);
+        expect(listWorkItemsPaginatedMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            projectId: page.workItems[0]!.project_id,
+            parentId: null,
+            page: 1,
+            limit: 10,
+          }),
+          MOCK_AUTH_USER_ID
+        );
+      }
+    );
   });
 
   it('rejects invalid list pagination', async () => {
-    await withApp(async (baseUrl) => {
-      const response = await fetch(`${baseUrl}/api/workItems?page=0`);
-      expect(response.status).toBe(400);
-      expect(listWorkItemsPaginatedMock).not.toHaveBeenCalled();
-    });
+    await withMountedRouter(
+      '/api/workItems',
+      workItemsRouter,
+      async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/api/workItems?page=0`);
+        expect(response.status).toBe(400);
+        expect(listWorkItemsPaginatedMock).not.toHaveBeenCalled();
+      }
+    );
   });
 
   it('returns Prisma detail by id', async () => {
     const row = createWorkItemListRow();
     getWorkItemDetailMock.mockResolvedValue(row);
 
-    await withApp(async (baseUrl) => {
-      const response = await fetch(`${baseUrl}/api/workItems/${row.id}`);
-      const body = await response.json();
+    await withMountedRouter(
+      '/api/workItems',
+      workItemsRouter,
+      async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/api/workItems/${row.id}`);
+        const body = await response.json();
 
-      expect(response.status).toBe(200);
-      expect(body).toEqual({
-        data: JSON.parse(JSON.stringify(row)),
-        error: null,
-      });
-      expect(getWorkItemDetailMock).toHaveBeenCalledWith(row.id, 'user-1');
-    });
+        expect(response.status).toBe(200);
+        expect(body).toEqual({
+          data: JSON.parse(JSON.stringify(row)),
+          error: null,
+        });
+        expect(getWorkItemDetailMock).toHaveBeenCalledWith(
+          row.id,
+          MOCK_AUTH_USER_ID
+        );
+      }
+    );
   });
 
   it('returns 404 when Prisma detail is missing', async () => {
     getWorkItemDetailMock.mockResolvedValue(null);
     const id = '22222222-2222-4222-8222-222222222222';
 
-    await withApp(async (baseUrl) => {
-      const response = await fetch(`${baseUrl}/api/workItems/${id}`);
-      const body = await response.json();
+    await withMountedRouter(
+      '/api/workItems',
+      workItemsRouter,
+      async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/api/workItems/${id}`);
+        const body = await response.json();
 
-      expect(response.status).toBe(404);
-      expect(body).toEqual({ data: null, error: 'Work item not found' });
-    });
+        expect(response.status).toBe(404);
+        expect(body).toEqual({ data: null, error: 'Work item not found' });
+      }
+    );
   });
 });

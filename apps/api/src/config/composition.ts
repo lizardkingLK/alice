@@ -18,6 +18,9 @@ import { createChatRouter } from '../routes/api/chat/chat.route';
 import { AttachmentsRepository } from '../routes/api/attachments/attachments.repository';
 import { AttachmentsService } from '../routes/api/attachments/attachments.service';
 import { createAttachmentsRouter } from '../routes/api/attachments/attachments.route';
+import { WorklogsRepository } from '../routes/api/worklogs/worklogs.repository';
+import { WorklogsService } from '../routes/api/worklogs/worklogs.service';
+import { createWorklogsRouter } from '../routes/api/worklogs/worklogs.route';
 import { AccessAllowlistRepository } from '../routes/api/accessAllowlist/accessAllowlist.repository';
 import { AccessAllowlistService } from '../routes/api/accessAllowlist/accessAllowlist.service';
 import { createAccessAllowlistRouter } from '../routes/api/accessAllowlist/accessAllowlist.route';
@@ -79,9 +82,14 @@ function createAccessAllowlistConfig() {
   };
 }
 
-function createAttachmentsConfig() {
+function createAttachmentsConfig(
+  workItemRepository: Pick<WorkItemRepository, 'requireProjectMember'>
+) {
   const attachmentsRepository = new AttachmentsRepository(supabase);
-  const attachmentsService = new AttachmentsService(attachmentsRepository);
+  const attachmentsService = new AttachmentsService(
+    attachmentsRepository,
+    workItemRepository
+  );
   const router = createAttachmentsRouter({
     attachmentsService,
   });
@@ -89,6 +97,26 @@ function createAttachmentsConfig() {
   return {
     attachmentsRepository,
     attachmentsService,
+    router,
+  };
+}
+
+function createWorklogsConfig(
+  workItemRepository: Pick<
+    WorkItemRepository,
+    'requireProjectMember' | 'getById'
+  >
+) {
+  const worklogsRepository = new WorklogsRepository(supabase);
+  const worklogsService = new WorklogsService(
+    worklogsRepository,
+    workItemRepository
+  );
+  const router = createWorklogsRouter({ worklogsService });
+
+  return {
+    worklogsRepository,
+    worklogsService,
     router,
   };
 }
@@ -289,14 +317,17 @@ function createHealthConfig() {
 export const root = createRootConfig();
 export const health = createHealthConfig();
 export const accessAllowlist = createAccessAllowlistConfig();
-export const attachments = createAttachmentsConfig();
 export const notifications = createNotificationsConfig();
-export const comments = createCommentsConfig(
-  notifications.notificationsService
-);
 export const workItems = createWorkItemsConfig(
   notifications.notificationsService
 );
+export const attachments = createAttachmentsConfig(
+  workItems.workItemRepository
+);
+export const comments = createCommentsConfig(
+  notifications.notificationsService
+);
+export const worklogs = createWorklogsConfig(workItems.workItemRepository);
 export const sprints = createSprintsConfig();
 export const jira = createJiraConfig();
 export const projects = createProjectsConfig(

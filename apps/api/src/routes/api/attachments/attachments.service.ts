@@ -10,7 +10,13 @@ import {
   storageObjectExists,
   uploadToStorage,
 } from '../../../lib/file-helpers';
-import type { AttachmentWithUploader } from '@repo/types';
+import type {
+  AttachmentListRow,
+  AttachmentSignedUrls,
+  AttachmentUploadSession,
+  UploadedAttachmentResult,
+} from '@repo/types';
+import type { WorkItemRepository } from '../workItems/workItems.repository';
 import { AttachmentsRepository } from './attachments.repository';
 
 /** Attachment row does not exist (or is archived/deleted). */
@@ -29,29 +35,7 @@ export class AttachmentGoneError extends Error {
   }
 }
 
-export type UploadedAttachmentResult = {
-  success: true;
-  path: string;
-  /** Signed URL (attachments bucket is private). */
-  url: string;
-  /** Present when upload is linked to a work item (DB row created). */
-  attachment?: AttachmentWithUploader;
-};
-
-export type AttachmentSignedUrls = {
-  previewUrl: string;
-  downloadUrl: string;
-  expiresAt: string;
-};
-
-export type CreatedAttachmentUploadSession = {
-  upload: {
-    bucket: string;
-    signedUrl: string;
-    token: string;
-    path: string;
-  };
-};
+type WorkItemAccess = Pick<WorkItemRepository, 'requireProjectMember'>;
 
 /**
  * Upload one file to the attachments bucket.
@@ -59,7 +43,19 @@ export type CreatedAttachmentUploadSession = {
  * Without it, storage-only (playground `/files` page).
  */
 export class AttachmentsService {
-  constructor(private readonly attachmentsRepository: AttachmentsRepository) {}
+  constructor(
+    private readonly attachmentsRepository: AttachmentsRepository,
+    private readonly workItems: WorkItemAccess
+  ) {}
+
+  /** Unused Express list path — requires project membership for the work item. */
+  async listByWorkItemId(
+    workItemId: string,
+    actorId: string
+  ): Promise<AttachmentListRow[]> {
+    await this.workItems.requireProjectMember(workItemId, actorId);
+    return await this.attachmentsRepository.listByWorkItemId(workItemId);
+  }
 
   async uploadAttachmentFile(
     file: Express.Multer.File,
@@ -124,7 +120,7 @@ export class AttachmentsService {
     fileName: string;
     contentType: string;
     fileSize: number;
-  }): Promise<CreatedAttachmentUploadSession> {
+  }): Promise<AttachmentUploadSession> {
     const { workItemId, fileName } = params;
     const bucket = env.STORAGE_BUCKET_ATTACHMENTS;
 
@@ -173,7 +169,6 @@ export class AttachmentsService {
       throw new Error('Invalid upload target');
     }
 
-    // Ensure the upload actually happened before committing DB rows.
     const exists = await storageObjectExistsStrict(bucket, storagePath);
     if (!exists) {
       throw new Error('Uploaded file not found in storage');
@@ -213,11 +208,11 @@ export class AttachmentsService {
 
     const bucket = env.STORAGE_BUCKET_ATTACHMENTS;
 
-    // Signing never validates existence — check first so orphaned rows return a
-    // distinct "gone" state instead of a URL that 404s on fetch (and loops the
-    // regenerate UI).
-    const exists = await storageObjectExists(bucket, attachment.storage_path);
-    if (!exists) {
+    const objectExists = await storageObjectExists(
+      bucket,
+      attachment.storage_path
+    );
+    if (!objectExists) {
       throw new AttachmentGoneError();
     }
 
@@ -229,8 +224,6 @@ export class AttachmentsService {
       }),
       createSignedStorageUrl(bucket, attachment.storage_path, {
         expiresInSeconds,
-        // Storage SDK encodes the final URL. Keep the query value filename-safe
-        // without pre-encoding it (which would double-encode `%` characters).
         download: sanitizeFileName(attachment.file_name),
       }),
     ]);

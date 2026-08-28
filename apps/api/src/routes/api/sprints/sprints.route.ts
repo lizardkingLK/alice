@@ -64,7 +64,6 @@ export function createSprintsRouter(deps: SprintsRouterDeps): Router {
 
   const sprintsRouter: Router = Router();
 
-
   sprintsRouter.post(
     '/',
     requireApiAuth,
@@ -195,9 +194,7 @@ export function createSprintsRouter(deps: SprintsRouterDeps): Router {
     async (req: AuthenticatedRequest, res) => {
       const parsedId = z.uuid().safeParse(req.params.id);
       if (!parsedId.success) {
-        return res
-          .status(400)
-          .json({ data: null, error: 'Invalid sprint id' });
+        return res.status(400).json({ data: null, error: 'Invalid sprint id' });
       }
 
       try {

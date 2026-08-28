@@ -1,5 +1,4 @@
-import { expectedUpdatedAtSchema } from '@repo/types';
-import { z } from 'zod';
+import type { ProfileDetailRow, UpdateOwnProfileBody } from '@repo/types';
 import { env } from '../../../config/env';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
 import { prisma } from '../../../lib/prisma';
@@ -10,21 +9,14 @@ import {
 import { uploadPublicImageReplacingPrevious } from '../../../lib/public-image-upload';
 import { ProfileRepository, ProfileUser } from './profile.repository';
 
-export const updateOwnProfileSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(2, 'Name must be at least 2 characters.')
-    .max(100, 'Name must be at most 100 characters.'),
-  expectedUpdatedAt: expectedUpdatedAtSchema,
-});
-
-export type UpdateOwnProfileInput = z.infer<typeof updateOwnProfileSchema>;
-
 type ProfileImageField = 'profile_picture' | 'cover_picture';
 
 export class ProfileService {
   constructor(private readonly profileRepository: ProfileRepository) {}
+
+  async getOwnProfile(userId: string): Promise<ProfileDetailRow | null> {
+    return this.profileRepository.getProfileUserPrisma(userId);
+  }
 
   private async findProfileUser(userId: string): Promise<ProfileUser | null> {
     return await this.profileRepository.getProfileUser(userId);
@@ -32,7 +24,7 @@ export class ProfileService {
 
   async updateOwnName(
     userId: string,
-    input: UpdateOwnProfileInput
+    input: UpdateOwnProfileBody
   ): Promise<ProfileUser> {
     return this.profileRepository.updateOwnName(userId, input);
   }

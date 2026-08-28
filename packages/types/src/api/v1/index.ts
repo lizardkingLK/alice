@@ -21,6 +21,30 @@ export {
   type WorkItemPrismaListFilters,
 } from './work-items.js';
 export {
+  archiveAttachmentSchema,
+  attachmentListSelect,
+  attachmentSignedUrlsSchema,
+  attachmentUploadSessionSchema,
+  attachmentUploaderSelect,
+  attachmentWithUploaderSchema,
+  createUploadSessionSchema,
+  deleteAttachmentResponseSchema,
+  finalizeUploadSchema,
+  listAttachmentsQuerySchema,
+  uploadedAttachmentResultSchema,
+  workItemIdSchema,
+  type ArchiveAttachmentBody,
+  type AttachmentListRow,
+  type AttachmentSignedUrls,
+  type AttachmentUploadSession,
+  type AttachmentWithUploaderWire,
+  type CreateUploadSessionBody,
+  type DeleteAttachmentResponse,
+  type FinalizeUploadBody,
+  type ListAttachmentsQuery,
+  type UploadedAttachmentResult,
+} from './attachments.js';
+export {
   listSprintsQuerySchema,
   sprintDetailSelect,
   sprintListSelect,
@@ -43,3 +67,28 @@ export {
 } from './comments.js';
 
 
+  PROFILE_USER_POSTGREST_SELECT,
+  profileDetailSelect,
+  profileImageUploadResultSchema,
+  profilePatchResponseSchema,
+  profileUserWireSchema,
+  updateOwnProfileSchema,
+  type ProfileDetailRow,
+  type ProfileImageUploadResult,
+  type ProfilePatchResponse,
+  type ProfileUserWire,
+  type UpdateOwnProfileBody,
+} from './profile.js';
+export {
+  createWorkLogResponseSchema,
+  createWorkLogSchema,
+  listWorkLogsQuerySchema,
+  workLogAuthorSelect,
+  workLogListSelect,
+  workLogWireSchema,
+  type CreateWorkLogBody,
+  type CreateWorkLogResponse,
+  type ListWorkLogsQuery,
+  type WorkLogListRow,
+  type WorkLogWire,
+} from './work-item-worklogs.js';
