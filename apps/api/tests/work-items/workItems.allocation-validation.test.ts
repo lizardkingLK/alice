@@ -25,6 +25,12 @@ vi.mock('../../src/config/env', () => ({
   },
 }));
 
+vi.mock('../../src/lib/supabase', () => ({
+  supabase: {
+    from: vi.fn(),
+  },
+}));
+
 vi.mock('../../src/lib/prisma', () => ({
   prisma: {
     teams: {
