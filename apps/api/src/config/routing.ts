@@ -33,6 +33,7 @@ routesConfig.use('/api/comments', comments.router);
 routesConfig.use('/api/jira', jira.router);
 routesConfig.use('/api/notifications', notifications.router);
 routesConfig.use('/api/profile', profile.router);
+routesConfig.use('/api/v1/profile', profile.router);
 routesConfig.use('/api/projects', projects.router);
 routesConfig.use('/api/saved-views', savedViews.router);
 routesConfig.use('/api/sprints', sprints.router);
