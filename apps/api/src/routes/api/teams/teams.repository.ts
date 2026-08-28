@@ -84,9 +84,9 @@ export class TeamsRepository {
     const term = input.search?.trim();
     if (term) {
       where.OR = [
-        { name: { contains: term, mode: 'insensitive' } },
-        { description: { contains: term, mode: 'insensitive' } },
-        { tech_stack: { contains: term, mode: 'insensitive' } },
+        { name: { contains: term, mode: Prisma.QueryMode.insensitive } },
+        { description: { contains: term, mode: Prisma.QueryMode.insensitive } },
+        { tech_stack: { contains: term, mode: Prisma.QueryMode.insensitive } },
       ];
     }
 
@@ -95,7 +95,7 @@ export class TeamsRepository {
         prisma.teams.findMany({
           where,
           select: teamListSelect,
-          orderBy: { created_at: 'desc' },
+          orderBy: { created_at: Prisma.SortOrder.desc },
           skip,
           take,
         }),

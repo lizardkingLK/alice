@@ -1,4 +1,5 @@
 import { requireUserWithRole } from '../../../lib/auth-helpers';
+import { ALL_PROJECTS } from '../../../lib/project-access';
 import {
   ProjectStatusEnum,
   UserRoleEnum,
@@ -88,7 +89,7 @@ export class ProjectsService {
     totalPages: number;
   }> {
     const accessible = await this.projectsRepository.listAccessibleProjectIds(actorId);
-    if (accessible !== 'all' && accessible.length === 0) {
+    if (accessible !== ALL_PROJECTS && accessible.length === 0) {
       return {
         projects: [],
         totalCount: 0,
@@ -114,7 +115,7 @@ export class ProjectsService {
     actorId: string
   ): Promise<ProjectDetailRow | null> {
     const accessible = await this.projectsRepository.listAccessibleProjectIds(actorId);
-    if (accessible !== 'all' && !accessible.includes(projectId)) {
+    if (accessible !== ALL_PROJECTS && !accessible.includes(projectId)) {
       throw new Error('Unauthorized project workspace access.');
     }
     return await this.projectsRepository.getDetailById(projectId);
@@ -125,7 +126,7 @@ export class ProjectsService {
     actorId: string
   ): Promise<ProjectMemberRow[]> {
     const accessible = await this.projectsRepository.listAccessibleProjectIds(actorId);
-    if (accessible !== 'all' && !accessible.includes(projectId)) {
+    if (accessible !== ALL_PROJECTS && !accessible.includes(projectId)) {
       throw new Error('Unauthorized project workspace access.');
     }
     return await this.projectsRepository.listMembersPrisma(projectId);

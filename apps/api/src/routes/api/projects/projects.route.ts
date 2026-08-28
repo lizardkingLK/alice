@@ -28,12 +28,14 @@ import type { JiraService } from '../jira/jira.service';
 import type { ParsedJiraIssue } from '../jira/jira.types';
 import { listProjectsQuerySchema } from '@repo/types';
 
+const TYPE_STRING = 'string';
+
 function firstQueryValue(value: unknown): string | undefined {
-  if (typeof value === 'string') {
-    return value;
+  if (typeof value === TYPE_STRING) {
+    return value as string;
   }
-  if (Array.isArray(value) && typeof value[0] === 'string') {
-    return value[0];
+  if (Array.isArray(value) && typeof value[0] === TYPE_STRING) {
+    return value[0] as string;
   }
   return undefined;
 }

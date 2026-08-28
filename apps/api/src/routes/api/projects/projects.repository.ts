@@ -21,7 +21,7 @@ import {
   prismaOptionalDate,
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
-import { listAccessibleProjectIds } from '../../../lib/project-access';
+import { listAccessibleProjectIds, ALL_PROJECTS } from '../../../lib/project-access';
 import type {
   ProjectMemberWithUser,
   ProjectRow,
@@ -96,14 +96,14 @@ function unsafeCast<T>(val: unknown): T {
 export class ProjectsRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
-  async listAccessibleProjectIds(actorId: string): Promise<'all' | string[]> {
+  async listAccessibleProjectIds(actorId: string): Promise<typeof ALL_PROJECTS | string[]> {
     return listAccessibleProjectIds(this.db, actorId);
   }
 
   async listPaginated(input: {
-    accessibleIds: 'all' | string[];
+    accessibleIds: typeof ALL_PROJECTS | string[];
     filters: {
-      status?: 'active' | 'archived';
+      status?: ProjectStatus;
       search?: string;
     };
     page: number;
@@ -120,7 +120,7 @@ export class ProjectsRepository {
 
     const where: Prisma.projectsWhereInput = {};
 
-    if (input.accessibleIds !== 'all') {
+    if (input.accessibleIds !== ALL_PROJECTS) {
       where.id = { in: input.accessibleIds };
     }
 
