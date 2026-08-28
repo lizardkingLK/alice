@@ -3,7 +3,10 @@ import express from 'express';
 import type { Server } from 'node:http';
 import { AddressInfo } from 'node:net';
 import { createSprintsRouter } from '../../src/routes/api/sprints/sprints.route';
-import type { SprintsService, SprintBurndownService } from '../../src/routes/api/sprints/sprints.service';
+import type {
+  SprintsService,
+  SprintBurndownService,
+} from '../../src/routes/api/sprints/sprints.service';
 import { createSprintListRow } from '../factories/sprint.factory';
 import { SprintAccessError } from '../../src/routes/api/sprints/sprints.errors';
 
@@ -147,7 +150,10 @@ describe('sprints unused Prisma GET routes', () => {
       const body = await response.json();
 
       expect(response.status).toBe(403);
-      expect(body).toEqual({ data: null, error: "You're not a member of this project." });
+      expect(body).toEqual({
+        data: null,
+        error: "You're not a member of this project.",
+      });
     });
   });
 });
@@ -182,7 +188,10 @@ describe('sprints versioned POST and PATCH mutation routes', () => {
         data: JSON.parse(JSON.stringify(sprintPayload)),
         error: null,
       });
-      expect(createSprintMock).toHaveBeenCalledWith('user-1', expect.objectContaining(body));
+      expect(createSprintMock).toHaveBeenCalledWith(
+        'user-1',
+        expect.objectContaining(body)
+      );
     });
   });
 

@@ -19,7 +19,6 @@ import type {
 import { requireUserWithRole } from '../../../lib/auth-helpers';
 import type { SprintPaginatedList } from './sprints.prisma-query';
 
-
 export type {
   BurndownPoint,
   SprintBurndownPayload as BurndownResponse,
@@ -191,7 +190,11 @@ export class SprintsService {
     const statuses =
       query.tab === 'archived'
         ? [SprintStatusEnum.Archived]
-        : [SprintStatusEnum.Planned, SprintStatusEnum.Active, SprintStatusEnum.Closed];
+        : [
+            SprintStatusEnum.Planned,
+            SprintStatusEnum.Active,
+            SprintStatusEnum.Closed,
+          ];
 
     const base = {
       status: statuses,

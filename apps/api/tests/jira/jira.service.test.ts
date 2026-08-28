@@ -148,12 +148,12 @@ describe('JiraService', () => {
       exp: Date.now() + 60_000,
     });
 
-    await expect(service.handleOAuthCallback('auth-code', state)).rejects.toThrow(
-      TypeError
-    );
-    await expect(service.handleOAuthCallback('auth-code', state)).rejects.toThrow(
-      'Invalid OAuth state payload.'
-    );
+    await expect(
+      service.handleOAuthCallback('auth-code', state)
+    ).rejects.toThrow(TypeError);
+    await expect(
+      service.handleOAuthCallback('auth-code', state)
+    ).rejects.toThrow('Invalid OAuth state payload.');
   });
 
   it('fetches issues for import with a Bearer token', async () => {
