@@ -2,7 +2,14 @@
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { Bell, Shield, SlidersHorizontal, UserRound } from '@repo/ui/lib/icons';
+import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
+import {
+  Bell,
+  Plug,
+  Shield,
+  SlidersHorizontal,
+  UserRound,
+} from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import type { SettingsTab } from '@/lib/search-params';
 
@@ -11,6 +18,7 @@ const SETTINGS_NAV: ReadonlyArray<{
   readonly label: string;
   readonly href: string;
   readonly Icon: typeof UserRound;
+  readonly adminOnly?: boolean;
 }> = [
   {
     id: 'general',
@@ -36,26 +44,37 @@ const SETTINGS_NAV: ReadonlyArray<{
     href: '/settings?tab=preferences',
     Icon: SlidersHorizontal,
   },
+  {
+    id: 'integrations',
+    label: 'Integrations',
+    href: '/settings?tab=integrations',
+    Icon: Plug,
+    adminOnly: true,
+  },
 ];
 
 type SettingsWorkspaceProps = {
   readonly activeTab: SettingsTab;
+  readonly isAdmin: boolean;
   readonly children: ReactNode;
 };
 
 export function SettingsWorkspace({
   activeTab,
+  isAdmin,
   children,
 }: Readonly<SettingsWorkspaceProps>) {
+  const navItems = SETTINGS_NAV.filter((item) => !item.adminOnly || isAdmin);
+
   return (
-    <div className="bg-background flex min-h-full flex-col md:flex-row">
-      <aside className="border-border w-full shrink-0 border-b md:w-56 md:border-r md:border-b-0">
+    <div className="flex h-full min-h-0 flex-1 flex-col md:flex-row">
+      <aside className="border-border shrink-0 border-b md:flex md:h-full md:w-56 md:flex-col md:border-r md:border-b-0">
         <div className="px-4 py-5 sm:px-4">
           <h1 className="text-lg font-semibold tracking-tight">Settings</h1>
         </div>
-        <nav aria-label="Settings sections" className="px-2 pb-4">
+        <nav aria-label="Settings sections" className="px-2 pb-4 md:pb-6">
           <ul className="flex flex-col gap-0.5">
-            {SETTINGS_NAV.map(({ id, label, href, Icon }) => {
+            {navItems.map(({ id, label, href, Icon }) => {
               const isActive = activeTab === id;
               return (
                 <li key={id}>
@@ -79,7 +98,9 @@ export function SettingsWorkspace({
         </nav>
       </aside>
 
-      <div className="min-w-0 flex-1">{children}</div>
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="min-h-0 w-full">{children}</div>
+      </ScrollArea>
     </div>
   );
 }

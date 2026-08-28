@@ -3,17 +3,18 @@
 User profile surfaces: a read-only **Profile** page backed by the Supabase auth
 session and `public.users` (with cover upload on the banner), plus **Settings**
 tabs for self-service account updates (General, Security, Notifications,
-Preferences).
+Preferences). Administrators also get an **Integrations** tab (see
+[integrations feature docs](../integrations/)).
 
 | Document                             | Description                                                          | Status |
 | ------------------------------------ | -------------------------------------------------------------------- | ------ |
 | This README                          | Profile + settings surfaces overview                                 | Living |
 | [EDIT_PROFILE.md](./EDIT_PROFILE.md) | General settings, storage buckets, forever avatar/cover URLs, fields | Living |
 
-| Surface  | Route       | Description                                                | Status |
-| -------- | ----------- | ---------------------------------------------------------- | ------ |
-| Profile  | `/profile`  | Identity, About, Contact, Teams, "Worked on", cover upload | Living |
-| Settings | `/settings` | Tabs: General, Security, Notifications, Preferences        | Living |
+| Surface  | Route       | Description                                                               | Status |
+| -------- | ----------- | ------------------------------------------------------------------------- | ------ |
+| Profile  | `/profile`  | Identity, About, Contact, Teams, "Worked on", cover upload                | Living |
+| Settings | `/settings` | Tabs: General, Security, Notifications, Preferences; Integrations (admin) | Living |
 
 ## Profile (`/profile`)
 

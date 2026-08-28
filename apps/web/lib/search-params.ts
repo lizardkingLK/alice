@@ -177,10 +177,18 @@ export function parseBoardPageTab(tab?: string | null): BoardPageTab {
 
 /** Account settings page tabs (`/settings?tab=`). */
 export type SettingsTab =
-  'general' | 'security' | 'notifications' | 'preferences';
+  'general' | 'security' | 'notifications' | 'preferences' | 'integrations';
+
+/** Self-service profile tabs (excludes admin-only Integrations). */
+export type AccountSettingsTab = Exclude<SettingsTab, 'integrations'>;
 
 export function parseSettingsTab(tab?: string | null): SettingsTab {
-  if (tab === 'security' || tab === 'notifications' || tab === 'preferences') {
+  if (
+    tab === 'security' ||
+    tab === 'notifications' ||
+    tab === 'preferences' ||
+    tab === 'integrations'
+  ) {
     return tab;
   }
   return 'general';

@@ -43,10 +43,14 @@ Related:
 
 ## Surfaces
 
-| Surface  | Route             | Role                                                  |
-| -------- | ----------------- | ----------------------------------------------------- |
-| Profile  | `/profile`        | Identity + teams / worked-on; cover upload via dialog |
-| Settings | `/settings?tab=…` | General, Security, Notifications, Preferences         |
+| Surface  | Route             | Role                                                                         |
+| -------- | ----------------- | ---------------------------------------------------------------------------- |
+| Profile  | `/profile`        | Identity + teams / worked-on; cover upload via dialog                        |
+| Settings | `/settings?tab=…` | General, Security, Notifications, Preferences; **Integrations** (admin only) |
+
+Integrations (admin-only) is documented in
+[SETTINGS_INTEGRATIONS.md](../integrations/SETTINGS_INTEGRATIONS.md) and lives
+at `/settings?tab=integrations`.
 
 `/profile` → **Manage your account** → `/settings?tab=general`. Identity comes from the
 session (`getUser()` / `getDbUser()`); no user id is required in the URL.
