@@ -12,9 +12,9 @@ import { Label } from '@repo/ui/components/ui/label';
 import { SearchableSelect } from '@/components/searchable-select';
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import { ALL_PROJECTS_ID } from '@/app/board/_helpers/board-defaults-storage';
-import { resolveDefaultBoardSprint } from '@/app/board/_services/board-defaults';
-import type { Project } from '@/app/projects/_services/projects.service.base';
-import type { Sprint } from '@/app/sprints/_services/sprints.service';
+import { resolveDefaultBoardSprint } from '@/app/board/_services/board.defaults.shared';
+import type { Project } from '@/app/projects/_services/projects.mutations.shared';
+import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { PreferenceDialogFooter } from '@/components/preference-dialog-footer';
 import { preventDismissForComboboxPortal } from '@/lib/dialog-outside-events';
 

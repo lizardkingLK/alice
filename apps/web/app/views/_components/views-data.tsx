@@ -5,12 +5,12 @@ import {
   parseViewsListTab,
   type RawSearchParams,
 } from '@/lib/search-params';
-import { getProjectList } from '@/app/projects/_services/projects.service.server';
+import { getProjectList } from '@/app/projects/_services/projects.reads.server';
 import { ViewsWorkspace } from '@/app/views/_components/views-workspace';
 import {
   getSavedViewsPaginated,
   type SavedView,
-} from '@/app/views/_services/saved-views.service.server';
+} from '@/app/views/_services/saved-views.reads.server';
 
 const EMPTY_VIEWS = {
   views: [] as SavedView[],

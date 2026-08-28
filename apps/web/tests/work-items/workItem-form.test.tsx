@@ -1,17 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { WorkItemForm } from '@/app/work-items/_components/workItem-form';
+import { WorkItemForm } from '@/app/work-items/_components/work-item-form/work-item-form';
 import {
   createWorkItem,
   updateWorkItem,
-} from '@/app/work-items/_services/workItem.service.client';
+} from '@/app/work-items/_services/work-items.mutations.client';
 import { userFactory } from '../factories/user.factory';
 import { projectFactory } from '../factories/project.factory';
 import { workItemFactory } from '../factories/workItem.factory';
 import { pickComboboxOption } from '../helpers/pick-combobox-option';
 import { fetchProjectMembersForForm } from '@/lib/form-read-actions';
 
-vi.mock('@/app/work-items/_services/workItem.service.client', () => ({
+vi.mock('@/app/work-items/_services/work-items.mutations.client', () => ({
   createWorkItem: vi.fn(),
   updateWorkItem: vi.fn(),
   listParentCandidateWorkItems: vi.fn().mockResolvedValue([]),

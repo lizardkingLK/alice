@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import type { work_itemsGetPayload } from '../../generated/prisma/models/work_items.js';
+import { projectRelationSelect } from '../../projects.js';
+import { userRelationSelect } from '../../users.js';
 import { WORK_ITEM_TYPES, type WorkItemType } from '../../work-item-types.js';
 import { parseWorkItemLabelsFilterParam } from '../../work-item-labels.js';
 
@@ -15,6 +17,41 @@ export const workItemUserSelect = {
   email: true,
   profile_picture: true,
 } as const;
+
+/** PostgREST embeds — keep aligned with `workItemUserSelect`. */
+export const WORK_ITEM_ASSIGNEE_POSTGREST_SELECT = userRelationSelect(
+  'assignee',
+  'assignee_id'
+);
+export const WORK_ITEM_REPORTER_POSTGREST_SELECT = userRelationSelect(
+  'reporter',
+  'reporter_id'
+);
+
+/**
+ * PostgREST scalar columns for list/board reads.
+ * Field list must stay aligned with `workItemListSelect` keys.
+ */
+export const WORK_ITEM_LIST_POSTGREST_COLUMNS =
+  'id, project_id, sprint_id, parent_id, title, type, priority, labels, assignee_id, reporter_id, due_date, story_points, status, record_status, done_at, created_by, created_at, updated_by, updated_at, jira_issue_key' as const;
+
+/** PostgREST select for list/board reads (optional TipTap description). */
+export function workItemListPostgrestSelect(
+  includeDescription: boolean
+): string {
+  const columns = includeDescription
+    ? `${WORK_ITEM_LIST_POSTGREST_COLUMNS}, description`
+    : WORK_ITEM_LIST_POSTGREST_COLUMNS;
+  return `${columns}, ${WORK_ITEM_ASSIGNEE_POSTGREST_SELECT}, ${WORK_ITEM_REPORTER_POSTGREST_SELECT}`;
+}
+
+export const WORK_ITEM_PROJECT_POSTGREST_SELECT = projectRelationSelect();
+export const WORK_ITEM_SPRINT_POSTGREST_SELECT = 'sprint:sprints(id, name)';
+
+/** PostgREST select for detail reads — aligned with `workItemDetailSelect` embeds. */
+export function workItemDetailPostgrestSelect(): string {
+  return `*, ${WORK_ITEM_ASSIGNEE_POSTGREST_SELECT}, ${WORK_ITEM_REPORTER_POSTGREST_SELECT}, ${WORK_ITEM_PROJECT_POSTGREST_SELECT}, ${WORK_ITEM_SPRINT_POSTGREST_SELECT}`;
+}
 
 export const workItemProjectSelect = {
   id: true,

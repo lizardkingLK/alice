@@ -1,4 +1,4 @@
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 
 const defaultAssignee = {
   id: 'user-123',

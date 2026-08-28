@@ -20,8 +20,8 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import { UserPlus, Loader2, X } from '@repo/ui/lib/icons';
-import type { User } from '../_services/users.service';
-import { createUser, updateUser } from '../_services/users.service';
+import type { User } from '../_services/users.mutations.client';
+import { createUser, updateUser } from '../_services/users.mutations.client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 

@@ -1,4 +1,4 @@
-import { getActiveMemberProjectIds } from '@/app/board/_services/board-defaults.server';
+import { getActiveMemberProjectIds } from '@/app/board/_services/board.reads.defaults.server';
 import { isAdmin, isAppRole } from '@/lib/rbac/roles';
 import { createClient } from '@/lib/supabase/server';
 

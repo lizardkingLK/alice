@@ -2,8 +2,8 @@
 
 import type { DragEvent } from 'react';
 import { cn } from '@repo/ui/lib/utils';
-import type { Project } from '@/app/projects/_services/projects.service';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import type { Project } from '@/app/projects/_services/projects.mutations.client';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { CalendarDayItem } from '@/app/calendar/_components/calendar-day-item';
 
 type CalendarWorkItemListProps = {

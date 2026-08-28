@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { WorkItemLinkSubtaskDialog } from '@/app/work-items/_components/work-item-link-subtask-dialog';
-import { updateWorkItem } from '@/app/work-items/_services/workItem.service.client';
+import { WorkItemLinkSubtaskDialog } from '@/app/work-items/_components/work-item-subtasks/work-item-link-subtask-dialog';
+import { updateWorkItem } from '@/app/work-items/_services/work-items.mutations.client';
 import { workItemFactory } from '../factories/workItem.factory';
 import { pickComboboxOption } from '../helpers/pick-combobox-option';
 
-vi.mock('@/app/work-items/_services/workItem.service.client', () => ({
+vi.mock('@/app/work-items/_services/work-items.mutations.client', () => ({
   updateWorkItem: vi.fn(),
 }));
 

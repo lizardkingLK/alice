@@ -8,7 +8,14 @@ export {
 } from './health.js';
 export {
   listWorkItemsQuerySchema,
+  WORK_ITEM_ASSIGNEE_POSTGREST_SELECT,
+  WORK_ITEM_LIST_POSTGREST_COLUMNS,
+  WORK_ITEM_PROJECT_POSTGREST_SELECT,
+  WORK_ITEM_REPORTER_POSTGREST_SELECT,
+  WORK_ITEM_SPRINT_POSTGREST_SELECT,
+  workItemDetailPostgrestSelect,
   workItemDetailSelect,
+  workItemListPostgrestSelect,
   workItemListSelect,
   workItemListSelectWithDescription,
   workItemProjectSelect,

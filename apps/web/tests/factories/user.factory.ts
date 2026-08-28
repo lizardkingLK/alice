@@ -1,4 +1,4 @@
-import type { User } from '@/app/users/_services/users.service';
+import type { User } from '@/app/users/_services/users.mutations.client';
 
 export const userFactory = {
   build(overrides: Partial<User> = {}): User {

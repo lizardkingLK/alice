@@ -5,7 +5,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { all, createLowlight } from 'lowlight';
-import CodeBlockNodeView from '@/app/work-items/_components/workItem-description-editor-nodeView';
+import CodeBlockNodeView from '@/app/work-items/_components/work-item-description/work-item-description-editor-nodeView';
 import { CustomLinkExtension } from '@/lib/editor/tiptap-link-configuration';
 import { EDITOR_EMPTY_PLACEHOLDER_CLASS } from '@/lib/editor/editor-placeholder-classes';
 

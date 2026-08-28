@@ -15,10 +15,10 @@ import {
   TabsList,
   TabsTrigger,
 } from '@repo/ui/components/ui/tabs';
-import type { Project } from '@/app/projects/_services/projects.service';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
-import type { User } from '@/app/users/_services/users.service';
-import { WorkItemForm } from '@/app/work-items/_components/workItem-form';
+import type { Project } from '@/app/projects/_services/projects.mutations.client';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import type { User } from '@/app/users/_services/users.mutations.client';
+import { WorkItemForm } from '@/app/work-items/_components/work-item-form/work-item-form';
 import { useWorkItemCreateFormMode } from '@/app/work-items/_hooks/use-work-item-create-form-mode';
 import { Pagination } from '@/components/pagination';
 import { QUERY_FILTER_ALL_VALUE } from '@/hooks/use-query-filter';

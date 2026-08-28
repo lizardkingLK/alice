@@ -4,17 +4,20 @@ import { AccessAllowlistForm } from '@/app/access-allowlist/_components/access-a
 import {
   createAccessAllowlistEntry,
   updateAccessAllowlistEntry,
-} from '@/app/access-allowlist/_services/accessAllowlist.service';
+} from '@/app/access-allowlist/_services/access-allowlist.mutations.client';
 import { accessAllowlistFactory } from '../factories/accessAllowlist.factory';
 
 vi.mock('@repo/ui/components/ui/select', () =>
   import('../mocks/select').then((module) => module.createSelectMock())
 );
 
-vi.mock('@/app/access-allowlist/_services/accessAllowlist.service', () => ({
-  createAccessAllowlistEntry: vi.fn(),
-  updateAccessAllowlistEntry: vi.fn(),
-}));
+vi.mock(
+  '@/app/access-allowlist/_services/access-allowlist.mutations.client',
+  () => ({
+    createAccessAllowlistEntry: vi.fn(),
+    updateAccessAllowlistEntry: vi.fn(),
+  })
+);
 
 describe('AccessAllowlistForm', () => {
   afterEach(() => {

@@ -3,12 +3,12 @@ import { TeamRegistry } from '@/app/manager/_components/team-registry';
 import {
   getTeamListPaginated,
   type Team,
-} from '@/app/manager/_services/teams.service.server';
-import { getUserList } from '@/app/users/_services/users.service.server';
+} from '@/app/manager/_services/teams.reads.server';
+import { getUserList } from '@/app/users/_services/users.reads.server';
 import {
   getProjectList,
   getProjectMembersByProjectIds,
-} from '@/app/projects/_services/projects.service.server';
+} from '@/app/projects/_services/projects.reads.server';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import {

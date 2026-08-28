@@ -26,8 +26,8 @@ import {
   createSprint,
   updateSprint,
   Sprint,
-} from '../_services/sprints.service';
-import type { Project } from '@/app/projects/_services/projects.service.base';
+} from '../_services/sprints.mutations.client';
+import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
 import { loadProjectsForSprintForm } from '@/lib/cache/load-projects-for-forms';
 import { createClient } from '@/lib/supabase/client';

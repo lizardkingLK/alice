@@ -12,7 +12,7 @@ import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { Calendar, Folder, Shield } from '@repo/ui/lib/icons';
 import { ProjectSummaryMetrics } from '@/app/projects/[id]/_components/project-summary-metrics';
 import { REPORT_CARD_CLASS } from '@/app/projects/[id]/_components/project-details-shared';
-import type { Project } from '../../_services/projects.service';
+import type { Project } from '../../_services/projects.mutations.client';
 import { formatDate } from '@/app/_shared/utility';
 
 export type ProjectDetailsTabProps = {

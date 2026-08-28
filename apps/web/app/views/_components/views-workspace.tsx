@@ -51,7 +51,7 @@ import {
   deleteSharedView,
   restoreSavedView,
   type SavedView,
-} from '@/app/views/_services/saved-views.client';
+} from '@/app/views/_services/saved-views.mutations.client';
 import { emitSavedViewsChanged } from '@/app/views/_hooks/use-saved-views-nav';
 import { ShareViewDialog } from '@/app/views/_components/share-view-dialog';
 import { ViewsColumnsDialog } from '@/app/views/_components/views-columns-dialog';

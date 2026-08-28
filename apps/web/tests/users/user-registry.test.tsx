@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { UserRegistry } from '@/app/users/_components/user-registry';
-import { toggleUserActive } from '@/app/users/_services/users.service';
-import type { User } from '@/app/users/_services/users.service';
+import { toggleUserActive } from '@/app/users/_services/users.mutations.client';
+import type { User } from '@/app/users/_services/users.mutations.client';
 
 vi.mock(
   '@repo/ui/components/ui/dropdown-menu',
@@ -28,7 +28,7 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-vi.mock('@/app/users/_services/users.service', () => ({
+vi.mock('@/app/users/_services/users.mutations.client', () => ({
   toggleUserActive: vi.fn(),
 }));
 

@@ -2,7 +2,7 @@ import type {
   CommentItem,
   CommentUser,
   CommentWorkItem,
-} from '@/app/comments/_services/comments.service';
+} from '@/app/comments/_services/comments.mutations.client';
 import { formatDateToISOString } from '@/app/_shared/utility';
 import { plainTextToCommentDoc } from '@repo/types';
 

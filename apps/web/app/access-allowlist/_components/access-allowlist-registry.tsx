@@ -66,7 +66,7 @@ import {
 import {
   deleteAccessAllowlistEntry,
   type AccessAllowlistEntry,
-} from '@/app/access-allowlist/_services/accessAllowlist.service';
+} from '@/app/access-allowlist/_services/access-allowlist.mutations.client';
 import { AccessAllowlistForm } from '@/app/access-allowlist/_components/access-allowlist-form';
 
 interface AccessAllowlistRegistryProps {

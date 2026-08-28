@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { SprintList } from '@/app/sprints/_components/sprint-list';
 import { SprintsWorkspace } from '@/app/sprints/_components/sprints-workspace';
-import { Sprint } from '@/app/sprints/_services/sprints.service';
+import { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { assertDebouncedSearchRedirect } from '../helpers/assert-debounced-search';
 
 const mockPush = vi.fn();

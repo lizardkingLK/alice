@@ -29,7 +29,7 @@ import {
   RefreshCw,
   MoreHorizontal,
 } from '@repo/ui/lib/icons';
-import { Sprint } from '@/app/sprints/_services/sprints.service';
+import { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { Pagination } from '@/components/pagination';
 import { DataTable } from '@/components/data-table';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';

@@ -1,25 +1,25 @@
 import { getAllowedChildType, type WorkItemType } from '@repo/types';
 import { redirect } from 'next/navigation';
-import WorkItemDetails from '@/app/work-items/_components/workItem-details';
+import WorkItemDetails from '@/app/work-items/_components/work-item-details/work-item-details';
 import {
   getWorkItem,
   getWorkItemAncestors,
   getWorkItems,
-} from '@/app/work-items/_services/workItem.service.server';
-import { getWorkItemAttachments } from '@/app/work-items/_services/workItem-attachments.service.server';
+} from '@/app/work-items/_services/work-items.reads.server';
+import { getWorkItemAttachments } from '@/app/attachments/_services/attachments.reads.supabase.server';
 import {
   getCommentCountsByWorkItemIds,
   getWorkItemDiscussion,
-} from '@/app/comments/_services/comments.service.server';
+} from '@/app/comments/_services/comments.reads.server';
 import {
   getProject,
   getProjectMembers,
-} from '@/app/projects/_services/projects.service.server';
-import { getWorkItemWorkLogs } from '@/app/work-items/_services/workItem-worklogs.service.server';
+} from '@/app/projects/_services/projects.reads.server';
+import { getWorkItemWorkLogs } from '@/app/worklogs/_services/worklogs.reads.supabase.server';
 import { getDbUser } from '@/lib/auth';
 import { zeroCountsById } from '@/lib/db/query';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
-import type { WorkItemPatchMemberOption } from '@/app/work-items/_components/workItem-field-patch-dialog';
+import type { WorkItemPatchMemberOption } from '@/app/work-items/_components/work-item-details/work-item-field-patch-dialog';
 
 type WorkItemDetailsDataProps = {
   readonly workItemId: string;

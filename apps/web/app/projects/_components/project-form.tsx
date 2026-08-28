@@ -34,19 +34,19 @@ import {
   Maximize2,
   Minimize2,
 } from '@repo/ui/lib/icons';
-import type { User } from '@/app/users/_services/users.service';
+import type { User } from '@/app/users/_services/users.mutations.client';
 import {
   createProject,
   updateProject,
   type Project,
   type CreateProjectInput,
-} from '../_services/projects.service';
+} from '../_services/projects.mutations.client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 import { cn } from '@repo/ui/lib/utils';
 import { FormAlertMessage } from '@/components/form-alert-message';
 import { toLocalYYYYMMDD } from '@/app/_shared/utility';
-import { importJiraIssues } from '../_services/jira.service';
+import { importJiraIssues } from '../_services/projects.jira.mutations.client';
 import {
   formatGithubRepoPath,
   parseGithubRepoPath,

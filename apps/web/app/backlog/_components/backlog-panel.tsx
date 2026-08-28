@@ -6,8 +6,8 @@ import { Button } from '@repo/ui/components/ui/button';
 import { ChevronDown, ChevronRight, Plus } from '@repo/ui/lib/icons';
 import { BacklogDropZone } from '@/app/backlog/_components/backlog-drop-zone';
 import type { BacklogAssignee } from '@/app/backlog/_helpers/backlog-item-utils';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
-import type { Project as DbProject } from '@/app/projects/_services/projects.service';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 
 /* eslint-disable no-unused-vars */
 type BacklogPanelProps = {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { WorkItemLabelsTrain } from '@/app/work-items/_components/work-item-labels-train';
+import { WorkItemLabelsTrain } from '@/app/work-items/_components/work-item-labels/work-item-labels-train';
 
 describe('WorkItemLabelsTrain', () => {
   it('renders an em dash when there are no labels', () => {

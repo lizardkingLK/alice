@@ -4,7 +4,7 @@ import {
   clearBoardDefaults,
   readValidatedBoardDefaults,
 } from '@/app/board/_helpers/board-defaults-storage';
-import type { Sprint } from '@/app/sprints/_services/sprints.service';
+import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 
 export { ALL_PROJECTS_ID };
 
