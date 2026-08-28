@@ -63,6 +63,9 @@ vi.mock('@/app/work-items/_services/work-items.mutations.client', () => ({
   archiveWorkItem: vi.fn(),
   restoreWorkItem: vi.fn(),
   purgeWorkItem: vi.fn(),
+}));
+
+vi.mock('@/app/work-items/_services/work-items.reads.client', () => ({
   countWorkItemDescendants: vi.fn().mockResolvedValue(0),
 }));
 
@@ -208,6 +211,7 @@ describe('WorkItemsTable', () => {
         id: assignee.id,
         name: assignee.name,
         email: assignee.email,
+        profile_picture: null,
       },
     });
 

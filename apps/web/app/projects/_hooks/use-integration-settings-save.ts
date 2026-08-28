@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiFetch } from '@/lib/api/api-client';
+import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import { errorMessage } from '@/lib/errors/error-message';
 
 export type UseIntegrationSettingsSaveOptions = {

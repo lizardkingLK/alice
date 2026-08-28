@@ -1,6 +1,6 @@
 import { serializeWorkItemLabelsFilter, toDateOnly } from '@repo/types';
-import { ApiError } from '@/lib/api/api';
-import { apiFetch } from '@/lib/api/api-client.server';
+import { ApiError } from '@/lib/api/api-fetch.helper';
+import { apiFetch } from '@/lib/api/api-fetch.reads.use.server';
 import type {
   DbWorkItem,
   GetWorkItemsPaginatedResponse,
@@ -24,7 +24,7 @@ function asDueDate(value: unknown): string | null {
   return toDateOnly(asIso(value));
 }
 
-/** Align Express JSON (ISO dates) with the supabase-js `DbWorkItem` shape. */
+/** Align Express JSON (ISO dates) with the v1 `WorkItemReadRow` wire shape. */
 export function mapWorkItemApiRow(row: Record<string, unknown>): DbWorkItem {
   return {
     ...row,

@@ -6,13 +6,13 @@ import {
   updateProject,
 } from '@/app/projects/_services/projects.mutations.client';
 import type { User } from '@/app/users/_services/users.mutations.client';
-import { apiFetch } from '@/lib/api/api-client';
+import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import {
   getComboboxOptions,
   pickComboboxOption,
 } from '../helpers/pick-combobox-option';
 
-vi.mock('@/lib/api/api-client', () => ({
+vi.mock('@/lib/api/api-fetch.mutations.use.client', () => ({
   apiFetch: vi.fn(),
 }));
 

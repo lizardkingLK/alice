@@ -182,7 +182,7 @@ export default function WorkItemDetails({
   };
 
   const descriptionContent = useMemo(
-    () => toTiptapContent(workItem.description),
+    () => toTiptapContent(workItem.description ?? null),
     [workItem.description]
   );
 

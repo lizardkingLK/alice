@@ -12,7 +12,7 @@ import { forceUpdateTeam } from '@/app/manager/_services/teams.mutations.client'
 import { forceUpdateUser } from '@/app/users/_services/users.mutations.client';
 import { forceUpdateAccessAllowlistEntry } from '@/app/access-allowlist/_services/access-allowlist.mutations.client';
 import { forceUpdateWorkItemFields } from '@/app/work-items/_services/work-items.mutations.client';
-import { apiFetch } from '@/lib/api/api-client';
+import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import { clearOptimisticPending } from '@/lib/optimistic-lock/pending-storage';
 import type { OptimisticLockEntityType } from '@repo/types';
 

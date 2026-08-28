@@ -23,13 +23,15 @@ import { AddressInfo } from 'node:net';
 import { createProjectsRouter } from '../../src/routes/api/projects/projects.route';
 import type { ProjectsService } from '../../src/routes/api/projects/projects.service';
 
-const { listProjectsPaginatedMock, getProjectDetailMock, listProjectMembersPrismaMock } = vi.hoisted(
-  () => ({
-    listProjectsPaginatedMock: vi.fn(),
-    getProjectDetailMock: vi.fn(),
-    listProjectMembersPrismaMock: vi.fn(),
-  })
-);
+const {
+  listProjectsPaginatedMock,
+  getProjectDetailMock,
+  listProjectMembersPrismaMock,
+} = vi.hoisted(() => ({
+  listProjectsPaginatedMock: vi.fn(),
+  getProjectDetailMock: vi.fn(),
+  listProjectMembersPrismaMock: vi.fn(),
+}));
 
 vi.mock('../../src/middlewares/auth', () => ({
   requireApiAuth: (
@@ -93,7 +95,11 @@ const mockProjectDetail = {
   logo_url: null,
   cover_picture: null,
   github_token: 'secret-token',
-  owner: { id: '11111111-1111-4111-8111-111111111111', name: 'Owner', email: 'owner@example.com' },
+  owner: {
+    id: '11111111-1111-4111-8111-111111111111',
+    name: 'Owner',
+    email: 'owner@example.com',
+  },
 };
 
 describe('projects unused Prisma GET routes', () => {
@@ -144,13 +150,18 @@ describe('projects unused Prisma GET routes', () => {
     getProjectDetailMock.mockResolvedValue(mockProjectDetail);
 
     await withApp(async (baseUrl) => {
-      const response = await fetch(`${baseUrl}/api/projects/${mockProjectDetail.id}`);
+      const response = await fetch(
+        `${baseUrl}/api/projects/${mockProjectDetail.id}`
+      );
       const body = await response.json();
 
       expect(response.status).toBe(200);
       expect(body.data.github_token).toBeUndefined();
       expect(body.data.has_github_token).toBe(true);
-      expect(getProjectDetailMock).toHaveBeenCalledWith(mockProjectDetail.id, '11111111-1111-4111-8111-111111111111');
+      expect(getProjectDetailMock).toHaveBeenCalledWith(
+        mockProjectDetail.id,
+        '11111111-1111-4111-8111-111111111111'
+      );
     });
   });
 
@@ -168,16 +179,28 @@ describe('projects unused Prisma GET routes', () => {
   });
 
   it('returns list of project members', async () => {
-    const members = [{ project_id: '33333333-3333-4333-8333-333333333333', user_id: '11111111-1111-4111-8111-111111111111', status: 'active', user: { name: 'Bob' } }];
+    const members = [
+      {
+        project_id: '33333333-3333-4333-8333-333333333333',
+        user_id: '11111111-1111-4111-8111-111111111111',
+        status: 'active',
+        user: { name: 'Bob' },
+      },
+    ];
     listProjectMembersPrismaMock.mockResolvedValue(members);
 
     await withApp(async (baseUrl) => {
-      const response = await fetch(`${baseUrl}/api/projects/33333333-3333-4333-8333-333333333333/members`);
+      const response = await fetch(
+        `${baseUrl}/api/projects/33333333-3333-4333-8333-333333333333/members`
+      );
       const body = await response.json();
 
       expect(response.status).toBe(200);
       expect(body.members).toEqual(members);
-      expect(listProjectMembersPrismaMock).toHaveBeenCalledWith('33333333-3333-4333-8333-333333333333', '11111111-1111-4111-8111-111111111111');
+      expect(listProjectMembersPrismaMock).toHaveBeenCalledWith(
+        '33333333-3333-4333-8333-333333333333',
+        '11111111-1111-4111-8111-111111111111'
+      );
     });
   });
 });

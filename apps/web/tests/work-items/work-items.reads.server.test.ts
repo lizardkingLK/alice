@@ -13,7 +13,7 @@ vi.mock('@/lib/data-retrieval.server', () => ({
   shouldReadViaApi: shouldReadViaApiMock,
 }));
 
-vi.mock('@/lib/api/api-client.server', () => ({
+vi.mock('@/lib/api/api-fetch.reads.use.server', () => ({
   apiFetch: apiFetchMock,
 }));
 

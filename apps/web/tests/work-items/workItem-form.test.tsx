@@ -14,6 +14,9 @@ import { fetchProjectMembersForForm } from '@/lib/form-read-actions';
 vi.mock('@/app/work-items/_services/work-items.mutations.client', () => ({
   createWorkItem: vi.fn(),
   updateWorkItem: vi.fn(),
+}));
+
+vi.mock('@/app/work-items/_services/work-items.reads.client', () => ({
   listParentCandidateWorkItems: vi.fn().mockResolvedValue([]),
 }));
 

@@ -1,6 +1,6 @@
 import { getUser } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { apiFetch } from '@/lib/api/api-client.server';
+import { apiFetch } from '@/lib/api/api-fetch.reads.use.server';
 import { throwIfError } from '@/lib/db/query';
 import { unstable_cache } from 'next/cache';
 import type {

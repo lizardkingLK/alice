@@ -3,7 +3,7 @@ import {
   projectRelationSelect,
   userRelationSelect,
 } from '@repo/types';
-import { apiFetch } from '@/lib/api/api-client.server';
+import { apiFetch } from '@/lib/api/api-fetch.reads.use.server';
 import { createClient } from '@/lib/supabase/server';
 import { getUser } from '@/lib/auth';
 import { safeServerFetch } from '@/lib/safe-server-fetch';

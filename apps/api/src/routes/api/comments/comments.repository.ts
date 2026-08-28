@@ -194,9 +194,8 @@ export class CommentsRepository {
       throw new Error('Comment not found');
     }
 
-    const projectId = (
-      comment.work_items as unknown as { project_id: string }
-    ).project_id;
+    const projectId = (comment.work_items as unknown as { project_id: string })
+      .project_id;
     await this.assertCanAccessProject(actorId, projectId);
     return { projectId };
   }

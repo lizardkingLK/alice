@@ -121,9 +121,7 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
     async (req: AuthenticatedRequest, res) => {
       const parsedId = z.uuid().safeParse(req.params.id);
       if (!parsedId.success) {
-        return res
-          .status(400)
-          .json({ error: 'Invalid project id' });
+        return res.status(400).json({ error: 'Invalid project id' });
       }
 
       try {
@@ -134,7 +132,9 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
         res.json({ members });
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : 'Failed to list project members';
+          error instanceof Error
+            ? error.message
+            : 'Failed to list project members';
         res.status(500).json({ error: message });
       }
     }

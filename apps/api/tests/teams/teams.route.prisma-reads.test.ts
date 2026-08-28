@@ -10,12 +10,10 @@ import { AddressInfo } from 'node:net';
 import { createTeamsRouter } from '../../src/routes/api/teams/teams.route';
 import type { TeamsService } from '../../src/routes/api/teams/teams.service';
 
-const { listTeamsPaginatedMock, getTeamDetailMock } = vi.hoisted(
-  () => ({
-    listTeamsPaginatedMock: vi.fn(),
-    getTeamDetailMock: vi.fn(),
-  })
-);
+const { listTeamsPaginatedMock, getTeamDetailMock } = vi.hoisted(() => ({
+  listTeamsPaginatedMock: vi.fn(),
+  getTeamDetailMock: vi.fn(),
+}));
 
 vi.mock('../../src/middlewares/auth', () => ({
   requireApiAuth: (
@@ -36,10 +34,7 @@ const teamsService = {
 async function withApp(run: (baseUrl: string) => Promise<void>): Promise<void> {
   const app = express();
   app.disable('x-powered-by');
-  app.use(
-    '/api/teams',
-    createTeamsRouter({ teamsService })
-  );
+  app.use('/api/teams', createTeamsRouter({ teamsService }));
 
   const server: Server = await new Promise((resolve) => {
     const next = app.listen(0, '127.0.0.1', () => resolve(next));
@@ -65,7 +60,11 @@ const mockTeamDetail = {
   status: 'active',
   created_at: '2026-08-25T12:00:00.000Z',
   updated_at: '2026-08-25T12:00:00.000Z',
-  manager: { id: '11111111-1111-4111-8111-111111111111', name: 'Manager', email: 'manager@example.com' },
+  manager: {
+    id: '11111111-1111-4111-8111-111111111111',
+    name: 'Manager',
+    email: 'manager@example.com',
+  },
   members: [],
 };
 
@@ -126,7 +125,10 @@ describe('teams unused Prisma GET routes', () => {
         data: JSON.parse(JSON.stringify(mockTeamDetail)),
         error: null,
       });
-      expect(getTeamDetailMock).toHaveBeenCalledWith(mockTeamDetail.id, '11111111-1111-4111-8111-111111111111');
+      expect(getTeamDetailMock).toHaveBeenCalledWith(
+        mockTeamDetail.id,
+        '11111111-1111-4111-8111-111111111111'
+      );
     });
   });
 

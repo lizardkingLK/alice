@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/api/api-client';
+import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import { createUsersService } from './users.mutations.shared';
 
 const service = createUsersService(apiFetch);
