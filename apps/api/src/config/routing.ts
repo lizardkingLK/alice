@@ -31,6 +31,7 @@ routesConfig.use('/api/attachments', attachments.router);
 routesConfig.use('/api/v1/attachments', attachments.router);
 routesConfig.use('/api/chat', chat.router);
 routesConfig.use('/api/comments', comments.router);
+routesConfig.use('/api/v1/comments', comments.router);
 routesConfig.use('/api/jira', jira.router);
 routesConfig.use('/api/notifications', notifications.router);
 routesConfig.use('/api/profile', profile.router);

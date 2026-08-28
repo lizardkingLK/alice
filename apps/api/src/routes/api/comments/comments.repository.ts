@@ -4,12 +4,19 @@ import {
   projectRelationSelect,
   userRelationSelect,
   type Json,
+  commentListSelect,
+  commentDetailSelect,
+  type CommentListRow,
+  type CommentDetailRow,
+  paginationMeta,
 } from '@repo/types';
 import { Prisma, RecordStatus } from '@repo/types/prisma';
 import { prisma } from '../../../lib/prisma';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
 import { prismaLockTimestamp } from '../../../lib/prisma-audit';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { listAccessibleProjectIds } from '../../../lib/project-access';
+import { CommentAccessError } from './comments.errors';
 
 export type CommentRow = {
   id: string;
@@ -146,5 +153,146 @@ export class CommentsRepository {
 
   async hardDelete(id: string): Promise<void> {
     await prisma.comments.deleteMany({ where: { id } });
+  }
+
+  async listAccessibleProjectIds(actorId: string): Promise<'all' | string[]> {
+    return listAccessibleProjectIds(this.db, actorId);
+  }
+
+  async assertCanAccessProject(
+    actorId: string,
+    projectId: string
+  ): Promise<void> {
+    const accessible = await this.listAccessibleProjectIds(actorId);
+    if (accessible === 'all') {
+      return;
+    }
+    if (!accessible.includes(projectId)) {
+      throw new CommentAccessError();
+    }
+  }
+
+  async requireProjectMember(
+    commentId: string,
+    actorId: string
+  ): Promise<{ projectId: string }> {
+    const { data: comment, error } = await this.db
+      .from('comments')
+      .select('work_items(project_id)')
+      .eq('id', commentId)
+      .maybeSingle();
+
+    if (error) {
+      console.error(
+        'error. failed to load comment for project access:',
+        error.message
+      );
+      throw new Error('Failed to authorize comment access');
+    }
+
+    if (!comment?.work_items) {
+      throw new Error('Comment not found');
+    }
+
+    const projectId = (
+      comment.work_items as unknown as { project_id: string }
+    ).project_id;
+    await this.assertCanAccessProject(actorId, projectId);
+    return { projectId };
+  }
+
+  async requireWorkItemProjectMember(
+    workItemId: string,
+    actorId: string
+  ): Promise<{ projectId: string }> {
+    const { data: workItem, error } = await this.db
+      .from('work_items')
+      .select('project_id')
+      .eq('id', workItemId)
+      .maybeSingle();
+
+    if (error) {
+      console.error(
+        'error. failed to load work-item for project access:',
+        error.message
+      );
+      throw new Error('Failed to authorize comment access');
+    }
+
+    if (!workItem) {
+      throw new Error('Work item not found');
+    }
+
+    await this.assertCanAccessProject(actorId, workItem.project_id);
+    return { projectId: workItem.project_id };
+  }
+
+  async listPaginated(input: {
+    filters?: {
+      workItemId?: string;
+      projectIds?: string[];
+      projectId?: string;
+    };
+    page: number;
+    limit: number;
+  }): Promise<{
+    comments: CommentListRow[];
+    totalCount: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const skip = (input.page - 1) * input.limit;
+    const take = input.limit;
+    const where: Prisma.commentsWhereInput = {};
+
+    if (input.filters?.workItemId) {
+      where.work_item_id = input.filters.workItemId;
+    }
+
+    if (input.filters?.projectId) {
+      where.work_item = {
+        project_id: input.filters.projectId,
+      };
+    } else if (input.filters?.projectIds) {
+      where.work_item = {
+        project_id: { in: input.filters.projectIds },
+      };
+    }
+
+    try {
+      const [comments, totalCount] = await Promise.all([
+        prisma.comments.findMany({
+          where,
+          select: commentListSelect,
+          orderBy: { created_at: 'desc' },
+          skip,
+          take,
+        }),
+        prisma.comments.count({ where }),
+      ]);
+
+      return {
+        comments,
+        ...paginationMeta(totalCount, input.page, input.limit),
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to list comments:', message);
+      throw new Error('Failed to list comments');
+    }
+  }
+
+  async getDetailById(commentId: string): Promise<CommentDetailRow | null> {
+    try {
+      return await prisma.comments.findUnique({
+        where: { id: commentId },
+        select: commentDetailSelect,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to get comment detail:', message);
+      throw new Error('Failed to get comment');
+    }
   }
 }
