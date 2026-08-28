@@ -156,7 +156,7 @@ export type WorkItemListRow = Prisma.work_itemsGetPayload<{
 }>;
 ```
 
-Work-items first cut lives in `packages/types/src/api/v1/work-items.ts`. Sprint and work-log v1 wire DTOs live in `packages/types/src/api/v1/sprints.ts` and `packages/types/src/api/v1/work-item-worklogs.ts`.
+Work-items first cut lives in `packages/types/src/api/v1/work-items.ts`. Attachments, sprint, and work-log v1 wire DTOs live in `packages/types/src/api/v1/attachments.ts`, `sprints.ts`, and `work-item-worklogs.ts`.
 
 Mutation example (unchanged rule):
 
@@ -428,17 +428,17 @@ Anti-pattern: `WorkItemServiceV1` and `V2` that both `findMany` the same table.
 
 ## Rollout
 
-| Step | Work                                                                                                    | Status                                                                                                                                                           |
-| ---- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0    | This plan                                                                                               | **Now**                                                                                                                                                          |
-| 1    | Composition root for remaining domains (users, projects, teams, profile, saved-views)                   | In progress                                                                                                                                                      |
-| 2    | `packages/types/src/api/v1/` directory tree (~1h)                                                       | **Started** (work-items selects + list query Zod)                                                                                                                |
-| 3    | Per feature: unused Prisma GETs (~4h) + Zod isolation (~2h)                                             | **Started** (work-items, sprints, **worklogs** list GET + v1 Zod in `@repo/types`; work-items mutation Zod stays in `workItems.schemas.ts` until web imports it) |
-| 4    | Health v1 as `/api/v1/health` (~1h)                                                                     | **Done** (alias `/api/health`; `GET /` is root status)                                                                                                           |
-| 4b   | Health v2 reference (`/api/v2/health`, shared repo, `HealthServiceV2`)                                  | **Done** (template for product v2)                                                                                                                               |
-| 5    | Product `/api/v1` aliases once GETs exist                                                               | After 3–4                                                                                                                                                        |
-| 6    | Optional: point RSC at Express GETs via [DATA_RETRIEVAL.md](./DATA_RETRIEVAL.md) (`DATA_READS_VIA_API`) | Plan (default off)                                                                                                                                               |
-| 7    | Mark this doc **Living**                                                                                | After 4                                                                                                                                                          |
+| Step | Work                                                                                                    | Status                                                                                                                                                                 |
+| ---- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0    | This plan                                                                                               | **Now**                                                                                                                                                                |
+| 1    | Composition root for remaining domains (users, projects, teams, profile, saved-views)                   | In progress                                                                                                                                                            |
+| 2    | `packages/types/src/api/v1/` directory tree (~1h)                                                       | **Started** (work-items selects + list query Zod)                                                                                                                      |
+| 3    | Per feature: unused Prisma GETs (~4h) + Zod isolation (~2h)                                             | **Started** (work-items, sprints, **attachments** + **worklogs** list GET + v1 Zod in `@repo/types`; work-items mutation Zod stays in `workItems.schemas.ts` until web imports it) |
+| 4    | Health v1 as `/api/v1/health` (~1h)                                                                     | **Done** (alias `/api/health`; `GET /` is root status)                                                                                                                 |
+| 4b   | Health v2 reference (`/api/v2/health`, shared repo, `HealthServiceV2`)                                  | **Done** (template for product v2)                                                                                                                                     |
+| 5    | Product `/api/v1` aliases once GETs exist                                                               | **Started** (`/api/v1/attachments`, `/api/v1/worklogs` aliases mounted)                                                                                                |
+| 6    | Optional: point RSC at Express GETs via [DATA_RETRIEVAL.md](./DATA_RETRIEVAL.md) (`DATA_READS_VIA_API`) | Plan (default off)                                                                                                                                                     |
+| 7    | Mark this doc **Living**                                                                                | After 4                                                                                                                                                                |
 
 ---
 

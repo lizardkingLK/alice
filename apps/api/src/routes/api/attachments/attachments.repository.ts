@@ -7,7 +7,9 @@ import {
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
 import {
   ATTACHMENT_SELECT,
+  attachmentListSelect,
   Database,
+  type AttachmentListRow,
   type AttachmentWithUploader,
 } from '@repo/types';
 import { SupabaseClient } from '@supabase/supabase-js';
@@ -93,5 +95,19 @@ export class AttachmentsRepository {
     }
 
     return Boolean(data);
+  }
+
+  /**
+   * Unused Express list path (Prisma). Do not call from mutation/lock flows.
+   */
+  async listByWorkItemId(workItemId: string): Promise<AttachmentListRow[]> {
+    return await prisma.attachments.findMany({
+      where: {
+        work_item_id: workItemId,
+        status: 'active',
+      },
+      orderBy: { created_at: 'desc' },
+      select: attachmentListSelect,
+    });
   }
 }
