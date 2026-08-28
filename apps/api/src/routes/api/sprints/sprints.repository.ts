@@ -19,6 +19,7 @@ import {
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { listAccessibleProjectIds } from '../../../lib/project-access';
 import { SprintAccessError } from './sprints.errors';
 import {
   buildSprintPrismaListWhere,
@@ -170,49 +171,7 @@ export class SprintsRepository {
   }
 
   async listAccessibleProjectIds(actorId: string): Promise<'all' | string[]> {
-    const { data: systemUser } = await this.db
-      .from('users')
-      .select('role')
-      .eq('id', actorId)
-      .maybeSingle();
-
-    if (systemUser?.role === 'admin') {
-      return 'all';
-    }
-
-    const [
-      { data: memberships, error: memberError },
-      { data: owned, error: ownedError },
-    ] = await Promise.all([
-      this.db
-        .from('project_members')
-        .select('project_id')
-        .eq('user_id', actorId)
-        .eq('status', 'active'),
-      this.db.from('projects').select('id').eq('owner_id', actorId),
-    ]);
-
-    if (memberError) {
-      console.error(
-        'error. failed to list member projects for sprint access:',
-        memberError.message
-      );
-      throw new Error('Failed to authorize sprint access');
-    }
-
-    if (ownedError) {
-      console.error(
-        'error. failed to list owned projects for sprint access:',
-        ownedError.message
-      );
-      throw new Error('Failed to authorize sprint access');
-    }
-
-    const ids = [
-      ...(memberships ?? []).map((row) => row.project_id),
-      ...(owned ?? []).map((row) => row.id),
-    ];
-    return [...new Set(ids)];
+    return listAccessibleProjectIds(this.db, actorId);
   }
 
   async assertCanAccessProject(
