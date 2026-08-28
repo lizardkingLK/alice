@@ -1,28 +1,10 @@
 import { apiFetch } from '@/lib/api/api-client';
 import { createClient } from '@/lib/supabase/client';
-import type { AttachmentWithUploader } from '@repo/types';
-
-export type AttachmentSignedUrls = {
-  previewUrl: string;
-  downloadUrl: string;
-  expiresAt: string;
-};
-
-export type UploadAttachmentResult = {
-  success: true;
-  path: string;
-  url: string;
-  attachment?: AttachmentWithUploader;
-};
-
-type UploadSessionResponse = {
-  upload: {
-    bucket: string;
-    signedUrl: string;
-    token: string;
-    path: string;
-  };
-};
+import type {
+  AttachmentSignedUrls,
+  AttachmentUploadSession,
+  UploadedAttachmentResult,
+} from '@repo/types';
 
 const API = '/api/attachments';
 
@@ -37,11 +19,11 @@ export async function mintAttachmentUrls(
 export async function uploadWorkItemAttachment(
   file: File,
   workItemId: string
-): Promise<UploadAttachmentResult> {
+): Promise<UploadedAttachmentResult> {
   const supabase = createClient();
   const mimeType = file.type || 'application/octet-stream';
 
-  const session = await apiFetch<UploadSessionResponse>(
+  const session = await apiFetch<AttachmentUploadSession>(
     `${API}/upload-session`,
     {
       method: 'POST',
@@ -64,7 +46,7 @@ export async function uploadWorkItemAttachment(
     throw new Error(error.message);
   }
 
-  return apiFetch<UploadAttachmentResult>(`${API}/finalize`, {
+  return apiFetch<UploadedAttachmentResult>(`${API}/finalize`, {
     method: 'POST',
     body: JSON.stringify({
       work_item_id: workItemId,

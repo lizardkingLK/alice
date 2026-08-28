@@ -19,6 +19,7 @@ import {
 } from '@repo/types';
 import { Prisma } from '@repo/types/prisma';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { listAccessibleProjectIds } from '../../../lib/project-access';
 import { prisma } from '../../../lib/prisma';
 import {
   prismaAuditCreate,
@@ -28,7 +29,6 @@ import {
   prismaOptionalDate,
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
-import { listAccessibleProjectIdsHelper } from '../../../lib/auth-helpers';
 import { WorkItemAccessError } from './workItems.errors';
 import { WorkItemBody, WorkItemUpdateBody } from './workItems.schemas';
 import {
@@ -74,7 +74,7 @@ export class WorkItemRepository {
    * Admin: all projects. Member/manager: active membership ∪ owned projects.
    */
   async listAccessibleProjectIds(actorId: string): Promise<'all' | string[]> {
-    return await listAccessibleProjectIdsHelper(this.db, actorId);
+    return listAccessibleProjectIds(this.db, actorId);
   }
 
   async assertCanAccessProject(

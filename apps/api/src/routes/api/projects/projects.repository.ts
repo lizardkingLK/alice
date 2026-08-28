@@ -21,7 +21,7 @@ import {
   prismaOptionalDate,
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
-import { listAccessibleProjectIdsHelper } from '../../../lib/auth-helpers';
+import { listAccessibleProjectIds } from '../../../lib/project-access';
 import type {
   ProjectMemberWithUser,
   ProjectRow,
@@ -97,7 +97,7 @@ export class ProjectsRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
   async listAccessibleProjectIds(actorId: string): Promise<'all' | string[]> {
-    return await listAccessibleProjectIdsHelper(this.db, actorId);
+    return listAccessibleProjectIds(this.db, actorId);
   }
 
   async listPaginated(input: {
