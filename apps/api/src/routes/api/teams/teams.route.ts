@@ -15,6 +15,27 @@ import {
   sendRouteMutationError,
   registerLockedStatusPatch,
 } from '../../../lib/optimistic-lock';
+import { listTeamsQuerySchema } from '@repo/types';
+
+function firstQueryValue(value: unknown): string | undefined {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (Array.isArray(value) && typeof value[0] === 'string') {
+    return value[0];
+  }
+  return undefined;
+}
+
+function listTeamsQueryFromRequest(query: Record<string, unknown>) {
+  return listTeamsQuerySchema.safeParse({
+    page: firstQueryValue(query.page),
+    limit: firstQueryValue(query.limit),
+    status: firstQueryValue(query.status),
+    search: firstQueryValue(query.search),
+    projectId: firstQueryValue(query.projectId),
+  });
+}
 
 export type TeamsRouterDeps = {
   teamsService: TeamsService;
@@ -23,6 +44,61 @@ export type TeamsRouterDeps = {
 export function createTeamsRouter(deps: TeamsRouterDeps) {
   const { teamsService } = deps;
   const teamsRouter: Router = Router();
+
+  teamsRouter.get(
+    '/',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsed = listTeamsQueryFromRequest(
+        req.query as Record<string, unknown>
+      );
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+
+      try {
+        const result = await teamsService.listTeamsPaginated(
+          parsed.data,
+          req.userId!
+        );
+        res.json(result);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to list teams';
+        res.status(500).json({ error: message });
+      }
+    }
+  );
+
+  teamsRouter.get(
+    '/:id',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsedId = z.uuid().safeParse(req.params.id);
+      if (!parsedId.success) {
+        return res
+          .status(400)
+          .json({ data: null, error: 'Invalid team id' });
+      }
+
+      try {
+        const team = await teamsService.getTeamDetail(
+          parsedId.data,
+          req.userId!
+        );
+        if (!team) {
+          return res
+            .status(404)
+            .json({ data: null, error: 'Team not found' });
+        }
+        res.json({ data: team, error: null });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to get team';
+        res.status(500).json({ data: null, error: message });
+      }
+    }
+  );
 
   teamsRouter.post(
     '/',

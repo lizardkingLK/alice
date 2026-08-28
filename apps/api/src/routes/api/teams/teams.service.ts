@@ -1,5 +1,10 @@
 import { requireUserWithRole } from '../../../lib/auth-helpers';
-import { RecordStatusEnum, UserRoleEnum } from '@repo/types';
+import {
+  RecordStatusEnum,
+  UserRoleEnum,
+  type ListTeamsQuery,
+  type TeamListRow,
+} from '@repo/types';
 import { type TeamRow, type TeamsRepository } from './teams.repository';
 
 async function requireTeamManager(actorId: string) {
@@ -29,6 +34,32 @@ export type UpdateTeamInput = Partial<CreateTeamInput>;
 
 export class TeamsService {
   constructor(private readonly teamsRepository: TeamsRepository) {}
+
+  async listTeamsPaginated(
+    query: ListTeamsQuery,
+    _actorId: string
+  ): Promise<{
+    teams: TeamListRow[];
+    totalCount: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    return await this.teamsRepository.listPaginated({
+      projectId: query.projectId,
+      status: query.status,
+      search: query.search,
+      page: query.page,
+      limit: query.limit,
+    });
+  }
+
+  async getTeamDetail(
+    teamId: string,
+    _actorId: string
+  ): Promise<TeamListRow | null> {
+    return await this.teamsRepository.getDetailById(teamId);
+  }
 
   async createTeam(actorId: string, input: CreateTeamInput): Promise<TeamRow> {
     await requireTeamManager(actorId);

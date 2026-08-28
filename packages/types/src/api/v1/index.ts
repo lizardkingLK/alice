@@ -20,3 +20,24 @@ export {
   type WorkItemListRowWithDescription,
   type WorkItemPrismaListFilters,
 } from './work-items.js';
+export {
+  projectOwnerSelect,
+  projectListSelect,
+  projectDetailSelect,
+  type ProjectListRow,
+  type ProjectDetailRow,
+  projectMemberUserSelect,
+  projectMemberSelect,
+  type ProjectMemberRow,
+  listProjectsQuerySchema,
+  type ListProjectsQuery,
+} from './projects.js';
+export {
+  teamManagerSelect,
+  teamMemberSelect,
+  teamListSelect,
+  type TeamListRow,
+  listTeamsQuerySchema,
+  type ListTeamsQuery,
+} from './teams.js';
+

@@ -3,7 +3,14 @@ import {
   userRelationSelect,
   withoutIntegrationSecrets,
   type Database,
+  projectListSelect,
+  projectDetailSelect,
+  projectMemberSelect,
+  type ProjectListRow,
+  type ProjectDetailRow,
+  type ProjectMemberRow,
 } from '@repo/types';
+import { Prisma } from '@repo/types/prisma';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { prisma } from '../../../lib/prisma';
 import {
@@ -87,6 +94,168 @@ function unsafeCast<T>(val: unknown): T {
 
 export class ProjectsRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
+
+  async listAccessibleProjectIds(actorId: string): Promise<'all' | string[]> {
+    const { data: systemUser } = await this.db
+      .from('users')
+      .select('role')
+      .eq('id', actorId)
+      .maybeSingle();
+
+    if (systemUser?.role === 'admin') {
+      return 'all';
+    }
+
+    const [
+      { data: memberships, error: memberError },
+      { data: owned, error: ownedError },
+    ] = await Promise.all([
+      this.db
+        .from('project_members')
+        .select('project_id')
+        .eq('user_id', actorId)
+        .eq('status', 'active'),
+      this.db.from('projects').select('id').eq('owner_id', actorId),
+    ]);
+
+    if (memberError) {
+      console.error(
+        'error. failed to list member projects for projects access:',
+        memberError.message
+      );
+      throw new Error('Failed to authorize projects access');
+    }
+
+    if (ownedError) {
+      console.error(
+        'error. failed to list owned projects for projects access:',
+        ownedError.message
+      );
+      throw new Error('Failed to authorize projects access');
+    }
+
+    const ids = [
+      ...(memberships ?? []).map((row) => row.project_id),
+      ...(owned ?? []).map((row) => row.id),
+    ];
+    return [...new Set(ids)];
+  }
+
+  async listPaginated(input: {
+    accessibleIds: 'all' | string[];
+    filters: {
+      status?: 'active' | 'archived';
+      search?: string;
+    };
+    page: number;
+    limit: number;
+  }): Promise<{
+    projects: (ProjectListRow & { team_count: number })[];
+    totalCount: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const skip = (input.page - 1) * input.limit;
+    const take = input.limit;
+
+    const where: Prisma.projectsWhereInput = {};
+
+    if (input.accessibleIds !== 'all') {
+      where.id = { in: input.accessibleIds };
+    }
+
+    if (input.filters.status === 'archived') {
+      where.deleted_at = { not: null };
+    } else {
+      where.deleted_at = null;
+    }
+
+    const term = input.filters.search?.trim();
+    if (term) {
+      where.OR = [
+        { name: { contains: term, mode: 'insensitive' } },
+        { key: { contains: term, mode: 'insensitive' } },
+        { description: { contains: term, mode: 'insensitive' } },
+      ];
+    }
+
+    try {
+      const [projectRows, totalCount] = await Promise.all([
+        prisma.projects.findMany({
+          where,
+          select: projectListSelect,
+          orderBy: { created_at: 'desc' },
+          skip,
+          take,
+        }),
+        prisma.projects.count({ where }),
+      ]);
+
+      const projectIds = projectRows.map((p) => p.id);
+
+      const teamCountsGroup = await prisma.teams.groupBy({
+        by: ['project_id'],
+        _count: { id: true },
+        where: {
+          project_id: { in: projectIds },
+          status: { not: 'deleted' },
+        },
+      });
+
+      const teamCountMap = new Map<string, number>();
+      for (const group of teamCountsGroup) {
+        if (group.project_id) {
+          teamCountMap.set(group.project_id, group._count.id);
+        }
+      }
+
+      const projects = projectRows.map((p) => ({
+        ...p,
+        team_count: teamCountMap.get(p.id) ?? 0,
+      }));
+
+      const totalPages = Math.ceil(totalCount / input.limit);
+
+      return {
+        projects,
+        totalCount,
+        page: input.page,
+        limit: input.limit,
+        totalPages,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to list projects:', message);
+      throw new Error('Failed to list projects');
+    }
+  }
+
+  async getDetailById(projectId: string): Promise<ProjectDetailRow | null> {
+    try {
+      return await prisma.projects.findUnique({
+        where: { id: projectId },
+        select: projectDetailSelect,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to get project detail:', message);
+      throw new Error('Failed to get project');
+    }
+  }
+
+  async listMembersPrisma(projectId: string): Promise<ProjectMemberRow[]> {
+    try {
+      return await prisma.project_members.findMany({
+        where: { project_id: projectId, status: 'active' },
+        select: projectMemberSelect,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to list project members via prisma:', message);
+      throw new Error('Failed to list project members');
+    }
+  }
 
   async listAll(): Promise<ProjectRowWithOwner[]> {
     const { data, error } = await this.db
