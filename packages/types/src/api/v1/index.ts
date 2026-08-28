@@ -30,4 +30,16 @@ export {
   type SprintListRow,
   type SprintPrismaListFilters,
 } from './sprints.js';
+export {
+  commentAuthorSelect,
+  commentWorkItemProjectSelect,
+  commentWorkItemSelect,
+  commentListSelect,
+  commentDetailSelect,
+  type CommentListRow,
+  type CommentDetailRow,
+  listCommentsQuerySchema,
+  type ListCommentsQuery,
+} from './comments.js';
+
 

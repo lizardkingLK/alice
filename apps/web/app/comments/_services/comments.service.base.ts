@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 import type { Json, Tables } from '@repo/types';
 import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
+import { ResponseDTO } from '@repo/types/connection';
 
 export type CommentUser = Pick<Tables<'users'>, 'id' | 'name' | 'email'> &
   Partial<Pick<Tables<'users'>, 'role' | 'profile_picture'>>;
@@ -77,11 +78,11 @@ export function createCommentsService(
 
   return {
     async createComment(input: CreateCommentInput): Promise<CommentItem> {
-      const data = await apiFetch<{ comment: CommentItem }>(apiComments, {
+      const res = await apiFetch<ResponseDTO<CommentItem>>(apiComments, {
         method: 'POST',
         body: JSON.stringify(input),
       });
-      return data.comment;
+      return res.data!;
     },
 
     async updateComment(
@@ -89,14 +90,14 @@ export function createCommentsService(
       content: Json,
       expectedUpdatedAt: string
     ): Promise<CommentItem> {
-      const data = await apiFetch<{ comment: CommentItem }>(
+      const res = await apiFetch<ResponseDTO<CommentItem>>(
         `${apiComments}/${id}`,
         {
           method: 'PATCH',
           body: JSON.stringify({ content, expectedUpdatedAt }),
         }
       );
-      return data.comment;
+      return res.data!;
     },
 
     /** Force-apply pending fields after a user confirms Keep mine / merge. */
@@ -105,12 +106,12 @@ export function createCommentsService(
       pendingFields: Record<string, unknown>,
       expectedUpdatedAt: string
     ): Promise<CommentItem> {
-      const data = await forceOptimisticPatch<{ comment: CommentItem }>(
+      const res = await forceOptimisticPatch<ResponseDTO<CommentItem>>(
         apiFetch,
         `${apiComments}/${id}`,
         { pendingFields, expectedUpdatedAt, method: 'PATCH' }
       );
-      return data.comment;
+      return res.data!;
     },
 
     async archiveComment(
