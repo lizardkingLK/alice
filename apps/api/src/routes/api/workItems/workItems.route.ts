@@ -13,7 +13,6 @@ import { type WorkItemService } from './workItems.service';
 import type { NotificationsService } from '../notifications/notifications.service';
 import {
   createUpdateWorkItemBodySchema,
-  createWorkLogSchema,
   isBlockedPastDueDateChange,
   patchUpdateWorkItemBodySchema,
   type WorkItemUpdateBody,
@@ -369,42 +368,6 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
         const message =
           error instanceof Error ? error.message : 'Failed to get work-item';
         res.status(500).json({ data: null, error: message });
-      }
-    }
-  );
-
-  workItemsRouter.post(
-    '/:id/worklogs',
-    requireApiAuth,
-    async (req: AuthenticatedRequest, res) => {
-      const parsed = createWorkLogSchema.safeParse(req.body);
-
-      if (!parsed.success) {
-        return res.status(400).json({ error: z.treeifyError(parsed.error) });
-      }
-
-      const dateOnly =
-        parsed.data.logged_at ?? new Date().toISOString().slice(0, 10);
-      const loggedAtIso = new Date(`${dateOnly}T00:00:00.000Z`).toISOString();
-
-      try {
-        const worklog = await workItemService.createWorkItemWorkLog(
-          req.userId!,
-          req.params.id!,
-          {
-            loggedHours: parsed.data.logged_hours,
-            loggedAtIso,
-            comment: parsed.data.comment ?? null,
-          }
-        );
-
-        res.status(201).json({ worklog });
-      } catch (error) {
-        return sendWorkItemMutationError(
-          res,
-          error,
-          'Failed to create work log'
-        );
       }
     }
   );

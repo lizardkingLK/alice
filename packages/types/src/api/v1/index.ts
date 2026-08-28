@@ -54,3 +54,16 @@ export {
   type SprintListRow,
   type SprintPrismaListFilters,
 } from './sprints.js';
+export {
+  createWorkLogResponseSchema,
+  createWorkLogSchema,
+  listWorkLogsQuerySchema,
+  workLogAuthorSelect,
+  workLogListSelect,
+  workLogWireSchema,
+  type CreateWorkLogBody,
+  type CreateWorkLogResponse,
+  type ListWorkLogsQuery,
+  type WorkLogListRow,
+  type WorkLogWire,
+} from './work-item-worklogs.js';
