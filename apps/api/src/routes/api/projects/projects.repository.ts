@@ -10,7 +10,7 @@ import {
   type ProjectDetailRow,
   type ProjectMemberRow,
 } from '@repo/types';
-import { Prisma } from '@repo/types/prisma';
+import { Prisma, ProjectStatus } from '@repo/types/prisma';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { prisma } from '../../../lib/prisma';
 import {
@@ -124,7 +124,7 @@ export class ProjectsRepository {
       where.id = { in: input.accessibleIds };
     }
 
-    if (input.filters.status === 'archived') {
+    if (input.filters.status === ProjectStatus.archived) {
       where.deleted_at = { not: null };
     } else {
       where.deleted_at = null;

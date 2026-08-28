@@ -57,7 +57,7 @@ export class TeamsRepository {
 
   async listPaginated(input: {
     projectId?: string;
-    status?: 'active' | 'inactive' | 'archived' | 'deleted';
+    status?: RecordStatus;
     search?: string;
     page: number;
     limit: number;

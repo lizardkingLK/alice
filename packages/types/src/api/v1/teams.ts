@@ -38,6 +38,10 @@ export type TeamListRow = teamsGetPayload<{
   select: typeof teamListSelect;
 }>;
 
+import { RecordStatus as RecordStatusEnum } from '../../generated/prisma/enums.js';
+
+type RecordStatusType = (typeof RecordStatusEnum)[keyof typeof RecordStatusEnum];
+
 function emptyToUndefined(value: unknown): unknown {
   if (value === '' || value === undefined || value === null) {
     return undefined;
@@ -56,7 +60,7 @@ export const listTeamsQuerySchema = z.object({
   ),
   status: z.preprocess(
     emptyToUndefined,
-    z.enum(['active', 'inactive', 'archived', 'deleted']).optional()
+    z.enum(Object.values(RecordStatusEnum) as [RecordStatusType, ...RecordStatusType[]]).optional()
   ),
   search: z.preprocess(emptyToUndefined, z.string().optional()),
   projectId: z.preprocess(emptyToUndefined, z.string().uuid().optional()),

@@ -61,6 +61,10 @@ export type ProjectMemberRow = project_membersGetPayload<{
   select: typeof projectMemberSelect;
 }>;
 
+import { ProjectStatus as ProjectStatusEnum } from '../../generated/prisma/enums.js';
+
+type ProjectStatusType = (typeof ProjectStatusEnum)[keyof typeof ProjectStatusEnum];
+
 function emptyToUndefined(value: unknown): unknown {
   if (value === '' || value === undefined || value === null) {
     return undefined;
@@ -79,7 +83,7 @@ export const listProjectsQuerySchema = z.object({
   ),
   status: z.preprocess(
     emptyToUndefined,
-    z.enum(['active', 'archived']).optional()
+    z.enum(Object.values(ProjectStatusEnum) as [ProjectStatusType, ...ProjectStatusType[]]).optional()
   ),
   search: z.preprocess(emptyToUndefined, z.string().optional()),
 });
