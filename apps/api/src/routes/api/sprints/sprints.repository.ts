@@ -4,6 +4,11 @@ import {
   type Database,
   type SprintRowWithProject,
   type Tables,
+  sprintListSelect,
+  sprintDetailSelect,
+  type SprintDetailRow,
+  type SprintPrismaListFilters,
+  paginationMeta,
 } from '@repo/types';
 import { prisma } from '../../../lib/prisma';
 import {
@@ -14,6 +19,13 @@ import {
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { SprintAccessError } from './sprints.errors';
+import {
+  buildSprintPrismaListWhere,
+  sprintListPageSlice,
+  type SprintPaginatedList,
+} from './sprints.prisma-query';
+
 
 export type SprintRow = Tables<'sprints'>;
 
@@ -155,6 +167,136 @@ export class SprintsRepository {
       fetchCurrent: () => this.findById(sprintId),
       notFoundMessage: 'Sprint not found',
     });
+  }
+
+  async listAccessibleProjectIds(actorId: string): Promise<'all' | string[]> {
+    const { data: systemUser } = await this.db
+      .from('users')
+      .select('role')
+      .eq('id', actorId)
+      .maybeSingle();
+
+    if (systemUser?.role === 'admin') {
+      return 'all';
+    }
+
+    const [
+      { data: memberships, error: memberError },
+      { data: owned, error: ownedError },
+    ] = await Promise.all([
+      this.db
+        .from('project_members')
+        .select('project_id')
+        .eq('user_id', actorId)
+        .eq('status', 'active'),
+      this.db.from('projects').select('id').eq('owner_id', actorId),
+    ]);
+
+    if (memberError) {
+      console.error(
+        'error. failed to list member projects for sprint access:',
+        memberError.message
+      );
+      throw new Error('Failed to authorize sprint access');
+    }
+
+    if (ownedError) {
+      console.error(
+        'error. failed to list owned projects for sprint access:',
+        ownedError.message
+      );
+      throw new Error('Failed to authorize sprint access');
+    }
+
+    const ids = [
+      ...(memberships ?? []).map((row) => row.project_id),
+      ...(owned ?? []).map((row) => row.id),
+    ];
+    return [...new Set(ids)];
+  }
+
+  async assertCanAccessProject(
+    actorId: string,
+    projectId: string
+  ): Promise<void> {
+    const accessible = await this.listAccessibleProjectIds(actorId);
+    if (accessible === 'all') {
+      return;
+    }
+    if (!accessible.includes(projectId)) {
+      throw new SprintAccessError();
+    }
+  }
+
+  async requireProjectMember(
+    sprintId: string,
+    actorId: string
+  ): Promise<{ projectId: string }> {
+    const { data: sprint, error: sprintError } = await this.db
+      .from('sprints')
+      .select('project_id')
+      .eq('id', sprintId)
+      .maybeSingle();
+
+    if (sprintError) {
+      console.error(
+        'error. failed to load sprint for project access:',
+        sprintError.message
+      );
+      throw new Error('Failed to authorize sprint access');
+    }
+
+    if (!sprint) {
+      throw new Error('Sprint not found');
+    }
+
+    await this.assertCanAccessProject(actorId, sprint.project_id);
+    return { projectId: sprint.project_id };
+  }
+
+  async listPaginated(input: {
+    filters?: SprintPrismaListFilters;
+    search?: string;
+    page: number;
+    limit: number;
+  }): Promise<SprintPaginatedList> {
+    const where = buildSprintPrismaListWhere(input.filters, input.search);
+    const { skip, take } = sprintListPageSlice(input.page, input.limit);
+
+    try {
+      const [sprints, totalCount] = await Promise.all([
+        prisma.sprints.findMany({
+          where,
+          select: sprintListSelect,
+          orderBy: { start_date: 'asc' },
+          skip,
+          take,
+        }),
+        prisma.sprints.count({ where }),
+      ]);
+
+      return {
+        sprints,
+        ...paginationMeta(totalCount, input.page, input.limit),
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to list sprints:', message);
+      throw new Error('Failed to list sprints');
+    }
+  }
+
+  async getDetailById(sprintId: string): Promise<SprintDetailRow | null> {
+    try {
+      return await prisma.sprints.findUnique({
+        where: { id: sprintId },
+        select: sprintDetailSelect,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to get sprint detail:', message);
+      throw new Error('Failed to get sprint');
+    }
   }
 }
 
