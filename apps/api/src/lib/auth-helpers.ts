@@ -21,3 +21,4 @@ export async function requireUserWithRole(
   }
   return user;
 }
+

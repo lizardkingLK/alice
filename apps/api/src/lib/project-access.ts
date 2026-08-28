@@ -1,18 +1,20 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@repo/types';
+import { UserRoleEnum, type Database } from '@repo/types';
+
+export const ALL_PROJECTS = 'all';
 
 export async function listAccessibleProjectIds(
   db: SupabaseClient<Database>,
   actorId: string
-): Promise<'all' | string[]> {
+): Promise<typeof ALL_PROJECTS | string[]> {
   const { data: systemUser } = await db
     .from('users')
     .select('role')
     .eq('id', actorId)
     .maybeSingle();
 
-  if (systemUser?.role === 'admin') {
-    return 'all';
+  if (systemUser?.role === UserRoleEnum.admin) {
+    return ALL_PROJECTS;
   }
 
   const [
