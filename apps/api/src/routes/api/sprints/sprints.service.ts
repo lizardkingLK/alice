@@ -5,6 +5,10 @@ import {
   UserRoleEnum,
   type SprintBurndownPayload,
   type SprintResponse,
+  type ListSprintsQuery,
+  type SprintDetailRow,
+  type SprintPrismaListFilters,
+  paginationMeta,
 } from '@repo/types';
 import type { CreateSprintBody, UpdateSprintBody } from './sprints.schemas';
 import type {
@@ -13,6 +17,8 @@ import type {
   SprintRow,
 } from './sprints.repository';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
+import type { SprintPaginatedList } from './sprints.prisma-query';
+
 
 export type {
   BurndownPoint,
@@ -146,6 +152,67 @@ export class SprintsService {
     );
 
     return mapSprintRowToResponse(row);
+  }
+
+  async listSprintsPaginated(
+    query: ListSprintsQuery,
+    actorId: string
+  ): Promise<SprintPaginatedList> {
+    const accessible = await this.sprints.listAccessibleProjectIds(actorId);
+    const scopedFilters = this.resolveScopedListFilters(query, accessible);
+
+    if (scopedFilters === null) {
+      return {
+        sprints: [],
+        ...paginationMeta(0, query.page, query.limit),
+      };
+    }
+
+    return await this.sprints.listPaginated({
+      filters: scopedFilters,
+      search: query.search,
+      page: query.page,
+      limit: query.limit,
+    });
+  }
+
+  async getSprintDetail(
+    sprintId: string,
+    actorId: string
+  ): Promise<SprintDetailRow | null> {
+    await this.sprints.requireProjectMember(sprintId, actorId);
+    return await this.sprints.getDetailById(sprintId);
+  }
+
+  private resolveScopedListFilters(
+    query: ListSprintsQuery,
+    accessible: 'all' | string[]
+  ): SprintPrismaListFilters | null {
+    const statuses =
+      query.tab === 'archived'
+        ? [SprintStatusEnum.Archived]
+        : [SprintStatusEnum.Planned, SprintStatusEnum.Active, SprintStatusEnum.Closed];
+
+    const base = {
+      status: statuses,
+    };
+
+    if (accessible === 'all') {
+      return { ...base, projectId: query.projectId };
+    }
+
+    if (accessible.length === 0) {
+      return null;
+    }
+
+    if (query.projectId) {
+      if (!accessible.includes(query.projectId)) {
+        return null;
+      }
+      return { ...base, projectId: query.projectId };
+    }
+
+    return { ...base, projectIds: accessible };
   }
 }
 

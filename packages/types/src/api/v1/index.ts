@@ -20,3 +20,14 @@ export {
   type WorkItemListRowWithDescription,
   type WorkItemPrismaListFilters,
 } from './work-items.js';
+export {
+  listSprintsQuerySchema,
+  sprintDetailSelect,
+  sprintListSelect,
+  sprintProjectSelect,
+  type ListSprintsQuery,
+  type SprintDetailRow,
+  type SprintListRow,
+  type SprintPrismaListFilters,
+} from './sprints.js';
+
