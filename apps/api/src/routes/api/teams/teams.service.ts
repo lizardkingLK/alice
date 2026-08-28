@@ -1,6 +1,11 @@
 import { requireUserWithRole } from '../../../lib/auth-helpers';
-import { RecordStatusEnum, UserRoleEnum } from '@repo/types';
-import { teamsRepository, type TeamRow } from './teams.repository';
+import {
+  RecordStatusEnum,
+  UserRoleEnum,
+  type ListTeamsQuery,
+  type TeamListRow,
+} from '@repo/types';
+import { type TeamRow, type TeamsRepository } from './teams.repository';
 
 async function requireTeamManager(actorId: string) {
   return await requireUserWithRole(
@@ -33,15 +38,43 @@ export type CreateTeamInput = Omit<
 export type UpdateTeamInput = Partial<CreateTeamInput>;
 
 export class TeamsService {
+  constructor(private readonly teamsRepository: TeamsRepository) {}
+
+  async listTeamsPaginated(
+    query: ListTeamsQuery,
+    _actorId: string
+  ): Promise<{
+    teams: TeamListRow[];
+    totalCount: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    return await this.teamsRepository.listPaginated({
+      projectId: query.projectId,
+      status: query.status,
+      search: query.search,
+      page: query.page,
+      limit: query.limit,
+    });
+  }
+
+  async getTeamDetail(
+    teamId: string,
+    _actorId: string
+  ): Promise<TeamListRow | null> {
+    return await this.teamsRepository.getDetailById(teamId);
+  }
+
   async createTeam(actorId: string, input: CreateTeamInput): Promise<TeamRow> {
     await requireTeamManager(actorId);
 
-    const duplicate = await teamsRepository.findByName(input.name);
+    const duplicate = await this.teamsRepository.findByName(input.name);
     if (duplicate) {
       throw new Error(`A team with the name "${input.name}" already exists.`);
     }
 
-    return await teamsRepository.create(input, actorId);
+    return await this.teamsRepository.create(input, actorId);
   }
 
   async updateTeam(
@@ -53,7 +86,10 @@ export class TeamsService {
     await requireTeamManager(actorId);
 
     if (input.name) {
-      const duplicate = await teamsRepository.findByName(input.name, teamId);
+      const duplicate = await this.teamsRepository.findByName(
+        input.name,
+        teamId
+      );
       if (duplicate) {
         throw new Error(
           `Another team with the name "${input.name}" already exists.`
@@ -61,7 +97,7 @@ export class TeamsService {
       }
     }
 
-    return await teamsRepository.update(
+    return await this.teamsRepository.update(
       teamId,
       input,
       actorId,
@@ -76,7 +112,7 @@ export class TeamsService {
   ): Promise<TeamRow> {
     await requireTeamManager(actorId);
 
-    return await teamsRepository.update(
+    return await this.teamsRepository.update(
       teamId,
       {
         status: 'archived',
@@ -93,7 +129,7 @@ export class TeamsService {
   ): Promise<TeamRow> {
     await requireTeamManager(actorId);
 
-    return await teamsRepository.update(
+    return await this.teamsRepository.update(
       teamId,
       {
         status: RecordStatusEnum.active,
@@ -111,7 +147,7 @@ export class TeamsService {
     expectedUpdatedAt: string
   ): Promise<void> {
     await requireTeamManager(actorId);
-    await teamsRepository.updateMember(
+    await this.teamsRepository.updateMember(
       teamId,
       userId,
       patch,
@@ -123,8 +159,6 @@ export class TeamsService {
   async hardDeleteTeam(actorId: string, teamId: string): Promise<void> {
     await requireAdmin(actorId);
 
-    await teamsRepository.delete(teamId);
+    await this.teamsRepository.delete(teamId);
   }
 }
-
-export const teamsService = new TeamsService();

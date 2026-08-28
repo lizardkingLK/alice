@@ -168,6 +168,8 @@ export function buildWorkspaceFilterRedirectPath(
   options: {
     readonly projectId?: string;
     readonly sprintId?: string;
+    /** Preserved when seeding defaults (e.g. `calendar` on `/board`). */
+    readonly tab?: string;
   }
 ): string | null {
   const params = new URLSearchParams();
@@ -176,6 +178,9 @@ export function buildWorkspaceFilterRedirectPath(
   }
   if (options.sprintId) {
     params.set('sprint', options.sprintId);
+  }
+  if (options.tab) {
+    params.set('tab', options.tab);
   }
 
   const query = params.toString();

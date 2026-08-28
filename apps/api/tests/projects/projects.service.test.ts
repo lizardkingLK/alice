@@ -6,25 +6,26 @@ const {
   findByKeyMock,
   listMembersMock,
   addMemberMock,
+  ensureOwnerIsMemberMock,
   removeMemberMock,
   createMock,
   updateMock,
   deleteMock,
-  getJiraSettingsMock,
-  saveJiraSettingsMock,
-} = vi.hoisted(() => ({
-  selectSingleMock: vi.fn(),
-  findByIdMock: vi.fn(),
-  findByKeyMock: vi.fn(),
-  listMembersMock: vi.fn(),
-  addMemberMock: vi.fn(),
-  removeMemberMock: vi.fn(),
-  createMock: vi.fn(),
-  updateMock: vi.fn(),
-  deleteMock: vi.fn(),
-  getJiraSettingsMock: vi.fn(),
-  saveJiraSettingsMock: vi.fn(),
-}));
+} = vi.hoisted(() => {
+  process.env.GITHUB_ACTIONS = 'true';
+  return {
+    selectSingleMock: vi.fn(),
+    findByIdMock: vi.fn(),
+    findByKeyMock: vi.fn(),
+    listMembersMock: vi.fn(),
+    addMemberMock: vi.fn(),
+    ensureOwnerIsMemberMock: vi.fn(),
+    removeMemberMock: vi.fn(),
+    createMock: vi.fn(),
+    updateMock: vi.fn(),
+    deleteMock: vi.fn(),
+  };
+});
 
 vi.mock('../../src/lib/supabase', () => ({
   supabase: {
@@ -38,25 +39,11 @@ vi.mock('../../src/lib/supabase', () => ({
   },
 }));
 
-vi.mock('../../src/routes/api/projects/projects.repository', () => ({
-  projectsRepository: {
-    findById: findByIdMock,
-    findByKey: findByKeyMock,
-    listMembers: listMembersMock,
-    addMember: addMemberMock,
-    removeMember: removeMemberMock,
-    create: createMock,
-    update: updateMock,
-    delete: deleteMock,
-    getJiraSettings: getJiraSettingsMock,
-    saveJiraSettings: saveJiraSettingsMock,
-  },
-}));
-
 import {
   CreateProjectInput,
   ProjectsService,
 } from '../../src/routes/api/projects/projects.service';
+import type { ProjectsRepository } from '../../src/routes/api/projects/projects.repository';
 
 const mockProject = {
   id: 'project-1',
@@ -70,10 +57,8 @@ const mockProject = {
   created_at: '2026-01-01T00:00:00.000Z',
   updated_at: '2026-01-01T00:00:00.000Z',
   deleted_at: null,
-  jira_url: null,
-  jira_email: null,
-  jira_token: null,
   jira_project_key: null,
+  jira_connection_id: null,
   github_repo: null,
   github_token: null,
   logo_url: null,
@@ -81,7 +66,36 @@ const mockProject = {
 };
 
 describe('ProjectsService backend tests', () => {
-  const service = new ProjectsService();
+  const projectsRepository = {
+    findById: findByIdMock,
+    findByKey: findByKeyMock,
+    listMembers: listMembersMock,
+    addMember: addMemberMock,
+    ensureOwnerIsMember: ensureOwnerIsMemberMock,
+    removeMember: removeMemberMock,
+    create: createMock,
+    update: updateMock,
+    delete: deleteMock,
+  } as unknown as ProjectsRepository;
+
+  const service = new ProjectsService(projectsRepository);
+
+  const createProjectInput = (
+    overrides: Partial<CreateProjectInput> = {}
+  ): CreateProjectInput => ({
+    name: 'Alice Project',
+    key: 'ALICE',
+    description: 'A project description',
+    status: 'active',
+    start_date: '2026-01-01',
+    end_date: '2026-12-31',
+    owner_id: 'user-manager',
+    jira_project_key: null,
+    jira_connection_id: null,
+    github_repo: null,
+    github_token: null,
+    ...overrides,
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -99,83 +113,55 @@ describe('ProjectsService backend tests', () => {
   }
 
   describe('createProject', () => {
-    it('creates project successfully as manager/admin', async () => {
-      mockActorRole('manager');
+    it('creates project successfully as administrator', async () => {
+      mockActorRole('admin');
       findByKeyMock.mockResolvedValue(null);
       createMock.mockResolvedValue(mockProject);
 
-      const input: CreateProjectInput = {
-        name: 'Alice Project',
-        key: 'ALICE',
-        description: 'A project description',
-        status: 'active' as const,
-        start_date: '2026-01-01',
-        end_date: '2026-12-31',
-        owner_id: 'user-manager',
-        jira_url: null,
-        jira_email: null,
-        jira_token: null,
-        jira_project_key: null,
-        github_repo: null,
-        github_token: null,
-      };
+      const input = createProjectInput();
 
-      const result = await service.createProject('user-manager', input);
+      const result = await service.createProject('user-admin', input);
 
       expect(findByKeyMock).toHaveBeenCalledWith('ALICE');
-      expect(createMock).toHaveBeenCalledWith(input, 'user-manager');
+      expect(createMock).toHaveBeenCalledWith(input, 'user-admin');
       expect(result).toEqual(mockProject);
+    });
+
+    it('rejects creation for managers', async () => {
+      mockActorRole('manager');
+
+      const input = createProjectInput();
+
+      await expect(
+        service.createProject('user-manager', input)
+      ).rejects.toThrow(
+        'Unauthorized. Only administrators can create or permanently delete projects.'
+      );
+
+      expect(createMock).not.toHaveBeenCalled();
     });
 
     it('rejects creation for standard members', async () => {
       mockActorRole('member');
 
-      const input: CreateProjectInput = {
-        name: 'Alice Project',
-        key: 'ALICE',
-        description: 'A project description',
-        status: 'active' as const,
-        start_date: '2026-01-01',
-        end_date: '2026-12-31',
-        owner_id: 'user-manager',
-        jira_url: null,
-        jira_email: null,
-        jira_token: null,
-        jira_project_key: null,
-        github_repo: null,
-        github_token: null,
-      };
+      const input = createProjectInput();
 
       await expect(service.createProject('user-member', input)).rejects.toThrow(
-        'Unauthorized. Only admins and managers can manage projects.'
+        'Unauthorized. Only administrators can create or permanently delete projects.'
       );
 
       expect(createMock).not.toHaveBeenCalled();
     });
 
     it('validates key uniqueness on creation', async () => {
-      mockActorRole('manager');
-      findByKeyMock.mockResolvedValue(mockProject); // Duplicate exists
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(mockProject);
 
-      const input: CreateProjectInput = {
-        name: 'Alice Project',
-        key: 'ALICE',
-        description: 'A project description',
-        status: 'active' as const,
-        start_date: '2026-01-01',
-        end_date: '2026-12-31',
-        owner_id: 'user-manager',
-        jira_url: null,
-        jira_email: null,
-        jira_token: null,
-        jira_project_key: null,
-        github_repo: null,
-        github_token: null,
-      };
+      const input = createProjectInput();
 
-      await expect(
-        service.createProject('user-manager', input)
-      ).rejects.toThrow('A project with the key "ALICE" already exists.');
+      await expect(service.createProject('user-admin', input)).rejects.toThrow(
+        'A project with the key "ALICE" already exists.'
+      );
 
       expect(createMock).not.toHaveBeenCalled();
     });
@@ -208,7 +194,6 @@ describe('ProjectsService backend tests', () => {
 
     it('validates key uniqueness on update', async () => {
       mockActorRole('manager');
-      // Duplicate key found belonging to another project
       findByKeyMock.mockResolvedValue({ id: 'project-2', key: 'ALICE' });
 
       const input = { key: 'ALICE' };
@@ -223,6 +208,30 @@ describe('ProjectsService backend tests', () => {
       ).rejects.toThrow('Another project with the key "ALICE" already exists.');
 
       expect(updateMock).not.toHaveBeenCalled();
+    });
+
+    it('adds the new owner as a member when ownership changes', async () => {
+      mockActorRole('manager');
+      findByKeyMock.mockResolvedValue(null);
+      findByIdMock.mockResolvedValue(mockProject);
+      updateMock.mockResolvedValue({
+        ...mockProject,
+        owner_id: 'user-new-owner',
+      });
+      ensureOwnerIsMemberMock.mockResolvedValue(undefined);
+
+      await service.updateProject(
+        'user-manager',
+        'project-1',
+        { owner_id: 'user-new-owner' },
+        mockProject.updated_at
+      );
+
+      expect(ensureOwnerIsMemberMock).toHaveBeenCalledWith(
+        'project-1',
+        'user-new-owner',
+        'user-manager'
+      );
     });
 
     it('rejects updates for standard members', async () => {
@@ -333,6 +342,31 @@ describe('ProjectsService backend tests', () => {
     });
   });
 
+  describe('removeMember', () => {
+    it('removes a non-owner member', async () => {
+      mockActorRole('manager');
+      findByIdMock.mockResolvedValue(mockProject);
+      removeMemberMock.mockResolvedValue(undefined);
+
+      await service.removeMember('user-manager', 'project-1', 'user-member');
+
+      expect(removeMemberMock).toHaveBeenCalledWith('project-1', 'user-member');
+    });
+
+    it('rejects removing the project owner', async () => {
+      mockActorRole('manager');
+      findByIdMock.mockResolvedValue(mockProject);
+
+      await expect(
+        service.removeMember('user-manager', 'project-1', 'user-manager')
+      ).rejects.toThrow(
+        'Cannot remove the project owner from members. Change the project owner first.'
+      );
+
+      expect(removeMemberMock).not.toHaveBeenCalled();
+    });
+  });
+
   describe('hardDeleteProject', () => {
     it('deletes project permanently when administrator', async () => {
       mockActorRole('admin');
@@ -349,7 +383,7 @@ describe('ProjectsService backend tests', () => {
       await expect(
         service.hardDeleteProject('user-manager', 'project-1')
       ).rejects.toThrow(
-        'Unauthorized. Only administrators can permanently delete projects.'
+        'Unauthorized. Only administrators can create or permanently delete projects.'
       );
 
       expect(deleteMock).not.toHaveBeenCalled();

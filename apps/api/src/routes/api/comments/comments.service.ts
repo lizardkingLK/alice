@@ -1,4 +1,10 @@
-import type { Json } from '@repo/types';
+import {
+  type Json,
+  type ListCommentsQuery,
+  type CommentListRow,
+  type CommentDetailRow,
+  paginationMeta,
+} from '@repo/types';
 import { CommentsRepository, type CommentRow } from './comments.repository';
 import type { NotificationsService } from '../notifications/notifications.service';
 import {
@@ -98,5 +104,51 @@ export class CommentsService {
 
   async hardDeleteComment(id: string): Promise<void> {
     await this.commentsRepository.hardDelete(id);
+  }
+
+  async listCommentsPaginated(
+    query: ListCommentsQuery,
+    actorId: string
+  ): Promise<{
+    comments: CommentListRow[];
+    totalCount: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const accessible = await this.commentsRepository.listAccessibleProjectIds(actorId);
+
+    if (accessible !== 'all' && accessible.length === 0) {
+      return {
+        comments: [],
+        ...paginationMeta(0, query.page, query.limit),
+      };
+    }
+
+    if (query.workItemId) {
+      await this.commentsRepository.requireWorkItemProjectMember(
+        query.workItemId,
+        actorId
+      );
+    }
+
+    const filters = {
+      workItemId: query.workItemId,
+      projectIds: accessible === 'all' ? undefined : accessible,
+    };
+
+    return await this.commentsRepository.listPaginated({
+      filters,
+      page: query.page,
+      limit: query.limit,
+    });
+  }
+
+  async getCommentDetail(
+    commentId: string,
+    actorId: string
+  ): Promise<CommentDetailRow | null> {
+    await this.commentsRepository.requireProjectMember(commentId, actorId);
+    return await this.commentsRepository.getDetailById(commentId);
   }
 }

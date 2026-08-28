@@ -29,12 +29,6 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-vi.mock('@repo/ui/components/ui/select', () =>
-  import('../mocks/select').then((module) =>
-    module.createSelectMock('status-select')
-  )
-);
-
 vi.mock(
   '@repo/ui/components/ui/dropdown-menu',
   () => import('../mocks/dropdown-menu')
@@ -105,7 +99,9 @@ const mockProjects: Project[] = [
     attributes_config: null,
     workflow_config: null,
     github_repo: null,
-    github_token: null,
+    jira_connection_id: null,
+    jira_project_key: null,
+    has_github_token: false,
     logo_url: null,
     cover_picture: null,
     owner: {
@@ -132,7 +128,9 @@ const mockProjects: Project[] = [
     attributes_config: null,
     workflow_config: null,
     github_repo: null,
-    github_token: null,
+    jira_connection_id: null,
+    jira_project_key: null,
+    has_github_token: false,
     logo_url: null,
     cover_picture: null,
     owner: {
@@ -208,8 +206,7 @@ describe('ProjectRegistry Component', () => {
       />
     );
 
-    const select = screen.getAllByTestId('status-select')[0]!;
-    fireEvent.change(select, { target: { value: 'archived' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Archived$/i }));
 
     expect(mockPush).toHaveBeenCalledWith('/projects?tab=archived&page=1');
   });
@@ -240,7 +237,30 @@ describe('ProjectRegistry Component', () => {
     expect(mockPush).toHaveBeenCalledWith('/projects?search=Alpha&page=1');
   });
 
-  it('opens project form on Add Project button click', () => {
+  it('opens project form on Add Project button click for admins', () => {
+    render(
+      <ProjectRegistry
+        projects={mockProjects}
+        totalCount={2}
+        page={1}
+        limit={10}
+        totalPages={1}
+        tab="active"
+        search=""
+        users={mockUsers}
+        currentUserId="user-1"
+        currentUserRole="admin"
+      />
+    );
+
+    const addBtn = screen.getByRole('button', { name: /Add Project/i });
+    fireEvent.click(addBtn);
+
+    expect(screen.getByTestId('mock-project-form')).toBeInTheDocument();
+    expect(screen.getByText('Mock Project Form - Create')).toBeInTheDocument();
+  });
+
+  it('hides Add Project for managers', () => {
     render(
       <ProjectRegistry
         projects={mockProjects}
@@ -256,11 +276,9 @@ describe('ProjectRegistry Component', () => {
       />
     );
 
-    const addBtn = screen.getByRole('button', { name: /Add Project/i });
-    fireEvent.click(addBtn);
-
-    expect(screen.getByTestId('mock-project-form')).toBeInTheDocument();
-    expect(screen.getByText('Mock Project Form - Create')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Add Project/i })
+    ).not.toBeInTheDocument();
   });
 
   it('opens project form in edit mode on Edit button click', () => {

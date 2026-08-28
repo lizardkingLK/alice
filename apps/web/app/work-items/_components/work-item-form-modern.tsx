@@ -47,9 +47,43 @@ import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge
 import { WORK_ITEM_TYPE_ICONS } from '@/app/work-items/_helpers/work-item-type';
 import { MODERN_BORDERLESS_FOCUS_CLASSES } from '@/lib/editor/compact-editor-attrs';
 
-export type WorkItemFormModernFieldsProps = WorkItemFormSharedFieldProps;
+export type WorkItemFormModernFieldsProps = WorkItemFormSharedFieldProps & {
+  readonly titleDefault?: string;
+  readonly dueDateDefault?: string;
+  readonly lockDueDate?: boolean;
+  readonly storyPointsDefault?: number | null;
+  readonly labelsDefault?: readonly string[];
+  readonly descriptionDefault?: unknown;
+};
 
 type OptionalField = 'priority' | 'due_date' | 'story_points' | 'labels';
+
+function toDateInputValue(value: string): string {
+  return value.split('T')[0] ?? '';
+}
+
+function initialOptionalFields(options: {
+  readonly dueDateDefault: string;
+  readonly lockDueDate: boolean;
+  readonly storyPointsDefault: number | null;
+  readonly labelsDefault: readonly string[];
+  readonly hasExplicitPriority: boolean;
+}): Set<OptionalField> {
+  const fields = new Set<OptionalField>();
+  if (options.hasExplicitPriority) {
+    fields.add('priority');
+  }
+  if (toDateInputValue(options.dueDateDefault) || options.lockDueDate) {
+    fields.add('due_date');
+  }
+  if (options.storyPointsDefault != null) {
+    fields.add('story_points');
+  }
+  if (options.labelsDefault.length > 0) {
+    fields.add('labels');
+  }
+  return fields;
+}
 
 const OPTIONAL_FIELD_OPTIONS: ReadonlyArray<{
   readonly id: OptionalField;
@@ -156,12 +190,27 @@ export function WorkItemFormModernFields({
   onTypeChange,
   onPriorityChange,
   onParentIdChange,
+  titleDefault = '',
+  dueDateDefault = '',
+  lockDueDate = false,
+  storyPointsDefault = null,
+  labelsDefault = [],
+  descriptionDefault = null,
 }: Readonly<WorkItemFormModernFieldsProps>) {
+  const dueDateValue = toDateInputValue(dueDateDefault);
   const [descriptionJson, setDescriptionJson] = useState<string | null>(null);
-  const [labels, setLabels] = useState<string[]>([]);
+  const [labels, setLabels] = useState<string[]>(() => [...labelsDefault]);
   const [optionalFields, setOptionalFields] = useState<
     ReadonlySet<OptionalField>
-  >(() => new Set());
+  >(() =>
+    initialOptionalFields({
+      dueDateDefault,
+      lockDueDate,
+      storyPointsDefault,
+      labelsDefault,
+      hasExplicitPriority: Boolean(titleDefault),
+    })
+  );
   const showParentPicker = resolveShowParentPicker(lockParent, parentTypeLabel);
 
   const handleDescriptionChange = useCallback((json: string | null) => {
@@ -173,7 +222,9 @@ export function WorkItemFormModernFields({
   };
 
   const remainingOptional = OPTIONAL_FIELD_OPTIONS.filter(
-    (option) => !optionalFields.has(option.id)
+    (option) =>
+      !optionalFields.has(option.id) &&
+      !(lockDueDate && option.id === 'due_date')
   );
 
   const selectedProject = projects.find((project) => project.id === projectId);
@@ -225,13 +276,17 @@ export function WorkItemFormModernFields({
           name="title"
           placeholder="Title"
           aria-label="Title"
+          defaultValue={titleDefault}
           className={cn(
             'placeholder:text-muted-foreground/70 h-auto rounded-md bg-transparent! pr-10 pl-3 text-2xl! font-semibold',
             MODERN_BORDERLESS_FOCUS_CLASSES
           )}
         />
 
-        <WorkItemFormModernDescription onJsonChange={handleDescriptionChange} />
+        <WorkItemFormModernDescription
+          initialContent={descriptionDefault}
+          onJsonChange={handleDescriptionChange}
+        />
         {descriptionJson ? (
           <input type="hidden" name="description" value={descriptionJson} />
         ) : null}
@@ -332,6 +387,9 @@ export function WorkItemFormModernFields({
             priority={priority}
             onPriorityChange={onPriorityChange}
             onAddOptionalField={addOptionalField}
+            dueDateDefault={dueDateValue}
+            lockDueDate={lockDueDate}
+            storyPointsDefault={storyPointsDefault}
           />
         </div>
 
@@ -357,7 +415,45 @@ type ModernOptionalFieldPillsProps = {
   readonly onPriorityChange: (value: WorkItemPriority) => void;
   // eslint-disable-next-line no-unused-vars -- controlled setter
   readonly onAddOptionalField: (field: OptionalField) => void;
+  readonly dueDateDefault: string;
+  readonly lockDueDate: boolean;
+  readonly storyPointsDefault: number | null;
 };
+
+function ModernDueDateField({
+  optionalFields,
+  dueDateDefault,
+  lockDueDate,
+}: Readonly<{
+  optionalFields: ReadonlySet<OptionalField>;
+  dueDateDefault: string;
+  lockDueDate: boolean;
+}>) {
+  if (optionalFields.has('due_date')) {
+    return (
+      <FieldTooltip label="Due date">
+        <div className="relative">
+          <Calendar className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
+          <Input
+            id="due_date"
+            name="due_date"
+            type="date"
+            aria-label="Due date"
+            defaultValue={dueDateDefault}
+            disabled={lockDueDate}
+            className={cn(pillTriggerClassName(false), 'w-38 pr-2 pl-8')}
+          />
+        </div>
+      </FieldTooltip>
+    );
+  }
+
+  if (lockDueDate && dueDateDefault) {
+    return <input type="hidden" name="due_date" value={dueDateDefault} />;
+  }
+
+  return null;
+}
 
 function ModernOptionalFieldPills({
   optionalFields,
@@ -365,6 +461,9 @@ function ModernOptionalFieldPills({
   priority,
   onPriorityChange,
   onAddOptionalField,
+  dueDateDefault,
+  lockDueDate,
+  storyPointsDefault,
 }: Readonly<ModernOptionalFieldPillsProps>) {
   return (
     <>
@@ -386,20 +485,11 @@ function ModernOptionalFieldPills({
         <input type="hidden" name="priority" value={priority} />
       )}
 
-      {optionalFields.has('due_date') ? (
-        <FieldTooltip label="Due date">
-          <div className="relative">
-            <Calendar className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
-            <Input
-              id="due_date"
-              name="due_date"
-              type="date"
-              aria-label="Due date"
-              className={cn(pillTriggerClassName(false), 'w-38 pr-2 pl-8')}
-            />
-          </div>
-        </FieldTooltip>
-      ) : null}
+      <ModernDueDateField
+        optionalFields={optionalFields}
+        dueDateDefault={dueDateDefault}
+        lockDueDate={lockDueDate}
+      />
 
       {optionalFields.has('story_points') ? (
         <FieldTooltip label="Story points">
@@ -413,6 +503,7 @@ function ModernOptionalFieldPills({
               step="1"
               placeholder="Points"
               aria-label="Story points"
+              defaultValue={storyPointsDefault ?? undefined}
               className={cn(pillTriggerClassName(false), 'w-26 pr-2 pl-8')}
             />
           </div>

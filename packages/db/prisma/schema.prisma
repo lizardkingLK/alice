@@ -81,6 +81,12 @@ enum AccessAllowlistKind {
   email
 }
 
+enum JiraConnectionStatus {
+  active
+  revoked
+  expired
+}
+
 /// App profile + RBAC. `id` matches Supabase `auth.users.id` (set on invite, no DB default).
 model users {
   id              String       @id @db.Uuid
@@ -141,6 +147,7 @@ model users {
   saved_view_shares       saved_view_shares[] @relation("SavedViewShareRecipient")
   created_saved_view_shares saved_view_shares[] @relation("SavedViewShareCreatedBy")
   updated_saved_view_shares saved_view_shares[] @relation("SavedViewShareUpdatedBy")
+  jira_connections        jira_connections[]
 }
 
 model projects {
@@ -159,10 +166,8 @@ model projects {
   created_at        DateTime      @default(now()) @db.Timestamptz(6)
   updated_by        String?       @db.Uuid
   updated_at        DateTime      @updatedAt @db.Timestamptz(6)
-  jira_url          String?
-  jira_email        String?
-  jira_token        String?
   jira_project_key  String?
+  jira_connection_id String?      @db.Uuid
   github_repo       String?
   github_token      String?
   logo_url          String?
@@ -171,6 +176,7 @@ model projects {
   owner           users             @relation("ProjectOwner", fields: [owner_id], references: [id])
   created_by_user users?            @relation("ProjectCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
   updated_by_user users?            @relation("ProjectUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+  jira_connection jira_connections? @relation(fields: [jira_connection_id], references: [id], onDelete: SetNull)
   members         project_members[]
   teams           teams[]
   sprints         sprints[]
@@ -399,15 +405,25 @@ model access_allowlist {
   @@index([kind, status])
 }
 
-model jira_settings {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  jira_url   String
-  jira_email String
-  jira_token String
-  /** Always true; unique so at most one settings row exists. */
-  singleton  Boolean  @default(true) @unique
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @updatedAt @db.Timestamptz(6)
+model jira_connections {
+  id                      String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                 String               @db.Uuid
+  cloud_id                String
+  site_url                String
+  account_email           String?
+  refresh_token_enc       String
+  access_token_enc        String?
+  access_token_expires_at DateTime?            @db.Timestamptz(6)
+  scopes                  String
+  status                  JiraConnectionStatus @default(active)
+  created_at              DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime             @updatedAt @db.Timestamptz(6)
+
+  user     users      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  projects projects[]
+
+  @@index([user_id])
+  @@unique([user_id, cloud_id])
 }
 
 model chat_conversations {

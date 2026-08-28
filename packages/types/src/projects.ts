@@ -37,10 +37,8 @@ const baseCreateProjectSchema = z.object({
   status: z
     .enum(Constants.public.Enums.ProjectStatus)
     .default(ProjectStatusEnum.active),
-  jira_url: z.string().nullable().optional(),
-  jira_email: z.string().nullable().optional(),
-  jira_token: z.string().nullable().optional(),
   jira_project_key: z.string().nullable().optional(),
+  jira_connection_id: z.uuid().nullable().optional(),
   github_repo: z.string().nullable().optional(),
   github_token: z.string().nullable().optional(),
 });
@@ -89,19 +87,34 @@ export const createProjectSchema = baseCreateProjectSchema
     }
   );
 
-export const updateProjectSchema = baseCreateProjectSchema
-  .partial()
-  .refine(
-    (data) => {
-      if (data.start_date && data.end_date) {
-        const start = data.start_date.split('T')[0] ?? '';
-        const end = data.end_date.split('T')[0] ?? '';
-        return end >= start;
-      }
-      return true;
-    },
-    {
-      message: 'End date must be on or after the start date.',
-      path: ['end_date'],
+export const updateProjectSchema = baseCreateProjectSchema.partial().refine(
+  (data) => {
+    if (data.start_date && data.end_date) {
+      const start = data.start_date.split('T')[0] ?? '';
+      const end = data.end_date.split('T')[0] ?? '';
+      return end >= start;
     }
-  );
+    return true;
+  },
+  {
+    message: 'End date must be on or after the start date.',
+    path: ['end_date'],
+  }
+);
+
+/**
+ * Strip integration secrets before project rows reach clients.
+ * Deletes `github_token` and adds `has_github_token`.
+ */
+export function withoutIntegrationSecrets<
+  T extends { github_token?: string | null },
+>(project: T): Omit<T, 'github_token'> & { has_github_token: boolean } {
+  const { github_token: githubToken, ...rest } = project;
+  return {
+    ...(rest as Omit<T, 'github_token'>),
+    has_github_token: Boolean(githubToken),
+  };
+}
+
+/** @deprecated Prefer `withoutIntegrationSecrets` — same mapping. */
+export const withoutGithubToken = withoutIntegrationSecrets;

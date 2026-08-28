@@ -1,4 +1,5 @@
-import { supabase } from '../../../lib/supabase';
+import { teamListSelect, type Database, type Tables, type TeamListRow } from '@repo/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { prisma } from '../../../lib/prisma';
 import {
   prismaAuditCreateWithoutStatus,
@@ -6,8 +7,7 @@ import {
   prismaLockTimestamp,
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
-import type { Tables } from '@repo/types';
-import { RecordStatus } from '@repo/types/prisma';
+import { RecordStatus, Prisma } from '@repo/types/prisma';
 
 export type TeamMemberRow = Tables<'team_members'>;
 
@@ -55,8 +55,86 @@ async function insertTeamMembers(
 }
 
 export class TeamsRepository {
+  constructor(private readonly db: SupabaseClient<Database>) {}
+
+  async listPaginated(input: {
+    projectId?: string;
+    status?: RecordStatus;
+    search?: string;
+    page: number;
+    limit: number;
+  }): Promise<{
+    teams: TeamListRow[];
+    totalCount: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const skip = (input.page - 1) * input.limit;
+    const take = input.limit;
+
+    const where: Prisma.teamsWhereInput = {};
+
+    if (input.projectId) {
+      where.project_id = input.projectId;
+    }
+
+    if (input.status) {
+      where.status = input.status;
+    }
+
+    const term = input.search?.trim();
+    if (term) {
+      where.OR = [
+        { name: { contains: term, mode: Prisma.QueryMode.insensitive } },
+        { description: { contains: term, mode: Prisma.QueryMode.insensitive } },
+        { tech_stack: { contains: term, mode: Prisma.QueryMode.insensitive } },
+      ];
+    }
+
+    try {
+      const [teams, totalCount] = await Promise.all([
+        prisma.teams.findMany({
+          where,
+          select: teamListSelect,
+          orderBy: { created_at: Prisma.SortOrder.desc },
+          skip,
+          take,
+        }),
+        prisma.teams.count({ where }),
+      ]);
+
+      const totalPages = Math.ceil(totalCount / input.limit);
+
+      return {
+        teams,
+        totalCount,
+        page: input.page,
+        limit: input.limit,
+        totalPages,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to list teams:', message);
+      throw new Error('Failed to list teams');
+    }
+  }
+
+  async getDetailById(teamId: string): Promise<TeamListRow | null> {
+    try {
+      return await prisma.teams.findUnique({
+        where: { id: teamId },
+        select: teamListSelect,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to get team detail:', message);
+      throw new Error('Failed to get team');
+    }
+  }
+
   async findByName(name: string, excludeId?: string): Promise<TeamRow | null> {
-    let query = supabase.from('teams').select('*').eq('name', name);
+    let query = this.db.from('teams').select('*').eq('name', name);
     if (excludeId) {
       query = query.neq('id', excludeId);
     }
@@ -69,7 +147,7 @@ export class TeamsRepository {
   }
 
   async findById(id: string): Promise<TeamRow | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('teams')
       .select('*')
       .eq('id', id)
@@ -193,7 +271,7 @@ export class TeamsRepository {
     teamId: string,
     userId: string
   ): Promise<TeamMemberRow | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('team_members')
       .select('*')
       .eq('team_id', teamId)
@@ -240,5 +318,3 @@ export class TeamsRepository {
     await prisma.teams.deleteMany({ where: { id: teamId } });
   }
 }
-
-export const teamsRepository = new TeamsRepository();

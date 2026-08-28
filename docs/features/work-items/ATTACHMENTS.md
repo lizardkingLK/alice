@@ -119,11 +119,16 @@ attachment reads should prefer the direct-server path from day one.
 
 ## API (mutations + signed URL)
 
-| Endpoint                      | Role                                                                                                                                                                                        |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /api/attachments/:id`    | Auth → `{ previewUrl, downloadUrl, expiresAt }`. Verifies the Storage object exists first — returns **410** when the row is orphaned (object gone). `404` when the row is missing/archived. |
-| `POST /api/attachments`       | Upload to attachments bucket. Optional multipart `work_item_id` also inserts an `attachments` row (returns the row). Without it, storage-only (`/files` playground).                        |
-| `DELETE /api/attachments/:id` | Archive row (`status: 'archived'`) + best-effort Storage delete                                                                                                                             |
+All routes are also mounted at `/api/v1/attachments` (same router instance).
+
+| Endpoint                               | Role                                                                                                                                                                                        |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/attachments?work_item_id=`   | **Unused by Next** — Prisma list of active attachment metadata for a work item (escape hatch; RSC still uses supabase-js). Requires project membership.                                     |
+| `GET /api/attachments/:id`             | Auth → `{ previewUrl, downloadUrl, expiresAt }`. Verifies the Storage object exists first — returns **410** when the row is orphaned (object gone). `404` when the row is missing/archived. |
+| `POST /api/attachments/upload-session` | Mint a direct-to-Supabase upload session (JSON metadata only).                                                                                                                              |
+| `POST /api/attachments/finalize`       | Commit DB row after browser upload completes.                                                                                                                                               |
+| `POST /api/attachments`                | Upload to attachments bucket. Optional multipart `work_item_id` also inserts an `attachments` row (returns the row). Without it, storage-only (`/files` playground).                        |
+| `DELETE /api/attachments/:id`          | Archive row (`status: 'archived'`) + best-effort Storage delete                                                                                                                             |
 
 > The URL endpoint is `:/id` (not `/:id/url`) to match the `:id` resource convention used by other features.
 
@@ -157,16 +162,17 @@ Reuse `apps/api/src/lib/file-helpers.ts` for upload / signed URL / existence che
 
 ## Implementation pointers
 
-| Area                       | Path                                                                             |
-| -------------------------- | -------------------------------------------------------------------------------- |
-| Details RSC                | `apps/web/app/work-items/[id]/_components/work-item-details-data.tsx`            |
-| Details UI                 | `apps/web/app/work-items/_components/workItem-details.tsx`                       |
-| Attachments section (UI)   | `apps/web/app/work-items/_components/work-item-attachments-section.tsx`          |
-| Upload dialog (multi-file) | `apps/web/app/work-items/_components/work-item-attachment-upload-dialog.tsx`     |
-| Client ApiError (status)   | `apps/web/lib/api/api.ts` (`ApiError` carries HTTP status for 410 branching)     |
-| Discussion pattern         | `apps/web/app/comments/_services/comments.service.server.ts`                     |
-| Attachments shared types   | `packages/types/src/attachments.ts`                                              |
-| Attachments server reader  | `apps/web/app/work-items/_services/attachments.service.server.ts`                |
-| Attachments client API     | `apps/web/app/work-items/_services/attachments.service.ts`                       |
-| Storage helpers            | `apps/api/src/lib/file-helpers.ts`                                               |
-| Attachments API            | `apps/api/src/routes/api/attachments/` (`GET /:id/url`, `POST /`, `DELETE /:id`) |
+| Area                          | Path                                                                                                           |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Details RSC                   | `apps/web/app/work-items/[id]/_components/work-item-details-data.tsx`                                          |
+| Details UI                    | `apps/web/app/work-items/_components/workItem-details.tsx`                                                     |
+| Attachments section (UI)      | `apps/web/app/work-items/_components/work-item-attachments-section.tsx`                                        |
+| Upload dialog (multi-file)    | `apps/web/app/work-items/_components/work-item-attachment-upload-dialog.tsx`                                   |
+| Client ApiError (status)      | `apps/web/lib/api/api.ts` (`ApiError` carries HTTP status for 410 branching)                                   |
+| Discussion pattern            | `apps/web/app/comments/_services/comments.service.server.ts`                                                   |
+| Attachments shared read types | `packages/types/src/attachments.ts` (`AttachmentWithUploader`, `ATTACHMENT_SELECT`)                            |
+| Attachments v1 wire DTOs      | `packages/types/src/api/v1/attachments.ts` (Zod inputs/responses + Prisma `attachmentListSelect`)              |
+| Attachments server reader     | `apps/web/app/work-items/_services/workItem-attachments.service.server.ts`                                     |
+| Attachments client API        | `apps/web/app/work-items/_services/workItem-attachments.service.client.ts`                                     |
+| Storage helpers               | `apps/api/src/lib/file-helpers.ts`                                                                             |
+| Attachments API               | `apps/api/src/routes/api/attachments/` (`GET /`, `GET /:id`, upload session/finalize, `POST /`, `DELETE /:id`) |

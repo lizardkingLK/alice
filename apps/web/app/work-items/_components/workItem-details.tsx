@@ -46,10 +46,8 @@ import {
 import WorkItemDescriptionEditor from '@/app/work-items/_components/workItem-description-editor';
 import { DescriptionView } from '@/app/work-items/_components/workItem-description-view';
 import { toTiptapContent } from '@/app/work-items/_helpers/work-item-description';
-import {
-  createWorkItemWorkLog,
-  updateWorkItem,
-} from '@/app/work-items/_services/workItem.service.client';
+import { updateWorkItem } from '@/app/work-items/_services/workItem.service.client';
+import { createWorkItemWorkLog } from '@/app/work-items/_services/workItem-worklogs.service.client';
 import { useWorkItemLifecycleActions } from '@/app/work-items/_hooks/use-work-item-lifecycle-actions';
 import WorkItemSidebar from '@/app/work-items/_components/workItem-details-sidebar';
 import { WorkItemTitleEditor } from '@/app/work-items/_components/workItem-title-editor';

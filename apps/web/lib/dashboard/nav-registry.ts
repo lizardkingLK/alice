@@ -1,6 +1,5 @@
 import {
   BookOpen,
-  Calendar,
   CircleDot,
   CircleHelp,
   ClipboardPenIcon,
@@ -46,7 +45,6 @@ export const SYSTEM_NAV: readonly DashboardNavItem[] = [
 
 export const PROJECTS_NAV: readonly DashboardNavItem[] = [
   { path: '/projects', label: 'Projects', icon: FolderKanban },
-  { path: '/calendar', label: 'Calendar', icon: Calendar },
 ];
 
 export const SPRINTS_NAV: readonly DashboardNavItem[] = [

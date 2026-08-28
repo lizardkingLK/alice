@@ -35,7 +35,8 @@ const mockNotification: Notification = {
   id: 'notif-1',
   user_id: 'user-1',
   type: 'comment',
-  message: 'Access request\n\nFrom: requestor@example.com (John Doe)\n\nI need access to the system.',
+  message:
+    'Access request\n\nFrom: requestor@example.com (John Doe)\n\nI need access to the system.',
   read_status: false,
   status: 'active',
   created_at: new Date().toISOString(),
@@ -66,7 +67,9 @@ describe('NotificationInbox access request handling', () => {
     fireEvent.click(notificationBtn);
 
     // Assert dialog is open
-    expect(await screen.findByText('Access Request Details')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Access Request Details')
+    ).toBeInTheDocument();
     expect(
       screen.getByText(/An outside domain user is requesting access/i)
     ).toBeInTheDocument();

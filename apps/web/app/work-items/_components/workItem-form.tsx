@@ -60,8 +60,12 @@ export interface WorkItemFormProps {
   lockStatus?: boolean;
   /** Optional sprint for create (e.g. board sprint filter). */
   defaultSprintId?: string | null;
+  /** Pre-filled due date for create (YYYY-MM-DD). */
+  defaultDueDate?: string;
+  /** When true, due date is fixed on create (value still submitted). */
+  lockDueDate?: boolean;
   /**
-   * Create layout preference. Edit mode always uses classic.
+   * Form layout preference (classic | modern). Applies to create and edit.
    * Defaults to classic when omitted.
    */
   createFormMode?: WorkItemCreateFormMode;
@@ -128,6 +132,8 @@ export function WorkItemForm({
   defaultStatus,
   lockStatus = false,
   defaultSprintId = null,
+  defaultDueDate,
+  lockDueDate = false,
   createFormMode = 'classic',
 }: Readonly<WorkItemFormProps>) {
   const { handleMutationError } = useOptimisticLock();
@@ -135,7 +141,7 @@ export function WorkItemForm({
     allowedTypes && allowedTypes.length > 0 ? allowedTypes : taskTypes;
   const typeLocked = lockType || availableTypes.length === 1;
   const isEditMode = itemToEdit !== null;
-  const useModernCreate = !isEditMode && createFormMode === 'modern';
+  const useModernLayout = createFormMode === 'modern';
   const parentLocked = lockParent;
   const initialParentId = lockParent
     ? (lockedParentId ?? '')
@@ -170,6 +176,8 @@ export function WorkItemForm({
   const lockAssignee = Boolean(lockAssigneeId);
   const statusValue: WorkItemStatus | '' =
     itemToEdit?.status ?? defaultStatus ?? '';
+  const dueDateDefault =
+    itemToEdit?.due_date?.split('T')[0] ?? defaultDueDate ?? '';
 
   const currentMembers = useProjectMembers({
     projectId,
@@ -230,14 +238,14 @@ export function WorkItemForm({
   }, [allowedParentType, itemToEdit?.id, parentLocked, projectId, type]);
 
   useEffect(() => {
-    if (!useModernCreate || !state?.error) {
+    if (!useModernLayout || !state?.error) {
       return;
     }
     const timer = globalThis.setTimeout(() => {
       setState((current) => (current ? { ...current, error: null } : current));
     }, ALERT_DISMISS_MS);
     return () => globalThis.clearTimeout(timer);
-  }, [useModernCreate, state?.error]);
+  }, [useModernLayout, state?.error]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -317,13 +325,22 @@ export function WorkItemForm({
         <input type="hidden" name="sprint_id" value={defaultSprintId} />
       ) : null}
 
-      {useModernCreate ? (
-        <WorkItemFormModernFields {...fieldProps} />
+      {useModernLayout ? (
+        <WorkItemFormModernFields
+          {...fieldProps}
+          titleDefault={itemToEdit?.title ?? ''}
+          dueDateDefault={dueDateDefault}
+          lockDueDate={!isEditMode && lockDueDate}
+          storyPointsDefault={itemToEdit?.story_points ?? null}
+          labelsDefault={parseWorkItemLabels(itemToEdit?.labels)}
+          descriptionDefault={itemToEdit?.description ?? null}
+        />
       ) : (
         <WorkItemFormClassicFields
           {...fieldProps}
           titleDefault={itemToEdit?.title ?? ''}
-          dueDateDefault={itemToEdit?.due_date ?? ''}
+          dueDateDefault={dueDateDefault}
+          lockDueDate={!isEditMode && lockDueDate}
           storyPointsDefault={itemToEdit?.story_points ?? null}
           labelsDefault={parseWorkItemLabels(itemToEdit?.labels)}
         />
@@ -346,7 +363,7 @@ export function WorkItemForm({
           <SubmitButtonText
             isPending={isPending}
             isEditMode={isEditMode}
-            modernCreate={useModernCreate}
+            modernCreate={useModernLayout}
           />
         </Button>
       </DialogFooter>

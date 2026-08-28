@@ -1,6 +1,7 @@
 import { unstable_cache, updateTag } from 'next/cache';
 import { filterProductUsableUsers } from '@repo/types';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { withoutGithubToken } from '@/lib/projects/sanitize-project-secrets';
 import { getUser } from '@/lib/auth';
 
 /**
@@ -59,7 +60,11 @@ async function fetchProjectsForDropdown(): Promise<unknown[]> {
     throw new Error('Failed to list projects');
   }
 
-  return data ?? [];
+  return (data ?? []).map((row) =>
+    withoutGithubToken(
+      row as { github_token?: string | null } & Record<string, unknown>
+    )
+  );
 }
 
 const getCachedActiveUsers = unstable_cache(

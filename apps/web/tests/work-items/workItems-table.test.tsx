@@ -639,9 +639,11 @@ describe('WorkItemsTable', () => {
     expect(
       await screen.findByText("You're not a member of this project.")
     ).toBeInTheDocument();
-    expect(
-      await screen.findByRole('button', { name: /Expand subtasks/i })
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /Expand subtasks/i })
+      ).toBeInTheDocument();
+    });
   });
 
   it('switches to the archived tab via the toolbar', async () => {

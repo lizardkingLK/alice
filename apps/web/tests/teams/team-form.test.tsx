@@ -124,7 +124,9 @@ const mockProjects: Project[] = [
     attributes_config: null,
     workflow_config: null,
     github_repo: null,
-    github_token: null,
+    jira_connection_id: null,
+    jira_project_key: null,
+    has_github_token: false,
     logo_url: null,
     cover_picture: null,
     owner: {
@@ -150,7 +152,9 @@ const mockProjects: Project[] = [
     attributes_config: null,
     workflow_config: null,
     github_repo: null,
-    github_token: null,
+    jira_connection_id: null,
+    jira_project_key: null,
+    has_github_token: false,
     logo_url: null,
     cover_picture: null,
     owner: {

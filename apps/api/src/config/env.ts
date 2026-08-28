@@ -12,8 +12,15 @@ const serverSchema = z.object({
   STORAGE_BUCKET_PROJECT_LOGOS: z.string().min(1),
   STORAGE_BUCKET_PROJECT_COVERS: z.string().min(1),
   STORAGE_BUCKET_CHAT_HISTORY: z.string().min(1),
-  JIRA_API_TOKEN: z.string().optional(),
-  JIRA_EMAIL: z.string().optional(),
+  /**
+   * Base64-encoded 32-byte key for AES-256-GCM encryption of integration
+   * secrets (GitHub PATs, Jira OAuth tokens). Server-only.
+   */
+  INTEGRATION_TOKEN_ENCRYPTION_KEY: z.string().min(1).optional(),
+  /** Atlassian OAuth (3LO) app credentials — optional until Jira Connect is used. */
+  ATLASSIAN_CLIENT_ID: z.string().min(1).optional(),
+  ATLASSIAN_CLIENT_SECRET: z.string().min(1).optional(),
+  ATLASSIAN_REDIRECT_URI: z.string().min(1).optional(),
   /** Optional; when set, `/notifications/check-due-dates` requires `Authorization: Bearer <CRON_SECRET>`. */
   CRON_SECRET: z.string().min(1).optional(),
   /** Pooled Postgres URL for Prisma Client (Supavisor session mode, port 5432). */
@@ -34,8 +41,10 @@ const mock: EnvSchemaType = {
   STORAGE_BUCKET_PROJECT_LOGOS: 'alice_storage_project_logos',
   STORAGE_BUCKET_PROJECT_COVERS: 'alice_storage_project_covers',
   STORAGE_BUCKET_CHAT_HISTORY: 'alice_storage_chat_history',
-  JIRA_API_TOKEN: 'mock',
-  JIRA_EMAIL: 'mock@atlassian.net',
+  INTEGRATION_TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 1).toString('base64'),
+  ATLASSIAN_CLIENT_ID: 'mock-atlassian-client-id',
+  ATLASSIAN_CLIENT_SECRET: 'mock-atlassian-client-secret',
+  ATLASSIAN_REDIRECT_URI: 'http://localhost:5000/api/jira/oauth/callback',
   CRON_SECRET: 'mock-cron-secret',
   DATABASE_URL: 'postgresql://localhost:5432/postgres',
 };
@@ -52,8 +61,11 @@ const processEnv = {
   STORAGE_BUCKET_PROJECT_LOGOS: process.env.STORAGE_BUCKET_PROJECT_LOGOS,
   STORAGE_BUCKET_PROJECT_COVERS: process.env.STORAGE_BUCKET_PROJECT_COVERS,
   STORAGE_BUCKET_CHAT_HISTORY: process.env.STORAGE_BUCKET_CHAT_HISTORY,
-  JIRA_API_TOKEN: process.env.JIRA_API_TOKEN,
-  JIRA_EMAIL: process.env.JIRA_EMAIL,
+  INTEGRATION_TOKEN_ENCRYPTION_KEY:
+    process.env.INTEGRATION_TOKEN_ENCRYPTION_KEY,
+  ATLASSIAN_CLIENT_ID: process.env.ATLASSIAN_CLIENT_ID,
+  ATLASSIAN_CLIENT_SECRET: process.env.ATLASSIAN_CLIENT_SECRET,
+  ATLASSIAN_REDIRECT_URI: process.env.ATLASSIAN_REDIRECT_URI,
   CRON_SECRET: process.env.CRON_SECRET,
   DATABASE_URL: process.env.DATABASE_URL,
 };

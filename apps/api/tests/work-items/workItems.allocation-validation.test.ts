@@ -1,6 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WorkItemService } from '../../src/routes/api/workItems/workItems.service';
-import type { WorkItemRepository } from '../../src/routes/api/workItems/workItems.repository';
 import { WorkItemValidationError } from '../../src/routes/api/workItems/workItems.errors';
 
 const {
@@ -52,9 +52,13 @@ const mockRepo = {
   update: vi.fn(),
   getById: vi.fn(),
   requireProjectMember: vi.fn(),
-} as unknown as WorkItemRepository;
+} as any;
 
 const service = new WorkItemService(mockRepo);
+
+const VALID_PROJECT_ID = 'd9b0a1a5-827d-4bdf-87f5-19e48d3db09b';
+const VALID_SPRINT_ID = 'e9b0a1a5-827d-4bdf-87f5-19e48d3db09c';
+const VALID_ASSIGNEE_ID = 'f9b0a1a5-827d-4bdf-87f5-19e48d3db09d';
 
 describe('WorkItemService allocation validation', () => {
   beforeEach(() => {
@@ -66,9 +70,11 @@ describe('WorkItemService allocation validation', () => {
     mockRepo.create.mockResolvedValue({ id: 'wi-1' });
 
     const input = {
-      project_id: 'proj-1',
+      project_id: VALID_PROJECT_ID,
       title: 'Backlog Item',
       type: 'Task' as const,
+      assignee_id: null,
+      due_date: null,
     };
 
     await expect(service.createWorkItem('user-1', input)).resolves.toEqual({ id: 'wi-1' });
@@ -80,7 +86,7 @@ describe('WorkItemService allocation validation', () => {
     findManyTeamsMock.mockResolvedValue([
       {
         members: [
-          { user_id: 'user-2', capacity: 40, allocation: 100, status: 'active' },
+          { user_id: VALID_ASSIGNEE_ID, capacity: 40, allocation: 100, status: 'active' },
         ],
       },
     ]);
@@ -92,11 +98,13 @@ describe('WorkItemService allocation validation', () => {
     mockRepo.create.mockResolvedValue({ id: 'wi-1' });
 
     const input = {
-      project_id: 'proj-1',
-      sprint_id: 'sprint-1',
+      project_id: VALID_PROJECT_ID,
+      sprint_id: VALID_SPRINT_ID,
       story_points: 5,
       title: 'Sprint Item',
       type: 'Task' as const,
+      assignee_id: null,
+      due_date: null,
     };
 
     await expect(service.createWorkItem('user-1', input)).resolves.toEqual({ id: 'wi-1' });
@@ -107,7 +115,7 @@ describe('WorkItemService allocation validation', () => {
     findManyTeamsMock.mockResolvedValue([
       {
         members: [
-          { user_id: 'user-2', capacity: 40, allocation: 100, status: 'active' },
+          { user_id: VALID_ASSIGNEE_ID, capacity: 40, allocation: 100, status: 'active' },
         ],
       },
     ]);
@@ -118,11 +126,13 @@ describe('WorkItemService allocation validation', () => {
     // Proposed work item has 15 story points -> 45 > 40 -> blocked.
 
     const input = {
-      project_id: 'proj-1',
-      sprint_id: 'sprint-1',
+      project_id: VALID_PROJECT_ID,
+      sprint_id: VALID_SPRINT_ID,
       story_points: 15,
       title: 'Sprint Item',
       type: 'Task' as const,
+      assignee_id: null,
+      due_date: null,
     };
 
     await expect(service.createWorkItem('user-1', input)).rejects.toBeInstanceOf(WorkItemValidationError);
@@ -133,7 +143,7 @@ describe('WorkItemService allocation validation', () => {
     findManyTeamsMock.mockResolvedValue([
       {
         members: [
-          { user_id: 'user-2', capacity: 40, allocation: 100, status: 'active' },
+          { user_id: VALID_ASSIGNEE_ID, capacity: 40, allocation: 100, status: 'active' },
         ],
       },
     ]);
@@ -147,12 +157,13 @@ describe('WorkItemService allocation validation', () => {
     mockRepo.create.mockResolvedValue({ id: 'wi-1' });
 
     const input = {
-      project_id: 'proj-1',
-      sprint_id: 'sprint-1',
-      assignee_id: 'user-2',
+      project_id: VALID_PROJECT_ID,
+      sprint_id: VALID_SPRINT_ID,
+      assignee_id: VALID_ASSIGNEE_ID,
       story_points: 10,
       title: 'Member Sprint Item',
       type: 'Task' as const,
+      due_date: null,
     };
 
     await expect(service.createWorkItem('user-1', input)).resolves.toEqual({ id: 'wi-1' });
@@ -163,7 +174,7 @@ describe('WorkItemService allocation validation', () => {
     findManyTeamsMock.mockResolvedValue([
       {
         members: [
-          { user_id: 'user-2', capacity: 20, allocation: 100, status: 'active' },
+          { user_id: VALID_ASSIGNEE_ID, capacity: 20, allocation: 100, status: 'active' },
         ],
       },
     ]);
@@ -178,12 +189,13 @@ describe('WorkItemService allocation validation', () => {
     findUniqueUserMock.mockResolvedValue({ name: 'Carol Member' });
 
     const input = {
-      project_id: 'proj-1',
-      sprint_id: 'sprint-1',
-      assignee_id: 'user-2',
+      project_id: VALID_PROJECT_ID,
+      sprint_id: VALID_SPRINT_ID,
+      assignee_id: VALID_ASSIGNEE_ID,
       story_points: 10,
       title: 'Member Sprint Item',
       type: 'Task' as const,
+      due_date: null,
     };
 
     await expect(service.createWorkItem('user-1', input)).rejects.toBeInstanceOf(WorkItemValidationError);
@@ -193,7 +205,7 @@ describe('WorkItemService allocation validation', () => {
     findManyTeamsMock.mockResolvedValue([
       {
         members: [
-          { user_id: 'user-2', capacity: 40, allocation: 100, status: 'active' },
+          { user_id: VALID_ASSIGNEE_ID, capacity: 40, allocation: 100, status: 'active' },
         ],
       },
     ]);
@@ -203,12 +215,13 @@ describe('WorkItemService allocation validation', () => {
     findUniqueUserMock.mockResolvedValue({ name: 'Carol Member' });
 
     const input = {
-      project_id: 'proj-1',
-      sprint_id: 'sprint-1',
-      assignee_id: 'user-2',
+      project_id: VALID_PROJECT_ID,
+      sprint_id: VALID_SPRINT_ID,
+      assignee_id: VALID_ASSIGNEE_ID,
       story_points: 5,
       title: 'Sprint Item',
       type: 'Task' as const,
+      due_date: null,
     };
 
     await service.createWorkItem('user-1', input);

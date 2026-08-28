@@ -63,7 +63,7 @@ export const ModelName = {
   attachments: 'attachments',
   notifications: 'notifications',
   access_allowlist: 'access_allowlist',
-  jira_settings: 'jira_settings',
+  jira_connections: 'jira_connections',
   chat_conversations: 'chat_conversations',
   saved_views: 'saved_views',
   saved_view_shares: 'saved_view_shares',
@@ -121,10 +121,8 @@ export const ProjectsScalarFieldEnum = {
   created_at: 'created_at',
   updated_by: 'updated_by',
   updated_at: 'updated_at',
-  jira_url: 'jira_url',
-  jira_email: 'jira_email',
-  jira_token: 'jira_token',
   jira_project_key: 'jira_project_key',
+  jira_connection_id: 'jira_connection_id',
   github_repo: 'github_repo',
   github_token: 'github_token',
   logo_url: 'logo_url',
@@ -313,17 +311,22 @@ export const Access_allowlistScalarFieldEnum = {
 export type Access_allowlistScalarFieldEnum = (typeof Access_allowlistScalarFieldEnum)[keyof typeof Access_allowlistScalarFieldEnum]
 
 
-export const Jira_settingsScalarFieldEnum = {
+export const Jira_connectionsScalarFieldEnum = {
   id: 'id',
-  jira_url: 'jira_url',
-  jira_email: 'jira_email',
-  jira_token: 'jira_token',
-  singleton: 'singleton',
+  user_id: 'user_id',
+  cloud_id: 'cloud_id',
+  site_url: 'site_url',
+  account_email: 'account_email',
+  refresh_token_enc: 'refresh_token_enc',
+  access_token_enc: 'access_token_enc',
+  access_token_expires_at: 'access_token_expires_at',
+  scopes: 'scopes',
+  status: 'status',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
 
-export type Jira_settingsScalarFieldEnum = (typeof Jira_settingsScalarFieldEnum)[keyof typeof Jira_settingsScalarFieldEnum]
+export type Jira_connectionsScalarFieldEnum = (typeof Jira_connectionsScalarFieldEnum)[keyof typeof Jira_connectionsScalarFieldEnum]
 
 
 export const Chat_conversationsScalarFieldEnum = {

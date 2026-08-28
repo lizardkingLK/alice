@@ -1,4 +1,5 @@
-import { supabase } from '../../../lib/supabase';
+import type { Database } from '@repo/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { prisma } from '../../../lib/prisma';
 import {
   prismaAuditCreate,
@@ -29,8 +30,10 @@ export type UserRow = {
 };
 
 export class UsersRepository {
+  constructor(private readonly db: SupabaseClient<Database>) {}
+
   async findById(id: string): Promise<UserRow | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('users')
       .select('*')
       .eq('id', id)
@@ -47,7 +50,7 @@ export class UsersRepository {
   /** Membership-active admins with kill switch on, other than `excludeUserId`. */
   async countOtherActiveAdmins(excludeUserId: string): Promise<number> {
     const { count, error } = await filterProductUsableUsers(
-      supabase
+      this.db
         .from('users')
         .select('id', { count: 'exact', head: true })
         .eq('role', UserRoleEnum.admin)
@@ -73,7 +76,7 @@ export class UsersRepository {
     actorId: string,
     expectedUpdatedAt: string
   ): Promise<UserRow> {
-    const { data, error } = await supabase.rpc('deactivate_user_guarded', {
+    const { data, error } = await this.db.rpc('deactivate_user_guarded', {
       p_user_id: id,
       p_actor_id: actorId,
       p_expected_updated_at: expectedUpdatedAt,
@@ -107,7 +110,7 @@ export class UsersRepository {
   }
 
   async findByEmail(email: string): Promise<UserRow | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('users')
       .select('*')
       .eq('email', email)
@@ -169,5 +172,3 @@ export class UsersRepository {
     await prisma.users.deleteMany({ where: { id } });
   }
 }
-
-export const usersRepository = new UsersRepository();

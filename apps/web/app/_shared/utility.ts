@@ -204,3 +204,11 @@ export function formatDateToISOString(
     Date.UTC(year, monthIndex, day, hour, minute, second)
   ).toISOString();
 }
+
+/** Local calendar day as `YYYY-MM-DD` (not UTC). */
+export function toLocalYYYYMMDD(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}

@@ -2,10 +2,11 @@
 
 Project administration registry: list, create, edit, soft delete, restore, and hard delete.
 
-| Document                                     | Description                                                                                | Status |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------ | ------ |
-| [JIRA_INTEGRATION.md](./JIRA_INTEGRATION.md) | Manager OAuth (3LO) → persisted Jira link → import; **sweep interim API-token flow first** | Plan   |
-| —                                            | See [ARD](../../product/ARD.md) (PROJ-1) and [TRD](../../architecture/TRD.md)              | Living |
+| Document                                         | Description                                                                   | Status |
+| ------------------------------------------------ | ----------------------------------------------------------------------------- | ------ |
+| [JIRA_INTEGRATION.md](./JIRA_INTEGRATION.md)     | Manager OAuth (3LO) → persisted Jira link → import                            | Living |
+| [GITHUB_INTEGRATION.md](./GITHUB_INTEGRATION.md) | Per-project PAT, encrypt-at-rest, write-only client contract                  | Living |
+| —                                                | See [ARD](../../product/ARD.md) (PROJ-1) and [TRD](../../architecture/TRD.md) | Living |
 
 Quick links:
 
@@ -59,6 +60,6 @@ Dropdown caches used by board/backlog/forms (`getProjectList`) are separate from
 
 ## Jira Cloud integration
 
-**Planned:** Atlassian OAuth 2.0 (3LO) so the manager who creates a project authorizes Jira; Alice persists a `jira_connections` row and links the project to a Jira project key, then imports issues. See **[JIRA_INTEGRATION.md](./JIRA_INTEGRATION.md)** (Phase 0 = remove current token-based UI/API/`jira_settings` before building OAuth).
+**Current:** Atlassian OAuth 2.0 (3LO) — managers connect Jira, link `jira_connection_id` + `jira_project_key`, then preview/import. See **[JIRA_INTEGRATION.md](./JIRA_INTEGRATION.md)**.
 
-**Interim (current code, do not extend):** optional `jira_*` columns / global `jira_settings` / email+API-token preview & import. That path is documented only as the sweep target in the plan.
+**GitHub:** Per-project PATs with encrypt-at-rest — see **[GITHUB_INTEGRATION.md](./GITHUB_INTEGRATION.md)**. Shares `INTEGRATION_TOKEN_ENCRYPTION_KEY` with Jira OAuth token storage.

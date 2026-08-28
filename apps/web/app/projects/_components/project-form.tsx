@@ -1,8 +1,14 @@
 'use client';
 
-import { FormEvent, useEffect, useState, type ChangeEvent } from 'react';
+import {
+  FormEvent,
+  useEffect,
+  useState,
+  type ChangeEvent,
+  type ComponentProps,
+  type ReactNode,
+} from 'react';
 import { Button } from '@repo/ui/components/ui/button';
-import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import {
@@ -20,7 +26,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@repo/ui/components/ui/card';
-import { FolderPlus, FolderEdit, Loader2, X } from '@repo/ui/lib/icons';
+import {
+  FolderPlus,
+  FolderEdit,
+  Loader2,
+  X,
+  Maximize2,
+  Minimize2,
+} from '@repo/ui/lib/icons';
 import type { User } from '@/app/users/_services/users.service';
 import {
   createProject,
@@ -28,11 +41,22 @@ import {
   type Project,
   type CreateProjectInput,
 } from '../_services/projects.service';
-import { apiFetch } from '@/lib/api/api-client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 import { cn } from '@repo/ui/lib/utils';
 import { FormAlertMessage } from '@/components/form-alert-message';
+import { toLocalYYYYMMDD } from '@/app/_shared/utility';
+import { importJiraIssues } from '../_services/jira.service';
+import {
+  formatGithubRepoPath,
+  parseGithubRepoPath,
+} from '@/lib/projects/github-repo-path';
+import {
+  Step2Imports,
+  Step3SourceControl,
+  type Step2ImportsProps,
+  type Step3SourceControlProps,
+} from './project-form-integration-steps';
 
 interface ProjectFormProps {
   readonly onClose?: () => void;
@@ -51,11 +75,7 @@ function formatDateForInput(dateString?: string | null) {
 }
 
 function getTodayDateString() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return toLocalYYYYMMDD(new Date());
 }
 
 function validateProjectName(name: string): string | null {
@@ -148,14 +168,16 @@ function validateStep1({
 
 function validateStep2(
   importFromJira: boolean,
-  jiraUrl: string,
+  jiraConnectionId: string,
   jiraProjectKey: string
 ): string | null {
   if (importFromJira) {
-    if (!jiraUrl.trim())
-      return 'Jira URL is required when Jira integration is enabled.';
-    if (!jiraProjectKey.trim())
+    if (!jiraConnectionId.trim()) {
+      return 'Select a Jira connection when Jira integration is enabled.';
+    }
+    if (!jiraProjectKey.trim()) {
       return 'Jira Project Key is required when Jira integration is enabled.';
+    }
   }
   return null;
 }
@@ -190,7 +212,7 @@ function getStepError(
     originalStartDate?: string;
     originalEndDate?: string;
     importFromJira: boolean;
-    jiraUrl: string;
+    jiraConnectionId: string;
     jiraProjectKey: string;
     enableGithub: boolean;
     githubOwner: string;
@@ -213,7 +235,7 @@ function getStepError(
   if (currentStep === 2) {
     return validateStep2(
       fields.importFromJira,
-      fields.jiraUrl,
+      fields.jiraConnectionId,
       fields.jiraProjectKey
     );
   }
@@ -394,7 +416,11 @@ function Step1BasicDetails({
             onChange={(e: ChangeEvent<HTMLInputElement>) =>
               setEndDate(e.target.value)
             }
-            min={startDate && startDate > getTodayDateString() ? startDate : getTodayDateString()}
+            min={
+              startDate && startDate > getTodayDateString()
+                ? startDate
+                : getTodayDateString()
+            }
             className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
           />
         </div>
@@ -403,243 +429,222 @@ function Step1BasicDetails({
   );
 }
 
-/* eslint-disable no-unused-vars */
-interface Step2Props {
-  importFromJira: boolean;
-  handleJiraCheckboxChange: (_checked: boolean) => void;
-  jiraUrl: string;
-  setJiraUrl: (_url: string) => void;
-  jiraProjectKey: string;
-  setJiraProjectKey: (_key: string) => void;
-  handleTestConnection: () => Promise<void>;
-  isTestingJira: boolean;
-  jiraTestMessage: string | null;
-  jiraTestError: boolean;
-  previewIssues: Array<{ key: string; title: string; type: string }>;
-}
-/* eslint-enable no-unused-vars */
-
-function Step2JiraIntegration({
-  importFromJira,
-  handleJiraCheckboxChange,
-  jiraUrl,
-  setJiraUrl,
-  jiraProjectKey,
-  setJiraProjectKey,
-  handleTestConnection,
-  isTestingJira,
-  jiraTestMessage,
-  jiraTestError,
-  previewIssues,
-}: Readonly<Step2Props>) {
+function ProjectFormWindowActions({
+  isMaximized,
+  onToggleMaximize,
+  onClose,
+}: Readonly<{
+  readonly isMaximized: boolean;
+  readonly onToggleMaximize: () => void;
+  readonly onClose?: () => void;
+}>) {
   return (
-    <div className="animate-in fade-in slide-in-from-left-2 space-y-4 duration-300">
-      <div className="border-border bg-muted/20 flex items-center space-x-2 rounded-lg border p-4">
-        <Checkbox
-          id="importFromJira"
-          checked={importFromJira}
-          onCheckedChange={(value) => handleJiraCheckboxChange(value === true)}
-          className="cursor-pointer"
-        />
-        <div className="grid gap-1.5 leading-none">
-          <Label
-            htmlFor="importFromJira"
-            className="cursor-pointer text-sm font-semibold select-none"
+    <div className="absolute top-4 right-4 flex items-center gap-1">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={onToggleMaximize}
+        className="text-muted-foreground h-8 w-8 cursor-pointer rounded-full transition-colors"
+        aria-label={isMaximized ? 'Minimize form' : 'Maximize form'}
+        title={isMaximized ? 'Minimize form' : 'Maximize form'}
+      >
+        {isMaximized ? (
+          <Minimize2 className="h-4 w-4" />
+        ) : (
+          <Maximize2 className="h-4 w-4" />
+        )}
+      </Button>
+      {onClose ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          className="text-muted-foreground h-8 w-8 cursor-pointer rounded-full transition-colors"
+          aria-label="Close modal"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+function useBodyScrollLock(locked: boolean) {
+  useEffect(() => {
+    if (!locked) {
+      return;
+    }
+    const originalStyle = globalThis.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalStyle;
+    };
+  }, [locked]);
+}
+
+function ProjectFormStepper({ step }: Readonly<{ step: number }>) {
+  return (
+    <div className="mt-4 flex items-center justify-between px-1">
+      {[
+        { number: 1, label: 'Basic Info' },
+        { number: 2, label: 'Imports' },
+        { number: 3, label: 'Source Control' },
+      ].map((s, idx) => {
+        const isActive = step === s.number;
+        const isCompleted = step > s.number;
+        let stepIconClass = 'bg-muted text-muted-foreground';
+        if (isActive) {
+          stepIconClass =
+            'bg-primary text-primary-foreground ring-4 ring-primary/20 scale-105';
+        } else if (isCompleted) {
+          stepIconClass = 'bg-emerald-500 text-white';
+        }
+
+        const stepTextClass = isActive
+          ? 'text-foreground font-semibold'
+          : 'text-muted-foreground';
+
+        const lineClass = isCompleted ? 'bg-emerald-500' : 'bg-muted';
+
+        return (
+          <div
+            key={s.number}
+            className="flex flex-1 items-center last:flex-initial"
           >
-            Enable Jira Integration & Task Import
-          </Label>
-          <p className="text-muted-foreground text-xs">
-            Automatically import active issues and configure tracking from
-            Atlassian Jira.
-          </p>
-        </div>
-      </div>
-
-      {importFromJira && (
-        <div className="border-border/60 bg-muted/30 flex flex-col justify-start space-y-4 rounded-lg border p-4">
-          <div className="space-y-2">
-            <Label htmlFor="jiraUrl" className="text-xs font-medium">
-              Jira Cloud URL / Domain
-            </Label>
-            <Input
-              id="jiraUrl"
-              value={jiraUrl}
-              onChange={(e) => setJiraUrl(e.target.value)}
-              placeholder="e.g. company.atlassian.net"
-              className="h-9 text-sm"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="jiraProjectKey" className="text-xs font-medium">
-              Jira Project Key
-            </Label>
-            <Input
-              id="jiraProjectKey"
-              value={jiraProjectKey}
-              onChange={(e) => setJiraProjectKey(e.target.value)}
-              placeholder="e.g. PROJ"
-              className="h-9 text-sm uppercase"
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleTestConnection}
-              disabled={isTestingJira}
-              className="w-full self-start sm:w-auto"
-            >
-              {isTestingJira ? (
-                <>
-                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                  Testing Connection...
-                </>
-              ) : (
-                'Test Connection & Preview'
-              )}
-            </Button>
-
-            {jiraTestMessage && (
-              <p
-                className={`text-xs ${jiraTestError ? 'text-red-500' : 'text-green-600'} font-medium`}
+            <div className="flex flex-col items-center gap-1">
+              <div
+                className={cn(
+                  'flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all duration-300',
+                  stepIconClass
+                )}
               >
-                {jiraTestMessage}
-              </p>
+                {isCompleted ? '✓' : s.number}
+              </div>
+              <span
+                className={cn(
+                  'hidden text-[10px] font-medium tracking-tight whitespace-nowrap transition-colors duration-300 sm:block',
+                  stepTextClass
+                )}
+              >
+                {s.label}
+              </span>
+            </div>
+            {idx < 2 && (
+              <div
+                className={cn(
+                  'mx-2 h-0.5 flex-1 transition-colors duration-500',
+                  lineClass
+                )}
+              />
             )}
           </div>
-
-          {previewIssues.length > 0 && (
-            <div className="mt-2 flex min-h-0 flex-1 flex-col space-y-1">
-              <Label className="text-muted-foreground text-xs font-semibold">
-                Tasks Preview (to be imported):
-              </Label>
-              <div className="border-border/40 bg-background/50 divide-border/20 max-h-48 flex-1 divide-y overflow-y-auto rounded border p-2 text-xs">
-                {previewIssues.slice(0, 10).map((issue) => (
-                  <div
-                    key={issue.key}
-                    className="flex justify-between gap-4 py-1.5"
-                  >
-                    <span className="text-muted-foreground shrink-0 font-mono">
-                      {issue.key}
-                    </span>
-                    <span className="flex-1 truncate font-medium">
-                      {issue.title}
-                    </span>
-                    <span className="text-muted-foreground bg-secondary/80 shrink-0 rounded px-1">
-                      {issue.type}
-                    </span>
-                  </div>
-                ))}
-                {previewIssues.length > 10 && (
-                  <div className="text-muted-foreground py-1 text-center">
-                    ... and {previewIssues.length - 10} more tasks.
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+        );
+      })}
     </div>
   );
 }
 
-/* eslint-disable no-unused-vars */
-interface Step3Props {
-  enableGithub: boolean;
-  setEnableGithub: (_enable: boolean) => void;
-  githubOwner: string;
-  setGithubOwner: (_owner: string) => void;
-  githubRepoName: string;
-  setGithubRepoName: (_repoName: string) => void;
-  githubToken: string;
-  setGithubToken: (_token: string) => void;
+function getSubmitButtonContent(
+  isSubmitting: boolean,
+  isEditMode: boolean
+): ReactNode {
+  if (isSubmitting) {
+    return (
+      <>
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        {isEditMode ? 'Updating...' : 'Creating...'}
+      </>
+    );
+  }
+  return isEditMode ? 'Save Changes' : 'Create Project';
 }
-/* eslint-enable no-unused-vars */
 
-function Step3GitHubIntegration({
-  enableGithub,
-  setEnableGithub,
-  githubOwner,
-  setGithubOwner,
-  githubRepoName,
-  setGithubRepoName,
-  githubToken,
-  setGithubToken,
-}: Readonly<Step3Props>) {
+function ProjectFormNavButtons({
+  step,
+  isBusy,
+  isMaximized,
+  onClose,
+  onBack,
+  submitLabel,
+}: Readonly<{
+  step: number;
+  isBusy: boolean;
+  isMaximized: boolean;
+  onClose?: () => void;
+  onBack: () => void;
+  submitLabel: ReactNode;
+}>) {
+  const showBack = step > 1;
+  const showCancel = step <= 1 && Boolean(onClose);
+  const secondaryClass = isMaximized ? 'min-w-28' : 'w-1/3';
+  let primaryClass = 'w-full';
+  if (isMaximized) {
+    primaryClass = 'min-w-36';
+  } else if (showBack || showCancel) {
+    primaryClass = 'w-2/3';
+  }
+
   return (
-    <div className="animate-in fade-in slide-in-from-left-2 space-y-4 duration-300">
-      <div className="border-border bg-muted/20 flex items-center space-x-2 rounded-lg border p-4">
-        <Checkbox
-          id="enableGithub"
-          checked={enableGithub}
-          onCheckedChange={(value) => setEnableGithub(value === true)}
-          className="cursor-pointer"
-        />
-        <div className="grid gap-1.5 leading-none">
-          <Label
-            htmlFor="enableGithub"
-            className="cursor-pointer text-sm font-semibold select-none"
-          >
-            Enable GitHub Integration
-          </Label>
-          <p className="text-muted-foreground text-xs">
-            Link pull requests, view commits, and track branches inside your
-            tasks.
-          </p>
-        </div>
-      </div>
-
-      {enableGithub && (
-        <div className="border-border/60 bg-muted/30 flex flex-col justify-start space-y-4 rounded-lg border p-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="githubOwner" className="text-xs font-semibold">
-                GitHub Owner / Organization
-              </Label>
-              <Input
-                id="githubOwner"
-                value={githubOwner}
-                onChange={(e) => setGithubOwner(e.target.value)}
-                placeholder="e.g. facebook"
-                className="bg-background/50 h-9 text-sm"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="githubRepoName" className="text-xs font-semibold">
-                GitHub Repository Name
-              </Label>
-              <Input
-                id="githubRepoName"
-                value={githubRepoName}
-                onChange={(e) => setGithubRepoName(e.target.value)}
-                placeholder="e.g. react"
-                className="bg-background/50 h-9 text-sm"
-                required
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="githubToken" className="text-xs font-semibold">
-              Personal Access Token (optional)
-            </Label>
-            <Input
-              id="githubToken"
-              type="text"
-              value={githubToken}
-              onChange={(e) => setGithubToken(e.target.value)}
-              placeholder="e.g. ghp_xxxxxxxxxxxx"
-              className="bg-background/50 custom-secret-text h-9 text-sm"
-            />
-          </div>
-        </div>
+    <div
+      className={cn(
+        'flex gap-3 pt-2',
+        isMaximized ? 'justify-end' : 'justify-stretch'
       )}
+    >
+      {showBack ? (
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isBusy}
+          onClick={onBack}
+          className={secondaryClass}
+        >
+          Back
+        </Button>
+      ) : null}
+      {showCancel ? (
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isBusy}
+          onClick={onClose}
+          className={secondaryClass}
+        >
+          Cancel
+        </Button>
+      ) : null}
+      {/*
+        Always type="submit" (label Next vs Create). Swapping a type="button"
+        Next for a type="submit" Create under the same click submits the form
+        on step 3 immediately and skips Source Control.
+      */}
+      <Button type="submit" disabled={isBusy} className={primaryClass}>
+        {step < 3 ? 'Next' : submitLabel}
+      </Button>
     </div>
   );
+}
+
+function ProjectFormStepBody({
+  step,
+  step1,
+  step2,
+  step3,
+}: Readonly<{
+  step: number;
+  step1: ComponentProps<typeof Step1BasicDetails>;
+  step2: Step2ImportsProps;
+  step3: Step3SourceControlProps;
+}>) {
+  if (step === 1) {
+    return <Step1BasicDetails {...step1} />;
+  }
+  if (step === 2) {
+    return <Step2Imports {...step2} />;
+  }
+  return <Step3SourceControl {...step3} />;
 }
 
 export function ProjectForm({
@@ -677,6 +682,8 @@ export function ProjectForm({
 
   // Stepper state
   const [step, setStep] = useState(1);
+  const [isMaximized, setIsMaximized] = useState(false);
+  useBodyScrollLock(isMaximized);
 
   // Jira Integration States
   const [importFromJira, setImportFromJira] = useState(false);
@@ -685,58 +692,14 @@ export function ProjectForm({
     setImportFromJira(checked);
     onJiraImportToggle?.(checked);
   };
-  const [jiraUrl, setJiraUrl] = useState('');
+  const [jiraConnectionId, setJiraConnectionId] = useState('');
   const [jiraProjectKey, setJiraProjectKey] = useState('');
-  const [isTestingJira, setIsTestingJira] = useState(false);
-  const [jiraTestMessage, setJiraTestMessage] = useState<string | null>(null);
-  const [jiraTestError, setJiraTestError] = useState(false);
-  const [previewIssues, setPreviewIssues] = useState<
-    Array<{ key: string; title: string; type: string }>
-  >([]);
 
   // GitHub Integration States
   const [enableGithub, setEnableGithub] = useState(false);
   const [githubOwner, setGithubOwner] = useState('');
   const [githubRepoName, setGithubRepoName] = useState('');
   const [githubToken, setGithubToken] = useState('');
-
-  const handleTestConnection = async () => {
-    if (!jiraUrl.trim() || !jiraProjectKey.trim()) {
-      setJiraTestMessage('Please enter both Jira Domain and Project Key.');
-      setJiraTestError(true);
-      return;
-    }
-
-    setIsTestingJira(true);
-    setJiraTestMessage(null);
-    setJiraTestError(false);
-    setPreviewIssues([]);
-
-    try {
-      const response = await apiFetch<{
-        issues: Array<{ key: string; title: string; type: string }>;
-      }>('/api/projects/jira/preview', {
-        method: 'POST',
-        body: JSON.stringify({
-          jiraUrl: jiraUrl.trim(),
-          jiraProjectKey: jiraProjectKey.toUpperCase().trim(),
-        }),
-      });
-      setPreviewIssues(response.issues);
-      setJiraTestMessage(
-        `Successfully connected! Found ${response.issues.length} tasks ready to import.`
-      );
-      setJiraTestError(false);
-    } catch (err) {
-      console.error('Jira preview error:', err);
-      setJiraTestMessage(
-        err instanceof Error ? err.message : 'Jira connection test failed.'
-      );
-      setJiraTestError(true);
-    } finally {
-      setIsTestingJira(false);
-    }
-  };
 
   const validateStep = (currentStep: number): boolean => {
     setMessage(null);
@@ -749,10 +712,14 @@ export function ProjectForm({
       endDate,
       isEditMode,
       todayStr: getTodayDateString(),
-      originalStartDate: projectToEdit ? formatDateForInput(projectToEdit.start_date) : undefined,
-      originalEndDate: projectToEdit ? formatDateForInput(projectToEdit.end_date) : undefined,
+      originalStartDate: projectToEdit
+        ? formatDateForInput(projectToEdit.start_date)
+        : undefined,
+      originalEndDate: projectToEdit
+        ? formatDateForInput(projectToEdit.end_date)
+        : undefined,
       importFromJira,
-      jiraUrl,
+      jiraConnectionId,
       jiraProjectKey,
       enableGithub,
       githubOwner,
@@ -780,44 +747,34 @@ export function ProjectForm({
     setStartDate(formatDateForInput(projectToEdit.start_date));
     setEndDate(formatDateForInput(projectToEdit.end_date));
 
-    // Initialize Jira Settings
-    const hasJira = !!projectToEdit.jira_url;
+    const hasJira = Boolean(
+      projectToEdit.jira_connection_id && projectToEdit.jira_project_key
+    );
     setImportFromJira(hasJira);
-    setJiraUrl(projectToEdit.jira_url ?? '');
+    setJiraConnectionId(projectToEdit.jira_connection_id ?? '');
     setJiraProjectKey(projectToEdit.jira_project_key ?? '');
 
-    // Initialize GitHub Settings
     const hasGithub = !!projectToEdit.github_repo;
     setEnableGithub(hasGithub);
-    if (projectToEdit.github_repo) {
-      const parts = projectToEdit.github_repo.split('/');
-      setGithubOwner(parts[0] ?? '');
-      setGithubRepoName(parts[1] ?? '');
-    } else {
-      setGithubOwner('');
-      setGithubRepoName('');
-    }
-    setGithubToken(projectToEdit.github_token ?? '');
+    const { owner, repoName } = parseGithubRepoPath(projectToEdit.github_repo);
+    setGithubOwner(owner);
+    setGithubRepoName(repoName);
+    setGithubToken('');
   }, [projectToEdit]);
 
   const handleJiraImport = async (projectId: string, projectName: string) => {
     try {
-      const importRes = await apiFetch<{ importedCount: number }>(
-        '/api/projects/jira/import',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            projectId,
-            jiraUrl: jiraUrl.trim(),
-            jiraProjectKey: jiraProjectKey.toUpperCase().trim(),
-          }),
-        }
-      );
+      const importRes = await importJiraIssues(projectId);
       setMessage(
         `Project "${projectName}" created and ${importRes.importedCount} tasks successfully imported from Jira!`
       );
     } catch (err) {
-      console.error('Jira import failed:', err);
+      // Log message only — passing an Error to console.error triggers Next's
+      // "Console Error" overlay in development.
+      console.error(
+        'Jira import failed:',
+        err instanceof Error ? err.message : err
+      );
       setMessage(
         `Project created, but task import failed: ${
           err instanceof Error ? err.message : 'Unknown error'
@@ -840,7 +797,7 @@ export function ProjectForm({
       status: projectData.status,
       attributes_config: projectData.attributes_config,
       workflow_config: projectData.workflow_config,
-      jira_url: projectData.jira_url,
+      jira_connection_id: projectData.jira_connection_id,
       jira_project_key: projectData.jira_project_key,
       github_repo: projectData.github_repo,
       github_token: projectData.github_token,
@@ -864,12 +821,26 @@ export function ProjectForm({
     const result = await createProject(projectData);
     setMessage(`Project "${result.name}" created.`);
 
-    const hasJiraConfig = jiraUrl && jiraProjectKey;
+    const hasJiraConfig = jiraConnectionId && jiraProjectKey;
     if (importFromJira && hasJiraConfig) {
       setMessage(`Project created. Importing tasks from Jira...`);
       await handleJiraImport(result.id, result.name);
     }
     onProjectUpdated?.(result as Project);
+  };
+
+  const resolveGithubToken = (): string | null | undefined => {
+    if (!enableGithub) {
+      return null;
+    }
+    if (githubToken.trim()) {
+      return githubToken.trim();
+    }
+    // Edit: omit blank token so existing encrypted PAT is unchanged.
+    if (projectToEdit) {
+      return undefined;
+    }
+    return null;
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -894,7 +865,8 @@ export function ProjectForm({
     }
 
     try {
-      const projectData = {
+      const linkedJira = importFromJira && jiraConnectionId && jiraProjectKey;
+      const projectData: CreateProjectInput = {
         name: name.trim(),
         key: key.toUpperCase().trim(),
         description: description.trim() || null,
@@ -904,14 +876,14 @@ export function ProjectForm({
         status: status,
         attributes_config: null,
         workflow_config: null,
-        jira_url: importFromJira ? jiraUrl.trim() || null : null,
-        jira_project_key: importFromJira
-          ? jiraProjectKey.toUpperCase().trim() || null
+        jira_connection_id: linkedJira ? jiraConnectionId : null,
+        jira_project_key: linkedJira
+          ? jiraProjectKey.toUpperCase().trim()
           : null,
         github_repo: enableGithub
-          ? `${githubOwner.trim()}/${githubRepoName.trim()}`
+          ? formatGithubRepoPath(githubOwner, githubRepoName)
           : null,
-        github_token: enableGithub ? githubToken.trim() || null : null,
+        github_token: resolveGithubToken(),
       };
 
       if (projectToEdit) {
@@ -943,65 +915,27 @@ export function ProjectForm({
     }
   }, [isSuccess, onSuccess]);
 
-  let submitButtonContent;
-  if (isSubmitting) {
-    submitButtonContent = (
-      <>
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        {isEditMode ? 'Updating...' : 'Creating...'}
-      </>
-    );
-  } else if (isEditMode) {
-    submitButtonContent = 'Save Changes';
-  } else {
-    submitButtonContent = 'Create Project';
-  }
-
-  let backOrCancelButton = null;
-  if (step > 1) {
-    backOrCancelButton = (
-      <Button
-        key="back-btn"
-        type="button"
-        variant="outline"
-        disabled={isSubmitting || isSuccess}
-        onClick={() => setStep((s) => s - 1)}
-        className="w-1/3"
-      >
-        Back
-      </Button>
-    );
-  } else if (onClose) {
-    backOrCancelButton = (
-      <Button
-        key="cancel-btn"
-        type="button"
-        variant="outline"
-        disabled={isSubmitting || isSuccess}
-        onClick={onClose}
-        className="w-1/3"
-      >
-        Cancel
-      </Button>
-    );
-  }
-
   return (
-    <Card className="border-border bg-card text-card-foreground relative border shadow-2xl transition-all duration-300">
-      {onClose && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          className="text-muted-foreground absolute top-4 right-4 h-8 w-8 cursor-pointer rounded-full transition-colors"
-          aria-label="Close modal"
-        >
-          <X className="h-4 w-4" />
-        </Button>
+    <Card
+      className={cn(
+        'border-border bg-card text-card-foreground relative border shadow-2xl transition-all duration-200',
+        isMaximized
+          ? 'fixed inset-0 z-60 flex h-screen w-screen flex-col gap-0 overflow-hidden rounded-none'
+          : 'overflow-visible'
       )}
+    >
+      <ProjectFormWindowActions
+        isMaximized={isMaximized}
+        onToggleMaximize={() => setIsMaximized((value) => !value)}
+        onClose={onClose}
+      />
 
-      <CardHeader className="space-y-1.5 pb-4">
+      <CardHeader
+        className={cn(
+          'shrink-0 space-y-1.5 pb-4',
+          isMaximized && 'px-8 sm:px-12 md:px-16 lg:px-24'
+        )}
+      >
         <CardTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight">
           {isEditMode ? (
             <FolderEdit className="text-primary h-5 w-5" />
@@ -1016,147 +950,87 @@ export function ProjectForm({
             : 'Register a new project workspace to organize tasks and sprints.'}
         </CardDescription>
 
-        {/* Stepper Header */}
-        <div className="mt-4 flex items-center justify-between px-1">
-          {[
-            { number: 1, label: 'Basic Info' },
-            { number: 2, label: 'Jira Integration' },
-            { number: 3, label: 'GitHub Integration' },
-          ].map((s, idx) => {
-            const isActive = step === s.number;
-            const isCompleted = step > s.number;
-            let stepIconClass = 'bg-muted text-muted-foreground';
-            if (isActive) {
-              stepIconClass =
-                'bg-primary text-primary-foreground ring-4 ring-primary/20 scale-105';
-            } else if (isCompleted) {
-              stepIconClass = 'bg-emerald-500 text-white';
-            }
-
-            const stepTextClass = isActive
-              ? 'text-foreground font-semibold'
-              : 'text-muted-foreground';
-
-            const lineClass = isCompleted ? 'bg-emerald-500' : 'bg-muted';
-
-            return (
-              <div
-                key={s.number}
-                className="flex flex-1 items-center last:flex-initial"
-              >
-                <div className="flex flex-col items-center gap-1">
-                  <div
-                    className={cn(
-                      'flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all duration-300',
-                      stepIconClass
-                    )}
-                  >
-                    {isCompleted ? '✓' : s.number}
-                  </div>
-                  <span
-                    className={cn(
-                      'hidden text-[10px] font-medium tracking-tight whitespace-nowrap transition-colors duration-300 sm:block',
-                      stepTextClass
-                    )}
-                  >
-                    {s.label}
-                  </span>
-                </div>
-                {idx < 2 && (
-                  <div
-                    className={cn(
-                      'mx-2 h-0.5 flex-1 transition-colors duration-500',
-                      lineClass
-                    )}
-                  />
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <ProjectFormStepper step={step} />
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {step === 1 && (
-            <Step1BasicDetails
-              name={name}
-              setName={setName}
-              keyString={key}
-              setKeyString={setKey}
-              description={description}
-              setDescription={setDescription}
-              selectedOwnerId={selectedOwnerId}
-              setSelectedOwnerId={setSelectedOwnerId}
-              status={status}
-              setStatus={setStatus}
-              startDate={startDate}
-              setStartDate={setStartDate}
-              endDate={endDate}
-              setEndDate={setEndDate}
-              users={users}
-              isEditMode={isEditMode}
-              getTodayDateString={getTodayDateString}
-            />
+      <CardContent
+        className={cn(
+          isMaximized &&
+            'flex min-h-0 flex-1 flex-col overflow-hidden px-8 sm:px-12 md:px-16 lg:px-24'
+        )}
+      >
+        <form
+          noValidate
+          onSubmit={handleSubmit}
+          className={cn(
+            'space-y-4',
+            isMaximized && 'flex min-h-0 flex-1 flex-col'
           )}
-
-          {step === 2 && (
-            <Step2JiraIntegration
-              importFromJira={importFromJira}
-              handleJiraCheckboxChange={handleJiraCheckboxChange}
-              jiraUrl={jiraUrl}
-              setJiraUrl={setJiraUrl}
-              jiraProjectKey={jiraProjectKey}
-              setJiraProjectKey={setJiraProjectKey}
-              handleTestConnection={handleTestConnection}
-              isTestingJira={isTestingJira}
-              jiraTestMessage={jiraTestMessage}
-              jiraTestError={jiraTestError}
-              previewIssues={previewIssues}
-            />
-          )}
-
-          {step === 3 && (
-            <Step3GitHubIntegration
-              enableGithub={enableGithub}
-              setEnableGithub={setEnableGithub}
-              githubOwner={githubOwner}
-              setGithubOwner={setGithubOwner}
-              githubRepoName={githubRepoName}
-              setGithubRepoName={setGithubRepoName}
-              githubToken={githubToken}
-              setGithubToken={setGithubToken}
-            />
-          )}
-
-          <FormAlertMessage message={message} isError={isError} />
-
-          <div className="flex gap-3 pt-2">
-            {backOrCancelButton}
-
-            {step < 3 ? (
-              <Button
-                key="next-btn"
-                type="button"
-                disabled={isSubmitting || isSuccess}
-                onClick={() => {
-                  if (validateStep(step)) {
-                    setStep((s) => s + 1);
-                  }
-                }}
-                className={step > 1 || onClose ? 'w-2/3' : 'w-full'}
-              >
-                Next
-              </Button>
-            ) : (
-              <Button
-                key="submit-btn"
-                type="submit"
-                disabled={isSubmitting || isSuccess}
-                className={step > 1 || onClose ? 'w-2/3' : 'w-full'}
-              >
-                {submitButtonContent}
-              </Button>
+        >
+          <div
+            className={cn(
+              'p-0.5',
+              isMaximized &&
+                'no-scrollbar mx-auto min-h-0 w-full max-w-4xl flex-1 space-y-4 overflow-y-auto px-1 py-1.5'
             )}
+          >
+            <ProjectFormStepBody
+              step={step}
+              step1={{
+                name,
+                setName,
+                keyString: key,
+                setKeyString: setKey,
+                description,
+                setDescription,
+                selectedOwnerId,
+                setSelectedOwnerId,
+                status,
+                setStatus,
+                startDate,
+                setStartDate,
+                endDate,
+                setEndDate,
+                users,
+                isEditMode,
+                getTodayDateString,
+              }}
+              step2={{
+                importFromJira,
+                handleJiraCheckboxChange,
+                jiraConnectionId,
+                setJiraConnectionId,
+                jiraProjectKey,
+                setJiraProjectKey,
+              }}
+              step3={{
+                enableGithub,
+                setEnableGithub,
+                githubOwner,
+                setGithubOwner,
+                githubRepoName,
+                setGithubRepoName,
+                githubToken,
+                setGithubToken,
+              }}
+            />
+          </div>
+
+          <div
+            className={cn(
+              'space-y-3',
+              isMaximized &&
+                'mx-auto mt-auto w-full max-w-4xl shrink-0 border-t pt-3'
+            )}
+          >
+            <FormAlertMessage message={message} isError={isError} />
+            <ProjectFormNavButtons
+              step={step}
+              isBusy={isSubmitting || isSuccess}
+              isMaximized={isMaximized}
+              onClose={onClose}
+              onBack={() => setStep((s) => s - 1)}
+              submitLabel={getSubmitButtonContent(isSubmitting, isEditMode)}
+            />
           </div>
         </form>
       </CardContent>
