@@ -1,5 +1,5 @@
 import { RecordStatusEnum } from '@repo/types';
-import { apiFetch } from '@/lib/api/api-client.server';
+import { apiFetch } from '@/lib/api/api-fetch.reads.use.server';
 import { getDbUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { paginationMeta } from '@/lib/db/pagination';

@@ -1,8 +1,9 @@
-import { getResponse, type GetResponseInit } from '@/lib/api/api';
+import { getResponse, type GetResponseInit } from '@/lib/api/api-fetch.helper';
 import { createClient } from '@/lib/supabase/client';
 import { redirect } from 'next/navigation';
 import { buildLoginPath } from '@/lib/auth-redirect';
 
+/** Authenticated `'use client'` → Express fetch (shared by reads/mutations use-client entrypoints). */
 export async function apiFetch<T>(
   path: string,
   init?: GetResponseInit

@@ -1,4 +1,9 @@
-import { teamListSelect, type Database, type Tables, type TeamListRow } from '@repo/types';
+import {
+  teamListSelect,
+  type Database,
+  type Tables,
+  type TeamListRow,
+} from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { prisma } from '../../../lib/prisma';
 import {

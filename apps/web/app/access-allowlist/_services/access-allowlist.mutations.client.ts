@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/api/api-client';
+import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import { createAccessAllowlistService } from './access-allowlist.mutations.shared';
 
 const service = createAccessAllowlistService(apiFetch);

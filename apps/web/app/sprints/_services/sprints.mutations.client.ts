@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/api/api-client';
+import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
 import type { SprintResponse, SprintRowWithProject, Tables } from '@repo/types';
 import type { ResponseDTO } from '@repo/types/connection';

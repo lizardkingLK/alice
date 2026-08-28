@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/api/api-client';
+import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import { createTeamsService } from './teams.mutations.shared';
 
 const service = createTeamsService(apiFetch);

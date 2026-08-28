@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/api/api-client';
+import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 
 /**
  * Jira Cloud search + bulk work-item create often exceeds the default 20s

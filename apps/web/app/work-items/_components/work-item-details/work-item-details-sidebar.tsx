@@ -76,12 +76,14 @@ import {
   type SetStateAction,
 } from 'react';
 import {
-  getLinkedPRs,
   linkPR,
   unlinkPR,
-  type LinkedGithubPR,
-  type GithubCommit,
 } from '@/app/work-items/_services/work-items.mutations.client';
+import {
+  getLinkedPRs,
+  type GithubCommit,
+  type LinkedGithubPR,
+} from '@/app/work-items/_services/work-items.reads.client';
 import {
   Dialog,
   DialogContent,

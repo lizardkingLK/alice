@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatDate, formatFileSize } from '@/app/_shared/utility';
 import type { AttachmentSignedUrls, AttachmentWithUploader } from '@repo/types';
-import { ApiError } from '@/lib/api/api';
+import { ApiError } from '@/lib/api/api-fetch.helper';
 import {
   deleteWorkItemAttachment,
   mintAttachmentUrls,

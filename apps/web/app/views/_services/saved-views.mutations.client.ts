@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/api/api-client';
+import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import { normalizeSavedViewSearch, type Tables } from '@repo/types';
 
 export type SavedView = Tables<'saved_views'>;

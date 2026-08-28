@@ -7,7 +7,16 @@ export {
   type ApiVersionDetails,
 } from './health.js';
 export {
+  createWorkItemBodySchema,
+  isBlockedPastDueDateChange,
+  jsonSchema,
   listWorkItemsQuerySchema,
+  patchWorkItemBodySchema,
+  patchWorkItemStatusBodySchema,
+  preprocessWorkItemMutationBody,
+  workItemCoreObject,
+  workItemLifecycleActionBodySchema,
+  workItemStatusSchema,
   WORK_ITEM_ASSIGNEE_POSTGREST_SELECT,
   WORK_ITEM_LIST_POSTGREST_COLUMNS,
   WORK_ITEM_PROJECT_POSTGREST_SELECT,
@@ -21,11 +30,26 @@ export {
   workItemProjectSelect,
   workItemSprintSelect,
   workItemUserSelect,
+  type CreateWorkItemBody,
+  type LinkWorkItemGithubPrBody,
   type ListWorkItemsQuery,
+  type PatchWorkItemBody,
+  type PatchWorkItemStatusBody,
+  type SupabaseJson,
+  type WorkItemAncestorWireRow,
   type WorkItemDetailRow,
+  type WorkItemDetailWireRow,
+  type WorkItemLifecycleActionBody,
   type WorkItemListRow,
   type WorkItemListRowWithDescription,
+  type WorkItemListWireRow,
+  type WorkItemListWithDescriptionWireRow,
   type WorkItemPrismaListFilters,
+  type WorkItemReadRow,
+  type WorkItemUserWireRow,
+  type WorkItemUpdateBody,
+  githubWorkItemPrUrlSchema,
+  linkWorkItemGithubPrBodySchema,
 } from './work-items.js';
 export {
   projectOwnerSelect,
@@ -94,7 +118,7 @@ export {
   type ListCommentsQuery,
 } from './comments.js';
 
-export{
+export {
   PROFILE_USER_POSTGREST_SELECT,
   profileDetailSelect,
   profileImageUploadResultSchema,

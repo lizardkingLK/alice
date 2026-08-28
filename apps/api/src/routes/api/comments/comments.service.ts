@@ -116,7 +116,8 @@ export class CommentsService {
     limit: number;
     totalPages: number;
   }> {
-    const accessible = await this.commentsRepository.listAccessibleProjectIds(actorId);
+    const accessible =
+      await this.commentsRepository.listAccessibleProjectIds(actorId);
 
     if (accessible !== 'all' && accessible.length === 0) {
       return {

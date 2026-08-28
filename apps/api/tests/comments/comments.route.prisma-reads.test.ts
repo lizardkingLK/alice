@@ -50,10 +50,7 @@ async function withApp(run: (baseUrl: string) => Promise<void>): Promise<void> {
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json());
-  app.use(
-    '/api/comments',
-    createCommentsRouter({ commentsService })
-  );
+  app.use('/api/comments', createCommentsRouter({ commentsService }));
 
   const server: Server = await new Promise((resolve) => {
     const next = app.listen(0, '127.0.0.1', () => resolve(next));
@@ -106,7 +103,9 @@ describe('comments routes', () => {
     });
 
     it('handles CommentAccessError on list with 403', async () => {
-      listCommentsPaginatedMock.mockRejectedValue(new CommentAccessError('Access denied'));
+      listCommentsPaginatedMock.mockRejectedValue(
+        new CommentAccessError('Access denied')
+      );
 
       await withApp(async (baseUrl) => {
         const response = await fetch(`${baseUrl}/api/comments`);
@@ -136,7 +135,9 @@ describe('comments routes', () => {
       getCommentDetailMock.mockResolvedValue(null);
 
       await withApp(async (baseUrl) => {
-        const response = await fetch(`${baseUrl}/api/comments/00000000-0000-0000-0000-000000000000`);
+        const response = await fetch(
+          `${baseUrl}/api/comments/00000000-0000-0000-0000-000000000000`
+        );
         const body = await response.json();
 
         expect(response.status).toBe(404);
@@ -157,10 +158,14 @@ describe('comments routes', () => {
     });
 
     it('handles CommentAccessError on detail lookup with 403', async () => {
-      getCommentDetailMock.mockRejectedValue(new CommentAccessError('No access'));
+      getCommentDetailMock.mockRejectedValue(
+        new CommentAccessError('No access')
+      );
 
       await withApp(async (baseUrl) => {
-        const response = await fetch(`${baseUrl}/api/comments/00000000-0000-0000-0000-000000000000`);
+        const response = await fetch(
+          `${baseUrl}/api/comments/00000000-0000-0000-0000-000000000000`
+        );
         const body = await response.json();
 
         expect(response.status).toBe(403);
@@ -181,7 +186,15 @@ describe('comments routes', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             work_item_id: comment.work_item_id,
-            content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hello' }] }] },
+            content: {
+              type: 'doc',
+              content: [
+                {
+                  type: 'paragraph',
+                  content: [{ type: 'text', text: 'Hello' }],
+                },
+              ],
+            },
           }),
         });
         const body = await response.json();
@@ -189,9 +202,12 @@ describe('comments routes', () => {
         expect(response.status).toBe(201);
         expect(body.data.id).toBe(comment.id);
         expect(body.error).toBeNull();
-        expect(createCommentMock).toHaveBeenCalledWith('user-1', expect.objectContaining({
-          work_item_id: comment.work_item_id,
-        }));
+        expect(createCommentMock).toHaveBeenCalledWith(
+          'user-1',
+          expect.objectContaining({
+            work_item_id: comment.work_item_id,
+          })
+        );
       });
     });
 
@@ -204,7 +220,15 @@ describe('comments routes', () => {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Updated content' }] }] },
+            content: {
+              type: 'doc',
+              content: [
+                {
+                  type: 'paragraph',
+                  content: [{ type: 'text', text: 'Updated content' }],
+                },
+              ],
+            },
             expectedUpdatedAt: new Date().toISOString(),
           }),
         });
@@ -224,13 +248,16 @@ describe('comments routes', () => {
 
     it('handles DELETE /:id (archive comment)', async () => {
       await withApp(async (baseUrl) => {
-        const response = await fetch(`${baseUrl}/api/comments/44444444-4444-4444-8444-444444444444`, {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            expectedUpdatedAt: new Date().toISOString(),
-          }),
-        });
+        const response = await fetch(
+          `${baseUrl}/api/comments/44444444-4444-4444-8444-444444444444`,
+          {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              expectedUpdatedAt: new Date().toISOString(),
+            }),
+          }
+        );
         const body = await response.json();
 
         expect(response.status).toBe(200);
@@ -245,27 +272,35 @@ describe('comments routes', () => {
 
     it('handles DELETE /:id?permanent=true (hard delete)', async () => {
       await withApp(async (baseUrl) => {
-        const response = await fetch(`${baseUrl}/api/comments/44444444-4444-4444-8444-444444444444?permanent=true`, {
-          method: 'DELETE',
-        });
+        const response = await fetch(
+          `${baseUrl}/api/comments/44444444-4444-4444-8444-444444444444?permanent=true`,
+          {
+            method: 'DELETE',
+          }
+        );
         const body = await response.json();
 
         expect(response.status).toBe(200);
         expect(body.data.success).toBe(true);
         expect(body.error).toBeNull();
-        expect(hardDeleteCommentMock).toHaveBeenCalledWith('44444444-4444-4444-8444-444444444444');
+        expect(hardDeleteCommentMock).toHaveBeenCalledWith(
+          '44444444-4444-4444-8444-444444444444'
+        );
       });
     });
 
     it('handles POST /:id/restore (restore comment)', async () => {
       await withApp(async (baseUrl) => {
-        const response = await fetch(`${baseUrl}/api/comments/44444444-4444-4444-8444-444444444444/restore`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            expectedUpdatedAt: new Date().toISOString(),
-          }),
-        });
+        const response = await fetch(
+          `${baseUrl}/api/comments/44444444-4444-4444-8444-444444444444/restore`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              expectedUpdatedAt: new Date().toISOString(),
+            }),
+          }
+        );
         const body = await response.json();
 
         expect(response.status).toBe(200);

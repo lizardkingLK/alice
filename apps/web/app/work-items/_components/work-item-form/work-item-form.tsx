@@ -18,9 +18,9 @@ import { User as DbUser } from '@/app/users/_services/users.mutations.client';
 import { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import {
   createWorkItem,
-  listParentCandidateWorkItems,
   updateWorkItem,
 } from '@/app/work-items/_services/work-items.mutations.client';
+import { listParentCandidateWorkItems } from '@/app/work-items/_services/work-items.reads.client';
 import { FormStatusAlerts } from '@/app/work-items/_components/work-item-form/work-item-form-alerts';
 import { WorkItemFormClassicFields } from '@/app/work-items/_components/work-item-form/work-item-form-classic';
 import { WorkItemFormModernFields } from '@/app/work-items/_components/work-item-form/work-item-form-modern';

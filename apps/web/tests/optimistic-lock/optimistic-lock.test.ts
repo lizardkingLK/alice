@@ -12,7 +12,7 @@ import {
   parseOptimisticLockFromApiError,
   readApiLockConflict,
 } from '@/lib/optimistic-lock/errors';
-import { ApiError } from '@/lib/api/api';
+import { ApiError } from '@/lib/api/api-fetch.helper';
 import {
   OPTIMISTIC_LOCK_ERROR_CODE,
   OPTIMISTIC_LOCK_HTTP_STATUS,

@@ -33,7 +33,9 @@ describe('createCommentsService', () => {
       parent_id: 'comment-parent-1',
       content: plainTextToCommentDoc('This is a threaded reply'),
     });
-    const apiFetch = vi.fn().mockResolvedValue({ data: replyComment, error: null });
+    const apiFetch = vi
+      .fn()
+      .mockResolvedValue({ data: replyComment, error: null });
     const service = createCommentsService(apiFetch);
     const input = {
       work_item_id: 'wi-1',
@@ -171,7 +173,9 @@ describe('createCommentsService', () => {
 
   it('soft-deletes (archives) a comment via DELETE', async () => {
     // Arrange
-    const apiFetch = vi.fn().mockResolvedValue({ data: { success: true }, error: null });
+    const apiFetch = vi
+      .fn()
+      .mockResolvedValue({ data: { success: true }, error: null });
     const service = createCommentsService(apiFetch);
     const expectedUpdatedAt = '2026-08-17T09:00:00.000Z';
 
@@ -187,7 +191,9 @@ describe('createCommentsService', () => {
 
   it('permanently deletes a comment via DELETE when permanent flag is true', async () => {
     // Arrange
-    const apiFetch = vi.fn().mockResolvedValue({ data: { success: true }, error: null });
+    const apiFetch = vi
+      .fn()
+      .mockResolvedValue({ data: { success: true }, error: null });
     const service = createCommentsService(apiFetch);
     const expectedUpdatedAt = '2026-08-17T09:00:00.000Z';
 
@@ -206,7 +212,9 @@ describe('createCommentsService', () => {
 
   it('restores a comment via POST', async () => {
     // Arrange
-    const apiFetch = vi.fn().mockResolvedValue({ data: { success: true }, error: null });
+    const apiFetch = vi
+      .fn()
+      .mockResolvedValue({ data: { success: true }, error: null });
     const service = createCommentsService(apiFetch);
     const expectedUpdatedAt = '2026-08-17T09:00:00.000Z';
 

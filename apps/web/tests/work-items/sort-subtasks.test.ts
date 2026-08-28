@@ -7,13 +7,23 @@ describe('sortSubtasks', () => {
     id: 'wi-a',
     title: 'Alpha task',
     priority: 'low',
-    assignee: { id: 'u1', name: 'Zed', email: 'z@x.com' },
+    assignee: {
+      id: 'u1',
+      name: 'Zed',
+      email: 'z@x.com',
+      profile_picture: null,
+    },
   });
   const beta = workItemFactory.build({
     id: 'wi-b',
     title: 'Beta task',
     priority: 'highest',
-    assignee: { id: 'u2', name: 'Ann', email: 'a@x.com' },
+    assignee: {
+      id: 'u2',
+      name: 'Ann',
+      email: 'a@x.com',
+      profile_picture: null,
+    },
   });
   const gamma = workItemFactory.build({
     id: 'wi-c',

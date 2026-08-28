@@ -1,91 +1,31 @@
 import { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
-import { apiFetch } from '@/lib/api/api-client';
-import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
-import { coerceLabelsFormField } from '@repo/types';
+import type { LinkedGithubPR } from '@/app/work-items/_services/work-items.reads.client';
+import {
+  formatWorkItemZodError,
+  parseCreateWorkItemFormData,
+  parseForcePatchWorkItemBody,
+  parsePatchWorkItemFormData,
+} from '@/app/work-items/_helpers/work-item-mutation-body';
+import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
+import {
+  linkWorkItemGithubPrBodySchema,
+  patchWorkItemStatusBodySchema,
+  workItemLifecycleActionBodySchema,
+  type PatchWorkItemStatusBody,
+  type WorkItemLifecycleActionBody,
+} from '@repo/types/api/v1';
 import { ResponseDTO } from '@repo/types/connection';
 
 const workItemsPath = '/api/workItems';
 
-function isTiptapDoc(value: unknown): value is { type: 'doc' } {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    !Array.isArray(value) &&
-    (value as { type?: unknown }).type === 'doc'
-  );
-}
-
-function applyLabelsFormField(body: Record<string, unknown>): void {
-  if (!('labels' in body)) {
-    return;
-  }
-  body.labels = coerceLabelsFormField(body.labels);
-}
-
-function formDataToCreateBody(formData: FormData): Record<string, unknown> {
-  const body: Record<string, unknown> = Object.fromEntries(formData.entries());
-
-  // TipTap docs are submitted as JSON strings via FormData; persist as objects.
-  if (typeof body.description === 'string') {
-    const raw = body.description.trim();
-    if (!raw) {
-      delete body.description;
-    } else {
-      try {
-        const parsed: unknown = JSON.parse(raw);
-        if (isTiptapDoc(parsed)) {
-          body.description = parsed;
-        }
-        // Non-doc JSON (null, arrays, unrelated objects) stays a plain string.
-      } catch {
-        // Keep plain-string descriptions for legacy callers.
-      }
-    }
-  }
-
-  applyLabelsFormField(body);
-
-  return body;
-}
-
 export async function createWorkItem(
   formData: FormData
 ): Promise<ResponseDTO<DbWorkItem>> {
+  const body = parseCreateWorkItemFormData(formData);
   return await apiFetch<ResponseDTO<DbWorkItem>>(workItemsPath, {
     method: 'POST',
-    body: JSON.stringify(formDataToCreateBody(formData)),
+    body: JSON.stringify(body),
   });
-}
-
-/** Parent picker options for create/edit forms (same project + allowed parent type). */
-export async function listParentCandidateWorkItems(input: {
-  projectId: string;
-  parentType: string;
-  excludeId?: string | null;
-}): Promise<Array<{ id: string; title: string; type: string }>> {
-  const params = new URLSearchParams({
-    page: '1',
-    limit: '100',
-    projectId: input.projectId,
-    type: input.parentType,
-  });
-  const result = await apiFetch<{
-    workItems: Array<{ id: string; title: string; type: string }>;
-  }>(`${workItemsPath}?${params.toString()}`);
-
-  return (result.workItems ?? []).filter(
-    (item) => !input.excludeId || item.id !== input.excludeId
-  );
-}
-
-function formDataToPatchBody(
-  formData: FormData,
-  expectedUpdatedAt: string
-): Record<string, unknown> {
-  const body: Record<string, unknown> = Object.fromEntries(formData.entries());
-  body.expectedUpdatedAt = expectedUpdatedAt;
-  applyLabelsFormField(body);
-  return body;
 }
 
 export async function updateWorkItem(
@@ -93,9 +33,10 @@ export async function updateWorkItem(
   formData: FormData,
   expectedUpdatedAt: string
 ): Promise<ResponseDTO<DbWorkItem>> {
+  const body = parsePatchWorkItemFormData(formData, expectedUpdatedAt);
   return await apiFetch<ResponseDTO<DbWorkItem>>(`${workItemsPath}/${id}`, {
     method: 'PATCH',
-    body: JSON.stringify(formDataToPatchBody(formData, expectedUpdatedAt)),
+    body: JSON.stringify(body),
   });
 }
 
@@ -104,9 +45,15 @@ export async function updateWorkItemStatus(
   status: DbWorkItem['status'],
   expectedUpdatedAt: string
 ): Promise<ResponseDTO<DbWorkItem>> {
+  const body: PatchWorkItemStatusBody = { status, expectedUpdatedAt };
+  const parsed = patchWorkItemStatusBodySchema.safeParse(body);
+  if (!parsed.success) {
+    throw new Error('Invalid work item status update');
+  }
+
   return await apiFetch<ResponseDTO<DbWorkItem>>(`${workItemsPath}/${id}`, {
     method: 'PATCH',
-    body: JSON.stringify({ status, expectedUpdatedAt }),
+    body: JSON.stringify(parsed.data),
   });
 }
 
@@ -116,18 +63,11 @@ export async function forceUpdateWorkItemFields(
   pendingFields: Record<string, unknown>,
   expectedUpdatedAt: string
 ): Promise<ResponseDTO<DbWorkItem>> {
-  return forceOptimisticPatch<ResponseDTO<DbWorkItem>>(
-    apiFetch,
-    `${workItemsPath}/${id}`,
-    { pendingFields, expectedUpdatedAt, method: 'PATCH' }
-  );
-}
-
-export async function countWorkItemDescendants(id: string): Promise<number> {
-  const data = await apiFetch<{ descendantCount: number }>(
-    `${workItemsPath}/${id}/descendant-count`
-  );
-  return data.descendantCount;
+  const body = parseForcePatchWorkItemBody(pendingFields, expectedUpdatedAt);
+  return await apiFetch<ResponseDTO<DbWorkItem>>(`${workItemsPath}/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
 }
 
 async function patchWorkItemLifecycle(
@@ -135,11 +75,17 @@ async function patchWorkItemLifecycle(
   action: 'archive' | 'restore',
   expectedUpdatedAt: string
 ): Promise<DbWorkItem> {
+  const body: WorkItemLifecycleActionBody = { expectedUpdatedAt };
+  const parsed = workItemLifecycleActionBodySchema.safeParse(body);
+  if (!parsed.success) {
+    throw new Error(`Invalid work item ${action} request`);
+  }
+
   const data = await apiFetch<{ workItem: DbWorkItem }>(
     `${workItemsPath}/${id}/${action}`,
     {
       method: 'PATCH',
-      body: JSON.stringify({ expectedUpdatedAt }),
+      body: JSON.stringify(parsed.data),
     }
   );
   return data.workItem;
@@ -165,42 +111,20 @@ export async function purgeWorkItem(id: string): Promise<void> {
   });
 }
 
-export interface GithubCommit {
-  sha: string;
-  message: string;
-  author: string;
-  date: string;
-}
-
-export interface LinkedGithubPR {
-  id: string;
-  pr_number: number;
-  pr_title: string;
-  pr_url: string;
-  status: 'open' | 'merged' | 'closed';
-  branch_name: string | null;
-  commits: GithubCommit[];
-}
-
-export async function getLinkedPRs(
-  workItemId: string
-): Promise<{ prs: LinkedGithubPR[]; githubRepo: string | null }> {
-  const res = await apiFetch<{
-    prs: LinkedGithubPR[];
-    githubRepo: string | null;
-  }>(`${workItemsPath}/${workItemId}/github`);
-  return { prs: res.prs || [], githubRepo: res.githubRepo || null };
-}
-
 export async function linkPR(
   workItemId: string,
   prUrl: string
 ): Promise<ResponseDTO<LinkedGithubPR>> {
+  const parsed = linkWorkItemGithubPrBodySchema.safeParse({ prUrl });
+  if (!parsed.success) {
+    throw new Error(formatWorkItemZodError(parsed.error));
+  }
+
   return await apiFetch<ResponseDTO<LinkedGithubPR>>(
     `${workItemsPath}/${workItemId}/github`,
     {
       method: 'POST',
-      body: JSON.stringify({ prUrl }),
+      body: JSON.stringify(parsed.data),
     }
   );
 }

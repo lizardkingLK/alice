@@ -9,7 +9,7 @@ import {
 } from '@/lib/cache/dropdown-cache';
 import { createClient } from '@/lib/supabase/server';
 import { toggleUserActive as apiToggleUserActive } from '@/app/users/_services/users.reads.server';
-import { ApiError } from '@/lib/api/api';
+import { ApiError } from '@/lib/api/api-fetch.helper';
 
 export type DeactivateAccountState = {
   success: boolean;

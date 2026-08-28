@@ -2,13 +2,13 @@ import { cache } from 'react';
 import {
   getWorkItemFromApi,
   listWorkItemsPaginatedFromApi,
-} from '@/app/work-items/_services/reads/api.server';
+} from '@/app/work-items/_services/work-items.reads.api.server';
 import {
   getWorkItemAncestorsFromSupabase,
   getWorkItemFromSupabase,
   getWorkItemsFromSupabase,
   listWorkItemsPaginatedFromSupabase,
-} from '@/app/work-items/_services/reads/supabase.server';
+} from '@/app/work-items/_services/work-items.reads.supabase.server';
 import type {
   DbWorkItem,
   GetWorkItemsOptions,
@@ -26,7 +26,7 @@ export type {
   WorkItemListFilters,
 } from '@/app/work-items/_types/work-items.reads.types';
 
-export { applyWorkItemFilters } from '@/app/work-items/_services/reads/supabase.server';
+export { applyWorkItemFilters } from '@/app/work-items/_services/work-items.reads.supabase.server';
 
 /**
  * Public server read facade — picks supabase-js (default) or Express GET

@@ -12,7 +12,7 @@ import {
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { updateWorkItem } from '@/app/work-items/_services/work-items.mutations.client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
-import { ApiError } from '@/lib/api/api';
+import { ApiError } from '@/lib/api/api-fetch.helper';
 import { runLockedMutation } from '@/lib/optimistic-lock/run-locked-mutation';
 import {
   PAST_DUE_DATE_MESSAGE,

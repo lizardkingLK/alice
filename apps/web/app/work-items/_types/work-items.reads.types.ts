@@ -1,25 +1,11 @@
-import { User as DbUser } from '@/app/users/_services/users.mutations.client';
-import type { WorkItemPrismaListFilters } from '@repo/types';
-import { Tables } from '@repo/types';
+import type {
+  WorkItemAncestorWireRow,
+  WorkItemPrismaListFilters,
+  WorkItemReadRow,
+} from '@repo/types/api/v1';
 
-type DbUserEssentials = Pick<DbUser, 'id' | 'name' | 'email'> & {
-  profile_picture?: string | null;
-};
-
-/** Supabase RSC row shape for work-item reads (list + detail embeds). */
-export type DbWorkItem = Tables<'work_items'> & {
-  assignee: DbUserEssentials | null;
-  reporter?: DbUserEssentials | null;
-  project?: {
-    id: string;
-    key: string;
-    name: string;
-  } | null;
-  sprint?: {
-    id: string;
-    name: string;
-  } | null;
-};
+/** v1 wire read row (PostgREST / Express JSON — ISO date strings). */
+export type DbWorkItem = WorkItemReadRow;
 
 /** List/detail filters shared with Express `listWorkItemsQuerySchema`. */
 export type WorkItemListFilters = WorkItemPrismaListFilters;
@@ -37,7 +23,4 @@ export type GetWorkItemsOptions = {
 };
 
 /** Minimal ancestor fields for the in-page hierarchy path. */
-export type WorkItemAncestor = Pick<
-  DbWorkItem,
-  'id' | 'type' | 'title' | 'parent_id'
->;
+export type WorkItemAncestor = WorkItemAncestorWireRow;

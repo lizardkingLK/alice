@@ -1,5 +1,5 @@
 import { cache } from 'react';
-import { getResponse } from '@/lib/api/api';
+import { getResponse } from '@/lib/api/api-fetch.helper';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { buildLoginPath } from '@/lib/auth-redirect';

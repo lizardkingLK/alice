@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/api/api-client';
+import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import type { ActionItem, ChatMessage } from '../_components/chat-client.types';
 import type { ChatModelValue } from '@repo/types';
 

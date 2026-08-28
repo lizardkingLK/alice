@@ -46,7 +46,7 @@ vi.mock('@/app/work-items/_components/work-item-time-tracking', () => ({
   WorkItemTimeTracking: () => <div data-testid="time-tracking" />,
 }));
 
-vi.mock('@/app/work-items/_services/work-items.mutations.client', () => ({
+vi.mock('@/app/work-items/_services/work-items.reads.client', () => ({
   getLinkedPRs: vi.fn().mockResolvedValue({
     prs: [
       {
@@ -68,6 +68,9 @@ vi.mock('@/app/work-items/_services/work-items.mutations.client', () => ({
     ],
     githubRepo: 'owner/repo',
   }),
+}));
+
+vi.mock('@/app/work-items/_services/work-items.mutations.client', () => ({
   linkPR: vi.fn(),
   unlinkPR: vi.fn(),
 }));

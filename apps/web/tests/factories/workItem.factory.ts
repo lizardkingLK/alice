@@ -4,6 +4,7 @@ const defaultAssignee = {
   id: 'user-123',
   name: 'Erlich Bachman',
   email: 'erlich@bachmanity.com',
+  profile_picture: null,
 };
 
 export const workItemFactory = {

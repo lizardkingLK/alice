@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/api/api-client.server';
+import { apiFetch } from '@/lib/api/api-fetch.reads.use.server';
 import { createClient } from '@/lib/supabase/server';
 import {
   applyListSearch,

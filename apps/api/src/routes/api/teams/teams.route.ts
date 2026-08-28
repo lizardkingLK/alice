@@ -78,9 +78,7 @@ export function createTeamsRouter(deps: TeamsRouterDeps) {
     async (req: AuthenticatedRequest, res) => {
       const parsedId = z.uuid().safeParse(req.params.id);
       if (!parsedId.success) {
-        return res
-          .status(400)
-          .json({ data: null, error: 'Invalid team id' });
+        return res.status(400).json({ data: null, error: 'Invalid team id' });
       }
 
       try {
@@ -89,9 +87,7 @@ export function createTeamsRouter(deps: TeamsRouterDeps) {
           req.userId!
         );
         if (!team) {
-          return res
-            .status(404)
-            .json({ data: null, error: 'Team not found' });
+          return res.status(404).json({ data: null, error: 'Team not found' });
         }
         res.json({ data: team, error: null });
       } catch (error) {
