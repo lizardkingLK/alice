@@ -1,15 +1,19 @@
 'use client';
 
 import type { DragEvent } from 'react';
-import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
 import { cn } from '@repo/ui/lib/utils';
 import type { Project } from '@/app/projects/_services/projects.service';
 import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
-import { CalendarDayItem } from '@/app/calendar/_components/calendar-day-item';
+import { CalendarDayOverflowPopover } from '@/app/calendar/_components/calendar-day-overflow-popover';
+import { CalendarWorkItemList } from '@/app/calendar/_components/calendar-work-item-list';
 import type { CalendarDayCell } from '@/app/calendar/_components/calendar-utils';
-import { DAYS_OF_WEEK } from '@/app/calendar/_components/calendar-constants';
+import {
+  DAYS_OF_WEEK,
+  MAX_VISIBLE_ITEMS_IN_DAY_CELL,
+} from '@/app/calendar/_components/calendar-constants';
 
 type CalendarMonthGridProps = {
+  readonly className?: string;
   readonly calendarDays: readonly CalendarDayCell[];
   readonly itemsByDate: Readonly<Record<string, DbWorkItem[]>>;
   readonly projects: readonly Project[];
@@ -32,6 +36,7 @@ type CalendarMonthGridProps = {
 };
 
 export function CalendarMonthGrid({
+  className,
   calendarDays,
   itemsByDate,
   projects,
@@ -47,7 +52,12 @@ export function CalendarMonthGrid({
   onOpenItem,
 }: Readonly<CalendarMonthGridProps>) {
   return (
-    <div className="border-border flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border">
+    <div
+      className={cn(
+        'border-border flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border',
+        className
+      )}
+    >
       <div className="bg-muted grid shrink-0 grid-cols-7 border-b">
         {DAYS_OF_WEEK.map((day) => (
           <div
@@ -62,7 +72,13 @@ export function CalendarMonthGrid({
       <div className="bg-border grid min-h-0 flex-1 grid-cols-7 grid-rows-6 gap-px">
         {calendarDays.map((dayCell) => {
           const dayItems = itemsByDate[dayCell.dateString] || [];
+          const visibleItems = dayItems.slice(0, MAX_VISIBLE_ITEMS_IN_DAY_CELL);
+          const overflowCount = dayItems.length - visibleItems.length;
           const isDropTarget = activeDropDate === dayCell.dateString;
+
+          const dayLabel = new Date(
+            `${dayCell.dateString}T00:00:00`
+          ).toLocaleDateString(undefined, { dateStyle: 'full' });
 
           return (
             <div
@@ -71,7 +87,7 @@ export function CalendarMonthGrid({
               onDragLeave={() => onDayDragLeave(dayCell.dateString)}
               onDrop={(event) => onDayDrop(event, dayCell.dateString)}
               className={cn(
-                'bg-card group hover:bg-accent/15 flex h-full min-h-0 w-full flex-col gap-1 p-1.5 text-left transition-colors duration-150 sm:p-2',
+                'bg-card group relative flex h-full min-h-0 w-full flex-col gap-1 p-1.5 text-left transition-colors duration-150 sm:p-2',
                 !dayCell.isCurrentMonth &&
                   'bg-muted/30 text-muted-foreground/50',
                 isDropTarget &&
@@ -80,9 +96,11 @@ export function CalendarMonthGrid({
             >
               <button
                 type="button"
+                aria-label={`Open ${dayLabel}`}
                 onClick={() => onOpenDay(dayCell.dateString)}
-                className="focus-visible:ring-ring flex w-full shrink-0 items-center justify-between rounded-sm outline-hidden focus-visible:ring-2 focus-visible:ring-offset-0"
-              >
+                className="hover:bg-accent/15 absolute inset-0 z-0 cursor-pointer rounded-none border-0 bg-transparent p-0"
+              />
+              <div className="pointer-events-none relative z-10 flex w-full shrink-0 items-center justify-between">
                 <span
                   className={cn(
                     'flex size-5 items-center justify-center rounded-full text-[10px] font-bold select-none sm:size-6 sm:text-xs',
@@ -99,25 +117,35 @@ export function CalendarMonthGrid({
                     {dayItems.length}
                   </span>
                 ) : null}
-              </button>
+              </div>
 
-              <ScrollArea type="hover" className="h-0 min-h-0 flex-1">
-                <div className="flex flex-col gap-0.5 pr-2.5">
-                  {dayItems.map((item) => (
-                    <CalendarDayItem
-                      key={item.id}
-                      item={item}
-                      compact
+              <div className="pointer-events-none relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden">
+                <CalendarWorkItemList
+                  items={visibleItems}
+                  projects={projects}
+                  className="pointer-events-auto gap-0.5"
+                  draggedItemId={draggedItemId}
+                  pendingDueDateIds={pendingDueDateIds}
+                  onDragStart={onItemDragStart}
+                  onDragEnd={onItemDragEnd}
+                  onOpenItem={onOpenItem}
+                />
+                {overflowCount > 0 ? (
+                  <div className="pointer-events-auto">
+                    <CalendarDayOverflowPopover
+                      dateString={dayCell.dateString}
+                      items={dayItems}
+                      overflowCount={overflowCount}
                       projects={projects}
-                      isDragging={draggedItemId === item.id}
-                      isPending={pendingDueDateIds.has(item.id)}
+                      draggedItemId={draggedItemId}
+                      pendingDueDateIds={pendingDueDateIds}
                       onDragStart={onItemDragStart}
                       onDragEnd={onItemDragEnd}
-                      onOpen={onOpenItem}
+                      onOpenItem={onOpenItem}
                     />
-                  ))}
-                </div>
-              </ScrollArea>
+                  </div>
+                ) : null}
+              </div>
             </div>
           );
         })}

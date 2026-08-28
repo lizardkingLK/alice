@@ -22,10 +22,14 @@ import { WorkItemForm } from '@/app/work-items/_components/workItem-form';
 import { useWorkItemCreateFormMode } from '@/app/work-items/_hooks/use-work-item-create-form-mode';
 import { Pagination } from '@/components/pagination';
 import { QUERY_FILTER_ALL_VALUE } from '@/hooks/use-query-filter';
-import { CalendarDayItem } from '@/app/calendar/_components/calendar-day-item';
+import { CalendarWorkItemList } from '@/app/calendar/_components/calendar-work-item-list';
+
+const EMPTY_PENDING_DUE_DATE_IDS = new Set<string>();
 
 type CalendarDaySheetProps = {
   readonly selectedDateStr: string | null;
+  /** Prevents overlay/outside dismiss while a nested modal (e.g. edit dialog) is open. */
+  readonly blockOutsideClose?: boolean;
   // eslint-disable-next-line no-unused-vars -- open change
   readonly onOpenChange: (open: boolean) => void;
   readonly itemsByDate: Readonly<Record<string, DbWorkItem[]>>;
@@ -41,6 +45,7 @@ type CalendarDaySheetProps = {
 
 export function CalendarDaySheet({
   selectedDateStr,
+  blockOutsideClose = false,
   onOpenChange,
   itemsByDate,
   projects,
@@ -70,7 +75,19 @@ export function CalendarDaySheet({
 
   return (
     <Sheet open={!!selectedDateStr} onOpenChange={onOpenChange}>
-      <SheetContent className="bg-card border-border/80 flex h-full flex-col p-0 data-[side=right]:sm:max-w-2xl">
+      <SheetContent
+        className="bg-card border-border/80 flex h-full flex-col p-0 data-[side=right]:sm:max-w-2xl"
+        onPointerDownOutside={(event) => {
+          if (blockOutsideClose) {
+            event.preventDefault();
+          }
+        }}
+        onInteractOutside={(event) => {
+          if (blockOutsideClose) {
+            event.preventDefault();
+          }
+        }}
+      >
         {selectedDateStr ? (
           <Tabs
             value={activeTab}
@@ -112,20 +129,19 @@ export function CalendarDaySheet({
                   </div>
                 ) : (
                   <div className="flex h-full flex-col justify-between gap-4">
-                    <div className="w-full space-y-3">
-                      {paginatedItems.map((item) => (
-                        <CalendarDayItem
-                          key={item.id}
-                          item={item}
-                          compact={false}
-                          projects={projects}
-                          isDragging={false}
-                          isPending={false}
-                          onDragStart={() => undefined}
-                          onDragEnd={() => undefined}
-                          onOpen={onOpenItem}
-                        />
-                      ))}
+                    <div className="w-full">
+                      <CalendarWorkItemList
+                        items={paginatedItems}
+                        projects={projects}
+                        compact={false}
+                        enableDrag={false}
+                        className="gap-3"
+                        draggedItemId={null}
+                        pendingDueDateIds={EMPTY_PENDING_DUE_DATE_IDS}
+                        onDragStart={() => undefined}
+                        onDragEnd={() => undefined}
+                        onOpenItem={onOpenItem}
+                      />
                     </div>
                     {totalCount > 0 ? (
                       <Pagination
@@ -152,6 +168,8 @@ export function CalendarDaySheet({
                   projects={scopedProjects}
                   projectMembers={users}
                   createFormMode={createFormMode}
+                  defaultDueDate={selectedDateStr}
+                  lockDueDate
                   defaultSprintId={
                     sprintValue && sprintValue !== QUERY_FILTER_ALL_VALUE
                       ? sprintValue
