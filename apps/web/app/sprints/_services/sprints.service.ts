@@ -1,6 +1,7 @@
 import { apiFetch } from '@/lib/api/api-client';
 import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
 import type { SprintResponse, SprintRowWithProject, Tables } from '@repo/types';
+import type { ResponseDTO } from '@repo/types/connection';
 export { mapSprintRowToResponse as mapDbSprintToSprint } from '@repo/types';
 
 /** Re-export the shared response type under its original local name. */
@@ -20,12 +21,12 @@ export type CreateSprintInput = {
 const apiSprints = '/api/sprints';
 
 export async function createSprint(input: CreateSprintInput): Promise<Sprint> {
-  const data = await apiFetch<{ sprint: Sprint }>(apiSprints, {
+  const data = await apiFetch<ResponseDTO<Sprint>>(apiSprints, {
     method: 'POST',
     body: JSON.stringify(input),
   });
 
-  return data.sprint;
+  return data.data!;
 }
 
 export type PaginatedSprints = {
@@ -43,7 +44,7 @@ export async function updateSprintStatus(
   status: Sprint['status'],
   expectedUpdatedAt: string
 ): Promise<Sprint> {
-  const data = await apiFetch<{ sprint: Sprint }>(
+  const data = await apiFetch<ResponseDTO<Sprint>>(
     `${apiSprints}/${id}/status`,
     {
       method: 'PATCH',
@@ -51,7 +52,7 @@ export async function updateSprintStatus(
     }
   );
 
-  return data.sprint;
+  return data.data!;
 }
 
 export async function updateSprint(
@@ -59,12 +60,12 @@ export async function updateSprint(
   input: CreateSprintInput,
   expectedUpdatedAt: string
 ): Promise<Sprint> {
-  const data = await apiFetch<{ sprint: Sprint }>(`${apiSprints}/${id}`, {
+  const data = await apiFetch<ResponseDTO<Sprint>>(`${apiSprints}/${id}`, {
     method: 'PATCH',
     body: JSON.stringify({ ...input, expectedUpdatedAt }),
   });
 
-  return data.sprint;
+  return data.data!;
 }
 
 /** Force-apply pending fields after a user confirms Keep mine / merge. */
@@ -73,13 +74,13 @@ export async function forceUpdateSprint(
   pendingFields: Record<string, unknown>,
   expectedUpdatedAt: string
 ): Promise<Sprint> {
-  const data = await forceOptimisticPatch<{ sprint: Sprint }>(
+  const data = await forceOptimisticPatch<ResponseDTO<Sprint>>(
     apiFetch,
     `${apiSprints}/${id}`,
     { pendingFields, expectedUpdatedAt, method: 'PATCH' }
   );
 
-  return data.sprint;
+  return data.data!;
 }
 
 /** Force-apply status after conflict resolution on the status endpoint. */
@@ -93,7 +94,7 @@ export async function forceUpdateSprintStatus(
     return forceUpdateSprint(id, pendingFields, expectedUpdatedAt);
   }
 
-  const data = await apiFetch<{ sprint: Sprint }>(
+  const data = await apiFetch<ResponseDTO<Sprint>>(
     `${apiSprints}/${id}/status`,
     {
       method: 'PATCH',
@@ -101,5 +102,5 @@ export async function forceUpdateSprintStatus(
     }
   );
 
-  return data.sprint;
+  return data.data!;
 }

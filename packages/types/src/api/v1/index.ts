@@ -44,3 +44,13 @@ export {
   type ListAttachmentsQuery,
   type UploadedAttachmentResult,
 } from './attachments.js';
+  listSprintsQuerySchema,
+  sprintDetailSelect,
+  sprintListSelect,
+  sprintProjectSelect,
+  type ListSprintsQuery,
+  type SprintDetailRow,
+  type SprintListRow,
+  type SprintPrismaListFilters,
+} from './sprints.js';
+
