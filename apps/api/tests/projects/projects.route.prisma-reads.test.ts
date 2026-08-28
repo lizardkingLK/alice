@@ -4,6 +4,19 @@ vi.hoisted(() => {
   process.env.GITHUB_ACTIONS = 'true';
 });
 
+// Mock supabase module to avoid real instantiation and websocket issues
+vi.mock('../../src/lib/supabase', () => ({
+  supabase: {
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          not: vi.fn().mockResolvedValue({ data: [], error: null }),
+        })),
+      })),
+    })),
+  },
+}));
+
 import express from 'express';
 import type { Server } from 'node:http';
 import { AddressInfo } from 'node:net';
