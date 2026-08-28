@@ -1,4 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.hoisted(() => {
+  process.env.GITHUB_ACTIONS = 'true';
+});
+
 import type { Database } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {

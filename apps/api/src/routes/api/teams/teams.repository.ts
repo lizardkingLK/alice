@@ -1,5 +1,4 @@
-import type { Database, Tables } from '@repo/types';
-import { teamListSelect, type TeamListRow } from '@repo/types';
+import { teamListSelect, type Database, type Tables, type TeamListRow } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { prisma } from '../../../lib/prisma';
 import {
@@ -8,8 +7,7 @@ import {
   prismaLockTimestamp,
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
-import { RecordStatus } from '@repo/types/prisma';
-import { Prisma } from '@repo/types/prisma';
+import { RecordStatus, Prisma } from '@repo/types/prisma';
 
 export type TeamMemberRow = Tables<'team_members'>;
 

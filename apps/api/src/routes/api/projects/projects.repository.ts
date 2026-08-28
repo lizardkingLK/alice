@@ -21,6 +21,7 @@ import {
   prismaOptionalDate,
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
+import { listAccessibleProjectIdsHelper } from '../../../lib/auth-helpers';
 import type {
   ProjectMemberWithUser,
   ProjectRow,
@@ -96,49 +97,7 @@ export class ProjectsRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
   async listAccessibleProjectIds(actorId: string): Promise<'all' | string[]> {
-    const { data: systemUser } = await this.db
-      .from('users')
-      .select('role')
-      .eq('id', actorId)
-      .maybeSingle();
-
-    if (systemUser?.role === 'admin') {
-      return 'all';
-    }
-
-    const [
-      { data: memberships, error: memberError },
-      { data: owned, error: ownedError },
-    ] = await Promise.all([
-      this.db
-        .from('project_members')
-        .select('project_id')
-        .eq('user_id', actorId)
-        .eq('status', 'active'),
-      this.db.from('projects').select('id').eq('owner_id', actorId),
-    ]);
-
-    if (memberError) {
-      console.error(
-        'error. failed to list member projects for projects access:',
-        memberError.message
-      );
-      throw new Error('Failed to authorize projects access');
-    }
-
-    if (ownedError) {
-      console.error(
-        'error. failed to list owned projects for projects access:',
-        ownedError.message
-      );
-      throw new Error('Failed to authorize projects access');
-    }
-
-    const ids = [
-      ...(memberships ?? []).map((row) => row.project_id),
-      ...(owned ?? []).map((row) => row.id),
-    ];
-    return [...new Set(ids)];
+    return await listAccessibleProjectIdsHelper(this.db, actorId);
   }
 
   async listPaginated(input: {
