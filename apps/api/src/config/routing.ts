@@ -27,6 +27,7 @@ routesConfig.use('/api/v1/health', health.v1Router);
 routesConfig.use('/api/v2/health', health.v2Router);
 routesConfig.use('/api/accessAllowlist', accessAllowlist.router);
 routesConfig.use('/api/attachments', attachments.router);
+routesConfig.use('/api/v1/attachments', attachments.router);
 routesConfig.use('/api/chat', chat.router);
 routesConfig.use('/api/comments', comments.router);
 routesConfig.use('/api/jira', jira.router);

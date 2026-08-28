@@ -3,12 +3,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatDate, formatFileSize } from '@/app/_shared/utility';
-import type { AttachmentWithUploader } from '@repo/types';
+import type { AttachmentSignedUrls, AttachmentWithUploader } from '@repo/types';
 import { ApiError } from '@/lib/api/api';
 import {
   deleteWorkItemAttachment,
   mintAttachmentUrls,
-  type AttachmentSignedUrls,
 } from '@/app/work-items/_services/workItem-attachments.service.client';
 import { WorkItemAttachmentUploadDialog } from '@/app/work-items/_components/work-item-attachment-upload-dialog';
 import { Button } from '@repo/ui/components/ui/button';

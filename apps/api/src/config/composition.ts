@@ -79,9 +79,14 @@ function createAccessAllowlistConfig() {
   };
 }
 
-function createAttachmentsConfig() {
+function createAttachmentsConfig(
+  workItemRepository: Pick<WorkItemRepository, 'requireProjectMember'>
+) {
   const attachmentsRepository = new AttachmentsRepository(supabase);
-  const attachmentsService = new AttachmentsService(attachmentsRepository);
+  const attachmentsService = new AttachmentsService(
+    attachmentsRepository,
+    workItemRepository
+  );
   const router = createAttachmentsRouter({
     attachmentsService,
   });
@@ -289,12 +294,14 @@ function createHealthConfig() {
 export const root = createRootConfig();
 export const health = createHealthConfig();
 export const accessAllowlist = createAccessAllowlistConfig();
-export const attachments = createAttachmentsConfig();
 export const notifications = createNotificationsConfig();
-export const comments = createCommentsConfig(
+export const workItems = createWorkItemsConfig(
   notifications.notificationsService
 );
-export const workItems = createWorkItemsConfig(
+export const attachments = createAttachmentsConfig(
+  workItems.workItemRepository
+);
+export const comments = createCommentsConfig(
   notifications.notificationsService
 );
 export const sprints = createSprintsConfig();
