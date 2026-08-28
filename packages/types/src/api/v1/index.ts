@@ -66,7 +66,7 @@ export {
   type ListCommentsQuery,
 } from './comments.js';
 
-
+export{
   PROFILE_USER_POSTGREST_SELECT,
   profileDetailSelect,
   profileImageUploadResultSchema,
