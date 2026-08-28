@@ -42,5 +42,4 @@ routesConfig.use('/api/users', users.router);
 routesConfig.use('/api/workItems', workItems.router);
 routesConfig.use('/api/v1/workItems', workItems.router);
 
-
 export default routesConfig;
