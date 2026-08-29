@@ -3,12 +3,7 @@ import integrationCatalogData from '@/app/settings/_components/settings-integrat
 export type IntegrationCatalogStatus = 'active' | 'mock' | 'planned';
 
 export type IntegrationFilterTab =
-  | 'all'
-  | 'ai-agents'
-  | 'communication'
-  | 'design'
-  | 'productivity'
-  | 'planned';
+  'all' | 'ai-agents' | 'communication' | 'design' | 'productivity' | 'planned';
 
 type IntegrationCategory = Exclude<IntegrationFilterTab, 'all' | 'planned'>;
 
@@ -72,7 +67,7 @@ export const INTEGRATION_FILTER_TABS: ReadonlyArray<{
   { id: 'communication', label: 'Communication' },
   { id: 'design', label: 'Design & diagramming' },
   { id: 'productivity', label: 'Productivity' },
-  { id: 'planned', label: 'Planned' },
+  { id: 'planned', label: 'Coming soon' },
 ];
 
 export const WORKSPACE_INTEGRATIONS: readonly WorkspaceIntegration[] =
@@ -85,11 +80,11 @@ export function integrationStatusLabel(
 ): string {
   switch (status) {
     case 'active':
-      return 'Active';
+      return 'Connected';
     case 'mock':
-      return 'Mock UI';
+      return 'Preview';
     case 'planned':
-      return 'Planned';
+      return 'Coming soon';
   }
 }
 

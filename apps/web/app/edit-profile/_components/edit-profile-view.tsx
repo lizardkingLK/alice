@@ -438,7 +438,7 @@ function GeneralSection({
               )}
             </div>
             <p className="text-muted-foreground text-xs">
-              Email changes require a verification flow (coming soon).
+              Email changes are not available yet.
             </p>
           </div>
           <div className="space-y-2">
@@ -666,7 +666,7 @@ function NotificationsSection() {
         </div>
         <p className="text-muted-foreground flex items-center gap-2 text-xs">
           <Mail className="size-3.5 shrink-0" aria-hidden="true" />
-          Notification preferences will sync when email delivery is enabled.
+          Email notifications are not available yet.
         </p>
       </CardContent>
     </Card>

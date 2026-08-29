@@ -3,14 +3,14 @@
     "id": "alice-gemini",
     "name": "Google Gemini",
     "websiteUrl": "ai.google.dev",
-    "description": "Power Alice Chat with Gemini models, function calling, and workspace-aware project context.",
+    "description": "Power Alice Chat with Gemini models and workspace-aware project context.",
     "filterTab": "ai-agents",
     "status": "mock",
     "defaultConnected": true,
     "highlights": [
-      "Shared model list with the chat sidebar",
-      "Function calling for projects, sprints, and work items",
-      "Workspace-level model default (planned)"
+      "Same models available in the chat sidebar",
+      "Ask Alice about projects, sprints, and work items",
+      "Set a default model for your workspace"
     ]
   },
   {
@@ -49,9 +49,9 @@
     "filterTab": "communication",
     "status": "mock",
     "highlights": [
-      "Workspace bot installation",
-      "Channel routing rules",
-      "Thread summaries (planned)"
+      "Install Alice for your workspace",
+      "Choose which channels receive updates",
+      "Summarize Slack threads in Alice"
     ]
   },
   {

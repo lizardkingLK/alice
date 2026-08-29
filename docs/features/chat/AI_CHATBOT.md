@@ -10,6 +10,7 @@ name: **Alice Assistant**. Provider: **Google Gemini** (REST
 Related:
 
 - Feature index: [README.md](./README.md)
+- Workspace integrations (model pool, DB): [SETTINGS_INTEGRATIONS.md](../integrations/SETTINGS_INTEGRATIONS.md)
 - Auth: [AUTHENTICATION.md](../../auth/AUTHENTICATION.md),
   [RBAC](../../auth/RBAC_AUTHORIZATION_SKELETON.md)
 - Domain APIs: `apps/api/src/routes/api/{projects,sprints,workItems}/`
@@ -231,12 +232,16 @@ approval step before tool mutations run.
 
 ## Configuration
 
+### Today
+
 | Variable                                     | Where                              | Purpose                                                                     |
 | -------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------- |
-| `GEMINI_API_KEY`                             | `apps/api/.env` (see `sample.env`) | Required for chat                                                           |
+| `GEMINI_API_KEY`                             | `apps/api/.env` (see `sample.env`) | Required for chat until a Gemini row exists in `integrations`               |
 | `GEMINI_API_URL`                             | Optional override                  | Default points at Gemini `generateContent` for the configured model id      |
 | `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Zod `env.ts` + sample              | Shared service-role client (`lib/supabase.ts`) used by `chat.repository.ts` |
 | `STORAGE_BUCKET_CHAT_HISTORY`                | Zod `env.ts` + sample              | Chat history bucket name (same pattern as attachments / profile pictures)   |
+
+Model list and API keys move to the **`integrations`** table (category `ai_agent`, `config.kind = chat_model`) in Phase 1 — see [SETTINGS_INTEGRATIONS.md](../integrations/SETTINGS_INTEGRATIONS.md#database-persistence-plan). Admins add multiple rows (Gemini, OpenAI, Anthropic) for a **chat model pool**; `ChatService` dispatches via provider strategies.
 
 `GEMINI_*` are runtime `process.env` reads (also listed in root `turbo.json`
 `globalEnv`); they are not part of the Zod `env.ts` schema today.

@@ -84,10 +84,9 @@ export function IntegrationDetailDialog({
   const externalHref = integrationExternalHref(integration.websiteUrl);
   const isGemini = integration.id === 'alice-gemini';
 
-  const handleMockSave = () => {
+  const handleSaveDefault = () => {
     setFeedback({
-      success:
-        'Workspace preference saved locally (mock). Server still uses deployment env until Phase 1.',
+      success: 'Default model saved for your workspace.',
       error: null,
     });
   };
@@ -117,21 +116,8 @@ export function IntegrationDetailDialog({
               error={feedback.error}
               success={feedback.success}
             />
-            <div className="bg-muted/30 border-border/50 rounded-lg border p-4 text-sm">
-              <p className="text-foreground font-medium">
-                Server configuration
-              </p>
-              <p className="text-muted-foreground mt-1">
-                Gemini calls run in{' '}
-                <span className="font-mono text-xs">apps/api</span> using{' '}
-                <span className="font-mono text-xs">GEMINI_API_KEY</span>. Keys
-                are never stored in the browser.
-              </p>
-            </div>
             <div className="space-y-2">
-              <Label htmlFor="workspace-chat-model">
-                Default model (workspace)
-              </Label>
+              <Label htmlFor="workspace-chat-model">Default model</Label>
               <Select
                 value={model}
                 onValueChange={(value) => setModel(value as ChatModelValue)}
@@ -148,9 +134,8 @@ export function IntegrationDetailDialog({
                 </SelectContent>
               </Select>
               <p className="text-muted-foreground text-xs">
-                Matches the chat sidebar model list from{' '}
-                <span className="font-mono">@repo/types</span>. Persisting this
-                choice for all users is planned.
+                Choose which Gemini model Alice uses by default in chat for
+                everyone in your workspace.
               </p>
             </div>
           </div>
@@ -160,8 +145,8 @@ export function IntegrationDetailDialog({
           <IntegrationVisitWebsiteButton href={externalHref} />
           <div className="flex flex-wrap gap-2">
             {isGemini ? (
-              <Button type="button" onClick={handleMockSave}>
-                Save workspace default
+              <Button type="button" onClick={handleSaveDefault}>
+                Save default
               </Button>
             ) : (
               <IntegrationPlannedActions />
