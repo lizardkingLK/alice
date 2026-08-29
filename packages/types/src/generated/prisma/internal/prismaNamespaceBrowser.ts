@@ -67,7 +67,8 @@ export const ModelName = {
   chat_conversations: 'chat_conversations',
   saved_views: 'saved_views',
   saved_view_shares: 'saved_view_shares',
-  github_pull_requests: 'github_pull_requests'
+  github_pull_requests: 'github_pull_requests',
+  integrations: 'integrations'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -387,6 +388,25 @@ export const Github_pull_requestsScalarFieldEnum = {
 } as const
 
 export type Github_pull_requestsScalarFieldEnum = (typeof Github_pull_requestsScalarFieldEnum)[keyof typeof Github_pull_requestsScalarFieldEnum]
+
+
+export const IntegrationsScalarFieldEnum = {
+  id: 'id',
+  catalog_id: 'catalog_id',
+  category: 'category',
+  provider: 'provider',
+  name: 'name',
+  status: 'status',
+  config: 'config',
+  is_default: 'is_default',
+  sort_order: 'sort_order',
+  created_by: 'created_by',
+  created_at: 'created_at',
+  updated_by: 'updated_by',
+  updated_at: 'updated_at'
+} as const
+
+export type IntegrationsScalarFieldEnum = (typeof IntegrationsScalarFieldEnum)[keyof typeof IntegrationsScalarFieldEnum]
 
 
 export const SortOrder = {

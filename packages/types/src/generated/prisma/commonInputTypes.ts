@@ -572,6 +572,40 @@ export type EnumJiraConnectionStatusWithAggregatesFilter<$PrismaModel = never> =
   _max?: Prisma.NestedEnumJiraConnectionStatusFilter<$PrismaModel>
 }
 
+export type EnumIntegrationCategoryFilter<$PrismaModel = never> = {
+  equals?: $Enums.IntegrationCategory | Prisma.EnumIntegrationCategoryFieldRefInput<$PrismaModel>
+  in?: $Enums.IntegrationCategory[] | Prisma.ListEnumIntegrationCategoryFieldRefInput<$PrismaModel>
+  notIn?: $Enums.IntegrationCategory[] | Prisma.ListEnumIntegrationCategoryFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumIntegrationCategoryFilter<$PrismaModel> | $Enums.IntegrationCategory
+}
+
+export type EnumIntegrationStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.IntegrationStatus | Prisma.EnumIntegrationStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.IntegrationStatus[] | Prisma.ListEnumIntegrationStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.IntegrationStatus[] | Prisma.ListEnumIntegrationStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumIntegrationStatusFilter<$PrismaModel> | $Enums.IntegrationStatus
+}
+
+export type EnumIntegrationCategoryWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.IntegrationCategory | Prisma.EnumIntegrationCategoryFieldRefInput<$PrismaModel>
+  in?: $Enums.IntegrationCategory[] | Prisma.ListEnumIntegrationCategoryFieldRefInput<$PrismaModel>
+  notIn?: $Enums.IntegrationCategory[] | Prisma.ListEnumIntegrationCategoryFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumIntegrationCategoryWithAggregatesFilter<$PrismaModel> | $Enums.IntegrationCategory
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumIntegrationCategoryFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumIntegrationCategoryFilter<$PrismaModel>
+}
+
+export type EnumIntegrationStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.IntegrationStatus | Prisma.EnumIntegrationStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.IntegrationStatus[] | Prisma.ListEnumIntegrationStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.IntegrationStatus[] | Prisma.ListEnumIntegrationStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumIntegrationStatusWithAggregatesFilter<$PrismaModel> | $Enums.IntegrationStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumIntegrationStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumIntegrationStatusFilter<$PrismaModel>
+}
+
 export type NestedUuidFilter<$PrismaModel = never> = {
   equals?: string | Prisma.StringFieldRefInput<$PrismaModel>
   in?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
@@ -1072,6 +1106,40 @@ export type NestedEnumJiraConnectionStatusWithAggregatesFilter<$PrismaModel = ne
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumJiraConnectionStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumJiraConnectionStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumIntegrationCategoryFilter<$PrismaModel = never> = {
+  equals?: $Enums.IntegrationCategory | Prisma.EnumIntegrationCategoryFieldRefInput<$PrismaModel>
+  in?: $Enums.IntegrationCategory[] | Prisma.ListEnumIntegrationCategoryFieldRefInput<$PrismaModel>
+  notIn?: $Enums.IntegrationCategory[] | Prisma.ListEnumIntegrationCategoryFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumIntegrationCategoryFilter<$PrismaModel> | $Enums.IntegrationCategory
+}
+
+export type NestedEnumIntegrationStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.IntegrationStatus | Prisma.EnumIntegrationStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.IntegrationStatus[] | Prisma.ListEnumIntegrationStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.IntegrationStatus[] | Prisma.ListEnumIntegrationStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumIntegrationStatusFilter<$PrismaModel> | $Enums.IntegrationStatus
+}
+
+export type NestedEnumIntegrationCategoryWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.IntegrationCategory | Prisma.EnumIntegrationCategoryFieldRefInput<$PrismaModel>
+  in?: $Enums.IntegrationCategory[] | Prisma.ListEnumIntegrationCategoryFieldRefInput<$PrismaModel>
+  notIn?: $Enums.IntegrationCategory[] | Prisma.ListEnumIntegrationCategoryFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumIntegrationCategoryWithAggregatesFilter<$PrismaModel> | $Enums.IntegrationCategory
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumIntegrationCategoryFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumIntegrationCategoryFilter<$PrismaModel>
+}
+
+export type NestedEnumIntegrationStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.IntegrationStatus | Prisma.EnumIntegrationStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.IntegrationStatus[] | Prisma.ListEnumIntegrationStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.IntegrationStatus[] | Prisma.ListEnumIntegrationStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumIntegrationStatusWithAggregatesFilter<$PrismaModel> | $Enums.IntegrationStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumIntegrationStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumIntegrationStatusFilter<$PrismaModel>
 }
 
 
