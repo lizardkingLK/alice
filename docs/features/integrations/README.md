@@ -2,9 +2,9 @@
 
 Workspace-level **AI agent** and **third-party tool** connections configured by admins from **Settings → Integrations**.
 
-| Document                                               | Description                                             | Status                     |
-| ------------------------------------------------------ | ------------------------------------------------------- | -------------------------- |
-| [SETTINGS_INTEGRATIONS.md](./SETTINGS_INTEGRATIONS.md) | Settings tab, RBAC, integration catalog, rollout phases | **Plan** (mock UI landing) |
+| Document                                               | Description                                                                 | Status                                     |
+| ------------------------------------------------------ | --------------------------------------------------------------------------- | ------------------------------------------ |
+| [SETTINGS_INTEGRATIONS.md](./SETTINGS_INTEGRATIONS.md) | Settings tab, RBAC, catalog, **database persistence plan** (`integrations`) | **In progress** (UI done; DB Phase 1 next) |
 
 Quick links:
 

@@ -427,7 +427,7 @@ export function ChatClient({
       const message =
         err instanceof Error
           ? err.message
-          : 'Something went wrong. Please check if backend API and GEMINI_API_KEY are configured.';
+          : 'Something went wrong. Please try again. If this keeps happening, contact your administrator.';
       setError(message);
     } finally {
       setIsPending(false);

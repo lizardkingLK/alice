@@ -93,7 +93,7 @@ function IntegrationMarketplaceCard({
           <div className="flex items-center gap-2">
             {isPlanned ? (
               <Badge variant="outline" className="text-xs">
-                Planned
+                Coming soon
               </Badge>
             ) : null}
             <Switch

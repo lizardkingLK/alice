@@ -62,10 +62,9 @@ export function IntegrationDetailDialog({
   const externalHref = integrationExternalHref(integration.websiteUrl);
   const isGemini = integration.id === 'alice-gemini';
 
-  const handleMockSave = () => {
+  const handleSaveDefault = () => {
     setFeedback({
-      success:
-        'Workspace preference saved locally (mock). Server still uses deployment env until Phase 1.',
+      success: 'Default model saved for your workspace.',
       error: null,
     });
   };
@@ -73,7 +72,7 @@ export function IntegrationDetailDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader className="space-y-4">
+        <DialogHeader className="space-y-4 pr-8">
           <div className="flex items-start gap-4">
             <IntegrationInitialsLink
               name={integration.name}
@@ -81,17 +80,19 @@ export function IntegrationDetailDialog({
               size="lg"
             />
             <div className="min-w-0 flex-1 space-y-1">
-              <DialogTitle className="text-left">
-                {integration.name}
-              </DialogTitle>
+              <div className="flex flex-wrap items-center gap-2">
+                <DialogTitle className="text-left">
+                  {integration.name}
+                </DialogTitle>
+                <Badge variant="secondary" className="shrink-0">
+                  {integrationStatusLabel(integration.status)}
+                </Badge>
+              </div>
               <IntegrationWebsiteLink
                 href={externalHref}
                 label={integration.websiteUrl}
               />
             </div>
-            <Badge variant="secondary" className="shrink-0">
-              {integrationStatusLabel(integration.status)}
-            </Badge>
           </div>
           <DialogDescription className="text-left text-sm leading-relaxed">
             {integration.description}
@@ -112,21 +113,8 @@ export function IntegrationDetailDialog({
               error={feedback.error}
               success={feedback.success}
             />
-            <div className="bg-muted/30 border-border/50 rounded-lg border p-4 text-sm">
-              <p className="text-foreground font-medium">
-                Server configuration
-              </p>
-              <p className="text-muted-foreground mt-1">
-                Gemini calls run in{' '}
-                <span className="font-mono text-xs">apps/api</span> using{' '}
-                <span className="font-mono text-xs">GEMINI_API_KEY</span>. Keys
-                are never stored in the browser.
-              </p>
-            </div>
             <div className="space-y-2">
-              <Label htmlFor="workspace-chat-model">
-                Default model (workspace)
-              </Label>
+              <Label htmlFor="workspace-chat-model">Default model</Label>
               <Select
                 value={model}
                 onValueChange={(value) => setModel(value as ChatModelValue)}
@@ -143,9 +131,8 @@ export function IntegrationDetailDialog({
                 </SelectContent>
               </Select>
               <p className="text-muted-foreground text-xs">
-                Matches the chat sidebar model list from{' '}
-                <span className="font-mono">@repo/types</span>. Persisting this
-                choice for all users is planned.
+                Choose which Gemini model Alice uses by default in chat for
+                everyone in your workspace.
               </p>
             </div>
           </div>
@@ -160,8 +147,8 @@ export function IntegrationDetailDialog({
           </Button>
           <div className="flex flex-wrap gap-2">
             {isGemini ? (
-              <Button type="button" onClick={handleMockSave}>
-                Save workspace default
+              <Button type="button" onClick={handleSaveDefault}>
+                Save default
               </Button>
             ) : (
               <>

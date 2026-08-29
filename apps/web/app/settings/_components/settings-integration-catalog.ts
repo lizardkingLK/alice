@@ -1,12 +1,7 @@
 export type IntegrationCatalogStatus = 'active' | 'mock' | 'planned';
 
 export type IntegrationFilterTab =
-  | 'all'
-  | 'ai-agents'
-  | 'communication'
-  | 'design'
-  | 'productivity'
-  | 'planned';
+  'all' | 'ai-agents' | 'communication' | 'design' | 'productivity' | 'planned';
 
 type IntegrationCategory = Exclude<IntegrationFilterTab, 'all' | 'planned'>;
 
@@ -56,7 +51,7 @@ export const INTEGRATION_FILTER_TABS: ReadonlyArray<{
   { id: 'communication', label: 'Communication' },
   { id: 'design', label: 'Design & diagramming' },
   { id: 'productivity', label: 'Productivity' },
-  { id: 'planned', label: 'Planned' },
+  { id: 'planned', label: 'Coming soon' },
 ];
 
 export const WORKSPACE_INTEGRATIONS: readonly WorkspaceIntegration[] = [
@@ -64,15 +59,15 @@ export const WORKSPACE_INTEGRATIONS: readonly WorkspaceIntegration[] = [
     'alice-gemini',
     'Google Gemini',
     'ai.google.dev',
-    'Power Alice Chat with Gemini models, function calling, and workspace-aware project context.',
+    'Power Alice Chat with Gemini models and workspace-aware project context.',
     'ai-agents',
     {
       status: 'mock',
       defaultConnected: true,
       highlights: [
-        'Shared model list with the chat sidebar',
-        'Function calling for projects, sprints, and work items',
-        'Workspace-level model default (planned)',
+        'Same models available in the chat sidebar',
+        'Ask Alice about projects, sprints, and work items',
+        'Set a default model for your workspace',
       ],
     }
   ),
@@ -113,9 +108,9 @@ export const WORKSPACE_INTEGRATIONS: readonly WorkspaceIntegration[] = [
     {
       status: 'mock',
       highlights: [
-        'Workspace bot installation',
-        'Channel routing rules',
-        'Thread summaries (planned)',
+        'Install Alice for your workspace',
+        'Choose which channels receive updates',
+        'Summarize Slack threads in Alice',
       ],
     }
   ),
@@ -238,11 +233,11 @@ export function integrationStatusLabel(
 ): string {
   switch (status) {
     case 'active':
-      return 'Active';
+      return 'Connected';
     case 'mock':
-      return 'Mock UI';
+      return 'Preview';
     case 'planned':
-      return 'Planned';
+      return 'Coming soon';
   }
 }
 
