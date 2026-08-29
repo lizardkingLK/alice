@@ -3,12 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@repo/ui/components/ui/card';
+import { Card, CardContent, CardHeader } from '@repo/ui/components/ui/card';
 import { Input } from '@repo/ui/components/ui/input';
 import { Switch } from '@repo/ui/components/ui/switch';
 import { Tabs, TabsList, TabsTrigger } from '@repo/ui/components/ui/tabs';
@@ -18,15 +13,11 @@ import {
   INTEGRATION_FILTER_TABS,
   WORKSPACE_INTEGRATIONS,
   filterWorkspaceIntegrations,
-  integrationExternalHref,
   type IntegrationFilterTab,
   type WorkspaceIntegration,
 } from '@/app/settings/_components/settings-integration-catalog';
 import { IntegrationDetailDialog } from '@/app/settings/_components/settings-integration-detail-dialog';
-import {
-  IntegrationInitialsLink,
-  IntegrationWebsiteLink,
-} from '@/app/settings/_components/settings-integration-initials-link';
+import { IntegrationCardIdentity } from '@/app/settings/_components/settings-integration-identity';
 
 const FILTER_TAB_TRIGGER_CLASS =
   'text-muted-foreground data-[state=active]:text-foreground rounded-none border-0 border-b-2 border-transparent bg-transparent px-1 pb-3 pt-0 shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none';
@@ -53,28 +44,14 @@ function IntegrationMarketplaceCard({
   onView,
 }: Readonly<IntegrationMarketplaceCardProps>) {
   const isPlanned = integration.status === 'planned';
-  const externalHref = integrationExternalHref(integration.websiteUrl);
 
   return (
     <Card className="flex h-full flex-col">
       <CardHeader className="space-y-0 pb-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <CardTitle className="text-base font-semibold">
-              {integration.name}
-            </CardTitle>
-            <IntegrationWebsiteLink
-              href={externalHref}
-              label={integration.websiteUrl}
-              className="mt-1"
-            />
-          </div>
-          <IntegrationInitialsLink
-            name={integration.name}
-            href={externalHref}
-            size="md"
-          />
-        </div>
+        <IntegrationCardIdentity
+          name={integration.name}
+          websiteUrl={integration.websiteUrl}
+        />
       </CardHeader>
       <CardContent className="flex flex-1 flex-col justify-between gap-4 pt-0">
         <p className="text-muted-foreground line-clamp-2 text-sm leading-relaxed">
