@@ -8,6 +8,7 @@ export const accessAllowlistFactory = {
       value: 'acme.com',
       label: 'Acme corp',
       expires_at: null,
+      allowed_project_ids: null,
       status: 'active',
       created_at: '2026-07-09T10:00:00Z',
       updated_at: '2026-07-09T10:00:00Z',

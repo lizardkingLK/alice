@@ -477,7 +477,7 @@ Per-model API keys live in `integrations.config` after Phase 1. Settings UI show
 - [x] Integrations tab in Settings sidebar (admin only)
 - [x] Marketplace UI + integration detail dialog
 - [x] Database persistence plan (this doc)
-- [ ] `integrations` Prisma model + migration + RLS
+- [x] `integrations` Prisma model + migration SQL + RLS (apply with `pnpm db migrate:deploy`)
 - [ ] `@repo/types` config Zod + v1 API DTOs
 - [ ] Express `integrations` module + chat provider strategies
 - [ ] Bootstrap seed from `GEMINI_API_KEY`
