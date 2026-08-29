@@ -29,8 +29,8 @@ import {
   type WorkspaceIntegration,
 } from '@/app/settings/_components/settings-integration-catalog';
 import {
-  IntegrationDialogIdentity,
   IntegrationHighlightsList,
+  IntegrationIdentity,
 } from '@/app/settings/_components/settings-integration-identity';
 import { FormStatusAlerts } from '@/app/work-items/_components/work-item-form/work-item-form-alerts';
 
@@ -96,9 +96,10 @@ export function IntegrationDetailDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader className="space-y-4 pr-8">
-          <IntegrationDialogIdentity
+          <IntegrationIdentity
             name={integration.name}
             websiteUrl={integration.websiteUrl}
+            variant="dialog"
             statusLabel={integrationStatusLabel(integration.status)}
           />
           <DialogDescription className="text-left text-sm leading-relaxed">

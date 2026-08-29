@@ -13,6 +13,11 @@ export function integrationInitials(name: string): string {
   return trimmed.slice(0, 2).toUpperCase() || '?';
 }
 
+const EXTERNAL_LINK_PROPS = {
+  target: '_blank',
+  rel: 'noopener noreferrer',
+} as const;
+
 const INITIALS_LINK_SIZE_CLASS = {
   sm: 'size-10 text-xs',
   md: 'size-12 text-sm',
@@ -36,8 +41,7 @@ export function IntegrationInitialsLink({
   return (
     <a
       href={href}
-      target="_blank"
-      rel="noopener noreferrer"
+      {...EXTERNAL_LINK_PROPS}
       title={`Visit ${name}`}
       className={cn(
         'bg-muted text-foreground hover:bg-muted/80 inline-flex shrink-0 items-center justify-center rounded-xl font-semibold tracking-tight transition-colors',
@@ -65,8 +69,7 @@ export function IntegrationWebsiteLink({
   return (
     <a
       href={href}
-      target="_blank"
-      rel="noopener noreferrer"
+      {...EXTERNAL_LINK_PROPS}
       className={cn(
         'text-muted-foreground hover:text-foreground inline-flex max-w-full items-center gap-1 text-sm',
         className

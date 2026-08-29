@@ -17,7 +17,7 @@ import {
   type WorkspaceIntegration,
 } from '@/app/settings/_components/settings-integration-catalog';
 import { IntegrationDetailDialog } from '@/app/settings/_components/settings-integration-detail-dialog';
-import { IntegrationCardIdentity } from '@/app/settings/_components/settings-integration-identity';
+import { IntegrationIdentity } from '@/app/settings/_components/settings-integration-identity';
 
 const FILTER_TAB_TRIGGER_CLASS =
   'text-muted-foreground data-[state=active]:text-foreground rounded-none border-0 border-b-2 border-transparent bg-transparent px-1 pb-3 pt-0 shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none';
@@ -48,9 +48,10 @@ function IntegrationMarketplaceCard({
   return (
     <Card className="flex h-full flex-col">
       <CardHeader className="space-y-0 pb-3">
-        <IntegrationCardIdentity
+        <IntegrationIdentity
           name={integration.name}
           websiteUrl={integration.websiteUrl}
+          variant="card"
         />
       </CardHeader>
       <CardContent className="flex flex-1 flex-col justify-between gap-4 pt-0">

@@ -10,28 +10,50 @@ import {
 type IntegrationIdentityProps = {
   readonly name: string;
   readonly websiteUrl: string;
-  readonly avatarSize: 'md' | 'lg';
+  readonly variant: 'card' | 'dialog';
   readonly statusLabel?: string;
 };
 
-/** Marketplace card header: title, website link, initials avatar. */
-export function IntegrationCardIdentity({
+/** Shared marketplace card / detail dialog identity block. */
+export function IntegrationIdentity({
   name,
   websiteUrl,
-}: Readonly<Omit<IntegrationIdentityProps, 'avatarSize' | 'statusLabel'>>) {
+  variant,
+  statusLabel,
+}: Readonly<IntegrationIdentityProps>) {
   const href = integrationExternalHref(websiteUrl);
+  const avatarSize = variant === 'card' ? 'md' : 'lg';
+
+  if (variant === 'card') {
+    return (
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <CardTitle className="text-base font-semibold">{name}</CardTitle>
+          <IntegrationWebsiteLink
+            href={href}
+            label={websiteUrl}
+            className="mt-1"
+          />
+        </div>
+        <IntegrationInitialsLink name={name} href={href} size={avatarSize} />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex items-start justify-between gap-3">
-      <div className="min-w-0 flex-1">
-        <CardTitle className="text-base font-semibold">{name}</CardTitle>
-        <IntegrationWebsiteLink
-          href={href}
-          label={websiteUrl}
-          className="mt-1"
-        />
+    <div className="flex items-start gap-4">
+      <IntegrationInitialsLink name={name} href={href} size={avatarSize} />
+      <div className="min-w-0 flex-1 space-y-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <DialogTitle className="text-left">{name}</DialogTitle>
+          {statusLabel ? (
+            <Badge variant="secondary" className="shrink-0">
+              {statusLabel}
+            </Badge>
+          ) : null}
+        </div>
+        <IntegrationWebsiteLink href={href} label={websiteUrl} />
       </div>
-      <IntegrationInitialsLink name={name} href={href} size="md" />
     </div>
   );
 }
@@ -45,33 +67,5 @@ export function IntegrationHighlightsList({
         <li key={line}>{line}</li>
       ))}
     </ul>
-  );
-}
-
-/** Detail dialog header: avatar, title, status badge, website link. */
-export function IntegrationDialogIdentity({
-  name,
-  websiteUrl,
-  statusLabel,
-}: Readonly<
-  Pick<IntegrationIdentityProps, 'name' | 'websiteUrl' | 'statusLabel'>
->) {
-  const href = integrationExternalHref(websiteUrl);
-
-  return (
-    <div className="flex items-start gap-4">
-      <IntegrationInitialsLink name={name} href={href} size="lg" />
-      <div className="min-w-0 flex-1 space-y-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <DialogTitle className="text-left">{name}</DialogTitle>
-          {statusLabel ? (
-            <Badge variant="secondary" className="shrink-0">
-              {statusLabel}
-            </Badge>
-          ) : null}
-        </div>
-        <IntegrationWebsiteLink href={href} label={websiteUrl} />
-      </div>
-    </div>
   );
 }
