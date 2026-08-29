@@ -87,6 +87,19 @@ enum JiraConnectionStatus {
   expired
 }
 
+enum IntegrationCategory {
+  ai_agent
+  communication
+  design
+  productivity
+}
+
+enum IntegrationStatus {
+  active
+  disabled
+  draft
+}
+
 /// App profile + RBAC. `id` matches Supabase `auth.users.id` (set on invite, no DB default).
 model users {
   id              String       @id @db.Uuid
@@ -148,6 +161,8 @@ model users {
   created_saved_view_shares saved_view_shares[] @relation("SavedViewShareCreatedBy")
   updated_saved_view_shares saved_view_shares[] @relation("SavedViewShareUpdatedBy")
   jira_connections        jira_connections[]
+  created_integrations    integrations[]      @relation("IntegrationCreatedBy")
+  updated_integrations    integrations[]      @relation("IntegrationUpdatedBy")
 }
 
 model projects {
@@ -501,5 +516,35 @@ model github_pull_requests {
   work_item      work_items @relation(fields: [work_item_id], references: [id], onDelete: Cascade)
 
   @@unique([work_item_id, repo_owner, repo_name, pr_number])
+}
+
+/// Workspace-level integration instance (chat models, Slack, Figma, etc.).
+/// Secrets live encrypted inside `config` JSONB; API access is service-role only.
+model integrations {
+  id         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Static catalog id, e.g. "alice-gemini", "openai", "slack".
+  catalog_id String
+  category   IntegrationCategory
+  /// Provider slug for strategy dispatch: gemini, openai, anthropic, slack, …
+  provider   String
+  /// Admin-facing label, e.g. "Gemini 3.6", "GPT-4o (production)".
+  name       String
+  status     IntegrationStatus   @default(draft)
+  /// Provider-specific JSON; secret fields stored as v1:… ciphertext.
+  config     Json                @default("{}")
+  /// Default Alice Chat model when user has not picked one (ai_agent only).
+  is_default Boolean             @default(false)
+  sort_order Int                 @default(0)
+  created_by String?             @db.Uuid
+  created_at DateTime            @default(now()) @db.Timestamptz(6)
+  updated_by String?             @db.Uuid
+  updated_at DateTime            @updatedAt @db.Timestamptz(6)
+
+  created_by_user users? @relation("IntegrationCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users? @relation("IntegrationUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+
+  @@index([category, status])
+  @@index([catalog_id])
+  @@index([provider, status])
 }
 
