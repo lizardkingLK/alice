@@ -6,7 +6,6 @@ import {
   DEFAULT_CHAT_MODEL_VALUE,
   type ChatModelValue,
 } from '@repo/types';
-import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
@@ -14,7 +13,6 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
 } from '@repo/ui/components/ui/dialog';
 import { Label } from '@repo/ui/components/ui/label';
 import {
@@ -31,9 +29,9 @@ import {
   type WorkspaceIntegration,
 } from '@/app/settings/_components/settings-integration-catalog';
 import {
-  IntegrationInitialsLink,
-  IntegrationWebsiteLink,
-} from '@/app/settings/_components/settings-integration-initials-link';
+  IntegrationHighlightsList,
+  IntegrationIdentity,
+} from '@/app/settings/_components/settings-integration-identity';
 import { FormStatusAlerts } from '@/app/work-items/_components/work-item-form/work-item-form-alerts';
 
 type IntegrationDetailDialogProps = {
@@ -43,6 +41,30 @@ type IntegrationDetailDialogProps = {
   readonly onOpenChange: (open: boolean) => void;
   /* eslint-enable no-unused-vars */
 };
+
+function IntegrationVisitWebsiteButton({ href }: Readonly<{ href: string }>) {
+  return (
+    <Button type="button" variant="outline" asChild>
+      <a href={href} target="_blank" rel="noopener noreferrer">
+        Visit website
+        <ExternalLink className="size-4" data-icon="inline-end" />
+      </a>
+    </Button>
+  );
+}
+
+function IntegrationPlannedActions() {
+  return (
+    <>
+      <Button type="button" disabled>
+        Connect
+      </Button>
+      <Button type="button" variant="outline" disabled>
+        Configure
+      </Button>
+    </>
+  );
+}
 
 export function IntegrationDetailDialog({
   integration,
@@ -73,38 +95,19 @@ export function IntegrationDetailDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader className="space-y-4 pr-8">
-          <div className="flex items-start gap-4">
-            <IntegrationInitialsLink
-              name={integration.name}
-              href={externalHref}
-              size="lg"
-            />
-            <div className="min-w-0 flex-1 space-y-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <DialogTitle className="text-left">
-                  {integration.name}
-                </DialogTitle>
-                <Badge variant="secondary" className="shrink-0">
-                  {integrationStatusLabel(integration.status)}
-                </Badge>
-              </div>
-              <IntegrationWebsiteLink
-                href={externalHref}
-                label={integration.websiteUrl}
-              />
-            </div>
-          </div>
+          <IntegrationIdentity
+            name={integration.name}
+            websiteUrl={integration.websiteUrl}
+            variant="dialog"
+            statusLabel={integrationStatusLabel(integration.status)}
+          />
           <DialogDescription className="text-left text-sm leading-relaxed">
             {integration.description}
           </DialogDescription>
         </DialogHeader>
 
         {integration.highlights?.length ? (
-          <ul className="text-muted-foreground list-disc space-y-1 pl-5 text-sm">
-            {integration.highlights.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
+          <IntegrationHighlightsList highlights={integration.highlights} />
         ) : null}
 
         {isGemini ? (
@@ -139,26 +142,14 @@ export function IntegrationDetailDialog({
         ) : null}
 
         <DialogFooter className="gap-2 sm:justify-between">
-          <Button type="button" variant="outline" asChild>
-            <a href={externalHref} target="_blank" rel="noopener noreferrer">
-              Visit website
-              <ExternalLink className="size-4" data-icon="inline-end" />
-            </a>
-          </Button>
+          <IntegrationVisitWebsiteButton href={externalHref} />
           <div className="flex flex-wrap gap-2">
             {isGemini ? (
               <Button type="button" onClick={handleSaveDefault}>
                 Save default
               </Button>
             ) : (
-              <>
-                <Button type="button" disabled>
-                  Connect
-                </Button>
-                <Button type="button" variant="outline" disabled>
-                  Configure
-                </Button>
-              </>
+              <IntegrationPlannedActions />
             )}
           </div>
         </DialogFooter>

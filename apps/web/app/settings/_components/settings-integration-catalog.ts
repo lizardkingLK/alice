@@ -1,3 +1,5 @@
+import integrationCatalogData from '@/app/settings/_components/settings-integration-catalog.data.json';
+
 export type IntegrationCatalogStatus = 'active' | 'mock' | 'planned';
 
 export type IntegrationFilterTab =
@@ -22,23 +24,37 @@ type WorkspaceIntegrationOptions = {
   readonly highlights?: readonly string[];
 };
 
+type IntegrationCatalogSeed = {
+  readonly id: string;
+  readonly name: string;
+  readonly websiteUrl: string;
+  readonly description: string;
+  readonly filterTab: IntegrationCategory;
+} & WorkspaceIntegrationOptions;
+
 function workspaceIntegration(
-  id: string,
-  name: string,
-  websiteUrl: string,
-  description: string,
-  filterTab: IntegrationCategory,
-  options: WorkspaceIntegrationOptions = {}
+  seed: IntegrationCatalogSeed
 ): WorkspaceIntegration {
+  const {
+    id,
+    name,
+    websiteUrl,
+    description,
+    filterTab,
+    status,
+    defaultConnected,
+    highlights,
+  } = seed;
+
   return {
     id,
     name,
     websiteUrl,
     description,
     filterTab,
-    status: options.status ?? 'planned',
-    defaultConnected: options.defaultConnected ?? false,
-    ...(options.highlights ? { highlights: options.highlights } : {}),
+    status: status ?? 'planned',
+    defaultConnected: defaultConnected ?? false,
+    ...(highlights ? { highlights } : {}),
   };
 }
 
@@ -54,179 +70,10 @@ export const INTEGRATION_FILTER_TABS: ReadonlyArray<{
   { id: 'planned', label: 'Coming soon' },
 ];
 
-export const WORKSPACE_INTEGRATIONS: readonly WorkspaceIntegration[] = [
-  workspaceIntegration(
-    'alice-gemini',
-    'Google Gemini',
-    'ai.google.dev',
-    'Power Alice Chat with Gemini models and workspace-aware project context.',
-    'ai-agents',
-    {
-      status: 'mock',
-      defaultConnected: true,
-      highlights: [
-        'Same models available in the chat sidebar',
-        'Ask Alice about projects, sprints, and work items',
-        'Set a default model for your workspace',
-      ],
-    }
-  ),
-  workspaceIntegration(
-    'coderabbit',
-    'CodeRabbit',
-    'coderabbit.ai',
-    'AI code review summaries and suggested fixes linked to pull requests on work items.',
-    'ai-agents'
-  ),
-  workspaceIntegration(
-    'cursor',
-    'Cursor',
-    'cursor.com',
-    'Connect Cursor agents for in-IDE planning sessions tied to Alice epics and stories.',
-    'ai-agents'
-  ),
-  workspaceIntegration(
-    'openai',
-    'OpenAI',
-    'openai.com',
-    'Optional GPT models alongside Gemini for Alice Chat and future automations.',
-    'ai-agents'
-  ),
-  workspaceIntegration(
-    'anthropic',
-    'Anthropic',
-    'anthropic.com',
-    'Claude models for long-context planning sessions and spec reviews inside Alice.',
-    'ai-agents'
-  ),
-  workspaceIntegration(
-    'slack',
-    'Slack',
-    'slack.com',
-    'Post work-item updates, sprint summaries, and @-mention Alice in team channels.',
-    'communication',
-    {
-      status: 'mock',
-      highlights: [
-        'Install Alice for your workspace',
-        'Choose which channels receive updates',
-        'Summarize Slack threads in Alice',
-      ],
-    }
-  ),
-  workspaceIntegration(
-    'intercom',
-    'Intercom',
-    'intercom.com',
-    'Route customer conversations into Alice work items and sprint follow-ups.',
-    'communication'
-  ),
-  workspaceIntegration(
-    'loom',
-    'Loom',
-    'loom.com',
-    'Attach async video updates to work items and sprint reviews.',
-    'communication'
-  ),
-  workspaceIntegration(
-    'mailchimp',
-    'Mailchimp',
-    'mailchimp.com',
-    'Sync release announcements and stakeholder comms with sprint milestones.',
-    'communication'
-  ),
-  workspaceIntegration(
-    'teams',
-    'Microsoft Teams',
-    'teams.microsoft.com',
-    'Enterprise chat parity with Slack for notifications and Alice mentions.',
-    'communication'
-  ),
-  workspaceIntegration(
-    'figma',
-    'Figma',
-    'figma.com',
-    'Link Figma files and prototypes to stories for design–dev handoff inside Alice.',
-    'design'
-  ),
-  workspaceIntegration(
-    'eraser',
-    'Eraser',
-    'eraser.io',
-    'Attach cloud architecture and flow diagrams to epics; open Eraser boards from work items.',
-    'design'
-  ),
-  workspaceIntegration(
-    'miro',
-    'Miro',
-    'miro.com',
-    'Embed whiteboards for discovery workshops and link boards to epics.',
-    'design'
-  ),
-  workspaceIntegration(
-    'asana',
-    'Asana',
-    'asana.com',
-    'Import projects and tasks for teams evaluating a move to Alice.',
-    'productivity'
-  ),
-  workspaceIntegration(
-    'trello',
-    'Trello',
-    'trello.com',
-    'Migrate boards and cards into Alice work items with status mapping.',
-    'productivity'
-  ),
-  workspaceIntegration(
-    'dropbox',
-    'Dropbox',
-    'dropbox.com',
-    'Link shared folders and files as attachments on epics and stories.',
-    'productivity'
-  ),
-  workspaceIntegration(
-    'google-drive',
-    'Google Drive',
-    'drive.google.com',
-    'Attach Docs and Sheets from Drive directly to work-item descriptions.',
-    'productivity'
-  ),
-  workspaceIntegration(
-    'zapier',
-    'Zapier',
-    'zapier.com',
-    'Automate Alice events with thousands of SaaS triggers and actions.',
-    'productivity'
-  ),
-  workspaceIntegration(
-    'linear',
-    'Linear',
-    'linear.app',
-    'Bi-directional issue sync for teams migrating from Linear to Alice.',
-    'productivity'
-  ),
-  workspaceIntegration(
-    'notion',
-    'Notion',
-    'notion.so',
-    'Pull spec pages into work-item descriptions and keep docs in sync.',
-    'productivity'
-  ),
-  workspaceIntegration(
-    'github-copilot',
-    'GitHub Copilot',
-    'github.com/features/copilot',
-    'Suggest PR links and code context on tasks (extends project GitHub).',
-    'productivity'
-  ),
-  workspaceIntegration(
-    'jira-cloud',
-    'Jira Cloud',
-    'atlassian.com/software/jira',
-    'Smart import and duplicate detection (extends project Jira integration).',
-    'productivity'
-  ),
-];
+export const WORKSPACE_INTEGRATIONS: readonly WorkspaceIntegration[] =
+  integrationCatalogData.map((seed) =>
+    workspaceIntegration(seed as IntegrationCatalogSeed)
+  );
 
 export function integrationStatusLabel(
   status: IntegrationCatalogStatus
