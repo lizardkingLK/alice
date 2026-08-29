@@ -1,7 +1,14 @@
 export type IntegrationCatalogStatus = 'active' | 'mock' | 'planned';
 
 export type IntegrationFilterTab =
-  'all' | 'ai-agents' | 'communication' | 'design' | 'productivity' | 'planned';
+  | 'all'
+  | 'ai-agents'
+  | 'communication'
+  | 'design'
+  | 'productivity'
+  | 'planned';
+
+type IntegrationCategory = Exclude<IntegrationFilterTab, 'all' | 'planned'>;
 
 export type WorkspaceIntegration = {
   readonly id: string;
@@ -9,10 +16,36 @@ export type WorkspaceIntegration = {
   readonly websiteUrl: string;
   readonly description: string;
   readonly status: IntegrationCatalogStatus;
-  readonly filterTab: Exclude<IntegrationFilterTab, 'all' | 'planned'>;
+  readonly filterTab: IntegrationCategory;
   readonly defaultConnected: boolean;
   readonly highlights?: readonly string[];
 };
+
+type WorkspaceIntegrationOptions = {
+  readonly status?: IntegrationCatalogStatus;
+  readonly defaultConnected?: boolean;
+  readonly highlights?: readonly string[];
+};
+
+function workspaceIntegration(
+  id: string,
+  name: string,
+  websiteUrl: string,
+  description: string,
+  filterTab: IntegrationCategory,
+  options: WorkspaceIntegrationOptions = {}
+): WorkspaceIntegration {
+  return {
+    id,
+    name,
+    websiteUrl,
+    description,
+    filterTab,
+    status: options.status ?? 'planned',
+    defaultConnected: options.defaultConnected ?? false,
+    ...(options.highlights ? { highlights: options.highlights } : {}),
+  };
+}
 
 export const INTEGRATION_FILTER_TABS: ReadonlyArray<{
   readonly id: IntegrationFilterTab;
@@ -27,235 +60,177 @@ export const INTEGRATION_FILTER_TABS: ReadonlyArray<{
 ];
 
 export const WORKSPACE_INTEGRATIONS: readonly WorkspaceIntegration[] = [
-  {
-    id: 'alice-gemini',
-    name: 'Google Gemini',
-    websiteUrl: 'ai.google.dev',
-    description:
-      'Power Alice Chat with Gemini models, function calling, and workspace-aware project context.',
-    status: 'mock',
-    filterTab: 'ai-agents',
-    defaultConnected: true,
-    highlights: [
-      'Shared model list with the chat sidebar',
-      'Function calling for projects, sprints, and work items',
-      'Workspace-level model default (planned)',
-    ],
-  },
-  {
-    id: 'coderabbit',
-    name: 'CodeRabbit',
-    websiteUrl: 'coderabbit.ai',
-    description:
-      'AI code review summaries and suggested fixes linked to pull requests on work items.',
-    status: 'planned',
-    filterTab: 'ai-agents',
-    defaultConnected: false,
-  },
-  {
-    id: 'cursor',
-    name: 'Cursor',
-    websiteUrl: 'cursor.com',
-    description:
-      'Connect Cursor agents for in-IDE planning sessions tied to Alice epics and stories.',
-    status: 'planned',
-    filterTab: 'ai-agents',
-    defaultConnected: false,
-  },
-  {
-    id: 'openai',
-    name: 'OpenAI',
-    websiteUrl: 'openai.com',
-    description:
-      'Optional GPT models alongside Gemini for Alice Chat and future automations.',
-    status: 'planned',
-    filterTab: 'ai-agents',
-    defaultConnected: false,
-  },
-  {
-    id: 'anthropic',
-    name: 'Anthropic',
-    websiteUrl: 'anthropic.com',
-    description:
-      'Claude models for long-context planning sessions and spec reviews inside Alice.',
-    status: 'planned',
-    filterTab: 'ai-agents',
-    defaultConnected: false,
-  },
-  {
-    id: 'slack',
-    name: 'Slack',
-    websiteUrl: 'slack.com',
-    description:
-      'Post work-item updates, sprint summaries, and @-mention Alice in team channels.',
-    status: 'mock',
-    filterTab: 'communication',
-    defaultConnected: false,
-    highlights: [
-      'Workspace bot installation',
-      'Channel routing rules',
-      'Thread summaries (planned)',
-    ],
-  },
-  {
-    id: 'intercom',
-    name: 'Intercom',
-    websiteUrl: 'intercom.com',
-    description:
-      'Route customer conversations into Alice work items and sprint follow-ups.',
-    status: 'planned',
-    filterTab: 'communication',
-    defaultConnected: false,
-  },
-  {
-    id: 'loom',
-    name: 'Loom',
-    websiteUrl: 'loom.com',
-    description: 'Attach async video updates to work items and sprint reviews.',
-    status: 'planned',
-    filterTab: 'communication',
-    defaultConnected: false,
-  },
-  {
-    id: 'mailchimp',
-    name: 'Mailchimp',
-    websiteUrl: 'mailchimp.com',
-    description:
-      'Sync release announcements and stakeholder comms with sprint milestones.',
-    status: 'planned',
-    filterTab: 'communication',
-    defaultConnected: false,
-  },
-  {
-    id: 'teams',
-    name: 'Microsoft Teams',
-    websiteUrl: 'teams.microsoft.com',
-    description:
-      'Enterprise chat parity with Slack for notifications and Alice mentions.',
-    status: 'planned',
-    filterTab: 'communication',
-    defaultConnected: false,
-  },
-  {
-    id: 'figma',
-    name: 'Figma',
-    websiteUrl: 'figma.com',
-    description:
-      'Link Figma files and prototypes to stories for design–dev handoff inside Alice.',
-    status: 'planned',
-    filterTab: 'design',
-    defaultConnected: false,
-  },
-  {
-    id: 'eraser',
-    name: 'Eraser',
-    websiteUrl: 'eraser.io',
-    description:
-      'Attach cloud architecture and flow diagrams to epics; open Eraser boards from work items.',
-    status: 'planned',
-    filterTab: 'design',
-    defaultConnected: false,
-  },
-  {
-    id: 'miro',
-    name: 'Miro',
-    websiteUrl: 'miro.com',
-    description:
-      'Embed whiteboards for discovery workshops and link boards to epics.',
-    status: 'planned',
-    filterTab: 'design',
-    defaultConnected: false,
-  },
-  {
-    id: 'asana',
-    name: 'Asana',
-    websiteUrl: 'asana.com',
-    description:
-      'Import projects and tasks for teams evaluating a move to Alice.',
-    status: 'planned',
-    filterTab: 'productivity',
-    defaultConnected: false,
-  },
-  {
-    id: 'trello',
-    name: 'Trello',
-    websiteUrl: 'trello.com',
-    description:
-      'Migrate boards and cards into Alice work items with status mapping.',
-    status: 'planned',
-    filterTab: 'productivity',
-    defaultConnected: false,
-  },
-  {
-    id: 'dropbox',
-    name: 'Dropbox',
-    websiteUrl: 'dropbox.com',
-    description:
-      'Link shared folders and files as attachments on epics and stories.',
-    status: 'planned',
-    filterTab: 'productivity',
-    defaultConnected: false,
-  },
-  {
-    id: 'google-drive',
-    name: 'Google Drive',
-    websiteUrl: 'drive.google.com',
-    description:
-      'Attach Docs and Sheets from Drive directly to work-item descriptions.',
-    status: 'planned',
-    filterTab: 'productivity',
-    defaultConnected: false,
-  },
-  {
-    id: 'zapier',
-    name: 'Zapier',
-    websiteUrl: 'zapier.com',
-    description:
-      'Automate Alice events with thousands of SaaS triggers and actions.',
-    status: 'planned',
-    filterTab: 'productivity',
-    defaultConnected: false,
-  },
-  {
-    id: 'linear',
-    name: 'Linear',
-    websiteUrl: 'linear.app',
-    description:
-      'Bi-directional issue sync for teams migrating from Linear to Alice.',
-    status: 'planned',
-    filterTab: 'productivity',
-    defaultConnected: false,
-  },
-  {
-    id: 'notion',
-    name: 'Notion',
-    websiteUrl: 'notion.so',
-    description:
-      'Pull spec pages into work-item descriptions and keep docs in sync.',
-    status: 'planned',
-    filterTab: 'productivity',
-    defaultConnected: false,
-  },
-  {
-    id: 'github-copilot',
-    name: 'GitHub Copilot',
-    websiteUrl: 'github.com/features/copilot',
-    description:
-      'Suggest PR links and code context on tasks (extends project GitHub).',
-    status: 'planned',
-    filterTab: 'productivity',
-    defaultConnected: false,
-  },
-  {
-    id: 'jira-cloud',
-    name: 'Jira Cloud',
-    websiteUrl: 'atlassian.com/software/jira',
-    description:
-      'Smart import and duplicate detection (extends project Jira integration).',
-    status: 'planned',
-    filterTab: 'productivity',
-    defaultConnected: false,
-  },
+  workspaceIntegration(
+    'alice-gemini',
+    'Google Gemini',
+    'ai.google.dev',
+    'Power Alice Chat with Gemini models, function calling, and workspace-aware project context.',
+    'ai-agents',
+    {
+      status: 'mock',
+      defaultConnected: true,
+      highlights: [
+        'Shared model list with the chat sidebar',
+        'Function calling for projects, sprints, and work items',
+        'Workspace-level model default (planned)',
+      ],
+    }
+  ),
+  workspaceIntegration(
+    'coderabbit',
+    'CodeRabbit',
+    'coderabbit.ai',
+    'AI code review summaries and suggested fixes linked to pull requests on work items.',
+    'ai-agents'
+  ),
+  workspaceIntegration(
+    'cursor',
+    'Cursor',
+    'cursor.com',
+    'Connect Cursor agents for in-IDE planning sessions tied to Alice epics and stories.',
+    'ai-agents'
+  ),
+  workspaceIntegration(
+    'openai',
+    'OpenAI',
+    'openai.com',
+    'Optional GPT models alongside Gemini for Alice Chat and future automations.',
+    'ai-agents'
+  ),
+  workspaceIntegration(
+    'anthropic',
+    'Anthropic',
+    'anthropic.com',
+    'Claude models for long-context planning sessions and spec reviews inside Alice.',
+    'ai-agents'
+  ),
+  workspaceIntegration(
+    'slack',
+    'Slack',
+    'slack.com',
+    'Post work-item updates, sprint summaries, and @-mention Alice in team channels.',
+    'communication',
+    {
+      status: 'mock',
+      highlights: [
+        'Workspace bot installation',
+        'Channel routing rules',
+        'Thread summaries (planned)',
+      ],
+    }
+  ),
+  workspaceIntegration(
+    'intercom',
+    'Intercom',
+    'intercom.com',
+    'Route customer conversations into Alice work items and sprint follow-ups.',
+    'communication'
+  ),
+  workspaceIntegration(
+    'loom',
+    'Loom',
+    'loom.com',
+    'Attach async video updates to work items and sprint reviews.',
+    'communication'
+  ),
+  workspaceIntegration(
+    'mailchimp',
+    'Mailchimp',
+    'mailchimp.com',
+    'Sync release announcements and stakeholder comms with sprint milestones.',
+    'communication'
+  ),
+  workspaceIntegration(
+    'teams',
+    'Microsoft Teams',
+    'teams.microsoft.com',
+    'Enterprise chat parity with Slack for notifications and Alice mentions.',
+    'communication'
+  ),
+  workspaceIntegration(
+    'figma',
+    'Figma',
+    'figma.com',
+    'Link Figma files and prototypes to stories for design–dev handoff inside Alice.',
+    'design'
+  ),
+  workspaceIntegration(
+    'eraser',
+    'Eraser',
+    'eraser.io',
+    'Attach cloud architecture and flow diagrams to epics; open Eraser boards from work items.',
+    'design'
+  ),
+  workspaceIntegration(
+    'miro',
+    'Miro',
+    'miro.com',
+    'Embed whiteboards for discovery workshops and link boards to epics.',
+    'design'
+  ),
+  workspaceIntegration(
+    'asana',
+    'Asana',
+    'asana.com',
+    'Import projects and tasks for teams evaluating a move to Alice.',
+    'productivity'
+  ),
+  workspaceIntegration(
+    'trello',
+    'Trello',
+    'trello.com',
+    'Migrate boards and cards into Alice work items with status mapping.',
+    'productivity'
+  ),
+  workspaceIntegration(
+    'dropbox',
+    'Dropbox',
+    'dropbox.com',
+    'Link shared folders and files as attachments on epics and stories.',
+    'productivity'
+  ),
+  workspaceIntegration(
+    'google-drive',
+    'Google Drive',
+    'drive.google.com',
+    'Attach Docs and Sheets from Drive directly to work-item descriptions.',
+    'productivity'
+  ),
+  workspaceIntegration(
+    'zapier',
+    'Zapier',
+    'zapier.com',
+    'Automate Alice events with thousands of SaaS triggers and actions.',
+    'productivity'
+  ),
+  workspaceIntegration(
+    'linear',
+    'Linear',
+    'linear.app',
+    'Bi-directional issue sync for teams migrating from Linear to Alice.',
+    'productivity'
+  ),
+  workspaceIntegration(
+    'notion',
+    'Notion',
+    'notion.so',
+    'Pull spec pages into work-item descriptions and keep docs in sync.',
+    'productivity'
+  ),
+  workspaceIntegration(
+    'github-copilot',
+    'GitHub Copilot',
+    'github.com/features/copilot',
+    'Suggest PR links and code context on tasks (extends project GitHub).',
+    'productivity'
+  ),
+  workspaceIntegration(
+    'jira-cloud',
+    'Jira Cloud',
+    'atlassian.com/software/jira',
+    'Smart import and duplicate detection (extends project Jira integration).',
+    'productivity'
+  ),
 ];
 
 export function integrationStatusLabel(

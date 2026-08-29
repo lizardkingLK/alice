@@ -19,6 +19,15 @@ describe('integrationInitials', () => {
 });
 
 describe('filterWorkspaceIntegrations', () => {
+  it('defaults planned integrations from the catalog factory', () => {
+    const figma = WORKSPACE_INTEGRATIONS.find((item) => item.id === 'figma');
+    expect(figma).toMatchObject({
+      status: 'planned',
+      defaultConnected: false,
+      filterTab: 'design',
+    });
+  });
+
   it('returns all integrations for the all tab', () => {
     expect(
       filterWorkspaceIntegrations(WORKSPACE_INTEGRATIONS, 'all', '')
