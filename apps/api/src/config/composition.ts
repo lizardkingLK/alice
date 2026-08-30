@@ -281,7 +281,8 @@ function createChatConfig(
   workItemService: WorkItemService,
   sprintsService: SprintsService,
   projectsService: ProjectsService,
-  projectsRepository: ProjectsRepository
+  projectsRepository: ProjectsRepository,
+  integrationsService: IntegrationsService
 ) {
   const chatRepository = new ChatRepository(supabase);
   const chatService = new ChatService({
@@ -290,6 +291,7 @@ function createChatConfig(
     sprintsService,
     projectsService,
     projectsRepository,
+    integrationsService,
   });
   const router = createChatRouter({ chatService });
 
@@ -355,10 +357,11 @@ export const profile = createProfileConfig();
 export const savedViews = createSavedViewsConfig(
   notifications.notificationsRepository
 );
+export const integrations = createIntegrationsConfig();
 export const chat = createChatConfig(
   workItems.workItemService,
   sprints.sprintsService,
   projects.projectsService,
-  projects.projectsRepository
+  projects.projectsRepository,
+  integrations.integrationsService
 );
-export const integrations = createIntegrationsConfig();

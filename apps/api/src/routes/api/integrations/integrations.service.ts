@@ -1,15 +1,21 @@
 import { requireUserWithRole } from '../../../lib/auth-helpers';
-import { encryptSecretIfPresent } from '../../../lib/secrets/token-crypto';
 import {
+  decryptSecretIfPresent,
+  encryptSecretIfPresent,
+} from '../../../lib/secrets/token-crypto';
+import {
+  DEFAULT_CHAT_MODEL_VALUE,
   INTEGRATION_SECRET_KEYS,
   UserRoleEnum,
   isPlainRecord,
+  resolveChatModel,
   withoutIntegrationConfigSecrets,
   type ChatModelOption,
   type IntegrationConfigPublic,
   type CreateIntegrationBody,
   type IntegrationConfigPatch,
   type IntegrationConfigStored,
+  type IntegrationDetailRow,
   type IntegrationDetailWire,
   type IntegrationListRow,
   type IntegrationWire,
@@ -17,6 +23,7 @@ import {
   type PatchIntegrationBody,
 } from '@repo/types';
 import { IntegrationStatus, Prisma } from '@repo/types/prisma';
+import type { ResolvedChatModelConfig } from './chat-providers/chat-provider.types';
 import type { IntegrationsRepository } from './integrations.repository';
 
 async function requireAdmin(actorId: string) {
@@ -151,6 +158,55 @@ function toChatModelOption(row: IntegrationListRow): ChatModelOption | null {
   };
 }
 
+function defaultApiUrlForProvider(provider: string, model: string): string {
+  if (provider === 'gemini') {
+    return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+  }
+  if (provider === 'openai') {
+    return 'https://api.openai.com/v1/chat/completions';
+  }
+  if (provider === 'anthropic') {
+    return 'https://api.anthropic.com/v1/messages';
+  }
+  throw new Error(`Unknown chat provider: ${provider}`);
+}
+
+function mapIntegrationRowToChatModelConfig(
+  row: IntegrationDetailRow
+): ResolvedChatModelConfig {
+  if (!isPlainRecord(row.config) || row.config.kind !== 'chat_model') {
+    throw new Error('Integration is not a chat model');
+  }
+
+  const model = row.config.model;
+  if (typeof model !== 'string' || model.length === 0) {
+    throw new Error('Chat model config is missing model id');
+  }
+
+  const encryptedApiKey = row.config.api_key;
+  const apiKey = decryptSecretIfPresent(
+    typeof encryptedApiKey === 'string' ? encryptedApiKey : null
+  );
+  if (!apiKey) {
+    throw new Error('Chat model API key is not configured');
+  }
+
+  const configuredApiUrl =
+    typeof row.config.api_url === 'string' ? row.config.api_url : '';
+  const apiUrl =
+    configuredApiUrl.length > 0
+      ? configuredApiUrl
+      : defaultApiUrlForProvider(row.provider, model);
+
+  return {
+    integrationId: row.id,
+    provider: row.provider,
+    model,
+    apiKey,
+    apiUrl,
+  };
+}
+
 export class IntegrationsService {
   constructor(
     private readonly integrationsRepository: IntegrationsRepository
@@ -252,5 +308,45 @@ export class IntegrationsService {
   async deleteIntegration(actorId: string, id: string): Promise<void> {
     await requireAdmin(actorId);
     await this.integrationsRepository.disable(id, actorId);
+  }
+
+  async resolveChatModelForChat(params: {
+    integrationId?: string;
+    legacyModelId?: string;
+  }): Promise<ResolvedChatModelConfig> {
+    if (params.integrationId) {
+      const row = await this.integrationsRepository.findActiveChatModelById(
+        params.integrationId
+      );
+      if (!row) {
+        throw new Error('Chat model integration not found or inactive');
+      }
+      return mapIntegrationRowToChatModelConfig(row);
+    }
+
+    const defaultRow =
+      await this.integrationsRepository.findDefaultActiveChatModel();
+    if (defaultRow) {
+      return mapIntegrationRowToChatModelConfig(defaultRow);
+    }
+
+    const legacyApiKey = process.env.GEMINI_API_KEY;
+    if (legacyApiKey) {
+      console.warn(
+        '[integrations] Using deprecated GEMINI_API_KEY env fallback for chat'
+      );
+      const modelEntry = resolveChatModel(
+        params.legacyModelId ?? DEFAULT_CHAT_MODEL_VALUE
+      );
+      return {
+        integrationId: null,
+        provider: 'gemini',
+        model: modelEntry.value,
+        apiKey: legacyApiKey,
+        apiUrl: process.env.GEMINI_API_URL || modelEntry.apiUrl,
+      };
+    }
+
+    throw new Error('No chat model configured');
   }
 }

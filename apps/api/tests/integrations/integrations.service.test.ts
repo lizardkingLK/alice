@@ -9,6 +9,8 @@ vi.hoisted(() => {
 const {
   listMock,
   findByIdMock,
+  findActiveChatModelByIdMock,
+  findDefaultActiveChatModelMock,
   createMock,
   updateMock,
   disableMock,
@@ -17,6 +19,8 @@ const {
 } = vi.hoisted(() => ({
   listMock: vi.fn(),
   findByIdMock: vi.fn(),
+  findActiveChatModelByIdMock: vi.fn(),
+  findDefaultActiveChatModelMock: vi.fn(),
   createMock: vi.fn(),
   updateMock: vi.fn(),
   disableMock: vi.fn(),
@@ -39,6 +43,8 @@ vi.mock('../../src/lib/supabase', () => ({
 const repository = {
   list: listMock,
   findById: findByIdMock,
+  findActiveChatModelById: findActiveChatModelByIdMock,
+  findDefaultActiveChatModel: findDefaultActiveChatModelMock,
   create: createMock,
   update: updateMock,
   disable: disableMock,
@@ -172,5 +178,57 @@ describe('IntegrationsService', () => {
       display_label: 'GPT-4o (prod)',
       api_key: 'v1:encrypted',
     });
+  });
+});
+
+describe('IntegrationsService.resolveChatModelForChat', () => {
+  const service = new IntegrationsService(repository);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete process.env.GEMINI_API_KEY;
+    findDefaultActiveChatModelMock.mockResolvedValue(null);
+  });
+
+  it('resolves an active integration by id and decrypts api_key', async () => {
+    findActiveChatModelByIdMock.mockResolvedValue({
+      ...integrationRow,
+      config: {
+        kind: 'chat_model',
+        model: 'gpt-4o',
+        display_label: 'GPT-4o',
+        api_key: 'sk-test',
+      },
+    });
+
+    const config = await service.resolveChatModelForChat({
+      integrationId: integrationRow.id,
+    });
+
+    expect(config).toMatchObject({
+      integrationId: integrationRow.id,
+      provider: 'openai',
+      model: 'gpt-4o',
+      apiKey: 'sk-test',
+      apiUrl: 'https://api.openai.com/v1/chat/completions',
+    });
+  });
+
+  it('falls back to GEMINI_API_KEY when no integration row exists', async () => {
+    process.env.GEMINI_API_KEY = 'legacy-key';
+
+    const config = await service.resolveChatModelForChat({});
+
+    expect(config).toMatchObject({
+      integrationId: null,
+      provider: 'gemini',
+      apiKey: 'legacy-key',
+    });
+  });
+
+  it('throws when no integration or env fallback is available', async () => {
+    await expect(service.resolveChatModelForChat({})).rejects.toThrow(
+      'No chat model configured'
+    );
   });
 });

@@ -3,12 +3,7 @@ import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
-import {
-  ChatRoles,
-  parseChatRole,
-  DEFAULT_CHAT_MODEL_VALUE,
-  resolveChatModel,
-} from '@repo/types';
+import { ChatRoles, parseChatRole } from '@repo/types';
 import { type ChatService, sanitizeLog } from './chat.service';
 import type { InputMessage, StoredChatMessage } from './chat.route.types';
 
@@ -135,21 +130,28 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
     '/',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
-      const { messages, conversationId: reqConversationId, modelId } = req.body;
-
-      const resolvedModelValue = resolveChatModel(
-        typeof modelId === 'string' ? modelId : DEFAULT_CHAT_MODEL_VALUE
-      ).value;
+      const {
+        messages,
+        conversationId: reqConversationId,
+        modelId,
+        integrationId,
+      } = req.body;
 
       if (!messages || !Array.isArray(messages)) {
         return res.status(400).json({ error: 'messages array is required' });
       }
 
-      if (!process.env.GEMINI_API_KEY) {
-        return res.status(400).json({
-          error:
-            'GEMINI_API_KEY is not configured. Please add GEMINI_API_KEY to your apps/api/.env file and restart the server.',
+      let chatModelConfig;
+      try {
+        chatModelConfig = await chatService.resolveChatModelForChat({
+          integrationId:
+            typeof integrationId === 'string' ? integrationId : undefined,
+          legacyModelId: typeof modelId === 'string' ? modelId : undefined,
         });
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : 'No chat model configured';
+        return res.status(400).json({ error: message });
       }
 
       try {
@@ -168,10 +170,10 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
         if (!conversationId) {
           // Process first message synchronously to ensure Gemini succeeds before database/sidebar creation
           const { responseText, toolActionsPerformed } =
-            await chatService.generateGeminiResponse(
+            await chatService.generateChatResponse(
               req.userId!,
               sanitizedInputMessages,
-              resolvedModelValue
+              chatModelConfig
             );
 
           const firstMsgText =
@@ -240,7 +242,7 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
               req.userId!,
               conversationId,
               sanitizedInputMessages,
-              resolvedModelValue
+              chatModelConfig
             )
             .catch((err) => {
               console.error('Error starting async process:', err);

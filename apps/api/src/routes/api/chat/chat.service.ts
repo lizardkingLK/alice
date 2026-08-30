@@ -1,10 +1,5 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import {
   getRoleName,
-  DEFAULT_CHAT_MODEL_VALUE,
-  resolveChatModel,
-  type ChatModelValue,
   WorkItemTypeEnum,
   DEFAULT_WORK_ITEM_PRIORITY,
   WORK_ITEM_PRIORITIES,
@@ -19,6 +14,9 @@ import type { SprintsService } from '../sprints/sprints.service';
 import type { ProjectsService } from '../projects/projects.service';
 import type { ProjectsRepository } from '../projects/projects.repository';
 import type { ProjectRowWithOwner } from '../projects/projects.types';
+import type { IntegrationsService } from '../integrations/integrations.service';
+import type { ResolvedChatModelConfig } from '../integrations/chat-providers/chat-provider.types';
+import { resolveChatProvider } from '../integrations/chat-providers/resolve-chat-provider';
 import { systemInstruction, geminiTools } from './chat.route.data';
 import type { ChatRepository } from './chat.repository';
 import { sanitizeLog } from './chat.utils';
@@ -39,6 +37,7 @@ export type ChatServiceDeps = {
   sprintsService: Pick<SprintsService, 'createSprint'>;
   projectsService: Pick<ProjectsService, 'createProject'>;
   projectsRepository: Pick<ProjectsRepository, 'listAll' | 'findById'>;
+  integrationsService: Pick<IntegrationsService, 'resolveChatModelForChat'>;
 };
 
 function textToProseMirrorJson(text: string | null | undefined) {
@@ -111,41 +110,6 @@ export function markdownToChatHistory(md: string): StoredChatMessage[] {
   }
 }
 
-function logGeminiError(errorDetails: {
-  timestamp: string;
-  status: number;
-  statusText: string;
-  errorBody: string;
-  attempt: number;
-  messagesCount: number;
-}) {
-  const logMessage: string = [
-    `[${errorDetails.timestamp}]`,
-    'Attempt',
-    errorDetails.attempt,
-    'failed with Status',
-    errorDetails.status,
-    `${errorDetails.statusText}.`,
-    'Body:',
-    `${errorDetails.errorBody}.`,
-    'Messages in history:',
-    `${errorDetails.messagesCount}\n`,
-  ].join(' ');
-
-  console.error(
-    `Gemini Error: Request failed with status ${errorDetails.status}. See gemini-errors.log for details.`
-  );
-  try {
-    const logFilePath = path.join(__dirname, '../../../../gemini-errors.log');
-    fs.appendFileSync(logFilePath, logMessage);
-  } catch (err) {
-    const errorName = err instanceof Error ? err.name : 'UnknownError';
-    console.error(
-      `Failed to write to gemini-errors.log: ${sanitizeLog(errorName)}`
-    );
-  }
-}
-
 export class ChatService {
   private readonly historyCache = new Map<string, StoredChatMessage[]>();
 
@@ -155,8 +119,27 @@ export class ChatService {
     return this.deps.chat;
   }
 
-  private resolveGeminiBaseUrl(modelValue: ChatModelValue): string {
-    return resolveChatModel(modelValue).apiUrl;
+  resolveChatModelForChat(params: {
+    integrationId?: string;
+    legacyModelId?: string;
+  }): Promise<ResolvedChatModelConfig> {
+    return this.deps.integrationsService.resolveChatModelForChat(params);
+  }
+
+  async callChatModelAPI(
+    chatModel: ResolvedChatModelConfig,
+    contents: ContentTurn[],
+    contextInstruction: string
+  ): Promise<GeminiResponse> {
+    const provider = resolveChatProvider(chatModel.provider);
+    return provider.generateWithTools({
+      apiKey: chatModel.apiKey,
+      apiUrl: chatModel.apiUrl,
+      model: chatModel.model,
+      contents,
+      systemInstruction: systemInstruction + '\n' + contextInstruction,
+      tools: geminiTools,
+    });
   }
 
   async processFunctionCalls(
@@ -342,99 +325,6 @@ export class ChatService {
     return result;
   }
 
-  async callGeminiAPI(
-    contents: ContentTurn[],
-    contextInstruction: string,
-    modelValue: ChatModelValue = DEFAULT_CHAT_MODEL_VALUE
-  ): Promise<GeminiResponse> {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error(
-        'GEMINI_API_KEY is not configured in backend .env file. Please add it to start chatting.'
-      );
-    }
-
-    const baseUrl =
-      process.env.GEMINI_API_URL || this.resolveGeminiBaseUrl(modelValue);
-    const url = baseUrl.includes('key=')
-      ? `${baseUrl}${apiKey}`
-      : `${baseUrl}?key=${apiKey}`;
-
-    const retries = 3;
-    let delay = 2000;
-
-    for (let i = 0; i < retries; i++) {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents,
-          systemInstruction: {
-            parts: [{ text: systemInstruction + '\n' + contextInstruction }],
-          },
-          tools: geminiTools,
-        }),
-      });
-
-      if (
-        response.status === 429 ||
-        response.status === 503 ||
-        (response.status >= 500 && response.status <= 504)
-      ) {
-        const errorText = await response.text();
-        logGeminiError({
-          timestamp: new Date().toISOString(),
-          status: response.status,
-          statusText: response.statusText,
-          errorBody: errorText,
-          attempt: i + 1,
-          messagesCount: contents.length,
-        });
-
-        if (i < retries - 1) {
-          console.warn(
-            `Gemini transient error ${response.status}. Retrying in ${delay}ms...`
-          );
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          delay *= 2;
-          continue;
-        }
-        if (response.status === 429) {
-          throw new Error(
-            'Alice AI service is temporarily unavailable because the rate limit has been exceeded. Please try again in a few moments.'
-          );
-        } else {
-          throw new Error(
-            'Alice AI service is temporarily unavailable due to a remote server issue. Please try again in a few moments.'
-          );
-        }
-      }
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        logGeminiError({
-          timestamp: new Date().toISOString(),
-          status: response.status,
-          statusText: response.statusText,
-          errorBody: errorText,
-          attempt: i + 1,
-          messagesCount: contents.length,
-        });
-        throw new Error(
-          'Alice AI service encountered an error while processing your request. Please try again in a few moments.'
-        );
-      }
-
-      return response.json() as Promise<GeminiResponse>;
-    }
-
-    throw new Error(
-      'Alice AI service is temporarily unavailable because the API rate limit has been exceeded. Please try again in a few moments.'
-    );
-  }
-
   async saveChatHistory(
     conversationId: string,
     messages: StoredChatMessage[]
@@ -598,10 +488,10 @@ export class ChatService {
     return { users, activeSprints };
   }
 
-  async generateGeminiResponse(
+  async generateChatResponse(
     userId: string,
     history: StoredChatMessage[],
-    modelValue: ChatModelValue
+    chatModel: ResolvedChatModelConfig
   ): Promise<{ responseText: string; toolActionsPerformed: ToolAction[] }> {
     const contents: ContentTurn[] = history.map((msg) => {
       const role = toGeminiRole(msg.role);
@@ -630,10 +520,10 @@ Current Workspace State:
     const maxLoops = 5;
 
     while (loopCount < maxLoops) {
-      const geminiResponse = await this.callGeminiAPI(
+      const geminiResponse = await this.callChatModelAPI(
+        chatModel,
         contents,
-        contextInstruction,
-        modelValue
+        contextInstruction
       );
       const candidate = geminiResponse.candidates?.[0];
       const modelContent = candidate?.content;
@@ -675,11 +565,11 @@ Current Workspace State:
     userId: string,
     conversationId: string,
     history: StoredChatMessage[],
-    modelValue: ChatModelValue
+    chatModel: ResolvedChatModelConfig
   ): Promise<void> {
     try {
       const { responseText, toolActionsPerformed } =
-        await this.generateGeminiResponse(userId, history, modelValue);
+        await this.generateChatResponse(userId, history, chatModel);
 
       const newAssistantMessage: StoredChatMessage = {
         id: `msg-${Date.now()}`,

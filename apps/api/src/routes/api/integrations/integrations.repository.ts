@@ -15,9 +15,9 @@ import {
   type IntegrationDetailRow,
   type IntegrationListRow,
   type ListIntegrationsQuery,
+  type Database,
 } from '@repo/types';
 import { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@repo/types';
 
 type IntegrationsTx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
@@ -93,6 +93,30 @@ export class IntegrationsRepository {
   async findById(id: string): Promise<IntegrationDetailRow | null> {
     return prisma.integrations.findUnique({
       where: { id },
+      select: integrationDetailSelect,
+    });
+  }
+
+  async findActiveChatModelById(
+    id: string
+  ): Promise<IntegrationDetailRow | null> {
+    return prisma.integrations.findFirst({
+      where: {
+        id,
+        category: IntegrationCategory.ai_agent,
+        status: IntegrationStatus.active,
+      },
+      select: integrationDetailSelect,
+    });
+  }
+
+  async findDefaultActiveChatModel(): Promise<IntegrationDetailRow | null> {
+    return prisma.integrations.findFirst({
+      where: {
+        category: IntegrationCategory.ai_agent,
+        status: IntegrationStatus.active,
+        is_default: true,
+      },
       select: integrationDetailSelect,
     });
   }
