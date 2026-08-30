@@ -106,7 +106,9 @@ export type IntegrationConfigPatch = z.infer<
   typeof integrationConfigPatchSchema
 >;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+export function isPlainRecord(
+  value: unknown
+): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
@@ -117,7 +119,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export function withoutIntegrationConfigSecrets(
   config: unknown
 ): IntegrationConfigPublic | Record<string, never> {
-  if (!isRecord(config)) {
+  if (!isPlainRecord(config)) {
     return {};
   }
 

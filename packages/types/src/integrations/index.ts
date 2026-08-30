@@ -4,6 +4,7 @@ export {
   integrationConfigPublicSchema,
   integrationConfigStoredSchema,
   integrationSecretHasKey,
+  isPlainRecord,
   parseIntegrationConfigPublic,
   parseIntegrationConfigStored,
   withoutIntegrationConfigSecrets,

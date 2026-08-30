@@ -57,6 +57,9 @@ import { createProfileRouter } from '../routes/api/profile/profile.route';
 import { SavedViewsRepository } from '../routes/api/savedViews/savedViews.repository';
 import { SavedViewsService } from '../routes/api/savedViews/savedViews.service';
 import { createSavedViewsRouter } from '../routes/api/savedViews/savedViews.route';
+import { IntegrationsRepository } from '../routes/api/integrations/integrations.repository';
+import { IntegrationsService } from '../routes/api/integrations/integrations.service';
+import { createIntegrationsRouter } from '../routes/api/integrations/integrations.route';
 
 function createRootConfig() {
   const router = createRootRouter();
@@ -313,6 +316,18 @@ function createHealthConfig() {
   };
 }
 
+function createIntegrationsConfig() {
+  const integrationsRepository = new IntegrationsRepository(supabase);
+  const integrationsService = new IntegrationsService(integrationsRepository);
+  const router = createIntegrationsRouter({ integrationsService });
+
+  return {
+    integrationsRepository,
+    integrationsService,
+    router,
+  };
+}
+
 /** Production configs graph (repo → service → router). */
 export const root = createRootConfig();
 export const health = createHealthConfig();
@@ -346,3 +361,4 @@ export const chat = createChatConfig(
   projects.projectsService,
   projects.projectsRepository
 );
+export const integrations = createIntegrationsConfig();
