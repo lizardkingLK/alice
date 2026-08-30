@@ -186,7 +186,6 @@ describe('IntegrationsService.resolveChatModelForChat', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    delete process.env.GEMINI_API_KEY;
     findDefaultActiveChatModelMock.mockResolvedValue(null);
   });
 
@@ -214,19 +213,24 @@ describe('IntegrationsService.resolveChatModelForChat', () => {
     });
   });
 
-  it('falls back to GEMINI_API_KEY when no integration row exists', async () => {
-    process.env.GEMINI_API_KEY = 'legacy-key';
+  it('uses the workspace default integration when integrationId is omitted', async () => {
+    findDefaultActiveChatModelMock.mockResolvedValue({
+      ...integrationRow,
+      config: {
+        kind: 'chat_model',
+        model: 'gpt-4o',
+        display_label: 'GPT-4o',
+        api_key: 'sk-test',
+      },
+    });
 
     const config = await service.resolveChatModelForChat({});
 
-    expect(config).toMatchObject({
-      integrationId: null,
-      provider: 'gemini',
-      apiKey: 'legacy-key',
-    });
+    expect(config.integrationId).toBe(integrationRow.id);
+    expect(config.model).toBe('gpt-4o');
   });
 
-  it('throws when no integration or env fallback is available', async () => {
+  it('throws when no integration is configured', async () => {
     await expect(service.resolveChatModelForChat({})).rejects.toThrow(
       'No chat model configured'
     );

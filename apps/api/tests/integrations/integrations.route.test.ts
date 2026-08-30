@@ -135,6 +135,37 @@ describe('integrations routes', () => {
     );
   });
 
+  it('returns 403 when non-admin create is denied', async () => {
+    createIntegrationMock.mockRejectedValue(
+      new Error('Unauthorized. Only administrators can manage integrations.')
+    );
+
+    await withMountedRouter(
+      '/api/integrations',
+      integrationsRouter,
+      async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/api/integrations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            catalog_id: 'openai',
+            category: 'ai_agent',
+            provider: 'openai',
+            name: 'GPT-4o',
+            config: {
+              kind: 'chat_model',
+              model: 'gpt-4o',
+              display_label: 'GPT-4o',
+              api_key: 'sk-test',
+            },
+          }),
+        });
+
+        expect(response.status).toBe(403);
+      }
+    );
+  });
+
   it('creates an integration', async () => {
     createIntegrationMock.mockResolvedValue({
       ...integrationWire,

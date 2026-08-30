@@ -4,11 +4,9 @@ import {
   encryptSecretIfPresent,
 } from '../../../lib/secrets/token-crypto';
 import {
-  DEFAULT_CHAT_MODEL_VALUE,
   INTEGRATION_SECRET_KEYS,
   UserRoleEnum,
   isPlainRecord,
-  resolveChatModel,
   withoutIntegrationConfigSecrets,
   type ChatModelOption,
   type IntegrationConfigPublic,
@@ -328,23 +326,6 @@ export class IntegrationsService {
       await this.integrationsRepository.findDefaultActiveChatModel();
     if (defaultRow) {
       return mapIntegrationRowToChatModelConfig(defaultRow);
-    }
-
-    const legacyApiKey = process.env.GEMINI_API_KEY;
-    if (legacyApiKey) {
-      console.warn(
-        '[integrations] Using deprecated GEMINI_API_KEY env fallback for chat'
-      );
-      const modelEntry = resolveChatModel(
-        params.legacyModelId ?? DEFAULT_CHAT_MODEL_VALUE
-      );
-      return {
-        integrationId: null,
-        provider: 'gemini',
-        model: modelEntry.value,
-        apiKey: legacyApiKey,
-        apiUrl: process.env.GEMINI_API_URL || modelEntry.apiUrl,
-      };
     }
 
     throw new Error('No chat model configured');

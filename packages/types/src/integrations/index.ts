@@ -14,3 +14,6 @@ export {
   type IntegrationConfigStored,
   type IntegrationSecretKey,
 } from './config.js';
+
+export { IntegrationCategory } from '../generated/prisma/enums.js';
+export type { IntegrationCategory as IntegrationCategoryEnum } from '../generated/prisma/enums.js';

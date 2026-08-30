@@ -1,6 +1,6 @@
 # Settings — Integrations (admin)
 
-Status: **In progress** — Integrations tab + marketplace UI shipped (Phase 0); **database persistence plan** below (Phase 1+)
+Status: **Phase 1 complete** — DB-backed workspace integrations, Settings admin UI, and Alice Chat model pool are live. Phase 2 (Slack OAuth, Figma/Eraser) remains planned.
 
 Admins configure **workspace-wide** AI agents and tool integrations from **`/settings?tab=integrations`**. This is separate from **project-scoped** integrations (GitHub, Jira on `/projects/[id]?tab=integrations`).
 
@@ -18,7 +18,7 @@ Related:
 
 - Single **Integrations** entry in the Settings sidebar for **admin** users only.
 - Surface a **catalog** of AI agents and workspace tools with clear status: **Active**, **Mock UI**, **Planned**.
-- Start with **mock UI** for most providers; wire **Alice Chat (Gemini)** against the existing server config (`GEMINI_API_KEY`, `CHAT_MODELS`) as read-only context plus a placeholder for future workspace-level overrides.
+- **Phase 1 (done):** Admins configure chat models in Settings; Alice Chat reads active rows from `integrations` (no env bootstrap).
 - Keep project-level dev-tool integrations (GitHub, Jira) on the project detail page — do not duplicate them here.
 
 ## Non-goals (Phase 0 — done)
@@ -80,12 +80,12 @@ flowchart TB
 
 ### Phase 0 — Marketplace UI (done)
 
-| Integration          | Category       | UI status                                            | Backend                                                      |
-| -------------------- | -------------- | ---------------------------------------------------- | ------------------------------------------------------------ |
-| **Google Gemini**    | AI agents      | Preview dialog + model picker (mock save)            | **Live** chat via `apps/api` + `GEMINI_API_KEY` (server env) |
-| **Slack**            | Communication  | Preview card + connect mock                          | None                                                         |
-| **Eraser / Figma**   | Design         | Coming-soon cards in catalog                         | None                                                         |
-| **Suggested agents** | Reference list | OpenAI, Anthropic, Linear, Notion, Miro, Teams, etc. | Planned                                                      |
+| Integration          | Category       | UI status                                            | Backend                                                    |
+| -------------------- | -------------- | ---------------------------------------------------- | ---------------------------------------------------------- |
+| **Google Gemini**    | AI agents      | Admin configure dialog (API key + model)             | **Live** via `integrations` row + Gemini provider strategy |
+| **Slack**            | Communication  | Preview card + connect mock                          | None                                                       |
+| **Eraser / Figma**   | Design         | Coming-soon cards in catalog                         | None                                                       |
+| **Suggested agents** | Reference list | OpenAI, Anthropic, Linear, Notion, Miro, Teams, etc. | Planned                                                    |
 
 Static catalog metadata lives in `settings-integration-catalog.ts` (names, descriptions, filter tabs). **Configured instances** move to the `integrations` table in Phase 1.
 
@@ -95,7 +95,7 @@ Static catalog metadata lives in `settings-integration-catalog.ts` (names, descr
 - Admin saves API keys and model settings from Settings → Integrations; secrets encrypted in `config` via existing `token-crypto.ts`.
 - **`ChatService`** resolves the selected model from DB rows where `category = ai_agent`, using a **provider strategy** (Gemini, OpenAI, Anthropic) instead of a hard-coded `CHAT_MODELS` constant.
 - Users pick any **active chat model** from the pool in `/chat` and the navbar drawer.
-- `GEMINI_API_KEY` env becomes a **bootstrap fallback** until the first Gemini row is seeded (then optional).
+- No env bootstrap — admins create the first Gemini (or other) row in Settings.
 
 ### Phase 2 — OAuth and notification integrations
 
@@ -398,7 +398,7 @@ VALUES (
     'model_version', '3.6',
     'display_label', 'Gemini 3.6',
     'api_url', 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',
-    'api_key', '<encrypted at runtime from GEMINI_API_KEY>'
+    'api_key', '<encrypted via INTEGRATION_TOKEN_ENCRYPTION_KEY>'
   ),
   true,
   0
@@ -407,9 +407,8 @@ VALUES (
 
 `ChatService` resolution order:
 
-1. Load integration by `integration_id` from request (or user’s last-selected / workspace default).
-2. If no row and `GEMINI_API_KEY` is set → legacy env fallback (log deprecation).
-3. If neither → `400` “No chat model configured”.
+1. Load integration by `integration_id` from request (or workspace default when omitted).
+2. If no active row → `400` “No chat model configured”.
 
 ### UI wiring (Phase 1)
 
@@ -428,19 +427,19 @@ VALUES (
 | 2    | `@repo/types` Zod config unions + v1 API DTOs                          |
 | 3    | `integrations.*` Express module (repository, service, router)          |
 | 4    | `chat-providers/*` + refactor `ChatService` to accept `integration_id` |
-| 5    | Seed / env bootstrap for first Gemini row                              |
+| 5    | ~~Seed / env bootstrap~~ — skipped (admin-configured only)             |
 | 6    | Settings UI — wire save + list                                         |
 | 7    | Chat UI — dynamic model dropdown                                       |
 | 8    | Tests: encrypt round-trip, strategy mocks, admin RBAC                  |
 
 ### Relationship to project integrations
 
-| Scope                  | Storage today                   | Future                       |
-| ---------------------- | ------------------------------- | ---------------------------- |
-| GitHub PAT + repo      | `projects.github_*`             | Unchanged                    |
-| Jira OAuth             | `jira_connections` + project FK | Unchanged                    |
-| Alice Chat LLMs        | `GEMINI_API_KEY` env            | `integrations` (`ai_agent`)  |
-| Slack / Figma / Eraser | —                               | `integrations` (by category) |
+| Scope                  | Storage today                   | Future                                           |
+| ---------------------- | ------------------------------- | ------------------------------------------------ |
+| GitHub PAT + repo      | `projects.github_*`             | Unchanged                                        |
+| Jira OAuth             | `jira_connections` + project FK | Unchanged                                        |
+| Alice Chat LLMs        | `integrations` (`ai_agent`)     | Multi-row model pool (Gemini, OpenAI, Anthropic) |
+| Slack / Figma / Eraser | —                               | `integrations` (by category)                     |
 
 Do **not** move GitHub/Jira into `integrations` without an explicit migration project — different scope, FKs, and UI surfaces.
 
@@ -448,26 +447,27 @@ Do **not** move GitHub/Jira into `integrations` without an explicit migration pr
 
 ## Environment
 
-| Variable                           | App        | Notes                                                                     |
-| ---------------------------------- | ---------- | ------------------------------------------------------------------------- |
-| `GEMINI_API_KEY`                   | `apps/api` | **Legacy** chat bootstrap; optional after first Gemini `integrations` row |
-| `GEMINI_API_URL`                   | `apps/api` | Optional override; prefer per-row `config.api_url`                        |
-| `INTEGRATION_TOKEN_ENCRYPTION_KEY` | `apps/api` | Required for encrypted `config` secrets (shared with GitHub/Jira)         |
+| Variable                           | App        | Notes                                                             |
+| ---------------------------------- | ---------- | ----------------------------------------------------------------- |
+| `INTEGRATION_TOKEN_ENCRYPTION_KEY` | `apps/api` | Required for encrypted `config` secrets (shared with GitHub/Jira) |
 
-Per-model API keys live in `integrations.config` after Phase 1. Settings UI shows **Connected** vs **Needs API key** via `has_api_key` on admin API responses.
+Per-model API keys and optional `config.api_url` live in `integrations.config`. Settings UI shows **Connected** vs **Needs API key** via `has_api_key` on admin API responses. Chat does **not** read `GEMINI_*` env vars.
 
 ---
 
 ## Testing
 
-| Test                                   | Scope                                             |
-| -------------------------------------- | ------------------------------------------------- |
-| `parseSettingsTab('integrations')`     | Returns `integrations`                            |
-| Settings data                          | Non-admin + `?tab=integrations` → general content |
-| `settings-integration-catalog.test.ts` | Filter/search helpers                             |
-| `integrations.service` encrypt/strip   | Secret round-trip, `has_api_key` DTO              |
-| `resolveChatProvider`                  | Gemini + OpenAI mock HTTP                         |
-| Admin RBAC                             | Non-admin `POST /api/integrations` → 403          |
+| Test                               | Location                                                       | Scope                                                 |
+| ---------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------- |
+| `parseSettingsTab('integrations')` | `apps/web/tests/lib/search-params-settings-tab.test.ts`        | Returns `integrations`                                |
+| `resolveSettingsTabForUser`        | `apps/web/tests/lib/search-params-settings-tab.test.ts`        | Non-admin + `integrations` → `general`                |
+| Catalog helpers                    | `apps/web/tests/settings/settings-integration-catalog.test.ts` | Filter/search, `isCatalogConnected`, configurable ids |
+| Settings API client                | `apps/web/tests/settings/integrations-api.shared.test.ts`      | List/create via `/api/integrations`                   |
+| Chat model helpers                 | `apps/web/tests/chat/chat-models-api.shared.test.ts`           | Default + selection resolution                        |
+| Integration config Zod             | `apps/web/tests/integrations/integrations-config.test.ts`      | Stored/public config, create/patch bodies             |
+| `integrations.service`             | `apps/api/tests/integrations/integrations.service.test.ts`     | Encrypt/strip, chat model pool, resolve for chat      |
+| `integrations` routes              | `apps/api/tests/integrations/integrations.route.test.ts`       | List, chat-models, create, admin RBAC 403             |
+| `resolveChatProvider`              | `apps/api/tests/integrations/resolve-chat-provider.test.ts`    | Provider registry                                     |
 
 ---
 
@@ -478,10 +478,10 @@ Per-model API keys live in `integrations.config` after Phase 1. Settings UI show
 - [x] Marketplace UI + integration detail dialog
 - [x] Database persistence plan (this doc)
 - [x] `integrations` Prisma model + migration SQL + RLS (apply with `pnpm db migrate:deploy`)
-- [ ] `@repo/types` config Zod + v1 API DTOs
-- [ ] Express `integrations` module + chat provider strategies
-- [ ] Bootstrap seed from `GEMINI_API_KEY`
-- [ ] Settings UI wired to API (save / list / status)
-- [ ] Chat model dropdown from DB pool
+- [x] `@repo/types` config Zod + v1 API DTOs
+- [x] Express `integrations` module + chat provider strategies
+- [x] ~~Bootstrap seed from `GEMINI_API_KEY`~~ — **skipped by design** (admins configure in Settings)
+- [x] Settings UI wired to API (save / list / status)
+- [x] Chat model dropdown from DB pool
 - [ ] Slack OAuth connect (Phase 2)
 - [ ] Figma / Eraser link flows (Phase 2)

@@ -4,6 +4,7 @@ import { safeServerFetch } from '@/lib/safe-server-fetch';
 import { getDbUser } from '@/lib/auth';
 import { ChatClient } from './_components/chat-client';
 import { getChatPageBootstrap } from './_services/chat.reads.server';
+import { listChatModelsForChat } from './_services/chat-models.reads.server';
 import { ChatPageSkeleton } from './_components/chat-page-skeleton';
 
 export const metadata = {
@@ -13,12 +14,13 @@ export const metadata = {
 async function ChatPageData({
   conversationId,
 }: Readonly<{ conversationId?: string }>) {
-  const [bootstrap, dbUser] = await Promise.all([
+  const [bootstrap, chatModels, dbUser] = await Promise.all([
     safeServerFetch(
       getChatPageBootstrap(conversationId),
       { conversations: [], messages: [] },
       'fetch chat page bootstrap'
     ),
+    safeServerFetch(listChatModelsForChat(), [], 'fetch chat models'),
     getDbUser(),
   ]);
 
@@ -27,6 +29,7 @@ async function ChatPageData({
       initialConversations={bootstrap.conversations}
       initialConversationId={bootstrap.activeConversationId}
       initialMessages={bootstrap.messages}
+      initialChatModels={chatModels}
       currentUserName={dbUser?.name}
       currentUserImageUrl={dbUser?.profile_picture}
       currentUserId={dbUser?.id}

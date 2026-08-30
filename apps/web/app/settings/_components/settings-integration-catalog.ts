@@ -117,3 +117,54 @@ export function filterWorkspaceIntegrations(
 export function integrationExternalHref(websiteUrl: string): string {
   return websiteUrl.startsWith('http') ? websiteUrl : `https://${websiteUrl}`;
 }
+
+/** Static catalog id → API row metadata for admin configure flows. */
+export const CONFIGURABLE_CATALOG_PROVIDERS = {
+  'alice-gemini': {
+    provider: 'gemini',
+    category: 'ai_agent',
+  },
+  openai: {
+    provider: 'openai',
+    category: 'ai_agent',
+  },
+  anthropic: {
+    provider: 'anthropic',
+    category: 'ai_agent',
+  },
+} as const;
+
+export type ConfigurableCatalogId = keyof typeof CONFIGURABLE_CATALOG_PROVIDERS;
+
+export function isConfigurableCatalog(
+  catalogId: string
+): catalogId is ConfigurableCatalogId {
+  return catalogId in CONFIGURABLE_CATALOG_PROVIDERS;
+}
+
+type IntegrationWireLike = {
+  catalog_id: string;
+  status: string;
+  config: {
+    kind?: string;
+    has_api_key?: boolean;
+  };
+};
+
+export function integrationRowsForCatalog<T extends IntegrationWireLike>(
+  rows: readonly T[],
+  catalogId: string
+): T[] {
+  return rows.filter((row) => row.catalog_id === catalogId);
+}
+
+export function isCatalogConnected(
+  catalogId: string,
+  rows: readonly IntegrationWireLike[]
+): boolean {
+  return integrationRowsForCatalog(rows, catalogId).some(
+    (row) =>
+      row.status === 'active' &&
+      (row.config.kind !== 'chat_model' || row.config.has_api_key === true)
+  );
+}

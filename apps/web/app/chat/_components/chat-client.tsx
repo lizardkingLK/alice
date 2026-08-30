@@ -12,11 +12,7 @@ import {
 } from '@repo/ui/components/ui/tooltip';
 import { Send, Sparkles, PanelLeft, PanelLeftClose } from '@repo/ui/lib/icons';
 import { useRouter } from 'next/navigation';
-import {
-  ChatRoles,
-  DEFAULT_CHAT_MODEL_VALUE,
-  type ChatModelValue,
-} from '@repo/types';
+import { ChatRoles, type ChatModelOption } from '@repo/types';
 import { createClient } from '@/lib/supabase/client';
 import type { ChatMessage, ActionItem } from './chat-client.types';
 import {
@@ -37,11 +33,94 @@ import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import ChatClientSidebar from '@/app/chat/_components/chat-client-sidebar';
 import ChatClientHeaderActions from '@/app/chat/_components/chat-client-header-actions';
 import ChatClientMain from '@/app/chat/_components/chat-client-main';
+import { useWorkspaceChatModels } from '@/app/chat/_components/use-workspace-chat-models';
 
 let messageCounter = 0;
 
 const CHAT_PANEL_HEADER_CLASS =
   'border-border flex h-14 shrink-0 items-center border-b px-4';
+
+const NO_CHAT_MODEL_ERROR =
+  'No chat model is configured. Use Add Model to connect one in Settings.';
+
+/* eslint-disable no-unused-vars */
+type ChatResponseRouter = { replace: (href: string) => void };
+/* eslint-enable no-unused-vars */
+
+function applySuccessfulChatResponse(params: {
+  response: {
+    history?: ChatMessage[];
+    conversationId: string;
+    title: string;
+    is_processing?: boolean;
+    actions?: ActionItem[];
+  };
+  activeConversationId: string | undefined;
+  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+  setActiveConversationId: React.Dispatch<
+    React.SetStateAction<string | undefined>
+  >;
+  setConversations: React.Dispatch<React.SetStateAction<ChatConversation[]>>;
+  hydratedRef: React.MutableRefObject<string | null>;
+  router: ChatResponseRouter;
+}) {
+  const {
+    response,
+    activeConversationId,
+    setMessages,
+    setActiveConversationId,
+    setConversations,
+    hydratedRef,
+    router,
+  } = params;
+
+  if (response.history) {
+    setMessages(response.history);
+  }
+
+  if (!activeConversationId && response.conversationId) {
+    if (!response.is_processing) {
+      hydratedRef.current = response.conversationId;
+    }
+    router.replace(`/chat?conversationId=${response.conversationId}`);
+    setActiveConversationId(response.conversationId);
+    setConversations((prev) => [
+      {
+        id: response.conversationId,
+        title: response.title || 'New Chat',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        is_processing: response.is_processing ?? false,
+      },
+      ...prev,
+    ]);
+    return;
+  }
+
+  if (!activeConversationId) {
+    return;
+  }
+
+  if (!response.is_processing) {
+    hydratedRef.current = activeConversationId;
+  }
+
+  setConversations((prev) => {
+    const others = prev.filter((c) => c.id !== activeConversationId);
+    const activeConv = prev.find((c) => c.id === activeConversationId);
+    if (!activeConv) {
+      return prev;
+    }
+
+    return [
+      {
+        ...activeConv,
+        is_processing: response.is_processing ?? true,
+      },
+      ...others,
+    ];
+  });
+}
 
 interface ChatClientProps {
   readonly variant?: 'page' | 'drawer';
@@ -52,6 +131,7 @@ interface ChatClientProps {
   readonly initialConversations?: ChatConversation[];
   readonly initialConversationId?: string;
   readonly initialMessages?: ChatMessage[];
+  readonly initialChatModels?: ChatModelOption[];
   readonly currentUserId?: string | null;
 }
 
@@ -63,6 +143,7 @@ export function ChatClient({
   initialConversations,
   initialConversationId,
   initialMessages,
+  initialChatModels,
   currentUserId,
 }: Readonly<ChatClientProps>) {
   const router = useRouter();
@@ -88,9 +169,8 @@ export function ChatClient({
     useState<ChatConversation | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(true);
   const [conversationSearch, setConversationSearch] = useState('');
-  const [selectedModelId, setSelectedModelId] = useState<ChatModelValue>(
-    () => DEFAULT_CHAT_MODEL_VALUE
-  );
+  const { chatModels, selectedIntegrationId, setSelectedIntegrationId } =
+    useWorkspaceChatModels(initialChatModels);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const hydratedRef = useRef<string | null>(null);
@@ -350,6 +430,11 @@ export function ChatClient({
   const handleSendMessage = async (textToSend: string) => {
     if (!textToSend.trim() || isPending) return;
 
+    if (!selectedIntegrationId) {
+      setError(NO_CHAT_MODEL_ERROR);
+      return;
+    }
+
     const userMessage: ChatMessage = {
       id: `msg-${Date.now()}-${++messageCounter}`,
       role: ChatRoles.User,
@@ -368,7 +453,7 @@ export function ChatClient({
       const response = await sendChatMessage(
         history,
         activeConversationId,
-        selectedModelId
+        selectedIntegrationId
       );
 
       if (response.error) {
@@ -376,45 +461,15 @@ export function ChatClient({
         return;
       }
 
-      if (response.history) {
-        setMessages(response.history);
-      }
-
-      if (!activeConversationId && response.conversationId) {
-        if (!response.is_processing) {
-          hydratedRef.current = response.conversationId;
-        }
-        router.replace(`/chat?conversationId=${response.conversationId}`);
-        setActiveConversationId(response.conversationId);
-        setConversations((prev) => [
-          {
-            id: response.conversationId,
-            title: response.title || 'New Chat',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            is_processing: response.is_processing ?? false,
-          },
-          ...prev,
-        ]);
-      } else if (activeConversationId) {
-        if (!response.is_processing) {
-          hydratedRef.current = activeConversationId;
-        }
-        setConversations((prev) => {
-          const others = prev.filter((c) => c.id !== activeConversationId);
-          const activeConv = prev.find((c) => c.id === activeConversationId);
-          if (activeConv) {
-            return [
-              {
-                ...activeConv,
-                is_processing: response.is_processing ?? true,
-              },
-              ...others,
-            ];
-          }
-          return prev;
-        });
-      }
+      applySuccessfulChatResponse({
+        response,
+        activeConversationId,
+        setMessages,
+        setActiveConversationId,
+        setConversations,
+        hydratedRef,
+        router,
+      });
 
       if (response.actions && response.actions.length > 0) {
         await revalidateAfterChatActions(
@@ -526,8 +581,9 @@ export function ChatClient({
             <ChatClientHeaderActions
               variant={variant}
               isPending={isInputDisabled}
-              selectedModelId={selectedModelId}
-              onSelectedModelIdChange={setSelectedModelId}
+              chatModels={chatModels}
+              selectedIntegrationId={selectedIntegrationId}
+              onSelectedIntegrationIdChange={setSelectedIntegrationId}
               onNewChat={handleNewChat}
               onClose={onClose}
             />

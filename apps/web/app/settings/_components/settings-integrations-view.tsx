@@ -1,6 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import type { IntegrationWire } from '@repo/types';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card, CardContent, CardHeader } from '@repo/ui/components/ui/card';
@@ -13,24 +15,23 @@ import {
   INTEGRATION_FILTER_TABS,
   WORKSPACE_INTEGRATIONS,
   filterWorkspaceIntegrations,
+  isCatalogConnected,
+  integrationRowsForCatalog,
   type IntegrationFilterTab,
   type WorkspaceIntegration,
 } from '@/app/settings/_components/settings-integration-catalog';
 import { IntegrationDetailDialog } from '@/app/settings/_components/settings-integration-detail-dialog';
 import { IntegrationIdentity } from '@/app/settings/_components/settings-integration-identity';
+import { deleteWorkspaceIntegration } from '@/app/settings/_services/integrations.mutations.client';
+import { errorMessage } from '@/lib/errors/error-message';
 
 const FILTER_TAB_TRIGGER_CLASS =
   'text-muted-foreground data-[state=active]:text-foreground rounded-none border-0 border-b-2 border-transparent bg-transparent px-1 pb-3 pt-0 shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none';
 
-function buildInitialConnectionState(): Record<string, boolean> {
-  return Object.fromEntries(
-    WORKSPACE_INTEGRATIONS.map((item) => [item.id, item.defaultConnected])
-  );
-}
-
 type IntegrationMarketplaceCardProps = {
   readonly integration: WorkspaceIntegration;
   readonly connected: boolean;
+  readonly isUpdating: boolean;
   /* eslint-disable no-unused-vars -- callback param name documents the value */
   readonly onConnectedChange: (connected: boolean) => void;
   readonly onView: () => void;
@@ -40,6 +41,7 @@ type IntegrationMarketplaceCardProps = {
 function IntegrationMarketplaceCard({
   integration,
   connected,
+  isUpdating,
   onConnectedChange,
   onView,
 }: Readonly<IntegrationMarketplaceCardProps>) {
@@ -77,7 +79,7 @@ function IntegrationMarketplaceCard({
             <Switch
               checked={connected}
               onCheckedChange={onConnectedChange}
-              disabled={isPlanned}
+              disabled={isPlanned || isUpdating}
               aria-label={`${integration.name} connected`}
             />
           </div>
@@ -87,18 +89,30 @@ function IntegrationMarketplaceCard({
   );
 }
 
+type SettingsIntegrationsViewProps = {
+  readonly initialIntegrations: IntegrationWire[];
+  readonly initialCategoryFilter?: IntegrationFilterTab;
+};
+
 /**
- * Admin-only workspace integrations marketplace (mock UI for most providers).
+ * Admin-only workspace integrations marketplace.
  */
-export function SettingsIntegrationsView() {
-  const [activeFilter, setActiveFilter] = useState<IntegrationFilterTab>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [connectionState, setConnectionState] = useState(
-    buildInitialConnectionState
+export function SettingsIntegrationsView({
+  initialIntegrations,
+  initialCategoryFilter,
+}: Readonly<SettingsIntegrationsViewProps>) {
+  const router = useRouter();
+  const [activeFilter, setActiveFilter] = useState<IntegrationFilterTab>(
+    () => initialCategoryFilter ?? 'all'
   );
+  const [searchQuery, setSearchQuery] = useState('');
   const [detailIntegration, setDetailIntegration] =
     useState<WorkspaceIntegration | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [updatingCatalogId, setUpdatingCatalogId] = useState<string | null>(
+    null
+  );
+  const [listError, setListError] = useState<string | null>(null);
 
   const filteredIntegrations = useMemo(
     () =>
@@ -113,6 +127,37 @@ export function SettingsIntegrationsView() {
   const openDetail = (integration: WorkspaceIntegration) => {
     setDetailIntegration(integration);
     setDetailOpen(true);
+  };
+
+  const handleConnectedChange = async (
+    integration: WorkspaceIntegration,
+    connected: boolean
+  ) => {
+    setListError(null);
+
+    if (connected) {
+      openDetail(integration);
+      return;
+    }
+
+    const rows = integrationRowsForCatalog(
+      initialIntegrations,
+      integration.id
+    ).filter((row) => row.status === 'active');
+
+    if (rows.length === 0) {
+      return;
+    }
+
+    setUpdatingCatalogId(integration.id);
+    try {
+      await Promise.all(rows.map((row) => deleteWorkspaceIntegration(row.id)));
+      router.refresh();
+    } catch (error) {
+      setListError(errorMessage(error, 'Failed to disconnect integration'));
+    } finally {
+      setUpdatingCatalogId(null);
+    }
   };
 
   return (
@@ -134,6 +179,12 @@ export function SettingsIntegrationsView() {
             Custom integration
           </Button>
         </div>
+
+        {listError ? (
+          <p className="text-destructive text-sm" role="alert">
+            {listError}
+          </p>
+        ) : null}
 
         <Tabs
           value={activeFilter}
@@ -183,12 +234,13 @@ export function SettingsIntegrationsView() {
               <li key={integration.id}>
                 <IntegrationMarketplaceCard
                   integration={integration}
-                  connected={connectionState[integration.id] ?? false}
+                  connected={isCatalogConnected(
+                    integration.id,
+                    initialIntegrations
+                  )}
+                  isUpdating={updatingCatalogId === integration.id}
                   onConnectedChange={(connected) =>
-                    setConnectionState((current) => ({
-                      ...current,
-                      [integration.id]: connected,
-                    }))
+                    void handleConnectedChange(integration, connected)
                   }
                   onView={() => openDetail(integration)}
                 />
@@ -202,6 +254,15 @@ export function SettingsIntegrationsView() {
         integration={detailIntegration}
         open={detailOpen}
         onOpenChange={setDetailOpen}
+        configuredRows={
+          detailIntegration
+            ? integrationRowsForCatalog(
+                initialIntegrations,
+                detailIntegration.id
+              )
+            : []
+        }
+        onSaved={() => router.refresh()}
       />
     </div>
   );
