@@ -1,3 +1,4 @@
+import type { ChatHistoryResponse } from '@repo/types/api/v1';
 import { getUser } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { apiFetch } from '@/lib/api/api-fetch.reads.use.server';
@@ -82,14 +83,10 @@ const getCachedChatConversationsForUser = unstable_cache(
 export async function getChatHistoryServer(
   conversationId: string
 ): Promise<ChatMessage[]> {
-  const response = await apiFetch<{
-    history: ChatMessage[];
-    error?: string;
-  }>(`/api/chat/${conversationId}`, { method: 'GET' });
-
-  if (response.error) {
-    throw new Error(response.error);
-  }
+  const response = await apiFetch<ChatHistoryResponse>(
+    `/api/v1/chat/${conversationId}`,
+    { method: 'GET' }
+  );
 
   return response.history ?? [];
 }

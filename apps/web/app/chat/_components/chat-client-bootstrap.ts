@@ -22,9 +22,6 @@ export async function loadConversationHistory(
 ): Promise<HistoryLoadResult> {
   try {
     const response = await getChatHistory(conversationId);
-    if (response.error) {
-      return { messages: [], error: response.error };
-    }
     return { messages: response.history ?? [], error: null };
   } catch (err: unknown) {
     console.error('Failed to load conversation history:', err);
