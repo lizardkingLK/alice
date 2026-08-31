@@ -169,7 +169,7 @@ export default function ChatClientHeaderActions({
       >
         <SelectTrigger
           aria-label="Chat model"
-          className="bg-background/50 border-border/80 h-9 w-37.5 px-2 text-xs font-medium"
+          className="bg-background/50 border-border/80 h-9 w-56 px-2 text-xs font-medium"
         >
           <SelectValue placeholder="Select model" />
         </SelectTrigger>

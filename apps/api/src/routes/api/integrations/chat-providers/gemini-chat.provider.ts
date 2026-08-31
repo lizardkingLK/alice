@@ -3,6 +3,8 @@ import type {
   ChatModelProvider,
   LlmResponse,
 } from './chat-provider.types';
+import { ChatProviderError } from './chat-provider.error';
+import { resolveGeminiUserFacingError } from './gemini-api-errors';
 import { logLlmProviderError } from './llm-error-log';
 
 function buildGeminiUrl(baseUrl: string, apiKey: string): string {
@@ -77,6 +79,16 @@ export class GeminiChatProvider implements ChatModelProvider {
           attempt: i + 1,
           messagesCount: input.contents.length,
         });
+
+        const userMessage = resolveGeminiUserFacingError({
+          status: response.status,
+          errorBody: errorText,
+          modelId: input.model,
+        });
+        if (userMessage) {
+          throw new ChatProviderError(userMessage, 400);
+        }
+
         throw new Error(
           'Alice AI service encountered an error while processing your request. Please try again in a few moments.'
         );

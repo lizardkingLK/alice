@@ -4,6 +4,7 @@ import {
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
 import { ChatRoles, parseChatRole } from '@repo/types';
+import { ChatProviderError } from '../integrations/chat-providers/chat-provider.error';
 import { type ChatService, sanitizeLog } from './chat.service';
 import type { InputMessage, StoredChatMessage } from './chat.route.types';
 
@@ -18,8 +19,10 @@ function sendChatError(
   logLabel: string
 ) {
   const message = error instanceof Error ? error.message : fallback;
+  const statusCode =
+    error instanceof ChatProviderError ? error.statusCode : 500;
   console.error(`${logLabel}:`, sanitizeLog(message));
-  res.status(500).json({ error: message });
+  res.status(statusCode).json({ error: message });
 }
 
 /** Returns false after sending 403 when the user does not own the conversation. */
