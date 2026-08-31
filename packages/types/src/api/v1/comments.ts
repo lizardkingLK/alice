@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { commentsGetPayload } from '../../generated/prisma/models/comments.js';
+import { emptyToUndefined } from './query-preprocess.js';
 
 export const commentAuthorSelect = {
   id: true,
@@ -44,13 +45,6 @@ export type CommentListRow = commentsGetPayload<{
 export type CommentDetailRow = commentsGetPayload<{
   select: typeof commentDetailSelect;
 }>;
-
-function emptyToUndefined(value: unknown): unknown {
-  if (value === '' || value === undefined || value === null) {
-    return undefined;
-  }
-  return value;
-}
 
 const optionalUuid = z.preprocess(emptyToUndefined, z.uuid().optional());
 

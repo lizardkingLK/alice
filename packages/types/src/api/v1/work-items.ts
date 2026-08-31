@@ -13,6 +13,7 @@ import {
   parseWorkItemLabelsFilterParam,
   WorkItemLabelsValidationError,
 } from '../../work-item-labels.js';
+import { emptyToUndefined } from './query-preprocess.js';
 
 /**
  * Prisma `select` objects for unused Express work-item GETs.
@@ -180,13 +181,6 @@ export type WorkItemPrismaListFilters = {
   /** Lifecycle filter. Defaults to `active` on list endpoints. */
   recordStatus?: 'active' | 'archived';
 };
-
-function emptyToUndefined(value: unknown): unknown {
-  if (value === '' || value === undefined || value === null) {
-    return undefined;
-  }
-  return value;
-}
 
 const optionalUuid = z.preprocess(emptyToUndefined, z.uuid().optional());
 

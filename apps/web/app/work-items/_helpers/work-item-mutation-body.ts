@@ -1,3 +1,4 @@
+import { formatZodError } from '@/lib/zod/format-zod-error';
 import {
   createWorkItemBodySchema,
   patchWorkItemBodySchema,
@@ -5,14 +6,9 @@ import {
   type CreateWorkItemBody,
   type PatchWorkItemBody,
 } from '@repo/types/api/v1';
-import { z } from 'zod';
 
 function formDataToRecord(formData: FormData): Record<string, unknown> {
   return Object.fromEntries(formData.entries());
-}
-
-export function formatWorkItemZodError(error: z.ZodError): string {
-  return JSON.stringify(z.treeifyError(error));
 }
 
 export function parsePatchWorkItemBody(
@@ -25,7 +21,7 @@ export function parsePatchWorkItemBody(
 
   const parsed = patchWorkItemBodySchema.safeParse(preprocessed);
   if (!parsed.success) {
-    throw new Error(formatWorkItemZodError(parsed.error));
+    throw new Error(formatZodError(parsed.error));
   }
 
   return parsed.data;
@@ -46,7 +42,7 @@ export function parseCreateWorkItemFormData(
 
   const parsed = createWorkItemBodySchema.safeParse(preprocessed);
   if (!parsed.success) {
-    throw new Error(formatWorkItemZodError(parsed.error));
+    throw new Error(formatZodError(parsed.error));
   }
 
   return parsed.data;

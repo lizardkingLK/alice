@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { sprintsGetPayload } from '../../generated/prisma/models/sprints.js';
 import { type SprintStatus } from '../../sprint-status.js';
+import { emptyToUndefined } from './query-preprocess.js';
 
 export const sprintProjectSelect = {
   id: true,
@@ -39,13 +40,6 @@ export type SprintPrismaListFilters = {
   projectIds?: readonly string[];
   status?: SprintStatus[];
 };
-
-function emptyToUndefined(value: unknown): unknown {
-  if (value === '' || value === undefined || value === null) {
-    return undefined;
-  }
-  return value;
-}
 
 const optionalUuid = z.preprocess(emptyToUndefined, z.uuid().optional());
 

@@ -1,10 +1,10 @@
 import {
   normalizeSavedViewSearch,
   uniqueSavedViewIdsFromShares,
-  type CreateSavedViewInput,
+  type CreateSavedViewBody,
   type Database,
   type Tables,
-  type UpdateSavedViewInput,
+  type UpdateSavedViewBody,
 } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { RecordStatus } from '@repo/types/prisma';
@@ -52,7 +52,7 @@ export class SavedViewsRepository {
 
   async create(
     ownerId: string,
-    input: CreateSavedViewInput
+    input: CreateSavedViewBody
   ): Promise<SavedViewRow> {
     const pathname = input.pathname;
     const search = normalizeSavedViewSearch(input.search ?? '');
@@ -106,7 +106,7 @@ export class SavedViewsRepository {
   private async applyCreateInput(
     id: string,
     ownerId: string,
-    input: CreateSavedViewInput,
+    input: CreateSavedViewBody,
     search: string,
     options: { readonly restore?: boolean } = {}
   ): Promise<SavedViewRow> {
@@ -127,7 +127,7 @@ export class SavedViewsRepository {
 
   private async insertNew(
     ownerId: string,
-    input: CreateSavedViewInput,
+    input: CreateSavedViewBody,
     search: string
   ): Promise<SavedViewRow> {
     const created = await prisma.saved_views.create({
@@ -213,7 +213,7 @@ export class SavedViewsRepository {
   async update(
     id: string,
     actorId: string,
-    input: UpdateSavedViewInput
+    input: UpdateSavedViewBody
   ): Promise<SavedViewRow> {
     const updated = await prisma.saved_views.update({
       where: { id },

@@ -2,9 +2,9 @@ import {
   expandShareRecipients,
   NotificationBuilder,
   ViewSharedNotification,
-  type CreateSavedViewInput,
-  type ShareSavedViewInput,
-  type UpdateSavedViewInput,
+  type CreateSavedViewBody,
+  type ShareSavedViewBody,
+  type UpdateSavedViewBody,
 } from '@repo/types';
 import type { NotificationsRepository } from '../notifications/notifications.repository';
 import {
@@ -21,7 +21,7 @@ export class SavedViewsService {
     >
   ) {}
 
-  create(ownerId: string, input: CreateSavedViewInput) {
+  create(ownerId: string, input: CreateSavedViewBody) {
     return this.savedViewsRepository.create(ownerId, input);
   }
 
@@ -36,7 +36,7 @@ export class SavedViewsService {
   async update(
     actorId: string,
     viewId: string,
-    input: UpdateSavedViewInput
+    input: UpdateSavedViewBody
   ): Promise<SavedViewRow> {
     const view = await this.requireOwnedView(actorId, viewId);
     return this.savedViewsRepository.update(view.id, actorId, input);
@@ -71,7 +71,7 @@ export class SavedViewsService {
   async share(
     actorId: string,
     viewId: string,
-    input: ShareSavedViewInput
+    input: ShareSavedViewBody
   ): Promise<{ view: SavedViewRow; recipientCount: number }> {
     const view = await this.requireOwnedView(actorId, viewId);
     if (view.status !== 'active') {

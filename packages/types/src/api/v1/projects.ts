@@ -3,6 +3,7 @@ import type { projectsGetPayload } from '../../generated/prisma/models/projects.
 import type { project_membersGetPayload } from '../../generated/prisma/models/project_members.js';
 import { Constants } from '../../generated/supabase/database.types.js';
 import { ProjectStatus as ProjectStatusEnum } from '../../generated/prisma/enums.js';
+import { emptyToUndefined } from './query-preprocess.js';
 
 export { ProjectStatusEnum };
 
@@ -182,13 +183,6 @@ export type ProjectMemberRow = project_membersGetPayload<{
 
 type ProjectStatusType =
   (typeof ProjectStatusEnum)[keyof typeof ProjectStatusEnum];
-
-function emptyToUndefined(value: unknown): unknown {
-  if (value === '' || value === undefined || value === null) {
-    return undefined;
-  }
-  return value;
-}
 
 export const listProjectsQuerySchema = z.object({
   page: z.preprocess(
