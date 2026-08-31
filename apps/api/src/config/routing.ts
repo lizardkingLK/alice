@@ -42,6 +42,7 @@ routesConfig.use('/api/v1/profile', profile.router);
 routesConfig.use('/api/projects', projects.router);
 routesConfig.use('/api/v1/projects', projects.router);
 routesConfig.use('/api/saved-views', savedViews.router);
+routesConfig.use('/api/v1/saved-views', savedViews.router);
 routesConfig.use('/api/sprints', sprints.router);
 routesConfig.use('/api/v1/sprints', sprints.router);
 routesConfig.use('/api/teams', teams.router);

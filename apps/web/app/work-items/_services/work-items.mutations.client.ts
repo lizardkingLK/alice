@@ -1,7 +1,7 @@
 import { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import type { LinkedGithubPR } from '@/app/work-items/_services/work-items.reads.client';
+import { formatZodError } from '@/lib/zod/format-zod-error';
 import {
-  formatWorkItemZodError,
   parseCreateWorkItemFormData,
   parseForcePatchWorkItemBody,
   parsePatchWorkItemFormData,
@@ -117,7 +117,7 @@ export async function linkPR(
 ): Promise<ResponseDTO<LinkedGithubPR>> {
   const parsed = linkWorkItemGithubPrBodySchema.safeParse({ prUrl });
   if (!parsed.success) {
-    throw new Error(formatWorkItemZodError(parsed.error));
+    throw new Error(formatZodError(parsed.error));
   }
 
   return await apiFetch<ResponseDTO<LinkedGithubPR>>(
