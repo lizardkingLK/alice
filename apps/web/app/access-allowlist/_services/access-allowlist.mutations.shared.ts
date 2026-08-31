@@ -12,12 +12,14 @@ export type AccessAllowlistCreateInput = {
   value: string;
   label?: string | null;
   expires_at?: string | null;
+  allowed_project_ids?: string[] | null;
   status?: AccessAllowlistStatus;
 };
 
 export type AccessAllowlistUpdateInput = {
   label?: string | null;
   expires_at?: string | null;
+  allowed_project_ids?: string[] | null;
   status?: AccessAllowlistStatus;
 };
 

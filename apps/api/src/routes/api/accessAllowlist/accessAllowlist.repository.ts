@@ -18,7 +18,7 @@ import {
   type Tables,
   type Json,
 } from '@repo/types';
-import { AccessAllowlistKind as AccessAllowlistKindEnum } from '@repo/types/prisma';
+import { AccessAllowlistKind as AccessAllowlistKindEnum, Prisma } from '@repo/types/prisma';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 export type AccessAllowlistRow = Tables<'access_allowlist'>;
@@ -90,6 +90,7 @@ export class AccessAllowlistRepository {
     value: string;
     label?: string | null;
     expires_at?: string | null;
+    allowed_project_ids?: string[] | null;
     status: AccessAllowlistStatus;
   }): Promise<AccessAllowlistRow> {
     const { actorId, kind } = params;
@@ -114,6 +115,7 @@ export class AccessAllowlistRepository {
           value: normalizedValue,
           label: params.label ?? null,
           expires_at: prismaOptionalDate(expires_at) ?? null,
+          allowed_project_ids: params.allowed_project_ids ?? Prisma.DbNull,
           status: params.status,
           ...prismaAuditCreateWithoutStatus(actorId),
         },
@@ -135,6 +137,7 @@ export class AccessAllowlistRepository {
     id: string;
     label?: string | null;
     expires_at?: string | null;
+    allowed_project_ids?: string[] | null;
     status?: AccessAllowlistStatus;
     expectedUpdatedAt: string;
   }): Promise<AccessAllowlistRow> {
@@ -160,6 +163,9 @@ export class AccessAllowlistRepository {
         ...(params.label !== undefined ? { label: params.label ?? null } : {}),
         ...(expires_at !== undefined
           ? { expires_at: prismaOptionalDate(expires_at) }
+          : {}),
+        ...(params.allowed_project_ids !== undefined
+          ? { allowed_project_ids: params.allowed_project_ids ?? Prisma.DbNull }
           : {}),
         ...(params.status !== undefined ? { status: params.status } : {}),
         ...prismaAuditUpdate(params.actorId),
