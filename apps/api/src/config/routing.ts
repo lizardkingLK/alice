@@ -5,6 +5,7 @@ import {
   chat,
   comments,
   health,
+  integrations,
   jira,
   notifications,
   profile,
@@ -26,6 +27,8 @@ routesConfig.use('/', root.router);
 routesConfig.use('/api/health', health.v1Router);
 routesConfig.use('/api/v1/health', health.v1Router);
 routesConfig.use('/api/v2/health', health.v2Router);
+routesConfig.use('/api/integrations', integrations.router);
+routesConfig.use('/api/v1/integrations', integrations.router);
 routesConfig.use('/api/accessAllowlist', accessAllowlist.router);
 routesConfig.use('/api/attachments', attachments.router);
 routesConfig.use('/api/v1/attachments', attachments.router);

@@ -6,6 +6,8 @@ export interface RawSearchParams {
   page?: string;
   limit?: string;
   tab?: string;
+  /** Settings integrations marketplace filter (`ai-agents`, etc.). */
+  category?: string;
   /** Work-item lifecycle list filter (`active` | `archived`). */
   recordStatus?: string;
   teamStatus?: string;
@@ -192,6 +194,17 @@ export function parseSettingsTab(tab?: string | null): SettingsTab {
     return tab;
   }
   return 'general';
+}
+
+/** Coerce admin-only tabs when the signed-in user is not an administrator. */
+export function resolveSettingsTabForUser(
+  tab: SettingsTab,
+  userIsAdmin: boolean
+): SettingsTab {
+  if (tab === 'integrations' && !userIsAdmin) {
+    return 'general';
+  }
+  return tab;
 }
 
 /**

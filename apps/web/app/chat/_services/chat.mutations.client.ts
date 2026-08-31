@@ -1,6 +1,5 @@
 import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import type { ActionItem, ChatMessage } from '../_components/chat-client.types';
-import type { ChatModelValue } from '@repo/types';
 
 /** Gemini + tool rounds often exceed the default 20s apiFetch abort. */
 const CHAT_FETCH_TIMEOUT_MS = 90_000;
@@ -10,7 +9,7 @@ export type { ChatConversation } from '../_components/chat-client.types';
 export async function sendChatMessage(
   history: ChatMessage[],
   conversationId: string | undefined,
-  modelId: ChatModelValue
+  integrationId: string | undefined
 ) {
   return apiFetch<{
     reply: string;
@@ -25,7 +24,7 @@ export async function sendChatMessage(
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ messages: history, conversationId, modelId }),
+    body: JSON.stringify({ messages: history, conversationId, integrationId }),
     timeoutMs: CHAT_FETCH_TIMEOUT_MS,
   });
 }

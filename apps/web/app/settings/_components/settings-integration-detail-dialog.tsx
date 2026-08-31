@@ -1,11 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import {
-  CHAT_MODELS,
-  DEFAULT_CHAT_MODEL_VALUE,
-  type ChatModelValue,
-} from '@repo/types';
+import { useEffect, useMemo, useState } from 'react';
+import type { IntegrationWire } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
@@ -14,31 +10,36 @@ import {
   DialogFooter,
   DialogHeader,
 } from '@repo/ui/components/ui/dialog';
-import { Label } from '@repo/ui/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@repo/ui/components/ui/select';
 import { ExternalLink } from '@repo/ui/lib/icons';
 import {
+  CONFIGURABLE_CATALOG_PROVIDERS,
   integrationExternalHref,
-  integrationStatusLabel,
+  isConfigurableCatalog,
   type WorkspaceIntegration,
 } from '@/app/settings/_components/settings-integration-catalog';
+import { IntegrationConfigForm } from '@/app/settings/_components/settings-integration-config-form';
+import {
+  createFormStateForNewModel,
+  createFormStateFromRow,
+  createFormStateFromRows,
+  DEFAULT_GEMINI_MODEL,
+  integrationDialogStatusLabel,
+  saveIntegrationModel,
+  type IntegrationSaveFeedback,
+} from '@/app/settings/_components/settings-integration-detail-dialog.helpers';
+import { IntegrationSaveButton } from '@/app/settings/_components/settings-integration-save-button';
 import {
   IntegrationHighlightsList,
   IntegrationIdentity,
 } from '@/app/settings/_components/settings-integration-identity';
-import { FormStatusAlerts } from '@/app/work-items/_components/work-item-form/work-item-form-alerts';
 
 type IntegrationDetailDialogProps = {
   readonly integration: WorkspaceIntegration | null;
+  readonly configuredRows: IntegrationWire[];
   readonly open: boolean;
   /* eslint-disable no-unused-vars -- callback param name documents the value */
   readonly onOpenChange: (open: boolean) => void;
+  readonly onSaved: () => void;
   /* eslint-enable no-unused-vars */
 };
 
@@ -68,27 +69,107 @@ function IntegrationPlannedActions() {
 
 export function IntegrationDetailDialog({
   integration,
+  configuredRows,
   open,
   onOpenChange,
+  onSaved,
 }: Readonly<IntegrationDetailDialogProps>) {
-  const [model, setModel] = useState<ChatModelValue>(DEFAULT_CHAT_MODEL_VALUE);
-  const [feedback, setFeedback] = useState<{
-    success: string | null;
-    error: string | null;
-  }>({ success: null, error: null });
+  const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const [modelId, setModelId] = useState<string>(DEFAULT_GEMINI_MODEL.value);
+  const [displayLabel, setDisplayLabel] = useState<string>(
+    DEFAULT_GEMINI_MODEL.label
+  );
+  const [apiKey, setApiKey] = useState('');
+  const [isDefault, setIsDefault] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [feedback, setFeedback] = useState<IntegrationSaveFeedback>({
+    success: null,
+    error: null,
+  });
+
+  const activeRows = useMemo(
+    () => configuredRows.filter((row) => row.status === 'active'),
+    [configuredRows]
+  );
+
+  const selectedRow = useMemo(
+    () => activeRows.find((row) => row.id === selectedRowId) ?? null,
+    [activeRows, selectedRowId]
+  );
+
+  useEffect(() => {
+    if (!open || !integration) {
+      return;
+    }
+
+    const nextState = createFormStateFromRows(activeRows);
+    setSelectedRowId(nextState.selectedRowId);
+    setModelId(nextState.modelId);
+    setDisplayLabel(nextState.displayLabel);
+    setIsDefault(nextState.isDefault);
+    setApiKey('');
+    setFeedback({ success: null, error: null });
+  }, [open, integration, activeRows]);
 
   if (!integration) {
     return null;
   }
 
   const externalHref = integrationExternalHref(integration.websiteUrl);
-  const isGemini = integration.id === 'alice-gemini';
+  const canConfigure = isConfigurableCatalog(integration.id);
+  const dialogStatusLabel = integrationDialogStatusLabel(
+    integration,
+    activeRows
+  );
 
-  const handleSaveDefault = () => {
-    setFeedback({
-      success: 'Default model saved for your workspace.',
-      error: null,
+  const resetFeedback = () => {
+    setFeedback({ success: null, error: null });
+  };
+
+  const handleSelectRow = (row: IntegrationWire) => {
+    const nextState = createFormStateFromRow(row);
+    setSelectedRowId(nextState.selectedRowId);
+    setModelId(nextState.modelId);
+    setDisplayLabel(nextState.displayLabel);
+    setIsDefault(nextState.isDefault);
+    setApiKey('');
+    resetFeedback();
+  };
+
+  const handleAddModel = () => {
+    const nextState = createFormStateForNewModel(activeRows);
+    setSelectedRowId(nextState.selectedRowId);
+    setModelId(nextState.modelId);
+    setDisplayLabel(nextState.displayLabel);
+    setIsDefault(nextState.isDefault);
+    setApiKey('');
+    resetFeedback();
+  };
+
+  const handleSave = async () => {
+    if (!canConfigure || !(integration.id in CONFIGURABLE_CATALOG_PROVIDERS)) {
+      return;
+    }
+
+    setIsSaving(true);
+    resetFeedback();
+
+    const result = await saveIntegrationModel({
+      catalogId: integration.id,
+      selectedRow,
+      modelId,
+      displayLabel,
+      apiKey,
+      isDefault,
     });
+
+    setFeedback(result);
+    setIsSaving(false);
+
+    if (result.success) {
+      setApiKey('');
+      onSaved();
+    }
   };
 
   return (
@@ -99,7 +180,7 @@ export function IntegrationDetailDialog({
             name={integration.name}
             websiteUrl={integration.websiteUrl}
             variant="dialog"
-            statusLabel={integrationStatusLabel(integration.status)}
+            statusLabel={dialogStatusLabel}
           />
           <DialogDescription className="text-left text-sm leading-relaxed">
             {integration.description}
@@ -110,44 +191,34 @@ export function IntegrationDetailDialog({
           <IntegrationHighlightsList highlights={integration.highlights} />
         ) : null}
 
-        {isGemini ? (
-          <div className="space-y-4">
-            <FormStatusAlerts
-              error={feedback.error}
-              success={feedback.success}
-            />
-            <div className="space-y-2">
-              <Label htmlFor="workspace-chat-model">Default model</Label>
-              <Select
-                value={model}
-                onValueChange={(value) => setModel(value as ChatModelValue)}
-              >
-                <SelectTrigger id="workspace-chat-model" className="w-full">
-                  <SelectValue placeholder="Select model" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.values(CHAT_MODELS).map((entry) => (
-                    <SelectItem key={entry.value} value={entry.value}>
-                      {entry.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-muted-foreground text-xs">
-                Choose which Gemini model Alice uses by default in chat for
-                everyone in your workspace.
-              </p>
-            </div>
-          </div>
+        {canConfigure ? (
+          <IntegrationConfigForm
+            activeRows={activeRows}
+            selectedRowId={selectedRowId}
+            selectedRow={selectedRow}
+            displayLabel={displayLabel}
+            modelId={modelId}
+            apiKey={apiKey}
+            isDefault={isDefault}
+            feedback={feedback}
+            onSelectRow={handleSelectRow}
+            onAddModel={handleAddModel}
+            onDisplayLabelChange={setDisplayLabel}
+            onModelIdChange={setModelId}
+            onApiKeyChange={setApiKey}
+            onIsDefaultChange={setIsDefault}
+          />
         ) : null}
 
         <DialogFooter className="gap-2 sm:justify-between">
           <IntegrationVisitWebsiteButton href={externalHref} />
           <div className="flex flex-wrap gap-2">
-            {isGemini ? (
-              <Button type="button" onClick={handleSaveDefault}>
-                Save default
-              </Button>
+            {canConfigure ? (
+              <IntegrationSaveButton
+                isSaving={isSaving}
+                isEditingExistingRow={Boolean(selectedRow)}
+                onSave={() => void handleSave()}
+              />
             ) : (
               <IntegrationPlannedActions />
             )}

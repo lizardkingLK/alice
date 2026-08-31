@@ -57,6 +57,9 @@ import { createProfileRouter } from '../routes/api/profile/profile.route';
 import { SavedViewsRepository } from '../routes/api/savedViews/savedViews.repository';
 import { SavedViewsService } from '../routes/api/savedViews/savedViews.service';
 import { createSavedViewsRouter } from '../routes/api/savedViews/savedViews.route';
+import { IntegrationsRepository } from '../routes/api/integrations/integrations.repository';
+import { IntegrationsService } from '../routes/api/integrations/integrations.service';
+import { createIntegrationsRouter } from '../routes/api/integrations/integrations.route';
 
 function createRootConfig() {
   const router = createRootRouter();
@@ -278,7 +281,8 @@ function createChatConfig(
   workItemService: WorkItemService,
   sprintsService: SprintsService,
   projectsService: ProjectsService,
-  projectsRepository: ProjectsRepository
+  projectsRepository: ProjectsRepository,
+  integrationsService: IntegrationsService
 ) {
   const chatRepository = new ChatRepository(supabase);
   const chatService = new ChatService({
@@ -287,6 +291,7 @@ function createChatConfig(
     sprintsService,
     projectsService,
     projectsRepository,
+    integrationsService,
   });
   const router = createChatRouter({ chatService });
 
@@ -310,6 +315,18 @@ function createHealthConfig() {
     healthServiceV2,
     v1Router,
     v2Router,
+  };
+}
+
+function createIntegrationsConfig() {
+  const integrationsRepository = new IntegrationsRepository(supabase);
+  const integrationsService = new IntegrationsService(integrationsRepository);
+  const router = createIntegrationsRouter({ integrationsService });
+
+  return {
+    integrationsRepository,
+    integrationsService,
+    router,
   };
 }
 
@@ -340,9 +357,11 @@ export const profile = createProfileConfig();
 export const savedViews = createSavedViewsConfig(
   notifications.notificationsRepository
 );
+export const integrations = createIntegrationsConfig();
 export const chat = createChatConfig(
   workItems.workItemService,
   sprints.sprintsService,
   projects.projectsService,
-  projects.projectsRepository
+  projects.projectsRepository,
+  integrations.integrationsService
 );

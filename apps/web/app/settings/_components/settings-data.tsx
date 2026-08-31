@@ -2,11 +2,17 @@ import { redirect } from 'next/navigation';
 import { EditProfileData } from '@/app/edit-profile/_components/edit-profile-data';
 import { SettingsIntegrationsView } from '@/app/settings/_components/settings-integrations-view';
 import { SettingsWorkspace } from '@/app/settings/_components/settings-workspace';
+import { listWorkspaceIntegrations } from '@/app/settings/_services/integrations.reads.server';
 import { getDbUser, getUser } from '@/lib/auth';
 import { buildLoginPath } from '@/lib/auth-redirect';
 import { getRequestPathForLoginNext } from '@/lib/auth-redirect.server';
 import { isAdmin } from '@/lib/rbac';
-import { parseSettingsTab, type RawSearchParams } from '@/lib/search-params';
+import { parseIntegrationsCategoryFilter } from '@/app/settings/_services/settings-integrations-navigation.shared';
+import {
+  parseSettingsTab,
+  resolveSettingsTabForUser,
+  type RawSearchParams,
+} from '@/lib/search-params';
 
 type SettingsDataProps = {
   readonly searchParams: Promise<RawSearchParams>;
@@ -24,13 +30,23 @@ export async function SettingsData({
   }
 
   const userIsAdmin = isAdmin(dbUser.role);
-  const tab =
-    requestedTab === 'integrations' && !userIsAdmin ? 'general' : requestedTab;
+  const tab = resolveSettingsTabForUser(requestedTab, userIsAdmin);
+  const initialCategoryFilter = parseIntegrationsCategoryFilter(
+    resolved.category
+  );
+
+  const workspaceIntegrations =
+    tab === 'integrations' && userIsAdmin
+      ? await listWorkspaceIntegrations()
+      : [];
 
   return (
     <SettingsWorkspace activeTab={tab} isAdmin={userIsAdmin}>
       {tab === 'integrations' ? (
-        <SettingsIntegrationsView />
+        <SettingsIntegrationsView
+          initialIntegrations={workspaceIntegrations}
+          initialCategoryFilter={initialCategoryFilter}
+        />
       ) : (
         <EditProfileData section={tab} />
       )}

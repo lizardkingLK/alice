@@ -156,3 +156,23 @@ export {
   type WorkLogListRow,
   type WorkLogWire,
 } from './work-item-worklogs.js';
+export {
+  chatModelOptionSchema,
+  chatModelOptionsResponseSchema,
+  createIntegrationBodySchema,
+  integrationDetailSelect,
+  integrationDetailWireSchema,
+  integrationListSelect,
+  integrationWireSchema,
+  listIntegrationsQuerySchema,
+  patchIntegrationBodySchema,
+  type ChatModelOption,
+  type ChatModelOptionsResponse,
+  type CreateIntegrationBody,
+  type IntegrationDetailRow,
+  type IntegrationDetailWire,
+  type IntegrationListRow,
+  type IntegrationWire,
+  type ListIntegrationsQuery,
+  type PatchIntegrationBody,
+} from './integrations.js';
