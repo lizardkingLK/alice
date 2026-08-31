@@ -30,6 +30,7 @@ routesConfig.use('/api/v2/health', health.v2Router);
 routesConfig.use('/api/integrations', integrations.router);
 routesConfig.use('/api/v1/integrations', integrations.router);
 routesConfig.use('/api/accessAllowlist', accessAllowlist.router);
+routesConfig.use('/api/v1/accessAllowlist', accessAllowlist.router);
 routesConfig.use('/api/attachments', attachments.router);
 routesConfig.use('/api/v1/attachments', attachments.router);
 routesConfig.use('/api/chat', chat.router);

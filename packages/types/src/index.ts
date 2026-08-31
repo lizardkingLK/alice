@@ -42,3 +42,9 @@ export * from './api/v1/index.js';
 export * from './api/v2/index.js';
 export * from './data-retrieval.js';
 export * from './pagination.js';
+
+export {
+  accessAllowlistUpdateSchema,
+  type AccessAllowlistUpdateInput,
+} from './access-allowlist.js';
+

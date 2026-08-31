@@ -236,3 +236,21 @@ export {
   type ChatToolActionWire,
   type PostChatMessageBody,
 } from './chat.js';
+
+export {
+  accessAllowlistCreateSchema,
+  accessAllowlistUpdateSchema,
+  accessAllowlistLockActionSchema,
+  baseAccessAllowlistUpdateSchema,
+  type AccessAllowlistCreateInput,
+  type AccessAllowlistUpdateInput,
+  type AccessAllowlistLockActionInput,
+  type BaseAccessAllowlistUpdateInput,
+  normalizeAccessAllowlistDomain,
+  isValidAccessAllowlistDomain,
+  OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE,
+  emailDomainFromAddress,
+  isActorOwnAllowlistDomain,
+  isOwnAllowlistDomainLockout,
+} from './access-allowlist.js';
+
