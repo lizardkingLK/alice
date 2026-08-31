@@ -1,8 +1,7 @@
 import { auditCreate, auditUpdate } from '@/lib/audit';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { RecordStatusEnum, type Json } from '@repo/types';
+import { RecordStatusEnum, type Json, type Database } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@repo/types';
 
 type AdminClient = SupabaseClient<Database>;
 
