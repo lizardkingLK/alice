@@ -54,4 +54,79 @@ All successful changes to allocation fields (`sprint_id`, `assignee_id`, or `sto
 Guest access is locked down using the following restrictions:
 * **User Existence:** An active exact `email` allowlist entry must match a user in the `users` table.
 * **Project Membership:** The guest user must have at least **1 active membership** in the `project_members` table to access any protected area of the application.
-* **Access Control List (ACL):** If `allowed_project_ids` is configured on their allowlist record, they are restricted to accessing *only* those specific projects. Their accessible project queries will intersect their memberships with this ACL list.
+* **Access Control List (ACL):** If `allowed_project_ids` (configured as Allowed Project Keys in the UI allowlist form) is defined on their allowlist record, they are restricted to accessing *only* those specific projects. The backend resolves these configured project keys into their internal UUIDs, filtering the guest's workspace project list and permissions.
+
+---
+
+## 5. Testing Guide
+
+Use the following step-by-step test cases to verify the correctness of the allocation validation and guest isolation behaviors.
+
+### Scenario A: Sprint Capacity Enforcement
+**Objective**: Verify that adding tasks to a sprint beyond its total member capacity is blocked.
+1. **Setup**:
+   - Create a project (e.g. `SG`) and define an active team (e.g. `SG DEV`).
+   - Add one active team member (e.g. `Sandeepa`) with capacity = `30` in the team workspace.
+   - Create a sprint for this project (e.g. `SG SPRINT 1`). The sprint capacity will resolve to `30`.
+2. **Action**:
+   - Create a work item with `30` story points in the backlog.
+   - Drag or update this work item to assign it to `SG SPRINT 1`. (This should succeed).
+   - Create another work item with `10` story points in the backlog.
+   - Attempt to drag or assign this second item to `SG SPRINT 1`.
+3. **Expected Result**:
+   - The action is blocked.
+   - A modal pop-up error dialog (matching the project delete format) is displayed to the user with the message:
+     > [!WARNING]
+     > `Sprint capacity exceeded. Sprint capacity is 30 story points, but the sprint would have 40 story points allocated.`
+
+---
+
+### Scenario B: Member Capacity Enforcement
+**Objective**: Verify that assigning tasks to a specific member beyond their individual capacity is blocked even when the sprint has remaining capacity.
+1. **Setup**:
+   - In the team workspace, add two active team members:
+     - Member A (e.g. `Sandeepa`) with capacity = `30`.
+     - Member B (e.g. `Carol`) with capacity = `40`.
+   - The total sprint capacity resolves to `70` (`30 + 40`).
+2. **Action**:
+   - Assign a work item with `20` story points in `SG SPRINT 1` to Member A. (This should succeed).
+   - Create another work item in the backlog with `15` story points.
+   - Attempt to assign this second item to Member A and assign it to `SG SPRINT 1`.
+3. **Expected Result**:
+   - The action is blocked (even though the total sprint points `35` is well below the sprint capacity of `70`).
+   - A modal pop-up error dialog is displayed to the user with the message:
+     > [!WARNING]
+     > `Member capacity exceeded in this sprint. Sandeepa has a capacity of 30 story points, but would have 35 story points assigned.`
+
+---
+
+### Scenario C: Allocation Change Logs
+**Objective**: Verify that successful adjustments to sprints, assignees, or story points automatically create log worklogs.
+1. **Action**:
+   - Select an existing work item.
+   - Change its sprint from `Backlog` to `SG SPRINT 1`.
+   - Change its assignee to `Sandeepa`.
+   - Change its story points from `5` to `8`.
+2. **Expected Result**:
+   - The changes are saved successfully.
+   - Navigate to the work item logs database/view.
+   - A worklog row exists with `logged_hours = 0` and a comment resembling:
+     `"Allocation changed: sprint_id set to 'SG SPRINT 1' (was: Backlog), assignee_id set to 'Sandeepa' (was: Unassigned), story_points set to 8 (was: 5)."`
+
+---
+
+### Scenario D: Guest Project Isolation (ACL Keys)
+**Objective**: Verify guest users are strictly isolated to projects matching their configured allowlist ACL keys.
+1. **Setup**:
+   - Log in as an administrator.
+   - Navigate to **System Settings > Users > Allowlist** (`/users?tab=allowlist`).
+   - Add or edit the allowlist entry for a user (e.g. `tashila.kumara@1billiontech.com`).
+   - In the **Allowed Project Keys (optional, comma-separated)** field, enter `SG`.
+   - Add `tashila.kumara@1billiontech.com` as a member to two projects in the database: `SG` (key: `SG`) and `NarrowURL` (key: `NU`).
+2. **Action**:
+   - Log in as `tashila.kumara@1billiontech.com`.
+   - Navigate to the projects registry page (`/projects`).
+3. **Expected Result**:
+   - The user **only sees the SG project** in the projects registry.
+   - The `NarrowURL` project is completely hidden.
+   - Any manual URL navigation to `/projects/NarrowURL-ID` is denied with an authorization error.
