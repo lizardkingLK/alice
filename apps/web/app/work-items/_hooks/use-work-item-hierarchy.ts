@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { loadWorkItemChildrenAction } from '@/app/work-items/_components/actions';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import { loadWorkItemChildrenAction } from '@/app/work-items/_components/work-item-registry/actions';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 
 type UseWorkItemHierarchyOptions = {
   readonly enabled: boolean;

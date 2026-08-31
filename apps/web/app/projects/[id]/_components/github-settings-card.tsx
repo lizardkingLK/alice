@@ -23,7 +23,7 @@ import {
   formatGithubRepoPath,
   parseGithubRepoPath,
 } from '@/lib/projects/github-repo-path';
-import type { Project } from '../../_services/projects.service';
+import type { Project } from '../../_services/projects.mutations.client';
 
 export type GithubSettingsCardProps = {
   readonly project: Project;

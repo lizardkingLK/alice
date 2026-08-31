@@ -6,8 +6,8 @@
 import { useRef, useState, useMemo } from 'react';
 import { useReactToPrint } from 'react-to-print';
 
-import type { Sprint } from '@/app/sprints/_services/sprints.service';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import {
   Calendar,
   CheckCircle,

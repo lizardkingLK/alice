@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { contactRequestSchema } from '@repo/types';
-import { getAPIUrl } from '@/lib/api/api';
+import { getAPIUrl } from '@/lib/api/api-fetch.helper';
 
 export async function submitContact(formData: FormData) {
   const emailEntry = formData.get('email');

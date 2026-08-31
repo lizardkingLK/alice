@@ -21,7 +21,10 @@ import {
   prismaOptionalDate,
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
-import { listAccessibleProjectIds, ALL_PROJECTS } from '../../../lib/project-access';
+import {
+  listAccessibleProjectIds,
+  ALL_PROJECTS,
+} from '../../../lib/project-access';
 import type {
   ProjectMemberWithUser,
   ProjectRow,
@@ -96,7 +99,9 @@ function unsafeCast<T>(val: unknown): T {
 export class ProjectsRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
-  async listAccessibleProjectIds(actorId: string): Promise<typeof ALL_PROJECTS | string[]> {
+  async listAccessibleProjectIds(
+    actorId: string
+  ): Promise<typeof ALL_PROJECTS | string[]> {
     return listAccessibleProjectIds(this.db, actorId);
   }
 
@@ -211,7 +216,10 @@ export class ProjectsRepository {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error('error. failed to list project members via prisma:', message);
+      console.error(
+        'error. failed to list project members via prisma:',
+        message
+      );
       throw new Error('Failed to list project members');
     }
   }

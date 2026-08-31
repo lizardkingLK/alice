@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import WorkItemDetails from '@/app/work-items/_components/workItem-details';
+import WorkItemDetails from '@/app/work-items/_components/work-item-details/work-item-details';
 import {
   mockRefresh,
   configureNextNavigationMock,
@@ -38,142 +38,169 @@ vi.mock('@/app/work-items/_components/work-item-path-breadcrumb', () => ({
   WorkItemPathBreadcrumb: () => <div data-testid="path-breadcrumb" />,
 }));
 
-vi.mock('@/app/work-items/_components/workItem-title-editor', () => ({
-  WorkItemTitleEditor: ({
-    title,
-    readOnly,
-  }: {
-    title: string;
-    readOnly?: boolean;
-  }) => (
-    <div>
-      <h1>{title}</h1>
-      {readOnly ? null : (
-        <button type="button" aria-label="Edit title">
-          Edit title
-        </button>
-      )}
-    </div>
-  ),
-}));
-
-vi.mock('@/app/work-items/_components/workItem-description-view', () => ({
-  DescriptionView: () => <div data-testid="description-view" />,
-}));
-
-vi.mock('@/app/work-items/_components/workItem-description-editor', () => ({
-  default: () => <div data-testid="description-editor" />,
-}));
-
-vi.mock('@/app/work-items/_components/work-item-attachments-section', () => ({
-  AttachmentsSection: () => <div data-testid="attachments-section" />,
-}));
-
-vi.mock('@/app/work-items/_components/work-item-activity-tabs', () => ({
-  WorkItemActivityTabs: () => <div data-testid="activity-tabs" />,
-}));
-
-vi.mock('@/app/work-items/_components/workItem-details-sidebar', () => ({
-  default: () => <aside data-testid="work-item-sidebar" />,
-}));
-
-vi.mock('@/app/work-items/_components/work-item-form-dialog', () => ({
-  WorkItemFormDialog: ({
-    open,
-    title,
-    parentId,
-    allowedTypes,
-    onSuccess,
-    onClose,
-  }: {
-    open: boolean;
-    title: string;
-    parentId?: string | null;
-    allowedTypes?: readonly string[];
-    // eslint-disable-next-line no-unused-vars
-    onSuccess?: (workItem: unknown) => void;
-    onClose?: () => void;
-  }) =>
-    open ? (
-      <div data-testid="subtask-dialog">
-        <span>{title}</span>
-        <span data-testid="dialog-parent-id">{parentId}</span>
-        <span data-testid="dialog-allowed-types">
-          {allowedTypes?.join(',') ?? ''}
-        </span>
-        <button
-          type="button"
-          onClick={() => onSuccess?.(workItemFactory.build())}
-        >
-          Succeed create
-        </button>
-        <button type="button" onClick={onClose}>
-          Close dialog
-        </button>
+vi.mock(
+  '@/app/work-items/_components/work-item-details/work-item-title-editor',
+  () => ({
+    WorkItemTitleEditor: ({
+      title,
+      readOnly,
+    }: {
+      title: string;
+      readOnly?: boolean;
+    }) => (
+      <div>
+        <h1>{title}</h1>
+        {readOnly ? null : (
+          <button type="button" aria-label="Edit title">
+            Edit title
+          </button>
+        )}
       </div>
-    ) : null,
-}));
+    ),
+  })
+);
 
-vi.mock('@/app/work-items/_components/work-item-link-subtask-dialog', () => ({
-  WorkItemLinkSubtaskDialog: ({
-    open,
-    parentWorkItemId,
-    childType,
-    onLinked,
-    onOpenChange,
-  }: {
-    open: boolean;
-    parentWorkItemId: string;
-    childType: string;
-    onLinked?: () => void;
-    // eslint-disable-next-line no-unused-vars
-    onOpenChange?: (open: boolean) => void;
-  }) =>
-    open ? (
-      <div data-testid="link-subtask-dialog">
-        <span>Link Subtask</span>
-        <span data-testid="link-parent-id">{parentWorkItemId}</span>
-        <span data-testid="link-child-type">{childType}</span>
-        <button type="button" onClick={() => onLinked?.()}>
-          Succeed link
-        </button>
-        <button type="button" onClick={() => onOpenChange?.(false)}>
-          Close link dialog
-        </button>
-      </div>
-    ) : null,
-}));
+vi.mock(
+  '@/app/work-items/_components/work-item-description/work-item-description-view',
+  () => ({
+    DescriptionView: () => <div data-testid="description-view" />,
+  })
+);
 
-vi.mock('@/app/work-items/_components/work-item-unlink-subtask-dialog', () => ({
-  UnlinkSubtaskButton: ({ onClick }: { onClick: () => void }) => (
-    <button type="button" aria-label="Unlink subtask" onClick={onClick}>
-      Unlink
-    </button>
-  ),
-  WorkItemUnlinkSubtaskDialog: ({
-    open,
-    childId,
-    onUnlinked,
-    onOpenChange,
-  }: {
-    open: boolean;
-    childId: string;
-    onUnlinked?: () => void;
-    // eslint-disable-next-line no-unused-vars
-    onOpenChange?: (open: boolean) => void;
-  }) =>
-    open ? (
-      <div data-testid="unlink-subtask-dialog">
-        <span data-testid="unlink-child-id">{childId}</span>
-        <button type="button" onClick={() => onUnlinked?.()}>
-          Succeed unlink
-        </button>
-        <button type="button" onClick={() => onOpenChange?.(false)}>
-          Close unlink dialog
-        </button>
-      </div>
-    ) : null,
-}));
+vi.mock(
+  '@/app/work-items/_components/work-item-description/work-item-description-editor',
+  () => ({
+    default: () => <div data-testid="description-editor" />,
+  })
+);
+
+vi.mock(
+  '@/app/work-items/_components/work-item-attachments/work-item-attachments-section',
+  () => ({
+    AttachmentsSection: () => <div data-testid="attachments-section" />,
+  })
+);
+
+vi.mock(
+  '@/app/work-items/_components/work-item-details/work-item-activity-tabs',
+  () => ({
+    WorkItemActivityTabs: () => <div data-testid="activity-tabs" />,
+  })
+);
+
+vi.mock(
+  '@/app/work-items/_components/work-item-details/work-item-details-sidebar',
+  () => ({
+    default: () => <aside data-testid="work-item-sidebar" />,
+  })
+);
+
+vi.mock(
+  '@/app/work-items/_components/work-item-form/work-item-form-dialog',
+  () => ({
+    WorkItemFormDialog: ({
+      open,
+      title,
+      parentId,
+      allowedTypes,
+      onSuccess,
+      onClose,
+    }: {
+      open: boolean;
+      title: string;
+      parentId?: string | null;
+      allowedTypes?: readonly string[];
+      // eslint-disable-next-line no-unused-vars
+      onSuccess?: (workItem: unknown) => void;
+      onClose?: () => void;
+    }) =>
+      open ? (
+        <div data-testid="subtask-dialog">
+          <span>{title}</span>
+          <span data-testid="dialog-parent-id">{parentId}</span>
+          <span data-testid="dialog-allowed-types">
+            {allowedTypes?.join(',') ?? ''}
+          </span>
+          <button
+            type="button"
+            onClick={() => onSuccess?.(workItemFactory.build())}
+          >
+            Succeed create
+          </button>
+          <button type="button" onClick={onClose}>
+            Close dialog
+          </button>
+        </div>
+      ) : null,
+  })
+);
+
+vi.mock(
+  '@/app/work-items/_components/work-item-subtasks/work-item-link-subtask-dialog',
+  () => ({
+    WorkItemLinkSubtaskDialog: ({
+      open,
+      parentWorkItemId,
+      childType,
+      onLinked,
+      onOpenChange,
+    }: {
+      open: boolean;
+      parentWorkItemId: string;
+      childType: string;
+      onLinked?: () => void;
+      // eslint-disable-next-line no-unused-vars
+      onOpenChange?: (open: boolean) => void;
+    }) =>
+      open ? (
+        <div data-testid="link-subtask-dialog">
+          <span>Link Subtask</span>
+          <span data-testid="link-parent-id">{parentWorkItemId}</span>
+          <span data-testid="link-child-type">{childType}</span>
+          <button type="button" onClick={() => onLinked?.()}>
+            Succeed link
+          </button>
+          <button type="button" onClick={() => onOpenChange?.(false)}>
+            Close link dialog
+          </button>
+        </div>
+      ) : null,
+  })
+);
+
+vi.mock(
+  '@/app/work-items/_components/work-item-subtasks/work-item-unlink-subtask-dialog',
+  () => ({
+    UnlinkSubtaskButton: ({ onClick }: { onClick: () => void }) => (
+      <button type="button" aria-label="Unlink subtask" onClick={onClick}>
+        Unlink
+      </button>
+    ),
+    WorkItemUnlinkSubtaskDialog: ({
+      open,
+      childId,
+      onUnlinked,
+      onOpenChange,
+    }: {
+      open: boolean;
+      childId: string;
+      onUnlinked?: () => void;
+      // eslint-disable-next-line no-unused-vars
+      onOpenChange?: (open: boolean) => void;
+    }) =>
+      open ? (
+        <div data-testid="unlink-subtask-dialog">
+          <span data-testid="unlink-child-id">{childId}</span>
+          <button type="button" onClick={() => onUnlinked?.()}>
+            Succeed unlink
+          </button>
+          <button type="button" onClick={() => onOpenChange?.(false)}>
+            Close unlink dialog
+          </button>
+        </div>
+      ) : null,
+  })
+);
 
 describe('WorkItemDetails subtasks', () => {
   const project = projectFactory.build();

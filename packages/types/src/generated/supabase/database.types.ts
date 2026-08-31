@@ -336,48 +336,111 @@ export type Database = {
           },
         ]
       }
-      jira_connections: {
+      integrations: {
         Row: {
-          id: string
-          user_id: string
-          cloud_id: string
-          site_url: string
-          account_email: string | null
-          refresh_token_enc: string
-          access_token_enc: string | null
-          access_token_expires_at: string | null
-          scopes: string
-          status: Database["public"]["Enums"]["JiraConnectionStatus"]
+          catalog_id: string
+          category: Database["public"]["Enums"]["IntegrationCategory"]
+          config: Json
           created_at: string
+          created_by: string | null
+          id: string
+          is_default: boolean
+          name: string
+          provider: string
+          sort_order: number
+          status: Database["public"]["Enums"]["IntegrationStatus"]
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
-          id?: string
-          user_id: string
-          cloud_id: string
-          site_url: string
-          account_email?: string | null
-          refresh_token_enc: string
-          access_token_enc?: string | null
-          access_token_expires_at?: string | null
-          scopes: string
-          status?: Database["public"]["Enums"]["JiraConnectionStatus"]
+          catalog_id: string
+          category: Database["public"]["Enums"]["IntegrationCategory"]
+          config?: Json
           created_at?: string
-          updated_at?: string
+          created_by?: string | null
+          id?: string
+          is_default?: boolean
+          name: string
+          provider: string
+          sort_order?: number
+          status?: Database["public"]["Enums"]["IntegrationStatus"]
+          updated_at: string
+          updated_by?: string | null
         }
         Update: {
+          catalog_id?: string
+          category?: Database["public"]["Enums"]["IntegrationCategory"]
+          config?: Json
+          created_at?: string
+          created_by?: string | null
           id?: string
-          user_id?: string
-          cloud_id?: string
-          site_url?: string
-          account_email?: string | null
-          refresh_token_enc?: string
+          is_default?: boolean
+          name?: string
+          provider?: string
+          sort_order?: number
+          status?: Database["public"]["Enums"]["IntegrationStatus"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integrations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integrations_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jira_connections: {
+        Row: {
+          access_token_enc: string | null
+          access_token_expires_at: string | null
+          account_email: string | null
+          cloud_id: string
+          created_at: string
+          id: string
+          refresh_token_enc: string
+          scopes: string
+          site_url: string
+          status: Database["public"]["Enums"]["JiraConnectionStatus"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
           access_token_enc?: string | null
           access_token_expires_at?: string | null
-          scopes?: string
-          status?: Database["public"]["Enums"]["JiraConnectionStatus"]
+          account_email?: string | null
+          cloud_id: string
           created_at?: string
+          id?: string
+          refresh_token_enc: string
+          scopes: string
+          site_url: string
+          status?: Database["public"]["Enums"]["JiraConnectionStatus"]
+          updated_at: string
+          user_id: string
+        }
+        Update: {
+          access_token_enc?: string | null
+          access_token_expires_at?: string | null
+          account_email?: string | null
+          cloud_id?: string
+          created_at?: string
+          id?: string
+          refresh_token_enc?: string
+          scopes?: string
+          site_url?: string
+          status?: Database["public"]["Enums"]["JiraConnectionStatus"]
           updated_at?: string
+          user_id?: string
         }
         Relationships: [
           {
@@ -515,6 +578,7 @@ export type Database = {
       projects: {
         Row: {
           attributes_config: Json | null
+          cover_picture: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -527,7 +591,6 @@ export type Database = {
           jira_project_key: string | null
           key: string
           logo_url: string | null
-          cover_picture: string | null
           name: string
           owner_id: string
           start_date: string | null
@@ -538,6 +601,7 @@ export type Database = {
         }
         Insert: {
           attributes_config?: Json | null
+          cover_picture?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -550,7 +614,6 @@ export type Database = {
           jira_project_key?: string | null
           key: string
           logo_url?: string | null
-          cover_picture?: string | null
           name: string
           owner_id: string
           start_date?: string | null
@@ -561,6 +624,7 @@ export type Database = {
         }
         Update: {
           attributes_config?: Json | null
+          cover_picture?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -573,7 +637,6 @@ export type Database = {
           jira_project_key?: string | null
           key?: string
           logo_url?: string | null
-          cover_picture?: string | null
           name?: string
           owner_id?: string
           start_date?: string | null
@@ -1246,6 +1309,13 @@ export type Database = {
     }
     Enums: {
       AccessAllowlistKind: "domain" | "email"
+      IntegrationCategory:
+        | "ai_agent"
+        | "communication"
+        | "design"
+        | "productivity"
+      IntegrationStatus: "active" | "disabled" | "draft"
+      JiraConnectionStatus: "active" | "revoked" | "expired"
       NotificationType:
         | "assign"
         | "status_change"
@@ -1254,7 +1324,7 @@ export type Database = {
         | "sprint"
         | "due_date"
         | "view_shared"
-      JiraConnectionStatus: "active" | "revoked" | "expired"
+        | "chat_processed"
       ProjectStatus: "active" | "archived"
       RecordStatus: "active" | "inactive" | "archived" | "deleted"
       SprintStatus: "planned" | "active" | "closed" | "archived"
@@ -1397,6 +1467,14 @@ export const Constants = {
   public: {
     Enums: {
       AccessAllowlistKind: ["domain", "email"],
+      IntegrationCategory: [
+        "ai_agent",
+        "communication",
+        "design",
+        "productivity",
+      ],
+      IntegrationStatus: ["active", "disabled", "draft"],
+      JiraConnectionStatus: ["active", "revoked", "expired"],
       NotificationType: [
         "assign",
         "status_change",
@@ -1405,8 +1483,8 @@ export const Constants = {
         "sprint",
         "due_date",
         "view_shared",
+        "chat_processed",
       ],
-      JiraConnectionStatus: ["active", "revoked", "expired"],
       ProjectStatus: ["active", "archived"],
       RecordStatus: ["active", "inactive", "archived", "deleted"],
       SprintStatus: ["planned", "active", "closed", "archived"],

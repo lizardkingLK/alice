@@ -2,13 +2,13 @@
 
 import { useCallback, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import {
   archiveWorkItem,
-  countWorkItemDescendants,
   purgeWorkItem,
   restoreWorkItem,
-} from '@/app/work-items/_services/workItem.service.client';
+} from '@/app/work-items/_services/work-items.mutations.client';
+import { countWorkItemDescendants } from '@/app/work-items/_services/work-items.reads.client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runRegistryLockedAction } from '@/lib/optimistic-lock/run-locked-mutation';
 import {

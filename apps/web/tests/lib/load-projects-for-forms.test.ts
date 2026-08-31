@@ -11,7 +11,7 @@ vi.mock('@/lib/cache/dropdown-cache', () => ({
   invalidateDropdownCache: invalidateDropdownCacheMock,
 }));
 
-vi.mock('@/app/projects/_services/projects.service.server', () => ({
+vi.mock('@/app/projects/_services/projects.reads.server', () => ({
   getProjectList: getProjectListMock,
 }));
 

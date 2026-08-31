@@ -35,12 +35,12 @@ import {
   type BacklogActiveTab,
   type BacklogAssignee,
 } from '@/app/backlog/_helpers/backlog-item-utils';
-import { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
-import { Sprint } from '@/app/sprints/_services/sprints.service';
+import { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { updateSprintStatusWithOptimisticLock } from '@/app/sprints/_helpers/update-sprint-status-with-lock';
-import { Project as DbProject } from '@/app/projects/_services/projects.service';
-import { User as DbUser } from '@/app/users/_services/users.service';
-import { updateWorkItem } from '@/app/work-items/_services/workItem.service.client';
+import { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
+import { User as DbUser } from '@/app/users/_services/users.mutations.client';
+import { updateWorkItem } from '@/app/work-items/_services/work-items.mutations.client';
 import { resolveWorkItemMember } from '@/app/work-items/_helpers/work-item-member';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutation } from '@/lib/optimistic-lock/run-locked-mutation';

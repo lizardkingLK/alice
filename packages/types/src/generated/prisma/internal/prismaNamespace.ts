@@ -413,7 +413,8 @@ export const ModelName = {
   chat_conversations: 'chat_conversations',
   saved_views: 'saved_views',
   saved_view_shares: 'saved_view_shares',
-  github_pull_requests: 'github_pull_requests'
+  github_pull_requests: 'github_pull_requests',
+  integrations: 'integrations'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -429,7 +430,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "jira_connections" | "chat_conversations" | "saved_views" | "saved_view_shares" | "github_pull_requests"
+    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "jira_connections" | "chat_conversations" | "saved_views" | "saved_view_shares" | "github_pull_requests" | "integrations"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1691,6 +1692,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    integrations: {
+      payload: Prisma.$integrationsPayload<ExtArgs>
+      fields: Prisma.integrationsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.integrationsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.integrationsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationsPayload>
+        }
+        findFirst: {
+          args: Prisma.integrationsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.integrationsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationsPayload>
+        }
+        findMany: {
+          args: Prisma.integrationsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationsPayload>[]
+        }
+        create: {
+          args: Prisma.integrationsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationsPayload>
+        }
+        createMany: {
+          args: Prisma.integrationsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.integrationsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationsPayload>[]
+        }
+        delete: {
+          args: Prisma.integrationsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationsPayload>
+        }
+        update: {
+          args: Prisma.integrationsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationsPayload>
+        }
+        deleteMany: {
+          args: Prisma.integrationsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.integrationsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.integrationsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationsPayload>[]
+        }
+        upsert: {
+          args: Prisma.integrationsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationsPayload>
+        }
+        aggregate: {
+          args: Prisma.IntegrationsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateIntegrations>
+        }
+        groupBy: {
+          args: Prisma.integrationsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.IntegrationsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.integrationsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.IntegrationsCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2034,6 +2109,25 @@ export const Github_pull_requestsScalarFieldEnum = {
 export type Github_pull_requestsScalarFieldEnum = (typeof Github_pull_requestsScalarFieldEnum)[keyof typeof Github_pull_requestsScalarFieldEnum]
 
 
+export const IntegrationsScalarFieldEnum = {
+  id: 'id',
+  catalog_id: 'catalog_id',
+  category: 'category',
+  provider: 'provider',
+  name: 'name',
+  status: 'status',
+  config: 'config',
+  is_default: 'is_default',
+  sort_order: 'sort_order',
+  created_by: 'created_by',
+  created_at: 'created_at',
+  updated_by: 'updated_by',
+  updated_at: 'updated_at'
+} as const
+
+export type IntegrationsScalarFieldEnum = (typeof IntegrationsScalarFieldEnum)[keyof typeof IntegrationsScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -2318,6 +2412,34 @@ export type EnumJiraConnectionStatusFieldRefInput<$PrismaModel> = FieldRefInputT
 export type ListEnumJiraConnectionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'JiraConnectionStatus[]'>
     
 
+
+/**
+ * Reference to a field of type 'IntegrationCategory'
+ */
+export type EnumIntegrationCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'IntegrationCategory'>
+    
+
+
+/**
+ * Reference to a field of type 'IntegrationCategory[]'
+ */
+export type ListEnumIntegrationCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'IntegrationCategory[]'>
+    
+
+
+/**
+ * Reference to a field of type 'IntegrationStatus'
+ */
+export type EnumIntegrationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'IntegrationStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'IntegrationStatus[]'
+ */
+export type ListEnumIntegrationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'IntegrationStatus[]'>
+    
+
 /**
  * Batch Payload for updateMany & deleteMany & createMany
  */
@@ -2486,6 +2608,7 @@ export type GlobalOmitConfig = {
   saved_views?: Prisma.saved_viewsOmit
   saved_view_shares?: Prisma.saved_view_sharesOmit
   github_pull_requests?: Prisma.github_pull_requestsOmit
+  integrations?: Prisma.integrationsOmit
 }
 
 /* Types for Logging */

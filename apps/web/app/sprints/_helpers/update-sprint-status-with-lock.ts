@@ -1,5 +1,5 @@
-import type { Sprint } from '@/app/sprints/_services/sprints.service';
-import { updateSprintStatus } from '@/app/sprints/_services/sprints.service';
+import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
+import { updateSprintStatus } from '@/app/sprints/_services/sprints.mutations.client';
 import {
   runLockedMutationOrThrow,
   type RunLockedMutationOptions,

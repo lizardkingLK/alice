@@ -23,7 +23,7 @@ import {
   sendChatMessage,
   deleteConversation,
   type ChatConversation,
-} from '../_services/chat-client.service';
+} from '../_services/chat.mutations.client';
 import { revalidateAfterChatActions } from '@/lib/cache/revalidate-after-chat';
 import {
   bootstrapLatestChat,
@@ -32,7 +32,7 @@ import {
 import {
   listChatConversationsAction,
   revalidateChatConversations,
-} from '../_services/chat-read-actions';
+} from '../_services/chat.reads.actions.server';
 import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import ChatClientSidebar from '@/app/chat/_components/chat-client-sidebar';
 import ChatClientHeaderActions from '@/app/chat/_components/chat-client-header-actions';
@@ -427,7 +427,7 @@ export function ChatClient({
       const message =
         err instanceof Error
           ? err.message
-          : 'Something went wrong. Please check if backend API and GEMINI_API_KEY are configured.';
+          : 'Something went wrong. Please try again. If this keeps happening, contact your administrator.';
       setError(message);
     } finally {
       setIsPending(false);

@@ -23,8 +23,8 @@ import { addMemberAction, removeMemberAction } from './actions';
 import type {
   Project,
   ProjectMemberWithUser,
-} from '../../_services/projects.service';
-import type { User } from '@/app/users/_services/users.service';
+} from '../../_services/projects.mutations.client';
+import type { User } from '@/app/users/_services/users.mutations.client';
 
 export type ProjectMembersTabProps = {
   readonly project: Project;

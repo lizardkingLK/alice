@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { WorkItemPathBreadcrumb } from '@/app/work-items/_components/work-item-path-breadcrumb';
 import { workItemFactory } from '../factories/workItem.factory';
 import { toShortId } from '@/app/_shared/utility';
-import type { WorkItemAncestor } from '@/app/work-items/_services/workItem.service.server';
+import type { WorkItemAncestor } from '@/app/work-items/_services/work-items.reads.server';
 
 vi.mock('next/link', () => ({
   default: ({

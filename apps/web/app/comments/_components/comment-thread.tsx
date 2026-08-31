@@ -11,7 +11,7 @@ import type {
   CommentItem,
   CommentUser,
   CommentWorkItemOption,
-} from '@/app/comments/_services/comments.service.base';
+} from '@/app/comments/_services/comments.mutations.shared';
 
 type MentionWorkItem = Pick<CommentWorkItemOption, 'id' | 'key' | 'title'>;
 

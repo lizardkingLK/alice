@@ -19,7 +19,7 @@ import {
   writeOptimisticPending,
 } from '@/lib/optimistic-lock/pending-storage';
 import { isOptimisticLockClientError } from '@/lib/optimistic-lock/errors';
-import { ApiError } from '@/lib/api/api';
+import { ApiError } from '@/lib/api/api-fetch.helper';
 
 export type ConflictSession = {
   readonly entityType: OptimisticLockEntityType;

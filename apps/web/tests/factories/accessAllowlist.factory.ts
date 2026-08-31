@@ -1,4 +1,4 @@
-import type { AccessAllowlistEntry } from '@/app/access-allowlist/_services/accessAllowlist.service';
+import type { AccessAllowlistEntry } from '@/app/access-allowlist/_services/access-allowlist.mutations.client';
 
 export const accessAllowlistFactory = {
   build(overrides: Partial<AccessAllowlistEntry> = {}): AccessAllowlistEntry {

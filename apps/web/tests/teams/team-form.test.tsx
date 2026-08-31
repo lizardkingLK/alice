@@ -2,17 +2,20 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { TeamForm } from '@/app/manager/_components/team-form';
-import { createTeam, updateTeam } from '@/app/manager/_services/teams.service';
-import type { User } from '@/app/users/_services/users.service';
-import type { Team } from '@/app/manager/_services/teams.service';
+import {
+  createTeam,
+  updateTeam,
+} from '@/app/manager/_services/teams.mutations.client';
+import type { User } from '@/app/users/_services/users.mutations.client';
+import type { Team } from '@/app/manager/_services/teams.mutations.client';
 import type {
   Project,
   ProjectMemberWithUser,
   ProjectMembersByProjectId,
-} from '@/app/projects/_services/projects.service.base';
+} from '@/app/projects/_services/projects.mutations.shared';
 import { pickComboboxOption } from '../helpers/pick-combobox-option';
 
-vi.mock('@/app/manager/_services/teams.service', () => ({
+vi.mock('@/app/manager/_services/teams.mutations.client', () => ({
   createTeam: vi.fn(),
   updateTeam: vi.fn(),
 }));

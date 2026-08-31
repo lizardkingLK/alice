@@ -117,3 +117,22 @@ export const JiraConnectionStatus = {
 } as const
 
 export type JiraConnectionStatus = (typeof JiraConnectionStatus)[keyof typeof JiraConnectionStatus]
+
+
+export const IntegrationCategory = {
+  ai_agent: 'ai_agent',
+  communication: 'communication',
+  design: 'design',
+  productivity: 'productivity'
+} as const
+
+export type IntegrationCategory = (typeof IntegrationCategory)[keyof typeof IntegrationCategory]
+
+
+export const IntegrationStatus = {
+  active: 'active',
+  disabled: 'disabled',
+  draft: 'draft'
+} as const
+
+export type IntegrationStatus = (typeof IntegrationStatus)[keyof typeof IntegrationStatus]

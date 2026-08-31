@@ -36,7 +36,16 @@ const mockTeamRow = {
   updated_at: new Date('2026-08-25T12:00:00.000Z'),
   manager: { id: 'manager-1', name: 'Manager', email: 'manager@example.com' },
   members: [
-    { team_id: 'team-1', user_id: 'user-1', role: 'developer', seniority: 'senior', capacity: 40, allocation: 100, reporting_line: null, status: 'active' }
+    {
+      team_id: 'team-1',
+      user_id: 'user-1',
+      role: 'developer',
+      seniority: 'senior',
+      capacity: 40,
+      allocation: 100,
+      reporting_line: null,
+      status: 'active',
+    },
   ],
 };
 

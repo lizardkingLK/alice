@@ -1,19 +1,22 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { WorkItemTitleEditor } from '@/app/work-items/_components/workItem-title-editor';
+import { WorkItemTitleEditor } from '@/app/work-items/_components/work-item-details/work-item-title-editor';
 
-vi.mock('@/app/work-items/_components/workItem-field-patch-dialog', () => ({
-  WORK_ITEM_PATCH_FIELD_CONFIG: {
-    title: {
-      field: 'title',
-      kind: 'text',
-      title: 'Edit Title',
-      description: 'Update the work item title.',
-      label: 'Title',
+vi.mock(
+  '@/app/work-items/_components/work-item-details/work-item-field-patch-dialog',
+  () => ({
+    WORK_ITEM_PATCH_FIELD_CONFIG: {
+      title: {
+        field: 'title',
+        kind: 'text',
+        title: 'Edit Title',
+        description: 'Update the work item title.',
+        label: 'Title',
+      },
     },
-  },
-  WorkItemFieldPatchDialog: () => null,
-}));
+    WorkItemFieldPatchDialog: () => null,
+  })
+);
 
 describe('WorkItemTitleEditor', () => {
   it('shows the edit control when not read-only', () => {

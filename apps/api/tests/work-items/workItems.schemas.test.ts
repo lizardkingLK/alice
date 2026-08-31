@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createUpdateWorkItemBodySchema } from '../../src/routes/api/workItems/workItems.schemas';
+import {
+  createWorkItemBodySchema,
+  linkWorkItemGithubPrBodySchema,
+  patchWorkItemBodySchema,
+} from '@repo/types/api/v1';
 
 const validCore = {
   title: 'Labeled item',
@@ -16,7 +20,7 @@ describe('work item labels schema', () => {
   });
 
   it('accepts and normalizes labels arrays', () => {
-    const parsed = createUpdateWorkItemBodySchema.safeParse({
+    const parsed = createWorkItemBodySchema.safeParse({
       ...validCore,
       labels: ['  Alpha ', 'Beta', 'Alpha'],
     });
@@ -28,7 +32,7 @@ describe('work item labels schema', () => {
   });
 
   it('accepts labels JSON strings', () => {
-    const parsed = createUpdateWorkItemBodySchema.safeParse({
+    const parsed = createWorkItemBodySchema.safeParse({
       ...validCore,
       labels: '["Mobile"]',
     });
@@ -40,11 +44,44 @@ describe('work item labels schema', () => {
   });
 
   it('rejects invalid labels payloads', () => {
-    const parsed = createUpdateWorkItemBodySchema.safeParse({
+    const parsed = createWorkItemBodySchema.safeParse({
       ...validCore,
       labels: [1, 2],
     });
 
     expect(parsed.success).toBe(false);
+  });
+});
+
+describe('linkWorkItemGithubPrBodySchema', () => {
+  it('accepts full GitHub PR URLs', () => {
+    const parsed = linkWorkItemGithubPrBodySchema.safeParse({
+      prUrl: 'https://github.com/acme/app/pull/42',
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('accepts owner/repo/pull shorthand', () => {
+    const parsed = linkWorkItemGithubPrBodySchema.safeParse({
+      prUrl: 'acme/app/pull/42',
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('rejects invalid PR URLs', () => {
+    const parsed = linkWorkItemGithubPrBodySchema.safeParse({
+      prUrl: 'https://gitlab.com/acme/app/-/merge_requests/1',
+    });
+    expect(parsed.success).toBe(false);
+  });
+});
+
+describe('patchWorkItemBodySchema', () => {
+  it('accepts optimistic-lock force patch payloads', () => {
+    const parsed = patchWorkItemBodySchema.safeParse({
+      title: 'Updated title',
+      expectedUpdatedAt: '2026-08-06T12:00:00.000Z',
+    });
+    expect(parsed.success).toBe(true);
   });
 });

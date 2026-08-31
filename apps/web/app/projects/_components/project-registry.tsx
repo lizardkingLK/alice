@@ -37,7 +37,7 @@ import { hardDeleteProject } from './actions';
 import {
   softDeleteProject as clientSoftDeleteProject,
   restoreProject as clientRestoreProject,
-} from '../_services/projects.service';
+} from '../_services/projects.mutations.client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runRegistryLockedAction } from '@/lib/optimistic-lock/run-locked-mutation';
 import {
@@ -58,8 +58,8 @@ import {
   registryActionsHeader,
 } from '@/components/registry-row-actions';
 import { RegistryTabSwitcher } from '@/components/registry-tab-switcher';
-import type { Project } from '../_services/projects.service';
-import type { User } from '@/app/users/_services/users.service';
+import type { Project } from '../_services/projects.mutations.client';
+import type { User } from '@/app/users/_services/users.mutations.client';
 import { cn } from '@repo/ui/lib/utils';
 import { formatMonthYear } from '@/app/_shared/utility';
 

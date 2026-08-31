@@ -33,7 +33,7 @@ import {
   type AccessAllowlistEntry,
   type AccessAllowlistKind,
   type AccessAllowlistStatus,
-} from '@/app/access-allowlist/_services/accessAllowlist.service';
+} from '@/app/access-allowlist/_services/access-allowlist.mutations.client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 

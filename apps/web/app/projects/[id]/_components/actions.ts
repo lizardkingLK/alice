@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import {
   addProjectMember,
   removeProjectMember,
-} from '../../_services/projects.service.server';
+} from '../../_services/projects.reads.server';
 import {
   actionFailure,
   actionSuccess,

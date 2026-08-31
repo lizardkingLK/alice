@@ -5,12 +5,12 @@ import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { SprintList } from '@/app/sprints/_components/sprint-list';
 import { SprintForm } from '@/app/sprints/_components/sprint-form';
-import { Sprint } from '@/app/sprints/_services/sprints.service';
+import { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { updateSprintStatusWithOptimisticLock } from '@/app/sprints/_helpers/update-sprint-status-with-lock';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Search, Plus } from '@repo/ui/lib/icons';
-import type { Project } from '@/app/projects/_services/projects.service.base';
+import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 
 interface SprintsWorkspaceProps {

@@ -1,7 +1,7 @@
 'use server';
 
-import { getProjectList } from '@/app/projects/_services/projects.service.server';
-import type { Project } from '@/app/projects/_services/projects.service.base';
+import { getProjectList } from '@/app/projects/_services/projects.reads.server';
+import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import {
   DROPDOWN_CACHE_TAGS,
   invalidateDropdownCache,

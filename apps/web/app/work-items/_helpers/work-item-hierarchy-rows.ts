@@ -1,6 +1,6 @@
 import type { WorkItemType } from '@repo/types';
 import { getAllowedChildType } from '@repo/types';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 
 export type WorkItemHierarchyDisplayRow = {
   readonly workItem: DbWorkItem;

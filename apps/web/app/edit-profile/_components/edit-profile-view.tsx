@@ -20,14 +20,13 @@ import {
   type DeactivateAccountState,
 } from '@/app/edit-profile/_components/actions';
 import { EditProfilePreferencesCard } from '@/app/edit-profile/_components/edit-profile-preferences-card';
-import { FormStatusAlerts } from '@/app/work-items/_components/workItem-form-alerts';
 import { ImagePositionUploadDialog } from '@/components/image-position-upload-dialog';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
-import { apiFetch } from '@/lib/api/api-client';
+import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import { applyLockedImageUploadOutcome } from '@/lib/image-position/apply-locked-image-upload';
 import { uploadLockedImage } from '@/lib/image-position/upload-locked-image';
 import { tryHandleLockedMutationError } from '@/lib/optimistic-lock/run-locked-mutation';
-import type { SettingsTab } from '@/lib/search-params';
+import type { AccountSettingsTab } from '@/lib/search-params';
 import {
   Avatar,
   AvatarFallback,
@@ -54,9 +53,10 @@ import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { Separator } from '@repo/ui/components/ui/separator';
 import { Switch } from '@repo/ui/components/ui/switch';
+import { FormStatusAlerts } from '@/app/work-items/_components/work-item-form/work-item-form-alerts';
 
 type EditProfileViewProps = {
-  readonly section: SettingsTab;
+  readonly section: AccountSettingsTab;
   readonly name: string;
   readonly handle: string;
   readonly email: string;
@@ -77,7 +77,7 @@ type ProfilePictureUploadResult = {
 };
 
 const SECTION_HEADINGS: Record<
-  SettingsTab,
+  AccountSettingsTab,
   { readonly title: string; readonly icon: typeof UserRound }
 > = {
   general: { title: 'General', icon: UserRound },
@@ -438,7 +438,7 @@ function GeneralSection({
               )}
             </div>
             <p className="text-muted-foreground text-xs">
-              Email changes require a verification flow (coming soon).
+              Email changes are not available yet.
             </p>
           </div>
           <div className="space-y-2">
@@ -666,7 +666,7 @@ function NotificationsSection() {
         </div>
         <p className="text-muted-foreground flex items-center gap-2 text-xs">
           <Mail className="size-3.5 shrink-0" aria-hidden="true" />
-          Notification preferences will sync when email delivery is enabled.
+          Email notifications are not available yet.
         </p>
       </CardContent>
     </Card>

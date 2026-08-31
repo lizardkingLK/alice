@@ -1,4 +1,4 @@
-import type { Sprint } from '@/app/sprints/_services/sprints.service';
+import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 
 export function formatDateToISOString(
   year: number,

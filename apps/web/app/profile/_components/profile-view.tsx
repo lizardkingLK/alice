@@ -31,13 +31,13 @@ import {
   formatLabelFirstLetterCapitalized,
   getInitials,
 } from '@/app/_shared/utility';
-import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
+import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
 import { ProfileCoverBanner } from '@/app/profile/_components/profile-cover-banner';
 import { SETTINGS_GENERAL_HREF } from '@/app/settings/_components/settings-page-meta';
 import type {
   ProfileTeam,
   ProfileWorkedOn,
-} from '@/app/profile/_services/profile.service.server';
+} from '@/app/profile/_services/profile.reads.server';
 
 type ProfileViewProps = {
   name: string;

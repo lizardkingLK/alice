@@ -2,8 +2,8 @@
 
 import { BoardDefaultsDialog } from '@/app/board/_components/board-defaults-dialog';
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
-import type { Project } from '@/app/projects/_services/projects.service.base';
-import type { Sprint } from '@/app/sprints/_services/sprints.service';
+import type { Project } from '@/app/projects/_services/projects.mutations.shared';
+import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 
 /** Dialog fields returned by board/backlog defaults hooks. */
 export type WorkspaceDefaultsDialogController = {

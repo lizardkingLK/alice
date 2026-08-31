@@ -4,8 +4,8 @@ import { SprintForm } from '@/app/sprints/_components/sprint-form';
 import {
   createSprint,
   updateSprint,
-} from '@/app/sprints/_services/sprints.service';
-import type { Project } from '@/app/projects/_services/projects.service.base';
+} from '@/app/sprints/_services/sprints.mutations.client';
+import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 
 import { projectFactory } from '../factories/project.factory';
 import {
@@ -17,7 +17,7 @@ import {
   pickComboboxOption,
 } from '../helpers/pick-combobox-option';
 
-vi.mock('@/app/sprints/_services/sprints.service', () => ({
+vi.mock('@/app/sprints/_services/sprints.mutations.client', () => ({
   createSprint: vi.fn(),
   updateSprint: vi.fn(),
 }));

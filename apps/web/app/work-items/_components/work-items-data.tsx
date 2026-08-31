@@ -1,17 +1,17 @@
-import WorkItemsWorkspace from '@/app/work-items/_components/workItems-workspace';
+import WorkItemsWorkspace from '@/app/work-items/_components/work-items-workspace';
 import {
   getWorkItemsPaginated,
   type DbWorkItem,
   type WorkItemListFilters,
-} from '@/app/work-items/_services/workItem.service.server';
+} from '@/app/work-items/_services/work-items.reads.server';
 import { needsWorkspaceProjectBootstrap } from '@/app/board/_helpers/workspace-defaults-shared';
 import {
   EMPTY_ACTIVE_SPRINTS_PAGE,
   getSuggestedBoardDefaults,
-} from '@/app/board/_services/board-defaults.server';
-import { getUserList } from '@/app/users/_services/users.service.server';
-import { getProjectList } from '@/app/projects/_services/projects.service.server';
-import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.service.server';
+} from '@/app/board/_services/board.reads.defaults.server';
+import { getUserList } from '@/app/users/_services/users.reads.server';
+import { getProjectList } from '@/app/projects/_services/projects.reads.server';
+import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.reads.server';
 import { getDbUser } from '@/lib/auth';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
 import { listAccessibleProjectIds } from '@/lib/projects/project-workspace-access';

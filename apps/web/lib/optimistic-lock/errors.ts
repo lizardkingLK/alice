@@ -4,7 +4,7 @@ import {
   isOptimisticLockConflictBody,
   type OptimisticLockEntityType,
 } from '@repo/types';
-import { ApiError } from '@/lib/api/api';
+import { ApiError } from '@/lib/api/api-fetch.helper';
 
 export class OptimisticLockClientError<TServer = unknown> extends ApiError {
   readonly code = OPTIMISTIC_LOCK_ERROR_CODE;

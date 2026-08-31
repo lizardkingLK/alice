@@ -4,7 +4,7 @@ import { cn } from '@repo/ui/lib/utils';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { getInitials } from '@/app/_shared/utility';
 import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
-import type { CommentUser } from '@/app/comments/_services/comments.service.base';
+import type { CommentUser } from '@/app/comments/_services/comments.mutations.shared';
 
 export type CommentMentionItem = {
   id: string;
