@@ -15,7 +15,7 @@ import {
 } from '@repo/types';
 import { Prisma } from '@repo/types/prisma';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { listAccessibleProjectIds } from '../../../lib/project-access';
+import { listAccessibleProjectIds, ALL_PROJECTS } from '../../../lib/project-access';
 import { prisma } from '../../../lib/prisma';
 import {
   prismaAuditCreateWithoutStatus,
@@ -68,7 +68,7 @@ export class WorkItemRepository {
   /**
    * Admin: all projects. Member/manager: active membership ∪ owned projects.
    */
-  async listAccessibleProjectIds(actorId: string): Promise<'all' | string[]> {
+  async listAccessibleProjectIds(actorId: string): Promise<typeof ALL_PROJECTS | string[]> {
     return listAccessibleProjectIds(this.db, actorId);
   }
 
@@ -77,7 +77,7 @@ export class WorkItemRepository {
     projectId: string
   ): Promise<void> {
     const accessible = await this.listAccessibleProjectIds(actorId);
-    if (accessible === 'all') {
+    if (accessible === ALL_PROJECTS) {
       return;
     }
     if (!accessible.includes(projectId)) {

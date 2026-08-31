@@ -11,6 +11,15 @@ export const createTeamSchema = z.object({
     .enum(['active', 'inactive', 'archived', 'deleted'])
     .default('active'),
   member_ids: z.array(z.uuid()).optional(),
+  members: z
+    .array(
+      z.object({
+        user_id: z.uuid(),
+        capacity: z.number().int().min(0).nullable().optional(),
+        allocation: z.number().int().min(0).max(100).nullable().optional(),
+      })
+    )
+    .optional(),
 });
 
 export const updateTeamSchema = createTeamSchema.partial();
@@ -76,16 +85,10 @@ export type TeamListRow = teamsGetPayload<{
 }>;
 
 import { RecordStatus as RecordStatusEnum } from '../../generated/prisma/enums.js';
+import { emptyToUndefined } from './query-preprocess.js';
 
 type RecordStatusType =
   (typeof RecordStatusEnum)[keyof typeof RecordStatusEnum];
-
-function emptyToUndefined(value: unknown): unknown {
-  if (value === '' || value === undefined || value === null) {
-    return undefined;
-  }
-  return value;
-}
 
 export const listTeamsQuerySchema = z.object({
   page: z.preprocess(

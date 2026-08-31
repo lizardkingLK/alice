@@ -82,7 +82,7 @@ async function enforceAllowlistGate(
   }
 
   try {
-    const allowed = await isEmailAllowed(email ?? '');
+    const allowed = await isEmailAllowed(email ?? '', { enforceGuestChecks: true });
     if (allowed) {
       return null;
     }

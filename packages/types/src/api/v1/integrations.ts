@@ -9,6 +9,7 @@ import {
   integrationConfigPublicSchema,
   integrationConfigStoredSchema,
 } from '../../integrations/config.js';
+import { emptyToUndefined } from './query-preprocess.js';
 
 type IntegrationCategoryType =
   (typeof IntegrationCategoryEnum)[keyof typeof IntegrationCategoryEnum];
@@ -56,13 +57,6 @@ export type IntegrationListRow = integrationsGetPayload<{
 export type IntegrationDetailRow = integrationsGetPayload<{
   select: typeof integrationDetailSelect;
 }>;
-
-function emptyToUndefined(value: unknown): unknown {
-  if (value === '' || value === undefined || value === null) {
-    return undefined;
-  }
-  return value;
-}
 
 export const listIntegrationsQuerySchema = z.object({
   category: z.preprocess(

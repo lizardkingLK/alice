@@ -1,4 +1,5 @@
 import { Router, type Response } from 'express';
+import { z } from 'zod';
 import {
   requireApiAuth,
   type AuthenticatedRequest,
@@ -6,7 +7,11 @@ import {
 import { ChatRoles, parseChatRole } from '@repo/types';
 import { ChatProviderError } from '../integrations/chat-providers/chat-provider.error';
 import { type ChatService, sanitizeLog } from './chat.service';
-import type { InputMessage, StoredChatMessage } from './chat.route.types';
+import {
+  chatConversationIdParamSchema,
+  postChatMessageBodySchema,
+} from './chat.schemas';
+import type { StoredChatMessage } from './chat.route.types';
 
 export type ChatRouterDeps = {
   chatService: ChatService;
@@ -45,6 +50,38 @@ async function requireConversationOwner(
   return true;
 }
 
+function parseConversationIdParam(
+  res: Response,
+  rawId: string | undefined
+): string | undefined {
+  const parsed = chatConversationIdParamSchema.safeParse(rawId);
+  if (!parsed.success) {
+    res.status(400).json({ error: z.treeifyError(parsed.error) });
+    return undefined;
+  }
+  return parsed.data;
+}
+
+async function resolveOwnedConversationId(
+  chatService: ChatService,
+  res: Response,
+  userId: string,
+  rawId: string | undefined
+): Promise<string | undefined> {
+  const conversationId = parseConversationIdParam(res, rawId);
+  if (!conversationId) {
+    return undefined;
+  }
+
+  if (
+    !(await requireConversationOwner(chatService, res, userId, conversationId))
+  ) {
+    return undefined;
+  }
+
+  return conversationId;
+}
+
 export function createChatRouter(deps: ChatRouterDeps): Router {
   const { chatService } = deps;
   const chatRouter: Router = Router();
@@ -76,18 +113,16 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const { conversationId } = req.params;
-        if (
-          !(await requireConversationOwner(
-            chatService,
-            res,
-            req.userId!,
-            conversationId!
-          ))
-        ) {
+        const conversationId = await resolveOwnedConversationId(
+          chatService,
+          res,
+          req.userId!,
+          req.params.conversationId
+        );
+        if (!conversationId) {
           return;
         }
-        const history = await chatService.loadChatHistory(conversationId!);
+        const history = await chatService.loadChatHistory(conversationId);
         res.json({ history });
       } catch (error: unknown) {
         sendChatError(
@@ -105,18 +140,16 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const { conversationId } = req.params;
-        if (
-          !(await requireConversationOwner(
-            chatService,
-            res,
-            req.userId!,
-            conversationId!
-          ))
-        ) {
+        const conversationId = await resolveOwnedConversationId(
+          chatService,
+          res,
+          req.userId!,
+          req.params.conversationId
+        );
+        if (!conversationId) {
           return;
         }
-        await chatService.deleteConversation(req.userId!, conversationId!);
+        await chatService.deleteConversation(req.userId!, conversationId);
         res.json({ success: true });
       } catch (error: unknown) {
         sendChatError(
@@ -133,23 +166,25 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
     '/',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
+      const validation = postChatMessageBodySchema.safeParse(req.body);
+      if (!validation.success) {
+        return res
+          .status(400)
+          .json({ error: z.treeifyError(validation.error) });
+      }
+
       const {
         messages,
         conversationId: reqConversationId,
         modelId,
         integrationId,
-      } = req.body;
-
-      if (!messages || !Array.isArray(messages)) {
-        return res.status(400).json({ error: 'messages array is required' });
-      }
+      } = validation.data;
 
       let chatModelConfig;
       try {
         chatModelConfig = await chatService.resolveChatModelForChat({
-          integrationId:
-            typeof integrationId === 'string' ? integrationId : undefined,
-          legacyModelId: typeof modelId === 'string' ? modelId : undefined,
+          integrationId,
+          legacyModelId: modelId,
         });
       } catch (error: unknown) {
         const message =
@@ -159,7 +194,7 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
 
       try {
         const sanitizedInputMessages: StoredChatMessage[] = messages.map(
-          (msg: InputMessage, index: number) => ({
+          (msg, index) => ({
             id: msg.id || `msg-${Date.now()}-${index}`,
             role: parseChatRole(msg.role),
             content: msg.content || msg.text || '',

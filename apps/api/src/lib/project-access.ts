@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { UserRoleEnum, type Database } from '@repo/types';
+import { UserRoleEnum, type Database, RecordStatusEnum } from '@repo/types';
+import { AccessAllowlistKind as AccessAllowlistKindEnum } from '@repo/types/prisma';
 
 export const ALL_PROJECTS = 'all';
 
@@ -9,7 +10,7 @@ export async function listAccessibleProjectIds(
 ): Promise<typeof ALL_PROJECTS | string[]> {
   const { data: systemUser } = await db
     .from('users')
-    .select('role')
+    .select('role, email')
     .eq('id', actorId)
     .maybeSingle();
 
@@ -45,9 +46,36 @@ export async function listAccessibleProjectIds(
     throw new Error('Failed to authorize project access');
   }
 
-  const ids = [
+  let allowedProjectIdsFromAcl: string[] | null = null;
+  if (systemUser?.email) {
+    const { data: allowlistRecord } = await db
+      .from('access_allowlist')
+      .select('allowed_project_ids')
+      .eq('status', RecordStatusEnum.active)
+      .eq('kind', AccessAllowlistKindEnum.email)
+      .eq('value', systemUser.email.trim().toLowerCase())
+      .maybeSingle();
+
+    if (allowlistRecord?.allowed_project_ids) {
+      try {
+        const acl = allowlistRecord.allowed_project_ids;
+        if (Array.isArray(acl)) {
+          allowedProjectIdsFromAcl = acl.map(String);
+        }
+      } catch (e) {
+        console.error('Failed to parse allowed_project_ids ACL:', e);
+      }
+    }
+  }
+
+  let ids = [
     ...(memberships ?? []).map((row) => row.project_id),
     ...(owned ?? []).map((row) => row.id),
   ];
+
+  if (allowedProjectIdsFromAcl !== null) {
+    ids = ids.filter(id => allowedProjectIdsFromAcl!.includes(id));
+  }
+
   return [...new Set(ids)];
 }

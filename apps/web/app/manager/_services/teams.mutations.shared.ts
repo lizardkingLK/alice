@@ -8,6 +8,8 @@ export type Team = Tables<'teams'> & {
   members?: {
     team_id: string;
     user_id: string;
+    capacity?: number | null;
+    allocation?: number | null;
     status: 'active' | 'inactive' | 'archived' | 'deleted';
   }[];
 };

@@ -416,8 +416,6 @@ export function ChatClient({
           handleNewChat(true);
         }
         setConversationToDelete(null);
-      } else if (response.error) {
-        setError(response.error);
       }
     } catch (err) {
       console.error('Failed to delete conversation:', err);
@@ -455,11 +453,6 @@ export function ChatClient({
         activeConversationId,
         selectedIntegrationId
       );
-
-      if (response.error) {
-        setError(response.error);
-        return;
-      }
 
       applySuccessfulChatResponse({
         response,

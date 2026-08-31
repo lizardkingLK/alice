@@ -85,4 +85,48 @@ describe('isEmailAllowed', () => {
       'Failed to check access allowlist'
     );
   });
+
+  it('denies guest access when enforceGuestChecks is true and user does not exist', async () => {
+    mockAllowlistRows(
+      { 'email:guest@partner.com': { expires_at: null } },
+      {}, // no user
+      {}
+    );
+
+    const allowed = await isEmailAllowed('guest@partner.com', { enforceGuestChecks: true });
+    expect(allowed).toBe(false);
+  });
+
+  it('denies guest access when enforceGuestChecks is true and user exists but has 0 projects', async () => {
+    mockAllowlistRows(
+      { 'email:guest@partner.com': { expires_at: null } },
+      { 'guest@partner.com': { id: 'user-guest' } },
+      { 'user-guest': [] } // 0 projects
+    );
+
+    const allowed = await isEmailAllowed('guest@partner.com', { enforceGuestChecks: true });
+    expect(allowed).toBe(false);
+  });
+
+  it('allows guest access when enforceGuestChecks is true and user exists with projects', async () => {
+    mockAllowlistRows(
+      { 'email:guest@partner.com': { expires_at: null } },
+      { 'guest@partner.com': { id: 'user-guest' } },
+      { 'user-guest': [{ project_id: 'proj-1' }] } // 1 project
+    );
+
+    const allowed = await isEmailAllowed('guest@partner.com', { enforceGuestChecks: true });
+    expect(allowed).toBe(true);
+  });
+
+  it('bypasses guest checks when enforceGuestChecks is false or unset', async () => {
+    mockAllowlistRows(
+      { 'email:guest@partner.com': { expires_at: null } },
+      {}, // no user
+      {}
+    );
+
+    const allowed = await isEmailAllowed('guest@partner.com');
+    expect(allowed).toBe(true);
+  });
 });

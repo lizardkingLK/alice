@@ -1,3 +1,4 @@
+import { parseWithZod } from '@/lib/zod/format-zod-error';
 import {
   createWorkItemBodySchema,
   patchWorkItemBodySchema,
@@ -5,14 +6,9 @@ import {
   type CreateWorkItemBody,
   type PatchWorkItemBody,
 } from '@repo/types/api/v1';
-import { z } from 'zod';
 
 function formDataToRecord(formData: FormData): Record<string, unknown> {
   return Object.fromEntries(formData.entries());
-}
-
-export function formatWorkItemZodError(error: z.ZodError): string {
-  return JSON.stringify(z.treeifyError(error));
 }
 
 export function parsePatchWorkItemBody(
@@ -23,12 +19,7 @@ export function parsePatchWorkItemBody(
     throw new Error('Invalid JSON format provided for description field');
   }
 
-  const parsed = patchWorkItemBodySchema.safeParse(preprocessed);
-  if (!parsed.success) {
-    throw new Error(formatWorkItemZodError(parsed.error));
-  }
-
-  return parsed.data;
+  return parseWithZod(patchWorkItemBodySchema, preprocessed);
 }
 
 export function parseCreateWorkItemFormData(
@@ -44,12 +35,7 @@ export function parseCreateWorkItemFormData(
     throw new Error('Invalid JSON format provided for description field');
   }
 
-  const parsed = createWorkItemBodySchema.safeParse(preprocessed);
-  if (!parsed.success) {
-    throw new Error(formatWorkItemZodError(parsed.error));
-  }
-
-  return parsed.data;
+  return parseWithZod(createWorkItemBodySchema, preprocessed);
 }
 
 export function parsePatchWorkItemFormData(
