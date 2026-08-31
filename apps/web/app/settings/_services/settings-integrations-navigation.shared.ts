@@ -12,14 +12,14 @@ export const INTEGRATION_CATEGORY_FILTER_TAB: Record<
   [IntegrationCategory.productivity]: 'productivity',
 };
 
-const INTEGRATION_FILTER_TABS: readonly IntegrationFilterTab[] = [
+const INTEGRATION_FILTER_TABS = new Set<IntegrationFilterTab>([
   'all',
   'ai-agents',
   'communication',
   'design',
   'productivity',
   'planned',
-];
+]);
 
 export function settingsIntegrationsHref(
   category: IntegrationCategory
@@ -39,7 +39,6 @@ export function parseIntegrationsCategoryFilter(
     return undefined;
   }
 
-  return INTEGRATION_FILTER_TABS.includes(category as IntegrationFilterTab)
-    ? (category as IntegrationFilterTab)
-    : undefined;
+  const filterTab = category as IntegrationFilterTab;
+  return INTEGRATION_FILTER_TABS.has(filterTab) ? filterTab : undefined;
 }
