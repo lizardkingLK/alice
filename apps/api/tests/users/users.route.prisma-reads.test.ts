@@ -91,7 +91,7 @@ describe('users versioned GET routes', () => {
 
       expect(response.status).toBe(200);
       expect(body.totalCount).toBe(1);
-      expect(body.users[0].id).toBe(page.users[0].id);
+      expect(body.users[0].id).toBe(page.users[0]!.id);
       expect(listUsersPaginatedMock).toHaveBeenCalledWith(
         expect.objectContaining({
           page: 1,
