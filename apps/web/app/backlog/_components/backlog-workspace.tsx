@@ -22,6 +22,7 @@ import {
   BacklogCreateSprintDialog,
   BacklogMismatchDialog,
   BacklogStartSprintDialog,
+  BacklogErrorDialog,
 } from '@/app/backlog/_components/backlog-dialogs';
 import {
   getBacklogIssuesPaneClass,
@@ -137,6 +138,7 @@ export function BacklogWorkspace({
   const [actionError, setActionError] = useState<string | null>(null);
   const [isActionPending, setIsActionPending] = useState(false);
   const [isMismatchOpen, setIsMismatchOpen] = useState(false);
+  const [isErrorOpen, setIsErrorOpen] = useState(false);
 
   const isSprintDropMismatch = (
     itemId: string | null,
@@ -168,6 +170,7 @@ export function BacklogWorkspace({
       prev?.id === itemId ? { ...prev, ...patch } : prev
     );
     setActionError(error instanceof Error ? error.message : fallbackMessage);
+    setIsErrorOpen(true);
     console.error('error. failed to update work item', error);
   };
 
@@ -761,6 +764,16 @@ export function BacklogWorkspace({
           open={isMismatchOpen}
           onOpenChange={setIsMismatchOpen}
           onAcknowledge={() => setIsMismatchOpen(false)}
+        />
+
+        <BacklogErrorDialog
+          open={isErrorOpen}
+          error={actionError}
+          onOpenChange={setIsErrorOpen}
+          onClose={() => {
+            setIsErrorOpen(false);
+            setActionError(null);
+          }}
         />
 
         <WorkspaceDefaultsDialogHost

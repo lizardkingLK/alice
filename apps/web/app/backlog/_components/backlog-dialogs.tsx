@@ -369,3 +369,69 @@ export function BacklogMismatchDialog({
     </Dialog>
   );
 }
+
+/* eslint-disable no-unused-vars */
+type ErrorDialogProps = {
+  readonly open: boolean;
+  readonly error: string | null;
+  readonly onOpenChange: (open: boolean) => void;
+  readonly onClose: () => void;
+};
+/* eslint-enable no-unused-vars */
+
+export function BacklogErrorDialog({
+  open,
+  error,
+  onOpenChange,
+  onClose,
+}: Readonly<ErrorDialogProps>) {
+  if (!error) return null;
+
+  const isCapacityError = error.toLowerCase().includes('capacity');
+  const title = isCapacityError ? 'Sprint Capacity Exceeded' : 'Action Failed';
+  const description = isCapacityError
+    ? 'The task cannot be allocated because the sprint story point limit has been reached.'
+    : 'An error occurred while updating the work item.';
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-card border-border/80 backdrop-blur-md sm:max-w-md p-0 overflow-hidden"
+      >
+        <div className="p-6">
+          <div className="mb-3 flex items-center gap-3 text-rose-500">
+            <div className="rounded-full border border-rose-500/20 bg-rose-500/10 p-2">
+              <AlertCircle className="h-6 w-6" />
+            </div>
+            <h3 className="text-foreground text-lg font-bold">{title}</h3>
+          </div>
+
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            {description}
+          </p>
+          <p className="text-muted-foreground/80 bg-muted/50 border-border/40 mt-2 rounded-lg border p-2.5 text-xs">
+            {error}
+          </p>
+        </div>
+
+        <div className="bg-muted/40 border-border flex justify-end gap-3 border-t px-6 py-4">
+          <Button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
+            className="bg-rose-600 hover:bg-rose-700 px-4 text-xs font-semibold text-white shadow-sm"
+          >
+            OK
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
