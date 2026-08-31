@@ -11,10 +11,31 @@ import {
   updateUserSchema,
 } from './users.schemas';
 import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
+import { listUsersQuerySchema } from '@repo/types';
 
 export type UsersRouterDeps = {
   usersService: UsersService;
 };
+
+function firstQueryValue(value: unknown): string | undefined {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (Array.isArray(value) && typeof value[0] === 'string') {
+    return value[0];
+  }
+  return undefined;
+}
+
+function listUsersQueryFromRequest(query: Record<string, unknown>) {
+  return listUsersQuerySchema.safeParse({
+    page: firstQueryValue(query.page),
+    limit: firstQueryValue(query.limit),
+    search: firstQueryValue(query.search),
+    role: firstQueryValue(query.role),
+    active: firstQueryValue(query.active),
+  });
+}
 
 export function createUsersRouter(deps: UsersRouterDeps) {
   const { usersService } = deps;
@@ -117,5 +138,51 @@ export function createUsersRouter(deps: UsersRouterDeps) {
     }
   );
 
+  usersRouter.get(
+    '/',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsed = listUsersQueryFromRequest(
+        req.query as Record<string, unknown>
+      );
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+
+      try {
+        const result = await usersService.listUsersPaginated(parsed.data);
+        res.json(result);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to list users';
+        res.status(500).json({ error: message });
+      }
+    }
+  );
+
+  usersRouter.get(
+    '/:id',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsedId = z.uuid().safeParse(req.params.id);
+      if (!parsedId.success) {
+        return res.status(400).json({ error: 'Invalid user ID.' });
+      }
+
+      try {
+        const user = await usersService.getUserDetail(parsedId.data);
+        if (!user) {
+          return res.status(404).json({ error: 'User not found.' });
+        }
+        res.json({ user });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to get user';
+        res.status(500).json({ error: message });
+      }
+    }
+  );
+
   return usersRouter;
 }
+

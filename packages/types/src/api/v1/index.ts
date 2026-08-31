@@ -176,3 +176,15 @@ export {
   type ListIntegrationsQuery,
   type PatchIntegrationBody,
 } from './integrations.js';
+export {
+  listUsersQuerySchema,
+  userDetailSelect,
+  userListSelect,
+  type ListUsersQuery,
+  type UserDetailRow,
+  type UserListRow,
+  type UserPrismaListFilters,
+  createUserSchema,
+  updateUserSchema,
+} from './users.js';
+

@@ -47,6 +47,7 @@ routesConfig.use('/api/v1/sprints', sprints.router);
 routesConfig.use('/api/teams', teams.router);
 routesConfig.use('/api/v1/teams', teams.router);
 routesConfig.use('/api/users', users.router);
+routesConfig.use('/api/v1/users', users.router);
 routesConfig.use('/api/workItems', workItems.router);
 routesConfig.use('/api/v1/workItems', workItems.router);
 routesConfig.use('/api/worklogs', worklogs.router);

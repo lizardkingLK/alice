@@ -1,4 +1,4 @@
-import type { Database } from '@repo/types';
+import type { Database, UserDetailRow, UserPrismaListFilters } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { prisma } from '../../../lib/prisma';
 import {
@@ -14,7 +14,16 @@ import {
   filterProductUsableUsers,
   UserMembershipStatusEnum,
   UserRoleEnum,
+  userListSelect,
+  userDetailSelect,
+  paginationMeta,
 } from '@repo/types';
+import {
+  buildUserPrismaWhere,
+  userListPageSlice,
+  type UserPaginatedList,
+} from './users.prisma-query';
+
 
 export type UserRow = {
   id: string;
@@ -166,6 +175,51 @@ export class UsersRepository {
       fetchCurrent: () => this.findById(id),
       notFoundMessage: 'User not found',
     });
+  }
+
+  async listPaginated(input: {
+    filters?: UserPrismaListFilters;
+    search?: string;
+    page: number;
+    limit: number;
+  }): Promise<UserPaginatedList> {
+    const where = buildUserPrismaWhere(input.filters, input.search);
+    const { skip, take } = userListPageSlice(input.page, input.limit);
+
+    try {
+      const [users, totalCount] = await Promise.all([
+        prisma.users.findMany({
+          where,
+          select: userListSelect,
+          orderBy: { created_at: 'desc' },
+          skip,
+          take,
+        }),
+        prisma.users.count({ where }),
+      ]);
+
+      return {
+        users,
+        ...paginationMeta(totalCount, input.page, input.limit),
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to list users:', message);
+      throw new Error('Failed to list users');
+    }
+  }
+
+  async getDetailById(userId: string): Promise<UserDetailRow | null> {
+    try {
+      return await prisma.users.findUnique({
+        where: { id: userId },
+        select: userDetailSelect,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to get user detail:', message);
+      throw new Error('Failed to get user');
+    }
   }
 
   async delete(id: string): Promise<void> {
