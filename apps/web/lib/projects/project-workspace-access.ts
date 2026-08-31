@@ -1,6 +1,8 @@
 import { getActiveMemberProjectIds } from '@/app/board/_services/board.reads.defaults.server';
 import { isAdmin, isAppRole } from '@/lib/rbac/roles';
 import { createClient } from '@/lib/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@repo/types';
 
 /** True when `userId` owns the project (`projects.owner_id`). */
 export async function isProjectOwner(
@@ -75,6 +77,52 @@ export async function canAccessProjectWorkspace(
   return isActiveProjectMember(userId, projectId);
 }
 
+async function resolveAllowedProjectIdsFromAcl(
+  supabase: SupabaseClient<Database>,
+  userId: string
+): Promise<string[] | null> {
+  const { data: userRow } = await supabase
+    .from('users')
+    .select('email')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (!userRow?.email) {
+    return null;
+  }
+
+  const { data: allowlistRecord } = await supabase
+    .from('access_allowlist')
+    .select('allowed_project_ids')
+    .eq('status', 'active')
+    .eq('kind', 'email')
+    .eq('value', userRow.email.trim().toLowerCase())
+    .maybeSingle();
+
+  if (!allowlistRecord?.allowed_project_ids) {
+    return null;
+  }
+
+  try {
+    const acl = allowlistRecord.allowed_project_ids;
+    if (!Array.isArray(acl)) {
+      return null;
+    }
+    const keys = acl.map(String).map((k) => k.trim().toUpperCase()).filter(Boolean);
+    if (keys.length === 0) {
+      return [];
+    }
+    const { data: matchedProjects } = await supabase
+      .from('projects')
+      .select('id')
+      .in('key', keys);
+    return (matchedProjects ?? []).map((row) => row.id);
+  } catch (err) {
+    console.error('Failed to parse allowed_project_ids ACL:', err);
+    return null;
+  }
+}
+
 /**
  * Project ids visible in the `/projects` registry for this user.
  * - `'all'` — admins see every project
@@ -92,7 +140,8 @@ export async function listAccessibleProjectIds(
     return 'all';
   }
 
-  const memberIds = await listMemberProjectIdsSafe(userId);
+  let memberIds = await listMemberProjectIdsSafe(userId);
+  let ownedIds: string[] = [];
 
   try {
     const supabase = await createClient();
@@ -106,16 +155,21 @@ export async function listAccessibleProjectIds(
         'error. failed to list owned projects for registry:',
         error.message
       );
-      return [...new Set(memberIds)];
+    } else {
+      ownedIds = (data ?? []).map((row) => row.id);
     }
 
-    const ownedIds = (data ?? []).map((row) => row.id);
-    return [...new Set([...memberIds, ...ownedIds])];
-  } catch (ownedError) {
+    const allowedProjectIdsFromAcl = await resolveAllowedProjectIdsFromAcl(supabase, userId);
+    if (allowedProjectIdsFromAcl !== null) {
+      memberIds = memberIds.filter((id) => allowedProjectIdsFromAcl.includes(id));
+      ownedIds = ownedIds.filter((id) => allowedProjectIdsFromAcl.includes(id));
+    }
+  } catch (err) {
     console.error(
-      'error. failed to list owned projects for registry',
-      ownedError
+      'error. failed to resolve projects for registry with ACL',
+      err
     );
-    return [...new Set(memberIds)];
   }
+
+  return [...new Set([...memberIds, ...ownedIds])];
 }
