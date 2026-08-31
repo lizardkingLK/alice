@@ -186,9 +186,7 @@ export class TeamsRepository {
       },
     });
 
-    const parsedMembers = members 
-      ? members 
-      : (member_ids || []).map(id => ({ user_id: id }));
+    const parsedMembers = members ?? (member_ids || []).map(id => ({ user_id: id }));
 
     if (parsedMembers.length > 0) {
       try {
@@ -246,9 +244,7 @@ export class TeamsRepository {
     });
 
     if (members || member_ids) {
-      const parsedMembers = members 
-        ? members 
-        : (member_ids || []).map(id => ({ user_id: id }));
+      const parsedMembers = members ?? (member_ids || []).map(id => ({ user_id: id }));
 
       try {
         await prisma.team_members.deleteMany({ where: { team_id: teamId } });

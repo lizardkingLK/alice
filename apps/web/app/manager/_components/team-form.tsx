@@ -509,10 +509,10 @@ export function TeamForm({
                               className="h-8 w-16 text-center text-xs p-1"
                               value={currentCapacity}
                               onChange={(e) => {
-                                const val = parseInt(e.target.value, 10);
+                                const val = Number.parseInt(e.target.value, 10);
                                 setMemberCapacities((prev) => ({
                                   ...prev,
-                                  [userId]: isNaN(val) ? 0 : val,
+                                  [userId]: Number.isNaN(val) ? 0 : val,
                                 }));
                               }}
                             />
@@ -526,10 +526,10 @@ export function TeamForm({
                               className="h-8 w-16 text-center text-xs p-1"
                               value={currentAllocation}
                               onChange={(e) => {
-                                const val = parseInt(e.target.value, 10);
+                                const val = Number.parseInt(e.target.value, 10);
                                 setMemberAllocations((prev) => ({
                                   ...prev,
-                                  [userId]: isNaN(val) ? 0 : val,
+                                  [userId]: Number.isNaN(val) ? 0 : val,
                                 }));
                               }}
                             />

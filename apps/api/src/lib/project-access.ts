@@ -60,7 +60,7 @@ export async function listAccessibleProjectIds(
       try {
         const acl = allowlistRecord.allowed_project_ids;
         if (Array.isArray(acl)) {
-          allowedProjectIdsFromAcl = acl.map(id => String(id));
+          allowedProjectIdsFromAcl = acl.map(String);
         }
       } catch (e) {
         console.error('Failed to parse allowed_project_ids ACL:', e);

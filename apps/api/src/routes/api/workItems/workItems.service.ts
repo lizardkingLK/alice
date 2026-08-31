@@ -222,7 +222,7 @@ export class WorkItemService {
     });
 
     if (sprintChanged || assigneeChanged || storyPointsChanged) {
-      await this.createWorkItemUpdateWorklog(
+      await this.createWorkItemUpdateWorklog({
         userId,
         workItemId,
         current,
@@ -231,24 +231,35 @@ export class WorkItemService {
         storyPoints,
         sprintChanged,
         assigneeChanged,
-        storyPointsChanged
-      );
+        storyPointsChanged,
+      });
     }
 
     return updated;
   }
 
-  private async createWorkItemUpdateWorklog(
-    userId: string,
-    workItemId: string,
-    current: DbWorkItem,
-    sprintId: string | null | undefined,
-    assigneeId: string | null | undefined,
-    storyPoints: number | null | undefined,
-    sprintChanged: boolean,
-    assigneeChanged: boolean,
-    storyPointsChanged: boolean
-  ): Promise<void> {
+  private async createWorkItemUpdateWorklog(params: {
+    userId: string;
+    workItemId: string;
+    current: DbWorkItem;
+    sprintId: string | null | undefined;
+    assigneeId: string | null | undefined;
+    storyPoints: number | null | undefined;
+    sprintChanged: boolean;
+    assigneeChanged: boolean;
+    storyPointsChanged: boolean;
+  }): Promise<void> {
+    const {
+      userId,
+      workItemId,
+      current,
+      sprintId,
+      assigneeId,
+      storyPoints,
+      sprintChanged,
+      assigneeChanged,
+      storyPointsChanged,
+    } = params;
     let oldSprintName: string = WorkItemDefaults.BACKLOG;
     if (current.sprint_id) {
       const s = await prisma.sprints.findUnique({ where: { id: current.sprint_id }, select: { name: true } });

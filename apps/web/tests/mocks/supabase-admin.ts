@@ -74,7 +74,7 @@ export function mockAllowlistRows(
           }
           return { data: null, error: null };
         }),
-        then: vi.fn(async (onfulfilled) => {
+        then: vi.fn(async (onfulfilled) => { // NOSONAR
           if (table === 'project_members') {
             const userIdKey = filters['user_id'] || '';
             const list = projectMemberships[userIdKey] || [];
