@@ -405,8 +405,9 @@ model access_allowlist {
   kind       AccessAllowlistKind
   value      String
   label      String?
-  expires_at DateTime?           @db.Timestamptz(6)
-  status     RecordStatus        @default(active)
+  expires_at          DateTime?           @db.Timestamptz(6)
+  allowed_project_ids Json?
+  status              RecordStatus        @default(active)
   created_by String?             @db.Uuid
   created_at DateTime            @default(now()) @db.Timestamptz(6)
   updated_by String?             @db.Uuid

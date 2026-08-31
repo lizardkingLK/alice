@@ -50,6 +50,7 @@ const emailEntry = {
   value: 'client@partner.com',
   label: 'Pilot',
   expires_at: null,
+  allowed_project_ids: null,
   status: 'active' as const,
   created_by: 'admin-1',
   created_at: '2026-01-01T00:00:00.000Z',

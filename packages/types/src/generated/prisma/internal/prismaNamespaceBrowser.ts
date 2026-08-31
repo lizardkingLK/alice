@@ -301,6 +301,7 @@ export const Access_allowlistScalarFieldEnum = {
   value: 'value',
   label: 'label',
   expires_at: 'expires_at',
+  allowed_project_ids: 'allowed_project_ids',
   status: 'status',
   created_by: 'created_by',
   created_at: 'created_at',

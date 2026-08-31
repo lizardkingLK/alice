@@ -16,6 +16,7 @@ import {
   isValidAccessAllowlistDomain,
   normalizeAccessAllowlistDomain,
   type Tables,
+  type Json,
 } from '@repo/types';
 import { AccessAllowlistKind as AccessAllowlistKindEnum } from '@repo/types/prisma';
 import { SupabaseClient } from '@supabase/supabase-js';
@@ -40,6 +41,7 @@ function toAccessAllowlistRow(row: {
   value: string;
   label: string | null;
   expires_at: Date | null;
+  allowed_project_ids: Json | null;
   status: AccessAllowlistStatus;
   created_by: string | null;
   created_at: Date;
@@ -51,8 +53,8 @@ function toAccessAllowlistRow(row: {
     kind: row.kind,
     value: row.value,
     label: row.label,
-    allowed_project_ids: null,
     expires_at: row.expires_at?.toISOString() ?? null,
+    allowed_project_ids: row.allowed_project_ids ?? null,
     status: row.status,
     created_by: row.created_by,
     created_at: row.created_at.toISOString(),

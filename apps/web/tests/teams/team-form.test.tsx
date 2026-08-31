@@ -337,6 +337,7 @@ describe('TeamForm Component', () => {
         project_id: 'proj-1',
         status: 'active',
         member_ids: [],
+        members: [],
       });
     });
 
@@ -380,6 +381,13 @@ describe('TeamForm Component', () => {
           manager_id: 'user-mgr-1',
           project_id: 'proj-1',
           member_ids: ['user-dev-1'],
+          members: [
+            {
+              user_id: 'user-dev-1',
+              capacity: 40,
+              allocation: 100,
+            },
+          ],
         })
       );
     });
@@ -421,6 +429,13 @@ describe('TeamForm Component', () => {
           manager_id: 'user-mgr-1',
           status: 'active',
           member_ids: ['user-dev-1'],
+          members: [
+            {
+              user_id: 'user-dev-1',
+              capacity: 40,
+              allocation: 100,
+            },
+          ],
         }),
         '2026-07-10T10:00:00Z'
       );
@@ -518,6 +533,13 @@ describe('TeamForm Component', () => {
         expect.objectContaining({
           project_id: 'proj-1',
           member_ids: ['user-dev-1'],
+          members: [
+            {
+              user_id: 'user-dev-1',
+              capacity: 40,
+              allocation: 100,
+            },
+          ],
         }),
         '2026-07-10T10:00:00Z'
       );
