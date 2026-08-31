@@ -21,6 +21,8 @@ const requestPasswordResetSchema = z.object({
   email: z.email({ message: 'Please enter a valid email address.' }),
 });
 
+import { loginErrorMessage } from '@/lib/auth-login-errors';
+
 export async function login(formData: FormData) {
   const supabase = await createClient();
 
@@ -43,7 +45,7 @@ export async function login(formData: FormData) {
   if (error) {
     redirect(
       buildLoginPath(next, {
-        error: error.message,
+        error: loginErrorMessage(error.message),
       })
     );
   }
