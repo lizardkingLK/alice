@@ -62,6 +62,14 @@ export {
   type ProjectMemberRow,
   listProjectsQuerySchema,
   type ListProjectsQuery,
+  ProjectStatusEnum,
+  PROJECT_PROJECTION,
+  type ProjectProjection,
+  projectRelationSelect,
+  createProjectSchema,
+  updateProjectSchema,
+  withoutIntegrationSecrets,
+  withoutGithubToken,
 } from './projects.js';
 export {
   teamManagerSelect,
@@ -70,6 +78,10 @@ export {
   type TeamListRow,
   listTeamsQuerySchema,
   type ListTeamsQuery,
+  createTeamSchema,
+  updateTeamSchema,
+  teamMemberPatchFields,
+  updateTeamMemberSchema,
 } from './teams.js';
 
 export {

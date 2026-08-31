@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { work_itemsGetPayload } from '../../generated/prisma/models/work_items.js';
 import { todayDateString, toDateOnly } from '../../date-only.js';
 import { expectedUpdatedAtSchema } from '../../optimistic-lock.js';
-import { projectRelationSelect } from '../../projects.js';
+import { projectRelationSelect } from './projects.js';
 import { userRelationSelect } from '../../users.js';
 import { WORK_ITEM_PRIORITIES } from '../../work-item-priorities.js';
 import { WORK_ITEM_STATUSES } from '../../work-item-status.js';
