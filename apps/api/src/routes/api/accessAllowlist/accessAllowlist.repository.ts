@@ -18,8 +18,7 @@ import {
   type Tables,
   type Json,
 } from '@repo/types';
-import { AccessAllowlistKind as AccessAllowlistKindEnum } from '@repo/types/prisma';
-import { Prisma } from '@repo/types/prisma';
+import { AccessAllowlistKind as AccessAllowlistKindEnum, Prisma } from '@repo/types/prisma';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 export type AccessAllowlistRow = Tables<'access_allowlist'>;
