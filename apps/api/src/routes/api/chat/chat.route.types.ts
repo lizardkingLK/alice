@@ -1,4 +1,9 @@
-import type { ChatRole, GeminiRole } from '@repo/types';
+import type { GeminiRole } from '@repo/types';
+import type {
+  ChatInputMessage,
+  ChatMessageWire,
+  ChatToolActionWire,
+} from '@repo/types/api/v1';
 
 export interface ContentPart {
   text?: string;
@@ -27,28 +32,6 @@ export interface GeminiResponse {
   candidates?: GeminiCandidate[];
 }
 
-export interface InputMessage {
-  role: string;
-  content?: string;
-  text?: string;
-  parts?: ContentPart[];
-  id?: string;
-  actions?: ToolAction[];
-}
-
-export interface ToolAction {
-  type: 'create_project' | 'create_sprint' | 'create_work_item';
-  entity: {
-    id: string;
-    name?: string;
-    key?: string;
-    title?: string;
-    status?: string;
-  };
-}
-export interface StoredChatMessage {
-  id: string;
-  role: ChatRole;
-  content: string;
-  actions?: ToolAction[];
-}
+export type InputMessage = ChatInputMessage;
+export type ToolAction = ChatToolActionWire;
+export type StoredChatMessage = ChatMessageWire;

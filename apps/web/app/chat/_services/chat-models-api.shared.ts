@@ -1,6 +1,7 @@
 import type { ChatModelOption } from '@repo/types';
+import { chatModelOptionsResponseSchema } from '@repo/types/api/v1';
 
-export const CHAT_MODELS_API_PATH = '/api/integrations/chat-models';
+export const CHAT_MODELS_API_PATH = '/api/v1/integrations/chat-models';
 
 export type ChatModelOptionsResponse = {
   models: ChatModelOption[];
@@ -42,7 +43,11 @@ export function createChatModelsService(
 ) {
   async function listChatModels(): Promise<ChatModelOption[]> {
     const data = await apiFetch<ChatModelOptionsResponse>(CHAT_MODELS_API_PATH);
-    return data.models;
+    const parsed = chatModelOptionsResponseSchema.safeParse(data);
+    if (!parsed.success) {
+      throw new Error('Invalid chat models response');
+    }
+    return parsed.data.models;
   }
 
   return { listChatModels };
