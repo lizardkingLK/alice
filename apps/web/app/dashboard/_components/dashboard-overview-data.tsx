@@ -1,5 +1,5 @@
 import { DashboardOverview } from '@/app/dashboard/_components/dashboard-overview';
-import { getDashboardBurndownBootstrap } from '@/app/dashboard/_services/dashboard-burndown.server';
+import { getDashboardBurndownBootstrap } from '@/app/dashboard/_services/dashboard.reads.burndown.server';
 
 /** Async RSC — owns burndown prefetch so the shell can stream first. */
 export async function DashboardOverviewData() {

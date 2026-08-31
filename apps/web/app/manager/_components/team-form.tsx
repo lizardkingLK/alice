@@ -28,13 +28,13 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import { Users, Loader2, X } from '@repo/ui/lib/icons';
-import type { User } from '@/app/users/_services/users.service';
-import { createTeam, updateTeam } from '../_services/teams.service';
+import type { User } from '@/app/users/_services/users.mutations.client';
+import { createTeam, updateTeam } from '../_services/teams.mutations.client';
 import type {
   Project,
   ProjectMembersByProjectId,
-} from '@/app/projects/_services/projects.service.base';
-import type { Team } from '../_services/teams.service';
+} from '@/app/projects/_services/projects.mutations.shared';
+import type { Team } from '../_services/teams.mutations.client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 

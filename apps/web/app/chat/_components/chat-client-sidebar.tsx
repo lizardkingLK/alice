@@ -5,7 +5,7 @@ import { Input } from '@repo/ui/components/ui/input';
 import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
 import { Loader2, Trash2 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
-import type { ChatConversation } from '../_services/chat-client.service';
+import type { ChatConversation } from '../_services/chat.mutations.client';
 
 type ChatClientSidebarProps = {
   readonly showHistory: boolean;

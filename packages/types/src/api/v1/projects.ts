@@ -180,7 +180,8 @@ export type ProjectMemberRow = project_membersGetPayload<{
   select: typeof projectMemberSelect;
 }>;
 
-type ProjectStatusType = (typeof ProjectStatusEnum)[keyof typeof ProjectStatusEnum];
+type ProjectStatusType =
+  (typeof ProjectStatusEnum)[keyof typeof ProjectStatusEnum];
 
 function emptyToUndefined(value: unknown): unknown {
   if (value === '' || value === undefined || value === null) {
@@ -200,7 +201,14 @@ export const listProjectsQuerySchema = z.object({
   ),
   status: z.preprocess(
     emptyToUndefined,
-    z.enum(Object.values(ProjectStatusEnum) as [ProjectStatusType, ...ProjectStatusType[]]).optional()
+    z
+      .enum(
+        Object.values(ProjectStatusEnum) as [
+          ProjectStatusType,
+          ...ProjectStatusType[],
+        ]
+      )
+      .optional()
   ),
   search: z.preprocess(emptyToUndefined, z.string().optional()),
 });

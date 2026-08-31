@@ -102,3 +102,9 @@ export type saved_view_shares = Prisma.saved_view_sharesModel
  * 
  */
 export type github_pull_requests = Prisma.github_pull_requestsModel
+/**
+ * Model integrations
+ * Workspace-level integration instance (chat models, Slack, Figma, etc.).
+ * Secrets live encrypted inside `config` JSONB; API access is service-role only.
+ */
+export type integrations = Prisma.integrationsModel

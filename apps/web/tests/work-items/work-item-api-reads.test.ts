@@ -1,18 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError } from '@/lib/api/api';
+import { ApiError } from '@/lib/api/api-fetch.helper';
 import {
   buildWorkItemsListSearchParams,
   getWorkItemFromApi,
   listWorkItemsPaginatedFromApi,
   mapWorkItemApiRow,
-} from '@/app/work-items/_services/workItem.service.server.api';
+} from '@/app/work-items/_services/work-items.reads.api.server';
 import { workItemFactory } from '../factories/workItem.factory';
 
 const { apiFetchMock } = vi.hoisted(() => ({
   apiFetchMock: vi.fn(),
 }));
 
-vi.mock('@/lib/api/api-client.server', () => ({
+vi.mock('@/lib/api/api-fetch.reads.use.server', () => ({
   apiFetch: apiFetchMock,
 }));
 

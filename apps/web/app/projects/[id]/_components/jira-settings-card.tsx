@@ -23,12 +23,12 @@ import {
   deleteJiraConnection,
   importJiraIssues,
   type JiraConnection,
-} from '@/app/projects/_services/jira.service';
+} from '@/app/projects/_services/projects.jira.mutations.client';
 import { useJiraConnectionPicker } from '@/app/projects/_hooks/use-jira-connection-picker';
 import { useIntegrationSettingsSave } from '@/app/projects/_hooks/use-integration-settings-save';
 import { JiraConnectionFields } from '@/app/projects/_components/jira-connection-fields';
 import { errorMessage } from '@/lib/errors/error-message';
-import type { Project } from '../../_services/projects.service';
+import type { Project } from '../../_services/projects.mutations.client';
 
 function linkedConnectionSite(
   connections: JiraConnection[],

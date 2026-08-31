@@ -3,9 +3,9 @@ import { render, screen } from '@testing-library/react';
 import {
   WORK_ITEM_PATCH_FIELD_CONFIG,
   WorkItemFieldPatchDialog,
-} from '@/app/work-items/_components/workItem-field-patch-dialog';
+} from '@/app/work-items/_components/work-item-details/work-item-field-patch-dialog';
 
-vi.mock('@/app/work-items/_services/workItem.service.client', () => ({
+vi.mock('@/app/work-items/_services/work-items.mutations.client', () => ({
   updateWorkItem: vi.fn(),
   updateWorkItemStatus: vi.fn(),
 }));

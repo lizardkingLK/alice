@@ -39,7 +39,7 @@ import {
   updateComment,
   archiveComment,
   restoreComment,
-} from '../_services/comments.service';
+} from '../_services/comments.mutations.client';
 import { createCommentAction } from './actions';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { tryHandleLockedMutationError } from '@/lib/optimistic-lock/run-locked-mutation';

@@ -1,4 +1,4 @@
-import type { Project } from '@/app/projects/_services/projects.service.base';
+import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 
 export function filterActiveProjects(projects: Project[]): Project[] {
   return projects

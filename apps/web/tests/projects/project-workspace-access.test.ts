@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const getActiveMemberProjectIdsMock = vi.hoisted(() => vi.fn());
 const createClientMock = vi.hoisted(() => vi.fn());
 
-vi.mock('@/app/board/_services/board-defaults.server', () => ({
+vi.mock('@/app/board/_services/board.reads.defaults.server', () => ({
   getActiveMemberProjectIds: getActiveMemberProjectIdsMock,
 }));
 

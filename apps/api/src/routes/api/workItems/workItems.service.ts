@@ -236,35 +236,6 @@ export class WorkItemService {
     return Math.max(0, ids.length - 1);
   }
 
-  async listWorkItemWorkLogs(actorId: string, workItemId: string) {
-    return await this.workItems.listWorkItemWorkLogs(workItemId, actorId);
-  }
-
-  async createWorkItemWorkLog(
-    actorId: string,
-    workItemId: string,
-    input: {
-      loggedHours: number;
-      loggedAtIso: string;
-      comment: string | null;
-    }
-  ) {
-    const current = await this.workItems.getById(workItemId);
-    if (current?.status === 'Done') {
-      throw new WorkItemValidationError(
-        'Done work items are read-only except Status. Change status to log work.'
-      );
-    }
-
-    return await this.workItems.createWorkItemWorkLog({
-      workItemId,
-      actorId,
-      loggedHours: input.loggedHours,
-      loggedAtIso: input.loggedAtIso,
-      comment: input.comment,
-    });
-  }
-
   /**
    * Archive or restore a work-item subtree after membership + state checks.
    */

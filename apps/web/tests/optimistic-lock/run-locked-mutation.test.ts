@@ -3,7 +3,7 @@ import {
   OPTIMISTIC_LOCK_ERROR_CODE,
   OPTIMISTIC_LOCK_HTTP_STATUS,
 } from '@repo/types';
-import { ApiError } from '@/lib/api/api';
+import { ApiError } from '@/lib/api/api-fetch.helper';
 import {
   runLockedMutation,
   runLockedMutationOrThrow,

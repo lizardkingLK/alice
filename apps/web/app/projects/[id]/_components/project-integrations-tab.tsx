@@ -2,7 +2,7 @@
 
 import { JiraSettingsCard } from '@/app/projects/[id]/_components/jira-settings-card';
 import { GithubSettingsCard } from '@/app/projects/[id]/_components/github-settings-card';
-import type { Project } from '../../_services/projects.service';
+import type { Project } from '../../_services/projects.mutations.client';
 
 export type ProjectIntegrationsTabProps = {
   readonly project: Project;

@@ -3,7 +3,7 @@
 import { getUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { throwIfError } from '@/lib/db/query';
-import { getProjectMembers } from '@/app/projects/_services/projects.service.server';
+import { getProjectMembers } from '@/app/projects/_services/projects.reads.server';
 import type { WorkItemMemberLike } from '@/app/work-items/_helpers/work-item-member';
 
 export type ShareViewMemberOption = {

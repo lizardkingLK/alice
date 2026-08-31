@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { WorkItemUnlinkSubtaskDialog } from '@/app/work-items/_components/work-item-unlink-subtask-dialog';
-import { updateWorkItem } from '@/app/work-items/_services/workItem.service.client';
+import { WorkItemUnlinkSubtaskDialog } from '@/app/work-items/_components/work-item-subtasks/work-item-unlink-subtask-dialog';
+import { updateWorkItem } from '@/app/work-items/_services/work-items.mutations.client';
 
-vi.mock('@/app/work-items/_services/workItem.service.client', () => ({
+vi.mock('@/app/work-items/_services/work-items.mutations.client', () => ({
   updateWorkItem: vi.fn(),
 }));
 

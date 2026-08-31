@@ -6,17 +6,16 @@ vi.hoisted(() => {
 
 import type { Database } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import {
-  projectListSelect,
-  projectDetailSelect,
-} from '@repo/types';
+import { projectListSelect, projectDetailSelect } from '@repo/types';
 
-const { findManyMock, findUniqueMock, countMock, groupByMock } = vi.hoisted(() => ({
-  findManyMock: vi.fn(),
-  findUniqueMock: vi.fn(),
-  countMock: vi.fn(),
-  groupByMock: vi.fn(),
-}));
+const { findManyMock, findUniqueMock, countMock, groupByMock } = vi.hoisted(
+  () => ({
+    findManyMock: vi.fn(),
+    findUniqueMock: vi.fn(),
+    countMock: vi.fn(),
+    groupByMock: vi.fn(),
+  })
+);
 
 vi.mock('../../src/lib/prisma', () => ({
   prisma: {
@@ -37,7 +36,9 @@ const db = {
   from: vi.fn(() => ({
     select: vi.fn(() => ({
       eq: vi.fn(() => ({
-        maybeSingle: vi.fn().mockResolvedValue({ data: { role: 'admin' }, error: null }),
+        maybeSingle: vi
+          .fn()
+          .mockResolvedValue({ data: { role: 'admin' }, error: null }),
       })),
     })),
   })),
@@ -70,7 +71,9 @@ describe('ProjectsRepository Prisma reads', () => {
   it('lists with status filter, search, page slice, and includes team_count', async () => {
     findManyMock.mockResolvedValue([mockProjectRow]);
     countMock.mockResolvedValue(1);
-    groupByMock.mockResolvedValue([{ project_id: 'project-1', _count: { id: 3 } }]);
+    groupByMock.mockResolvedValue([
+      { project_id: 'project-1', _count: { id: 3 } },
+    ]);
 
     const result = await repository.listPaginated({
       accessibleIds: 'all',

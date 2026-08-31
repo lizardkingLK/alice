@@ -4,7 +4,7 @@ import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { WorkItemDetailsData } from '@/app/work-items/[id]/_components/work-item-details-data';
 import { WorkItemDetailsSkeleton } from '@/app/work-items/[id]/_components/work-item-details-skeleton';
 import { buildWorkItemBreadcrumbOverrides } from '@/app/work-items/_helpers/work-item-links';
-import { getWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import { getWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 
 export default async function WorkItemPage({
   params,

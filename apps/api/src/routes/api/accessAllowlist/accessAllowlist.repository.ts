@@ -51,6 +51,7 @@ function toAccessAllowlistRow(row: {
     kind: row.kind,
     value: row.value,
     label: row.label,
+    allowed_project_ids: null,
     expires_at: row.expires_at?.toISOString() ?? null,
     status: row.status,
     created_by: row.created_by,

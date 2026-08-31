@@ -8,7 +8,7 @@ import {
   resolveOpenDefaultsPreference,
 } from '@/app/board/_helpers/workspace-defaults-shared';
 import { useWorkspaceDefaultsDialog } from '@/app/board/_hooks/use-workspace-defaults-dialog';
-import type { Sprint } from '@/app/sprints/_services/sprints.service';
+import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 
 type UseWorkspaceDefaultsSessionOptions = {
   readonly userId: string | null;

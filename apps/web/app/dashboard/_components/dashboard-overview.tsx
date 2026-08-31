@@ -22,7 +22,7 @@ import {
   type WidgetId,
 } from './dashboard-mock-data';
 import { DashboardWidget } from './dashboard-widgets';
-import type { DashboardBurndownBootstrap } from '@/app/dashboard/_services/dashboard-burndown.server';
+import type { DashboardBurndownBootstrap } from '@/app/dashboard/_services/dashboard.reads.burndown.server';
 import 'react-grid-layout/css/styles.css';
 import './dashboard-grid.css';
 

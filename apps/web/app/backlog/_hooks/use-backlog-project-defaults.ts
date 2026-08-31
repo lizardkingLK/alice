@@ -9,8 +9,8 @@ import {
   resolveBaselineProjectFilter,
 } from '@/app/board/_helpers/workspace-defaults-shared';
 import { useWorkspaceDefaultsSession } from '@/app/board/_hooks/use-workspace-defaults-session';
-import type { Project as DbProject } from '@/app/projects/_services/projects.service';
-import type { Sprint } from '@/app/sprints/_services/sprints.service';
+import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
+import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 
 type UseBacklogProjectDefaultsOptions = {
   readonly userId: string | null;

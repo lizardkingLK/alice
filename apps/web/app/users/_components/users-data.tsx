@@ -4,9 +4,9 @@ import { UsersWorkspace } from '@/app/users/_components/users-workspace';
 import {
   getUsersListPaginated,
   type User,
-} from '@/app/users/_services/users.service.server';
-import { listAccessAllowlist } from '@/app/access-allowlist/_services/accessAllowlist.service.server';
-import type { AccessAllowlistListResult } from '@/app/access-allowlist/_services/accessAllowlist.service.base';
+} from '@/app/users/_services/users.reads.server';
+import { listAccessAllowlist } from '@/app/access-allowlist/_services/access-allowlist.reads.server';
+import type { AccessAllowlistListResult } from '@/app/access-allowlist/_services/access-allowlist.mutations.shared';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import {
   listParamsForUsersPageTab,

@@ -59,23 +59,23 @@ import {
 } from '@/app/board/_components/workspace-defaults-dialog-host';
 import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
-import type { Project } from '@/app/projects/_services/projects.service.base';
-import type { Sprint } from '@/app/sprints/_services/sprints.service';
-import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
-import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
-import { WorkItemTypeBadge } from '@/app/work-items/_components/workItem-badge-type';
-import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form-dialog';
-import { DescriptionView } from '@/app/work-items/_components/workItem-description-view';
-import { WorkItemsFilterDialog } from '@/app/work-items/_components/work-items-filter-dialog';
+import type { Project } from '@/app/projects/_services/projects.mutations.shared';
+import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
+import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
+import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
+import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-type';
+import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form/work-item-form-dialog';
+import { DescriptionView } from '@/app/work-items/_components/work-item-description/work-item-description-view';
+import { WorkItemsFilterDialog } from '@/app/work-items/_components/work-item-registry/work-items-filter-dialog';
 import {
   applyWorkItemsProjectSprintDraftToSearchParams,
   type WorkItemsFilterDraft,
-} from '@/app/work-items/_components/workItems-table-helpers';
-import type { FilterQuery } from '@/app/work-items/_components/workItems-table-types';
+} from '@/app/work-items/_components/work-item-table/work-item-table-helpers';
+import type { FilterQuery } from '@/app/work-items/_components/work-item-table/work-items-table-types';
 import { descriptionToPlainText } from '@/app/work-items/_helpers/work-item-description';
 import { BOARD_STATUS_COLUMNS } from '@/app/work-items/_helpers/work-item-status';
-import { updateWorkItemStatus } from '@/app/work-items/_services/workItem.service.client';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import { updateWorkItemStatus } from '@/app/work-items/_services/work-items.mutations.client';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { SearchInput } from '@/components/search-input';
 import { UserAvatar } from '@/components/user-avatar';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';

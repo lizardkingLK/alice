@@ -9,8 +9,8 @@ import {
   updateComment as apiUpdateComment,
   archiveComment as apiArchiveComment,
   restoreComment as apiRestoreComment,
-} from '../_services/comments.service.server';
-import type { CommentItem } from '../_services/comments.service.base';
+} from '../_services/comments.reads.server';
+import type { CommentItem } from '../_services/comments.mutations.shared';
 
 type CommentActionFailure = { success: false; error: string };
 type CommentDbUser = NonNullable<Awaited<ReturnType<typeof getDbUser>>>;

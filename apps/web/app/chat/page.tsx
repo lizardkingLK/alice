@@ -3,7 +3,7 @@ import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import { getDbUser } from '@/lib/auth';
 import { ChatClient } from './_components/chat-client';
-import { getChatPageBootstrap } from './_services/chat.service.server';
+import { getChatPageBootstrap } from './_services/chat.reads.server';
 import { ChatPageSkeleton } from './_components/chat-page-skeleton';
 
 export const metadata = {

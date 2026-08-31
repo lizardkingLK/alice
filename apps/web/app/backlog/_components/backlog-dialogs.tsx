@@ -10,11 +10,11 @@ import {
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
 import { SprintForm } from '@/app/sprints/_components/sprint-form';
-import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form-dialog';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
-import type { Project as DbProject } from '@/app/projects/_services/projects.service';
-import type { Sprint } from '@/app/sprints/_services/sprints.service';
-import type { User as DbUser } from '@/app/users/_services/users.service';
+import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form/work-item-form-dialog';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
+import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
+import type { User as DbUser } from '@/app/users/_services/users.mutations.client';
 
 const ERROR_ALERT_CLASS =
   'bg-destructive/15 border-destructive/20 text-destructive flex items-center gap-2 rounded-lg border px-4 py-3 text-sm';

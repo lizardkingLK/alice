@@ -1,4 +1,4 @@
-import type { Project } from '@/app/projects/_services/projects.service';
+import type { Project } from '@/app/projects/_services/projects.mutations.client';
 
 export const projectFactory = {
   build(overrides: Partial<Project> = {}): Project {

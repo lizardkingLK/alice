@@ -2,16 +2,16 @@
 
 import type React from 'react';
 import { useMemo } from 'react';
-import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
-import { WorkItemStatusBadge } from '@/app/work-items/_components/workItem-badge-status';
-import { WorkItemTypeBadge } from '@/app/work-items/_components/workItem-badge-type';
+import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
+import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
+import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-type';
 import {
   projectDisplayKey,
   resolveBacklogAssigneeAvatar,
   type BacklogAssignee,
 } from '@/app/backlog/_helpers/backlog-item-utils';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
-import type { Project as DbProject } from '@/app/projects/_services/projects.service';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import { UserAvatar } from '@/components/user-avatar';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';

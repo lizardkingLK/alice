@@ -88,7 +88,8 @@ export class ProjectsService {
     limit: number;
     totalPages: number;
   }> {
-    const accessible = await this.projectsRepository.listAccessibleProjectIds(actorId);
+    const accessible =
+      await this.projectsRepository.listAccessibleProjectIds(actorId);
     if (accessible !== ALL_PROJECTS && accessible.length === 0) {
       return {
         projects: [],
@@ -114,7 +115,8 @@ export class ProjectsService {
     projectId: string,
     actorId: string
   ): Promise<ProjectDetailRow | null> {
-    const accessible = await this.projectsRepository.listAccessibleProjectIds(actorId);
+    const accessible =
+      await this.projectsRepository.listAccessibleProjectIds(actorId);
     if (accessible !== ALL_PROJECTS && !accessible.includes(projectId)) {
       throw new Error('Unauthorized project workspace access.');
     }
@@ -125,7 +127,8 @@ export class ProjectsService {
     projectId: string,
     actorId: string
   ): Promise<ProjectMemberRow[]> {
-    const accessible = await this.projectsRepository.listAccessibleProjectIds(actorId);
+    const accessible =
+      await this.projectsRepository.listAccessibleProjectIds(actorId);
     if (accessible !== ALL_PROJECTS && !accessible.includes(projectId)) {
       throw new Error('Unauthorized project workspace access.');
     }

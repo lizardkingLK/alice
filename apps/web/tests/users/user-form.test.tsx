@@ -1,10 +1,13 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { UserForm } from '@/app/users/_components/user-form';
-import { createUser, updateUser } from '@/app/users/_services/users.service';
-import type { User } from '@/app/users/_services/users.service';
+import {
+  createUser,
+  updateUser,
+} from '@/app/users/_services/users.mutations.client';
+import type { User } from '@/app/users/_services/users.mutations.client';
 
-vi.mock('@/app/users/_services/users.service', () => ({
+vi.mock('@/app/users/_services/users.mutations.client', () => ({
   createUser: vi.fn(),
   updateUser: vi.fn(),
 }));

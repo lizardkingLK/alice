@@ -3,11 +3,11 @@ import { needsWorkspaceProjectBootstrap } from '@/app/board/_helpers/workspace-d
 import {
   EMPTY_ACTIVE_SPRINTS_PAGE,
   getSuggestedBoardDefaults,
-} from '@/app/board/_services/board-defaults.server';
-import { getProjectList } from '@/app/projects/_services/projects.service.server';
-import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.service.server';
-import { getUserList } from '@/app/users/_services/users.service.server';
-import { getWorkItems } from '@/app/work-items/_services/workItem.service.server';
+} from '@/app/board/_services/board.reads.defaults.server';
+import { getProjectList } from '@/app/projects/_services/projects.reads.server';
+import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.reads.server';
+import { getUserList } from '@/app/users/_services/users.reads.server';
+import { getWorkItems } from '@/app/work-items/_services/work-items.reads.server';
 import { getDbUser } from '@/lib/auth';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
 import { safeServerFetch } from '@/lib/safe-server-fetch';

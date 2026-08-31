@@ -10,6 +10,7 @@ export async function withMountedRouter(
 ): Promise<void> {
   const app = express();
   app.disable('x-powered-by');
+  app.use(express.json());
   app.use(mountPath, router);
 
   const server: Server = await new Promise((resolve) => {

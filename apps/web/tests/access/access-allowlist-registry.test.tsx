@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { AccessAllowlistRegistry } from '@/app/access-allowlist/_components/access-allowlist-registry';
-import { deleteAccessAllowlistEntry } from '@/app/access-allowlist/_services/accessAllowlist.service';
+import { deleteAccessAllowlistEntry } from '@/app/access-allowlist/_services/access-allowlist.mutations.client';
 import { accessAllowlistFactory } from '../factories/accessAllowlist.factory';
 
 const mockPush = vi.fn();
@@ -27,9 +27,12 @@ vi.mock(
   () => import('../mocks/dropdown-menu')
 );
 
-vi.mock('@/app/access-allowlist/_services/accessAllowlist.service', () => ({
-  deleteAccessAllowlistEntry: vi.fn(),
-}));
+vi.mock(
+  '@/app/access-allowlist/_services/access-allowlist.mutations.client',
+  () => ({
+    deleteAccessAllowlistEntry: vi.fn(),
+  })
+);
 
 vi.mock('@/app/access-allowlist/_components/access-allowlist-form', () => ({
   AccessAllowlistForm: ({

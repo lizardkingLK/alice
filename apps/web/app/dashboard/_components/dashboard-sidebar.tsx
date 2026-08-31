@@ -24,7 +24,7 @@ import {
 } from '@repo/ui/components/ui/sidebar';
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import { useWorkspaceDefaultsNavPreference } from '@/app/board/_hooks/use-workspace-defaults-nav-preference';
-import { buildWorkspaceNavHref } from '@/app/board/_services/board-defaults';
+import { buildWorkspaceNavHref } from '@/app/board/_services/board.defaults.shared';
 import { useFavorites } from '@/lib/favorites/use-favorites';
 import {
   readFavoritesSidebarOpen,

@@ -2,8 +2,8 @@
 
 import * as React from 'react';
 import Image from 'next/image';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
-import { PriorityBadge } from '@/app/work-items/_components/workItem-badge-priority';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-priority';
 import { FileText } from '@repo/ui/lib/icons';
 import {
   Card,

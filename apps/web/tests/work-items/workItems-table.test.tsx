@@ -6,14 +6,14 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import WorkItemsTable from '@/app/work-items/_components/workItems-table';
-import { loadWorkItemChildrenAction } from '@/app/work-items/_components/actions';
+import WorkItemsTable from '@/app/work-items/_components/work-item-table/work-items-table';
+import { loadWorkItemChildrenAction } from '@/app/work-items/_components/work-item-registry/actions';
 import {
   archiveWorkItem,
   purgeWorkItem,
   restoreWorkItem,
-} from '@/app/work-items/_services/workItem.service.client';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+} from '@/app/work-items/_services/work-items.mutations.client';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { formatDate } from '@/app/_shared/utility';
 import {
   mockPush,
@@ -55,18 +55,21 @@ vi.mock(
   () => import('../mocks/dropdown-menu')
 );
 
-vi.mock('@/app/work-items/_components/actions', () => ({
+vi.mock('@/app/work-items/_components/work-item-registry/actions', () => ({
   loadWorkItemChildrenAction: vi.fn(),
 }));
 
-vi.mock('@/app/work-items/_services/workItem.service.client', () => ({
+vi.mock('@/app/work-items/_services/work-items.mutations.client', () => ({
   archiveWorkItem: vi.fn(),
   restoreWorkItem: vi.fn(),
   purgeWorkItem: vi.fn(),
+}));
+
+vi.mock('@/app/work-items/_services/work-items.reads.client', () => ({
   countWorkItemDescendants: vi.fn().mockResolvedValue(0),
 }));
 
-vi.mock('@/app/work-items/_components/workItem-form', () => ({
+vi.mock('@/app/work-items/_components/work-item-form/work-item-form', () => ({
   WorkItemForm: ({
     onClose,
     onSuccess,
@@ -208,6 +211,7 @@ describe('WorkItemsTable', () => {
         id: assignee.id,
         name: assignee.name,
         email: assignee.email,
+        profile_picture: null,
       },
     });
 

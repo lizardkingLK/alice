@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import { getSprint } from '@/app/sprints/_services/sprints.service.server';
-import { getWorkItems } from '@/app/work-items/_services/workItem.service.server';
+import { getSprint } from '@/app/sprints/_services/sprints.reads.server';
+import { getWorkItems } from '@/app/work-items/_services/work-items.reads.server';
 import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
 import { notFound } from 'next/navigation';
 import { SprintReportView } from './sprint-report-view';

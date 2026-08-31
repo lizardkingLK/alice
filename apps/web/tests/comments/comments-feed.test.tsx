@@ -4,11 +4,11 @@ import { CommentsFeed } from '@/app/comments/_components/comments-feed';
 import type {
   CommentItem,
   CommentWorkItemOption,
-} from '@/app/comments/_services/comments.service';
+} from '@/app/comments/_services/comments.mutations.client';
 import {
   archiveComment,
   restoreComment,
-} from '@/app/comments/_services/comments.service';
+} from '@/app/comments/_services/comments.mutations.client';
 import { userFactory } from '../factories/user.factory';
 import { projectFactory } from '../factories/project.factory';
 import { workItemFactory } from '../factories/workItem.factory';
@@ -44,18 +44,21 @@ vi.mock('@/app/comments/_components/comment-editor', async () => {
   return { CommentEditor: MockCommentEditor };
 });
 
-vi.mock('@/app/comments/_services/comments.service', async (importOriginal) => {
-  const actual =
-    await importOriginal<
-      typeof import('@/app/comments/_services/comments.service')
-    >();
-  return {
-    ...actual,
-    updateComment: vi.fn(),
-    archiveComment: vi.fn(),
-    restoreComment: vi.fn(),
-  };
-});
+vi.mock(
+  '@/app/comments/_services/comments.mutations.client',
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import('@/app/comments/_services/comments.mutations.client')
+      >();
+    return {
+      ...actual,
+      updateComment: vi.fn(),
+      archiveComment: vi.fn(),
+      restoreComment: vi.fn(),
+    };
+  }
+);
 
 vi.mock(
   '@repo/ui/components/ui/dropdown-menu',

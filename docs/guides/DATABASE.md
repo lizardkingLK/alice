@@ -11,6 +11,21 @@ See also: [`docs/database/ER_DIAGRAM.md`](../database/ER_DIAGRAM.md) — entity 
 | `apps/web`    | supabase-js for RSC reads, Auth, Storage — do not import `@repo/db`                     |
 | `apps/api`    | Prisma Client for table mutations; supabase-js for Auth, Storage, RPC, and joined reads |
 
+## Why `apps/web` does not use Prisma Client
+
+RSC runs on the server, but **`apps/web` and `apps/api` are separate deploy units** with different DB access rules. Next.js RSC is not a substitute for `apps/api`.
+
+| Concern                     | supabase-js (default RSC reads)                            | Prisma in `apps/web` (not allowed)                            | Prisma via Express (`DATA_READS_VIA_API`)                  |
+| --------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------- |
+| **Deploy / env**            | Anon + user JWT; no `DATABASE_URL` in web                  | Requires pooled `DATABASE_URL` on the **web** Vercel project  | `DATABASE_URL` stays on **api** only                       |
+| **Serverless connections**  | PostgREST pool; no app-owned TCP pool                      | Cold RSC invocations × Prisma/`pg` exhaust Supavisor limits   | One pooled client in `apps/api`                            |
+| **RLS / identity**          | User JWT → PostgREST applies RLS                           | DB role usually bypasses RLS unless per-request `SET LOCAL`   | Service/app auth in Express; same Prisma repo as mutations |
+| **Query duplication**       | PostgREST `select` aligned with v1 consts in `@repo/types` | Second copy of list/detail/ancestor queries beside `apps/api` | Single Prisma repository in `apps/api`                     |
+| **Other Supabase products** | Auth, Storage, Realtime stay on SDK                        | Still need supabase-js alongside Prisma                       | Reads opt in via HTTP; Auth/Storage unchanged              |
+| **Versioning / DTOs**       | v1 PostgREST selects + wire row types                      | Splits read stack from API versioning path                    | v1 query + payload types shared with unused GETs           |
+
+**Allowed Prisma read path for Next:** RSC → `*.reads.api.server.ts` → `GET /api/…` → Prisma in `apps/api` (see [DATA_RETRIEVAL.md](../architecture/DATA_RETRIEVAL.md)). **Not:** import `@repo/db` in `apps/web`.
+
 ## Environment (`packages/db/.env`)
 
 Copy `packages/db/sample.env` to `.env`:
