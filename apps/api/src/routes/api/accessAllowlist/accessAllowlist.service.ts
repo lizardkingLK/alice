@@ -56,12 +56,14 @@ export type CreateAccessAllowlistInput = {
   value: string;
   label?: string | null;
   expires_at?: string | null;
+  allowed_project_ids?: string[] | null;
   status?: AccessAllowlistStatus;
 };
 
 export type UpdateAccessAllowlistInput = {
   label?: string | null;
   expires_at?: string | null;
+  allowed_project_ids?: string[] | null;
   status?: AccessAllowlistStatus;
   expectedUpdatedAt: string;
 };
@@ -99,6 +101,7 @@ export class AccessAllowlistService {
       value: input.value,
       label: input.label,
       expires_at: input.expires_at,
+      allowed_project_ids: input.allowed_project_ids,
       status: input.status ?? RecordStatusEnum.active,
     });
 
@@ -125,6 +128,7 @@ export class AccessAllowlistService {
       id,
       label: input.label,
       expires_at: input.expires_at,
+      allowed_project_ids: input.allowed_project_ids,
       status: input.status,
       expectedUpdatedAt: input.expectedUpdatedAt,
     });

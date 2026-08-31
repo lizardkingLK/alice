@@ -118,6 +118,7 @@ describe('AccessAllowlistForm', () => {
         value: 'fff.com',
         label: 'Acme corp',
         expires_at: null,
+        allowed_project_ids: null,
         status: 'active',
       });
     });
@@ -162,6 +163,7 @@ describe('AccessAllowlistForm', () => {
         {
           label: 'Updated client',
           expires_at: null,
+          allowed_project_ids: null,
           status: 'active',
         },
         entry.updated_at

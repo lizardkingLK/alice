@@ -33,9 +33,24 @@ export const accessAllowlistEmailValueSchema = z
 
 const accessAllowlistStatusSchema = z.enum(Constants.public.Enums.RecordStatus);
 
+export const allowedProjectIdsSchema = z
+  .union([z.string(), z.array(z.string())])
+  .optional()
+  .nullable()
+  .transform((val) => {
+    if (!val) return null;
+    if (Array.isArray(val)) {
+      const filtered = val.map(v => v.trim()).filter(Boolean);
+      return filtered.length > 0 ? filtered : null;
+    }
+    const parts = val.split(',').map((v) => v.trim()).filter(Boolean);
+    return parts.length > 0 ? parts : null;
+  });
+
 const accessAllowlistMetaFields = {
   label: z.string().max(200).optional().nullable(),
   expires_at: z.string().optional().nullable(),
+  allowed_project_ids: allowedProjectIdsSchema,
   status: accessAllowlistStatusSchema.optional(),
 };
 

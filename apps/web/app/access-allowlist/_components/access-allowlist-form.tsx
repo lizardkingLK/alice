@@ -108,6 +108,9 @@ export function AccessAllowlistForm({
   const [status, setStatus] = useState<AccessAllowlistStatus>(
     entry?.status ?? 'active'
   );
+  const [allowedProjectIds, setAllowedProjectIds] = useState(
+    entry?.allowed_project_ids ? (entry.allowed_project_ids as string[]).join(', ') : ''
+  );
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -116,10 +119,16 @@ export function AccessAllowlistForm({
     setIsError(false);
 
     try {
+      let parsedAcl: string[] | null = null;
+      if (kind === 'email' && allowedProjectIds.trim()) {
+        parsedAcl = allowedProjectIds.split(',').map(s => s.trim()).filter(Boolean);
+      }
+
       if (isEdit && entry) {
         const pendingFields = {
           label: label.trim() || null,
           expires_at: fromDateInputValue(expiresAt),
+          allowed_project_ids: parsedAcl,
           status,
         };
 
@@ -153,6 +162,7 @@ export function AccessAllowlistForm({
           value: validated.value,
           label: label.trim() || null,
           expires_at: fromDateInputValue(expiresAt),
+          allowed_project_ids: parsedAcl,
           status,
         });
         setMessage('Allowlist entry created.');
@@ -302,6 +312,22 @@ export function AccessAllowlistForm({
               disabled={isSubmitting || isSuccess}
             />
           </div>
+
+          {kind === 'email' ? (
+            <div className="space-y-2">
+              <Label htmlFor="allowlist-acl">
+                Allowed Project IDs (optional, comma-separated)
+              </Label>
+              <Input
+                id="allowlist-acl"
+                value={allowedProjectIds}
+                onChange={(event) => setAllowedProjectIds(event.target.value)}
+                placeholder="e.g. uuid-1, uuid-2"
+                disabled={isSubmitting || isSuccess}
+                autoComplete="off"
+              />
+            </div>
+          ) : null}
 
           <FormCancelSubmitActions
             message={message}
