@@ -17,9 +17,7 @@ export {
   type RecordStatus,
 } from './audit.js';
 
-export * from './projects.js';
 export * from './users.js';
-export * from './teams.js';
 export * from './notification.js';
 export * from './attachments.js';
 export * from './work-item-worklogs.js';
