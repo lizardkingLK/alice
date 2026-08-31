@@ -1,7 +1,8 @@
 'use client';
 
 import { FormCancelSubmitActions } from '@/components/form-cancel-submit-actions';
-import { FormEvent, useEffect, useState } from 'react';
+import { ProjectCheckboxList } from '@/components/project-checkbox-list';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import {
@@ -36,10 +37,15 @@ import {
 } from '@/app/access-allowlist/_services/access-allowlist.mutations.client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
+import type { Project } from '@/app/projects/_services/projects.mutations.shared';
+
+const ALLOWLIST_PROJECTS_TOOLTIP =
+  'Select at least one project. The allowlisted user must also be added as a member of at least one project before they can access the app.';
 
 interface AccessAllowlistFormProps {
   readonly entry?: AccessAllowlistEntry;
   readonly currentUserEmail?: string | null;
+  readonly projects?: readonly Project[];
   readonly onClose?: () => void;
   readonly onSuccess?: () => void;
   readonly initialKind?: AccessAllowlistKind;
@@ -79,9 +85,52 @@ function validateAllowlistValue(
   return { ok: true, value: parsed.data };
 }
 
+function initialSelectedProjectKeys(
+  entry: AccessAllowlistEntry | undefined
+): string[] {
+  if (
+    !entry?.allowed_project_ids ||
+    !Array.isArray(entry.allowed_project_ids)
+  ) {
+    return [];
+  }
+  return entry.allowed_project_ids.map(String).filter(Boolean);
+}
+
+type AllowlistSubmitValidation =
+  | { ok: false; message: string }
+  | { ok: true; validatedValue: string | null; parsedAcl: string[] | null };
+
+function validateAllowlistSubmit(params: {
+  readonly isEdit: boolean;
+  readonly kind: AccessAllowlistKind;
+  readonly value: string;
+  readonly selectedProjectKeys: readonly string[];
+}): AllowlistSubmitValidation {
+  let validatedValue: string | null = null;
+  if (!params.isEdit) {
+    const validated = validateAllowlistValue(params.kind, params.value);
+    if (!validated.ok) {
+      return { ok: false, message: validated.message };
+    }
+    validatedValue = validated.value;
+  }
+
+  let parsedAcl: string[] | null = null;
+  if (params.kind === 'email') {
+    if (params.selectedProjectKeys.length === 0) {
+      return { ok: false, message: 'Select at least one allowed project.' };
+    }
+    parsedAcl = [...params.selectedProjectKeys];
+  }
+
+  return { ok: true, validatedValue, parsedAcl };
+}
+
 export function AccessAllowlistForm({
   entry,
   currentUserEmail = null,
+  projects = [],
   onClose,
   onSuccess,
   initialKind,
@@ -108,8 +157,17 @@ export function AccessAllowlistForm({
   const [status, setStatus] = useState<AccessAllowlistStatus>(
     entry?.status ?? 'active'
   );
-  const [allowedProjectIds, setAllowedProjectIds] = useState(
-    entry?.allowed_project_ids ? (entry.allowed_project_ids as string[]).join(', ') : ''
+  const [selectedProjectKeys, setSelectedProjectKeys] = useState<string[]>(() =>
+    initialSelectedProjectKeys(entry)
+  );
+
+  const projectCheckboxOptions = useMemo(
+    () =>
+      projects.map((project) => ({
+        key: project.key,
+        name: project.name,
+      })),
+    [projects]
   );
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -119,10 +177,19 @@ export function AccessAllowlistForm({
     setIsError(false);
 
     try {
-      let parsedAcl: string[] | null = null;
-      if (kind === 'email' && allowedProjectIds.trim()) {
-        parsedAcl = allowedProjectIds.split(',').map(s => s.trim()).filter(Boolean);
+      const validation = validateAllowlistSubmit({
+        isEdit,
+        kind,
+        value,
+        selectedProjectKeys,
+      });
+      if (!validation.ok) {
+        setMessage(validation.message);
+        setIsError(true);
+        return;
       }
+
+      const { validatedValue, parsedAcl } = validation;
 
       if (isEdit && entry) {
         const pendingFields = {
@@ -150,16 +217,9 @@ export function AccessAllowlistForm({
         }
         setMessage('Allowlist entry updated.');
       } else {
-        const validated = validateAllowlistValue(kind, value);
-        if (!validated.ok) {
-          setMessage(validated.message);
-          setIsError(true);
-          return;
-        }
-
         await createAccessAllowlistEntry({
           kind,
-          value: validated.value,
+          value: validatedValue ?? value,
           label: label.trim() || null,
           expires_at: fromDateInputValue(expiresAt),
           allowed_project_ids: parsedAcl,
@@ -315,16 +375,18 @@ export function AccessAllowlistForm({
 
           {kind === 'email' ? (
             <div className="space-y-2">
-              <Label htmlFor="allowlist-acl">
-                Allowed Project Keys (optional, comma-separated)
-              </Label>
-              <Input
-                id="allowlist-acl"
-                value={allowedProjectIds}
-                onChange={(event) => setAllowedProjectIds(event.target.value)}
-                placeholder="e.g. SG, DEMO"
+              <div className="flex h-6 items-center gap-1">
+                <Label>Allowed projects</Label>
+                <InfoTooltip ariaLabel={ALLOWLIST_PROJECTS_TOOLTIP}>
+                  {ALLOWLIST_PROJECTS_TOOLTIP}
+                </InfoTooltip>
+              </div>
+              <ProjectCheckboxList
+                projects={projectCheckboxOptions}
+                selectedKeys={selectedProjectKeys}
+                onSelectedKeysChange={setSelectedProjectKeys}
                 disabled={isSubmitting || isSuccess}
-                autoComplete="off"
+                emptyText="No projects available. Create a project first."
               />
             </div>
           ) : null}

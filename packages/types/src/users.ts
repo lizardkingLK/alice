@@ -55,8 +55,4 @@ export function userRelationSelect(
   return `${alias}:users!${foreignKeyHint}(${projection})`;
 }
 
-export {
-  createUserSchema,
-  updateUserSchema,
-} from './api/v1/users.js';
-
+export { createUserSchema, updateUserSchema } from './api/v1/users.js';

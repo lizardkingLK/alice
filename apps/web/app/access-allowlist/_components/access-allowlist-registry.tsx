@@ -68,6 +68,7 @@ import {
   type AccessAllowlistEntry,
 } from '@/app/access-allowlist/_services/access-allowlist.mutations.client';
 import { AccessAllowlistForm } from '@/app/access-allowlist/_components/access-allowlist-form';
+import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 
 interface AccessAllowlistRegistryProps {
   readonly entries: AccessAllowlistEntry[];
@@ -77,6 +78,7 @@ interface AccessAllowlistRegistryProps {
   readonly totalPages: number;
   readonly search: string;
   readonly currentUserEmail?: string | null;
+  readonly projects?: readonly Project[];
 }
 
 type AllowlistRow = Row<AccessAllowlistEntry>;
@@ -277,6 +279,7 @@ export function AccessAllowlistRegistry({
   totalPages,
   search,
   currentUserEmail = null,
+  projects = [],
 }: Readonly<AccessAllowlistRegistryProps>) {
   const router = useRouter();
   const pathname = usePathname();
@@ -437,13 +440,14 @@ export function AccessAllowlistRegistry({
       >
         <DialogContent
           showCloseButton={false}
-          className="border-0 bg-transparent p-0 shadow-none ring-0 sm:max-w-lg"
+          className="border-0 bg-transparent p-0 shadow-none ring-0 sm:max-w-xl"
         >
           <DialogTitle className="sr-only">Add allowlist entry</DialogTitle>
           <DialogDescription className="sr-only">
             Create a domain or email admission rule.
           </DialogDescription>
           <AccessAllowlistForm
+            projects={projects}
             onClose={handleCloseAdd}
             onSuccess={handleSuccessAdd}
             initialKind={addEmailParam ? 'email' : undefined}
@@ -460,7 +464,7 @@ export function AccessAllowlistRegistry({
       >
         <DialogContent
           showCloseButton={false}
-          className="border-0 bg-transparent p-0 shadow-none ring-0 sm:max-w-lg"
+          className="border-0 bg-transparent p-0 shadow-none ring-0 sm:max-w-xl"
         >
           <DialogTitle className="sr-only">Edit allowlist entry</DialogTitle>
           <DialogDescription className="sr-only">
@@ -470,6 +474,7 @@ export function AccessAllowlistRegistry({
             <AccessAllowlistForm
               entry={editingEntry}
               currentUserEmail={currentUserEmail}
+              projects={projects}
               onClose={() => setEditingEntry(null)}
               onSuccess={() => {
                 setEditingEntry(null);

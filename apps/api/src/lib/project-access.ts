@@ -25,7 +25,10 @@ async function resolveAllowedProjectIdsFromAcl(
     if (!Array.isArray(acl)) {
       return null;
     }
-    const keys = acl.map(String).map((k) => k.trim().toUpperCase()).filter(Boolean);
+    const keys = acl
+      .map(String)
+      .map((k) => k.trim().toUpperCase())
+      .filter(Boolean);
     if (keys.length === 0) {
       return [];
     }
@@ -84,7 +87,10 @@ export async function listAccessibleProjectIds(
 
   let allowedProjectIdsFromAcl: string[] | null = null;
   if (systemUser?.email) {
-    allowedProjectIdsFromAcl = await resolveAllowedProjectIdsFromAcl(db, systemUser.email);
+    allowedProjectIdsFromAcl = await resolveAllowedProjectIdsFromAcl(
+      db,
+      systemUser.email
+    );
   }
 
   let ids = [
@@ -93,7 +99,7 @@ export async function listAccessibleProjectIds(
   ];
 
   if (allowedProjectIdsFromAcl !== null) {
-    ids = ids.filter(id => allowedProjectIdsFromAcl!.includes(id));
+    ids = ids.filter((id) => allowedProjectIdsFromAcl!.includes(id));
   }
 
   return [...new Set(ids)];

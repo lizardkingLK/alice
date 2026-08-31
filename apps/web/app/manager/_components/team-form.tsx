@@ -88,7 +88,9 @@ export function TeamForm({
         .map((member) => member.user_id) ?? []
   );
 
-  const [memberCapacities, setMemberCapacities] = useState<Record<string, number>>(() => {
+  const [memberCapacities, setMemberCapacities] = useState<
+    Record<string, number>
+  >(() => {
     const capacities: Record<string, number> = {};
     if (teamToEdit?.members) {
       for (const m of teamToEdit.members) {
@@ -98,7 +100,9 @@ export function TeamForm({
     return capacities;
   });
 
-  const [memberAllocations, setMemberAllocations] = useState<Record<string, number>>(() => {
+  const [memberAllocations, setMemberAllocations] = useState<
+    Record<string, number>
+  >(() => {
     const allocations: Record<string, number> = {};
     if (teamToEdit?.members) {
       for (const m of teamToEdit.members) {
@@ -485,28 +489,37 @@ export function TeamForm({
             )}
 
             {showMembersSection && selectedMemberIds.length > 0 && (
-              <div className="space-y-3 sm:col-span-2 border-t border-border/50 pt-4 mt-2">
+              <div className="border-border/50 mt-2 space-y-3 border-t pt-4 sm:col-span-2">
                 <Label className="text-sm font-semibold">
                   Configure Member Capacity & Allocation
                 </Label>
-                <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                <div className="custom-scrollbar max-h-60 space-y-2 overflow-y-auto pr-2">
                   {selectedMemberIds.map((userId) => {
-                    const memberObj = memberCheckboxOptions.find((m) => m.userId === userId);
+                    const memberObj = memberCheckboxOptions.find(
+                      (m) => m.userId === userId
+                    );
                     if (!memberObj) return null;
 
                     const currentCapacity = memberCapacities[userId] ?? 40;
                     const currentAllocation = memberAllocations[userId] ?? 100;
 
                     return (
-                      <div key={userId} className="flex items-center justify-between gap-4 p-2 bg-muted/40 rounded-lg border border-border/40">
-                        <span className="text-sm font-medium truncate flex-1">{memberObj.name} ({memberObj.email})</span>
-                        <div className="flex items-center gap-2 shrink-0">
+                      <div
+                        key={userId}
+                        className="bg-muted/40 border-border/40 flex items-center justify-between gap-4 rounded-lg border p-2"
+                      >
+                        <span className="flex-1 truncate text-sm font-medium">
+                          {memberObj.name} ({memberObj.email})
+                        </span>
+                        <div className="flex shrink-0 items-center gap-2">
                           <div className="flex items-center gap-1">
-                            <span className="text-xs text-muted-foreground">Capacity:</span>
+                            <span className="text-muted-foreground text-xs">
+                              Capacity:
+                            </span>
                             <Input
                               type="number"
                               min={0}
-                              className="h-8 w-16 text-center text-xs p-1"
+                              className="h-8 w-16 p-1 text-center text-xs"
                               value={currentCapacity}
                               onChange={(e) => {
                                 const val = Number.parseInt(e.target.value, 10);
@@ -518,12 +531,14 @@ export function TeamForm({
                             />
                           </div>
                           <div className="flex items-center gap-1">
-                            <span className="text-xs text-muted-foreground">Allocation %:</span>
+                            <span className="text-muted-foreground text-xs">
+                              Allocation %:
+                            </span>
                             <Input
                               type="number"
                               min={0}
                               max={100}
-                              className="h-8 w-16 text-center text-xs p-1"
+                              className="h-8 w-16 p-1 text-center text-xs"
                               value={currentAllocation}
                               onChange={(e) => {
                                 const val = Number.parseInt(e.target.value, 10);

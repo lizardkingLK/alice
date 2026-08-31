@@ -7,6 +7,8 @@ import {
 } from '@/app/users/_services/users.reads.server';
 import { listAccessAllowlist } from '@/app/access-allowlist/_services/access-allowlist.reads.server';
 import type { AccessAllowlistListResult } from '@/app/access-allowlist/_services/access-allowlist.mutations.shared';
+import { getProjectList } from '@/app/projects/_services/projects.reads.server';
+import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import {
   listParamsForUsersPageTab,
@@ -31,6 +33,8 @@ const EMPTY_ALLOWLIST: AccessAllowlistListResult = {
   totalPages: 1,
 };
 
+const EMPTY_PROJECTS: Project[] = [];
+
 type UsersDataProps = {
   readonly searchParams: Promise<RawSearchParams>;
 };
@@ -50,7 +54,7 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
   const currentUserRole = dbUser?.role ?? 'member';
   const allowlistEnabled = isAdmin(currentUserRole);
 
-  const [usersData, allowlistData] = await Promise.all([
+  const [usersData, allowlistData, projects] = await Promise.all([
     safeServerFetch(
       getUsersListPaginated(
         usersParams.page,
@@ -72,6 +76,13 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
           'fetch access allowlist'
         )
       : Promise.resolve(EMPTY_ALLOWLIST),
+    allowlistEnabled
+      ? safeServerFetch(
+          getProjectList(),
+          EMPTY_PROJECTS,
+          'fetch projects for allowlist form'
+        )
+      : Promise.resolve(EMPTY_PROJECTS),
   ]);
 
   return (
@@ -90,6 +101,7 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
       allowlistLimit={allowlistData.limit}
       allowlistTotalPages={allowlistData.totalPages}
       currentUserEmail={dbUser?.email}
+      projects={projects}
     />
   );
 }

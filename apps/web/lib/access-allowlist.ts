@@ -147,7 +147,10 @@ export async function isEmailAllowed(
       .maybeSingle();
 
     if (userError || !userRecord) {
-      console.warn('Guest access denied: User record does not exist for email:', normalized);
+      console.warn(
+        'Guest access denied: User record does not exist for email:',
+        normalized
+      );
       return false;
     }
 
@@ -159,7 +162,10 @@ export async function isEmailAllowed(
       .eq('status', RecordStatusEnum.active);
 
     if (memberError || !memberships || memberships.length === 0) {
-      console.warn('Guest access denied: User has 0 projects configured:', normalized);
+      console.warn(
+        'Guest access denied: User has 0 projects configured:',
+        normalized
+      );
       return false;
     }
   }

@@ -74,14 +74,15 @@ export function mockAllowlistRows(
           }
           return { data: null, error: null };
         }),
-        then: vi.fn(async (onfulfilled) => { // NOSONAR
+        then: vi.fn(async (onfulfilled) => {
+          // NOSONAR
           if (table === 'project_members') {
             const userIdKey = filters['user_id'] || '';
             const list = projectMemberships[userIdKey] || [];
             return onfulfilled?.({ data: list, error: null });
           }
           return onfulfilled?.({ data: null, error: null });
-        })
+        }),
       };
 
       return chain;

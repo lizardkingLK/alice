@@ -93,7 +93,9 @@ describe('isEmailAllowed', () => {
       {}
     );
 
-    const allowed = await isEmailAllowed('guest@partner.com', { enforceGuestChecks: true });
+    const allowed = await isEmailAllowed('guest@partner.com', {
+      enforceGuestChecks: true,
+    });
     expect(allowed).toBe(false);
   });
 
@@ -104,7 +106,9 @@ describe('isEmailAllowed', () => {
       { 'user-guest': [] } // 0 projects
     );
 
-    const allowed = await isEmailAllowed('guest@partner.com', { enforceGuestChecks: true });
+    const allowed = await isEmailAllowed('guest@partner.com', {
+      enforceGuestChecks: true,
+    });
     expect(allowed).toBe(false);
   });
 
@@ -115,7 +119,9 @@ describe('isEmailAllowed', () => {
       { 'user-guest': [{ project_id: 'proj-1' }] } // 1 project
     );
 
-    const allowed = await isEmailAllowed('guest@partner.com', { enforceGuestChecks: true });
+    const allowed = await isEmailAllowed('guest@partner.com', {
+      enforceGuestChecks: true,
+    });
     expect(allowed).toBe(true);
   });
 

@@ -12,6 +12,7 @@ import { UserRegistry } from '@/app/users/_components/user-registry';
 import { AccessAllowlistRegistry } from '@/app/access-allowlist/_components/access-allowlist-registry';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import type { AccessAllowlistEntry } from '@/app/access-allowlist/_services/access-allowlist.mutations.client';
+import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import { parseUsersPageTab, type UsersPageTab } from '@/lib/search-params';
 import { UNDERLINE_TAB_TRIGGER_CLASS } from '@/components/underline-tab-trigger';
 
@@ -30,6 +31,7 @@ interface UsersWorkspaceProps {
   readonly allowlistLimit: number;
   readonly allowlistTotalPages: number;
   readonly currentUserEmail?: string | null;
+  readonly projects?: readonly Project[];
 }
 
 export function UsersWorkspace({
@@ -47,6 +49,7 @@ export function UsersWorkspace({
   allowlistLimit,
   allowlistTotalPages,
   currentUserEmail = null,
+  projects = [],
 }: Readonly<UsersWorkspaceProps>) {
   const router = useRouter();
   const pathname = usePathname();
@@ -131,6 +134,7 @@ export function UsersWorkspace({
           totalPages={allowlistTotalPages}
           search={search}
           currentUserEmail={currentUserEmail}
+          projects={projects}
         />
       </TabsContent>
     </Tabs>

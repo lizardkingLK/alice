@@ -401,7 +401,7 @@ export function BacklogErrorDialog({
         onPointerDown={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
-        className="bg-card border-border/80 backdrop-blur-md sm:max-w-md p-0 overflow-hidden"
+        className="bg-card border-border/80 overflow-hidden p-0 backdrop-blur-md sm:max-w-md"
       >
         <div className="p-6">
           <div className="mb-3 flex items-center gap-3 text-rose-500">
@@ -426,7 +426,7 @@ export function BacklogErrorDialog({
               e.stopPropagation();
               onClose();
             }}
-            className="bg-rose-600 hover:bg-rose-700 px-4 text-xs font-semibold text-white shadow-sm"
+            className="bg-rose-600 px-4 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
           >
             OK
           </Button>

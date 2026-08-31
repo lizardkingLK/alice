@@ -49,18 +49,12 @@ export const listUsersQuerySchema = z.object({
     z.coerce.number().int().min(1).max(100)
   ),
   search: z.preprocess(emptyToUndefined, z.string().optional()),
-  role: z.preprocess(
-    emptyToUndefined,
-    z.enum(USER_ROLES).optional()
-  ),
-  active: z.preprocess(
-    (value) => {
-      if (value === 'true') return true;
-      if (value === 'false') return false;
-      return emptyToUndefined(value);
-    },
-    z.boolean().optional()
-  ),
+  role: z.preprocess(emptyToUndefined, z.enum(USER_ROLES).optional()),
+  active: z.preprocess((value) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return emptyToUndefined(value);
+  }, z.boolean().optional()),
 });
 
 export type ListUsersQuery = z.infer<typeof listUsersQuerySchema>;

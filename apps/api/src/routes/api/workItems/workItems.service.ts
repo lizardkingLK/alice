@@ -151,12 +151,18 @@ export class WorkItemService {
     if (input.sprint_id || input.assignee_id || input.story_points) {
       let sprintName: string = WorkItemDefaults.BACKLOG;
       if (input.sprint_id) {
-        const sprint = await prisma.sprints.findUnique({ where: { id: input.sprint_id }, select: { name: true } });
+        const sprint = await prisma.sprints.findUnique({
+          where: { id: input.sprint_id },
+          select: { name: true },
+        });
         sprintName = sprint?.name || WorkItemDefaults.SPRINT;
       }
       let assigneeName: string = WorkItemDefaults.UNASSIGNED;
       if (input.assignee_id) {
-        const assignee = await prisma.users.findUnique({ where: { id: input.assignee_id }, select: { name: true } });
+        const assignee = await prisma.users.findUnique({
+          where: { id: input.assignee_id },
+          select: { name: true },
+        });
         assigneeName = assignee?.name || WorkItemDefaults.USER;
       }
       const comment = `Allocation changed: Assigned to sprint ${sprintName}, Assignee set to ${assigneeName}, Story points set to ${input.story_points || 0}.`;
@@ -199,8 +205,10 @@ export class WorkItemService {
     this.assertDoneIsReadOnlyExceptStatus(current, input);
 
     const sprintId = 'sprint_id' in input ? input.sprint_id : current.sprint_id;
-    const assigneeId = 'assignee_id' in input ? input.assignee_id : current.assignee_id;
-    const storyPoints = 'story_points' in input ? input.story_points : current.story_points;
+    const assigneeId =
+      'assignee_id' in input ? input.assignee_id : current.assignee_id;
+    const storyPoints =
+      'story_points' in input ? input.story_points : current.story_points;
 
     await this.validateAllocation(
       input.project_id,
@@ -211,8 +219,14 @@ export class WorkItemService {
     );
 
     const sprintChanged = !sameNullable(input.sprint_id, current.sprint_id);
-    const assigneeChanged = !sameNullable(input.assignee_id, current.assignee_id);
-    const storyPointsChanged = !sameNullable(input.story_points, current.story_points);
+    const assigneeChanged = !sameNullable(
+      input.assignee_id,
+      current.assignee_id
+    );
+    const storyPointsChanged = !sameNullable(
+      input.story_points,
+      current.story_points
+    );
 
     const updated = await this.workItems.update({
       ...input,
@@ -262,30 +276,51 @@ export class WorkItemService {
     } = params;
     let oldSprintName: string = WorkItemDefaults.BACKLOG;
     if (current.sprint_id) {
-      const s = await prisma.sprints.findUnique({ where: { id: current.sprint_id }, select: { name: true } });
+      const s = await prisma.sprints.findUnique({
+        where: { id: current.sprint_id },
+        select: { name: true },
+      });
       oldSprintName = s?.name || WorkItemDefaults.SPRINT;
     }
     let newSprintName: string = WorkItemDefaults.BACKLOG;
     if (sprintId) {
-      const s = await prisma.sprints.findUnique({ where: { id: sprintId }, select: { name: true } });
+      const s = await prisma.sprints.findUnique({
+        where: { id: sprintId },
+        select: { name: true },
+      });
       newSprintName = s?.name || WorkItemDefaults.SPRINT;
     }
 
     let oldAssigneeName: string = WorkItemDefaults.UNASSIGNED;
     if (current.assignee_id) {
-      const u = await prisma.users.findUnique({ where: { id: current.assignee_id }, select: { name: true } });
+      const u = await prisma.users.findUnique({
+        where: { id: current.assignee_id },
+        select: { name: true },
+      });
       oldAssigneeName = u?.name || WorkItemDefaults.USER;
     }
     let newAssigneeName: string = WorkItemDefaults.UNASSIGNED;
     if (assigneeId) {
-      const u = await prisma.users.findUnique({ where: { id: assigneeId }, select: { name: true } });
+      const u = await prisma.users.findUnique({
+        where: { id: assigneeId },
+        select: { name: true },
+      });
       newAssigneeName = u?.name || WorkItemDefaults.USER;
     }
 
     const commentParts = [];
-    if (sprintChanged) commentParts.push(`sprint changed from ${oldSprintName} to ${newSprintName}`);
-    if (assigneeChanged) commentParts.push(`assignee changed from ${oldAssigneeName} to ${newAssigneeName}`);
-    if (storyPointsChanged) commentParts.push(`story points changed from ${current.story_points || 0} to ${storyPoints || 0}`);
+    if (sprintChanged)
+      commentParts.push(
+        `sprint changed from ${oldSprintName} to ${newSprintName}`
+      );
+    if (assigneeChanged)
+      commentParts.push(
+        `assignee changed from ${oldAssigneeName} to ${newAssigneeName}`
+      );
+    if (storyPointsChanged)
+      commentParts.push(
+        `story points changed from ${current.story_points || 0} to ${storyPoints || 0}`
+      );
 
     const comment = `Allocation change: ${commentParts.join(', ')}.`;
 
@@ -829,10 +864,21 @@ export class WorkItemService {
 
     const points = storyPoints || 0;
 
-    await this.validateSprintAllocation(projectId, sprintId, points, workItemId);
+    await this.validateSprintAllocation(
+      projectId,
+      sprintId,
+      points,
+      workItemId
+    );
 
     if (assigneeId) {
-      await this.validateMemberAllocation(projectId, sprintId, assigneeId, points, workItemId);
+      await this.validateMemberAllocation(
+        projectId,
+        sprintId,
+        assigneeId,
+        points,
+        workItemId
+      );
     }
   }
 
@@ -861,8 +907,14 @@ export class WorkItemService {
 
     for (const team of teams) {
       for (const member of team.members) {
-        const cap = member.capacity !== null ? member.capacity : AllocationConfig.DEFAULT_CAPACITY;
-        const alloc = member.allocation !== null ? member.allocation : AllocationConfig.DEFAULT_ALLOCATION;
+        const cap =
+          member.capacity !== null
+            ? member.capacity
+            : AllocationConfig.DEFAULT_CAPACITY;
+        const alloc =
+          member.allocation !== null
+            ? member.allocation
+            : AllocationConfig.DEFAULT_ALLOCATION;
         totalSprintCapacity += cap * (alloc / 100);
         if (member.capacity !== null || member.allocation !== null) {
           hasConfiguredCapacity = true;
@@ -880,7 +932,10 @@ export class WorkItemService {
         story_points: true,
       },
     });
-    const currentAllocatedPoints = sprintItems.reduce((sum, item) => sum + (item.story_points || 0), 0);
+    const currentAllocatedPoints = sprintItems.reduce(
+      (sum, item) => sum + (item.story_points || 0),
+      0
+    );
     const proposedTotalPoints = currentAllocatedPoints + storyPoints;
 
     if (hasConfiguredCapacity && proposedTotalPoints > totalSprintCapacity) {
@@ -916,8 +971,14 @@ export class WorkItemService {
 
     for (const team of memberTeams) {
       for (const member of team.members) {
-        const cap = member.capacity !== null ? member.capacity : AllocationConfig.DEFAULT_CAPACITY;
-        const alloc = member.allocation !== null ? member.allocation : AllocationConfig.DEFAULT_ALLOCATION;
+        const cap =
+          member.capacity !== null
+            ? member.capacity
+            : AllocationConfig.DEFAULT_CAPACITY;
+        const alloc =
+          member.allocation !== null
+            ? member.allocation
+            : AllocationConfig.DEFAULT_ALLOCATION;
         memberCapacity += cap * (alloc / 100);
       }
     }
@@ -933,7 +994,10 @@ export class WorkItemService {
         story_points: true,
       },
     });
-    const currentMemberPoints = memberSprintItems.reduce((sum, item) => sum + (item.story_points || 0), 0);
+    const currentMemberPoints = memberSprintItems.reduce(
+      (sum, item) => sum + (item.story_points || 0),
+      0
+    );
     const proposedMemberPoints = currentMemberPoints + storyPoints;
 
     if (proposedMemberPoints > memberCapacity) {
