@@ -40,7 +40,7 @@ import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutat
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 
 const ALLOWLIST_PROJECTS_TOOLTIP =
-  'Select at least one project. The allowlisted user must also be added as a member of at least one project before they can access the app.';
+  'Select at least one project. Membership is created automatically for the allowlisted user and removed when a project is unchecked.';
 
 interface AccessAllowlistFormProps {
   readonly entry?: AccessAllowlistEntry;
