@@ -42,6 +42,8 @@ import type { SavedViewsService } from '../../src/routes/api/savedViews/savedVie
 import { MOCK_AUTH_USER_ID } from '../helpers/mock-api-auth';
 import { withMountedRouter } from '../helpers/route-test.harness';
 
+const savedViewsMount = '/api/v1/saved-views';
+
 const savedViewsService = {
   create: createMock,
   update: updateMock,
@@ -69,6 +71,22 @@ const savedViewWire = {
   updated_at: '2026-01-01T00:00:00.000Z',
 };
 
+async function withSavedViewsRouter(
+  run: (baseUrl: string) => Promise<void>
+): Promise<void> {
+  await withMountedRouter(savedViewsMount, savedViewsRouter, run);
+}
+
+async function requestSavedViews(
+  baseUrl: string,
+  subpath: string,
+  init?: RequestInit
+) {
+  const response = await fetch(`${baseUrl}${savedViewsMount}${subpath}`, init);
+  const body = await response.json();
+  return { response, body };
+}
+
 describe('savedViews routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -77,69 +95,56 @@ describe('savedViews routes', () => {
   it('creates a saved view with a validated body', async () => {
     createMock.mockResolvedValue(savedViewWire);
 
-    await withMountedRouter(
-      '/api/v1/saved-views',
-      savedViewsRouter,
-      async (baseUrl) => {
-        const response = await fetch(`${baseUrl}/api/v1/saved-views`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: 'My view',
-            pathname: '/backlog',
-          }),
-        });
-        const body = await response.json();
-
-        expect(response.status).toBe(201);
-        expect(body).toEqual({ data: savedViewWire });
-        expect(createMock).toHaveBeenCalledWith(MOCK_AUTH_USER_ID, {
+    await withSavedViewsRouter(async (baseUrl) => {
+      const { response, body } = await requestSavedViews(baseUrl, '', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           title: 'My view',
           pathname: '/backlog',
-          search: '',
-        });
-      }
-    );
+        }),
+      });
+
+      expect(response.status).toBe(201);
+      expect(body).toEqual({ data: savedViewWire });
+      expect(createMock).toHaveBeenCalledWith(MOCK_AUTH_USER_ID, {
+        title: 'My view',
+        pathname: '/backlog',
+        search: '',
+      });
+    });
   });
 
   it('returns 400 for invalid create payloads', async () => {
-    await withMountedRouter(
-      '/api/v1/saved-views',
-      savedViewsRouter,
-      async (baseUrl) => {
-        const response = await fetch(`${baseUrl}/api/v1/saved-views`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: '   ' }),
-        });
+    await withSavedViewsRouter(async (baseUrl) => {
+      const { response } = await requestSavedViews(baseUrl, '', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: '   ' }),
+      });
 
-        expect(response.status).toBe(400);
-        expect(createMock).not.toHaveBeenCalled();
-      }
-    );
+      expect(response.status).toBe(400);
+      expect(createMock).not.toHaveBeenCalled();
+    });
   });
 
   it('archives an owned saved view', async () => {
     archiveMock.mockResolvedValue({ ...savedViewWire, status: 'archived' });
 
-    await withMountedRouter(
-      '/api/v1/saved-views',
-      savedViewsRouter,
-      async (baseUrl) => {
-        const response = await fetch(
-          `${baseUrl}/api/v1/saved-views/${savedViewWire.id}/archive`,
-          { method: 'POST' }
-        );
-        const body = await response.json();
+    await withSavedViewsRouter(async (baseUrl) => {
+      const { response, body } = await requestSavedViews(
+        baseUrl,
+        `/${savedViewWire.id}/archive`,
+        { method: 'POST' }
+      );
 
-        expect(response.status).toBe(200);
-        expect(body.data.status).toBe('archived');
-        expect(archiveMock).toHaveBeenCalledWith(
-          MOCK_AUTH_USER_ID,
-          savedViewWire.id
-        );
-      }
-    );
+      expect(response.status).toBe(200);
+      expect(body.data.status).toBe('archived');
+      expect(archiveMock).toHaveBeenCalledWith(
+        MOCK_AUTH_USER_ID,
+        savedViewWire.id
+      );
+    });
   });
 
   it('shares a saved view with validated recipients', async () => {
@@ -148,53 +153,45 @@ describe('savedViews routes', () => {
       recipientCount: 1,
     });
 
-    await withMountedRouter(
-      '/api/v1/saved-views',
-      savedViewsRouter,
-      async (baseUrl) => {
-        const response = await fetch(
-          `${baseUrl}/api/v1/saved-views/${savedViewWire.id}/share`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userIds: ['33333333-3333-4333-8333-333333333333'],
-            }),
-          }
-        );
-        const body = await response.json();
+    await withSavedViewsRouter(async (baseUrl) => {
+      const { response, body } = await requestSavedViews(
+        baseUrl,
+        `/${savedViewWire.id}/share`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userIds: ['33333333-3333-4333-8333-333333333333'],
+          }),
+        }
+      );
 
-        expect(response.status).toBe(200);
-        expect(body.data.recipientCount).toBe(1);
-        expect(shareMock).toHaveBeenCalledWith(
-          MOCK_AUTH_USER_ID,
-          savedViewWire.id,
-          { userIds: ['33333333-3333-4333-8333-333333333333'] }
-        );
-      }
-    );
+      expect(response.status).toBe(200);
+      expect(body.data.recipientCount).toBe(1);
+      expect(shareMock).toHaveBeenCalledWith(
+        MOCK_AUTH_USER_ID,
+        savedViewWire.id,
+        { userIds: ['33333333-3333-4333-8333-333333333333'] }
+      );
+    });
   });
 
   it('hard-deletes an archived saved view', async () => {
     hardDeleteMock.mockResolvedValue(undefined);
 
-    await withMountedRouter(
-      '/api/v1/saved-views',
-      savedViewsRouter,
-      async (baseUrl) => {
-        const response = await fetch(
-          `${baseUrl}/api/v1/saved-views/${savedViewWire.id}`,
-          { method: 'DELETE' }
-        );
-        const body = await response.json();
+    await withSavedViewsRouter(async (baseUrl) => {
+      const { response, body } = await requestSavedViews(
+        baseUrl,
+        `/${savedViewWire.id}`,
+        { method: 'DELETE' }
+      );
 
-        expect(response.status).toBe(200);
-        expect(body).toEqual({ success: true });
-        expect(hardDeleteMock).toHaveBeenCalledWith(
-          MOCK_AUTH_USER_ID,
-          savedViewWire.id
-        );
-      }
-    );
+      expect(response.status).toBe(200);
+      expect(body).toEqual({ success: true });
+      expect(hardDeleteMock).toHaveBeenCalledWith(
+        MOCK_AUTH_USER_ID,
+        savedViewWire.id
+      );
+    });
   });
 });

@@ -3,7 +3,11 @@ import type { projectsGetPayload } from '../../generated/prisma/models/projects.
 import type { project_membersGetPayload } from '../../generated/prisma/models/project_members.js';
 import { Constants } from '../../generated/supabase/database.types.js';
 import { ProjectStatus as ProjectStatusEnum } from '../../generated/prisma/enums.js';
-import { emptyToUndefined } from './query-preprocess.js';
+import {
+  emptyToUndefined,
+  paginatedListLimitField,
+  paginatedListPageField,
+} from './query-preprocess.js';
 
 export { ProjectStatusEnum };
 
@@ -185,14 +189,8 @@ type ProjectStatusType =
   (typeof ProjectStatusEnum)[keyof typeof ProjectStatusEnum];
 
 export const listProjectsQuerySchema = z.object({
-  page: z.preprocess(
-    (value) => (value === undefined || value === '' ? 1 : value),
-    z.coerce.number().int().min(1)
-  ),
-  limit: z.preprocess(
-    (value) => (value === undefined || value === '' ? 10 : value),
-    z.coerce.number().int().min(1).max(100)
-  ),
+  page: paginatedListPageField,
+  limit: paginatedListLimitField(),
   status: z.preprocess(
     emptyToUndefined,
     z

@@ -1,7 +1,11 @@
 import { z } from 'zod';
 import type { sprintsGetPayload } from '../../generated/prisma/models/sprints.js';
 import { type SprintStatus } from '../../sprint-status.js';
-import { emptyToUndefined } from './query-preprocess.js';
+import {
+  emptyToUndefined,
+  paginatedListLimitField,
+  paginatedListPageField,
+} from './query-preprocess.js';
 
 export const sprintProjectSelect = {
   id: true,
@@ -45,14 +49,8 @@ const optionalUuid = z.preprocess(emptyToUndefined, z.uuid().optional());
 
 export const listSprintsQuerySchema = z
   .object({
-    page: z.preprocess(
-      (value) => (value === undefined || value === '' ? 1 : value),
-      z.coerce.number().int().min(1)
-    ),
-    limit: z.preprocess(
-      (value) => (value === undefined || value === '' ? 5 : value),
-      z.coerce.number().int().min(1).max(100)
-    ),
+    page: paginatedListPageField,
+    limit: paginatedListLimitField(5),
     search: z.preprocess(emptyToUndefined, z.string().optional()),
     projectId: optionalUuid,
     tab: z.preprocess(

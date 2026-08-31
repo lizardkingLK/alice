@@ -1,7 +1,11 @@
 import { z } from 'zod';
 import { Constants } from '../../generated/supabase/database.types.js';
 import type { saved_viewsGetPayload } from '../../generated/prisma/models/saved_views.js';
-import { emptyToUndefined } from './query-preprocess.js';
+import {
+  emptyToUndefined,
+  paginatedListLimitField,
+  paginatedListPageField,
+} from './query-preprocess.js';
 
 /** PostgREST column list for saved-view list/detail reads (RSC + mutation follow-ups). */
 export const SAVED_VIEW_POSTGREST_SELECT =
@@ -84,14 +88,8 @@ export type SavedViewStatusQuery = z.infer<typeof savedViewStatusQuerySchema>;
 /** Query params for unused Express list GET (parity with RSC `getSavedViewsPaginated`). */
 export const listSavedViewsQuerySchema = z
   .object({
-    page: z.preprocess(
-      (value) => (value === undefined || value === '' ? 1 : value),
-      z.coerce.number().int().min(1)
-    ),
-    limit: z.preprocess(
-      (value) => (value === undefined || value === '' ? 10 : value),
-      z.coerce.number().int().min(1).max(100)
-    ),
+    page: paginatedListPageField,
+    limit: paginatedListLimitField(),
     search: z.preprocess(emptyToUndefined, z.string().optional()),
     tab: z.preprocess(
       emptyToUndefined,

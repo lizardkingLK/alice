@@ -1,5 +1,4 @@
-import { normalizeSavedViewSearch } from '@repo/types';
-import { formatZodError } from '@/lib/zod/format-zod-error';
+import { parseWithZod } from '@/lib/zod/format-zod-error';
 import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import {
   createSavedViewBodySchema,
@@ -9,6 +8,7 @@ import {
   type SavedViewWire,
   type ShareSavedViewResponse,
 } from '@repo/types/api/v1';
+import { normalizeSavedViewSearch } from '@repo/types';
 
 export type SavedView = SavedViewWire;
 
@@ -24,55 +24,54 @@ export { buildSavedViewHref, normalizeSavedViewSearch } from '@repo/types';
 
 const savedViewsPath = '/api/v1/saved-views';
 
+async function postSavedViewMutation(subpath: string): Promise<SavedView> {
+  const response = await apiFetch<SavedViewMutationResponse>(
+    `${savedViewsPath}${subpath}`,
+    { method: 'POST' }
+  );
+  return response.data;
+}
+
+async function deleteSavedViewMutation(subpath: string): Promise<void> {
+  await apiFetch<SavedViewSuccessResponse>(`${savedViewsPath}${subpath}`, {
+    method: 'DELETE',
+  });
+}
+
 /** Mutations only — list reads use `saved-views.reads.server.ts` (SSR). */
 export async function createSavedView(
   input: CreateSavedViewClientInput
 ): Promise<SavedView> {
-  const parsed = createSavedViewBodySchema.safeParse({
+  const body = parseWithZod(createSavedViewBodySchema, {
     title: input.title,
     description: input.description ?? null,
     pathname: input.pathname,
     search: normalizeSavedViewSearch(input.search),
     projectId: input.projectId ?? null,
   });
-  if (!parsed.success) {
-    throw new Error(formatZodError(parsed.error));
-  }
 
   const response = await apiFetch<SavedViewMutationResponse>(savedViewsPath, {
     method: 'POST',
-    body: JSON.stringify(parsed.data),
+    body: JSON.stringify(body),
   });
   return response.data;
 }
 
 export async function archiveSavedView(id: string): Promise<SavedView> {
-  const response = await apiFetch<SavedViewMutationResponse>(
-    `${savedViewsPath}/${id}/archive`,
-    { method: 'POST' }
-  );
-  return response.data;
+  return postSavedViewMutation(`/${id}/archive`);
 }
 
 /** Remove a view from Shared with me (deletes the recipient’s share row only). */
 export async function deleteSharedView(id: string): Promise<void> {
-  await apiFetch<SavedViewSuccessResponse>(`${savedViewsPath}/${id}/share`, {
-    method: 'DELETE',
-  });
+  await deleteSavedViewMutation(`/${id}/share`);
 }
 
 export async function restoreSavedView(id: string): Promise<SavedView> {
-  const response = await apiFetch<SavedViewMutationResponse>(
-    `${savedViewsPath}/${id}/restore`,
-    { method: 'POST' }
-  );
-  return response.data;
+  return postSavedViewMutation(`/${id}/restore`);
 }
 
 export async function deleteSavedView(id: string): Promise<void> {
-  await apiFetch<SavedViewSuccessResponse>(`${savedViewsPath}/${id}`, {
-    method: 'DELETE',
-  });
+  await deleteSavedViewMutation(`/${id}`);
 }
 
 export type ShareSavedViewClientInput = {
@@ -83,18 +82,15 @@ export async function shareSavedView(
   id: string,
   input: ShareSavedViewClientInput
 ): Promise<ShareSavedViewResponse['data']> {
-  const parsed = shareSavedViewBodySchema.safeParse({
+  const body = parseWithZod(shareSavedViewBodySchema, {
     userIds: input.userIds,
   });
-  if (!parsed.success) {
-    throw new Error(formatZodError(parsed.error));
-  }
 
   const response = await apiFetch<ShareSavedViewResponse>(
     `${savedViewsPath}/${id}/share`,
     {
       method: 'POST',
-      body: JSON.stringify(parsed.data),
+      body: JSON.stringify(body),
     }
   );
   return response.data;

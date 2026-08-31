@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import type { commentsGetPayload } from '../../generated/prisma/models/comments.js';
-import { emptyToUndefined } from './query-preprocess.js';
+import {
+  emptyToUndefined,
+  paginatedListLimitField,
+  paginatedListPageField,
+} from './query-preprocess.js';
 
 export const commentAuthorSelect = {
   id: true,
@@ -50,14 +54,8 @@ const optionalUuid = z.preprocess(emptyToUndefined, z.uuid().optional());
 
 export const listCommentsQuerySchema = z
   .object({
-    page: z.preprocess(
-      (value) => (value === undefined || value === '' ? 1 : value),
-      z.coerce.number().int().min(1)
-    ),
-    limit: z.preprocess(
-      (value) => (value === undefined || value === '' ? 10 : value),
-      z.coerce.number().int().min(1).max(100)
-    ),
+    page: paginatedListPageField,
+    limit: paginatedListLimitField(),
     workItemId: optionalUuid,
   })
   .transform((query) => {
