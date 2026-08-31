@@ -4,7 +4,7 @@ import { prisma } from '../../../lib/prisma';
 import {
   prismaAuditCreate,
   prismaAuditUpdate,
-  prismaLockTimestamp,
+  prismaLockTimestampRange,
 } from '../../../lib/prisma-audit';
 import {
   OptimisticLockError,
@@ -153,7 +153,7 @@ export class UsersRepository {
     expectedUpdatedAt: string
   ): Promise<UserRow> {
     const { count } = await prisma.users.updateMany({
-      where: { id, updated_at: prismaLockTimestamp(expectedUpdatedAt) },
+      where: { id, updated_at: prismaLockTimestampRange(expectedUpdatedAt) },
       data: {
         ...data,
         ...prismaAuditUpdate(actorId),

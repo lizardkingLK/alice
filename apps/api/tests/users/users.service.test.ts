@@ -176,4 +176,27 @@ describe('UsersService.deactivateUser / toggleUserActive', () => {
     expect(deactivateGuardedMock).not.toHaveBeenCalled();
     expect(updateUserByIdMock).toHaveBeenCalled();
   });
+
+  it('reactivates a user and clears Auth ban', async () => {
+    updateMock.mockResolvedValue({ ...baseUser, active: true });
+    const microsecondTimestamp = '2026-08-31T06:00:00.123456+00:00';
+
+    const result = await service.toggleUserActive(
+      'admin-1',
+      'user-1',
+      true,
+      microsecondTimestamp
+    );
+
+    expect(result.active).toBe(true);
+    expect(updateMock).toHaveBeenCalledWith(
+      'user-1',
+      { active: true },
+      'admin-1',
+      microsecondTimestamp
+    );
+    expect(updateUserByIdMock).toHaveBeenCalledWith('user-1', {
+      ban_duration: 'none',
+    });
+  });
 });

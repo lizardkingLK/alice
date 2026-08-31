@@ -29,8 +29,28 @@ export function prismaAuditUpdate(actorId: string) {
   };
 }
 
+/** Prisma optimistic-lock value — aligns with JS Date millisecond precision. */
 export function prismaLockTimestamp(expectedUpdatedAt: string): Date {
   return new Date(expectedUpdatedAt);
+}
+
+/**
+ * Prisma optimistic-lock range for timestamptz columns that may store
+ * sub-millisecond precision (e.g. after `deactivate_user_guarded` RPC).
+ * Client ISO strings are parsed to ms; Postgres may still hold µs.
+ */
+export function prismaLockTimestampRange(expectedUpdatedAt: string): {
+  gte: Date;
+  lt: Date;
+} {
+  const ms = new Date(expectedUpdatedAt).getTime();
+  if (Number.isNaN(ms)) {
+    throw new Error('Invalid expectedUpdatedAt');
+  }
+  return {
+    gte: new Date(ms),
+    lt: new Date(ms + 1),
+  };
 }
 
 /** Convert an ISO/date string from DTOs into a Prisma `DateTime` value. */
