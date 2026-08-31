@@ -45,7 +45,7 @@ export function prismaLockTimestampRange(expectedUpdatedAt: string): {
 } {
   const ms = new Date(expectedUpdatedAt).getTime();
   if (Number.isNaN(ms)) {
-    throw new Error('Invalid expectedUpdatedAt');
+    throw new TypeError('Invalid expectedUpdatedAt');
   }
   return {
     gte: new Date(ms),

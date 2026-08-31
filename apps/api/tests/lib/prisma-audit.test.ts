@@ -11,6 +11,7 @@ describe('prismaLockTimestampRange', () => {
   });
 
   it('throws for invalid timestamps', () => {
+    expect(() => prismaLockTimestampRange('not-a-date')).toThrow(TypeError);
     expect(() => prismaLockTimestampRange('not-a-date')).toThrow(
       'Invalid expectedUpdatedAt'
     );
