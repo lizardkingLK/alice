@@ -1,7 +1,8 @@
-import type { Database } from '@repo/types';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database, ListUsersQuery, UserDetailRow } from '@repo/types';
 import { UserRoleEnum } from '@repo/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { type UserRow, type UsersRepository } from './users.repository';
+import type { UserPaginatedList } from './users.prisma-query';
 
 export class UsersServiceError extends Error {
   constructor(
@@ -296,5 +297,23 @@ export class UsersService {
       { type: 'admin', actorId },
       { expectedUpdatedAt }
     );
+  }
+
+  async listUsersPaginated(
+    query: ListUsersQuery
+  ): Promise<UserPaginatedList> {
+    return await this.usersRepository.listPaginated({
+      filters: {
+        role: query.role,
+        active: query.active,
+      },
+      search: query.search,
+      page: query.page,
+      limit: query.limit,
+    });
+  }
+
+  async getUserDetail(userId: string): Promise<UserDetailRow | null> {
+    return await this.usersRepository.getDetailById(userId);
   }
 }
