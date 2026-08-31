@@ -4,6 +4,42 @@ import { AccessAllowlistKind as AccessAllowlistKindEnum } from '@repo/types/pris
 
 export const ALL_PROJECTS = 'all';
 
+async function resolveAllowedProjectIdsFromAcl(
+  db: SupabaseClient<Database>,
+  email: string
+): Promise<string[] | null> {
+  const { data: allowlistRecord } = await db
+    .from('access_allowlist')
+    .select('allowed_project_ids')
+    .eq('status', RecordStatusEnum.active)
+    .eq('kind', AccessAllowlistKindEnum.email)
+    .eq('value', email.trim().toLowerCase())
+    .maybeSingle();
+
+  if (!allowlistRecord?.allowed_project_ids) {
+    return null;
+  }
+
+  try {
+    const acl = allowlistRecord.allowed_project_ids;
+    if (!Array.isArray(acl)) {
+      return null;
+    }
+    const keys = acl.map(String).map((k) => k.trim().toUpperCase()).filter(Boolean);
+    if (keys.length === 0) {
+      return [];
+    }
+    const { data: matchedProjects } = await db
+      .from('projects')
+      .select('id')
+      .in('key', keys);
+    return (matchedProjects ?? []).map((row) => row.id);
+  } catch (e) {
+    console.error('Failed to parse allowed_project_ids ACL:', e);
+    return null;
+  }
+}
+
 export async function listAccessibleProjectIds(
   db: SupabaseClient<Database>,
   actorId: string
@@ -48,24 +84,7 @@ export async function listAccessibleProjectIds(
 
   let allowedProjectIdsFromAcl: string[] | null = null;
   if (systemUser?.email) {
-    const { data: allowlistRecord } = await db
-      .from('access_allowlist')
-      .select('allowed_project_ids')
-      .eq('status', RecordStatusEnum.active)
-      .eq('kind', AccessAllowlistKindEnum.email)
-      .eq('value', systemUser.email.trim().toLowerCase())
-      .maybeSingle();
-
-    if (allowlistRecord?.allowed_project_ids) {
-      try {
-        const acl = allowlistRecord.allowed_project_ids;
-        if (Array.isArray(acl)) {
-          allowedProjectIdsFromAcl = acl.map(String);
-        }
-      } catch (e) {
-        console.error('Failed to parse allowed_project_ids ACL:', e);
-      }
-    }
+    allowedProjectIdsFromAcl = await resolveAllowedProjectIdsFromAcl(db, systemUser.email);
   }
 
   let ids = [

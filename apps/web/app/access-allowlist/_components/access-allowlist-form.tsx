@@ -316,13 +316,13 @@ export function AccessAllowlistForm({
           {kind === 'email' ? (
             <div className="space-y-2">
               <Label htmlFor="allowlist-acl">
-                Allowed Project IDs (optional, comma-separated)
+                Allowed Project Keys (optional, comma-separated)
               </Label>
               <Input
                 id="allowlist-acl"
                 value={allowedProjectIds}
                 onChange={(event) => setAllowedProjectIds(event.target.value)}
-                placeholder="e.g. uuid-1, uuid-2"
+                placeholder="e.g. SG, DEMO"
                 disabled={isSubmitting || isSuccess}
                 autoComplete="off"
               />

@@ -26,6 +26,9 @@ describe('WorkItemRepository guest ACL', () => {
           filters[column] = next;
           return chain;
         }),
+        in: vi.fn((_column: string, _next: string[]) => {
+          return chain;
+        }),
         maybeSingle: vi.fn(async () => {
           if (table === 'users') {
             return { data: { role: 'member', email: 'guest@partner.com' }, error: null };
@@ -51,8 +54,17 @@ describe('WorkItemRepository guest ACL', () => {
             });
           }
           if (table === 'projects') {
+            if (filters['owner_id']) {
+              return onfulfilled?.({
+                data: [],
+                error: null,
+              });
+            }
             return onfulfilled?.({
-              data: [],
+              data: [
+                { id: 'proj-1' },
+                { id: 'proj-2' },
+              ],
               error: null,
             });
           }
