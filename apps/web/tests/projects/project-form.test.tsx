@@ -254,8 +254,9 @@ describe('ProjectForm Component', () => {
     ).toBeInTheDocument();
     expect(onProjectUpdated).toHaveBeenCalledWith(mockProject);
 
-    await new Promise((resolve) => setTimeout(resolve, 1300));
-    expect(onSuccess).toHaveBeenCalled();
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled(), {
+      timeout: 2_000,
+    });
   });
 
   it('populates fields from projectToEdit and updates correctly in edit mode', async () => {
