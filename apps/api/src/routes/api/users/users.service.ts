@@ -299,9 +299,7 @@ export class UsersService {
     );
   }
 
-  async listUsersPaginated(
-    query: ListUsersQuery
-  ): Promise<UserPaginatedList> {
+  async listUsersPaginated(query: ListUsersQuery): Promise<UserPaginatedList> {
     return await this.usersRepository.listPaginated({
       filters: {
         role: query.role,

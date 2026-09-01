@@ -43,28 +43,34 @@ function mockSupabase(options?: {
             return { data: { email }, error: null };
           }
           if (table === 'access_allowlist') {
-            return { data: allowedProjectIds ? { allowed_project_ids: allowedProjectIds } : null, error: null };
+            return {
+              data: allowedProjectIds
+                ? { allowed_project_ids: allowedProjectIds }
+                : null,
+              error: null,
+            };
           }
           if (table === 'projects') {
             return { data: ownerRow, error: null };
           }
           return { data: null, error: null };
         },
-        then(
-          onFulfilled?: () => unknown,
-          onRejected?: () => unknown
-        ) {
+        then(onFulfilled?: () => unknown, onRejected?: () => unknown) {
           if (table === 'projects') {
             const listResult = {
-              data: projectsByKey.length > 0
-                ? projectsByKey
-                : ownedIds.map((id) => ({ id })),
+              data:
+                projectsByKey.length > 0
+                  ? projectsByKey
+                  : ownedIds.map((id) => ({ id })),
               error: null,
             };
             return Promise.resolve(listResult).then(onFulfilled, onRejected);
           }
-          return Promise.resolve({ data: null, error: null }).then(onFulfilled, onRejected);
-        }
+          return Promise.resolve({ data: null, error: null }).then(
+            onFulfilled,
+            onRejected
+          );
+        },
       };
       return chain;
     },
@@ -134,15 +140,18 @@ describe('listAccessibleProjectIds', () => {
   });
 
   it('restricts accessible projects for guest user matching allowlist ACL', async () => {
-    getActiveMemberProjectIdsMock.mockResolvedValue(['member-project', 'other-project']);
+    getActiveMemberProjectIdsMock.mockResolvedValue([
+      'member-project',
+      'other-project',
+    ]);
     mockSupabase({
       ownedIds: [],
       allowedProjectIds: ['SG'],
       projectsByKey: [{ id: 'member-project', key: 'SG' }],
     });
 
-    await expect(
-      listAccessibleProjectIds('user-1', 'member')
-    ).resolves.toEqual(['member-project']);
+    await expect(listAccessibleProjectIds('user-1', 'member')).resolves.toEqual(
+      ['member-project']
+    );
   });
 });

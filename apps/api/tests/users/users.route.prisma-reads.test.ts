@@ -5,10 +5,7 @@ import { AddressInfo } from 'node:net';
 import { createUsersRouter } from '../../src/routes/api/users/users.route';
 import type { UsersService } from '../../src/routes/api/users/users.service';
 
-const {
-  listUsersPaginatedMock,
-  getUserDetailMock,
-} = vi.hoisted(() => ({
+const { listUsersPaginatedMock, getUserDetailMock } = vi.hoisted(() => ({
   listUsersPaginatedMock: vi.fn(),
   getUserDetailMock: vi.fn(),
 }));
@@ -33,10 +30,7 @@ async function withApp(run: (baseUrl: string) => Promise<void>): Promise<void> {
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json());
-  app.use(
-    '/api/users',
-    createUsersRouter({ usersService })
-  );
+  app.use('/api/users', createUsersRouter({ usersService }));
 
   const server: Server = await new Promise((resolve) => {
     const next = app.listen(0, '127.0.0.1', () => resolve(next));
@@ -86,7 +80,9 @@ describe('users versioned GET routes', () => {
     listUsersPaginatedMock.mockResolvedValue(page);
 
     await withApp(async (baseUrl) => {
-      const response = await fetch(`${baseUrl}/api/users?role=member&active=true&search=Ada`);
+      const response = await fetch(
+        `${baseUrl}/api/users?role=member&active=true&search=Ada`
+      );
       const body = await response.json();
 
       expect(response.status).toBe(200);

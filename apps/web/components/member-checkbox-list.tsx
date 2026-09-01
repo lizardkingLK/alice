@@ -1,7 +1,10 @@
 'use client';
 
-import { Checkbox } from '@repo/ui/components/ui/checkbox';
-import { cn } from '@repo/ui/lib/utils';
+import { useMemo } from 'react';
+import {
+  CheckboxOptionList,
+  type CheckboxOption,
+} from '@/components/checkbox-option-list';
 
 export type MemberCheckboxOption = {
   readonly userId: string;
@@ -22,6 +25,17 @@ type MemberCheckboxListProps = {
   readonly listClassName?: string;
 };
 
+function toMemberCheckboxOptions(
+  members: readonly MemberCheckboxOption[]
+): CheckboxOption[] {
+  return members.map((member) => ({
+    id: member.userId,
+    label: member.name,
+    secondaryLabel:
+      [member.email, member.role].filter(Boolean).join(' • ') || undefined,
+  }));
+}
+
 export function MemberCheckboxList({
   members,
   selectedUserIds,
@@ -32,71 +46,23 @@ export function MemberCheckboxList({
   excludeUserIds,
   listClassName,
 }: Readonly<MemberCheckboxListProps>) {
-  const excluded = excludeUserIds?.length ? new Set(excludeUserIds) : null;
-  const visibleMembers = excluded
-    ? members.filter((member) => !excluded.has(member.userId))
-    : members;
-
-  if (visibleMembers.length === 0) {
-    return (
-      <div className="text-muted-foreground bg-muted/30 border-border/50 rounded-lg border p-3 text-xs">
-        {emptyText}
-      </div>
-    );
-  }
-
-  const toggleUser = (userId: string, checked: boolean) => {
-    if (checked) {
-      if (selectedUserIds.includes(userId)) {
-        return;
-      }
-      onSelectedUserIdsChange([...selectedUserIds, userId]);
-      return;
-    }
-    onSelectedUserIdsChange(selectedUserIds.filter((id) => id !== userId));
-  };
+  const options = useMemo(() => {
+    const excluded = excludeUserIds?.length ? new Set(excludeUserIds) : null;
+    const visibleMembers = excluded
+      ? members.filter((member) => !excluded.has(member.userId))
+      : members;
+    return toMemberCheckboxOptions(visibleMembers);
+  }, [excludeUserIds, members]);
 
   return (
-    <div
-      className={cn(
-        'bg-background/50 border-input custom-scrollbar max-h-48 space-y-1 overflow-y-auto rounded-md border p-2',
-        listClassName
-      )}
-    >
-      {visibleMembers.map((member) => {
-        const checked = selectedUserIds.includes(member.userId);
-        const checkboxId = `${checkboxIdPrefix}-${member.userId}`;
-        const meta = [member.email, member.role].filter(Boolean).join(' • ');
-        return (
-          <div
-            key={member.userId}
-            className="hover:bg-accent/50 flex items-center gap-3 rounded px-2.5 py-1.5 transition-colors"
-          >
-            <Checkbox
-              id={checkboxId}
-              checked={checked}
-              disabled={disabled}
-              onCheckedChange={(value) =>
-                toggleUser(member.userId, value === true)
-              }
-              className="cursor-pointer"
-            />
-            <label
-              htmlFor={checkboxId}
-              className="flex flex-1 cursor-pointer flex-col"
-            >
-              <span className="text-foreground text-xs font-semibold">
-                {member.name}
-              </span>
-              {meta ? (
-                <span className="text-muted-foreground text-[10px]">
-                  {meta}
-                </span>
-              ) : null}
-            </label>
-          </div>
-        );
-      })}
-    </div>
+    <CheckboxOptionList
+      options={options}
+      selectedIds={selectedUserIds}
+      onSelectedIdsChange={onSelectedUserIdsChange}
+      emptyText={emptyText}
+      checkboxIdPrefix={checkboxIdPrefix}
+      disabled={disabled}
+      listClassName={listClassName}
+    />
   );
 }

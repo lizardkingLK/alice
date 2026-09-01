@@ -1,11 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import express from 'express';
-import type { Server } from 'node:http';
-import { AddressInfo } from 'node:net';
 import { createCommentsRouter } from '../../src/routes/api/comments/comments.route';
 import type { CommentsService } from '../../src/routes/api/comments/comments.service';
 import { createCommentListRow } from '../factories/comment.factory';
 import { CommentAccessError } from '../../src/routes/api/comments/comments.errors';
+import { withMountedRouter } from '../helpers/route-test.harness';
 
 const {
   listCommentsPaginatedMock,
@@ -47,23 +45,11 @@ const commentsService = {
 } as unknown as CommentsService;
 
 async function withApp(run: (baseUrl: string) => Promise<void>): Promise<void> {
-  const app = express();
-  app.disable('x-powered-by');
-  app.use(express.json());
-  app.use('/api/comments', createCommentsRouter({ commentsService }));
-
-  const server: Server = await new Promise((resolve) => {
-    const next = app.listen(0, '127.0.0.1', () => resolve(next));
-  });
-
-  try {
-    const address = server.address() as AddressInfo;
-    await run(`http://127.0.0.1:${address.port}`);
-  } finally {
-    await new Promise<void>((resolve, reject) => {
-      server.close((error) => (error ? reject(error) : resolve()));
-    });
-  }
+  await withMountedRouter(
+    '/api/comments',
+    createCommentsRouter({ commentsService }),
+    run
+  );
 }
 
 describe('comments routes', () => {

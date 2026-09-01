@@ -31,7 +31,10 @@ describe('WorkItemRepository guest ACL', () => {
         }),
         maybeSingle: vi.fn(async () => {
           if (table === 'users') {
-            return { data: { role: 'member', email: 'guest@partner.com' }, error: null };
+            return {
+              data: { role: 'member', email: 'guest@partner.com' },
+              error: null,
+            };
           }
           if (table === 'access_allowlist') {
             return {
@@ -46,10 +49,7 @@ describe('WorkItemRepository guest ACL', () => {
         then: vi.fn(async (onfulfilled) => {
           if (table === 'project_members') {
             return onfulfilled?.({
-              data: [
-                { project_id: 'proj-2' },
-                { project_id: 'proj-3' },
-              ],
+              data: [{ project_id: 'proj-2' }, { project_id: 'proj-3' }],
               error: null,
             });
           }
@@ -61,10 +61,7 @@ describe('WorkItemRepository guest ACL', () => {
               });
             }
             return onfulfilled?.({
-              data: [
-                { id: 'proj-1' },
-                { id: 'proj-2' },
-              ],
+              data: [{ id: 'proj-1' }, { id: 'proj-2' }],
               error: null,
             });
           }
@@ -95,7 +92,10 @@ describe('WorkItemRepository guest ACL', () => {
         }),
         maybeSingle: vi.fn(async () => {
           if (table === 'users') {
-            return { data: { role: 'member', email: 'guest@partner.com' }, error: null };
+            return {
+              data: { role: 'member', email: 'guest@partner.com' },
+              error: null,
+            };
           }
           if (table === 'access_allowlist') {
             return {
@@ -108,10 +108,7 @@ describe('WorkItemRepository guest ACL', () => {
         then: vi.fn(async (onfulfilled) => {
           if (table === 'project_members') {
             return onfulfilled?.({
-              data: [
-                { project_id: 'proj-2' },
-                { project_id: 'proj-3' },
-              ],
+              data: [{ project_id: 'proj-2' }, { project_id: 'proj-3' }],
               error: null,
             });
           }

@@ -44,6 +44,10 @@ const repository = {
   hardDelete: hardDeleteMock,
 } as unknown as AccessAllowlistRepository;
 
+const projectsRepository = {
+  removeMember: vi.fn(),
+} as never;
+
 const emailEntry = {
   id: 'allow-1',
   kind: 'email' as const,
@@ -58,8 +62,15 @@ const emailEntry = {
   updated_at: '2026-01-01T00:00:00.000Z',
 };
 
+vi.mock('../../src/lib/sync-allowlist-project-members', () => ({
+  parseAllowlistProjectKeys: vi.fn((value: unknown) =>
+    Array.isArray(value) ? value : []
+  ),
+  syncAllowlistProjectMembers: vi.fn(),
+}));
+
 describe('AccessAllowlistService admission email', () => {
-  const service = new AccessAllowlistService(repository);
+  const service = new AccessAllowlistService(repository, projectsRepository);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -123,7 +134,7 @@ describe('AccessAllowlistService admission email', () => {
 });
 
 describe('AccessAllowlistService delete own domain', () => {
-  const service = new AccessAllowlistService(repository);
+  const service = new AccessAllowlistService(repository, projectsRepository);
   const domainEntry = {
     ...emailEntry,
     kind: 'domain' as const,

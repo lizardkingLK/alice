@@ -1,4 +1,8 @@
-import type { Database, UserDetailRow, UserPrismaListFilters } from '@repo/types';
+import type {
+  Database,
+  UserDetailRow,
+  UserPrismaListFilters,
+} from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { prisma } from '../../../lib/prisma';
 import {
@@ -23,7 +27,6 @@ import {
   userListPageSlice,
   type UserPaginatedList,
 } from './users.prisma-query';
-
 
 export type UserRow = {
   id: string;

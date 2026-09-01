@@ -83,7 +83,9 @@ describe('WorkItemService allocation validation', () => {
       due_date: null,
     };
 
-    await expect(service.createWorkItem('user-1', input)).resolves.toEqual({ id: 'wi-1' });
+    await expect(service.createWorkItem('user-1', input)).resolves.toEqual({
+      id: 'wi-1',
+    });
     expect(findManyTeamsMock).not.toHaveBeenCalled();
   });
 
@@ -92,14 +94,17 @@ describe('WorkItemService allocation validation', () => {
     findManyTeamsMock.mockResolvedValue([
       {
         members: [
-          { user_id: VALID_ASSIGNEE_ID, capacity: 40, allocation: 100, status: 'active' },
+          {
+            user_id: VALID_ASSIGNEE_ID,
+            capacity: 40,
+            allocation: 100,
+            status: 'active',
+          },
         ],
       },
     ]);
     // Current sprint allocation: 30 story points.
-    findManyWorkItemsMock.mockResolvedValue([
-      { story_points: 30 },
-    ]);
+    findManyWorkItemsMock.mockResolvedValue([{ story_points: 30 }]);
     // Proposed work item has 5 story points -> 35 <= 40 -> allowed.
     mockRepo.create.mockResolvedValue({ id: 'wi-1' });
 
@@ -113,7 +118,9 @@ describe('WorkItemService allocation validation', () => {
       due_date: null,
     };
 
-    await expect(service.createWorkItem('user-1', input)).resolves.toEqual({ id: 'wi-1' });
+    await expect(service.createWorkItem('user-1', input)).resolves.toEqual({
+      id: 'wi-1',
+    });
   });
 
   it('fails sprint capacity validation when exceeded', async () => {
@@ -121,14 +128,17 @@ describe('WorkItemService allocation validation', () => {
     findManyTeamsMock.mockResolvedValue([
       {
         members: [
-          { user_id: VALID_ASSIGNEE_ID, capacity: 40, allocation: 100, status: 'active' },
+          {
+            user_id: VALID_ASSIGNEE_ID,
+            capacity: 40,
+            allocation: 100,
+            status: 'active',
+          },
         ],
       },
     ]);
     // Current sprint allocation: 30.
-    findManyWorkItemsMock.mockResolvedValue([
-      { story_points: 30 },
-    ]);
+    findManyWorkItemsMock.mockResolvedValue([{ story_points: 30 }]);
     // Proposed work item has 15 story points -> 45 > 40 -> blocked.
 
     const input = {
@@ -141,7 +151,9 @@ describe('WorkItemService allocation validation', () => {
       due_date: null,
     };
 
-    await expect(service.createWorkItem('user-1', input)).rejects.toBeInstanceOf(WorkItemValidationError);
+    await expect(
+      service.createWorkItem('user-1', input)
+    ).rejects.toBeInstanceOf(WorkItemValidationError);
   });
 
   it('validates member capacity successfully', async () => {
@@ -149,16 +161,23 @@ describe('WorkItemService allocation validation', () => {
     findManyTeamsMock.mockResolvedValue([
       {
         members: [
-          { user_id: VALID_ASSIGNEE_ID, capacity: 40, allocation: 100, status: 'active' },
+          {
+            user_id: VALID_ASSIGNEE_ID,
+            capacity: 40,
+            allocation: 100,
+            status: 'active',
+          },
         ],
       },
     ]);
     // Other items in sprint assigned to member: 20 story points.
-    findManyWorkItemsMock.mockResolvedValueOnce([
-      { story_points: 20 }, // for sprint capacity sum
-    ]).mockResolvedValueOnce([
-      { story_points: 20 }, // for member capacity sum
-    ]);
+    findManyWorkItemsMock
+      .mockResolvedValueOnce([
+        { story_points: 20 }, // for sprint capacity sum
+      ])
+      .mockResolvedValueOnce([
+        { story_points: 20 }, // for member capacity sum
+      ]);
 
     mockRepo.create.mockResolvedValue({ id: 'wi-1' });
 
@@ -172,7 +191,9 @@ describe('WorkItemService allocation validation', () => {
       due_date: null,
     };
 
-    await expect(service.createWorkItem('user-1', input)).resolves.toEqual({ id: 'wi-1' });
+    await expect(service.createWorkItem('user-1', input)).resolves.toEqual({
+      id: 'wi-1',
+    });
   });
 
   it('fails member capacity validation when exceeded', async () => {
@@ -180,17 +201,24 @@ describe('WorkItemService allocation validation', () => {
     findManyTeamsMock.mockResolvedValue([
       {
         members: [
-          { user_id: VALID_ASSIGNEE_ID, capacity: 20, allocation: 100, status: 'active' },
+          {
+            user_id: VALID_ASSIGNEE_ID,
+            capacity: 20,
+            allocation: 100,
+            status: 'active',
+          },
         ],
       },
     ]);
     // Other items in sprint: 5.
     // Other items assigned to member in sprint: 15.
-    findManyWorkItemsMock.mockResolvedValueOnce([
-      { story_points: 5 }, // for sprint capacity sum
-    ]).mockResolvedValueOnce([
-      { story_points: 15 }, // for member capacity sum
-    ]);
+    findManyWorkItemsMock
+      .mockResolvedValueOnce([
+        { story_points: 5 }, // for sprint capacity sum
+      ])
+      .mockResolvedValueOnce([
+        { story_points: 15 }, // for member capacity sum
+      ]);
 
     findUniqueUserMock.mockResolvedValue({ name: 'Carol Member' });
 
@@ -204,14 +232,21 @@ describe('WorkItemService allocation validation', () => {
       due_date: null,
     };
 
-    await expect(service.createWorkItem('user-1', input)).rejects.toBeInstanceOf(WorkItemValidationError);
+    await expect(
+      service.createWorkItem('user-1', input)
+    ).rejects.toBeInstanceOf(WorkItemValidationError);
   });
 
   it('creates a worklog entry when allocation is changed', async () => {
     findManyTeamsMock.mockResolvedValue([
       {
         members: [
-          { user_id: VALID_ASSIGNEE_ID, capacity: 40, allocation: 100, status: 'active' },
+          {
+            user_id: VALID_ASSIGNEE_ID,
+            capacity: 40,
+            allocation: 100,
+            status: 'active',
+          },
         ],
       },
     ]);
@@ -237,7 +272,9 @@ describe('WorkItemService allocation validation', () => {
         data: expect.objectContaining({
           work_item_id: 'wi-1',
           logged_hours: 0,
-          comment: expect.stringContaining('Allocation changed: Assigned to sprint Sprint 1, Assignee set to Carol Member, Story points set to 5'),
+          comment: expect.stringContaining(
+            'Allocation changed: Assigned to sprint Sprint 1, Assignee set to Carol Member, Story points set to 5'
+          ),
         }),
       })
     );

@@ -108,7 +108,10 @@ async function resolveAllowedProjectIdsFromAcl(
     if (!Array.isArray(acl)) {
       return null;
     }
-    const keys = acl.map(String).map((k) => k.trim().toUpperCase()).filter(Boolean);
+    const keys = acl
+      .map(String)
+      .map((k) => k.trim().toUpperCase())
+      .filter(Boolean);
     if (keys.length === 0) {
       return [];
     }
@@ -159,9 +162,14 @@ export async function listAccessibleProjectIds(
       ownedIds = (data ?? []).map((row) => row.id);
     }
 
-    const allowedProjectIdsFromAcl = await resolveAllowedProjectIdsFromAcl(supabase, userId);
+    const allowedProjectIdsFromAcl = await resolveAllowedProjectIdsFromAcl(
+      supabase,
+      userId
+    );
     if (allowedProjectIdsFromAcl !== null) {
-      memberIds = memberIds.filter((id) => allowedProjectIdsFromAcl.includes(id));
+      memberIds = memberIds.filter((id) =>
+        allowedProjectIdsFromAcl.includes(id)
+      );
       ownedIds = ownedIds.filter((id) => allowedProjectIdsFromAcl.includes(id));
     }
   } catch (err) {

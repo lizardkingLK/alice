@@ -40,10 +40,13 @@ export const allowedProjectIdsSchema = z
   .transform((val) => {
     if (!val) return null;
     if (Array.isArray(val)) {
-      const filtered = val.map(v => v.trim()).filter(Boolean);
+      const filtered = val.map((v) => v.trim()).filter(Boolean);
       return filtered.length > 0 ? filtered : null;
     }
-    const parts = val.split(',').map((v) => v.trim()).filter(Boolean);
+    const parts = val
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean);
     return parts.length > 0 ? parts : null;
   });
 

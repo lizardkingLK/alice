@@ -12,6 +12,11 @@ import {
   type AccessAllowlistStatus,
 } from './accessAllowlist.repository';
 import { notifyAllowlistedEmail } from './notify-allowlisted-email';
+import type { ProjectsRepository } from '../projects/projects.repository';
+import {
+  parseAllowlistProjectKeys,
+  syncAllowlistProjectMembers,
+} from '../../../lib/sync-allowlist-project-members';
 
 async function requireAdmin(actorId: string) {
   return await requireUserWithRole(
@@ -51,6 +56,27 @@ async function notifyIfEmailAllowlisted(entry: AccessAllowlistRow) {
   }
 }
 
+async function syncEmailAllowlistProjectMembers(params: {
+  readonly actorId: string;
+  readonly entry: AccessAllowlistRow;
+  readonly previousKeys: readonly string[];
+  readonly nextKeys: readonly string[];
+  readonly projectsRepository: ProjectsRepository;
+}): Promise<void> {
+  if (params.entry.kind !== 'email') {
+    return;
+  }
+
+  await syncAllowlistProjectMembers({
+    actorId: params.actorId,
+    email: params.entry.value,
+    previousKeys: params.previousKeys,
+    nextKeys: params.nextKeys,
+    entryActive: params.entry.status === RecordStatusEnum.active,
+    projectsRepository: params.projectsRepository,
+  });
+}
+
 export type CreateAccessAllowlistInput = {
   kind: AccessAllowlistKind;
   value: string;
@@ -70,7 +96,8 @@ export type UpdateAccessAllowlistInput = {
 
 export class AccessAllowlistService {
   constructor(
-    private readonly accessAllowlistRepository: AccessAllowlistRepository
+    private readonly accessAllowlistRepository: AccessAllowlistRepository,
+    private readonly projectsRepository: ProjectsRepository
   ) {}
 
   async requireAdminAllowlistEntry(
@@ -107,6 +134,14 @@ export class AccessAllowlistService {
 
     await notifyIfEmailAllowlisted(entry);
 
+    await syncEmailAllowlistProjectMembers({
+      actorId,
+      entry,
+      previousKeys: [],
+      nextKeys: parseAllowlistProjectKeys(input.allowed_project_ids),
+      projectsRepository: this.projectsRepository,
+    });
+
     return entry;
   }
 
@@ -140,6 +175,22 @@ export class AccessAllowlistService {
       await notifyIfEmailAllowlisted(entry);
     }
 
+    const previousKeys = parseAllowlistProjectKeys(
+      previous.allowed_project_ids
+    );
+    const nextKeys =
+      input.allowed_project_ids !== undefined
+        ? parseAllowlistProjectKeys(input.allowed_project_ids)
+        : previousKeys;
+
+    await syncEmailAllowlistProjectMembers({
+      actorId,
+      entry,
+      previousKeys,
+      nextKeys,
+      projectsRepository: this.projectsRepository,
+    });
+
     return entry;
   }
 
@@ -150,6 +201,14 @@ export class AccessAllowlistService {
   ): Promise<void> {
     const { actor, entry } = await this.requireAdminAllowlistEntry(actorId, id);
     rejectOwnDomainLockout(entry, actor.email, { deleting: true });
+
+    await syncEmailAllowlistProjectMembers({
+      actorId,
+      entry,
+      previousKeys: parseAllowlistProjectKeys(entry.allowed_project_ids),
+      nextKeys: [],
+      projectsRepository: this.projectsRepository,
+    });
 
     return await this.accessAllowlistRepository.hardDelete({
       id,

@@ -6,6 +6,18 @@ export type AllowlistHit = { expires_at: string | null };
 
 type QueryResult = { data: unknown; error: unknown };
 
+type QueryContext = {
+  kind: string;
+  value: string;
+  filters: Record<string, string>;
+};
+
+type SupabaseQueryChain = Promise<QueryResult> & {
+  select: Mock;
+  eq: Mock;
+  maybeSingle: Mock;
+};
+
 /* eslint-disable no-unused-vars -- structural callback types for the query stub */
 function createAllowlistQueryChain(options: {
   resolve?: (kind: string, value: string) => Promise<QueryResult> | QueryResult;
@@ -39,6 +51,31 @@ function createAllowlistQueryChain(options: {
   return chain;
 }
 
+function createAwaitableQueryChain(
+  // eslint-disable-next-line no-unused-vars
+  resolveQuery: (context: QueryContext) => QueryResult | Promise<QueryResult>
+): SupabaseQueryChain {
+  const context: QueryContext = { kind: '', value: '', filters: {} };
+
+  const createChain = (): SupabaseQueryChain => {
+    const promise = Promise.resolve().then(() => resolveQuery(context));
+    return Object.assign(promise, {
+      select: vi.fn(() => createChain()),
+      eq: vi.fn((column: string, next: string) => {
+        if (column === 'kind') context.kind = next;
+        if (column === 'value') context.value = next;
+        context.filters[column] = next;
+        return createChain();
+      }),
+      maybeSingle: vi.fn(() =>
+        Promise.resolve().then(() => resolveQuery(context))
+      ),
+    });
+  };
+
+  return createChain();
+}
+
 /** Stub `access_allowlist` lookups keyed as `kind:value`, users, and project memberships. */
 export function mockAllowlistRows(
   rows: Record<string, AllowlistHit | null>,
@@ -46,46 +83,31 @@ export function mockAllowlistRows(
   projectMemberships: Record<string, { project_id: string }[]> = {}
 ) {
   createAdminClient.mockImplementation(() => ({
-    from: vi.fn((table: string) => {
-      const filters: Record<string, string> = {};
-      let kind = '';
-      let value = '';
+    from: vi.fn((table: string) =>
+      createAwaitableQueryChain((context) => {
+        if (table === 'access_allowlist') {
+          const key = `${context.kind}:${context.value}`;
+          if (!(key in rows)) {
+            return { data: null, error: null };
+          }
+          return { data: rows[key], error: null };
+        }
 
-      const chain = {
-        select: vi.fn(() => chain),
-        eq: vi.fn((column: string, next: string) => {
-          if (column === 'kind') kind = next;
-          if (column === 'value') value = next;
-          filters[column] = next;
-          return chain;
-        }),
-        maybeSingle: vi.fn(async () => {
-          if (table === 'access_allowlist') {
-            const key = `${kind}:${value}`;
-            if (!(key in rows)) {
-              return { data: null, error: null };
-            }
-            return { data: rows[key], error: null };
-          }
-          if (table === 'users') {
-            const emailKey = filters['email'] || '';
-            const user = users[emailKey];
-            return { data: user || null, error: null };
-          }
-          return { data: null, error: null };
-        }),
-        then: vi.fn(async (onfulfilled) => { // NOSONAR
-          if (table === 'project_members') {
-            const userIdKey = filters['user_id'] || '';
-            const list = projectMemberships[userIdKey] || [];
-            return onfulfilled?.({ data: list, error: null });
-          }
-          return onfulfilled?.({ data: null, error: null });
-        })
-      };
+        if (table === 'users') {
+          const emailKey = context.filters['email'] || '';
+          const user = users[emailKey];
+          return { data: user || null, error: null };
+        }
 
-      return chain;
-    }),
+        if (table === 'project_members') {
+          const userIdKey = context.filters['user_id'] || '';
+          const list = projectMemberships[userIdKey] || [];
+          return { data: list, error: null };
+        }
+
+        return { data: null, error: null };
+      })
+    ),
   }));
 }
 

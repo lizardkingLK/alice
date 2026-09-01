@@ -71,8 +71,10 @@ function createRootConfig() {
 
 function createAccessAllowlistConfig() {
   const accessAllowlistRepository = new AccessAllowlistRepository(supabase);
+  const projectsRepository = new ProjectsRepository(supabase);
   const accessAllowlistService = new AccessAllowlistService(
-    accessAllowlistRepository
+    accessAllowlistRepository,
+    projectsRepository
   );
   const router = createAccessAllowlistRouter({
     accessAllowlistService,
