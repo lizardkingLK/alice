@@ -271,4 +271,13 @@ describe('AccessAllowlistForm', () => {
       })
     ).toBeInTheDocument();
   });
+
+  it('contains invisible scroll and overflow classes on the form card', () => {
+    const { container } = render(<AccessAllowlistForm />);
+    const card = container.firstElementChild as HTMLElement;
+    expect(card).toHaveClass('no-scrollbar');
+    expect(card).toHaveClass('overflow-y-auto');
+    expect(card).toHaveClass('max-h-[85vh]');
+  });
 });
+
