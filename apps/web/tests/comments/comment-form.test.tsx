@@ -14,13 +14,25 @@ import { commentFactory } from '../factories/comment.factory';
 import { formatDateToISOString } from '@/app/_shared/utility';
 import { plainTextToCommentDoc } from '@repo/types';
 
-const mockOrder = vi.fn();
-const mockEq = vi.fn(() => ({ order: mockOrder }));
-const mockSelect = vi.fn(() => ({ eq: mockEq }));
-const mockFrom = vi.fn(() => ({ select: mockSelect }));
-const mockGetUser = vi.fn();
+const { mockOrder, mockGetUser } = vi.hoisted(() => ({
+  mockOrder: vi.fn().mockImplementation(() => Promise.resolve({ data: [], error: null })),
+  mockGetUser: vi.fn().mockImplementation(() => Promise.resolve({ data: { user: null }, error: null })),
+}));
 
 vi.mock('@/lib/supabase/client', () => {
+  const mockQueryBuilder = {
+    eq: vi.fn().mockImplementation(() => mockQueryBuilder),
+    in: vi.fn().mockImplementation(() => mockQueryBuilder),
+    order: mockOrder,
+    maybeSingle: vi.fn().mockImplementation(() => Promise.resolve({ data: null, error: null })),
+    // eslint-disable-next-line no-unused-vars
+    then: (resolve: (_data: { data: unknown[]; error: null }) => void) =>
+      resolve({ data: [], error: null }),
+  };
+
+  const mockSelect = vi.fn().mockImplementation(() => mockQueryBuilder);
+  const mockFrom = vi.fn().mockImplementation(() => ({ select: mockSelect }));
+
   return {
     createClient: vi.fn(() => ({
       from: mockFrom,
