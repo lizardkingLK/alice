@@ -85,6 +85,30 @@ describe('rewriteDocsMarkdownHref', () => {
       rewriteDocsMarkdownHref('./getting-started/README.md', 'user-guide')
     ).toBe('/docs/user-guide/getting-started');
   });
+
+  it('rewrites sibling links from nested topic README pages', () => {
+    const slug = 'user-guide/sign-in-and-account';
+    const path = 'user-guide/sign-in-and-account/README.md';
+
+    expect(rewriteDocsMarkdownHref('./email-sign-in.md', slug, path)).toBe(
+      '/docs/user-guide/sign-in-and-account/email-sign-in'
+    );
+    expect(rewriteDocsMarkdownHref('./google-sign-in.md', slug, path)).toBe(
+      '/docs/user-guide/sign-in-and-account/google-sign-in'
+    );
+  });
+
+  it('rewrites sibling links from nested topic leaf pages', () => {
+    const slug = 'user-guide/sign-in-and-account/email-sign-in';
+    const path = 'user-guide/sign-in-and-account/email-sign-in.md';
+
+    expect(rewriteDocsMarkdownHref('./google-sign-in.md', slug, path)).toBe(
+      '/docs/user-guide/sign-in-and-account/google-sign-in'
+    );
+    expect(
+      rewriteDocsMarkdownHref('../users-and-access/README.md', slug, path)
+    ).toBe('/docs/user-guide/users-and-access');
+  });
 });
 
 describe('buildDocsIndexEntry and filterDocsIndex', () => {

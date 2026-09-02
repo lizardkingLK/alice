@@ -143,13 +143,24 @@ export function excerptFromBody(bodyText: string, maxLength = 160): string {
   return `${bodyText.slice(0, maxLength).trimEnd()}…`;
 }
 
-function directoryForSlug(currentSlug: string): string {
+/** True when `relativePath` is a folder index (`README.md` or `…/README.md`). */
+export function isReadmeDocsPath(relativePath: string): boolean {
+  const normalized = normalizeDocsRelativePath(relativePath);
+  return normalized === 'README.md' || normalized.endsWith('/README.md');
+}
+
+function directoryForSlug(currentSlug: string, sourcePath?: string): string {
   if (currentSlug === 'index') {
     return '';
   }
+  // Folder README slugs (e.g. `user-guide/sign-in-and-account`) are the directory
+  // for sibling `./page.md` links — not the parent path.
+  if (sourcePath && isReadmeDocsPath(sourcePath)) {
+    return currentSlug;
+  }
   const separator = currentSlug.lastIndexOf('/');
   if (separator === -1) {
-    // README slugs like `user-guide` map from `user-guide/README.md` — treat as a folder.
+    // Single-segment README slugs like `user-guide` map from `user-guide/README.md`.
     return currentSlug;
   }
   return currentSlug.slice(0, separator);
@@ -158,10 +169,15 @@ function directoryForSlug(currentSlug: string): string {
 /**
  * Rewrite a markdown href targeting another .md doc into an in-app /docs slug.
  * Non-markdown / external / hash-only links are returned unchanged.
+ *
+ * @param sourcePath Repo-relative docs path for the current page (e.g.
+ *   `user-guide/sign-in-and-account/README.md`) so folder README pages resolve
+ *   sibling links correctly.
  */
 export function rewriteDocsMarkdownHref(
   href: string,
-  currentSlug: string
+  currentSlug: string,
+  sourcePath?: string
 ): string {
   if (
     !href ||
@@ -179,7 +195,10 @@ export function rewriteDocsMarkdownHref(
     return href;
   }
 
-  const joined = resolveRelativePath(directoryForSlug(currentSlug), pathPart);
+  const joined = resolveRelativePath(
+    directoryForSlug(currentSlug, sourcePath),
+    pathPart
+  );
   const slug = pathToSlug(joined);
   const hashSuffix = hash ? `#${hash}` : '';
   return slug === 'index' ? `/docs${hashSuffix}` : `/docs/${slug}${hashSuffix}`;

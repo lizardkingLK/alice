@@ -53,6 +53,7 @@ export default async function DocsSlugPage({ params }: DocsSlugPageProps) {
         title={doc.entry.title}
         section={doc.entry.section}
         slug={doc.entry.slug}
+        path={doc.entry.path}
         markdown={doc.markdown}
         previous={previous}
         next={next}

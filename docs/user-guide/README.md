@@ -1,25 +1,30 @@
 # User guide
 
-**Status:** Stub
+Product help for Alice — how to sign in, manage access, and work with your team.
 
-**Audience:** All users
+Engineering and architecture documentation is available to developers in local
+environments only. In production you see this user guide in **Docs**.
 
-## Summary
+---
 
-TODO: add content for "User guide".
+## Start here
 
-## Steps
+| Topic                                                | Who it's for                                |
+| ---------------------------------------------------- | ------------------------------------------- |
+| [Sign in & account](./sign-in-and-account/README.md) | Everyone                                    |
+| [Users & access](./users-and-access/README.md)       | Admins (and members browsing the directory) |
+| [Projects](./projects/README.md)                     | Managers and admins                         |
 
-1. TODO
+More topics (work items, board, notifications, and others) are being added.
 
-## In this topic
+---
 
-| Page                                        |     |
-| ------------------------------------------- | --- |
-| [Overview](./sign-in-and-account/README.md) |     |
-| [Overview](./navigation/README.md)          |     |
-| [Overview](./users-and-access/README.md)    |     |
+## Roles at a glance
 
-## Related
+| Role        | Typical access                                                            |
+| ----------- | ------------------------------------------------------------------------- |
+| **Member**  | Dashboard, board, work items, profile                                     |
+| **Manager** | Member access plus projects, sprints, and project settings                |
+| **Admin**   | Full workspace access including **Users**, allowlist, and access requests |
 
-- See the topic index in this folder.
+Your admin controls who is on the allowlist and which role each person has.

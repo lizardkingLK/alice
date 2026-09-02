@@ -1,24 +1,47 @@
 # Projects
 
-**Status:** Stub
+Create and manage projects, and control who can see each project's workspace.
 
-**Audience:** All users
+**Audience:** Managers and admins
 
-## Summary
+---
 
-TODO: add content for "Projects".
+## Who can open Projects
 
-## Steps
+The **Projects** area in the sidebar is available to **managers** and **admins**
+only. Members work on the board and work items for projects they're assigned to,
+but they don't open the project registry.
 
-1. TODO
+---
 
 ## In this topic
 
-| Page                                    |     |
-| --------------------------------------- | --- |
-| [browse projects](./browse-projects.md) |     |
-| [project members](./project-members.md) |     |
+| Page                                    | What you'll learn                 |
+| --------------------------------------- | --------------------------------- |
+| [Browse projects](./browse-projects.md) | Find projects you can access      |
+| [Project members](./project-members.md) | Add or remove people on a project |
 
-## Related
+Other project pages (create, settings, integrations) are documented separately.
 
-- See the topic index in this folder.
+---
+
+## Two layers of access
+
+1. **Platform role** — You need **manager** or **admin** to open `/projects`.
+2. **Project membership** — Even as a manager, you only see projects you **own**
+   or are a **member** of (admins see all projects).
+
+If you open a project you're not a member of, you'll see a no-access message
+with a link back to the list.
+
+---
+
+## Getting access to a project
+
+| Situation                        | What happens                                    |
+| -------------------------------- | ----------------------------------------------- |
+| You **create** a project         | You become the **owner** and see it in the list |
+| Someone **adds you** as a member | The project appears in your list                |
+| You're an **admin**              | All projects appear in the list                 |
+
+Ask a project owner or admin to add you under **Members** if you need access.

@@ -14,6 +14,7 @@ type DocsArticleProps = {
   readonly title: string;
   readonly section: string;
   readonly slug: string;
+  readonly path: string;
   readonly markdown: string;
   readonly previous?: DocsIndexEntry | null;
   readonly next?: DocsIndexEntry | null;
@@ -23,6 +24,7 @@ export function DocsArticle({
   title,
   section,
   slug,
+  path,
   markdown,
   previous = null,
   next = null,
@@ -48,7 +50,7 @@ export function DocsArticle({
           'prose-hr:border-border prose-thead:border-border prose-tr:border-border'
         )}
       >
-        <DocsMarkdownSlugProvider slug={slug}>
+        <DocsMarkdownSlugProvider slug={slug} path={path}>
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={docsMarkdownComponents}
