@@ -30,9 +30,8 @@ export class NotificationsService {
   }
 
   /**
-   * Contact / access-request form: notify all active admins.
-   * This endpoint intentionally uses a deterministic notification type so the
-   * inbox can render an appropriate icon.
+   * Generic contact notifications (non-access-request subjects).
+   * Access requests use AccessRequestsService.submitFromContact.
    */
   async sendAdminContactNotification(params: {
     fromEmail: string;
@@ -44,6 +43,7 @@ export class NotificationsService {
       await this.notificationsRepository.createMany(params);
     } catch (err) {
       console.error('Error inserting notifications to Supabase:', err);
+      throw new Error('Failed to submit contact request');
     }
   }
 

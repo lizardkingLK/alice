@@ -87,6 +87,29 @@ export class AccessAllowlistRepository {
     return data as AccessAllowlistRow | null;
   }
 
+  async findActiveDomainByValue(
+    domain: string
+  ): Promise<AccessAllowlistRow | null> {
+    const normalizedDomain = normalizeAccessAllowlistDomain(domain);
+    const { data, error } = await this.db
+      .from('access_allowlist')
+      .select('*')
+      .eq('kind', AccessAllowlistKindEnum.domain)
+      .eq('value', normalizedDomain)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (error) {
+      console.error(
+        'error. failed to find active domain allowlist entry:',
+        error.message
+      );
+      throw new Error('Failed to check domain allowlist');
+    }
+
+    return data as AccessAllowlistRow | null;
+  }
+
   async create(params: {
     actorId: string;
     kind: AccessAllowlistKind;

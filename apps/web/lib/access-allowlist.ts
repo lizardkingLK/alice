@@ -1,5 +1,11 @@
 import { createAdminClient } from '@/lib/supabase/admin';
-import { emailDomainFromAddress, RecordStatusEnum } from '@repo/types';
+import {
+  emailDomainFromAddress,
+  allowlistProjectKeysAreResolvable,
+  RecordStatusEnum,
+  type AccessDenialReason,
+  type EmailAdmissionResult,
+} from '@repo/types';
 
 /**
  * Paths that do not require an allowlisted identity.
@@ -72,20 +78,21 @@ export function isAllowlistExpired(
   return expires.getTime() <= now.getTime();
 }
 
-type AllowlistHit = {
+type AllowlistRowHit = {
+  status: string;
   expires_at: string | null;
+  allowed_project_ids: unknown;
 };
 
-async function findActiveAllowlistHit(params: {
+async function findAllowlistRow(params: {
   kind: 'domain' | 'email';
   value: string;
-}): Promise<AllowlistHit | null> {
+}): Promise<AllowlistRowHit | null> {
   const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from('access_allowlist')
-    .select('expires_at')
-    .eq('status', 'active')
+    .select('status, expires_at, allowed_project_ids')
     .eq('kind', params.kind)
     .eq('value', params.value)
     .maybeSingle();
@@ -98,77 +105,146 @@ async function findActiveAllowlistHit(params: {
   return data;
 }
 
+function isActiveAllowlistRow(row: AllowlistRowHit | null): boolean {
+  return Boolean(
+    row?.status === RecordStatusEnum.active &&
+    !isAllowlistExpired(row.expires_at)
+  );
+}
+
+function hasDeniedOrExpiredRow(
+  emailRow: AllowlistRowHit | null,
+  domainRow: AllowlistRowHit | null
+): boolean {
+  const candidates = [emailRow, domainRow].filter(Boolean) as AllowlistRowHit[];
+  if (candidates.length === 0) {
+    return false;
+  }
+
+  return candidates.every(
+    (row) =>
+      row.status !== RecordStatusEnum.active ||
+      isAllowlistExpired(row.expires_at)
+  );
+}
+
+async function guestHasWhitelistedProjects(
+  allowedProjectIds: unknown
+): Promise<boolean> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.from('projects').select('id, key');
+
+  if (error) {
+    console.error(
+      'error. guest allowlist project lookup failed:',
+      error.message
+    );
+    return false;
+  }
+
+  return allowlistProjectKeysAreResolvable(allowedProjectIds, data ?? []);
+}
+
+async function runGuestAdmissionChecks(
+  normalizedEmail: string,
+  emailRow: AllowlistRowHit
+): Promise<EmailAdmissionResult> {
+  const supabase = createAdminClient();
+
+  const { data: userRecord, error: userError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('email', normalizedEmail)
+    .maybeSingle();
+
+  if (userError || !userRecord) {
+    console.warn(
+      'Guest access denied: User record does not exist for email:',
+      normalizedEmail
+    );
+    return { allowed: false, reason: 'guest_user_missing' };
+  }
+
+  const hasProjects = await guestHasWhitelistedProjects(
+    emailRow.allowed_project_ids
+  );
+  if (!hasProjects) {
+    console.warn(
+      'Guest access denied: No whitelisted projects configured:',
+      normalizedEmail
+    );
+    return { allowed: false, reason: 'no_guest_projects' };
+  }
+
+  return { allowed: true };
+}
+
 /**
  * Admission check against `access_allowlist`.
- * Allows when an active, non-expired **email** row or **domain** row matches.
- * Uses the service-role client (server-only) — do not call from the browser.
+ * Domain rows admit without project-key checks; email rows require
+ * whitelisted project keys (not `project_members`).
  */
-export async function isEmailAllowed(
+export async function evaluateEmailAdmission(
   email: string,
   options?: { enforceGuestChecks?: boolean }
-): Promise<boolean> {
+): Promise<EmailAdmissionResult> {
   const normalized = normalizeEmail(email);
   if (!normalized) {
-    return false;
+    return { allowed: false, reason: 'not_allowlisted' };
   }
 
   const domain = extractEmailDomain(normalized);
   if (!domain) {
-    return false;
+    return { allowed: false, reason: 'not_allowlisted' };
   }
 
-  const [emailHit, domainHit] = await Promise.all([
-    findActiveAllowlistHit({ kind: 'email', value: normalized }),
-    findActiveAllowlistHit({ kind: 'domain', value: domain }),
+  const [emailRow, domainRow] = await Promise.all([
+    findAllowlistRow({ kind: 'email', value: normalized }),
+    findAllowlistRow({ kind: 'domain', value: domain }),
   ]);
 
-  let isAllowed = false;
-  let isGuest = false;
-
-  if (emailHit && !isAllowlistExpired(emailHit.expires_at)) {
-    isAllowed = true;
-    isGuest = true;
-  } else if (domainHit && !isAllowlistExpired(domainHit.expires_at)) {
-    isAllowed = true;
+  if (isActiveAllowlistRow(domainRow)) {
+    return { allowed: true };
   }
 
-  if (!isAllowed) {
-    return false;
-  }
-
-  if (isGuest && options?.enforceGuestChecks) {
-    const supabase = createAdminClient();
-
-    // 1. "An allowlisted email must belong to an existing user."
-    const { data: userRecord, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', normalized)
-      .maybeSingle();
-
-    if (userError || !userRecord) {
-      console.warn(
-        'Guest access denied: User record does not exist for email:',
-        normalized
-      );
-      return false;
+  if (emailRow && isActiveAllowlistRow(emailRow)) {
+    if (!options?.enforceGuestChecks) {
+      return { allowed: true };
     }
-
-    // 2. "That user must have 1 or more projects configured."
-    const { data: memberships, error: memberError } = await supabase
-      .from('project_members')
-      .select('project_id')
-      .eq('user_id', userRecord.id)
-      .eq('status', RecordStatusEnum.active);
-
-    if (memberError || !memberships || memberships.length === 0) {
-      console.warn(
-        'Guest access denied: User has 0 projects configured:',
-        normalized
-      );
-      return false;
-    }
+    return runGuestAdmissionChecks(normalized, emailRow);
   }
 
-  return true;
+  if (hasDeniedOrExpiredRow(emailRow, domainRow)) {
+    return { allowed: false, reason: 'denied_or_expired' };
+  }
+
+  return { allowed: false, reason: 'not_allowlisted' };
+}
+
+/** @deprecated Prefer `evaluateEmailAdmission` when a denial reason is needed. */
+export async function isEmailAllowed(
+  email: string,
+  options?: { enforceGuestChecks?: boolean }
+): Promise<boolean> {
+  const result = await evaluateEmailAdmission(email, options);
+  return result.allowed;
+}
+
+export function accessDenialReasonToQueryParam(
+  reason: AccessDenialReason
+): string | null {
+  if (reason === 'denied_or_expired') {
+    return 'denied_or_expired';
+  }
+  return null;
+}
+
+export function buildAccessDeniedPath(
+  reason?: AccessDenialReason | null
+): string {
+  const param = reason ? accessDenialReasonToQueryParam(reason) : null;
+  if (!param) {
+    return '/access-denied';
+  }
+  return `/access-denied?reason=${param}`;
 }

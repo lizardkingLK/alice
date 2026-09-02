@@ -7,6 +7,11 @@ import {
 } from '@/app/users/_services/users.reads.server';
 import { listAccessAllowlist } from '@/app/access-allowlist/_services/access-allowlist.reads.server';
 import type { AccessAllowlistListResult } from '@/app/access-allowlist/_services/access-allowlist.mutations.shared';
+import {
+  getAccessRequestById,
+  listAccessRequests,
+} from '@/app/access-requests/_services/access-requests.reads.server';
+import type { AccessRequestListResult } from '@/app/access-requests/_services/access-requests.mutations.shared';
 import { getProjectList } from '@/app/projects/_services/projects.reads.server';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
@@ -33,6 +38,14 @@ const EMPTY_ALLOWLIST: AccessAllowlistListResult = {
   totalPages: 1,
 };
 
+const EMPTY_REQUESTS: AccessRequestListResult = {
+  items: [],
+  totalCount: 0,
+  page: 1,
+  limit: 10,
+  totalPages: 1,
+};
+
 const EMPTY_PROJECTS: Project[] = [];
 
 type UsersDataProps = {
@@ -49,12 +62,27 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
     activeTab,
     'allowlist'
   );
+  const requestsParams = listParamsForUsersPageTab(
+    parsed,
+    activeTab,
+    'requests'
+  );
+  const requestId =
+    typeof resolvedSearchParams.requestId === 'string'
+      ? resolvedSearchParams.requestId
+      : null;
 
   const dbUser = await getDbUser();
   const currentUserRole = dbUser?.role ?? 'member';
   const allowlistEnabled = isAdmin(currentUserRole);
 
-  const [usersData, allowlistData, projects] = await Promise.all([
+  const [
+    usersData,
+    allowlistData,
+    requestsData,
+    projects,
+    focusedAccessRequest,
+  ] = await Promise.all([
     safeServerFetch(
       getUsersListPaginated(
         usersParams.page,
@@ -78,11 +106,30 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
       : Promise.resolve(EMPTY_ALLOWLIST),
     allowlistEnabled
       ? safeServerFetch(
+          listAccessRequests({
+            status: 'all',
+            page: requestsParams.page,
+            limit: requestsParams.limit,
+            search: requestsParams.search,
+          }),
+          EMPTY_REQUESTS,
+          'fetch access requests'
+        )
+      : Promise.resolve(EMPTY_REQUESTS),
+    allowlistEnabled
+      ? safeServerFetch(
           getProjectList(),
           EMPTY_PROJECTS,
           'fetch projects for allowlist form'
         )
       : Promise.resolve(EMPTY_PROJECTS),
+    allowlistEnabled && requestId
+      ? safeServerFetch(
+          getAccessRequestById(requestId),
+          null,
+          'fetch focused access request'
+        )
+      : Promise.resolve(null),
   ]);
 
   return (
@@ -100,6 +147,12 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
       allowlistPage={allowlistData.page}
       allowlistLimit={allowlistData.limit}
       allowlistTotalPages={allowlistData.totalPages}
+      accessRequests={requestsData.items}
+      accessRequestsTotalCount={requestsData.totalCount}
+      accessRequestsPage={requestsData.page}
+      accessRequestsLimit={requestsData.limit}
+      accessRequestsTotalPages={requestsData.totalPages}
+      focusedAccessRequest={focusedAccessRequest}
       currentUserEmail={dbUser?.email}
       projects={projects}
     />

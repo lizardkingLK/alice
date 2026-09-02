@@ -63,6 +63,7 @@ export const ModelName = {
   attachments: 'attachments',
   notifications: 'notifications',
   access_allowlist: 'access_allowlist',
+  access_requests: 'access_requests',
   jira_connections: 'jira_connections',
   chat_conversations: 'chat_conversations',
   saved_views: 'saved_views',
@@ -310,6 +311,25 @@ export const Access_allowlistScalarFieldEnum = {
 } as const
 
 export type Access_allowlistScalarFieldEnum = (typeof Access_allowlistScalarFieldEnum)[keyof typeof Access_allowlistScalarFieldEnum]
+
+
+export const Access_requestsScalarFieldEnum = {
+  id: 'id',
+  requester_email: 'requester_email',
+  requester_name: 'requester_name',
+  message: 'message',
+  kind: 'kind',
+  status: 'status',
+  request_count: 'request_count',
+  requested_project_keys: 'requested_project_keys',
+  resolved_by: 'resolved_by',
+  resolved_at: 'resolved_at',
+  last_requested_at: 'last_requested_at',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Access_requestsScalarFieldEnum = (typeof Access_requestsScalarFieldEnum)[keyof typeof Access_requestsScalarFieldEnum]
 
 
 export const Jira_connectionsScalarFieldEnum = {

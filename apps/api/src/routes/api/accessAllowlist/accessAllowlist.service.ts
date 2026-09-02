@@ -3,7 +3,9 @@ import {
   UserRoleEnum,
   RecordStatusEnum,
   OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE,
+  EMAIL_ALLOWLIST_DOMAIN_CONFLICT_MESSAGE,
   isOwnAllowlistDomainLockout,
+  emailDomainFromAddress,
 } from '@repo/types';
 import {
   AccessAllowlistRepository,
@@ -12,11 +14,7 @@ import {
   type AccessAllowlistStatus,
 } from './accessAllowlist.repository';
 import { notifyAllowlistedEmail } from './notify-allowlisted-email';
-import type { ProjectsRepository } from '../projects/projects.repository';
-import {
-  parseAllowlistProjectKeys,
-  syncAllowlistProjectMembers,
-} from '../../../lib/sync-allowlist-project-members';
+import type { AccessRequestsService } from '../accessRequests/accessRequests.service';
 
 async function requireAdmin(actorId: string) {
   return await requireUserWithRole(
@@ -56,27 +54,6 @@ async function notifyIfEmailAllowlisted(entry: AccessAllowlistRow) {
   }
 }
 
-async function syncEmailAllowlistProjectMembers(params: {
-  readonly actorId: string;
-  readonly entry: AccessAllowlistRow;
-  readonly previousKeys: readonly string[];
-  readonly nextKeys: readonly string[];
-  readonly projectsRepository: ProjectsRepository;
-}): Promise<void> {
-  if (params.entry.kind !== 'email') {
-    return;
-  }
-
-  await syncAllowlistProjectMembers({
-    actorId: params.actorId,
-    email: params.entry.value,
-    previousKeys: params.previousKeys,
-    nextKeys: params.nextKeys,
-    entryActive: params.entry.status === RecordStatusEnum.active,
-    projectsRepository: params.projectsRepository,
-  });
-}
-
 export type CreateAccessAllowlistInput = {
   kind: AccessAllowlistKind;
   value: string;
@@ -97,7 +74,7 @@ export type UpdateAccessAllowlistInput = {
 export class AccessAllowlistService {
   constructor(
     private readonly accessAllowlistRepository: AccessAllowlistRepository,
-    private readonly projectsRepository: ProjectsRepository
+    private readonly accessRequestsService?: AccessRequestsService
   ) {}
 
   async requireAdminAllowlistEntry(
@@ -122,6 +99,17 @@ export class AccessAllowlistService {
   ): Promise<AccessAllowlistRow> {
     await requireAdmin(actorId);
 
+    if (input.kind === 'email') {
+      const domain = emailDomainFromAddress(input.value);
+      if (domain) {
+        const domainRow =
+          await this.accessAllowlistRepository.findActiveDomainByValue(domain);
+        if (domainRow) {
+          throw new Error(EMAIL_ALLOWLIST_DOMAIN_CONFLICT_MESSAGE);
+        }
+      }
+    }
+
     const entry = await this.accessAllowlistRepository.create({
       actorId,
       kind: input.kind,
@@ -134,13 +122,12 @@ export class AccessAllowlistService {
 
     await notifyIfEmailAllowlisted(entry);
 
-    await syncEmailAllowlistProjectMembers({
-      actorId,
-      entry,
-      previousKeys: [],
-      nextKeys: parseAllowlistProjectKeys(input.allowed_project_ids),
-      projectsRepository: this.projectsRepository,
-    });
+    if (entry.kind === 'email' && this.accessRequestsService) {
+      await this.accessRequestsService.markGrantedForEmail(
+        actorId,
+        entry.value
+      );
+    }
 
     return entry;
   }
@@ -173,23 +160,13 @@ export class AccessAllowlistService {
       previous.status !== RecordStatusEnum.active
     ) {
       await notifyIfEmailAllowlisted(entry);
+      if (entry.kind === 'email' && this.accessRequestsService) {
+        await this.accessRequestsService.markGrantedForEmail(
+          actorId,
+          entry.value
+        );
+      }
     }
-
-    const previousKeys = parseAllowlistProjectKeys(
-      previous.allowed_project_ids
-    );
-    const nextKeys =
-      input.allowed_project_ids !== undefined
-        ? parseAllowlistProjectKeys(input.allowed_project_ids)
-        : previousKeys;
-
-    await syncEmailAllowlistProjectMembers({
-      actorId,
-      entry,
-      previousKeys,
-      nextKeys,
-      projectsRepository: this.projectsRepository,
-    });
 
     return entry;
   }
@@ -201,14 +178,6 @@ export class AccessAllowlistService {
   ): Promise<void> {
     const { actor, entry } = await this.requireAdminAllowlistEntry(actorId, id);
     rejectOwnDomainLockout(entry, actor.email, { deleting: true });
-
-    await syncEmailAllowlistProjectMembers({
-      actorId,
-      entry,
-      previousKeys: parseAllowlistProjectKeys(entry.allowed_project_ids),
-      nextKeys: [],
-      projectsRepository: this.projectsRepository,
-    });
 
     return await this.accessAllowlistRepository.hardDelete({
       id,

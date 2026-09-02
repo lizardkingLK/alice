@@ -409,6 +409,7 @@ export const ModelName = {
   attachments: 'attachments',
   notifications: 'notifications',
   access_allowlist: 'access_allowlist',
+  access_requests: 'access_requests',
   jira_connections: 'jira_connections',
   chat_conversations: 'chat_conversations',
   saved_views: 'saved_views',
@@ -430,7 +431,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "jira_connections" | "chat_conversations" | "saved_views" | "saved_view_shares" | "github_pull_requests" | "integrations"
+    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "jira_connections" | "chat_conversations" | "saved_views" | "saved_view_shares" | "github_pull_requests" | "integrations"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1322,6 +1323,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    access_requests: {
+      payload: Prisma.$access_requestsPayload<ExtArgs>
+      fields: Prisma.access_requestsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.access_requestsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$access_requestsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.access_requestsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$access_requestsPayload>
+        }
+        findFirst: {
+          args: Prisma.access_requestsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$access_requestsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.access_requestsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$access_requestsPayload>
+        }
+        findMany: {
+          args: Prisma.access_requestsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$access_requestsPayload>[]
+        }
+        create: {
+          args: Prisma.access_requestsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$access_requestsPayload>
+        }
+        createMany: {
+          args: Prisma.access_requestsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.access_requestsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$access_requestsPayload>[]
+        }
+        delete: {
+          args: Prisma.access_requestsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$access_requestsPayload>
+        }
+        update: {
+          args: Prisma.access_requestsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$access_requestsPayload>
+        }
+        deleteMany: {
+          args: Prisma.access_requestsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.access_requestsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.access_requestsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$access_requestsPayload>[]
+        }
+        upsert: {
+          args: Prisma.access_requestsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$access_requestsPayload>
+        }
+        aggregate: {
+          args: Prisma.Access_requestsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAccess_requests>
+        }
+        groupBy: {
+          args: Prisma.access_requestsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Access_requestsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.access_requestsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Access_requestsCountAggregateOutputType> | number
+        }
+      }
+    }
     jira_connections: {
       payload: Prisma.$jira_connectionsPayload<ExtArgs>
       fields: Prisma.jira_connectionsFieldRefs
@@ -2030,6 +2105,25 @@ export const Access_allowlistScalarFieldEnum = {
 export type Access_allowlistScalarFieldEnum = (typeof Access_allowlistScalarFieldEnum)[keyof typeof Access_allowlistScalarFieldEnum]
 
 
+export const Access_requestsScalarFieldEnum = {
+  id: 'id',
+  requester_email: 'requester_email',
+  requester_name: 'requester_name',
+  message: 'message',
+  kind: 'kind',
+  status: 'status',
+  request_count: 'request_count',
+  requested_project_keys: 'requested_project_keys',
+  resolved_by: 'resolved_by',
+  resolved_at: 'resolved_at',
+  last_requested_at: 'last_requested_at',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Access_requestsScalarFieldEnum = (typeof Access_requestsScalarFieldEnum)[keyof typeof Access_requestsScalarFieldEnum]
+
+
 export const Jira_connectionsScalarFieldEnum = {
   id: 'id',
   user_id: 'user_id',
@@ -2400,6 +2494,34 @@ export type ListEnumAccessAllowlistKindFieldRefInput<$PrismaModel> = FieldRefInp
 
 
 /**
+ * Reference to a field of type 'AccessRequestKind'
+ */
+export type EnumAccessRequestKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AccessRequestKind'>
+    
+
+
+/**
+ * Reference to a field of type 'AccessRequestKind[]'
+ */
+export type ListEnumAccessRequestKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AccessRequestKind[]'>
+    
+
+
+/**
+ * Reference to a field of type 'AccessRequestStatus'
+ */
+export type EnumAccessRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AccessRequestStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'AccessRequestStatus[]'
+ */
+export type ListEnumAccessRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AccessRequestStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'JiraConnectionStatus'
  */
 export type EnumJiraConnectionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'JiraConnectionStatus'>
@@ -2603,6 +2725,7 @@ export type GlobalOmitConfig = {
   attachments?: Prisma.attachmentsOmit
   notifications?: Prisma.notificationsOmit
   access_allowlist?: Prisma.access_allowlistOmit
+  access_requests?: Prisma.access_requestsOmit
   jira_connections?: Prisma.jira_connectionsOmit
   chat_conversations?: Prisma.chat_conversationsOmit
   saved_views?: Prisma.saved_viewsOmit

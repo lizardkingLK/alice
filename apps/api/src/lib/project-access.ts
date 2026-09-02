@@ -1,5 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { UserRoleEnum, type Database, RecordStatusEnum } from '@repo/types';
+import {
+  UserRoleEnum,
+  type Database,
+  RecordStatusEnum,
+  resolveProjectIdsFromAllowlistValue,
+  normalizedAllowlistProjectKeysFromValue,
+} from '@repo/types';
 import { AccessAllowlistKind as AccessAllowlistKindEnum } from '@repo/types/prisma';
 
 export const ALL_PROJECTS = 'all';
@@ -16,30 +22,29 @@ async function resolveAllowedProjectIdsFromAcl(
     .eq('value', email.trim().toLowerCase())
     .maybeSingle();
 
-  if (!allowlistRecord?.allowed_project_ids) {
+  if (!allowlistRecord) {
     return null;
   }
 
+  const normalizedKeys = normalizedAllowlistProjectKeysFromValue(
+    allowlistRecord.allowed_project_ids
+  );
+  if (normalizedKeys.length === 0) {
+    return [];
+  }
+
   try {
-    const acl = allowlistRecord.allowed_project_ids;
-    if (!Array.isArray(acl)) {
-      return null;
-    }
-    const keys = acl
-      .map(String)
-      .map((k) => k.trim().toUpperCase())
-      .filter(Boolean);
-    if (keys.length === 0) {
-      return [];
-    }
     const { data: matchedProjects } = await db
       .from('projects')
-      .select('id')
-      .in('key', keys);
-    return (matchedProjects ?? []).map((row) => row.id);
+      .select('id, key')
+      .in('key', normalizedKeys);
+    return resolveProjectIdsFromAllowlistValue(
+      allowlistRecord.allowed_project_ids,
+      matchedProjects ?? []
+    );
   } catch (e) {
     console.error('Failed to parse allowed_project_ids ACL:', e);
-    return null;
+    return [];
   }
 }
 
@@ -93,13 +98,13 @@ export async function listAccessibleProjectIds(
     );
   }
 
-  let ids = [
+  const ids = [
     ...(memberships ?? []).map((row) => row.project_id),
     ...(owned ?? []).map((row) => row.id),
   ];
 
   if (allowedProjectIdsFromAcl !== null) {
-    ids = ids.filter((id) => allowedProjectIdsFromAcl!.includes(id));
+    return allowedProjectIdsFromAcl;
   }
 
   return [...new Set(ids)];

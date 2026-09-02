@@ -1,7 +1,11 @@
 import type { Database } from '@repo/types';
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import { isEmailAllowed, isPublicAccessPath } from '@/lib/access-allowlist';
+import {
+  isPublicAccessPath,
+  evaluateEmailAdmission,
+  buildAccessDeniedPath,
+} from '@/lib/access-allowlist';
 import { buildLoginPath } from '@/lib/auth-redirect';
 
 function copyCookies(from: NextResponse, to: NextResponse): NextResponse {
@@ -29,11 +33,9 @@ function withPathHeaders(request: NextRequest): {
 function redirectPreservingSession(
   request: NextRequest,
   sessionResponse: NextResponse,
-  pathname: string
+  targetPath: string
 ): NextResponse {
-  const url = request.nextUrl.clone();
-  url.pathname = pathname;
-  url.search = '';
+  const url = new URL(targetPath, request.nextUrl.origin);
   return copyCookies(sessionResponse, NextResponse.redirect(url));
 }
 
@@ -82,12 +84,18 @@ async function enforceAllowlistGate(
   }
 
   try {
-    const allowed = await isEmailAllowed(email ?? '', {
+    const result = await evaluateEmailAdmission(email ?? '', {
       enforceGuestChecks: true,
     });
-    if (allowed) {
+    if (result.allowed) {
       return null;
     }
+
+    return redirectPreservingSession(
+      request,
+      sessionResponse,
+      buildAccessDeniedPath(result.reason)
+    );
   } catch (error) {
     console.error(
       'error. access allowlist middleware check failed:',

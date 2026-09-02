@@ -99,6 +99,62 @@ export type Database = {
           },
         ]
       }
+      access_requests: {
+        Row: {
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["AccessRequestKind"]
+          last_requested_at: string
+          message: string
+          request_count: number
+          requested_project_keys: Json | null
+          requester_email: string
+          requester_name: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: Database["public"]["Enums"]["AccessRequestStatus"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["AccessRequestKind"]
+          last_requested_at?: string
+          message: string
+          request_count?: number
+          requested_project_keys?: Json | null
+          requester_email: string
+          requester_name?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["AccessRequestStatus"]
+          updated_at: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["AccessRequestKind"]
+          last_requested_at?: string
+          message?: string
+          request_count?: number
+          requested_project_keys?: Json | null
+          requester_email?: string
+          requester_name?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["AccessRequestStatus"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_requests_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attachments: {
         Row: {
           created_at: string
@@ -1309,6 +1365,8 @@ export type Database = {
     }
     Enums: {
       AccessAllowlistKind: "domain" | "email"
+      AccessRequestKind: "admission" | "project_expansion"
+      AccessRequestStatus: "pending" | "granted" | "denied"
       IntegrationCategory:
         | "ai_agent"
         | "communication"
@@ -1325,6 +1383,7 @@ export type Database = {
         | "due_date"
         | "view_shared"
         | "chat_processed"
+        | "access_request"
       ProjectStatus: "active" | "archived"
       RecordStatus: "active" | "inactive" | "archived" | "deleted"
       SprintStatus: "planned" | "active" | "closed" | "archived"
@@ -1467,6 +1526,8 @@ export const Constants = {
   public: {
     Enums: {
       AccessAllowlistKind: ["domain", "email"],
+      AccessRequestKind: ["admission", "project_expansion"],
+      AccessRequestStatus: ["pending", "granted", "denied"],
       IntegrationCategory: [
         "ai_agent",
         "communication",
@@ -1484,6 +1545,7 @@ export const Constants = {
         "due_date",
         "view_shared",
         "chat_processed",
+        "access_request",
       ],
       ProjectStatus: ["active", "archived"],
       RecordStatus: ["active", "inactive", "archived", "deleted"],

@@ -5,12 +5,13 @@ Admission control: who may use the app (before RBAC roles apply).
 | Document                                     | Description                                                         | Status |
 | -------------------------------------------- | ------------------------------------------------------------------- | ------ |
 | [ACCESS_ALLOWLIST.md](./ACCESS_ALLOWLIST.md) | Email domain + exact-email allowlist, denied page, footer, admin UI | Living |
+| [ACCESS_REQUESTS.md](./ACCESS_REQUESTS.md)   | Contact-form admission requests, admin Requests tab, spam limits    | Living |
 
 Related:
 
 - [AUTHENTICATION.md](../../auth/AUTHENTICATION.md)
 - [RBAC plan](../../auth/RBAC_AUTHORIZATION_SKELETON.md)
-- [User management](../users/) — allowlist admin UI lives under `/users?tab=allowlist`
+- [User management](../users/) — allowlist admin UI under `/users?tab=allowlist`; requests under `/users?tab=requests`
 - Testing guide: [TESTING_DEVELOPMENT_FLOW.md](../../guides/TESTING_DEVELOPMENT_FLOW.md)
 
 ## Unit tests (Vitest)

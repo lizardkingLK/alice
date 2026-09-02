@@ -39,7 +39,7 @@ describe('WorkItemRepository guest ACL', () => {
           if (table === 'access_allowlist') {
             return {
               data: {
-                allowed_project_ids: ['proj-1', 'proj-2'],
+                allowed_project_ids: ['PROJ1', 'PROJ2'],
               },
               error: null,
             };
@@ -61,7 +61,10 @@ describe('WorkItemRepository guest ACL', () => {
               });
             }
             return onfulfilled?.({
-              data: [{ id: 'proj-1' }, { id: 'proj-2' }],
+              data: [
+                { id: 'proj-1', key: 'PROJ1' },
+                { id: 'proj-2', key: 'PROJ2' },
+              ],
               error: null,
             });
           }
@@ -74,11 +77,9 @@ describe('WorkItemRepository guest ACL', () => {
     const mockDb = { from: fromMock } as unknown as SupabaseClient<Database>;
     const repository = new WorkItemRepository(mockDb);
 
-    // Guest has memberships: proj-2, proj-3.
-    // Guest ACL allows: proj-1, proj-2.
-    // Accessible should be intersection: proj-2.
+    // Guest ACL allows: proj-1, proj-2 (memberships are ignored for email guests).
     const result = await repository.listAccessibleProjectIds('user-guest');
-    expect(result).toEqual(['proj-2']);
+    expect(result).toEqual(['proj-1', 'proj-2']);
   });
 
   it('returns all memberships when guest user has no ACL', async () => {

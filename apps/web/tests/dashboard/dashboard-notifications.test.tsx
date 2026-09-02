@@ -51,7 +51,7 @@ describe('NotificationInbox access request handling', () => {
     vi.clearAllMocks();
   });
 
-  it('opens dialog on access request click and redirects to allowlist with email on Allow', async () => {
+  it('opens dialog on legacy access request click and redirects to requests tab on Allow', async () => {
     // Arrange
     render(
       <NotificationInbox
@@ -80,7 +80,7 @@ describe('NotificationInbox access request handling', () => {
 
     // Assert it redirects with the extracted email
     expect(mockPush).toHaveBeenCalledWith(
-      '/users?tab=allowlist&addEmail=requestor%40example.com'
+      '/users?tab=requests&addEmail=requestor%40example.com'
     );
   });
 });

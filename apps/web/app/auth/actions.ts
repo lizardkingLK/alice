@@ -14,7 +14,7 @@ import {
   isObfuscatedDuplicateSignup,
 } from '@/lib/auth-existing-account';
 import { ensurePublicUser } from '@/lib/ensure-public-user';
-import { isEmailAllowed } from '@/lib/access-allowlist';
+import { redirectUnlessEmailAdmitted } from '@/lib/access-allowlist/auth-gate.server';
 import { createClient } from '@/lib/supabase/server';
 
 const requestPasswordResetSchema = z.object({
@@ -36,10 +36,7 @@ export async function login(formData: FormData) {
     typeof nextEntry === 'string' ? nextEntry : null
   );
 
-  const allowed = await isEmailAllowed(email);
-  if (!allowed) {
-    redirect('/access-denied');
-  }
+  await redirectUnlessEmailAdmitted(email);
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
@@ -79,10 +76,7 @@ export async function signUp(formData: FormData) {
   const email = typeof emailEntry === 'string' ? emailEntry : '';
   const password = typeof passwordEntry === 'string' ? passwordEntry : '';
 
-  const allowed = await isEmailAllowed(email);
-  if (!allowed) {
-    redirect('/access-denied');
-  }
+  await redirectUnlessEmailAdmitted(email);
 
   const origin = await getAuthOrigin();
   const emailRedirectTo = buildAuthCallbackUrl(origin, '/dashboard');
