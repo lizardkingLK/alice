@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  applyDocsPublishEnrichment,
   buildDocsIndexEntry,
   docHref,
   filterDocsByVisibility,
@@ -13,8 +12,12 @@ import {
   rewriteDocsMarkdownHref,
   sectionFromPath,
   type DocsIndexEntry,
-  type DocsPublishEnrichment,
 } from '@/lib/docs/docs-shared';
+import {
+  adminUserGuideEnrichment,
+  memberUserGuideEnrichment,
+  userGuideTestEntry,
+} from '@/tests/docs/docs-test-helpers';
 
 describe('docs-shared path helpers', () => {
   it('maps README paths to index and folder slugs', () => {
@@ -151,31 +154,14 @@ describe('getAdjacentDocs', () => {
 });
 
 describe('docs publish visibility', () => {
-  function userGuideEntry(
-    relativePath: string,
-    markdown: string,
-    enrichment: DocsPublishEnrichment
-  ): DocsIndexEntry {
-    return applyDocsPublishEnrichment(
-      buildDocsIndexEntry(relativePath, markdown),
-      enrichment
-    );
-  }
-
   const devEntry = buildDocsIndexEntry(
     'guides/SONAR.md',
     '# Sonar\n\nQuality.'
   );
-  const userEntry = userGuideEntry(
+  const userEntry = userGuideTestEntry(
     'user-guide/work-items/README.md',
     '# Work items\n\nTrack tasks.',
-    {
-      audience: 'user-guide',
-      section: 'Work items',
-      topicOrder: 2,
-      pageOrder: 1,
-      minimumRole: 'member',
-    }
+    memberUserGuideEnrichment('Work items', 2, 1)
   );
 
   it('shows only user-guide entries in production mode', () => {
@@ -185,16 +171,10 @@ describe('docs publish visibility', () => {
   });
 
   it('groups user-guide entries by manifest topic in production nav order', () => {
-    const accessEntry = userGuideEntry(
+    const accessEntry = userGuideTestEntry(
       'user-guide/access/README.md',
       '# Users & access\n\nAdmission.',
-      {
-        audience: 'user-guide',
-        section: 'Users & access',
-        topicOrder: 5,
-        pageOrder: 1,
-        minimumRole: 'admin',
-      }
+      adminUserGuideEnrichment('Users & access', 5, 1)
     );
 
     const groups = groupDocsByUserGuideTopics([userEntry, accessEntry]);

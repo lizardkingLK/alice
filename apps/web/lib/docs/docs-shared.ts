@@ -229,6 +229,23 @@ export function applyDocsPublishEnrichment(
   };
 }
 
+function sortDocsEntriesByTitle(
+  entries: readonly DocsIndexEntry[]
+): DocsIndexEntry[] {
+  return [...entries].sort((a, b) => a.title.localeCompare(b.title));
+}
+
+function sortDocsEntriesByPageOrder(
+  entries: readonly DocsIndexEntry[]
+): DocsIndexEntry[] {
+  return [...entries].sort(
+    (a, b) =>
+      (a.pageOrder ?? Number.MAX_SAFE_INTEGER) -
+        (b.pageOrder ?? Number.MAX_SAFE_INTEGER) ||
+      a.title.localeCompare(b.title)
+  );
+}
+
 /** Production nav — group user-guide pages by manifest topic order. */
 export function groupDocsByUserGuideTopics(
   entries: readonly DocsIndexEntry[]
@@ -258,13 +275,38 @@ export function groupDocsByUserGuideTopics(
     .map(([section, { entries: topicEntries }]) => ({
       id: `user-guide:${section}`,
       section,
-      entries: [...topicEntries].sort(
-        (a, b) =>
-          (a.pageOrder ?? Number.MAX_SAFE_INTEGER) -
-            (b.pageOrder ?? Number.MAX_SAFE_INTEGER) ||
-          a.title.localeCompare(b.title)
-      ),
+      entries: sortDocsEntriesByPageOrder(topicEntries),
     }));
+}
+
+export function partitionDocsByAudience(entries: readonly DocsIndexEntry[]): {
+  readonly userGuide: DocsIndexEntry[];
+  readonly dev: DocsIndexEntry[];
+} {
+  const userGuide: DocsIndexEntry[] = [];
+  const dev: DocsIndexEntry[] = [];
+
+  for (const entry of entries) {
+    if (entry.audience === 'user-guide') {
+      userGuide.push(entry);
+    } else {
+      dev.push(entry);
+    }
+  }
+
+  return { userGuide, dev };
+}
+
+export function buildDocsSectionGroups(
+  entries: readonly DocsIndexEntry[],
+  isDevMode: boolean
+): ReadonlyArray<DocsSectionGroup> {
+  if (!isDevMode) {
+    return groupDocsByUserGuideTopics(entries);
+  }
+
+  const { userGuide, dev } = partitionDocsByAudience(entries);
+  return [...groupDocsByUserGuideTopics(userGuide), ...groupDocsBySection(dev)];
 }
 
 export function filterDocsByVisibility(
@@ -334,10 +376,6 @@ export function groupDocsBySection(
     bySection.set(entry.section, list);
   }
 
-  for (const list of bySection.values()) {
-    list.sort((a, b) => a.title.localeCompare(b.title));
-  }
-
   const groups: DocsSectionGroup[] = [];
   for (const section of order) {
     const entriesForSection = bySection.get(section);
@@ -345,7 +383,7 @@ export function groupDocsBySection(
       groups.push({
         id: `docs:${section}`,
         section,
-        entries: entriesForSection,
+        entries: sortDocsEntriesByTitle(entriesForSection),
       });
       bySection.delete(section);
     }
@@ -356,7 +394,7 @@ export function groupDocsBySection(
     groups.push({
       id: `docs:${section}`,
       section,
-      entries: bySection.get(section) ?? [],
+      entries: sortDocsEntriesByTitle(bySection.get(section) ?? []),
     });
   }
 

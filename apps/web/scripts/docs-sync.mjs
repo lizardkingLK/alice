@@ -38,6 +38,7 @@ const {
   flattenDocsPublishManifest,
   normalizePublishPath,
   parseDocsPublishManifest,
+  docsPublishEnrichmentFromPageRef,
 } = publish;
 
 /**
@@ -91,14 +92,10 @@ function syncDocs() {
       return entry;
     }
 
-    return applyDocsPublishEnrichment(entry, {
-      audience: 'user-guide',
-      section: published.topicTitle,
-      title: published.title,
-      topicOrder: published.topicOrder,
-      pageOrder: published.order,
-      minimumRole: published.minimumRole ?? 'member',
-    });
+    return applyDocsPublishEnrichment(
+      entry,
+      docsPublishEnrichmentFromPageRef(published)
+    );
   });
 
   validatePublishManifestPaths(publishByPath, relativeFiles);

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  docsPublishEnrichmentFromPageRef,
   flattenDocsPublishManifest,
   normalizePublishPath,
   parseDocsPublishManifest,
@@ -65,5 +66,20 @@ describe('docs-publish manifest', () => {
     expect(byPath.get('user-guide/access/allowlist.md')?.title).toBe(
       'Allowlist'
     );
+  });
+
+  it('builds publish enrichment from flattened page refs', () => {
+    const pageRef = flattenDocsPublishManifest(sampleManifest).get(
+      'user-guide/access/allowlist.md'
+    );
+    expect(pageRef).toBeDefined();
+    expect(docsPublishEnrichmentFromPageRef(pageRef!)).toEqual({
+      audience: 'user-guide',
+      section: 'Users & access',
+      title: 'Allowlist',
+      topicOrder: 5,
+      pageOrder: 2,
+      minimumRole: 'member',
+    });
   });
 });

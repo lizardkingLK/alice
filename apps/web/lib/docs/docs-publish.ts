@@ -2,7 +2,11 @@
  * Types and helpers for docs/docs-publish.json — production user-guide curation.
  */
 
-import { normalizeDocsRelativePath, type DocsMinimumRole } from './docs-shared';
+import {
+  normalizeDocsRelativePath,
+  type DocsMinimumRole,
+  type DocsPublishEnrichment,
+} from './docs-shared';
 
 export type { DocsAudience, DocsMinimumRole } from './docs-shared';
 
@@ -57,6 +61,19 @@ export function flattenDocsPublishManifest(
   return byPath;
 }
 
+export function docsPublishEnrichmentFromPageRef(
+  pageRef: DocsPublishPageRef
+): DocsPublishEnrichment {
+  return {
+    audience: 'user-guide',
+    section: pageRef.topicTitle,
+    title: pageRef.title,
+    topicOrder: pageRef.topicOrder,
+    pageOrder: pageRef.order,
+    minimumRole: pageRef.minimumRole ?? 'member',
+  };
+}
+
 export function normalizePublishPath(relativePath: string): string {
   return normalizeDocsRelativePath(relativePath);
 }
@@ -90,11 +107,7 @@ function assertManifestVersion(version: unknown): void {
 }
 
 function parseDocsPublishTopic(topicRaw: unknown): DocsPublishTopic {
-  if (topicRaw == null || typeof topicRaw !== 'object') {
-    throw new Error('docs-publish.json topic must be an object');
-  }
-
-  const topic = topicRaw as Record<string, unknown>;
+  const topic = assertManifestObject(topicRaw, 'topic');
   const id = readNonEmptyString(topic.id, 'topic id');
   const title = readNonEmptyString(topic.title, 'topic title');
   const order = readOrder(topic.order, 'topic order');
@@ -115,13 +128,7 @@ function parseDocsPublishPage(
   topicId: string,
   pageRaw: unknown
 ): DocsPublishPage {
-  if (pageRaw == null || typeof pageRaw !== 'object') {
-    throw new Error(
-      `docs-publish.json topic "${topicId}" page must be an object`
-    );
-  }
-
-  const page = pageRaw as Record<string, unknown>;
+  const page = assertManifestObject(pageRaw, `topic "${topicId}" page`);
   const path = normalizePublishPath(
     readNonEmptyString(page.path, `topic "${topicId}" page path`)
   );
@@ -154,6 +161,17 @@ function readMinimumRole(
   throw new Error(
     `docs-publish.json topic "${topicId}" minimumRole must be member, manager, or admin`
   );
+}
+
+function assertManifestObject(
+  value: unknown,
+  label: string
+): Record<string, unknown> {
+  if (value == null || typeof value !== 'object') {
+    throw new Error(`docs-publish.json ${label} must be an object`);
+  }
+
+  return value as Record<string, unknown>;
 }
 
 function readOptionalTitle(value: unknown): string | undefined {

@@ -2,13 +2,11 @@ import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { getUserRole } from '@/lib/auth';
 import {
-  filterDocsByVisibility,
-  groupDocsBySection,
-  groupDocsByUserGuideTopics,
+  buildDocsSectionGroups,
   type DocsIndexEntry,
   withDocsAudienceDefaults,
 } from '@/lib/docs/docs-shared';
-import { filterDocsByRole } from '@/lib/docs/docs-role-filter';
+import { filterDocsForViewer } from '@/lib/docs/docs-role-filter';
 import { isDocsDevMode } from '@/lib/docs/docs-visibility.server';
 
 export { docHref } from '@/lib/docs/docs-shared';
@@ -27,12 +25,10 @@ function readDocsIndexRaw(): DocsIndexEntry[] {
 }
 
 async function getVisibleDocsIndexForUser(): Promise<DocsIndexEntry[]> {
-  const userRole = await getUserRole();
-  const envFiltered = filterDocsByVisibility(
-    readDocsIndexRaw(),
-    isDocsDevMode()
-  );
-  return filterDocsByRole(envFiltered, userRole);
+  return filterDocsForViewer(readDocsIndexRaw(), {
+    includeDevDocs: isDocsDevMode(),
+    userRole: await getUserRole(),
+  });
 }
 
 export async function getDocsIndex(): Promise<DocsIndexEntry[]> {
@@ -40,21 +36,10 @@ export async function getDocsIndex(): Promise<DocsIndexEntry[]> {
 }
 
 export async function getDocsSections() {
-  const entries = await getVisibleDocsIndexForUser();
-
-  if (!isDocsDevMode()) {
-    return groupDocsByUserGuideTopics(entries);
-  }
-
-  const userGuideEntries = entries.filter(
-    (entry) => entry.audience === 'user-guide'
+  return buildDocsSectionGroups(
+    await getVisibleDocsIndexForUser(),
+    isDocsDevMode()
   );
-  const devEntries = entries.filter((entry) => entry.audience !== 'user-guide');
-
-  return [
-    ...groupDocsByUserGuideTopics(userGuideEntries),
-    ...groupDocsBySection(devEntries),
-  ];
 }
 
 export async function getDocBySlug(

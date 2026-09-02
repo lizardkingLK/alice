@@ -1,6 +1,7 @@
 import { roleAtLeast, type AppRole } from '@/lib/rbac/roles';
 import {
   DEFAULT_DOCS_MINIMUM_ROLE,
+  filterDocsByVisibility,
   type DocsIndexEntry,
   type DocsMinimumRole,
 } from '@/lib/docs/docs-shared';
@@ -32,4 +33,17 @@ export function filterDocsByRole(
   userRole: AppRole | null | undefined
 ): DocsIndexEntry[] {
   return entries.filter((entry) => isDocsEntryVisibleForRole(entry, userRole));
+}
+
+export function filterDocsForViewer(
+  entries: readonly DocsIndexEntry[],
+  options: {
+    readonly includeDevDocs: boolean;
+    readonly userRole: AppRole | null | undefined;
+  }
+): DocsIndexEntry[] {
+  return filterDocsByRole(
+    filterDocsByVisibility(entries, options.includeDevDocs),
+    options.userRole
+  );
 }

@@ -1,40 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import {
   filterDocsByRole,
+  filterDocsForViewer,
   isDocsEntryVisibleForRole,
 } from '@/lib/docs/docs-role-filter';
+import { buildDocsIndexEntry } from '@/lib/docs/docs-shared';
 import {
-  applyDocsPublishEnrichment,
-  buildDocsIndexEntry,
-} from '@/lib/docs/docs-shared';
+  adminUserGuideEnrichment,
+  memberUserGuideEnrichment,
+  userGuideTestEntry,
+} from '@/tests/docs/docs-test-helpers';
 
 describe('docs role filter', () => {
-  const memberPage = applyDocsPublishEnrichment(
-    buildDocsIndexEntry(
-      'user-guide/work-items/create-work-item.md',
-      '# Create a work item\n\nSteps.'
-    ),
-    {
-      audience: 'user-guide',
-      section: 'Work items',
-      topicOrder: 5,
-      pageOrder: 1,
-      minimumRole: 'member',
-    }
+  const memberPage = userGuideTestEntry(
+    'user-guide/work-items/create-work-item.md',
+    '# Create a work item\n\nSteps.',
+    memberUserGuideEnrichment('Work items', 5, 1)
   );
 
-  const adminPage = applyDocsPublishEnrichment(
-    buildDocsIndexEntry(
-      'user-guide/users-and-access/allowlist.md',
-      '# Allowlist\n\nAdmin.'
-    ),
-    {
-      audience: 'user-guide',
-      section: 'Users & access',
-      topicOrder: 3,
-      pageOrder: 1,
-      minimumRole: 'admin',
-    }
+  const adminPage = userGuideTestEntry(
+    'user-guide/users-and-access/allowlist.md',
+    '# Allowlist\n\nAdmin.',
+    adminUserGuideEnrichment('Users & access', 3, 1)
   );
 
   const devPage = buildDocsIndexEntry('guides/SONAR.md', '# Sonar\n\nQuality.');
@@ -60,6 +47,17 @@ describe('docs role filter', () => {
     expect(filtered.map((entry) => entry.slug)).toEqual([
       'user-guide/work-items/create-work-item',
       'guides/SONAR',
+    ]);
+  });
+
+  it('applies env visibility before role filtering', () => {
+    const filtered = filterDocsForViewer([memberPage, adminPage, devPage], {
+      includeDevDocs: false,
+      userRole: 'admin',
+    });
+    expect(filtered.map((entry) => entry.slug)).toEqual([
+      'user-guide/work-items/create-work-item',
+      'user-guide/users-and-access/allowlist',
     ]);
   });
 });
