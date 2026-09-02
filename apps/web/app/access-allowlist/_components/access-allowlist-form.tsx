@@ -284,7 +284,7 @@ export function AccessAllowlistForm({
     <>
       <Card
         className={cn(
-          'no-scrollbar relative max-h-[85vh] overflow-y-auto border border-gray-200 bg-white text-gray-900 shadow-xl transition-all duration-300 hover:shadow-2xl',
+          'relative flex max-h-[85vh] flex-col overflow-hidden border border-gray-200 bg-white text-gray-900 shadow-xl transition-all duration-300 hover:shadow-2xl',
           className
         )}
       >
@@ -293,12 +293,12 @@ export function AccessAllowlistForm({
           variant="ghost"
           size="icon-sm"
           onClick={onClose}
-          className="absolute top-3 right-3 cursor-pointer"
+          className="absolute top-3 right-3 z-10 cursor-pointer"
           aria-label="Close"
         >
           <X className="size-4" />
         </Button>
-        <CardHeader>
+        <CardHeader className="shrink-0">
           <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
             <Shield className="text-primary size-5" />
             {isEdit ? 'Edit allowlist entry' : 'Add allowlist entry'}
@@ -309,121 +309,130 @@ export function AccessAllowlistForm({
             they already have an account). Domain rows do not send mail.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <div className="flex h-6 items-center gap-1">
-                  <Label htmlFor="allowlist-kind">Kind</Label>
+        <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <form
+            onSubmit={handleSubmit}
+            className="flex min-h-0 flex-1 flex-col justify-between overflow-hidden"
+          >
+            <div className="no-scrollbar flex-1 space-y-4 overflow-y-auto pr-1">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <div className="flex h-6 items-center gap-1">
+                    <Label htmlFor="allowlist-kind">Kind</Label>
+                  </div>
+                  <Select
+                    value={kind}
+                    onValueChange={(next) =>
+                      setKind(next as AccessAllowlistKind)
+                    }
+                    disabled={isEdit || isSubmitting || isSuccess}
+                  >
+                    <SelectTrigger id="allowlist-kind" className="w-full">
+                      <SelectValue placeholder="Select kind" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="domain">Domain</SelectItem>
+                      <SelectItem value="email">Email</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Select
-                  value={kind}
-                  onValueChange={(next) => setKind(next as AccessAllowlistKind)}
-                  disabled={isEdit || isSubmitting || isSuccess}
-                >
-                  <SelectTrigger id="allowlist-kind" className="w-full">
-                    <SelectValue placeholder="Select kind" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="domain">Domain</SelectItem>
-                    <SelectItem value="email">Email</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="space-y-2">
+                  <div className="flex h-6 items-center gap-1">
+                    <Label htmlFor="allowlist-status">Status</Label>
+                    {lockOwnDomainStatus ? (
+                      <InfoTooltip
+                        ariaLabel={OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE}
+                      >
+                        {OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE}
+                      </InfoTooltip>
+                    ) : null}
+                  </div>
+                  <Select
+                    value={status}
+                    onValueChange={(next) =>
+                      setStatus(next as AccessAllowlistStatus)
+                    }
+                    disabled={isSubmitting || isSuccess || lockOwnDomainStatus}
+                  >
+                    <SelectTrigger id="allowlist-status" className="w-full">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+
               <div className="space-y-2">
-                <div className="flex h-6 items-center gap-1">
-                  <Label htmlFor="allowlist-status">Status</Label>
-                  {lockOwnDomainStatus ? (
-                    <InfoTooltip
-                      ariaLabel={OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE}
-                    >
-                      {OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE}
-                    </InfoTooltip>
-                  ) : null}
-                </div>
-                <Select
-                  value={status}
-                  onValueChange={(next) =>
-                    setStatus(next as AccessAllowlistStatus)
+                <Label htmlFor="allowlist-value">
+                  {kind === 'domain' ? 'Domain' : 'Email'}
+                </Label>
+                <Input
+                  id="allowlist-value"
+                  value={value}
+                  onChange={(event) => setValue(event.target.value)}
+                  placeholder={
+                    kind === 'domain' ? 'acme.com' : 'client@partner.com'
                   }
-                  disabled={isSubmitting || isSuccess || lockOwnDomainStatus}
-                >
-                  <SelectTrigger id="allowlist-status" className="w-full">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="allowlist-value">
-                {kind === 'domain' ? 'Domain' : 'Email'}
-              </Label>
-              <Input
-                id="allowlist-value"
-                value={value}
-                onChange={(event) => setValue(event.target.value)}
-                placeholder={
-                  kind === 'domain' ? 'acme.com' : 'client@partner.com'
-                }
-                disabled={isEdit || isSubmitting || isSuccess}
-                autoComplete="off"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="allowlist-label">Label (optional)</Label>
-              <Input
-                id="allowlist-label"
-                value={label}
-                onChange={(event) => setLabel(event.target.value)}
-                placeholder="e.g. Acme corp, Pilot client"
-                disabled={isSubmitting || isSuccess}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="allowlist-expires">Expires on (optional)</Label>
-              <Input
-                id="allowlist-expires"
-                type="date"
-                value={expiresAt}
-                onChange={(event) => setExpiresAt(event.target.value)}
-                disabled={isSubmitting || isSuccess}
-              />
-            </div>
-
-            {kind === 'email' ? (
-              <div className="space-y-2">
-                <div className="flex h-6 items-center gap-1">
-                  <Label>Allowed projects</Label>
-                  <InfoTooltip ariaLabel={ALLOWLIST_PROJECTS_TOOLTIP}>
-                    {ALLOWLIST_PROJECTS_TOOLTIP}
-                  </InfoTooltip>
-                </div>
-                <ProjectCheckboxList
-                  projects={projectCheckboxOptions}
-                  selectedKeys={selectedProjectKeys}
-                  onSelectedKeysChange={setSelectedProjectKeys}
-                  disabled={isSubmitting || isSuccess}
-                  emptyText="No projects available. Create a project first."
-                  listClassName="no-scrollbar"
+                  disabled={isEdit || isSubmitting || isSuccess}
+                  autoComplete="off"
                 />
               </div>
-            ) : null}
 
-            <FormCancelSubmitActions
-              message={message}
-              isError={isError}
-              isBusy={isSubmitting || isSuccess}
-              onCancel={onClose}
-              submitLabel={submitButtonText}
-            />
+              <div className="space-y-2">
+                <Label htmlFor="allowlist-label">Label (optional)</Label>
+                <Input
+                  id="allowlist-label"
+                  value={label}
+                  onChange={(event) => setLabel(event.target.value)}
+                  placeholder="e.g. Acme corp, Pilot client"
+                  disabled={isSubmitting || isSuccess}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="allowlist-expires">Expires on (optional)</Label>
+                <Input
+                  id="allowlist-expires"
+                  type="date"
+                  value={expiresAt}
+                  onChange={(event) => setExpiresAt(event.target.value)}
+                  disabled={isSubmitting || isSuccess}
+                />
+              </div>
+
+              {kind === 'email' ? (
+                <div className="space-y-2">
+                  <div className="flex h-6 items-center gap-1">
+                    <Label>Allowed projects</Label>
+                    <InfoTooltip ariaLabel={ALLOWLIST_PROJECTS_TOOLTIP}>
+                      {ALLOWLIST_PROJECTS_TOOLTIP}
+                    </InfoTooltip>
+                  </div>
+                  <ProjectCheckboxList
+                    projects={projectCheckboxOptions}
+                    selectedKeys={selectedProjectKeys}
+                    onSelectedKeysChange={setSelectedProjectKeys}
+                    disabled={isSubmitting || isSuccess}
+                    emptyText="No projects available. Create a project first."
+                    listClassName="no-scrollbar"
+                  />
+                </div>
+              ) : null}
+            </div>
+
+            <div className="shrink-0 pt-4">
+              <FormCancelSubmitActions
+                message={message}
+                isError={isError}
+                isBusy={isSubmitting || isSuccess}
+                onCancel={onClose}
+                submitLabel={submitButtonText}
+              />
+            </div>
           </form>
         </CardContent>
       </Card>
