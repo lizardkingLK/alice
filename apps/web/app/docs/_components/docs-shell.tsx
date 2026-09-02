@@ -6,13 +6,10 @@ import { useSidebar } from '@repo/ui/components/ui/sidebar';
 import { cn } from '@repo/ui/lib/utils';
 import { DocsNav } from '@/app/docs/_components/docs-nav';
 import { DocsSearchDialog } from '@/app/docs/_components/docs-search-dialog';
-import type { DocsIndexEntry } from '@/lib/docs/docs-shared';
+import type { DocsIndexEntry, DocsSectionGroup } from '@/lib/docs/docs-shared';
 
 type DocsShellProps = {
-  readonly sections: ReadonlyArray<{
-    readonly section: string;
-    readonly entries: DocsIndexEntry[];
-  }>;
+  readonly sections: ReadonlyArray<DocsSectionGroup>;
   readonly entries: readonly DocsIndexEntry[];
   readonly children: ReactNode;
 };

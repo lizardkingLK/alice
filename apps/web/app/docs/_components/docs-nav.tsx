@@ -5,13 +5,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@repo/ui/lib/utils';
 import { docHref } from '@/lib/docs/docs-shared';
-import type { DocsIndexEntry } from '@/lib/docs/docs-shared';
+import type { DocsSectionGroup } from '@/lib/docs/docs-shared';
 
 type DocsNavProps = {
-  readonly sections: ReadonlyArray<{
-    readonly section: string;
-    readonly entries: DocsIndexEntry[];
-  }>;
+  readonly sections: ReadonlyArray<DocsSectionGroup>;
 };
 
 export function DocsNav({ sections }: DocsNavProps) {
@@ -35,8 +32,8 @@ export function DocsNav({ sections }: DocsNavProps) {
 
   return (
     <nav aria-label="Documentation" className="flex flex-col gap-6">
-      {sections.map(({ section, entries }) => (
-        <div key={section} className="flex flex-col gap-2">
+      {sections.map(({ id, section, entries }) => (
+        <div key={id} className="flex flex-col gap-2">
           <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
             {section}
           </p>

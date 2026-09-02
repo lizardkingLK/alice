@@ -2,6 +2,19 @@
  * Pure helpers shared by docs:sync and the /docs app routes.
  */
 
+export type DocsAudience = 'user-guide' | 'dev';
+
+/** Minimum app role required to view a user-guide page (`member` < `manager` < `admin`). */
+export type DocsMinimumRole = 'member' | 'manager' | 'admin';
+
+export const DOCS_MINIMUM_ROLES: readonly DocsMinimumRole[] = [
+  'member',
+  'manager',
+  'admin',
+] as const;
+
+export const DEFAULT_DOCS_MINIMUM_ROLE: DocsMinimumRole = 'member';
+
 export type DocsIndexEntry = {
   readonly slug: string;
   readonly title: string;
@@ -9,6 +22,20 @@ export type DocsIndexEntry = {
   readonly path: string;
   readonly excerpt: string;
   readonly bodyText: string;
+  readonly audience: DocsAudience;
+  /** Manifest topic order — user-guide pages in production nav. */
+  readonly topicOrder?: number;
+  /** Manifest page order within a topic. */
+  readonly pageOrder?: number;
+  /** User-guide pages only — enforced at runtime via RBAC hierarchy. */
+  readonly minimumRole?: DocsMinimumRole;
+};
+
+export type DocsSectionGroup = {
+  /** Stable unique key for React lists (section labels may repeat). */
+  readonly id: string;
+  readonly section: string;
+  readonly entries: DocsIndexEntry[];
 };
 
 const SECTION_LABELS: Record<string, string> = {
@@ -19,11 +46,17 @@ const SECTION_LABELS: Record<string, string> = {
   database: 'Database',
   features: 'Features',
   guides: 'Guides',
+  'user-guide': 'User guide',
 };
+
+/** Normalize a repo-relative docs path to posix (no leading `./`). */
+export function normalizeDocsRelativePath(relativePath: string): string {
+  return relativePath.replaceAll('\\', '/').replace(/^\.\//, '');
+}
 
 /** Relative posix path under docs/ → URL slug (no leading slash, no .md). */
 export function pathToSlug(relativePath: string): string {
-  const normalized = relativePath.replaceAll('\\', '/').replace(/^\.\//, '');
+  const normalized = normalizeDocsRelativePath(relativePath);
   const withoutExt = normalized.replace(/\.md$/i, '');
   if (withoutExt === 'README' || withoutExt.endsWith('/README')) {
     const dir = withoutExt.replace(/\/?README$/i, '');
@@ -33,7 +66,7 @@ export function pathToSlug(relativePath: string): string {
 }
 
 export function sectionFromPath(relativePath: string): string {
-  const normalized = relativePath.replaceAll('\\', '/');
+  const normalized = normalizeDocsRelativePath(relativePath);
   const first = normalized.split('/')[0] ?? '';
   if (!first || first.endsWith('.md')) {
     return SECTION_LABELS[''] ?? 'Overview';
@@ -116,7 +149,8 @@ function directoryForSlug(currentSlug: string): string {
   }
   const separator = currentSlug.lastIndexOf('/');
   if (separator === -1) {
-    return '';
+    // README slugs like `user-guide` map from `user-guide/README.md` — treat as a folder.
+    return currentSlug;
   }
   return currentSlug.slice(0, separator);
 }
@@ -163,10 +197,94 @@ export function buildDocsIndexEntry(
     slug,
     title,
     section,
-    path: relativePath.replaceAll('\\', '/'),
+    path: normalizeDocsRelativePath(relativePath),
     excerpt: excerptFromBody(bodyText),
     bodyText,
+    audience: 'dev',
   };
+}
+
+export type DocsPublishEnrichment = {
+  readonly audience: DocsAudience;
+  readonly section: string;
+  readonly title?: string;
+  readonly topicOrder: number;
+  readonly pageOrder: number;
+  readonly minimumRole: DocsMinimumRole;
+};
+
+/** Apply docs-publish.json metadata to a built index entry. */
+export function applyDocsPublishEnrichment(
+  entry: DocsIndexEntry,
+  enrichment: DocsPublishEnrichment
+): DocsIndexEntry {
+  return {
+    ...entry,
+    audience: enrichment.audience,
+    section: enrichment.section,
+    title: enrichment.title ?? entry.title,
+    topicOrder: enrichment.topicOrder,
+    pageOrder: enrichment.pageOrder,
+    minimumRole: enrichment.minimumRole,
+  };
+}
+
+/** Production nav — group user-guide pages by manifest topic order. */
+export function groupDocsByUserGuideTopics(
+  entries: readonly DocsIndexEntry[]
+): ReadonlyArray<DocsSectionGroup> {
+  const userGuide = entries.filter((entry) => entry.audience === 'user-guide');
+  const byTopic = new Map<
+    string,
+    { topicOrder: number; entries: DocsIndexEntry[] }
+  >();
+
+  for (const entry of userGuide) {
+    const topicOrder = entry.topicOrder ?? Number.MAX_SAFE_INTEGER;
+    const bucket = byTopic.get(entry.section) ?? {
+      topicOrder,
+      entries: [],
+    };
+    bucket.entries.push(entry);
+    byTopic.set(entry.section, bucket);
+  }
+
+  return [...byTopic.entries()]
+    .sort(
+      (a, b) =>
+        a[1].topicOrder - b[1].topicOrder ||
+        a[0].localeCompare(b[0], undefined, { sensitivity: 'base' })
+    )
+    .map(([section, { entries: topicEntries }]) => ({
+      id: `user-guide:${section}`,
+      section,
+      entries: [...topicEntries].sort(
+        (a, b) =>
+          (a.pageOrder ?? Number.MAX_SAFE_INTEGER) -
+            (b.pageOrder ?? Number.MAX_SAFE_INTEGER) ||
+          a.title.localeCompare(b.title)
+      ),
+    }));
+}
+
+export function filterDocsByVisibility(
+  entries: readonly DocsIndexEntry[],
+  includeDevDocs: boolean
+): DocsIndexEntry[] {
+  if (includeDevDocs) {
+    return [...entries];
+  }
+
+  return entries.filter((entry) => entry.audience === 'user-guide');
+}
+
+/** Backfill audience for indexes generated before publish metadata existed. */
+export function withDocsAudienceDefaults(
+  entries: readonly DocsIndexEntry[]
+): DocsIndexEntry[] {
+  return entries.map((entry) =>
+    entry.audience ? entry : { ...entry, audience: 'dev' as const }
+  );
 }
 
 function resolveRelativePath(fromDir: string, relativeTarget: string): string {
@@ -197,12 +315,10 @@ function titleCase(value: string): string {
 
 export function groupDocsBySection(
   entries: readonly DocsIndexEntry[]
-): ReadonlyArray<{
-  readonly section: string;
-  readonly entries: DocsIndexEntry[];
-}> {
+): ReadonlyArray<DocsSectionGroup> {
   const order = [
     'Overview',
+    'User guide',
     'Product',
     'Features',
     'Guides',
@@ -222,18 +338,26 @@ export function groupDocsBySection(
     list.sort((a, b) => a.title.localeCompare(b.title));
   }
 
-  const groups: { section: string; entries: DocsIndexEntry[] }[] = [];
+  const groups: DocsSectionGroup[] = [];
   for (const section of order) {
     const entriesForSection = bySection.get(section);
     if (entriesForSection?.length) {
-      groups.push({ section, entries: entriesForSection });
+      groups.push({
+        id: `docs:${section}`,
+        section,
+        entries: entriesForSection,
+      });
       bySection.delete(section);
     }
   }
 
   const remaining = [...bySection.keys()].sort((a, b) => a.localeCompare(b));
   for (const section of remaining) {
-    groups.push({ section, entries: bySection.get(section) ?? [] });
+    groups.push({
+      id: `docs:${section}`,
+      section,
+      entries: bySection.get(section) ?? [],
+    });
   }
 
   return groups;
@@ -262,7 +386,6 @@ export function docHref(slug: string): string {
 /** Flatten section groups into reading order (nav / prev-next). */
 export function flattenDocsEntries(
   sections: ReadonlyArray<{
-    readonly section: string;
     readonly entries: readonly DocsIndexEntry[];
   }>
 ): DocsIndexEntry[] {

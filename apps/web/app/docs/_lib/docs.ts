@@ -1,9 +1,15 @@
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
+import { getUserRole } from '@/lib/auth';
 import {
+  filterDocsByVisibility,
   groupDocsBySection,
+  groupDocsByUserGuideTopics,
   type DocsIndexEntry,
+  withDocsAudienceDefaults,
 } from '@/lib/docs/docs-shared';
+import { filterDocsByRole } from '@/lib/docs/docs-role-filter';
+import { isDocsDevMode } from '@/lib/docs/docs-visibility.server';
 
 export { docHref } from '@/lib/docs/docs-shared';
 
@@ -11,24 +17,53 @@ const CONTENT_ROOT = path.join(process.cwd(), 'content');
 const INDEX_PATH = path.join(CONTENT_ROOT, 'docs-index.json');
 const DOCS_ROOT = path.join(CONTENT_ROOT, 'docs');
 
-export function getDocsIndex(): DocsIndexEntry[] {
+function readDocsIndexRaw(): DocsIndexEntry[] {
   if (!existsSync(INDEX_PATH)) {
     return [];
   }
 
   const raw = readFileSync(INDEX_PATH, 'utf8');
-  return JSON.parse(raw) as DocsIndexEntry[];
+  return withDocsAudienceDefaults(JSON.parse(raw) as DocsIndexEntry[]);
 }
 
-export function getDocsSections() {
-  return groupDocsBySection(getDocsIndex());
+async function getVisibleDocsIndexForUser(): Promise<DocsIndexEntry[]> {
+  const userRole = await getUserRole();
+  const envFiltered = filterDocsByVisibility(
+    readDocsIndexRaw(),
+    isDocsDevMode()
+  );
+  return filterDocsByRole(envFiltered, userRole);
 }
 
-export function getDocBySlug(
+export async function getDocsIndex(): Promise<DocsIndexEntry[]> {
+  return getVisibleDocsIndexForUser();
+}
+
+export async function getDocsSections() {
+  const entries = await getVisibleDocsIndexForUser();
+
+  if (!isDocsDevMode()) {
+    return groupDocsByUserGuideTopics(entries);
+  }
+
+  const userGuideEntries = entries.filter(
+    (entry) => entry.audience === 'user-guide'
+  );
+  const devEntries = entries.filter((entry) => entry.audience !== 'user-guide');
+
+  return [
+    ...groupDocsByUserGuideTopics(userGuideEntries),
+    ...groupDocsBySection(devEntries),
+  ];
+}
+
+export async function getDocBySlug(
   slugParts: readonly string[]
-): { entry: DocsIndexEntry; markdown: string } | null {
+): Promise<{ entry: DocsIndexEntry; markdown: string } | null> {
   const slug = slugParts.length === 0 ? 'index' : slugParts.join('/');
-  const entry = getDocsIndex().find((item) => item.slug === slug);
+  const entry = (await getVisibleDocsIndexForUser()).find(
+    (item) => item.slug === slug
+  );
   if (!entry) {
     return null;
   }
@@ -42,4 +77,10 @@ export function getDocBySlug(
     entry,
     markdown: readFileSync(filePath, 'utf8'),
   };
+}
+
+export function getDocsShellDescription(): string {
+  return isDocsDevMode()
+    ? 'Product and engineering documentation for Alice.'
+    : 'User guide and product help for Alice.';
 }

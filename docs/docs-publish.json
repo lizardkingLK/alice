@@ -1,0 +1,262 @@
+{
+  "version": 1,
+  "topics": [
+    {
+      "id": "overview",
+      "title": "User guide",
+      "order": 0,
+      "pages": [
+        {
+          "path": "user-guide/README.md",
+          "order": 1
+        }
+      ]
+    },
+    {
+      "id": "sign-in-and-account",
+      "title": "Sign in & account",
+      "order": 1,
+      "pages": [
+        {
+          "path": "user-guide/sign-in-and-account/README.md",
+          "order": 1
+        },
+        {
+          "path": "user-guide/sign-in-and-account/email-sign-in.md",
+          "order": 2
+        },
+        {
+          "path": "user-guide/sign-in-and-account/google-sign-in.md",
+          "order": 3
+        },
+        {
+          "path": "user-guide/sign-in-and-account/sign-out.md",
+          "order": 4
+        },
+        {
+          "path": "user-guide/sign-in-and-account/forgot-password.md",
+          "order": 5
+        },
+        {
+          "path": "user-guide/sign-in-and-account/request-access.md",
+          "order": 6
+        }
+      ]
+    },
+    {
+      "id": "navigation",
+      "title": "Navigation",
+      "order": 2,
+      "pages": [
+        {
+          "path": "user-guide/navigation/README.md",
+          "order": 1
+        },
+        {
+          "path": "user-guide/navigation/dashboard-overview.md",
+          "order": 2
+        },
+        {
+          "path": "user-guide/navigation/keyboard-shortcuts.md",
+          "order": 3
+        },
+        {
+          "path": "user-guide/navigation/favorites-and-views.md",
+          "order": 4
+        }
+      ]
+    },
+    {
+      "id": "users-and-access",
+      "title": "Users & access",
+      "order": 3,
+      "pages": [
+        {
+          "path": "user-guide/users-and-access/README.md",
+          "order": 1
+        },
+        {
+          "path": "user-guide/users-and-access/user-directory.md",
+          "order": 2
+        },
+        {
+          "path": "user-guide/users-and-access/allowlist.md",
+          "order": 3,
+          "minimumRole": "admin"
+        },
+        {
+          "path": "user-guide/users-and-access/allowlist-domain.md",
+          "order": 4,
+          "minimumRole": "admin"
+        },
+        {
+          "path": "user-guide/users-and-access/allowlist-email-guests.md",
+          "order": 5,
+          "minimumRole": "admin"
+        },
+        {
+          "path": "user-guide/users-and-access/access-requests.md",
+          "order": 6,
+          "minimumRole": "admin"
+        },
+        {
+          "path": "user-guide/users-and-access/invite-users.md",
+          "order": 7,
+          "minimumRole": "admin"
+        },
+        {
+          "path": "user-guide/users-and-access/deactivate-users.md",
+          "order": 8,
+          "minimumRole": "admin"
+        }
+      ]
+    },
+    {
+      "id": "projects",
+      "title": "Projects",
+      "order": 4,
+      "pages": [
+        {
+          "path": "user-guide/projects/README.md",
+          "order": 1
+        },
+        {
+          "path": "user-guide/projects/browse-projects.md",
+          "order": 2
+        },
+        {
+          "path": "user-guide/projects/create-project.md",
+          "order": 3,
+          "minimumRole": "manager"
+        },
+        {
+          "path": "user-guide/projects/project-settings.md",
+          "order": 4,
+          "minimumRole": "manager"
+        },
+        {
+          "path": "user-guide/projects/project-members.md",
+          "order": 5,
+          "minimumRole": "manager"
+        },
+        {
+          "path": "user-guide/projects/project-integrations.md",
+          "order": 6,
+          "minimumRole": "manager"
+        }
+      ]
+    },
+    {
+      "id": "work-items",
+      "title": "Work items",
+      "order": 5,
+      "pages": [
+        {
+          "path": "user-guide/work-items/README.md",
+          "order": 1
+        },
+        {
+          "path": "user-guide/work-items/create-work-item.md",
+          "order": 2
+        },
+        {
+          "path": "user-guide/work-items/edit-work-item.md",
+          "order": 3
+        },
+        {
+          "path": "user-guide/work-items/assign-and-status.md",
+          "order": 4
+        },
+        {
+          "path": "user-guide/work-items/labels-and-priority.md",
+          "order": 5
+        },
+        {
+          "path": "user-guide/work-items/comments-and-activity.md",
+          "order": 6
+        },
+        {
+          "path": "user-guide/work-items/attachments.md",
+          "order": 7
+        }
+      ]
+    },
+    {
+      "id": "board-and-planning",
+      "title": "Board & planning",
+      "order": 6,
+      "pages": [
+        {
+          "path": "user-guide/board-and-planning/README.md",
+          "order": 1
+        },
+        {
+          "path": "user-guide/board-and-planning/kanban-board.md",
+          "order": 2
+        },
+        {
+          "path": "user-guide/board-and-planning/calendar-view.md",
+          "order": 3
+        },
+        {
+          "path": "user-guide/board-and-planning/backlog.md",
+          "order": 4
+        },
+        {
+          "path": "user-guide/board-and-planning/sprints.md",
+          "order": 5,
+          "minimumRole": "manager"
+        }
+      ]
+    },
+    {
+      "id": "notifications",
+      "title": "Notifications",
+      "order": 7,
+      "pages": [
+        {
+          "path": "user-guide/notifications/README.md",
+          "order": 1
+        },
+        {
+          "path": "user-guide/notifications/dashboard-inbox.md",
+          "order": 2
+        }
+      ]
+    },
+    {
+      "id": "chat",
+      "title": "Alice (AI chat)",
+      "order": 8,
+      "pages": [
+        {
+          "path": "user-guide/chat/README.md",
+          "order": 1
+        },
+        {
+          "path": "user-guide/chat/use-ai-assistant.md",
+          "order": 2
+        }
+      ]
+    },
+    {
+      "id": "profile-and-settings",
+      "title": "Profile & settings",
+      "order": 9,
+      "pages": [
+        {
+          "path": "user-guide/profile-and-settings/README.md",
+          "order": 1
+        },
+        {
+          "path": "user-guide/profile-and-settings/edit-profile.md",
+          "order": 2
+        },
+        {
+          "path": "user-guide/profile-and-settings/workspace-integrations.md",
+          "order": 3
+        }
+      ]
+    }
+  ]
+}

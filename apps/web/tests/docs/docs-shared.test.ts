@@ -1,15 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import {
+  applyDocsPublishEnrichment,
   buildDocsIndexEntry,
   docHref,
+  filterDocsByVisibility,
   filterDocsIndex,
   flattenDocsEntries,
   getAdjacentDocs,
   groupDocsBySection,
+  groupDocsByUserGuideTopics,
   pathToSlug,
   rewriteDocsMarkdownHref,
   sectionFromPath,
   type DocsIndexEntry,
+  type DocsPublishEnrichment,
 } from '@/lib/docs/docs-shared';
 
 describe('docs-shared path helpers', () => {
@@ -69,6 +73,15 @@ describe('rewriteDocsMarkdownHref', () => {
       '#heading'
     );
   });
+
+  it('rewrites links from folder README slugs using the slug as the directory', () => {
+    expect(rewriteDocsMarkdownHref('./board/README.md', 'user-guide')).toBe(
+      '/docs/user-guide/board'
+    );
+    expect(
+      rewriteDocsMarkdownHref('./getting-started/README.md', 'user-guide')
+    ).toBe('/docs/user-guide/getting-started');
+  });
 });
 
 describe('buildDocsIndexEntry and filterDocsIndex', () => {
@@ -83,6 +96,7 @@ describe('buildDocsIndexEntry and filterDocsIndex', () => {
     expect(entry.slug).toBe('auth/AUTHENTICATION');
     expect(entry.title).toBe('Authentication');
     expect(entry.section).toBe('Auth');
+    expect(entry.audience).toBe('dev');
     expect(entry.bodyText.toLowerCase()).toContain('email');
     expect(entry.bodyText).not.toContain('**');
   });
@@ -133,5 +147,60 @@ describe('getAdjacentDocs', () => {
       previous: null,
       next: null,
     });
+  });
+});
+
+describe('docs publish visibility', () => {
+  function userGuideEntry(
+    relativePath: string,
+    markdown: string,
+    enrichment: DocsPublishEnrichment
+  ): DocsIndexEntry {
+    return applyDocsPublishEnrichment(
+      buildDocsIndexEntry(relativePath, markdown),
+      enrichment
+    );
+  }
+
+  const devEntry = buildDocsIndexEntry(
+    'guides/SONAR.md',
+    '# Sonar\n\nQuality.'
+  );
+  const userEntry = userGuideEntry(
+    'user-guide/work-items/README.md',
+    '# Work items\n\nTrack tasks.',
+    {
+      audience: 'user-guide',
+      section: 'Work items',
+      topicOrder: 2,
+      pageOrder: 1,
+      minimumRole: 'member',
+    }
+  );
+
+  it('shows only user-guide entries in production mode', () => {
+    const visible = filterDocsByVisibility([devEntry, userEntry], false);
+    expect(visible).toHaveLength(1);
+    expect(visible[0]?.slug).toBe('user-guide/work-items');
+  });
+
+  it('groups user-guide entries by manifest topic in production nav order', () => {
+    const accessEntry = userGuideEntry(
+      'user-guide/access/README.md',
+      '# Users & access\n\nAdmission.',
+      {
+        audience: 'user-guide',
+        section: 'Users & access',
+        topicOrder: 5,
+        pageOrder: 1,
+        minimumRole: 'admin',
+      }
+    );
+
+    const groups = groupDocsByUserGuideTopics([userEntry, accessEntry]);
+    expect(groups.map((group) => group.section)).toEqual([
+      'Work items',
+      'Users & access',
+    ]);
   });
 });

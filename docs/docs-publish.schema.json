@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alice.local/docs/docs-publish.schema.json",
+  "title": "Docs publish manifest",
+  "description": "Curates which markdown pages appear in the in-app /docs sidebar for production (non-technical users). Development builds show the full repo docs tree.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "topics"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Manifest schema version."
+    },
+    "topics": {
+      "type": "array",
+      "minItems": 1,
+      "description": "User-guide sidebar groups (topics). Each topic renders as a section in production.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "order", "pages"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "description": "Stable topic id (kebab-case)."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Sidebar section label in production."
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Topic order in the sidebar (ascending)."
+          },
+          "pages": {
+            "type": "array",
+            "minItems": 1,
+            "description": "Pages under this topic. Paths are relative to repo-root docs/.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "order"],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "pattern": "^.+\\.md$",
+                  "description": "Markdown path under docs/, e.g. user-guide/work-items/README.md"
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Optional nav title override (defaults to the page H1)."
+                },
+                "order": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Page order within the topic (ascending)."
+                },
+                "minimumRole": {
+                  "type": "string",
+                  "enum": ["member", "manager", "admin"],
+                  "default": "member",
+                  "description": "Minimum app role to view this page at runtime (inherits upward: admin sees all)."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
