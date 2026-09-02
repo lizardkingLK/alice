@@ -1,9 +1,37 @@
 #!/bin/bash
-set -e
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT_DIR"
+
+copy_app_secrets() {
+    local app_dir="$1"
+    local dest="$2"
+    local label="$3"
+    local source=""
+
+    if [ -f "${app_dir}/.env.local" ]; then
+        source="${app_dir}/.env.local"
+    elif [ -f "${app_dir}/.env" ]; then
+        source="${app_dir}/.env"
+    else
+        echo "error. no env file for ${label} (expected ${app_dir}/.env.local or ${app_dir}/.env)" >&2
+        exit 1
+    fi
+
+    cp "$source" "$dest"
+    echo "info. copied ${label} secrets from ${source} → ${dest}"
+}
 
 echo "info. starting docker deployment"
+
+echo "info. copying secrets for web and api projects..."
+copy_app_secrets "apps/web" "./secrets_web.txt" "web"
+copy_app_secrets "apps/api" "./secrets_api.txt" "api"
+
 if [ -f ./secrets_web.txt ]; then
     echo "info. injecting environment tokens for local compilation..."
+    # shellcheck disable=SC2046
     export $(grep -v '^#' ./secrets_web.txt | xargs)
 fi
 
