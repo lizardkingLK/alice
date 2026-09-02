@@ -16,13 +16,13 @@ export default function ChatHeroSection({
   return (
     <div
       className={cn(
-        'flex min-h-0 flex-1 flex-col items-center justify-center',
-        isPage ? 'px-4 py-8 sm:px-6' : 'p-4'
+        'no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto',
+        isPage ? 'px-4 py-6 sm:px-6' : 'p-4'
       )}
     >
       <div
         className={cn(
-          'mx-auto flex w-full flex-col items-center space-y-6 text-center',
+          'my-auto mx-auto flex w-full flex-col items-center space-y-6 text-center',
           isPage ? 'max-w-md' : 'max-w-xs'
         )}
       >
