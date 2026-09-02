@@ -251,7 +251,9 @@ export function BacklogItemDetailsSheet({
                       })
                       .map((s) => ({
                         value: s.id,
-                        label: `${s.name} (${s.status})`,
+                        label: [s.name, s.status ? `(${s.status})` : '']
+                          .filter(Boolean)
+                          .join(' '),
                       })),
                   ]}
                 />
