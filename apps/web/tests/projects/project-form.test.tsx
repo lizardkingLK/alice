@@ -439,7 +439,7 @@ describe('ProjectForm Component', () => {
     ).toBeInTheDocument();
   });
 
-  it('submits project creation with split GitHub fields when GitHub is enabled', async () => {
+  it('submits project creation with GitHub Repository URL when GitHub is enabled', async () => {
     vi.mocked(createProject).mockResolvedValue(mockProject);
 
     render(<ProjectForm users={mockUsers} />);
@@ -450,11 +450,8 @@ describe('ProjectForm Component', () => {
 
     fireEvent.click(screen.getByRole('checkbox', { name: /^GitHub$/i }));
 
-    fireEvent.change(screen.getByLabelText(/GitHub Owner \/ Organization/i), {
-      target: { value: 'facebook' },
-    });
-    fireEvent.change(screen.getByLabelText(/GitHub Repository Name/i), {
-      target: { value: 'react' },
+    fireEvent.change(screen.getByLabelText(/GitHub Repository URL/i), {
+      target: { value: 'https://github.com/facebook/react' },
     });
     fireEvent.change(
       screen.getByLabelText(/Personal Access Token \(optional\)/i),
@@ -474,6 +471,34 @@ describe('ProjectForm Component', () => {
       );
     });
   });
+
+  it('automatically splits GitHub Repository URL into owner and repository name', async () => {
+    vi.mocked(createProject).mockResolvedValue(mockProject);
+
+    render(<ProjectForm users={mockUsers} />);
+
+    await fillStep1Basics();
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /^GitHub$/i }));
+
+    fireEvent.change(screen.getByLabelText(/GitHub Repository URL/i), {
+      target: { value: 'https://github.com/facebook/react.git' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
+
+    await waitFor(() => {
+      expect(createProject).toHaveBeenCalledWith(
+        expect.objectContaining({
+          github_repo: 'facebook/react',
+        })
+      );
+    });
+  });
+
+
 
   it('omits blank github_token on edit so existing PAT is unchanged', async () => {
     const onProjectUpdated = vi.fn();

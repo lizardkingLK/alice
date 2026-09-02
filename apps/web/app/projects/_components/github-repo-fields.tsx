@@ -1,7 +1,9 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
+import { parseGithubRepoPath } from '@/lib/projects/github-repo-path';
 
 export type GithubRepoFieldsProps = {
   githubOwner: string;
@@ -19,7 +21,8 @@ export type GithubRepoFieldsProps = {
 };
 
 /**
- * Shared owner / repo / optional PAT inputs for create Source Control and details Integrations.
+ * Shared repository URL & optional PAT inputs for Source Control integration.
+ * Users enter the GitHub Repository URL, which is automatically split into owner & repoName.
  */
 export function GithubRepoFields({
   githubOwner,
@@ -31,35 +34,51 @@ export function GithubRepoFields({
   tokenPlaceholder = 'e.g. ghp_xxxxxxxxxxxx',
   required = true,
 }: Readonly<GithubRepoFieldsProps>) {
+  const [githubUrl, setGithubUrl] = useState(() => {
+    if (githubOwner && githubRepoName) {
+      return `https://github.com/${githubOwner}/${githubRepoName}`;
+    }
+    return '';
+  });
+
+  useEffect(() => {
+    if (githubOwner && githubRepoName) {
+      const currentParsed = parseGithubRepoPath(githubUrl);
+      if (
+        currentParsed.owner !== githubOwner ||
+        currentParsed.repoName !== githubRepoName
+      ) {
+        setGithubUrl(`https://github.com/${githubOwner}/${githubRepoName}`);
+      }
+    } else if (!githubOwner && !githubRepoName && githubUrl) {
+      setGithubUrl('');
+    }
+  }, [githubOwner, githubRepoName, githubUrl]);
+
+  const handleUrlChange = (value: string) => {
+    setGithubUrl(value);
+    const { owner, repoName } = parseGithubRepoPath(value);
+    setGithubOwner(owner);
+    setGithubRepoName(repoName);
+  };
+
   return (
     <div className="flex flex-col justify-start space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="githubOwner" className="text-xs font-semibold">
-            GitHub Owner / Organization
-          </Label>
-          <Input
-            id="githubOwner"
-            value={githubOwner}
-            onChange={(e) => setGithubOwner(e.target.value)}
-            placeholder="e.g. facebook"
-            className="bg-background/50 h-9 text-sm"
-            required={required}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="githubRepoName" className="text-xs font-semibold">
-            GitHub Repository Name
-          </Label>
-          <Input
-            id="githubRepoName"
-            value={githubRepoName}
-            onChange={(e) => setGithubRepoName(e.target.value)}
-            placeholder="e.g. react"
-            className="bg-background/50 h-9 text-sm"
-            required={required}
-          />
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="githubUrl" className="text-xs font-semibold">
+          GitHub Repository URL
+        </Label>
+        <Input
+          id="githubUrl"
+          value={githubUrl}
+          onChange={(e) => handleUrlChange(e.target.value)}
+          placeholder="e.g. https://github.com/facebook/react"
+          className="bg-background/50 h-9 text-sm"
+          required={required}
+        />
+        <p className="text-muted-foreground text-[11px]">
+          Enter or paste a GitHub repository URL (e.g. https://github.com/owner/repository).
+        </p>
       </div>
       <div className="space-y-2">
         <Label htmlFor="githubToken" className="text-xs font-semibold">
@@ -77,3 +96,5 @@ export function GithubRepoFields({
     </div>
   );
 }
+
+
