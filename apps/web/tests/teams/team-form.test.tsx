@@ -590,4 +590,27 @@ describe('TeamForm Component', () => {
 
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('contains invisible scroll and overflow classes on the form card for Register New Team', () => {
+    const { container } = renderTeamForm();
+    const card = container.firstElementChild as HTMLElement;
+    expect(card).toHaveClass('no-scrollbar');
+    expect(card).toHaveClass('overflow-y-auto');
+    expect(card).toHaveClass('max-h-[90vh]');
+  });
+
+  it('contains invisible scroll and overflow classes on the form card for Modify Team Configuration', () => {
+    const { container } = renderTeamForm({ teamToEdit: mockTeam });
+    const card = container.firstElementChild as HTMLElement;
+    expect(card).toHaveClass('no-scrollbar');
+    expect(card).toHaveClass('overflow-y-auto');
+    expect(card).toHaveClass('max-h-[90vh]');
+  });
+
+  it('merges custom className on the form card using cn', () => {
+    const { container } = renderTeamForm({ className: 'custom-test-class' });
+    const card = container.firstElementChild as HTMLElement;
+    expect(card).toHaveClass('no-scrollbar');
+    expect(card).toHaveClass('custom-test-class');
+  });
 });

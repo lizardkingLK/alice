@@ -123,7 +123,7 @@ export function UsersWorkspace({
         </TabsTrigger>
         <TabsTrigger value="allowlist" className={UNDERLINE_TAB_TRIGGER_CLASS}>
           <Shield className="h-4 w-4" />
-          Access allowlist
+          Allowlist
         </TabsTrigger>
       </TabsList>
 

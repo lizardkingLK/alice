@@ -69,7 +69,10 @@ export class TeamsService {
   async createTeam(actorId: string, input: CreateTeamInput): Promise<TeamRow> {
     await requireTeamManager(actorId);
 
-    const duplicate = await this.teamsRepository.findByName(input.name);
+    const duplicate = await this.teamsRepository.findByName(
+      input.name,
+      input.project_id ?? null
+    );
     if (duplicate) {
       throw new Error(`A team with the name "${input.name}" already exists.`);
     }
@@ -85,15 +88,29 @@ export class TeamsService {
   ): Promise<TeamRow> {
     await requireTeamManager(actorId);
 
-    if (input.name) {
-      const duplicate = await this.teamsRepository.findByName(
-        input.name,
-        teamId
-      );
-      if (duplicate) {
-        throw new Error(
-          `Another team with the name "${input.name}" already exists.`
+    if (input.name !== undefined || input.project_id !== undefined) {
+      const currentTeam =
+        input.project_id === undefined || input.name === undefined
+          ? await this.teamsRepository.findById(teamId)
+          : null;
+
+      const targetProjectId =
+        input.project_id !== undefined
+          ? input.project_id
+          : (currentTeam?.project_id ?? null);
+      const targetName = input.name ?? currentTeam?.name;
+
+      if (targetName) {
+        const duplicate = await this.teamsRepository.findByName(
+          targetName,
+          targetProjectId,
+          teamId
         );
+        if (duplicate) {
+          throw new Error(
+            `Another team with the name "${targetName}" already exists.`
+          );
+        }
       }
     }
 

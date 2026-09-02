@@ -396,7 +396,7 @@ export function AccessAllowlistRegistry({
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight">
             <Shield className="text-primary size-5" />
-            Access allowlist
+            Allowlist
           </CardTitle>
           <CardDescription>
             Domains and exact emails approved for sign-up and sign-in.

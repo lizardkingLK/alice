@@ -47,6 +47,7 @@ import {
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
+import { cn } from '@repo/ui/lib/utils';
 
 const ALLOWLIST_PROJECTS_TOOLTIP =
   'Select at least one project. These control which project workspaces the guest can open. Add the user under Project → Members separately for operational access (assignments, teams, capacity).';
@@ -59,6 +60,7 @@ interface AccessAllowlistFormProps {
   readonly onSuccess?: () => void;
   readonly initialKind?: AccessAllowlistKind;
   readonly initialValue?: string;
+  readonly className?: string;
 }
 
 function toDateInputValue(iso: string | null): string {
@@ -144,6 +146,7 @@ export function AccessAllowlistForm({
   onSuccess,
   initialKind,
   initialValue,
+  className,
 }: Readonly<AccessAllowlistFormProps>) {
   const isEdit = Boolean(entry);
   const lockOwnDomainStatus = Boolean(
@@ -279,7 +282,12 @@ export function AccessAllowlistForm({
 
   return (
     <>
-      <Card className="relative border border-gray-200 bg-white text-gray-900 shadow-xl transition-all duration-300 hover:shadow-2xl">
+      <Card
+        className={cn(
+          'no-scrollbar relative max-h-[85vh] overflow-y-auto border border-gray-200 bg-white text-gray-900 shadow-xl transition-all duration-300 hover:shadow-2xl',
+          className
+        )}
+      >
         <Button
           type="button"
           variant="ghost"
@@ -326,9 +334,7 @@ export function AccessAllowlistForm({
                 <div className="flex h-6 items-center gap-1">
                   <Label htmlFor="allowlist-status">Status</Label>
                   {lockOwnDomainStatus ? (
-                    <InfoTooltip
-                      ariaLabel={OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE}
-                    >
+                    <InfoTooltip ariaLabel={OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE}>
                       {OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE}
                     </InfoTooltip>
                   ) : null}
@@ -404,6 +410,7 @@ export function AccessAllowlistForm({
                   onSelectedKeysChange={setSelectedProjectKeys}
                   disabled={isSubmitting || isSuccess}
                   emptyText="No projects available. Create a project first."
+                  listClassName="no-scrollbar"
                 />
               </div>
             ) : null}

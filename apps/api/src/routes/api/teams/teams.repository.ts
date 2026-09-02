@@ -142,17 +142,53 @@ export class TeamsRepository {
     }
   }
 
-  async findByName(name: string, excludeId?: string): Promise<TeamRow | null> {
-    let query = this.db.from('teams').select('*').eq('name', name);
-    if (excludeId) {
-      query = query.neq('id', excludeId);
+  async findByName(
+    name: string,
+    projectId?: string | null,
+    excludeId?: string
+  ): Promise<TeamRow | null> {
+    const where: Prisma.teamsWhereInput = {
+      name,
+    };
+
+    if (projectId !== undefined) {
+      where.project_id = projectId;
     }
-    const { data, error } = await query.maybeSingle();
-    if (error) {
-      console.error('database query error find team by name:', error.message);
+
+    if (excludeId) {
+      where.id = { not: excludeId };
+    }
+
+    try {
+      const team = await prisma.teams.findFirst({
+        where,
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          manager_id: true,
+          project_id: true,
+          tech_stack: true,
+          status: true,
+          created_at: true,
+          updated_at: true,
+          created_by: true,
+          updated_by: true,
+        },
+      });
+
+      if (!team) return null;
+
+      return {
+        ...team,
+        created_at: team.created_at.toISOString(),
+        updated_at: team.updated_at.toISOString(),
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to get team by name:', message);
       throw new Error('Failed to locate team by name');
     }
-    return data;
   }
 
   async findById(id: string): Promise<TeamRow | null> {
