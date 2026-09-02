@@ -20,8 +20,12 @@ vi.mock('@/lib/supabase/client', () => {
   const mockQueryBuilder = {
     eq: vi.fn().mockImplementation(() => mockQueryBuilder),
     in: vi.fn().mockImplementation(() => mockQueryBuilder),
-    order: vi.fn().mockImplementation(() => Promise.resolve({ data: [], error: null })),
-    maybeSingle: vi.fn().mockImplementation(() => Promise.resolve({ data: null, error: null })),
+    order: vi
+      .fn()
+      .mockImplementation(() => Promise.resolve({ data: [], error: null })),
+    maybeSingle: vi
+      .fn()
+      .mockImplementation(() => Promise.resolve({ data: null, error: null })),
     // eslint-disable-next-line no-unused-vars
     then: (resolve: (_data: { data: unknown[]; error: null }) => void) =>
       resolve({ data: [], error: null }),
@@ -29,7 +33,11 @@ vi.mock('@/lib/supabase/client', () => {
 
   const mockSelect = vi.fn().mockImplementation(() => mockQueryBuilder);
   const mockFrom = vi.fn().mockImplementation(() => ({ select: mockSelect }));
-  const mockGetUser = vi.fn().mockImplementation(() => Promise.resolve({ data: { user: null }, error: null }));
+  const mockGetUser = vi
+    .fn()
+    .mockImplementation(() =>
+      Promise.resolve({ data: { user: null }, error: null })
+    );
 
   return {
     createClient: vi.fn(() => ({

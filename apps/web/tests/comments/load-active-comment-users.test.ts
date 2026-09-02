@@ -17,8 +17,18 @@ describe('loadActiveCommentUsers', () => {
   });
 
   it('fetches active admins, project owners, and members when workItemId is undefined or all', async () => {
-    const mockAdmin = { id: 'u-1', name: 'Alice Admin', email: 'admin@dev.com', role: 'admin' };
-    const mockOwner = { id: 'u-2', name: 'Owen Owner', email: 'owner@dev.com', role: 'member' };
+    const mockAdmin = {
+      id: 'u-1',
+      name: 'Alice Admin',
+      email: 'admin@dev.com',
+      role: 'admin',
+    };
+    const mockOwner = {
+      id: 'u-2',
+      name: 'Owen Owner',
+      email: 'owner@dev.com',
+      role: 'member',
+    };
 
     mockFrom.mockImplementation((table: string) => {
       if (table === 'projects') {

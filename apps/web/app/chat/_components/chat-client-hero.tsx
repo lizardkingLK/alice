@@ -22,7 +22,7 @@ export default function ChatHeroSection({
     >
       <div
         className={cn(
-          'my-auto mx-auto flex w-full flex-col items-center space-y-6 text-center',
+          'mx-auto my-auto flex w-full flex-col items-center space-y-6 text-center',
           isPage ? 'max-w-md' : 'max-w-xs'
         )}
       >

@@ -307,4 +307,3 @@ describe('AccessAllowlistForm', () => {
     expect(card).toHaveClass('max-h-[85vh]');
   });
 });
-

@@ -15,8 +15,14 @@ import { formatDateToISOString } from '@/app/_shared/utility';
 import { plainTextToCommentDoc } from '@repo/types';
 
 const { mockOrder, mockGetUser } = vi.hoisted(() => ({
-  mockOrder: vi.fn().mockImplementation(() => Promise.resolve({ data: [], error: null })),
-  mockGetUser: vi.fn().mockImplementation(() => Promise.resolve({ data: { user: null }, error: null })),
+  mockOrder: vi
+    .fn()
+    .mockImplementation(() => Promise.resolve({ data: [], error: null })),
+  mockGetUser: vi
+    .fn()
+    .mockImplementation(() =>
+      Promise.resolve({ data: { user: null }, error: null })
+    ),
 }));
 
 vi.mock('@/lib/supabase/client', () => {
@@ -24,7 +30,9 @@ vi.mock('@/lib/supabase/client', () => {
     eq: vi.fn().mockImplementation(() => mockQueryBuilder),
     in: vi.fn().mockImplementation(() => mockQueryBuilder),
     order: mockOrder,
-    maybeSingle: vi.fn().mockImplementation(() => Promise.resolve({ data: null, error: null })),
+    maybeSingle: vi
+      .fn()
+      .mockImplementation(() => Promise.resolve({ data: null, error: null })),
     // eslint-disable-next-line no-unused-vars
     then: (resolve: (_data: { data: unknown[]; error: null }) => void) =>
       resolve({ data: [], error: null }),

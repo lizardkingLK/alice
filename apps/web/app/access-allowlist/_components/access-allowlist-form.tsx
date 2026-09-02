@@ -334,7 +334,9 @@ export function AccessAllowlistForm({
                 <div className="flex h-6 items-center gap-1">
                   <Label htmlFor="allowlist-status">Status</Label>
                   {lockOwnDomainStatus ? (
-                    <InfoTooltip ariaLabel={OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE}>
+                    <InfoTooltip
+                      ariaLabel={OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE}
+                    >
                       {OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE}
                     </InfoTooltip>
                   ) : null}
