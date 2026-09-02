@@ -89,23 +89,21 @@ export class TeamsService {
     await requireTeamManager(actorId);
 
     if (input.name !== undefined || input.project_id !== undefined) {
-      let targetProjectId = input.project_id;
-      let targetName = input.name;
+      const currentTeam =
+        input.project_id === undefined || input.name === undefined
+          ? await this.teamsRepository.findById(teamId)
+          : null;
 
-      if (targetProjectId === undefined || targetName === undefined) {
-        const currentTeam = await this.teamsRepository.findById(teamId);
-        if (targetProjectId === undefined) {
-          targetProjectId = currentTeam?.project_id ?? null;
-        }
-        if (targetName === undefined) {
-          targetName = currentTeam?.name;
-        }
-      }
+      const targetProjectId =
+        input.project_id !== undefined
+          ? input.project_id
+          : (currentTeam?.project_id ?? null);
+      const targetName = input.name ?? currentTeam?.name;
 
       if (targetName) {
         const duplicate = await this.teamsRepository.findByName(
           targetName,
-          targetProjectId ?? null,
+          targetProjectId,
           teamId
         );
         if (duplicate) {
