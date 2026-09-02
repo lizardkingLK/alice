@@ -142,8 +142,19 @@ export class TeamsRepository {
     }
   }
 
-  async findByName(name: string, excludeId?: string): Promise<TeamRow | null> {
+  async findByName(
+    name: string,
+    projectId?: string | null,
+    excludeId?: string
+  ): Promise<TeamRow | null> {
     let query = this.db.from('teams').select('*').eq('name', name);
+    if (projectId !== undefined) {
+      if (projectId === null) {
+        query = query.is('project_id', null);
+      } else {
+        query = query.eq('project_id', projectId);
+      }
+    }
     if (excludeId) {
       query = query.neq('id', excludeId);
     }
