@@ -555,6 +555,40 @@ export type EnumAccessAllowlistKindWithAggregatesFilter<$PrismaModel = never> = 
   _max?: Prisma.NestedEnumAccessAllowlistKindFilter<$PrismaModel>
 }
 
+export type EnumAccessRequestKindFilter<$PrismaModel = never> = {
+  equals?: $Enums.AccessRequestKind | Prisma.EnumAccessRequestKindFieldRefInput<$PrismaModel>
+  in?: $Enums.AccessRequestKind[] | Prisma.ListEnumAccessRequestKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AccessRequestKind[] | Prisma.ListEnumAccessRequestKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAccessRequestKindFilter<$PrismaModel> | $Enums.AccessRequestKind
+}
+
+export type EnumAccessRequestStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.AccessRequestStatus | Prisma.EnumAccessRequestStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.AccessRequestStatus[] | Prisma.ListEnumAccessRequestStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AccessRequestStatus[] | Prisma.ListEnumAccessRequestStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAccessRequestStatusFilter<$PrismaModel> | $Enums.AccessRequestStatus
+}
+
+export type EnumAccessRequestKindWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.AccessRequestKind | Prisma.EnumAccessRequestKindFieldRefInput<$PrismaModel>
+  in?: $Enums.AccessRequestKind[] | Prisma.ListEnumAccessRequestKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AccessRequestKind[] | Prisma.ListEnumAccessRequestKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAccessRequestKindWithAggregatesFilter<$PrismaModel> | $Enums.AccessRequestKind
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumAccessRequestKindFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumAccessRequestKindFilter<$PrismaModel>
+}
+
+export type EnumAccessRequestStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.AccessRequestStatus | Prisma.EnumAccessRequestStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.AccessRequestStatus[] | Prisma.ListEnumAccessRequestStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AccessRequestStatus[] | Prisma.ListEnumAccessRequestStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAccessRequestStatusWithAggregatesFilter<$PrismaModel> | $Enums.AccessRequestStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumAccessRequestStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumAccessRequestStatusFilter<$PrismaModel>
+}
+
 export type EnumJiraConnectionStatusFilter<$PrismaModel = never> = {
   equals?: $Enums.JiraConnectionStatus | Prisma.EnumJiraConnectionStatusFieldRefInput<$PrismaModel>
   in?: $Enums.JiraConnectionStatus[] | Prisma.ListEnumJiraConnectionStatusFieldRefInput<$PrismaModel>
@@ -1089,6 +1123,40 @@ export type NestedEnumAccessAllowlistKindWithAggregatesFilter<$PrismaModel = nev
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumAccessAllowlistKindFilter<$PrismaModel>
   _max?: Prisma.NestedEnumAccessAllowlistKindFilter<$PrismaModel>
+}
+
+export type NestedEnumAccessRequestKindFilter<$PrismaModel = never> = {
+  equals?: $Enums.AccessRequestKind | Prisma.EnumAccessRequestKindFieldRefInput<$PrismaModel>
+  in?: $Enums.AccessRequestKind[] | Prisma.ListEnumAccessRequestKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AccessRequestKind[] | Prisma.ListEnumAccessRequestKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAccessRequestKindFilter<$PrismaModel> | $Enums.AccessRequestKind
+}
+
+export type NestedEnumAccessRequestStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.AccessRequestStatus | Prisma.EnumAccessRequestStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.AccessRequestStatus[] | Prisma.ListEnumAccessRequestStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AccessRequestStatus[] | Prisma.ListEnumAccessRequestStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAccessRequestStatusFilter<$PrismaModel> | $Enums.AccessRequestStatus
+}
+
+export type NestedEnumAccessRequestKindWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.AccessRequestKind | Prisma.EnumAccessRequestKindFieldRefInput<$PrismaModel>
+  in?: $Enums.AccessRequestKind[] | Prisma.ListEnumAccessRequestKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AccessRequestKind[] | Prisma.ListEnumAccessRequestKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAccessRequestKindWithAggregatesFilter<$PrismaModel> | $Enums.AccessRequestKind
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumAccessRequestKindFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumAccessRequestKindFilter<$PrismaModel>
+}
+
+export type NestedEnumAccessRequestStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.AccessRequestStatus | Prisma.EnumAccessRequestStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.AccessRequestStatus[] | Prisma.ListEnumAccessRequestStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AccessRequestStatus[] | Prisma.ListEnumAccessRequestStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAccessRequestStatusWithAggregatesFilter<$PrismaModel> | $Enums.AccessRequestStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumAccessRequestStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumAccessRequestStatusFilter<$PrismaModel>
 }
 
 export type NestedEnumJiraConnectionStatusFilter<$PrismaModel = never> = {

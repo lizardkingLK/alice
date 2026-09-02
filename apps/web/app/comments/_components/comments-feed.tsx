@@ -119,10 +119,7 @@ function WorkItemDiscussionHeader({
   );
 }
 
-function collectUserIds(
-  ownerIds: string[],
-  memberIds: string[]
-): Set<string> {
+function collectUserIds(ownerIds: string[], memberIds: string[]): Set<string> {
   const userIds = new Set<string>();
   for (const id of ownerIds) {
     if (id) userIds.add(id);
@@ -143,9 +140,9 @@ async function fetchUsersByIds(
     .select(USER_PROJECTION)
     .eq('status', 'active')
     .in('id', Array.from(userIds));
-  return (fetchedUsers && Array.isArray(fetchedUsers)
+  return fetchedUsers && Array.isArray(fetchedUsers)
     ? (fetchedUsers as CommentUser[])
-    : []);
+    : [];
 }
 
 function mergeAndSortUsers(
@@ -187,9 +184,10 @@ async function loadProjectCommentUsers(
   ]);
 
   const ownerIds = projectRes.data?.owner_id ? [projectRes.data.owner_id] : [];
-  const memberIds = (membersRes.data as { user_id: string }[])
-    ?.map((m) => m.user_id)
-    .filter(Boolean) ?? [];
+  const memberIds =
+    (membersRes.data as { user_id: string }[])
+      ?.map((m) => m.user_id)
+      .filter(Boolean) ?? [];
   const allowedUserIds = collectUserIds(ownerIds, memberIds);
 
   const projectUsers = await fetchUsersByIds(supabase, allowedUserIds);
@@ -210,12 +208,14 @@ async function loadGlobalCommentUsers(
       .eq('role', 'admin'),
   ]);
 
-  const ownerIds = (projectsRes.data as { owner_id: string }[])
-    ?.map((p) => p.owner_id)
-    .filter(Boolean) ?? [];
-  const memberIds = (membersRes.data as { user_id: string }[])
-    ?.map((m) => m.user_id)
-    .filter(Boolean) ?? [];
+  const ownerIds =
+    (projectsRes.data as { owner_id: string }[])
+      ?.map((p) => p.owner_id)
+      .filter(Boolean) ?? [];
+  const memberIds =
+    (membersRes.data as { user_id: string }[])
+      ?.map((m) => m.user_id)
+      .filter(Boolean) ?? [];
   const allowedUserIds = collectUserIds(ownerIds, memberIds);
 
   const memberAndOwnerUsers = await fetchUsersByIds(supabase, allowedUserIds);

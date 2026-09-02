@@ -24,6 +24,9 @@ import { createWorklogsRouter } from '../routes/api/worklogs/worklogs.route';
 import { AccessAllowlistRepository } from '../routes/api/accessAllowlist/accessAllowlist.repository';
 import { AccessAllowlistService } from '../routes/api/accessAllowlist/accessAllowlist.service';
 import { createAccessAllowlistRouter } from '../routes/api/accessAllowlist/accessAllowlist.route';
+import { AccessRequestsRepository } from '../routes/api/accessRequests/accessRequests.repository';
+import { AccessRequestsService } from '../routes/api/accessRequests/accessRequests.service';
+import { createAccessRequestsRouter } from '../routes/api/accessRequests/accessRequests.route';
 import { CommentsRepository } from '../routes/api/comments/comments.repository';
 import { CommentsService } from '../routes/api/comments/comments.service';
 import { createCommentsRouter } from '../routes/api/comments/comments.route';
@@ -69,12 +72,13 @@ function createRootConfig() {
   };
 }
 
-function createAccessAllowlistConfig() {
+function createAccessAllowlistConfig(
+  accessRequestsService: AccessRequestsService
+) {
   const accessAllowlistRepository = new AccessAllowlistRepository(supabase);
-  const projectsRepository = new ProjectsRepository(supabase);
   const accessAllowlistService = new AccessAllowlistService(
     accessAllowlistRepository,
-    projectsRepository
+    accessRequestsService
   );
   const router = createAccessAllowlistRouter({
     accessAllowlistService,
@@ -83,6 +87,22 @@ function createAccessAllowlistConfig() {
   return {
     accessAllowlistRepository,
     accessAllowlistService,
+    router,
+  };
+}
+
+function createAccessRequestsConfig() {
+  const notificationsRepository = new NotificationsRepository(supabase);
+  const accessRequestsRepository = new AccessRequestsRepository();
+  const accessRequestsService = new AccessRequestsService(
+    accessRequestsRepository,
+    notificationsRepository
+  );
+  const router = createAccessRequestsRouter({ accessRequestsService });
+
+  return {
+    accessRequestsRepository,
+    accessRequestsService,
     router,
   };
 }
@@ -143,13 +163,16 @@ function createCommentsConfig(notificationsService: NotificationsService) {
   };
 }
 
-function createNotificationsConfig() {
+function createNotificationsConfig(
+  accessRequestsService: AccessRequestsService
+) {
   const notificationsRepository = new NotificationsRepository(supabase);
   const notificationsService = new NotificationsService(
     notificationsRepository
   );
   const router = createNotificationsRouter({
     notificationsService,
+    accessRequestsService,
   });
 
   return {
@@ -335,8 +358,13 @@ function createIntegrationsConfig() {
 /** Production configs graph (repo → service → router). */
 export const root = createRootConfig();
 export const health = createHealthConfig();
-export const accessAllowlist = createAccessAllowlistConfig();
-export const notifications = createNotificationsConfig();
+export const accessRequests = createAccessRequestsConfig();
+export const accessAllowlist = createAccessAllowlistConfig(
+  accessRequests.accessRequestsService
+);
+export const notifications = createNotificationsConfig(
+  accessRequests.accessRequestsService
+);
 export const workItems = createWorkItemsConfig(
   notifications.notificationsService
 );

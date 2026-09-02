@@ -1,7 +1,6 @@
 import type { User } from '@supabase/supabase-js';
 
 import { auditCreate } from '@/lib/audit';
-import { provisionAllowlistProjectMembersForUser } from '@/lib/access-allowlist/sync-project-members.server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { UserMembershipStatusEnum } from '@repo/types';
 
@@ -119,7 +118,6 @@ export async function ensurePublicUser(
     if (promote.error) {
       return { created: false, error: promote.error };
     }
-    await syncAllowlistMembersIfNeeded(user);
     return { created: false, error: null };
   }
 
@@ -134,7 +132,6 @@ export async function ensurePublicUser(
   }
 
   if (existingByEmail) {
-    await syncAllowlistMembersIfNeeded(user);
     return { created: false, error: null };
   }
 
@@ -159,31 +156,12 @@ export async function ensurePublicUser(
       if (promote.error) {
         return { created: false, error: promote.error };
       }
-      await syncAllowlistMembersIfNeeded(user);
       return { created: false, error: null };
     }
     return { created: false, error: insertError.message };
   }
 
-  await syncAllowlistMembersIfNeeded(user);
-
   return { created: true, error: null };
-}
-
-async function syncAllowlistMembersIfNeeded(user: User): Promise<void> {
-  if (!user.id || !user.email) {
-    return;
-  }
-
-  try {
-    await provisionAllowlistProjectMembersForUser({
-      userId: user.id,
-      email: user.email,
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error('error. allowlist project member provision failed:', message);
-  }
 }
 
 function isUniqueConstraintError(error: {

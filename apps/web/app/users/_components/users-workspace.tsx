@@ -7,11 +7,13 @@ import {
   TabsList,
   TabsTrigger,
 } from '@repo/ui/components/ui/tabs';
-import { Shield, Users } from '@repo/ui/lib/icons';
+import { Inbox, Shield, Users } from '@repo/ui/lib/icons';
 import { UserRegistry } from '@/app/users/_components/user-registry';
 import { AccessAllowlistRegistry } from '@/app/access-allowlist/_components/access-allowlist-registry';
+import { AccessRequestsRegistry } from '@/app/access-requests/_components/access-requests-registry';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import type { AccessAllowlistEntry } from '@/app/access-allowlist/_services/access-allowlist.mutations.client';
+import type { AccessRequestEntry } from '@/app/access-requests/_services/access-requests.mutations.shared';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import { parseUsersPageTab, type UsersPageTab } from '@/lib/search-params';
 import { UNDERLINE_TAB_TRIGGER_CLASS } from '@/components/underline-tab-trigger';
@@ -30,6 +32,12 @@ interface UsersWorkspaceProps {
   readonly allowlistPage: number;
   readonly allowlistLimit: number;
   readonly allowlistTotalPages: number;
+  readonly accessRequests: AccessRequestEntry[];
+  readonly accessRequestsTotalCount: number;
+  readonly accessRequestsPage: number;
+  readonly accessRequestsLimit: number;
+  readonly accessRequestsTotalPages: number;
+  readonly focusedAccessRequest?: AccessRequestEntry | null;
   readonly currentUserEmail?: string | null;
   readonly projects?: readonly Project[];
 }
@@ -48,6 +56,12 @@ export function UsersWorkspace({
   allowlistPage,
   allowlistLimit,
   allowlistTotalPages,
+  accessRequests,
+  accessRequestsTotalCount,
+  accessRequestsPage,
+  accessRequestsLimit,
+  accessRequestsTotalPages,
+  focusedAccessRequest = null,
   currentUserEmail = null,
   projects = [],
 }: Readonly<UsersWorkspaceProps>) {
@@ -57,7 +71,9 @@ export function UsersWorkspace({
   const isAdmin = currentUserRole === 'admin';
   const requestedTab = parseUsersPageTab(searchParams.get('tab'));
   const activeTab: UsersPageTab =
-    isAdmin && requestedTab === 'allowlist' ? 'allowlist' : 'users';
+    isAdmin && (requestedTab === 'allowlist' || requestedTab === 'requests')
+      ? requestedTab
+      : 'users';
 
   const handleTabChange = (value: string) => {
     const nextTab = value as UsersPageTab;
@@ -67,9 +83,10 @@ export function UsersWorkspace({
     } else {
       params.set('tab', nextTab);
     }
-    // Reset list filters when switching panels.
     params.delete('page');
     params.delete('search');
+    params.delete('requestId');
+    params.delete('addEmail');
     const query = params.toString();
     router.push(query ? `${pathname}?${query}` : pathname);
   };
@@ -100,9 +117,13 @@ export function UsersWorkspace({
           <Users className="h-4 w-4" />
           Users
         </TabsTrigger>
+        <TabsTrigger value="requests" className={UNDERLINE_TAB_TRIGGER_CLASS}>
+          <Inbox className="h-4 w-4" />
+          Requests
+        </TabsTrigger>
         <TabsTrigger value="allowlist" className={UNDERLINE_TAB_TRIGGER_CLASS}>
           <Shield className="h-4 w-4" />
-          Access allowlist
+          Allowlist
         </TabsTrigger>
       </TabsList>
 
@@ -119,6 +140,22 @@ export function UsersWorkspace({
           search={search}
           currentUserId={currentUserId}
           currentUserRole={currentUserRole}
+        />
+      </TabsContent>
+
+      <TabsContent
+        value="requests"
+        className="m-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+      >
+        <AccessRequestsRegistry
+          requests={accessRequests}
+          totalCount={accessRequestsTotalCount}
+          page={accessRequestsPage}
+          limit={accessRequestsLimit}
+          totalPages={accessRequestsTotalPages}
+          search={search}
+          focusedRequest={focusedAccessRequest}
+          projects={projects}
         />
       </TabsContent>
 

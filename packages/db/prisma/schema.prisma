@@ -74,11 +74,23 @@ enum NotificationType {
   due_date
   view_shared
   chat_processed
+  access_request
 }
 
 enum AccessAllowlistKind {
   domain
   email
+}
+
+enum AccessRequestStatus {
+  pending
+  granted
+  denied
+}
+
+enum AccessRequestKind {
+  admission
+  project_expansion
 }
 
 enum JiraConnectionStatus {
@@ -153,6 +165,7 @@ model users {
   updated_notifications   notifications[]   @relation("NotificationUpdatedBy")
   created_access_allowlist access_allowlist[] @relation("AccessAllowlistCreatedBy")
   updated_access_allowlist access_allowlist[] @relation("AccessAllowlistUpdatedBy")
+  resolved_access_requests access_requests[]  @relation("AccessRequestResolvedBy")
   chat_conversations      chat_conversations[]
   owned_saved_views       saved_views[]       @relation("SavedViewOwner")
   created_saved_views     saved_views[]       @relation("SavedViewCreatedBy")
@@ -418,6 +431,29 @@ model access_allowlist {
 
   @@unique([kind, value])
   @@index([kind, status])
+}
+
+/// Workspace admission requests from `/contact` (see docs/features/access/ACCESS_REQUESTS.md).
+model access_requests {
+  id                     String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requester_email        String
+  requester_name         String?
+  message                String
+  kind                   AccessRequestKind   @default(admission)
+  status                 AccessRequestStatus @default(pending)
+  request_count          Int                 @default(1)
+  requested_project_keys Json?
+  resolved_by            String?             @db.Uuid
+  resolved_at            DateTime?           @db.Timestamptz(6)
+  last_requested_at      DateTime            @default(now()) @db.Timestamptz(6)
+  created_at             DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime            @updatedAt @db.Timestamptz(6)
+
+  resolved_by_user users? @relation("AccessRequestResolvedBy", fields: [resolved_by], references: [id], onDelete: SetNull)
+
+  @@index([requester_email, status])
+  @@index([status, last_requested_at(sort: Desc)])
+  @@index([requester_email, last_requested_at(sort: Desc)])
 }
 
 model jira_connections {

@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { resolveSafeRedirectPath } from '@/lib/auth-redirect';
 import { ensurePublicUser } from '@/lib/ensure-public-user';
-import { isEmailAllowed } from '@/lib/access-allowlist';
+import {
+  evaluateEmailAdmission,
+  buildAccessDeniedPath,
+} from '@/lib/access-allowlist';
 import { createServerClient } from '@supabase/ssr';
 import type { EmailOtpType, SupabaseClient, User } from '@supabase/supabase-js';
 import type { Database } from '@repo/types';
@@ -30,10 +33,10 @@ async function admitUser(
   supabase: SupabaseClient<Database>,
   user: User
 ): Promise<string | null> {
-  const allowed = await isEmailAllowed(user.email ?? '');
-  if (!allowed) {
+  const admission = await evaluateEmailAdmission(user.email ?? '');
+  if (!admission.allowed) {
     await supabase.auth.signOut();
-    return '/access-denied';
+    return buildAccessDeniedPath(admission.reason);
   }
 
   const { error: profileError } = await ensurePublicUser(user);

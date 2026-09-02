@@ -3,6 +3,10 @@ import { isAdmin, isAppRole } from '@/lib/rbac/roles';
 import { createClient } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@repo/types';
+import {
+  resolveProjectIdsFromAllowlistValue,
+  normalizedAllowlistProjectKeysFromValue,
+} from '@repo/types';
 
 /** True when `userId` owns the project (`projects.owner_id`). */
 export async function isProjectOwner(
@@ -70,6 +74,22 @@ export async function canAccessProjectWorkspace(
     return true;
   }
 
+  try {
+    const supabase = await createClient();
+    const guestProjectIds = await resolveAllowedProjectIdsFromAcl(
+      supabase,
+      userId
+    );
+    if (guestProjectIds !== null) {
+      return guestProjectIds.includes(projectId);
+    }
+  } catch (err) {
+    console.error(
+      'error. failed to resolve guest workspace access from allowlist',
+      err
+    );
+  }
+
   if (await isProjectOwner(userId, projectId)) {
     return true;
   }
@@ -99,30 +119,29 @@ async function resolveAllowedProjectIdsFromAcl(
     .eq('value', userRow.email.trim().toLowerCase())
     .maybeSingle();
 
-  if (!allowlistRecord?.allowed_project_ids) {
+  if (!allowlistRecord) {
     return null;
   }
 
+  const normalizedKeys = normalizedAllowlistProjectKeysFromValue(
+    allowlistRecord.allowed_project_ids
+  );
+  if (normalizedKeys.length === 0) {
+    return [];
+  }
+
   try {
-    const acl = allowlistRecord.allowed_project_ids;
-    if (!Array.isArray(acl)) {
-      return null;
-    }
-    const keys = acl
-      .map(String)
-      .map((k) => k.trim().toUpperCase())
-      .filter(Boolean);
-    if (keys.length === 0) {
-      return [];
-    }
     const { data: matchedProjects } = await supabase
       .from('projects')
-      .select('id')
-      .in('key', keys);
-    return (matchedProjects ?? []).map((row) => row.id);
+      .select('id, key')
+      .in('key', normalizedKeys);
+    return resolveProjectIdsFromAllowlistValue(
+      allowlistRecord.allowed_project_ids,
+      matchedProjects ?? []
+    );
   } catch (err) {
     console.error('Failed to parse allowed_project_ids ACL:', err);
-    return null;
+    return [];
   }
 }
 
@@ -143,7 +162,7 @@ export async function listAccessibleProjectIds(
     return 'all';
   }
 
-  let memberIds = await listMemberProjectIdsSafe(userId);
+  const memberIds = await listMemberProjectIdsSafe(userId);
   let ownedIds: string[] = [];
 
   try {
@@ -167,10 +186,7 @@ export async function listAccessibleProjectIds(
       userId
     );
     if (allowedProjectIdsFromAcl !== null) {
-      memberIds = memberIds.filter((id) =>
-        allowedProjectIdsFromAcl.includes(id)
-      );
-      ownedIds = ownedIds.filter((id) => allowedProjectIdsFromAcl.includes(id));
+      return allowedProjectIdsFromAcl;
     }
   } catch (err) {
     console.error(

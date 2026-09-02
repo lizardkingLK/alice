@@ -1,8 +1,13 @@
 import { vi, type Mock } from 'vitest';
+import { RecordStatusEnum } from '@repo/types';
 
 export const createAdminClient: Mock = vi.fn();
 
-export type AllowlistHit = { expires_at: string | null };
+export type AllowlistHit = {
+  expires_at: string | null;
+  status?: string;
+  allowed_project_ids?: unknown;
+};
 
 type QueryResult = { data: unknown; error: unknown };
 
@@ -76,11 +81,23 @@ function createAwaitableQueryChain(
   return createChain();
 }
 
-/** Stub `access_allowlist` lookups keyed as `kind:value`, users, and project memberships. */
+function normalizeAllowlistRow(hit: AllowlistHit | null) {
+  if (!hit) {
+    return null;
+  }
+
+  return {
+    status: hit.status ?? RecordStatusEnum.active,
+    expires_at: hit.expires_at,
+    allowed_project_ids: hit.allowed_project_ids ?? null,
+  };
+}
+
+/** Stub `access_allowlist` lookups keyed as `kind:value`, users, and projects. */
 export function mockAllowlistRows(
   rows: Record<string, AllowlistHit | null>,
   users: Record<string, { id: string } | null> = {},
-  projectMemberships: Record<string, { project_id: string }[]> = {}
+  projects: Array<{ id: string; key: string }> = []
 ) {
   createAdminClient.mockImplementation(() => ({
     from: vi.fn((table: string) =>
@@ -90,7 +107,10 @@ export function mockAllowlistRows(
           if (!(key in rows)) {
             return { data: null, error: null };
           }
-          return { data: rows[key], error: null };
+          return {
+            data: normalizeAllowlistRow(rows[key] ?? null),
+            error: null,
+          };
         }
 
         if (table === 'users') {
@@ -99,10 +119,8 @@ export function mockAllowlistRows(
           return { data: user || null, error: null };
         }
 
-        if (table === 'project_members') {
-          const userIdKey = context.filters['user_id'] || '';
-          const list = projectMemberships[userIdKey] || [];
-          return { data: list, error: null };
+        if (table === 'projects') {
+          return { data: projects, error: null };
         }
 
         return { data: null, error: null };

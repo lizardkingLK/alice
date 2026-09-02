@@ -3,12 +3,14 @@ import type { Database } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { teamListSelect } from '@repo/types';
 
-const { findManyMock, findUniqueMock, findFirstMock, countMock } = vi.hoisted(() => ({
-  findManyMock: vi.fn(),
-  findUniqueMock: vi.fn(),
-  findFirstMock: vi.fn(),
-  countMock: vi.fn(),
-}));
+const { findManyMock, findUniqueMock, findFirstMock, countMock } = vi.hoisted(
+  () => ({
+    findManyMock: vi.fn(),
+    findUniqueMock: vi.fn(),
+    findFirstMock: vi.fn(),
+    countMock: vi.fn(),
+  })
+);
 
 vi.mock('../../src/lib/prisma', () => ({
   prisma: {

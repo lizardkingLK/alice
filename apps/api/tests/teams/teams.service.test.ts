@@ -1,16 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { selectSingleMock, findByIdMock, findByNameMock, createMock, updateMock } =
-  vi.hoisted(() => {
-    process.env.GITHUB_ACTIONS = 'true';
-    return {
-      selectSingleMock: vi.fn(),
-      findByIdMock: vi.fn(),
-      findByNameMock: vi.fn(),
-      createMock: vi.fn(),
-      updateMock: vi.fn(),
-    };
-  });
+const {
+  selectSingleMock,
+  findByIdMock,
+  findByNameMock,
+  createMock,
+  updateMock,
+} = vi.hoisted(() => {
+  process.env.GITHUB_ACTIONS = 'true';
+  return {
+    selectSingleMock: vi.fn(),
+    findByIdMock: vi.fn(),
+    findByNameMock: vi.fn(),
+    createMock: vi.fn(),
+    updateMock: vi.fn(),
+  };
+});
 
 vi.mock('../../src/lib/supabase', () => ({
   supabase: {
@@ -204,7 +209,9 @@ describe('TeamsService project-scoped uniqueness validation', () => {
           { name: 'Existing Team', project_id: 'project-sg' },
           '2026-08-25T12:00:00.000Z'
         )
-      ).rejects.toThrow('Another team with the name "Existing Team" already exists.');
+      ).rejects.toThrow(
+        'Another team with the name "Existing Team" already exists.'
+      );
 
       expect(updateMock).not.toHaveBeenCalled();
     });

@@ -78,6 +78,11 @@ export type notifications = Prisma.notificationsModel
  */
 export type access_allowlist = Prisma.access_allowlistModel
 /**
+ * Model access_requests
+ * Workspace admission requests from `/contact` (see docs/features/access/ACCESS_REQUESTS.md).
+ */
+export type access_requests = Prisma.access_requestsModel
+/**
  * Model jira_connections
  * 
  */

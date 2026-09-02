@@ -31,6 +31,7 @@ function mockSupabase(options?: {
   const email = options?.email ?? 'user@example.com';
   const allowedProjectIds = options?.allowedProjectIds ?? null;
   const projectsByKey = options?.projectsByKey ?? [];
+  const hasAllowlistRow = options?.allowedProjectIds !== undefined;
 
   createClientMock.mockResolvedValue({
     from: (table: string) => {
@@ -43,10 +44,11 @@ function mockSupabase(options?: {
             return { data: { email }, error: null };
           }
           if (table === 'access_allowlist') {
+            if (!hasAllowlistRow) {
+              return { data: null, error: null };
+            }
             return {
-              data: allowedProjectIds
-                ? { allowed_project_ids: allowedProjectIds }
-                : null,
+              data: { allowed_project_ids: allowedProjectIds },
               error: null,
             };
           }
@@ -115,6 +117,30 @@ describe('canAccessProjectWorkspace', () => {
       canAccessProjectWorkspace('user-1', 'manager', 'project-1')
     ).resolves.toBe(true);
   });
+
+  it('allows email guests only for allowlisted project ids', async () => {
+    mockSupabase({
+      allowedProjectIds: ['SG'],
+      projectsByKey: [{ id: 'acl-project', key: 'SG' }],
+    });
+    getActiveMemberProjectIdsMock.mockResolvedValue(['other-project']);
+
+    await expect(
+      canAccessProjectWorkspace('user-1', 'member', 'acl-project')
+    ).resolves.toBe(true);
+    await expect(
+      canAccessProjectWorkspace('user-1', 'member', 'other-project')
+    ).resolves.toBe(false);
+  });
+
+  it('denies email guests when allowlist project keys are empty', async () => {
+    mockSupabase({ allowedProjectIds: [] });
+    getActiveMemberProjectIdsMock.mockResolvedValue(['member-project']);
+
+    await expect(
+      canAccessProjectWorkspace('user-1', 'member', 'member-project')
+    ).resolves.toBe(false);
+  });
 });
 
 describe('listAccessibleProjectIds', () => {
@@ -139,19 +165,28 @@ describe('listAccessibleProjectIds', () => {
     ).resolves.toEqual(['member-project', 'owned-project']);
   });
 
-  it('restricts accessible projects for guest user matching allowlist ACL', async () => {
-    getActiveMemberProjectIdsMock.mockResolvedValue([
-      'member-project',
-      'other-project',
-    ]);
+  it('returns allowlist project ids for email guests without requiring membership', async () => {
+    getActiveMemberProjectIdsMock.mockResolvedValue(['other-project']);
     mockSupabase({
       ownedIds: [],
       allowedProjectIds: ['SG'],
-      projectsByKey: [{ id: 'member-project', key: 'SG' }],
+      projectsByKey: [{ id: 'acl-project', key: 'SG' }],
     });
 
     await expect(listAccessibleProjectIds('user-1', 'member')).resolves.toEqual(
-      ['member-project']
+      ['acl-project']
+    );
+  });
+
+  it('returns an empty list for email guests with no allowlisted projects', async () => {
+    getActiveMemberProjectIdsMock.mockResolvedValue(['member-project']);
+    mockSupabase({
+      ownedIds: [],
+      allowedProjectIds: [],
+    });
+
+    await expect(listAccessibleProjectIds('user-1', 'member')).resolves.toEqual(
+      []
     );
   });
 });

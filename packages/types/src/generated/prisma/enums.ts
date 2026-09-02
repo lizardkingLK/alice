@@ -96,7 +96,8 @@ export const NotificationType = {
   sprint: 'sprint',
   due_date: 'due_date',
   view_shared: 'view_shared',
-  chat_processed: 'chat_processed'
+  chat_processed: 'chat_processed',
+  access_request: 'access_request'
 } as const
 
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType]
@@ -108,6 +109,23 @@ export const AccessAllowlistKind = {
 } as const
 
 export type AccessAllowlistKind = (typeof AccessAllowlistKind)[keyof typeof AccessAllowlistKind]
+
+
+export const AccessRequestStatus = {
+  pending: 'pending',
+  granted: 'granted',
+  denied: 'denied'
+} as const
+
+export type AccessRequestStatus = (typeof AccessRequestStatus)[keyof typeof AccessRequestStatus]
+
+
+export const AccessRequestKind = {
+  admission: 'admission',
+  project_expansion: 'project_expansion'
+} as const
+
+export type AccessRequestKind = (typeof AccessRequestKind)[keyof typeof AccessRequestKind]
 
 
 export const JiraConnectionStatus = {

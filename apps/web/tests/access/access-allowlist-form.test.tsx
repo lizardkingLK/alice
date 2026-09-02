@@ -111,7 +111,7 @@ describe('AccessAllowlistForm', () => {
     expect(screen.getByText(/^Allowed projects$/i)).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
-        name: /Select at least one project/i,
+        name: /These control which project workspaces the guest can open/i,
       })
     ).toBeInTheDocument();
     expect(screen.getByText('Singapore')).toBeInTheDocument();
@@ -252,6 +252,33 @@ describe('AccessAllowlistForm', () => {
     ).toBeInTheDocument();
   });
 
+  it('shows a dialog when the email domain is already allowlisted', async () => {
+    const { EMAIL_ALLOWLIST_DOMAIN_CONFLICT_MESSAGE } =
+      await import('@repo/types');
+    vi.mocked(createAccessAllowlistEntry).mockRejectedValue(
+      new Error(EMAIL_ALLOWLIST_DOMAIN_CONFLICT_MESSAGE)
+    );
+
+    render(
+      <AccessAllowlistForm
+        initialKind="email"
+        initialValue="guest@partner.com"
+        projects={[...mockProjects]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /Singapore/i }));
+    fireEvent.submit(screen.getByLabelText(/^Email$/i).closest('form')!);
+
+    expect(
+      await screen.findByRole('dialog', { name: /Access denied/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(EMAIL_ALLOWLIST_DOMAIN_CONFLICT_MESSAGE)
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Okay$/i })).toBeInTheDocument();
+  });
+
   it('locks status when editing the current user own domain', () => {
     const entry = accessAllowlistFactory.build({
       kind: 'domain',
@@ -280,4 +307,3 @@ describe('AccessAllowlistForm', () => {
     expect(card).toHaveClass('max-h-[85vh]');
   });
 });
-

@@ -12,6 +12,7 @@ export interface RawSearchParams {
   recordStatus?: string;
   teamStatus?: string;
   search?: string;
+  requestId?: string;
   project?: string;
   sprint?: string;
   type?: string;
@@ -164,10 +165,12 @@ export function parseManagerTabStatus(
   return 'active';
 }
 
-export type UsersPageTab = 'users' | 'allowlist';
+export type UsersPageTab = 'users' | 'allowlist' | 'requests';
 
 export function parseUsersPageTab(tab?: string | null): UsersPageTab {
-  return tab === 'allowlist' ? 'allowlist' : 'users';
+  if (tab === 'allowlist') return 'allowlist';
+  if (tab === 'requests') return 'requests';
+  return 'users';
 }
 
 /** Board page tabs (`/board?tab=`). Default `board` omits the query param. */
