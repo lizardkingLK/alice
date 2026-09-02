@@ -482,4 +482,18 @@ describe('WorkItemForm', () => {
       screen.queryByRole('option', { name: 'Issue' })
     ).not.toBeInTheDocument();
   });
+
+  it('renders form fields within a scrollable body container', () => {
+    const { container } = render(
+      <WorkItemForm
+        projects={projects}
+        projectMembers={projectMembers}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    const scrollContainer = container.querySelector('.overflow-y-auto');
+    expect(scrollContainer).toBeInTheDocument();
+    expect(scrollContainer).toHaveClass('no-scrollbar', 'flex-1', 'space-y-4', 'overflow-y-auto', 'pr-1');
+  });
 });
