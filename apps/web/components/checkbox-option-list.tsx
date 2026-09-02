@@ -64,7 +64,7 @@ export function CheckboxOptionList({
   return (
     <div
       className={cn(
-        'bg-background/50 border-input custom-scrollbar max-h-48 space-y-1 overflow-y-auto rounded-md border p-2',
+        'bg-background/50 border-input no-scrollbar max-h-48 space-y-1 overflow-y-auto rounded-md border p-2',
         listClassName
       )}
     >

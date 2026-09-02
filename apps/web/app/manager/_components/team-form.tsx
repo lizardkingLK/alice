@@ -28,6 +28,7 @@ import {
   CardTitle,
 } from '@repo/ui/components/ui/card';
 import { Users, Loader2, X } from '@repo/ui/lib/icons';
+import { cn } from '@repo/ui/lib/utils';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import { createTeam, updateTeam } from '../_services/teams.mutations.client';
 import type {
@@ -39,6 +40,7 @@ import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 
 interface TeamFormProps {
+  readonly className?: string;
   readonly onClose?: () => void;
   readonly onSuccess?: () => void;
   readonly teamToEdit?: Team | null;
@@ -49,6 +51,7 @@ interface TeamFormProps {
 }
 
 export function TeamForm({
+  className,
   onClose,
   onSuccess,
   teamToEdit = null,
@@ -306,31 +309,12 @@ export function TeamForm({
   }, [projectLocked, editActionActive]);
 
   return (
-    <Card className="border-border bg-card text-card-foreground custom-scrollbar relative max-h-[90vh] overflow-y-auto border shadow-2xl transition-all duration-300">
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-        .custom-scrollbar {
-          scrollbar-width: thin !important;
-          scrollbar-color: rgba(156, 163, 175, 0.3) transparent !important;
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px !important;
-          height: 4px !important;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent !important;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: rgba(156, 163, 175, 0.3) !important;
-          border-radius: 9999px !important;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background-color: rgba(156, 163, 175, 0.6) !important;
-        }
-      `,
-        }}
-      />
+    <Card
+      className={cn(
+        'border-border bg-card text-card-foreground no-scrollbar relative max-h-[90vh] overflow-y-auto border shadow-2xl transition-all duration-300',
+        className
+      )}
+    >
       {onClose && (
         <Button
           type="button"
@@ -484,6 +468,7 @@ export function TeamForm({
                   members={memberCheckboxOptions}
                   selectedUserIds={selectedMemberIds}
                   onSelectedUserIdsChange={setSelectedMemberIds}
+                  listClassName="no-scrollbar"
                 />
               </div>
             )}
@@ -493,7 +478,7 @@ export function TeamForm({
                 <Label className="text-sm font-semibold">
                   Configure Member Capacity & Allocation
                 </Label>
-                <div className="custom-scrollbar max-h-60 space-y-2 overflow-y-auto pr-2">
+                <div className="no-scrollbar max-h-60 space-y-2 overflow-y-auto pr-2">
                   {selectedMemberIds.map((userId) => {
                     const memberObj = memberCheckboxOptions.find(
                       (m) => m.userId === userId

@@ -3,9 +3,10 @@ import type { Database } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { teamListSelect } from '@repo/types';
 
-const { findManyMock, findUniqueMock, countMock } = vi.hoisted(() => ({
+const { findManyMock, findUniqueMock, findFirstMock, countMock } = vi.hoisted(() => ({
   findManyMock: vi.fn(),
   findUniqueMock: vi.fn(),
+  findFirstMock: vi.fn(),
   countMock: vi.fn(),
 }));
 
@@ -14,6 +15,7 @@ vi.mock('../../src/lib/prisma', () => ({
     teams: {
       findMany: findManyMock,
       findUnique: findUniqueMock,
+      findFirst: findFirstMock,
       count: countMock,
     },
   },
@@ -101,5 +103,62 @@ describe('TeamsRepository Prisma reads', () => {
       select: teamListSelect,
     });
     expect(result).toEqual(mockTeamRow);
+  });
+
+  it('finds team by name and project using prisma.teams.findFirst', async () => {
+    findFirstMock.mockResolvedValue({
+      id: 'team-1',
+      name: 'Backend Devs',
+      description: 'Team description',
+      manager_id: 'manager-1',
+      project_id: 'project-1',
+      tech_stack: 'Node.js, Postgres',
+      status: 'active',
+      created_at: new Date('2026-08-25T12:00:00.000Z'),
+      updated_at: new Date('2026-08-25T12:00:00.000Z'),
+      created_by: 'manager-1',
+      updated_by: 'manager-1',
+    });
+
+    const result = await repository.findByName(
+      'Backend Devs',
+      'project-1',
+      'team-excluded'
+    );
+
+    expect(findFirstMock).toHaveBeenCalledWith({
+      where: {
+        name: 'Backend Devs',
+        project_id: 'project-1',
+        id: { not: 'team-excluded' },
+      },
+      select: expect.objectContaining({
+        id: true,
+        name: true,
+        project_id: true,
+      }),
+    });
+
+    expect(result).toEqual({
+      id: 'team-1',
+      name: 'Backend Devs',
+      description: 'Team description',
+      manager_id: 'manager-1',
+      project_id: 'project-1',
+      tech_stack: 'Node.js, Postgres',
+      status: 'active',
+      created_at: '2026-08-25T12:00:00.000Z',
+      updated_at: '2026-08-25T12:00:00.000Z',
+      created_by: 'manager-1',
+      updated_by: 'manager-1',
+    });
+  });
+
+  it('returns null when findByName finds no match', async () => {
+    findFirstMock.mockResolvedValue(null);
+
+    const result = await repository.findByName('Non Existent', 'project-1');
+
+    expect(result).toBeNull();
   });
 });
