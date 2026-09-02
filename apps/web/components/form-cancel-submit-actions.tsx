@@ -27,14 +27,14 @@ export function FormCancelSubmitActions({
     <>
       <FormAlertMessage message={message} isError={isError} />
 
-      <div className="flex gap-3 pt-2">
+      <div className="flex items-center justify-end gap-3 pt-2">
         {onCancel ? (
           <Button
             type="button"
             variant="outline"
             disabled={isBusy}
             onClick={onCancel}
-            className="w-1/3"
+            className="min-w-24 rounded-lg"
           >
             Cancel
           </Button>
@@ -42,7 +42,7 @@ export function FormCancelSubmitActions({
         <Button
           type="submit"
           disabled={isBusy}
-          className={onCancel ? 'w-2/3' : 'w-full'}
+          className="min-w-32 rounded-lg"
         >
           {submitLabel}
         </Button>
