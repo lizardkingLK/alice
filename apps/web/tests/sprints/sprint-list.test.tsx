@@ -100,7 +100,6 @@ describe('SprintList Component', () => {
         sprints={mockSprints}
         pagination={mockPagination}
         filterTab="active"
-        onTabChange={vi.fn()}
         onPageChange={vi.fn()}
         onLimitChange={vi.fn()}
       />
@@ -124,7 +123,6 @@ describe('SprintList Component', () => {
         sprints={mockSprints}
         pagination={mockPagination}
         filterTab="active"
-        onTabChange={vi.fn()}
         onPageChange={vi.fn()}
         onLimitChange={vi.fn()}
       />
@@ -158,7 +156,6 @@ describe('SprintList Component', () => {
         sprints={mockSprints}
         pagination={multiPagePagination}
         filterTab="active"
-        onTabChange={vi.fn()}
         onPageChange={onPageChange}
         onLimitChange={onLimitChange}
       />
@@ -265,7 +262,6 @@ describe('SprintList Component', () => {
         sprints={[]}
         pagination={{ page: 1, limit: 10, totalCount: 0, totalPages: 0 }}
         filterTab="active"
-        onTabChange={vi.fn()}
         onPageChange={vi.fn()}
         onLimitChange={vi.fn()}
         isLoading={true}
@@ -282,7 +278,6 @@ describe('SprintList Component', () => {
         sprints={[]}
         pagination={{ page: 1, limit: 10, totalCount: 0, totalPages: 0 }}
         filterTab="active"
-        onTabChange={vi.fn()}
         onPageChange={vi.fn()}
         onLimitChange={vi.fn()}
         error="Something went wrong"
@@ -302,7 +297,6 @@ describe('SprintList Component', () => {
         sprints={[]}
         pagination={{ page: 1, limit: 10, totalCount: 0, totalPages: 0 }}
         filterTab="active"
-        onTabChange={vi.fn()}
         onPageChange={vi.fn()}
         onLimitChange={vi.fn()}
       />
@@ -316,7 +310,6 @@ describe('SprintList Component', () => {
         sprints={[]}
         pagination={{ page: 1, limit: 10, totalCount: 5, totalPages: 1 }}
         filterTab="active"
-        onTabChange={vi.fn()}
         onPageChange={vi.fn()}
         onLimitChange={vi.fn()}
       />
@@ -330,7 +323,6 @@ describe('SprintList Component', () => {
         sprints={[]}
         pagination={{ page: 1, limit: 10, totalCount: 5, totalPages: 1 }}
         filterTab="archived"
-        onTabChange={vi.fn()}
         onPageChange={vi.fn()}
         onLimitChange={vi.fn()}
       />
