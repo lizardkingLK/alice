@@ -1,23 +1,23 @@
 # Notifications
 
-**Status:** Stub
+Stay on top of mentions, assignments, and shared views.
 
 **Audience:** All users
 
-## Summary
-
-TODO: add content for "Notifications".
-
-## Steps
-
-1. TODO
+---
 
 ## In this topic
 
-| Page                                    |     |
-| --------------------------------------- | --- |
-| [dashboard inbox](./dashboard-inbox.md) |     |
+| Page                                    | What you'll learn                |
+| --------------------------------------- | -------------------------------- |
+| [Dashboard inbox](./dashboard-inbox.md) | Bell menu and notification types |
+
+Notifications appear in the header on every dashboard page — there is no separate
+notifications route.
+
+---
 
 ## Related
 
-- See the topic index in this folder.
+- [Comments and activity](../work-items/comments-and-activity.md)
+- [Favorites and views](../navigation/favorites-and-views.md)

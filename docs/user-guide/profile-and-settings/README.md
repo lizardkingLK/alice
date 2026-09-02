@@ -1,23 +1,35 @@
 # Profile & settings
 
-**Status:** Stub
+Manage your identity, security, and preferences.
 
-**Audience:** All users
+**Audience:** All users (workspace integrations: admins)
 
-## Summary
-
-TODO: add content for "Profile & settings".
-
-## Steps
-
-1. TODO
+---
 
 ## In this topic
 
-| Page                              |     |
-| --------------------------------- | --- |
-| [edit profile](./edit-profile.md) |     |
+| Page                                                  | Who      | What you'll learn                    |
+| ----------------------------------------------------- | -------- | ------------------------------------ |
+| [Edit profile](./edit-profile.md)                     | Everyone | Name, avatar, cover, self-deactivate |
+| [Workspace integrations](./workspace-integrations.md) | Admin    | AI chat models and workspace tools   |
+
+---
+
+## Two surfaces
+
+| Surface      | Route       | Purpose                                                      |
+| ------------ | ----------- | ------------------------------------------------------------ |
+| **Profile**  | `/profile`  | Public-facing identity, teams, recent work, cover photo      |
+| **Settings** | `/settings` | Account tabs — general, security, notifications, preferences |
+
+From **Profile**, use **Manage your account** to jump to **Settings → General**.
+
+Project-level **GitHub** and **Jira** live on each project — see
+[Project integrations](../projects/project-integrations.md).
+
+---
 
 ## Related
 
-- See the topic index in this folder.
+- [Sign out](../sign-in-and-account/sign-out.md)
+- [Deactivate users](../users-and-access/deactivate-users.md) (admin)

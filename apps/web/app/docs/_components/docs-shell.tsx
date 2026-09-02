@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
 import { useSidebar } from '@repo/ui/components/ui/sidebar';
@@ -26,6 +27,13 @@ export function DocsShell({ sections, entries, children }: DocsShellProps) {
   const contentPadRem = 1.5;
   const fixedLeftRem = dashboardRailRem + contentPadRem;
   const articlePadRem = DOCS_INDEX_WIDTH_REM + DOCS_INDEX_GAP_REM;
+  const navViewportRef = useRef<HTMLDivElement | null>(null);
+
+  const captureNavViewport = useCallback((root: HTMLDivElement | null) => {
+    navViewportRef.current = root?.querySelector(
+      '[data-slot="scroll-area-viewport"]'
+    ) as HTMLDivElement | null;
+  }, []);
 
   return (
     <div className="relative">
@@ -47,8 +55,11 @@ export function DocsShell({ sections, entries, children }: DocsShellProps) {
         <div className="min-w-0 shrink-0">
           <DocsSearchDialog entries={entries} />
         </div>
-        <ScrollArea className="h-0 min-h-0 flex-1 pr-2">
-          <DocsNav sections={sections} />
+        <ScrollArea
+          ref={captureNavViewport}
+          className="h-0 min-h-0 flex-1 pr-2"
+        >
+          <DocsNav sections={sections} scrollViewportRef={navViewportRef} />
         </ScrollArea>
       </aside>
 

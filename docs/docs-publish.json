@@ -127,7 +127,7 @@
         {
           "path": "user-guide/projects/create-project.md",
           "order": 3,
-          "minimumRole": "manager"
+          "minimumRole": "admin"
         },
         {
           "path": "user-guide/projects/project-settings.md",

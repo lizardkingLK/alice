@@ -16,12 +16,13 @@ but they don't open the project registry.
 
 ## In this topic
 
-| Page                                    | What you'll learn                 |
-| --------------------------------------- | --------------------------------- |
-| [Browse projects](./browse-projects.md) | Find projects you can access      |
-| [Project members](./project-members.md) | Add or remove people on a project |
-
-Other project pages (create, settings, integrations) are documented separately.
+| Page                                              | What you'll learn                 |
+| ------------------------------------------------- | --------------------------------- |
+| [Browse projects](./browse-projects.md)           | Find projects you can access      |
+| [Create a project](./create-project.md)           | Add a new project (admins)        |
+| [Project settings](./project-settings.md)         | Edit project metadata             |
+| [Project members](./project-members.md)           | Add or remove people on a project |
+| [Project integrations](./project-integrations.md) | GitHub and Jira connections       |
 
 ---
 
@@ -38,10 +39,10 @@ with a link back to the list.
 
 ## Getting access to a project
 
-| Situation                        | What happens                                    |
-| -------------------------------- | ----------------------------------------------- |
-| You **create** a project         | You become the **owner** and see it in the list |
-| Someone **adds you** as a member | The project appears in your list                |
-| You're an **admin**              | All projects appear in the list                 |
+| Situation                        | What happens                                     |
+| -------------------------------- | ------------------------------------------------ |
+| An **admin creates** a project   | They become the **owner** and see it in the list |
+| Someone **adds you** as a member | The project appears in your list                 |
+| You're an **admin**              | All projects appear in the list                  |
 
 Ask a project owner or admin to add you under **Members** if you need access.

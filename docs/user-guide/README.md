@@ -9,13 +9,17 @@ environments only. In production you see this user guide in **Docs**.
 
 ## Start here
 
-| Topic                                                | Who it's for                                |
-| ---------------------------------------------------- | ------------------------------------------- |
-| [Sign in & account](./sign-in-and-account/README.md) | Everyone                                    |
-| [Users & access](./users-and-access/README.md)       | Admins (and members browsing the directory) |
-| [Projects](./projects/README.md)                     | Managers and admins                         |
-
-More topics (work items, board, notifications, and others) are being added.
+| Topic                                                  | Who it's for                                |
+| ------------------------------------------------------ | ------------------------------------------- |
+| [Sign in & account](./sign-in-and-account/README.md)   | Everyone                                    |
+| [Navigation](./navigation/README.md)                   | Everyone                                    |
+| [Users & access](./users-and-access/README.md)         | Admins (and members browsing the directory) |
+| [Projects](./projects/README.md)                       | Managers and admins                         |
+| [Work items](./work-items/README.md)                   | Everyone                                    |
+| [Board & planning](./board-and-planning/README.md)     | Everyone (sprints: managers+)               |
+| [Notifications](./notifications/README.md)             | Everyone                                    |
+| [Alice (AI chat)](./chat/README.md)                    | Everyone                                    |
+| [Profile & settings](./profile-and-settings/README.md) | Everyone (integrations: admin)              |
 
 ---
 
