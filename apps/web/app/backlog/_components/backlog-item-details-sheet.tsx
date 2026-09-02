@@ -237,12 +237,18 @@ export function BacklogItemDetailsSheet({
                   options={[
                     { value: 'backlog', label: 'Backlog' },
                     ...sprints
-                      .filter(
-                        (s) =>
+                      .filter((s) => {
+                        const sprintProjectId =
+                          s.project?.id ?? (s as { project_id?: string }).project_id;
+                        const isMatchingProject =
+                          !projectId ||
+                          (sprintProjectId ? sprintProjectId === projectId : true);
+                        const isAllowedStatusOrCurrent =
                           s.status === SprintStatusEnum.Planned ||
                           s.status === SprintStatusEnum.Active ||
-                          s.id === item?.sprint_id
-                      )
+                          s.id === item?.sprint_id;
+                        return isMatchingProject && isAllowedStatusOrCurrent;
+                      })
                       .map((s) => ({
                         value: s.id,
                         label: `${s.name} (${s.status})`,
