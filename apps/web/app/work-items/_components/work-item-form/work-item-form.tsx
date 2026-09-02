@@ -320,35 +320,40 @@ export function WorkItemForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form
+      onSubmit={handleSubmit}
+      className="flex min-h-0 flex-1 flex-col justify-between space-y-4 overflow-hidden"
+    >
       {!isEditMode && defaultSprintId ? (
         <input type="hidden" name="sprint_id" value={defaultSprintId} />
       ) : null}
 
-      {useModernLayout ? (
-        <WorkItemFormModernFields
-          {...fieldProps}
-          titleDefault={itemToEdit?.title ?? ''}
-          dueDateDefault={dueDateDefault}
-          lockDueDate={!isEditMode && lockDueDate}
-          storyPointsDefault={itemToEdit?.story_points ?? null}
-          labelsDefault={parseWorkItemLabels(itemToEdit?.labels)}
-          descriptionDefault={itemToEdit?.description ?? null}
-        />
-      ) : (
-        <WorkItemFormClassicFields
-          {...fieldProps}
-          titleDefault={itemToEdit?.title ?? ''}
-          dueDateDefault={dueDateDefault}
-          lockDueDate={!isEditMode && lockDueDate}
-          storyPointsDefault={itemToEdit?.story_points ?? null}
-          labelsDefault={parseWorkItemLabels(itemToEdit?.labels)}
-        />
-      )}
+      <div className="no-scrollbar flex-1 space-y-4 overflow-y-auto pr-1">
+        {useModernLayout ? (
+          <WorkItemFormModernFields
+            {...fieldProps}
+            titleDefault={itemToEdit?.title ?? ''}
+            dueDateDefault={dueDateDefault}
+            lockDueDate={!isEditMode && lockDueDate}
+            storyPointsDefault={itemToEdit?.story_points ?? null}
+            labelsDefault={parseWorkItemLabels(itemToEdit?.labels)}
+            descriptionDefault={itemToEdit?.description ?? null}
+          />
+        ) : (
+          <WorkItemFormClassicFields
+            {...fieldProps}
+            titleDefault={itemToEdit?.title ?? ''}
+            dueDateDefault={dueDateDefault}
+            lockDueDate={!isEditMode && lockDueDate}
+            storyPointsDefault={itemToEdit?.story_points ?? null}
+            labelsDefault={parseWorkItemLabels(itemToEdit?.labels)}
+          />
+        )}
 
-      <FormStatusAlerts error={state?.error} success={state?.success} />
+        <FormStatusAlerts error={state?.error} success={state?.success} />
+      </div>
 
-      <DialogFooter>
+      <DialogFooter className="shrink-0">
         {onClose ? (
           <Button
             type="button"
