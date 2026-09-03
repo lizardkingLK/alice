@@ -45,8 +45,6 @@ type SprintListProps = {
   };
   filterTab: 'active' | 'archived';
   // eslint-disable-next-line no-unused-vars
-  onTabChange?: (tab: 'active' | 'archived') => void;
-  // eslint-disable-next-line no-unused-vars
   onPageChange: (page: number) => void;
   // eslint-disable-next-line no-unused-vars
   onLimitChange: (limit: number) => void;
@@ -366,7 +364,6 @@ export function SprintList({
   sprints,
   pagination,
   filterTab,
-  onTabChange,
   onPageChange,
   onLimitChange,
   isLoading = false,
@@ -381,46 +378,16 @@ export function SprintList({
 
   return (
     <Card className="border-border bg-card/50 relative backdrop-blur-md">
-      <CardHeader className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <CardTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight">
-            <Calendar className="text-primary h-5 w-5" />
-            Sprints
-          </CardTitle>
-          <CardDescription className="text-muted-foreground text-sm">
-            {filterTab === 'active'
-              ? 'Active, upcoming, and completed sprints for your workspace.'
-              : 'Archived sprints.'}
-          </CardDescription>
-        </div>
-        {onTabChange && (
-          <div className="bg-muted/50 border-border text-muted-foreground inline-flex h-10 items-center justify-center rounded-md border p-1">
-            <Button
-              variant="ghost"
-              onClick={() => onTabChange('active')}
-              className={cn(
-                'h-8 cursor-pointer rounded-sm px-3 text-xs font-semibold transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
-                filterTab === 'active'
-                  ? 'bg-background text-foreground hover:bg-background shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
-              )}
-            >
-              Active
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => onTabChange('archived')}
-              className={cn(
-                'h-8 cursor-pointer rounded-sm px-3 text-xs font-semibold transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
-                filterTab === 'archived'
-                  ? 'bg-background text-foreground hover:bg-background shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
-              )}
-            >
-              Archived
-            </Button>
-          </div>
-        )}
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight">
+          <Calendar className="text-primary h-5 w-5" />
+          Sprints
+        </CardTitle>
+        <CardDescription className="text-muted-foreground text-sm">
+          {filterTab === 'active'
+            ? 'Active, upcoming, and completed sprints for your workspace.'
+            : 'Archived sprints.'}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <SprintListContent
