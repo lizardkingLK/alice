@@ -15,6 +15,7 @@ import {
 } from '@/app/work-items/_services/work-items.reads.server';
 import { getDbUser } from '@/lib/auth';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
+import { listAccessibleProjectIds } from '@/lib/projects/project-workspace-access';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 
 export type BacklogWorkspaceData = {
@@ -35,11 +36,34 @@ export async function getBacklogWorkspace(): Promise<BacklogWorkspaceData> {
   const dbUser = await getDbUser();
   const userRole = dbUser?.role ?? 'member';
 
+  const accessibleProjects = dbUser
+    ? await listAccessibleProjectIds(dbUser.id, dbUser.role)
+    : [];
+
+  let initialWorkItemsFilters:
+    | { projectIds: string[] }
+    | null
+    | undefined;
+
+  if (accessibleProjects === 'all') {
+    initialWorkItemsFilters = undefined;
+  } else if (accessibleProjects.length > 0) {
+    initialWorkItemsFilters = { projectIds: accessibleProjects };
+  } else {
+    initialWorkItemsFilters = null;
+  }
+
   const [projects, projectMembers, initialWorkItems, sprintsResult] =
     await Promise.all([
       safeServerFetch(getProjectList(), [], 'fetch projects for backlog'),
       safeServerFetch(getUserList(), [], 'fetch users for backlog'),
-      safeServerFetch(getWorkItems(), [], 'fetch work items for backlog'),
+      initialWorkItemsFilters === null
+        ? Promise.resolve([])
+        : safeServerFetch(
+            getWorkItems(initialWorkItemsFilters),
+            [],
+            'fetch work items for backlog'
+          ),
       getSprintsPaginatedServer('active', 1, 100).catch((error: unknown) => {
         fetchError =
           error instanceof Error
@@ -50,20 +74,30 @@ export async function getBacklogWorkspace(): Promise<BacklogWorkspaceData> {
       }),
     ]);
 
-  const activeProjects = filterActiveProjects(projects);
+  const visibleProjects =
+    accessibleProjects === 'all'
+      ? projects
+      : projects.filter((project) => accessibleProjects.includes(project.id));
+
+  const activeProjects = filterActiveProjects(visibleProjects);
+
+  const sprints =
+    accessibleProjects === 'all'
+      ? sprintsResult.sprints
+      : sprintsResult.sprints.filter(
+          (sprint) =>
+            sprint.project?.id && accessibleProjects.includes(sprint.project.id)
+        );
+
   const suggestedDefaults = dbUser
-    ? await getSuggestedBoardDefaults(
-        dbUser,
-        activeProjects,
-        sprintsResult.sprints
-      )
+    ? await getSuggestedBoardDefaults(dbUser, activeProjects, sprints)
     : null;
 
   return {
     projects: activeProjects,
     projectMembers,
     initialWorkItems,
-    sprints: sprintsResult.sprints,
+    sprints,
     userRole,
     currentUserId: dbUser?.id,
     suggestedDefaults,
