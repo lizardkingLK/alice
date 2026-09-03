@@ -5,6 +5,7 @@ import {
   createContext,
   isValidElement,
   useContext,
+  useMemo,
   type ComponentPropsWithoutRef,
   type ReactElement,
   type ReactNode,
@@ -14,19 +15,31 @@ import type { Components } from 'react-markdown';
 import { DocsMermaid } from '@/app/docs/_components/docs-mermaid';
 import { rewriteDocsMarkdownHref } from '@/lib/docs/docs-shared';
 
-const DocsMarkdownSlugContext = createContext('');
+type DocsMarkdownLinkContextValue = {
+  readonly slug: string;
+  readonly path: string;
+};
+
+const DocsMarkdownLinkContext = createContext<DocsMarkdownLinkContextValue>({
+  slug: '',
+  path: '',
+});
 
 export function DocsMarkdownSlugProvider({
   slug,
+  path,
   children,
 }: {
   readonly slug: string;
+  readonly path: string;
   readonly children: ReactNode;
 }) {
+  const value = useMemo(() => ({ slug, path }), [slug, path]);
+
   return (
-    <DocsMarkdownSlugContext.Provider value={slug}>
+    <DocsMarkdownLinkContext.Provider value={value}>
       {children}
-    </DocsMarkdownSlugContext.Provider>
+    </DocsMarkdownLinkContext.Provider>
   );
 }
 
@@ -50,9 +63,9 @@ function DocsMarkdownAnchor({
   href,
   children,
   ...props
-}: ComponentPropsWithoutRef<'a'>) {
-  const slug = useContext(DocsMarkdownSlugContext);
-  const nextHref = rewriteDocsMarkdownHref(href ?? '', slug);
+}: Readonly<ComponentPropsWithoutRef<'a'>>) {
+  const { slug, path } = useContext(DocsMarkdownLinkContext);
+  const nextHref = rewriteDocsMarkdownHref(href ?? '', slug, path);
   const isInternal = nextHref.startsWith('/docs');
 
   if (isInternal) {
@@ -95,7 +108,7 @@ function DocsMarkdownCode({
   className,
   children,
   ...props
-}: ComponentPropsWithoutRef<'code'>) {
+}: Readonly<ComponentPropsWithoutRef<'code'>>) {
   const isBlock = Boolean(className);
   if (isBlock) {
     return (

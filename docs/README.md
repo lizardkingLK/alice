@@ -80,6 +80,14 @@ Authentication and authorization. Index: [auth/README.md](./auth/README.md).
 - Account deactivation / offboarding: [features/users/ACCOUNT_DEACTIVATION.md](./features/users/ACCOUNT_DEACTIVATION.md) (phase 1 implemented)
 - User membership pending → active: [features/users/USER_MEMBERSHIP_STATUS.md](./features/users/USER_MEMBERSHIP_STATUS.md) (**Plan**)
 
+### User guide (in-app, production)
+
+Product-facing help shown in `/docs` when `NODE_ENV=production`. Curated via
+[`docs-publish.json`](./docs-publish.json); full tree still available in local dev.
+
+- Index: [user-guide/README.md](./user-guide/README.md)
+- Topics: getting started, work items, board, projects, users & access
+
 ### Guides
 
 How we work day to day.

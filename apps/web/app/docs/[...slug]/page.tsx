@@ -5,31 +5,20 @@ import {
   DocsPageFrame,
   DOCS_ROBOTS,
 } from '@/app/docs/_components/docs-page-frame';
-import {
-  docHref,
-  getDocBySlug,
-  getDocsIndex,
-  getDocsSections,
-} from '@/app/docs/_lib/docs';
+import { docHref, getDocBySlug, getDocsSections } from '@/app/docs/_lib/docs';
 import { flattenDocsEntries, getAdjacentDocs } from '@/lib/docs/docs-shared';
+
+export const dynamic = 'force-dynamic';
 
 type DocsSlugPageProps = {
   readonly params: Promise<{ slug: string[] }>;
 };
 
-export async function generateStaticParams() {
-  return getDocsIndex()
-    .filter((entry) => entry.slug !== 'index')
-    .map((entry) => ({
-      slug: entry.slug.split('/'),
-    }));
-}
-
 export async function generateMetadata({
   params,
 }: DocsSlugPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const doc = getDocBySlug(slug);
+  const doc = await getDocBySlug(slug);
   return {
     title: doc ? `${doc.entry.title} · Docs` : 'Docs',
     robots: DOCS_ROBOTS,
@@ -38,14 +27,15 @@ export async function generateMetadata({
 
 export default async function DocsSlugPage({ params }: DocsSlugPageProps) {
   const { slug } = await params;
-  const doc = getDocBySlug(slug);
+  const doc = await getDocBySlug(slug);
   if (!doc) {
     notFound();
   }
 
+  const sections = await getDocsSections();
   const { previous, next } = getAdjacentDocs(
     doc.entry.slug,
-    flattenDocsEntries(getDocsSections())
+    flattenDocsEntries(sections)
   );
 
   return (
@@ -63,6 +53,7 @@ export default async function DocsSlugPage({ params }: DocsSlugPageProps) {
         title={doc.entry.title}
         section={doc.entry.section}
         slug={doc.entry.slug}
+        path={doc.entry.path}
         markdown={doc.markdown}
         previous={previous}
         next={next}

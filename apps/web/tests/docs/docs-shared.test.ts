@@ -2,15 +2,22 @@ import { describe, expect, it } from 'vitest';
 import {
   buildDocsIndexEntry,
   docHref,
+  filterDocsByVisibility,
   filterDocsIndex,
   flattenDocsEntries,
   getAdjacentDocs,
   groupDocsBySection,
+  groupDocsByUserGuideTopics,
   pathToSlug,
   rewriteDocsMarkdownHref,
   sectionFromPath,
   type DocsIndexEntry,
 } from '@/lib/docs/docs-shared';
+import {
+  adminUserGuideEnrichment,
+  memberUserGuideEnrichment,
+  userGuideTestEntry,
+} from '@/tests/docs/docs-test-helpers';
 
 describe('docs-shared path helpers', () => {
   it('maps README paths to index and folder slugs', () => {
@@ -69,6 +76,39 @@ describe('rewriteDocsMarkdownHref', () => {
       '#heading'
     );
   });
+
+  it('rewrites links from folder README slugs using the slug as the directory', () => {
+    expect(rewriteDocsMarkdownHref('./board/README.md', 'user-guide')).toBe(
+      '/docs/user-guide/board'
+    );
+    expect(
+      rewriteDocsMarkdownHref('./getting-started/README.md', 'user-guide')
+    ).toBe('/docs/user-guide/getting-started');
+  });
+
+  it('rewrites sibling links from nested topic README pages', () => {
+    const slug = 'user-guide/sign-in-and-account';
+    const path = 'user-guide/sign-in-and-account/README.md';
+
+    expect(rewriteDocsMarkdownHref('./email-sign-in.md', slug, path)).toBe(
+      '/docs/user-guide/sign-in-and-account/email-sign-in'
+    );
+    expect(rewriteDocsMarkdownHref('./google-sign-in.md', slug, path)).toBe(
+      '/docs/user-guide/sign-in-and-account/google-sign-in'
+    );
+  });
+
+  it('rewrites sibling links from nested topic leaf pages', () => {
+    const slug = 'user-guide/sign-in-and-account/email-sign-in';
+    const path = 'user-guide/sign-in-and-account/email-sign-in.md';
+
+    expect(rewriteDocsMarkdownHref('./google-sign-in.md', slug, path)).toBe(
+      '/docs/user-guide/sign-in-and-account/google-sign-in'
+    );
+    expect(
+      rewriteDocsMarkdownHref('../users-and-access/README.md', slug, path)
+    ).toBe('/docs/user-guide/users-and-access');
+  });
 });
 
 describe('buildDocsIndexEntry and filterDocsIndex', () => {
@@ -83,6 +123,7 @@ describe('buildDocsIndexEntry and filterDocsIndex', () => {
     expect(entry.slug).toBe('auth/AUTHENTICATION');
     expect(entry.title).toBe('Authentication');
     expect(entry.section).toBe('Auth');
+    expect(entry.audience).toBe('dev');
     expect(entry.bodyText.toLowerCase()).toContain('email');
     expect(entry.bodyText).not.toContain('**');
   });
@@ -133,5 +174,37 @@ describe('getAdjacentDocs', () => {
       previous: null,
       next: null,
     });
+  });
+});
+
+describe('docs publish visibility', () => {
+  const devEntry = buildDocsIndexEntry(
+    'guides/SONAR.md',
+    '# Sonar\n\nQuality.'
+  );
+  const userEntry = userGuideTestEntry(
+    'user-guide/work-items/README.md',
+    '# Work items\n\nTrack tasks.',
+    memberUserGuideEnrichment('Work items', 2, 1)
+  );
+
+  it('shows only user-guide entries in production mode', () => {
+    const visible = filterDocsByVisibility([devEntry, userEntry], false);
+    expect(visible).toHaveLength(1);
+    expect(visible[0]?.slug).toBe('user-guide/work-items');
+  });
+
+  it('groups user-guide entries by manifest topic in production nav order', () => {
+    const accessEntry = userGuideTestEntry(
+      'user-guide/access/README.md',
+      '# Users & access\n\nAdmission.',
+      adminUserGuideEnrichment('Users & access', 5, 1)
+    );
+
+    const groups = groupDocsByUserGuideTopics([userEntry, accessEntry]);
+    expect(groups.map((group) => group.section)).toEqual([
+      'Work items',
+      'Users & access',
+    ]);
   });
 });

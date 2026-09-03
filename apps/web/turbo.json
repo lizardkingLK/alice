@@ -12,7 +12,8 @@
       "inputs": [
         "$TURBO_ROOT$/docs/**",
         "scripts/docs-sync.mjs",
-        "lib/docs/docs-shared.ts"
+        "lib/docs/docs-shared.ts",
+        "lib/docs/docs-publish.ts"
       ],
       "outputs": ["content/docs/**", "content/docs-index.json"]
     }
