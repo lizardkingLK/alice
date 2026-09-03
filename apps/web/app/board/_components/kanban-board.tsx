@@ -216,12 +216,12 @@ export function KanbanBoard({
 
   const boardFilterFieldIds = useMemo(() => {
     const fields: Array<'project' | 'sprint' | 'priority'> = [];
-    if (allowAllFilters) {
+    if (allowAllFilters || projects.length > 0) {
       fields.push('project');
     }
     fields.push('sprint', 'priority');
     return fields;
-  }, [allowAllFilters]);
+  }, [allowAllFilters, projects.length]);
 
   const priorityQuery = useMemo<FilterQuery>(
     () => ({
@@ -257,7 +257,8 @@ export function KanbanBoard({
 
       const params = new URLSearchParams(searchParams.toString());
 
-      if (allowAllFilters) {
+      const canFilterProject = allowAllFilters || projects.length > 0;
+      if (canFilterProject) {
         applyWorkItemsProjectSprintDraftToSearchParams(params, draft, {
           allValue: projectAllValue,
           applyProject: true,
@@ -293,6 +294,7 @@ export function KanbanBoard({
       allowAllFilters,
       pathname,
       projectAllValue,
+      projects.length,
       router,
       searchParams,
       setProjectFilterValue,
@@ -610,7 +612,7 @@ export function KanbanBoard({
             labelsQuery={IDLE_FILTER_QUERY}
             priorityQuery={priorityQuery}
             visibleFieldIds={boardFilterFieldIds}
-            isProjectLocked={!allowAllFilters}
+            isProjectLocked={!allowAllFilters && projects.length === 0}
             isAssigneeLocked
             onApplyFilters={handleApplyFilters}
             hasActiveFilters={hasDialogFilters}
