@@ -347,6 +347,7 @@ export function WorkItemForm({
             lockDueDate={!isEditMode && lockDueDate}
             storyPointsDefault={itemToEdit?.story_points ?? null}
             labelsDefault={parseWorkItemLabels(itemToEdit?.labels)}
+            descriptionDefault={itemToEdit?.description ?? null}
           />
         )}
 

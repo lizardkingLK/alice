@@ -72,6 +72,7 @@ describe('WorkItemForm', () => {
 
     // Assert
     expect(screen.getByLabelText(/^Title$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Description$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^Project$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^Type$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Priority/i)).toBeInTheDocument();
@@ -286,6 +287,7 @@ describe('WorkItemForm', () => {
 
     // Assert — populated
     expect(screen.getByLabelText(/^Title$/i)).toHaveValue('Original title');
+    expect(screen.getByLabelText(/^Description$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Priority/i)).toHaveTextContent('Medium');
     expect(screen.getByLabelText(/Due date/i)).toHaveValue('2026-07-20');
     expect(screen.getByLabelText(/Story points/i)).toHaveValue(5);

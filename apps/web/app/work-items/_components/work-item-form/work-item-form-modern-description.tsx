@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
+import { TooltipProvider } from '@repo/ui/components/ui/tooltip';
 import { createEditorExtensions } from '@/lib/editor/create-editor-extensions';
 import {
   getCompactEditorAttributes,
@@ -13,6 +14,7 @@ type WorkItemFormModernDescriptionProps = {
   // eslint-disable-next-line no-unused-vars -- callback for FormData sync
   readonly onJsonChange: (json: string | null) => void;
   readonly initialContent?: unknown;
+  readonly id?: string;
 };
 
 /**
@@ -22,6 +24,7 @@ type WorkItemFormModernDescriptionProps = {
 export function WorkItemFormModernDescription({
   onJsonChange,
   initialContent = null,
+  id,
 }: Readonly<WorkItemFormModernDescriptionProps>) {
   const editor = useEditor({
     immediatelyRender: false,
@@ -31,11 +34,14 @@ export function WorkItemFormModernDescription({
     }),
     content: initialContent ?? '',
     editorProps: {
-      attributes: getCompactEditorAttributes({
-        ariaLabel: 'Description',
-        size: 'lg',
-        className: MODERN_BORDERLESS_FOCUS_CLASSES,
-      }),
+      attributes: {
+        ...getCompactEditorAttributes({
+          ariaLabel: 'Description',
+          size: 'lg',
+          className: MODERN_BORDERLESS_FOCUS_CLASSES,
+        }),
+        ...(id ? { id } : {}),
+      },
     },
   });
 
@@ -62,6 +68,7 @@ export function WorkItemFormModernDescription({
   if (!editor) {
     return (
       <div
+        id={id}
         className="text-muted-foreground/70 min-h-16 px-3 py-2 text-lg"
         aria-label="Description"
       >
@@ -71,9 +78,11 @@ export function WorkItemFormModernDescription({
   }
 
   return (
-    <div className="relative">
-      <CompactEditorBubbleToolbar editor={editor} />
-      <EditorContent editor={editor} />
-    </div>
+    <TooltipProvider delayDuration={200}>
+      <div className="relative">
+        <CompactEditorBubbleToolbar editor={editor} />
+        <EditorContent editor={editor} />
+      </div>
+    </TooltipProvider>
   );
 }
