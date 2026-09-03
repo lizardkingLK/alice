@@ -3,7 +3,9 @@ import {
   UserRoleEnum,
   RecordStatusEnum,
   OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE,
+  EMAIL_ALLOWLIST_DOMAIN_CONFLICT_MESSAGE,
   isOwnAllowlistDomainLockout,
+  emailDomainFromAddress,
 } from '@repo/types';
 import {
   AccessAllowlistRepository,
@@ -12,6 +14,7 @@ import {
   type AccessAllowlistStatus,
 } from './accessAllowlist.repository';
 import { notifyAllowlistedEmail } from './notify-allowlisted-email';
+import type { AccessRequestsService } from '../accessRequests/accessRequests.service';
 
 async function requireAdmin(actorId: string) {
   return await requireUserWithRole(
@@ -56,19 +59,22 @@ export type CreateAccessAllowlistInput = {
   value: string;
   label?: string | null;
   expires_at?: string | null;
+  allowed_project_ids?: string[] | null;
   status?: AccessAllowlistStatus;
 };
 
 export type UpdateAccessAllowlistInput = {
   label?: string | null;
   expires_at?: string | null;
+  allowed_project_ids?: string[] | null;
   status?: AccessAllowlistStatus;
   expectedUpdatedAt: string;
 };
 
 export class AccessAllowlistService {
   constructor(
-    private readonly accessAllowlistRepository: AccessAllowlistRepository
+    private readonly accessAllowlistRepository: AccessAllowlistRepository,
+    private readonly accessRequestsService?: AccessRequestsService
   ) {}
 
   async requireAdminAllowlistEntry(
@@ -93,16 +99,35 @@ export class AccessAllowlistService {
   ): Promise<AccessAllowlistRow> {
     await requireAdmin(actorId);
 
+    if (input.kind === 'email') {
+      const domain = emailDomainFromAddress(input.value);
+      if (domain) {
+        const domainRow =
+          await this.accessAllowlistRepository.findActiveDomainByValue(domain);
+        if (domainRow) {
+          throw new Error(EMAIL_ALLOWLIST_DOMAIN_CONFLICT_MESSAGE);
+        }
+      }
+    }
+
     const entry = await this.accessAllowlistRepository.create({
       actorId,
       kind: input.kind,
       value: input.value,
       label: input.label,
       expires_at: input.expires_at,
+      allowed_project_ids: input.allowed_project_ids,
       status: input.status ?? RecordStatusEnum.active,
     });
 
     await notifyIfEmailAllowlisted(entry);
+
+    if (entry.kind === 'email' && this.accessRequestsService) {
+      await this.accessRequestsService.markGrantedForEmail(
+        actorId,
+        entry.value
+      );
+    }
 
     return entry;
   }
@@ -125,6 +150,7 @@ export class AccessAllowlistService {
       id,
       label: input.label,
       expires_at: input.expires_at,
+      allowed_project_ids: input.allowed_project_ids,
       status: input.status,
       expectedUpdatedAt: input.expectedUpdatedAt,
     });
@@ -134,6 +160,12 @@ export class AccessAllowlistService {
       previous.status !== RecordStatusEnum.active
     ) {
       await notifyIfEmailAllowlisted(entry);
+      if (entry.kind === 'email' && this.accessRequestsService) {
+        await this.accessRequestsService.markGrantedForEmail(
+          actorId,
+          entry.value
+        );
+      }
     }
 
     return entry;

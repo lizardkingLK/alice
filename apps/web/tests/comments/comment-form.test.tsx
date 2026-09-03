@@ -4,9 +4,9 @@ import { CommentsFeed } from '@/app/comments/_components/comments-feed';
 import type {
   CommentItem,
   CommentWorkItemOption,
-} from '@/app/comments/_services/comments.service';
+} from '@/app/comments/_services/comments.mutations.client';
 import { createCommentAction } from '@/app/comments/_components/actions';
-import { updateComment } from '@/app/comments/_services/comments.service';
+import { updateComment } from '@/app/comments/_services/comments.mutations.client';
 import { userFactory } from '../factories/user.factory';
 import { projectFactory } from '../factories/project.factory';
 import { workItemFactory } from '../factories/workItem.factory';
@@ -14,13 +14,33 @@ import { commentFactory } from '../factories/comment.factory';
 import { formatDateToISOString } from '@/app/_shared/utility';
 import { plainTextToCommentDoc } from '@repo/types';
 
-const mockOrder = vi.fn();
-const mockEq = vi.fn(() => ({ order: mockOrder }));
-const mockSelect = vi.fn(() => ({ eq: mockEq }));
-const mockFrom = vi.fn(() => ({ select: mockSelect }));
-const mockGetUser = vi.fn();
+const { mockOrder, mockGetUser } = vi.hoisted(() => ({
+  mockOrder: vi
+    .fn()
+    .mockImplementation(() => Promise.resolve({ data: [], error: null })),
+  mockGetUser: vi
+    .fn()
+    .mockImplementation(() =>
+      Promise.resolve({ data: { user: null }, error: null })
+    ),
+}));
 
 vi.mock('@/lib/supabase/client', () => {
+  const mockQueryBuilder = {
+    eq: vi.fn().mockImplementation(() => mockQueryBuilder),
+    in: vi.fn().mockImplementation(() => mockQueryBuilder),
+    order: mockOrder,
+    maybeSingle: vi
+      .fn()
+      .mockImplementation(() => Promise.resolve({ data: null, error: null })),
+    // eslint-disable-next-line no-unused-vars
+    then: (resolve: (_data: { data: unknown[]; error: null }) => void) =>
+      resolve({ data: [], error: null }),
+  };
+
+  const mockSelect = vi.fn().mockImplementation(() => mockQueryBuilder);
+  const mockFrom = vi.fn().mockImplementation(() => ({ select: mockSelect }));
+
   return {
     createClient: vi.fn(() => ({
       from: mockFrom,
@@ -37,18 +57,21 @@ vi.mock('@/app/comments/_components/actions', () => {
   };
 });
 
-vi.mock('@/app/comments/_services/comments.service', async (importOriginal) => {
-  const actual =
-    await importOriginal<
-      typeof import('@/app/comments/_services/comments.service')
-    >();
-  return {
-    ...actual,
-    updateComment: vi.fn(),
-    archiveComment: vi.fn(),
-    restoreComment: vi.fn(),
-  };
-});
+vi.mock(
+  '@/app/comments/_services/comments.mutations.client',
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import('@/app/comments/_services/comments.mutations.client')
+      >();
+    return {
+      ...actual,
+      updateComment: vi.fn(),
+      archiveComment: vi.fn(),
+      restoreComment: vi.fn(),
+    };
+  }
+);
 
 vi.mock('@/app/comments/_components/comment-editor', async () => {
   const { MockCommentEditor } = await import('./mock-comment-editor');

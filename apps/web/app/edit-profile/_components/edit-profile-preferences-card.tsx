@@ -45,8 +45,8 @@ export function EditProfilePreferencesCard() {
               Modern work item create
             </Label>
             <p className="text-muted-foreground text-xs">
-              Use a Linear/Jira-style create dialog instead of the classic
-              labeled form.
+              Use a compact create dialog with quick fields instead of the full
+              form layout.
             </p>
           </div>
           <Switch

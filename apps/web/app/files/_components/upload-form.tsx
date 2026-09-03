@@ -20,7 +20,7 @@ import {
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { formatFileSize } from '@/app/_shared/utility';
-import { apiFetch } from '@/lib/api/api-client';
+import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import { createClient } from '@/lib/supabase/client';
 import { UploadStatusIcon } from '@/components/upload-status-icon';
 

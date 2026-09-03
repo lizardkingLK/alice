@@ -2,17 +2,16 @@
 
 import { useEffect } from 'react';
 import { toast } from '@repo/ui/components/ui/sonner';
-import { forceUpdateComment } from '@/app/comments/_services/comments.service';
-import { forceUpdateProject } from '@/app/projects/_services/projects.service';
+import { forceUpdateComment } from '@/app/comments/_services/comments.mutations.client';
+import { forceUpdateProject } from '@/app/projects/_services/projects.mutations.client';
 import {
   forceUpdateSprint,
   forceUpdateSprintStatus,
-} from '@/app/sprints/_services/sprints.service';
-import { forceUpdateTeam } from '@/app/manager/_services/teams.service';
-import { forceUpdateUser } from '@/app/users/_services/users.service';
-import { forceUpdateAccessAllowlistEntry } from '@/app/access-allowlist/_services/accessAllowlist.service';
-import { forceUpdateWorkItemFields } from '@/app/work-items/_services/workItem.service.client';
-import { apiFetch } from '@/lib/api/api-client';
+} from '@/app/sprints/_services/sprints.mutations.client';
+import { forceUpdateTeam } from '@/app/manager/_services/teams.mutations.client';
+import { forceUpdateAccessAllowlistEntry } from '@/app/access-allowlist/_services/access-allowlist.mutations.client';
+import { forceUpdateWorkItemFields } from '@/app/work-items/_services/work-items.mutations.client';
+import { resolveUserOptimisticConflict } from '@/lib/optimistic-lock/resolve-user-conflict';
 import { clearOptimisticPending } from '@/lib/optimistic-lock/pending-storage';
 import type { OptimisticLockEntityType } from '@repo/types';
 
@@ -60,21 +59,11 @@ async function applyOptimisticResolution(detail: ResolveDetail): Promise<void> {
       await forceUpdateTeam(entityId, pendingFields, expectedUpdatedAt);
       break;
     case 'user':
-      if (
-        pendingFields.name !== undefined ||
-        pendingFields.role !== undefined
-      ) {
-        await forceUpdateUser(entityId, pendingFields, expectedUpdatedAt);
-      } else if (pendingFields.profile_picture !== undefined) {
-        throw new Error(
-          'Profile picture conflicts must be resolved by uploading again.'
-        );
-      } else {
-        await apiFetch(`/api/profile`, {
-          method: 'PATCH',
-          body: JSON.stringify({ ...pendingFields, expectedUpdatedAt }),
-        });
-      }
+      await resolveUserOptimisticConflict(
+        entityId,
+        pendingFields,
+        expectedUpdatedAt
+      );
       break;
     case 'access_allowlist':
       await forceUpdateAccessAllowlistEntry(

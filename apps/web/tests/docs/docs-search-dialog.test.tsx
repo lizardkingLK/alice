@@ -20,6 +20,7 @@ const ENTRIES: DocsIndexEntry[] = [
     path: 'guides/SONAR.md',
     excerpt: 'Quality gates and duplication.',
     bodyText: 'Quality gates and duplication.',
+    audience: 'dev',
   },
   {
     slug: 'features/board',
@@ -28,6 +29,7 @@ const ENTRIES: DocsIndexEntry[] = [
     path: 'features/board/README.md',
     excerpt: 'Kanban board defaults.',
     bodyText: 'Kanban board defaults.',
+    audience: 'dev',
   },
 ];
 

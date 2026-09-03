@@ -7,11 +7,12 @@ import {
   softDeleteProject as apiSoftDeleteProject,
   restoreProject as apiRestoreProject,
   hardDeleteProject as apiHardDeleteProject,
-} from '../_services/projects.service.server';
+} from '../_services/projects.reads.server';
 import {
   parseProjectForm,
   requireProjectManager,
 } from '@/lib/projects/admin-project';
+import { requireAdmin } from '@/lib/rbac/require-role';
 import {
   actionFailure,
   actionSuccess,
@@ -54,13 +55,19 @@ export async function createProject(
   _prevState: ActionState | null,
   formData: FormData
 ): Promise<ActionState & { projectId?: string }> {
-  return runProjectMutation(async () => {
+  const permission = await requireAdmin(
+    'Unauthorized. Only administrators can create projects.'
+  );
+  if (!permission.allowed) {
+    return actionFailure(permission.error);
+  }
+
+  try {
     const parsed = parseProjectForm(formData);
     if (!parsed.ok) {
       return parsed.state;
     }
 
-    // Call API backend
     const project = await apiCreateProject({
       name: parsed.data.name,
       key: parsed.data.key,
@@ -77,7 +84,9 @@ export async function createProject(
 
     revalidateProjects(project.id);
     return { ...actionSuccess(), projectId: project.id };
-  });
+  } catch (err) {
+    return unexpectedActionError(err);
+  }
 }
 
 export async function updateProject(

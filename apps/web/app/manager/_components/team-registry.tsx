@@ -29,7 +29,7 @@ import { hardDeleteTeam } from './actions';
 import {
   softDeleteTeam as clientSoftDeleteTeam,
   restoreTeam as clientRestoreTeam,
-} from '../_services/teams.service';
+} from '../_services/teams.mutations.client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runRegistryLockedAction } from '@/lib/optimistic-lock/run-locked-mutation';
 import { Users, Shield, Plus, Search, FolderOpen } from '@repo/ui/lib/icons';
@@ -48,12 +48,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@repo/ui/components/ui/select';
-import type { Team } from '../_services/teams.service';
-import type { User } from '@/app/users/_services/users.service';
+import type { Team } from '../_services/teams.mutations.client';
+import type { User } from '@/app/users/_services/users.mutations.client';
 import type {
   Project,
   ProjectMembersByProjectId,
-} from '@/app/projects/_services/projects.service.base';
+} from '@/app/projects/_services/projects.mutations.shared';
 
 type TeamTab = 'active' | 'inactive' | 'archived';
 
@@ -415,7 +415,7 @@ export function TeamRegistry({
                 setTeamToEdit(null);
                 setIsAddTeamOpen(true);
               }}
-              className="flex h-10 w-32 shrink-0 cursor-pointer items-center justify-center px-6 text-xs font-semibold shadow-md duration-300 hover:shadow-lg"
+              className="flex h-10 w-32 shrink-0 cursor-pointer items-center justify-center rounded-lg px-6 text-xs font-semibold shadow-md duration-300 hover:shadow-lg"
             >
               <Plus className="mr-1.5 h-4 w-4 shrink-0" />
               Add Team
@@ -461,7 +461,7 @@ export function TeamRegistry({
 
       {isAddTeamOpen || teamToEdit ? (
         <div className="bg-background/80 animate-in fade-in fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm duration-300">
-          <div className="w-full max-w-xl">
+          <div className="flex max-h-[85vh] sm:max-h-[90vh] w-full max-w-xl flex-col">
             <TeamForm
               users={users}
               activeProjects={activeProjects}

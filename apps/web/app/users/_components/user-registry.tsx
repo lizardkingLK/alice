@@ -45,15 +45,16 @@ import {
   Users,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
-import { formatDate, getInitials } from '@/app/_shared/utility';
+import { formatDate } from '@/app/_shared/utility';
 import { Pagination } from '@/components/pagination';
 import { DataTable } from '@/components/data-table';
+import { UserAvatar } from '@/components/user-avatar';
 import { SearchInput } from '@/components/search-input';
 import { DismissibleError } from '@/components/dismissible-error';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
-import { toggleUserActive } from '../_services/users.service';
-import type { User } from '../_services/users.service';
+import { toggleUserActive } from '../_services/users.mutations.client';
+import type { User } from '../_services/users.mutations.client';
 import { UserForm } from './user-form';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutation } from '@/lib/optimistic-lock/run-locked-mutation';
@@ -138,16 +139,20 @@ function UserCell({
 
   return (
     <div className="flex min-w-56 items-center gap-3">
-      <div
+      <UserAvatar
+        name={usr.name}
+        imageUrl={usr.profile_picture}
         className={cn(
-          'flex size-9 shrink-0 items-center justify-center rounded-full border text-xs font-semibold',
-          usr.active
-            ? 'bg-primary/10 text-primary border-primary/20'
-            : 'bg-muted text-muted-foreground border-muted-foreground/20'
+          'size-9',
+          usr.active ? 'border-primary/20' : 'border-muted-foreground/20'
         )}
-      >
-        {getInitials(usr.name)}
-      </div>
+        fallbackClassName={cn(
+          'text-xs',
+          usr.active
+            ? 'bg-primary/10 text-primary'
+            : 'bg-muted text-muted-foreground'
+        )}
+      />
       <div className="min-w-0 space-y-0.5">
         <div className="flex items-center gap-2">
           <span

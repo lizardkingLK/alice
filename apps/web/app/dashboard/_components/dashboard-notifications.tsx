@@ -16,6 +16,7 @@ import {
   InboxIcon,
   X,
   Layers,
+  Inbox,
 } from '@repo/ui/lib/icons';
 import {
   DropdownMenu,
@@ -25,6 +26,7 @@ import {
 import { cn } from '@repo/ui/lib/utils';
 import { Button } from '@repo/ui/components/ui/button';
 import { resolveNotificationHref } from '@/lib/notifications/resolve-notification-href';
+import { extractEmailFromAccessRequestMessage } from '@/lib/notifications/access-request-message';
 import {
   Dialog,
   DialogContent,
@@ -44,6 +46,8 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   sprint: Calendar,
   due_date: AlertCircle,
   view_shared: Layers,
+  chat_processed: MessageSquare,
+  access_request: Inbox,
   default: Bell,
 };
 
@@ -60,6 +64,10 @@ const iconColorMap: Record<string, string> = {
     'text-rose-500 bg-rose-500/10 border-rose-500/20 dark:bg-rose-500/20',
   view_shared:
     'text-amber-500 bg-amber-500/10 border-amber-500/20 dark:bg-amber-500/20',
+  chat_processed:
+    'text-indigo-500 bg-indigo-500/10 border-indigo-500/20 dark:bg-indigo-500/20',
+  access_request:
+    'text-orange-500 bg-orange-500/10 border-orange-500/20 dark:bg-orange-500/20',
   default: 'text-muted-foreground bg-muted border-border',
 };
 
@@ -126,6 +134,10 @@ function removeNotificationFromList(
     }
   }
   return result;
+}
+
+function extractEmailFromNotification(message: string): string | null {
+  return extractEmailFromAccessRequestMessage(message);
 }
 
 export function NotificationInbox({
@@ -301,10 +313,23 @@ export function NotificationInbox({
       await handleMarkAsRead(notif.id);
     }
     const isAccessRequest =
-      notif.related_item_id === null &&
-      (notif.message.includes('Access request') ||
-        notif.message.includes('Access Request'));
+      notif.type === 'access_request' ||
+      (notif.related_item_id === null &&
+        (notif.message.includes('Access request') ||
+          notif.message.includes('Access Request')));
     if (isAccessRequest) {
+      if (notif.type === 'access_request' && notif.related_item_id) {
+        const email = extractEmailFromNotification(notif.message);
+        const params = new URLSearchParams({
+          tab: 'requests',
+          requestId: notif.related_item_id,
+        });
+        if (email) {
+          params.set('addEmail', email);
+        }
+        router.push(`/users?${params.toString()}`);
+        return;
+      }
       setSelectedAccessRequest(notif);
       return;
     }
@@ -375,7 +400,7 @@ export function NotificationInbox({
         iconMap.default ||
         Bell) as React.ComponentType<{ className?: string }>;
       const iconStyles = notif.read_status
-        ? 'text-muted-foreground bg-muted border-border'
+        ? cn('text-muted-foreground', 'bg-muted', 'border-border')
         : iconColorMap[notif.type] || iconColorMap.default || '';
 
       return (
@@ -520,8 +545,27 @@ export function NotificationInbox({
               <Button
                 type="button"
                 onClick={() => {
+                  const email = extractEmailFromNotification(
+                    selectedAccessRequest.message
+                  );
+                  const requestId = selectedAccessRequest.related_item_id;
                   setSelectedAccessRequest(null);
-                  router.push('/users?tab=allowlist');
+                  if (requestId) {
+                    const params = new URLSearchParams({
+                      tab: 'requests',
+                      requestId,
+                    });
+                    if (email) {
+                      params.set('addEmail', email);
+                    }
+                    router.push(`/users?${params.toString()}`);
+                  } else if (email) {
+                    router.push(
+                      `/users?tab=requests&addEmail=${encodeURIComponent(email)}`
+                    );
+                  } else {
+                    router.push('/users?tab=requests');
+                  }
                 }}
               >
                 Allow

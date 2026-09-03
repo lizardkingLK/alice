@@ -11,11 +11,53 @@ import {
   updateSprintBodySchema,
 } from './sprints.schemas';
 import type { SprintsService, SprintBurndownService } from './sprints.service';
+import { SprintAccessError } from './sprints.errors';
+import { listSprintsQuerySchema } from '@repo/types';
 
 export type SprintsRouterDeps = {
   sprintsService: SprintsService;
   sprintBurndownService: SprintBurndownService;
 };
+
+function firstQueryValue(value: unknown): string | undefined {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (Array.isArray(value) && typeof value[0] === 'string') {
+    return value[0];
+  }
+  return undefined;
+}
+
+function listSprintsQueryFromRequest(query: Record<string, unknown>) {
+  return listSprintsQuerySchema.safeParse({
+    page: firstQueryValue(query.page),
+    limit: firstQueryValue(query.limit),
+    search: firstQueryValue(query.search),
+    projectId: firstQueryValue(query.projectId),
+    tab: firstQueryValue(query.tab),
+  });
+}
+
+function sendSprintMutationError(
+  res: {
+    status: (code: number) => {
+      json: (body: Record<string, unknown>) => void;
+    };
+  },
+  error: unknown,
+  fallbackMessage: string
+) {
+  if (trySendOptimisticLockError(res, error)) {
+    return;
+  }
+
+  const message = error instanceof Error ? error.message : fallbackMessage;
+  if (error instanceof SprintAccessError) {
+    return res.status(403).json({ data: null, error: message });
+  }
+  return res.status(500).json({ data: null, error: message });
+}
 
 export function createSprintsRouter(deps: SprintsRouterDeps): Router {
   const { sprintsService, sprintBurndownService } = deps;
@@ -29,7 +71,9 @@ export function createSprintsRouter(deps: SprintsRouterDeps): Router {
       const parsed = createSprintBodySchema.safeParse(req.body);
 
       if (!parsed.success) {
-        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+        return res
+          .status(400)
+          .json({ data: null, error: z.treeifyError(parsed.error) });
       }
 
       try {
@@ -37,11 +81,9 @@ export function createSprintsRouter(deps: SprintsRouterDeps): Router {
           req.userId!,
           parsed.data
         );
-        res.status(201).json({ sprint });
+        res.status(201).json({ data: sprint, error: null });
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to create sprint';
-        res.status(500).json({ error: message });
+        sendSprintMutationError(res, error, 'Failed to create sprint');
       }
     }
   );
@@ -52,7 +94,9 @@ export function createSprintsRouter(deps: SprintsRouterDeps): Router {
       const parsed = updateSprintStatusSchema.safeParse(req.body);
 
       if (!parsed.success) {
-        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+        return res
+          .status(400)
+          .json({ data: null, error: z.treeifyError(parsed.error) });
       }
 
       try {
@@ -62,14 +106,9 @@ export function createSprintsRouter(deps: SprintsRouterDeps): Router {
           parsed.data.status,
           parsed.data.expectedUpdatedAt
         );
-        res.json({ sprint });
+        res.status(200).json({ data: sprint, error: null });
       } catch (error) {
-        if (trySendOptimisticLockError(res, error)) return;
-        const message =
-          error instanceof Error
-            ? error.message
-            : 'Failed to update sprint status';
-        res.status(500).json({ error: message });
+        sendSprintMutationError(res, error, 'Failed to update sprint status');
       }
     }
   );
@@ -81,7 +120,9 @@ export function createSprintsRouter(deps: SprintsRouterDeps): Router {
       const parsed = updateSprintBodySchema.safeParse(req.body);
 
       if (!parsed.success) {
-        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+        return res
+          .status(400)
+          .json({ data: null, error: z.treeifyError(parsed.error) });
       }
 
       try {
@@ -90,12 +131,9 @@ export function createSprintsRouter(deps: SprintsRouterDeps): Router {
           req.params.id!,
           parsed.data
         );
-        res.json({ sprint });
+        res.status(200).json({ data: sprint, error: null });
       } catch (error) {
-        if (trySendOptimisticLockError(res, error)) return;
-        const message =
-          error instanceof Error ? error.message : 'Failed to update sprint';
-        res.status(500).json({ error: message });
+        sendSprintMutationError(res, error, 'Failed to update sprint');
       }
     }
   );
@@ -118,6 +156,65 @@ export function createSprintsRouter(deps: SprintsRouterDeps): Router {
             ? error.message
             : 'Failed to fetch burndown data';
         res.status(500).json({ error: message });
+      }
+    }
+  );
+
+  sprintsRouter.get(
+    '/',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsed = listSprintsQueryFromRequest(
+        req.query as Record<string, unknown>
+      );
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+
+      try {
+        const result = await sprintsService.listSprintsPaginated(
+          parsed.data,
+          req.userId!
+        );
+        res.json(result);
+      } catch (error) {
+        if (error instanceof SprintAccessError) {
+          return res.status(403).json({ error: error.message });
+        }
+        const message =
+          error instanceof Error ? error.message : 'Failed to list sprints';
+        res.status(500).json({ error: message });
+      }
+    }
+  );
+
+  sprintsRouter.get(
+    '/:id',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsedId = z.uuid().safeParse(req.params.id);
+      if (!parsedId.success) {
+        return res.status(400).json({ data: null, error: 'Invalid sprint id' });
+      }
+
+      try {
+        const sprint = await sprintsService.getSprintDetail(
+          parsedId.data,
+          req.userId!
+        );
+        if (!sprint) {
+          return res
+            .status(404)
+            .json({ data: null, error: 'Sprint not found' });
+        }
+        res.json({ data: sprint, error: null });
+      } catch (error) {
+        if (error instanceof SprintAccessError) {
+          return res.status(403).json({ data: null, error: error.message });
+        }
+        const message =
+          error instanceof Error ? error.message : 'Failed to get sprint';
+        res.status(500).json({ data: null, error: message });
       }
     }
   );

@@ -36,7 +36,7 @@ Requirements and scope for Alice.
 How the monorepo fits together (apps, auth, deployment).
 
 - [TRD.md](./architecture/TRD.md) — technical requirements and system design
-- [DI.md](./architecture/DI.md) — Express composition root (`config/composition.ts`) / constructor injection (**Plan**; work-items, sprints, chat Living)
+- [DI.md](./architecture/DI.md) — Express composition root (`config/composition.ts`) / constructor injection (**Plan**; work-items, sprints, chat, projects, users, teams, profile, savedViews Living)
 - [API_VERSIONING.md](./architecture/API_VERSIONING.md) — Prisma GETs (unused), Zod mutation DTOs, `/api/v1` (**Plan**)
 - [DATA_RETRIEVAL.md](./architecture/DATA_RETRIEVAL.md) — app toggle: RSC supabase-js vs Express Prisma GETs (**Plan**)
 
@@ -44,20 +44,21 @@ How the monorepo fits together (apps, auth, deployment).
 
 One folder per product area. Prefer a local `README.md` as the index.
 
-| Area       | Index                                                                                                                                                                                                                                     |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Users      | [features/users/](./features/users/)                                                                                                                                                                                                      |
-| Access     | [features/access/](./features/access/) ([ACCESS_ALLOWLIST.md](./features/access/ACCESS_ALLOWLIST.md))                                                                                                                                     |
-| Work items | [features/work-items/](./features/work-items/)                                                                                                                                                                                            |
-| Board      | [features/board/](./features/board/)                                                                                                                                                                                                      |
-| Projects   | [features/projects/](./features/projects/)                                                                                                                                                                                                |
-| Sprints    | [features/sprints/](./features/sprints/)                                                                                                                                                                                                  |
-| Chat / AI  | [features/chat/](./features/chat/) ([AI_CHATBOT.md](./features/chat/AI_CHATBOT.md)) — Gemini assistant (**Implemented**)                                                                                                                  |
-| Dashboard  | [features/dashboard/](./features/dashboard/)                                                                                                                                                                                              |
-| Views      | [features/views/](./features/views/) ([FAVORITES_AND_VIEWS.md](./features/views/FAVORITES_AND_VIEWS.md))                                                                                                                                  |
-| Profile    | [features/profile/](./features/profile/) ([EDIT_PROFILE.md](./features/profile/EDIT_PROFILE.md))                                                                                                                                          |
-| Docs (app) | [features/docs/](./features/docs/) — in-app `/docs` browser (**Living**)                                                                                                                                                                  |
-| Platform   | [features/platform/](./features/platform/) ([DAY_ONE_SETUP.md](./features/platform/DAY_ONE_SETUP.md)) — new-env script (**Plan**); [KEYBOARD_SHORTCUTS.md](./features/platform/KEYBOARD_SHORTCUTS.md) — global shortcut gate (**Living**) |
+| Area         | Index                                                                                                                                                                                                                                     |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Users        | [features/users/](./features/users/)                                                                                                                                                                                                      |
+| Access       | [features/access/](./features/access/) ([ACCESS_ALLOWLIST.md](./features/access/ACCESS_ALLOWLIST.md))                                                                                                                                     |
+| Work items   | [features/work-items/](./features/work-items/)                                                                                                                                                                                            |
+| Board        | [features/board/](./features/board/)                                                                                                                                                                                                      |
+| Projects     | [features/projects/](./features/projects/)                                                                                                                                                                                                |
+| Sprints      | [features/sprints/](./features/sprints/)                                                                                                                                                                                                  |
+| Chat / AI    | [features/chat/](./features/chat/) ([AI_CHATBOT.md](./features/chat/AI_CHATBOT.md)) — Gemini assistant (**Implemented**)                                                                                                                  |
+| Dashboard    | [features/dashboard/](./features/dashboard/)                                                                                                                                                                                              |
+| Views        | [features/views/](./features/views/) ([FAVORITES_AND_VIEWS.md](./features/views/FAVORITES_AND_VIEWS.md))                                                                                                                                  |
+| Profile      | [features/profile/](./features/profile/) ([EDIT_PROFILE.md](./features/profile/EDIT_PROFILE.md))                                                                                                                                          |
+| Integrations | [features/integrations/](./features/integrations/) ([SETTINGS_INTEGRATIONS.md](./features/integrations/SETTINGS_INTEGRATIONS.md)) — workspace AI/tools, `integrations` DB plan (**In progress**)                                          |
+| Docs (app)   | [features/docs/](./features/docs/) — in-app `/docs` browser (**Living**)                                                                                                                                                                  |
+| Platform     | [features/platform/](./features/platform/) ([DAY_ONE_SETUP.md](./features/platform/DAY_ONE_SETUP.md)) — new-env script (**Plan**); [KEYBOARD_SHORTCUTS.md](./features/platform/KEYBOARD_SHORTCUTS.md) — global shortcut gate (**Living**) |
 
 ### Database
 
@@ -78,6 +79,14 @@ Authentication and authorization. Index: [auth/README.md](./auth/README.md).
 - Day-one env bootstrap (Google + SMTP): [features/platform/DAY_ONE_SETUP.md](./features/platform/DAY_ONE_SETUP.md) (**Plan**)
 - Account deactivation / offboarding: [features/users/ACCOUNT_DEACTIVATION.md](./features/users/ACCOUNT_DEACTIVATION.md) (phase 1 implemented)
 - User membership pending → active: [features/users/USER_MEMBERSHIP_STATUS.md](./features/users/USER_MEMBERSHIP_STATUS.md) (**Plan**)
+
+### User guide (in-app, production)
+
+Product-facing help shown in `/docs` when `NODE_ENV=production`. Curated via
+[`docs-publish.json`](./docs-publish.json); full tree still available in local dev.
+
+- Index: [user-guide/README.md](./user-guide/README.md)
+- Topics: getting started, work items, board, projects, users & access
 
 ### Guides
 

@@ -83,6 +83,32 @@ export class NotificationsRepository {
     });
   }
 
+  async createManyForAccessRequest(params: {
+    requestId: string;
+    fromEmail: string;
+    fromName?: string;
+    message: string;
+  }) {
+    const adminIds = await this.listActiveAdminIds();
+    if (!adminIds.length) {
+      return;
+    }
+
+    const fromNamePart = params.fromName ? ` (${params.fromName})` : '';
+    const fullMessage = `Access request\n\nFrom: ${params.fromEmail}${fromNamePart}\n\n${params.message}`;
+
+    await prisma.notifications.createMany({
+      data: adminIds.map((adminId) => ({
+        user_id: adminId,
+        type: NotificationTypeEnum.access_request,
+        message: fullMessage,
+        related_item_id: params.requestId,
+        read_status: false,
+        status: RecordStatus.active,
+      })),
+    });
+  }
+
   async getUserName(userId: string): Promise<string | null> {
     const { data: actor } = await this.db
       .from('users')

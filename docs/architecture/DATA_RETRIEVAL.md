@@ -197,6 +197,57 @@ No new toggle.
 
 ---
 
+## Read-path file layout (web)
+
+Work-items was the first domain with a **dual read strategy**. Prefer **flat, suffix-based names** under `_services/` (same pattern as attachments and worklogs) over a nested `reads/` folder:
+
+| Role                                       | Suggested filename                  | Today (work-items)                    |
+| ------------------------------------------ | ----------------------------------- | ------------------------------------- |
+| Public facade (pages import this)          | `<domain>.reads.server.ts`          | `work-items.reads.server.ts`          |
+| Default SSR path (supabase-js → PostgREST) | `<domain>.reads.supabase.server.ts` | `work-items.reads.supabase.server.ts` |
+| Optional API path (`DATA_READS_VIA_API`)   | `<domain>.reads.api.server.ts`      | `work-items.reads.api.server.ts`      |
+| Browser Express GETs (client components)   | `<domain>.reads.client.ts`          | `work-items.reads.client.ts`          |
+
+**Do not** add `<domain>.reads.prisma.server.ts` in `apps/web`. Prisma runs in `apps/api` only; the web “Prisma read” is always **`reads.api.server.ts`** → Express GET → repository.
+
+### Read shapes vs mutation DTOs
+
+| Layer                                    | Reads                                                                              | Mutations                         |
+| ---------------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------- |
+| Wire contract in `@repo/types` `api/v1/` | Shared **select** consts + Prisma payload types (`WorkItemListRow`, …)             | **Zod input** schemas + `z.infer` |
+| Default RSC                              | PostgREST `select(...)` using v1 PostgREST helpers (`workItemListPostgrestSelect`) | N/A                               |
+| Toggle `api`                             | Express JSON mapped to the same page type (`mapWorkItemApiRow`)                    | N/A                               |
+| Validation                               | Query params only on Express GET (`listWorkItemsQuerySchema`); **no Zod per row**  | `safeParse` on web **and** API    |
+
+Aligning reads with versioning means **one field list** in `@repo/types` v1 (already started via `work-item-list-select.ts`), not moving Prisma into Next. When you need a single query stack and versioned HTTP reads, flip `DATA_READS_VIA_API` — do not replace `reads.supabase.server.ts` with Prisma locally.
+
+See also [DATABASE.md — Why `apps/web` does not use Prisma Client](../guides/DATABASE.md#why-appsweb-does-not-use-prisma-client).
+
+### Express HTTP clients (`apps/web/lib/api`)
+
+Shared transport + **reads vs mutations** fetch entrypoints (mirrors `*.reads.server.ts` / `*.mutations.client.ts` under each domain). The `.use.client` / `.use.server` suffix marks the React **`'use client'`** vs **RSC/server** runtime boundary:
+
+| File                                | Role                                                               |
+| ----------------------------------- | ------------------------------------------------------------------ |
+| `api-fetch.helper.ts`               | URL resolution, `getResponse`, `ApiError`, timeouts (shared)       |
+| `api-fetch.use.client.ts`           | Shared authenticated `'use client'` → Express transport (internal) |
+| `api-fetch.reads.use.server.ts`     | RSC → Express **GET** (cached session per request)                 |
+| `api-fetch.reads.use.client.ts`     | `'use client'` → Express **GET**                                   |
+| `api-fetch.mutations.use.client.ts` | `'use client'` → Express **POST/PATCH/DELETE**                     |
+
+Domain modules call the matching lib entrypoint:
+
+| Domain pattern                                 | Reads                                                                                           | Mutations                      |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------ |
+| RSC (default PostgREST or optional API toggle) | `<domain>.reads.server.ts`, `<domain>.reads.supabase.server.ts`, `<domain>.reads.api.server.ts` | N/A                            |
+| `'use client'`                                 | `<domain>.reads.client.ts`                                                                      | `<domain>.mutations.client.ts` |
+
+Example (work-items): `listParentCandidateWorkItems` / `getLinkedPRs` live in `work-items.reads.client.ts`; `createWorkItem` / `linkPR` live in `work-items.mutations.client.ts`.
+
+Do not use `api-fetch.mutations.use.client.ts` from RSC loaders; do not use `api-fetch.reads.use.server.ts` from `'use client'` modules.
+
+---
+
 ## Performance and drift
 
 Turning `DATA_READS_VIA_API=true` **reintroduces** `web → Express → DB` for allowlisted reads. That is intentional and measurable ([PERFORMANCE.md](../guides/PERFORMANCE.md)).

@@ -1,6 +1,12 @@
-import { getActiveMemberProjectIds } from '@/app/board/_services/board-defaults.server';
+import { getActiveMemberProjectIds } from '@/app/board/_services/board.reads.defaults.server';
 import { isAdmin, isAppRole } from '@/lib/rbac/roles';
 import { createClient } from '@/lib/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@repo/types';
+import {
+  resolveProjectIdsFromAllowlistValue,
+  normalizedAllowlistProjectKeysFromValue,
+} from '@repo/types';
 
 /** True when `userId` owns the project (`projects.owner_id`). */
 export async function isProjectOwner(
@@ -68,11 +74,75 @@ export async function canAccessProjectWorkspace(
     return true;
   }
 
+  try {
+    const supabase = await createClient();
+    const guestProjectIds = await resolveAllowedProjectIdsFromAcl(
+      supabase,
+      userId
+    );
+    if (guestProjectIds !== null) {
+      return guestProjectIds.includes(projectId);
+    }
+  } catch (err) {
+    console.error(
+      'error. failed to resolve guest workspace access from allowlist',
+      err
+    );
+  }
+
   if (await isProjectOwner(userId, projectId)) {
     return true;
   }
 
   return isActiveProjectMember(userId, projectId);
+}
+
+async function resolveAllowedProjectIdsFromAcl(
+  supabase: SupabaseClient<Database>,
+  userId: string
+): Promise<string[] | null> {
+  const { data: userRow } = await supabase
+    .from('users')
+    .select('email')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (!userRow?.email) {
+    return null;
+  }
+
+  const { data: allowlistRecord } = await supabase
+    .from('access_allowlist')
+    .select('allowed_project_ids')
+    .eq('status', 'active')
+    .eq('kind', 'email')
+    .eq('value', userRow.email.trim().toLowerCase())
+    .maybeSingle();
+
+  if (!allowlistRecord) {
+    return null;
+  }
+
+  const normalizedKeys = normalizedAllowlistProjectKeysFromValue(
+    allowlistRecord.allowed_project_ids
+  );
+  if (normalizedKeys.length === 0) {
+    return [];
+  }
+
+  try {
+    const { data: matchedProjects } = await supabase
+      .from('projects')
+      .select('id, key')
+      .in('key', normalizedKeys);
+    return resolveProjectIdsFromAllowlistValue(
+      allowlistRecord.allowed_project_ids,
+      matchedProjects ?? []
+    );
+  } catch (err) {
+    console.error('Failed to parse allowed_project_ids ACL:', err);
+    return [];
+  }
 }
 
 /**
@@ -93,6 +163,7 @@ export async function listAccessibleProjectIds(
   }
 
   const memberIds = await listMemberProjectIdsSafe(userId);
+  let ownedIds: string[] = [];
 
   try {
     const supabase = await createClient();
@@ -106,16 +177,23 @@ export async function listAccessibleProjectIds(
         'error. failed to list owned projects for registry:',
         error.message
       );
-      return [...new Set(memberIds)];
+    } else {
+      ownedIds = (data ?? []).map((row) => row.id);
     }
 
-    const ownedIds = (data ?? []).map((row) => row.id);
-    return [...new Set([...memberIds, ...ownedIds])];
-  } catch (ownedError) {
-    console.error(
-      'error. failed to list owned projects for registry',
-      ownedError
+    const allowedProjectIdsFromAcl = await resolveAllowedProjectIdsFromAcl(
+      supabase,
+      userId
     );
-    return [...new Set(memberIds)];
+    if (allowedProjectIdsFromAcl !== null) {
+      return allowedProjectIdsFromAcl;
+    }
+  } catch (err) {
+    console.error(
+      'error. failed to resolve projects for registry with ACL',
+      err
+    );
   }
+
+  return [...new Set([...memberIds, ...ownedIds])];
 }

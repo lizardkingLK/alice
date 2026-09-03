@@ -1,5 +1,17 @@
-import { USER_PROJECTION_WITH_ROLE, userRelationSelect } from '@repo/types';
-import { supabase } from '../../../lib/supabase';
+import {
+  USER_PROJECTION_WITH_ROLE,
+  userRelationSelect,
+  withoutIntegrationSecrets,
+  type Database,
+  projectListSelect,
+  projectDetailSelect,
+  projectMemberSelect,
+  type ProjectListRow,
+  type ProjectDetailRow,
+  type ProjectMemberRow,
+} from '@repo/types';
+import { Prisma, ProjectStatus, RecordStatus } from '@repo/types/prisma';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { prisma } from '../../../lib/prisma';
 import {
   prismaAuditCreate,
@@ -9,59 +21,38 @@ import {
   prismaOptionalDate,
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
+import {
+  listAccessibleProjectIds,
+  ALL_PROJECTS,
+} from '../../../lib/project-access';
+import type {
+  ProjectMemberWithUser,
+  ProjectRow,
+  ProjectRowWithOwner,
+  ProjectUpdateInput,
+  CreateProjectInput,
+} from './projects.types';
 
-export type ProjectRow = {
-  id: string;
-  name: string;
-  key: string;
-  description: string | null;
-  status: 'active' | 'archived';
-  start_date: string | null;
-  end_date: string | null;
-  owner_id: string;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-  jira_url: string | null;
-  jira_email: string | null;
-  jira_token: string | null;
-  jira_project_key: string | null;
-  github_repo: string | null;
-  github_token: string | null;
-  logo_url: string | null;
-  cover_picture: string | null;
-};
+export type {
+  CreateProjectInput,
+  ProjectMemberWithUser,
+  ProjectRow,
+  ProjectRowWithOwner,
+  ProjectUpdateInput,
+  UpdateProjectInput,
+} from './projects.types';
 
-export type ProjectRowWithOwner = ProjectRow & {
-  owner?: {
-    id: string;
-    name: string;
-    email: string;
-  } | null;
-};
-
-/** Strip Jira API token before serializing project DTOs to clients. */
-export function withoutJiraToken<T extends { jira_token?: string | null }>(
-  project: T
-): Omit<T, 'jira_token'> {
-  const safe = { ...project };
-  delete safe.jira_token;
-  return safe;
-}
-
-type ProjectUpdateInput = Partial<
-  Omit<ProjectRow, 'id' | 'created_at' | 'updated_at'>
->;
+export { withoutIntegrationSecrets };
 
 function applyOptionalProjectIntegrations(
   patch: Record<string, unknown>,
   data: ProjectUpdateInput
 ): void {
-  if (data.jira_url !== undefined) patch.jira_url = data.jira_url;
-  if (data.jira_email !== undefined) patch.jira_email = data.jira_email;
-  if (data.jira_token !== undefined) patch.jira_token = data.jira_token;
   if (data.jira_project_key !== undefined) {
     patch.jira_project_key = data.jira_project_key;
+  }
+  if (data.jira_connection_id !== undefined) {
+    patch.jira_connection_id = data.jira_connection_id;
   }
   if (data.github_repo !== undefined) patch.github_repo = data.github_repo;
   if (data.github_token !== undefined) patch.github_token = data.github_token;
@@ -95,20 +86,6 @@ function buildProjectUpdateData(data: ProjectUpdateInput, actorId: string) {
   return patch;
 }
 
-export type ProjectMemberWithUser = {
-  project_id: string;
-  user_id: string;
-  status: 'active' | 'inactive' | 'archived' | 'deleted';
-  created_at: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-    profile_picture?: string | null;
-  } | null;
-};
-
 const PROJECT_MEMBER_USER_SELECT = userRelationSelect(
   'user',
   'project_members_user_id_fkey',
@@ -120,8 +97,135 @@ function unsafeCast<T>(val: unknown): T {
 }
 
 export class ProjectsRepository {
+  constructor(private readonly db: SupabaseClient<Database>) {}
+
+  async listAccessibleProjectIds(
+    actorId: string
+  ): Promise<typeof ALL_PROJECTS | string[]> {
+    return listAccessibleProjectIds(this.db, actorId);
+  }
+
+  async listPaginated(input: {
+    accessibleIds: typeof ALL_PROJECTS | string[];
+    filters: {
+      status?: ProjectStatus;
+      search?: string;
+    };
+    page: number;
+    limit: number;
+  }): Promise<{
+    projects: (ProjectListRow & { team_count: number })[];
+    totalCount: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const skip = (input.page - 1) * input.limit;
+    const take = input.limit;
+
+    const where: Prisma.projectsWhereInput = {};
+
+    if (input.accessibleIds !== ALL_PROJECTS) {
+      where.id = { in: input.accessibleIds };
+    }
+
+    if (input.filters.status === ProjectStatus.archived) {
+      where.deleted_at = { not: null };
+    } else {
+      where.deleted_at = null;
+    }
+
+    const term = input.filters.search?.trim();
+    if (term) {
+      where.OR = [
+        { name: { contains: term, mode: 'insensitive' } },
+        { key: { contains: term, mode: 'insensitive' } },
+        { description: { contains: term, mode: 'insensitive' } },
+      ];
+    }
+
+    try {
+      const [projectRows, totalCount] = await Promise.all([
+        prisma.projects.findMany({
+          where,
+          select: projectListSelect,
+          orderBy: { created_at: 'desc' },
+          skip,
+          take,
+        }),
+        prisma.projects.count({ where }),
+      ]);
+
+      const projectIds = projectRows.map((p) => p.id);
+
+      const teamCountsGroup = await prisma.teams.groupBy({
+        by: ['project_id'],
+        _count: { id: true },
+        where: {
+          project_id: { in: projectIds },
+          status: { not: 'deleted' },
+        },
+      });
+
+      const teamCountMap = new Map<string, number>();
+      for (const group of teamCountsGroup) {
+        if (group.project_id) {
+          teamCountMap.set(group.project_id, group._count.id);
+        }
+      }
+
+      const projects = projectRows.map((p) => ({
+        ...p,
+        team_count: teamCountMap.get(p.id) ?? 0,
+      }));
+
+      const totalPages = Math.ceil(totalCount / input.limit);
+
+      return {
+        projects,
+        totalCount,
+        page: input.page,
+        limit: input.limit,
+        totalPages,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to list projects:', message);
+      throw new Error('Failed to list projects');
+    }
+  }
+
+  async getDetailById(projectId: string): Promise<ProjectDetailRow | null> {
+    try {
+      return await prisma.projects.findUnique({
+        where: { id: projectId },
+        select: projectDetailSelect,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to get project detail:', message);
+      throw new Error('Failed to get project');
+    }
+  }
+
+  async listMembersPrisma(projectId: string): Promise<ProjectMemberRow[]> {
+    try {
+      return await prisma.project_members.findMany({
+        where: { project_id: projectId, status: RecordStatus.active },
+        select: projectMemberSelect,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(
+        'error. failed to list project members via prisma:',
+        message
+      );
+      throw new Error('Failed to list project members');
+    }
+  }
+
   async listAll(): Promise<ProjectRowWithOwner[]> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('projects')
       .select('*, owner:users!projects_owner_id_fkey(id, name, email)')
       .order('created_at', { ascending: false });
@@ -135,7 +239,7 @@ export class ProjectsRepository {
   }
 
   async findByKey(key: string, excludeId?: string): Promise<ProjectRow | null> {
-    let query = supabase.from('projects').select('*').eq('key', key);
+    let query = this.db.from('projects').select('*').eq('key', key);
     if (excludeId) {
       query = query.neq('id', excludeId);
     }
@@ -144,11 +248,11 @@ export class ProjectsRepository {
       console.error('error. failed to find project by key:', error.message);
       throw new Error('Failed to find duplicate project key');
     }
-    return data;
+    return unsafeCast<ProjectRow | null>(data);
   }
 
   async findById(id: string): Promise<ProjectRowWithOwner | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('projects')
       .select('*, owner:users!projects_owner_id_fkey(id, name, email)')
       .eq('id', id)
@@ -162,7 +266,7 @@ export class ProjectsRepository {
   }
 
   async listMembers(projectId: string): Promise<ProjectMemberWithUser[]> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('project_members')
       .select(`*, ${PROJECT_MEMBER_USER_SELECT}`)
       .eq('project_id', projectId)
@@ -190,8 +294,29 @@ export class ProjectsRepository {
     });
   }
 
+  /**
+   * Idempotent: insert project_members for owner when missing.
+   * Used after ownership reassignment (create inserts inside its transaction).
+   */
+  async ensureOwnerIsMember(
+    projectId: string,
+    ownerId: string,
+    actorId: string
+  ): Promise<void> {
+    const existing = await prisma.project_members.findUnique({
+      where: {
+        project_id_user_id: { project_id: projectId, user_id: ownerId },
+      },
+      select: { user_id: true },
+    });
+    if (existing) {
+      return;
+    }
+    await this.addMember(projectId, ownerId, actorId);
+  }
+
   async removeMember(projectId: string, userId: string): Promise<void> {
-    const { data: projectTeams, error: teamsError } = await supabase
+    const { data: projectTeams, error: teamsError } = await this.db
       .from('teams')
       .select('id')
       .eq('project_id', projectId);
@@ -221,41 +346,38 @@ export class ProjectsRepository {
     });
   }
 
-  async create(
-    data: Omit<
-      ProjectRow,
-      | 'id'
-      | 'created_at'
-      | 'updated_at'
-      | 'deleted_at'
-      | 'logo_url'
-      | 'cover_picture'
-    > & {
-      logo_url?: string | null;
-      cover_picture?: string | null;
-    },
-    actorId: string
-  ): Promise<ProjectRow> {
-    const created = await prisma.projects.create({
-      data: {
-        name: data.name,
-        key: data.key,
-        description: data.description,
-        status: data.status,
-        start_date: prismaOptionalDate(data.start_date) ?? null,
-        end_date: prismaOptionalDate(data.end_date) ?? null,
-        owner_id: data.owner_id,
-        jira_url: data.jira_url,
-        jira_email: data.jira_email,
-        jira_token: data.jira_token,
-        jira_project_key: data.jira_project_key,
-        github_repo: data.github_repo,
-        github_token: data.github_token,
-        logo_url: data.logo_url ?? null,
-        cover_picture: data.cover_picture ?? null,
-        deleted_at: null,
-        ...prismaAuditCreateWithoutStatus(actorId),
-      },
+  async create(data: CreateProjectInput, actorId: string): Promise<ProjectRow> {
+    const created = await prisma.$transaction(async (tx) => {
+      const project = await tx.projects.create({
+        data: {
+          name: data.name,
+          key: data.key,
+          description: data.description,
+          status: data.status,
+          start_date: prismaOptionalDate(data.start_date) ?? null,
+          end_date: prismaOptionalDate(data.end_date) ?? null,
+          owner_id: data.owner_id,
+          jira_project_key: data.jira_project_key,
+          jira_connection_id: data.jira_connection_id,
+          github_repo: data.github_repo,
+          github_token: data.github_token,
+          logo_url: data.logo_url ?? null,
+          cover_picture: data.cover_picture ?? null,
+          deleted_at: null,
+          ...prismaAuditCreateWithoutStatus(actorId),
+        },
+      });
+
+      // Owner is always a project member so ACL and Members UI stay consistent.
+      await tx.project_members.create({
+        data: {
+          project_id: project.id,
+          user_id: data.owner_id,
+          ...prismaAuditCreate(actorId),
+        },
+      });
+
+      return project;
     });
 
     const row = await this.findById(created.id);
@@ -281,13 +403,13 @@ export class ProjectsRepository {
       fetchUpdated: async () => {
         const current = await this.findById(id);
         return current
-          ? (withoutJiraToken(current) as unknown as ProjectRow)
+          ? (withoutIntegrationSecrets(current) as unknown as ProjectRow)
           : null;
       },
       fetchCurrent: async () => {
         const current = await this.findById(id);
         return current
-          ? (withoutJiraToken(current) as unknown as ProjectRow)
+          ? (withoutIntegrationSecrets(current) as unknown as ProjectRow)
           : null;
       },
       notFoundMessage: 'Project not found',
@@ -296,45 +418,6 @@ export class ProjectsRepository {
 
   async delete(id: string): Promise<void> {
     await prisma.projects.deleteMany({ where: { id } });
-  }
-
-  async getJiraSettings(): Promise<{
-    jira_url: string;
-    jira_email: string;
-    jira_token: string;
-  } | null> {
-    const { data, error } = await supabase
-      .from('jira_settings')
-      .select('jira_url, jira_email, jira_token')
-      .limit(1)
-      .maybeSingle();
-
-    if (error) {
-      console.error('error. failed to fetch Jira settings:', error.message);
-      throw new Error('Failed to fetch Jira settings');
-    }
-    return data;
-  }
-
-  async saveJiraSettings(
-    url: string,
-    email: string,
-    token: string
-  ): Promise<void> {
-    await prisma.jira_settings.upsert({
-      where: { singleton: true },
-      create: {
-        singleton: true,
-        jira_url: url,
-        jira_email: email,
-        jira_token: token,
-      },
-      update: {
-        jira_url: url,
-        jira_email: email,
-        jira_token: token,
-      },
-    });
   }
 
   async linkImportedJiraParents(
@@ -371,5 +454,3 @@ export class ProjectsRepository {
     }
   }
 }
-
-export const projectsRepository = new ProjectsRepository();

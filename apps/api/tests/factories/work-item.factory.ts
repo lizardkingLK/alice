@@ -1,11 +1,5 @@
 import type { WorkItemListRow } from '@repo/types';
-
-const USER = {
-  id: '11111111-1111-4111-8111-111111111111',
-  name: 'Ada',
-  email: 'ada@example.com',
-  profile_picture: null,
-};
+import { TEST_USER } from './user.fixture';
 
 export function createWorkItemListRow(
   overrides: Partial<WorkItemListRow> = {}
@@ -19,19 +13,19 @@ export function createWorkItemListRow(
     type: 'Task',
     priority: 'medium',
     labels: ['api'],
-    assignee_id: USER.id,
+    assignee_id: TEST_USER.id,
     reporter_id: null,
     due_date: null,
     story_points: 3,
     status: 'New',
     done_at: null,
-    created_by: USER.id,
+    created_by: TEST_USER.id,
     created_at: new Date('2026-08-01T00:00:00.000Z'),
-    updated_by: USER.id,
+    updated_by: TEST_USER.id,
     updated_at: new Date('2026-08-01T00:00:00.000Z'),
     jira_issue_key: null,
     record_status: 'active',
-    assignee: USER,
+    assignee: TEST_USER,
     reporter: null,
     ...overrides,
   };

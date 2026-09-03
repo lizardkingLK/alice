@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { ProjectDetailsWorkspace } from '@/app/projects/[id]/_components/project-details-workspace';
 import { ProjectWorkspaceAccessDenied } from '@/app/projects/[id]/_components/project-workspace-access-denied';
-import { getProjectWorkspace } from '@/app/projects/_services/project-workspace.server';
+import { getProjectWorkspace } from '@/app/projects/_services/projects.reads.workspace.server';
 import { readWorkItemTableColumnVisibilityBootstrap } from '@/app/work-items/_helpers/work-item-table-columns-cookie.server';
 import type { RawSearchParams } from '@/lib/search-params';
 

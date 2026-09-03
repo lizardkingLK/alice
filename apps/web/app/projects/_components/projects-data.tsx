@@ -3,8 +3,8 @@ import { ProjectRegistry } from '@/app/projects/_components/project-registry';
 import {
   getProjectListPaginated,
   type Project,
-} from '@/app/projects/_services/projects.service.server';
-import { getUserList } from '@/app/users/_services/users.service.server';
+} from '@/app/projects/_services/projects.reads.server';
+import { getUserList } from '@/app/users/_services/users.reads.server';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import {
   parseStandardParams,

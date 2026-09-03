@@ -1,13 +1,9 @@
 import {
   Tables,
   userRelationSelect,
-  WORK_ITEM_WORKLOG_SELECT,
-  normalizeWorkLogRow,
   DEFAULT_WORK_ITEM_PRIORITY,
   WorkItemStatusEnum,
   type Database,
-  type WorkItemWorkLog,
-  type WorkItemWorkLogRowRaw,
   workItemDetailSelect,
   workItemListSelect,
   workItemListSelectWithDescription,
@@ -19,9 +15,12 @@ import {
 } from '@repo/types';
 import { Prisma } from '@repo/types/prisma';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import {
+  listAccessibleProjectIds,
+  ALL_PROJECTS,
+} from '../../../lib/project-access';
 import { prisma } from '../../../lib/prisma';
 import {
-  prismaAuditCreate,
   prismaAuditCreateWithoutStatus,
   prismaAuditUpdate,
   prismaLockTimestamp,
@@ -72,50 +71,10 @@ export class WorkItemRepository {
   /**
    * Admin: all projects. Member/manager: active membership ∪ owned projects.
    */
-  async listAccessibleProjectIds(actorId: string): Promise<'all' | string[]> {
-    const { data: systemUser } = await this.db
-      .from('users')
-      .select('role')
-      .eq('id', actorId)
-      .maybeSingle();
-
-    if (systemUser?.role === 'admin') {
-      return 'all';
-    }
-
-    const [
-      { data: memberships, error: memberError },
-      { data: owned, error: ownedError },
-    ] = await Promise.all([
-      this.db
-        .from('project_members')
-        .select('project_id')
-        .eq('user_id', actorId)
-        .eq('status', 'active'),
-      this.db.from('projects').select('id').eq('owner_id', actorId),
-    ]);
-
-    if (memberError) {
-      console.error(
-        'error. failed to list member projects for work-item access:',
-        memberError.message
-      );
-      throw new Error('Failed to authorize work-item access');
-    }
-
-    if (ownedError) {
-      console.error(
-        'error. failed to list owned projects for work-item access:',
-        ownedError.message
-      );
-      throw new Error('Failed to authorize work-item access');
-    }
-
-    const ids = [
-      ...(memberships ?? []).map((row) => row.project_id),
-      ...(owned ?? []).map((row) => row.id),
-    ];
-    return [...new Set(ids)];
+  async listAccessibleProjectIds(
+    actorId: string
+  ): Promise<typeof ALL_PROJECTS | string[]> {
+    return listAccessibleProjectIds(this.db, actorId);
   }
 
   async assertCanAccessProject(
@@ -123,7 +82,7 @@ export class WorkItemRepository {
     projectId: string
   ): Promise<void> {
     const accessible = await this.listAccessibleProjectIds(actorId);
-    if (accessible === 'all') {
+    if (accessible === ALL_PROJECTS) {
       return;
     }
     if (!accessible.includes(projectId)) {
@@ -341,73 +300,6 @@ export class WorkItemRepository {
       fetchCurrent: () => this.getById(input.id),
       notFoundMessage: 'Work item not found',
     });
-  }
-
-  async listWorkItemWorkLogs(
-    workItemId: string,
-    actorId: string
-  ): Promise<WorkItemWorkLog[]> {
-    await this.requireProjectMember(workItemId, actorId);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = this.db as unknown as SupabaseClient<any>;
-
-    const { data, error } = await db
-      .from('work_item_worklogs')
-      .select(WORK_ITEM_WORKLOG_SELECT)
-      .eq('work_item_id', workItemId)
-      .order('logged_at', { ascending: false });
-
-    if (error) {
-      console.error(
-        'error. failed to list work item work logs:',
-        error.message
-      );
-      throw new Error('Failed to list work logs');
-    }
-
-    const rows = (data ?? []) as unknown as WorkItemWorkLogRowRaw[];
-    return rows.map((row) => normalizeWorkLogRow(row));
-  }
-
-  async createWorkItemWorkLog(input: {
-    workItemId: string;
-    actorId: string;
-    loggedHours: number;
-    loggedAtIso: string;
-    comment: string | null;
-  }): Promise<WorkItemWorkLog> {
-    await this.requireProjectMember(input.workItemId, input.actorId);
-
-    const created = await prisma.work_item_worklogs.create({
-      data: {
-        work_item_id: input.workItemId,
-        user_id: input.actorId,
-        logged_hours: input.loggedHours,
-        logged_at: prismaOptionalDate(input.loggedAtIso)!,
-        comment: input.comment,
-        ...prismaAuditCreate(input.actorId),
-      },
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = this.db as unknown as SupabaseClient<any>;
-
-    const { data, error } = await db
-      .from('work_item_worklogs')
-      .select(WORK_ITEM_WORKLOG_SELECT)
-      .eq('id', created.id)
-      .single();
-
-    if (error || !data) {
-      console.error(
-        'error. failed to create work item work log:',
-        error?.message
-      );
-      throw new Error('Failed to create work log');
-    }
-
-    return normalizeWorkLogRow(data as unknown as WorkItemWorkLogRowRaw);
   }
 
   async listLinkedPRs(workItemId: string): Promise<DbGithubPullRequest[]> {

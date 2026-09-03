@@ -95,7 +95,9 @@ export const NotificationType = {
   mention: 'mention',
   sprint: 'sprint',
   due_date: 'due_date',
-  view_shared: 'view_shared'
+  view_shared: 'view_shared',
+  chat_processed: 'chat_processed',
+  access_request: 'access_request'
 } as const
 
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType]
@@ -107,3 +109,48 @@ export const AccessAllowlistKind = {
 } as const
 
 export type AccessAllowlistKind = (typeof AccessAllowlistKind)[keyof typeof AccessAllowlistKind]
+
+
+export const AccessRequestStatus = {
+  pending: 'pending',
+  granted: 'granted',
+  denied: 'denied'
+} as const
+
+export type AccessRequestStatus = (typeof AccessRequestStatus)[keyof typeof AccessRequestStatus]
+
+
+export const AccessRequestKind = {
+  admission: 'admission',
+  project_expansion: 'project_expansion'
+} as const
+
+export type AccessRequestKind = (typeof AccessRequestKind)[keyof typeof AccessRequestKind]
+
+
+export const JiraConnectionStatus = {
+  active: 'active',
+  revoked: 'revoked',
+  expired: 'expired'
+} as const
+
+export type JiraConnectionStatus = (typeof JiraConnectionStatus)[keyof typeof JiraConnectionStatus]
+
+
+export const IntegrationCategory = {
+  ai_agent: 'ai_agent',
+  communication: 'communication',
+  design: 'design',
+  productivity: 'productivity'
+} as const
+
+export type IntegrationCategory = (typeof IntegrationCategory)[keyof typeof IntegrationCategory]
+
+
+export const IntegrationStatus = {
+  active: 'active',
+  disabled: 'disabled',
+  draft: 'draft'
+} as const
+
+export type IntegrationStatus = (typeof IntegrationStatus)[keyof typeof IntegrationStatus]

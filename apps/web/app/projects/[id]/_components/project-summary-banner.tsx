@@ -15,7 +15,7 @@ import { formatDate } from '@/app/_shared/utility';
 import { ImagePositionUploadDialog } from '@/components/image-position-upload-dialog';
 import { applyLockedImageUploadOutcome } from '@/lib/image-position/apply-locked-image-upload';
 import { uploadLockedImage } from '@/lib/image-position/upload-locked-image';
-import type { Project } from '../../_services/projects.service';
+import type { Project } from '../../_services/projects.mutations.client';
 
 type ProjectImageUploadResult = {
   success: boolean;

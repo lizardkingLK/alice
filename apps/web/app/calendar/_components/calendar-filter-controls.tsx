@@ -42,6 +42,7 @@ export function CalendarFilterSelect({
   allLabel,
   options,
   triggerClassName = 'h-8 w-36 text-xs sm:w-40',
+  includeAll = true,
 }: Readonly<{
   value: string;
   // eslint-disable-next-line no-unused-vars -- select change
@@ -50,6 +51,7 @@ export function CalendarFilterSelect({
   allLabel: string;
   options: readonly CalendarFilterOption[];
   triggerClassName?: string;
+  includeAll?: boolean;
 }>) {
   return (
     <Select value={value} onValueChange={onValueChange}>
@@ -57,7 +59,9 @@ export function CalendarFilterSelect({
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={ALL_OPTION}>{allLabel}</SelectItem>
+        {includeAll ? (
+          <SelectItem value={ALL_OPTION}>{allLabel}</SelectItem>
+        ) : null}
         {options.map((option) => (
           <SelectItem key={option.id} value={option.id}>
             {option.label}

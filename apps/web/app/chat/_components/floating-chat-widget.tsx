@@ -2,6 +2,7 @@
 
 import { ChatClient } from './chat-client';
 import type { ChatConversation, ChatMessage } from './chat-client.types';
+import type { ChatModelOption } from '@repo/types';
 
 type FloatingChatDrawerProps = {
   readonly isOpen: boolean;
@@ -11,6 +12,7 @@ type FloatingChatDrawerProps = {
   readonly bootstrapConversations: ChatConversation[] | null;
   readonly bootstrapActiveConversationId?: string;
   readonly bootstrapMessages: ChatMessage[] | null;
+  readonly bootstrapChatModels?: ChatModelOption[];
 };
 
 export function FloatingChatDrawer({
@@ -21,6 +23,7 @@ export function FloatingChatDrawer({
   bootstrapConversations,
   bootstrapActiveConversationId,
   bootstrapMessages,
+  bootstrapChatModels,
 }: Readonly<FloatingChatDrawerProps>) {
   if (!isOpen) {
     return null;
@@ -44,6 +47,7 @@ export function FloatingChatDrawer({
           initialConversations={bootstrapConversations ?? undefined}
           initialConversationId={bootstrapActiveConversationId}
           initialMessages={bootstrapMessages ?? undefined}
+          initialChatModels={bootstrapChatModels}
         />
       </div>
     </>

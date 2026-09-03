@@ -39,3 +39,5 @@ export function toGeminiRole(value: unknown): GeminiRole {
 export function getRoleName(role: ChatRole): string {
   return toNameCase(role);
 }
+
+export * from './api/v1/chat.js';

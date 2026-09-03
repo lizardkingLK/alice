@@ -1,10 +1,27 @@
 import { vi, type Mock } from 'vitest';
+import { RecordStatusEnum } from '@repo/types';
 
 export const createAdminClient: Mock = vi.fn();
 
-export type AllowlistHit = { expires_at: string | null };
+export type AllowlistHit = {
+  expires_at: string | null;
+  status?: string;
+  allowed_project_ids?: unknown;
+};
 
 type QueryResult = { data: unknown; error: unknown };
+
+type QueryContext = {
+  kind: string;
+  value: string;
+  filters: Record<string, string>;
+};
+
+type SupabaseQueryChain = Promise<QueryResult> & {
+  select: Mock;
+  eq: Mock;
+  maybeSingle: Mock;
+};
 
 /* eslint-disable no-unused-vars -- structural callback types for the query stub */
 function createAllowlistQueryChain(options: {
@@ -39,18 +56,74 @@ function createAllowlistQueryChain(options: {
   return chain;
 }
 
-/** Stub `access_allowlist` lookups keyed as `kind:value`. */
-export function mockAllowlistRows(rows: Record<string, AllowlistHit | null>) {
+function createAwaitableQueryChain(
+  // eslint-disable-next-line no-unused-vars
+  resolveQuery: (context: QueryContext) => QueryResult | Promise<QueryResult>
+): SupabaseQueryChain {
+  const context: QueryContext = { kind: '', value: '', filters: {} };
+
+  const createChain = (): SupabaseQueryChain => {
+    const promise = Promise.resolve().then(() => resolveQuery(context));
+    return Object.assign(promise, {
+      select: vi.fn(() => createChain()),
+      eq: vi.fn((column: string, next: string) => {
+        if (column === 'kind') context.kind = next;
+        if (column === 'value') context.value = next;
+        context.filters[column] = next;
+        return createChain();
+      }),
+      maybeSingle: vi.fn(() =>
+        Promise.resolve().then(() => resolveQuery(context))
+      ),
+    });
+  };
+
+  return createChain();
+}
+
+function normalizeAllowlistRow(hit: AllowlistHit | null) {
+  if (!hit) {
+    return null;
+  }
+
+  return {
+    status: hit.status ?? RecordStatusEnum.active,
+    expires_at: hit.expires_at,
+    allowed_project_ids: hit.allowed_project_ids ?? null,
+  };
+}
+
+/** Stub `access_allowlist` lookups keyed as `kind:value`, users, and projects. */
+export function mockAllowlistRows(
+  rows: Record<string, AllowlistHit | null>,
+  users: Record<string, { id: string } | null> = {},
+  projects: Array<{ id: string; key: string }> = []
+) {
   createAdminClient.mockImplementation(() => ({
-    from: vi.fn(() =>
-      createAllowlistQueryChain({
-        resolve: (kind, value) => {
-          const key = `${kind}:${value}`;
+    from: vi.fn((table: string) =>
+      createAwaitableQueryChain((context) => {
+        if (table === 'access_allowlist') {
+          const key = `${context.kind}:${context.value}`;
           if (!(key in rows)) {
             return { data: null, error: null };
           }
-          return { data: rows[key], error: null };
-        },
+          return {
+            data: normalizeAllowlistRow(rows[key] ?? null),
+            error: null,
+          };
+        }
+
+        if (table === 'users') {
+          const emailKey = context.filters['email'] || '';
+          const user = users[emailKey];
+          return { data: user || null, error: null };
+        }
+
+        if (table === 'projects') {
+          return { data: projects, error: null };
+        }
+
+        return { data: null, error: null };
       })
     ),
   }));

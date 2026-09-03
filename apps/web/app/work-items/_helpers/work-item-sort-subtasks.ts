@@ -1,4 +1,4 @@
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 
 export type SubtaskSortField = 'none' | 'title' | 'priority' | 'assignee';
 export type SubtaskSortDirection = 'asc' | 'desc';

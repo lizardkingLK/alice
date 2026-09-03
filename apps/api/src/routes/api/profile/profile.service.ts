@@ -1,5 +1,4 @@
-import { expectedUpdatedAtSchema } from '@repo/types';
-import { z } from 'zod';
+import type { ProfileDetailRow, UpdateOwnProfileBody } from '@repo/types';
 import { env } from '../../../config/env';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
 import { prisma } from '../../../lib/prisma';
@@ -8,71 +7,26 @@ import {
   prismaLockTimestamp,
 } from '../../../lib/prisma-audit';
 import { uploadPublicImageReplacingPrevious } from '../../../lib/public-image-upload';
-import { supabase } from '../../../lib/supabase';
-
-export const updateOwnProfileSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(2, 'Name must be at least 2 characters.')
-    .max(100, 'Name must be at most 100 characters.'),
-  expectedUpdatedAt: expectedUpdatedAtSchema,
-});
-
-export type UpdateOwnProfileInput = z.infer<typeof updateOwnProfileSchema>;
-
-export type ProfileUser = {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  profile_picture: string | null;
-  cover_picture: string | null;
-  updated_at: string;
-};
+import { ProfileRepository, ProfileUser } from './profile.repository';
 
 type ProfileImageField = 'profile_picture' | 'cover_picture';
 
-const PROFILE_USER_SELECT =
-  'id, name, email, role, profile_picture, cover_picture, updated_at' as const;
-
 export class ProfileService {
+  constructor(private readonly profileRepository: ProfileRepository) {}
+
+  async getOwnProfile(userId: string): Promise<ProfileDetailRow | null> {
+    return this.profileRepository.getProfileUserPrisma(userId);
+  }
+
   private async findProfileUser(userId: string): Promise<ProfileUser | null> {
-    const { data, error } = await supabase
-      .from('users')
-      .select(PROFILE_USER_SELECT)
-      .eq('id', userId)
-      .maybeSingle();
-
-    if (error) {
-      console.error('error. failed to load profile user:', error.message);
-      throw new Error('Failed to load profile.');
-    }
-
-    return data as ProfileUser | null;
+    return await this.profileRepository.getProfileUser(userId);
   }
 
   async updateOwnName(
     userId: string,
-    input: UpdateOwnProfileInput
+    input: UpdateOwnProfileBody
   ): Promise<ProfileUser> {
-    const { count } = await prisma.users.updateMany({
-      where: {
-        id: userId,
-        updated_at: prismaLockTimestamp(input.expectedUpdatedAt),
-      },
-      data: {
-        name: input.name,
-        ...prismaAuditUpdate(userId),
-      },
-    });
-
-    return resolveOptimisticPrismaUpdate({
-      count,
-      fetchUpdated: () => this.findProfileUser(userId),
-      fetchCurrent: () => this.findProfileUser(userId),
-      notFoundMessage: 'User profile not found.',
-    });
+    return this.profileRepository.updateOwnName(userId, input);
   }
 
   async updateOwnProfilePicture(
@@ -152,5 +106,3 @@ export class ProfileService {
     };
   }
 }
-
-export const profileService = new ProfileService();

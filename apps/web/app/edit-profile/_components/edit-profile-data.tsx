@@ -7,10 +7,10 @@ import {
 import { getDbUser, getUser } from '@/lib/auth';
 import { buildLoginPath } from '@/lib/auth-redirect';
 import { getRequestPathForLoginNext } from '@/lib/auth-redirect.server';
-import type { SettingsTab } from '@/lib/search-params';
+import type { AccountSettingsTab } from '@/lib/search-params';
 
 type EditProfileDataProps = {
-  readonly section: SettingsTab;
+  readonly section: AccountSettingsTab;
 };
 
 export async function EditProfileData({

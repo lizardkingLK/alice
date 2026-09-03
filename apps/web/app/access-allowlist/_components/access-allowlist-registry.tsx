@@ -1,6 +1,12 @@
 'use client';
 
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import {
   type CellContext,
   type ColumnDef,
@@ -52,7 +58,7 @@ import { Pagination } from '@/components/pagination';
 import { SearchInput } from '@/components/search-input';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   isActorOwnAllowlistDomain,
   OWN_ALLOWLIST_DOMAIN_LOCKOUT_MESSAGE,
@@ -60,8 +66,9 @@ import {
 import {
   deleteAccessAllowlistEntry,
   type AccessAllowlistEntry,
-} from '@/app/access-allowlist/_services/accessAllowlist.service';
+} from '@/app/access-allowlist/_services/access-allowlist.mutations.client';
 import { AccessAllowlistForm } from '@/app/access-allowlist/_components/access-allowlist-form';
+import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 
 interface AccessAllowlistRegistryProps {
   readonly entries: AccessAllowlistEntry[];
@@ -71,6 +78,7 @@ interface AccessAllowlistRegistryProps {
   readonly totalPages: number;
   readonly search: string;
   readonly currentUserEmail?: string | null;
+  readonly projects?: readonly Project[];
 }
 
 type AllowlistRow = Row<AccessAllowlistEntry>;
@@ -271,8 +279,13 @@ export function AccessAllowlistRegistry({
   totalPages,
   search,
   currentUserEmail = null,
+  projects = [],
 }: Readonly<AccessAllowlistRegistryProps>) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const addEmailParam = searchParams.get('addEmail');
+
   const { handlePageChange, handleLimitChange } = usePaginationNavigation(
     totalPages,
     limit
@@ -286,6 +299,33 @@ export function AccessAllowlistRegistry({
     useState<AccessAllowlistEntry | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
+
+  useEffect(() => {
+    if (addEmailParam) {
+      setIsAddOpen(true);
+    }
+  }, [addEmailParam]);
+
+  const handleCloseAdd = useCallback(() => {
+    setIsAddOpen(false);
+    if (addEmailParam) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('addEmail');
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname);
+    }
+  }, [searchParams, addEmailParam, pathname, router]);
+
+  const handleSuccessAdd = useCallback(() => {
+    setIsAddOpen(false);
+    if (addEmailParam) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('addEmail');
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname);
+    }
+    router.refresh();
+  }, [searchParams, addEmailParam, pathname, router]);
 
   const openEditDialog = useCallback((entry: AccessAllowlistEntry) => {
     setEditingEntry(entry);
@@ -356,7 +396,7 @@ export function AccessAllowlistRegistry({
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight">
             <Shield className="text-primary size-5" />
-            Access allowlist
+            Allowlist
           </CardTitle>
           <CardDescription>
             Domains and exact emails approved for sign-up and sign-in.
@@ -390,21 +430,28 @@ export function AccessAllowlistRegistry({
         </CardContent>
       </Card>
 
-      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+      <Dialog
+        open={isAddOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            handleCloseAdd();
+          }
+        }}
+      >
         <DialogContent
           showCloseButton={false}
-          className="border-0 bg-transparent p-0 shadow-none ring-0 sm:max-w-lg"
+          className="border-0 bg-transparent p-0 shadow-none ring-0 sm:max-w-xl"
         >
           <DialogTitle className="sr-only">Add allowlist entry</DialogTitle>
           <DialogDescription className="sr-only">
             Create a domain or email admission rule.
           </DialogDescription>
           <AccessAllowlistForm
-            onClose={() => setIsAddOpen(false)}
-            onSuccess={() => {
-              setIsAddOpen(false);
-              router.refresh();
-            }}
+            projects={projects}
+            onClose={handleCloseAdd}
+            onSuccess={handleSuccessAdd}
+            initialKind={addEmailParam ? 'email' : undefined}
+            initialValue={addEmailParam ?? undefined}
           />
         </DialogContent>
       </Dialog>
@@ -417,7 +464,7 @@ export function AccessAllowlistRegistry({
       >
         <DialogContent
           showCloseButton={false}
-          className="border-0 bg-transparent p-0 shadow-none ring-0 sm:max-w-lg"
+          className="border-0 bg-transparent p-0 shadow-none ring-0 sm:max-w-xl"
         >
           <DialogTitle className="sr-only">Edit allowlist entry</DialogTitle>
           <DialogDescription className="sr-only">
@@ -427,6 +474,7 @@ export function AccessAllowlistRegistry({
             <AccessAllowlistForm
               entry={editingEntry}
               currentUserEmail={currentUserEmail}
+              projects={projects}
               onClose={() => setEditingEntry(null)}
               onSuccess={() => {
                 setEditingEntry(null);

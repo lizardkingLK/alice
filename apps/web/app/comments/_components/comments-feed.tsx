@@ -39,7 +39,7 @@ import {
   updateComment,
   archiveComment,
   restoreComment,
-} from '../_services/comments.service';
+} from '../_services/comments.mutations.client';
 import { createCommentAction } from './actions';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { tryHandleLockedMutationError } from '@/lib/optimistic-lock/run-locked-mutation';
@@ -119,15 +119,139 @@ function WorkItemDiscussionHeader({
   );
 }
 
-async function loadActiveCommentUsers(): Promise<CommentUser[]> {
-  const supabase = createClient();
-  const { data } = await supabase
+function collectUserIds(ownerIds: string[], memberIds: string[]): Set<string> {
+  const userIds = new Set<string>();
+  for (const id of ownerIds) {
+    if (id) userIds.add(id);
+  }
+  for (const id of memberIds) {
+    if (id) userIds.add(id);
+  }
+  return userIds;
+}
+
+async function fetchUsersByIds(
+  supabase: ReturnType<typeof createClient>,
+  userIds: Set<string>
+): Promise<CommentUser[]> {
+  if (userIds.size === 0) return [];
+  const { data: fetchedUsers } = await supabase
     .from('users')
     .select(USER_PROJECTION)
     .eq('status', 'active')
-    .order('name');
-  // Defense in depth: only active users are mentionable.
-  return ((data as CommentUser[] | null) ?? []).filter(Boolean);
+    .in('id', Array.from(userIds));
+  return fetchedUsers && Array.isArray(fetchedUsers)
+    ? (fetchedUsers as CommentUser[])
+    : [];
+}
+
+function mergeAndSortUsers(
+  adminUsers: CommentUser[],
+  otherUsers: CommentUser[]
+): CommentUser[] {
+  const userMap = new Map<string, CommentUser>();
+  for (const user of adminUsers) {
+    if (user?.id) userMap.set(user.id, user);
+  }
+  for (const user of otherUsers) {
+    if (user?.id) userMap.set(user.id, user);
+  }
+  const result = Array.from(userMap.values());
+  result.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  return result;
+}
+
+async function loadProjectCommentUsers(
+  supabase: ReturnType<typeof createClient>,
+  projectId: string
+): Promise<CommentUser[]> {
+  const [projectRes, membersRes, adminsRes] = await Promise.all([
+    supabase
+      .from('projects')
+      .select('owner_id')
+      .eq('id', projectId)
+      .maybeSingle(),
+    supabase
+      .from('project_members')
+      .select('user_id')
+      .eq('project_id', projectId)
+      .eq('status', 'active'),
+    supabase
+      .from('users')
+      .select(USER_PROJECTION)
+      .eq('status', 'active')
+      .eq('role', 'admin'),
+  ]);
+
+  const ownerIds = projectRes.data?.owner_id ? [projectRes.data.owner_id] : [];
+  const memberIds =
+    (membersRes.data as { user_id: string }[])
+      ?.map((m) => m.user_id)
+      .filter(Boolean) ?? [];
+  const allowedUserIds = collectUserIds(ownerIds, memberIds);
+
+  const projectUsers = await fetchUsersByIds(supabase, allowedUserIds);
+  const admins = (adminsRes.data as CommentUser[]) ?? [];
+  return mergeAndSortUsers(admins, projectUsers);
+}
+
+async function loadGlobalCommentUsers(
+  supabase: ReturnType<typeof createClient>
+): Promise<CommentUser[]> {
+  const [projectsRes, membersRes, adminsRes] = await Promise.all([
+    supabase.from('projects').select('owner_id').eq('status', 'active'),
+    supabase.from('project_members').select('user_id').eq('status', 'active'),
+    supabase
+      .from('users')
+      .select(USER_PROJECTION)
+      .eq('status', 'active')
+      .eq('role', 'admin'),
+  ]);
+
+  const ownerIds =
+    (projectsRes.data as { owner_id: string }[])
+      ?.map((p) => p.owner_id)
+      .filter(Boolean) ?? [];
+  const memberIds =
+    (membersRes.data as { user_id: string }[])
+      ?.map((m) => m.user_id)
+      .filter(Boolean) ?? [];
+  const allowedUserIds = collectUserIds(ownerIds, memberIds);
+
+  const memberAndOwnerUsers = await fetchUsersByIds(supabase, allowedUserIds);
+  const admins = (adminsRes.data as CommentUser[]) ?? [];
+  return mergeAndSortUsers(admins, memberAndOwnerUsers);
+}
+
+export async function loadActiveCommentUsers(
+  workItemId?: string
+): Promise<CommentUser[]> {
+  const supabase = createClient();
+
+  try {
+    if (workItemId && workItemId !== 'all') {
+      const { data: workItem } = await supabase
+        .from('work_items')
+        .select('project_id')
+        .eq('id', workItemId)
+        .maybeSingle();
+
+      const projectId = workItem?.project_id;
+      if (projectId) {
+        return await loadProjectCommentUsers(supabase, projectId);
+      }
+    }
+
+    return await loadGlobalCommentUsers(supabase);
+  } catch (error) {
+    console.error('error. failed to load work item mention users', error);
+    const { data } = await supabase
+      .from('users')
+      .select(USER_PROJECTION)
+      .eq('status', 'active')
+      .order('name');
+    return ((data as CommentUser[] | null) ?? []).filter(Boolean);
+  }
 }
 
 export function CommentsFeed({
@@ -170,6 +294,13 @@ export function CommentsFeed({
   const currentUserName = currentUser?.name ?? 'You';
   const currentUserImageUrl = currentUser?.profile_picture ?? null;
 
+  const targetWorkItemId =
+    workItemId ||
+    (newWorkItemId && newWorkItemId !== 'all' ? newWorkItemId : undefined) ||
+    (selectedWorkItemId && selectedWorkItemId !== 'all'
+      ? selectedWorkItemId
+      : undefined);
+
   const handleUserMentionClick = (mention: CommentUserMentionTarget) => {
     if (workItemId) {
       composerRef.current?.insertUserMention(mention);
@@ -204,12 +335,12 @@ export function CommentsFeed({
   }, [workItemId]);
 
   useEffect(() => {
-    loadActiveCommentUsers()
+    loadActiveCommentUsers(targetWorkItemId)
       .then(setUsers)
       .catch((error) => {
         console.error('error. failed to load comment users', error);
       });
-  }, []);
+  }, [targetWorkItemId]);
 
   const stats = useMemo(() => computeCommentStats(comments), [comments]);
 

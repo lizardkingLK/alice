@@ -1,4 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Database } from '@repo/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { UsersService } from '../../src/routes/api/users/users.service';
+import type { UsersRepository } from '../../src/routes/api/users/users.repository';
 
 const {
   findByIdMock,
@@ -14,32 +18,26 @@ const {
   selectSingleMock: vi.fn(),
 }));
 
-vi.mock('../../src/lib/supabase', () => ({
-  supabase: {
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          single: selectSingleMock,
-        })),
+const usersRepository = {
+  findById: findByIdMock,
+  deactivateGuarded: deactivateGuardedMock,
+  update: updateMock,
+} as unknown as UsersRepository;
+
+const mockDb = {
+  from: vi.fn(() => ({
+    select: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        single: selectSingleMock,
       })),
     })),
-    auth: {
-      admin: {
-        updateUserById: updateUserByIdMock,
-      },
+  })),
+  auth: {
+    admin: {
+      updateUserById: updateUserByIdMock,
     },
   },
-}));
-
-vi.mock('../../src/routes/api/users/users.repository', () => ({
-  usersRepository: {
-    findById: findByIdMock,
-    deactivateGuarded: deactivateGuardedMock,
-    update: updateMock,
-  },
-}));
-
-import { UsersService } from '../../src/routes/api/users/users.service';
+} as unknown as SupabaseClient<Database>;
 
 const baseUser = {
   id: 'user-1',
@@ -53,7 +51,7 @@ const baseUser = {
 };
 
 describe('UsersService.deactivateUser / toggleUserActive', () => {
-  const service = new UsersService();
+  const service = new UsersService(usersRepository, mockDb);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -177,5 +175,28 @@ describe('UsersService.deactivateUser / toggleUserActive', () => {
     expect(result.active).toBe(false);
     expect(deactivateGuardedMock).not.toHaveBeenCalled();
     expect(updateUserByIdMock).toHaveBeenCalled();
+  });
+
+  it('reactivates a user and clears Auth ban', async () => {
+    updateMock.mockResolvedValue({ ...baseUser, active: true });
+    const microsecondTimestamp = '2026-08-31T06:00:00.123456+00:00';
+
+    const result = await service.toggleUserActive(
+      'admin-1',
+      'user-1',
+      true,
+      microsecondTimestamp
+    );
+
+    expect(result.active).toBe(true);
+    expect(updateMock).toHaveBeenCalledWith(
+      'user-1',
+      { active: true },
+      'admin-1',
+      microsecondTimestamp
+    );
+    expect(updateUserByIdMock).toHaveBeenCalledWith('user-1', {
+      ban_duration: 'none',
+    });
   });
 });

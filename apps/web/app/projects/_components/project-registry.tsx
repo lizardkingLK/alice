@@ -27,12 +27,17 @@ import { Button } from '@repo/ui/components/ui/button';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Input } from '@repo/ui/components/ui/input';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@repo/ui/components/ui/avatar';
 import { ProjectForm } from './project-form';
 import { hardDeleteProject } from './actions';
 import {
   softDeleteProject as clientSoftDeleteProject,
   restoreProject as clientRestoreProject,
-} from '../_services/projects.service';
+} from '../_services/projects.mutations.client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runRegistryLockedAction } from '@/lib/optimistic-lock/run-locked-mutation';
 import {
@@ -52,19 +57,18 @@ import {
   RegistryRowActions,
   registryActionsHeader,
 } from '@/components/registry-row-actions';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@repo/ui/components/ui/select';
-import type { Project } from '../_services/projects.service';
-import type { User } from '@/app/users/_services/users.service';
+import { RegistryTabSwitcher } from '@/components/registry-tab-switcher';
+import type { Project } from '../_services/projects.mutations.client';
+import type { User } from '@/app/users/_services/users.mutations.client';
 import { cn } from '@repo/ui/lib/utils';
 import { formatMonthYear } from '@/app/_shared/utility';
 
 type ProjectTab = 'active' | 'archived';
+
+const PROJECT_STATUS_TABS = [
+  { id: 'active' as const, label: 'Active' },
+  { id: 'archived' as const, label: 'Archived' },
+] as const;
 
 interface ProjectRegistryProps {
   readonly projects: Project[];
@@ -110,6 +114,7 @@ function getProjectTableMeta(table: CellContext<Project, unknown>['table']) {
 
 function ProjectNameCell({ proj }: Readonly<{ proj: Project }>) {
   const teamCount = proj.team_count ?? 0;
+  const keyLetters = proj.key.slice(0, 2).toUpperCase();
 
   return (
     <div className="flex items-center gap-3">
@@ -117,9 +122,18 @@ function ProjectNameCell({ proj }: Readonly<{ proj: Project }>) {
         href={`/projects/${proj.id}`}
         className="group/row flex min-w-0 flex-1 items-center gap-3 transition-opacity hover:opacity-85"
       >
-        <div className="bg-primary/10 text-primary border-primary/20 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-bold shadow-sm transition-all duration-300 group-hover/row:scale-105">
-          {proj.key.slice(0, 2)}
-        </div>
+        <Avatar
+          size="sm"
+          className="border-primary/20 size-9 border shadow-sm transition-all duration-300 group-hover/row:scale-105"
+          title={proj.name}
+        >
+          {proj.logo_url ? (
+            <AvatarImage src={proj.logo_url} alt={`${proj.name} logo`} />
+          ) : null}
+          <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+            {keyLetters}
+          </AvatarFallback>
+        </Avatar>
         <div className="min-w-0">
           <div className="text-foreground group-hover/row:text-primary flex min-w-0 items-center gap-2 text-sm font-semibold transition-colors">
             <TruncatedText className="min-w-0">{proj.name}</TruncatedText>
@@ -380,31 +394,20 @@ export function ProjectRegistry({
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <Select
+        <div className="flex flex-wrap items-center gap-3 self-start">
+          <RegistryTabSwitcher
+            tabs={PROJECT_STATUS_TABS}
             value={tab}
-            onValueChange={(val) => handleTabChange(val as ProjectTab)}
-          >
-            <SelectTrigger
-              id="project-status-filter"
-              aria-label="Filter by Status"
-              className="bg-background/50 h-10 w-40"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active">Active Projects</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
-            </SelectContent>
-          </Select>
+            onChange={handleTabChange}
+          />
 
-          {isManagerOrAdmin ? (
+          {isAdmin ? (
             <Button
               onClick={() => {
                 setProjectToEdit(null);
                 setIsAddProjectOpen(true);
               }}
-              className="flex h-10 w-32 shrink-0 items-center justify-center px-6 text-xs font-semibold shadow-md duration-300 hover:shadow-lg"
+              className="flex h-10 shrink-0 items-center justify-center px-6 text-xs font-semibold shadow-md duration-300 hover:shadow-lg"
             >
               <Plus className="mr-1.5 h-4 w-4 shrink-0" />
               Add Project
@@ -454,7 +457,7 @@ export function ProjectRegistry({
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
           <div
             className={cn(
-              'animate-in fade-in zoom-in-95 no-scrollbar max-h-[calc(100vh-2rem)] w-full overflow-y-auto transition-all duration-300',
+              'animate-in fade-in zoom-in-95 no-scrollbar max-h-[calc(100vh-2rem)] w-full overflow-y-auto p-1 transition-all duration-300',
               isAddWide ? 'max-w-2xl' : 'max-w-xl'
             )}
           >
@@ -479,7 +482,7 @@ export function ProjectRegistry({
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
           <div
             className={cn(
-              'animate-in fade-in zoom-in-95 no-scrollbar max-h-[calc(100vh-2rem)] w-full max-w-xl overflow-y-auto duration-200'
+              'animate-in fade-in zoom-in-95 no-scrollbar max-h-[calc(100vh-2rem)] w-full max-w-xl overflow-y-auto p-1 duration-200'
             )}
           >
             <ProjectForm

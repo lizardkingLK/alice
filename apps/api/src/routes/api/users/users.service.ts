@@ -1,6 +1,8 @@
-import { supabase } from '../../../lib/supabase';
-import { usersRepository, type UserRow } from './users.repository';
+import type { Database, ListUsersQuery, UserDetailRow } from '@repo/types';
 import { UserRoleEnum } from '@repo/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { type UserRow, type UsersRepository } from './users.repository';
+import type { UserPaginatedList } from './users.prisma-query';
 
 export class UsersServiceError extends Error {
   constructor(
@@ -16,26 +18,6 @@ export function isUsersServiceError(
   error: unknown
 ): error is UsersServiceError {
   return error instanceof UsersServiceError;
-}
-
-async function requireAdmin(actorId: string) {
-  const { data: user, error } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', actorId)
-    .single();
-
-  if (error || !user) {
-    throw new UsersServiceError('Not authenticated.', 401);
-  }
-
-  if (user.role !== UserRoleEnum.admin) {
-    throw new UsersServiceError(
-      'Unauthorized. Only administrators can perform this action.',
-      403
-    );
-  }
-  return user;
 }
 
 export type CreateUserInput = {
@@ -58,11 +40,36 @@ export type DeactivateActor =
 const AUTH_BAN_DURATION = '87600h';
 
 export class UsersService {
+  constructor(
+    private readonly usersRepository: UsersRepository,
+    private readonly db: SupabaseClient<Database>
+  ) {}
+
+  private async requireAdmin(actorId: string) {
+    const { data: user, error } = await this.db
+      .from('users')
+      .select('role')
+      .eq('id', actorId)
+      .single();
+
+    if (error || !user) {
+      throw new UsersServiceError('Not authenticated.', 401);
+    }
+
+    if (user.role !== UserRoleEnum.admin) {
+      throw new UsersServiceError(
+        'Unauthorized. Only administrators can perform this action.',
+        403
+      );
+    }
+    return user;
+  }
+
   async createUser(actorId: string, input: CreateUserInput): Promise<UserRow> {
-    await requireAdmin(actorId);
+    await this.requireAdmin(actorId);
 
     // Check duplicate email
-    const existing = await usersRepository.findByEmail(input.email);
+    const existing = await this.usersRepository.findByEmail(input.email);
     if (existing) {
       throw new Error(
         'A user with this email address already exists in the registry.'
@@ -71,7 +78,7 @@ export class UsersService {
 
     // Invite user via Supabase Auth
     const { data: inviteData, error: inviteError } =
-      await supabase.auth.admin.inviteUserByEmail(input.email, {
+      await this.db.auth.admin.inviteUserByEmail(input.email, {
         redirectTo: input.redirectTo,
         data: {
           name: input.name,
@@ -90,7 +97,7 @@ export class UsersService {
 
     try {
       // Insert into public.users
-      return await usersRepository.create(
+      return await this.usersRepository.create(
         {
           id: invitedUser.id,
           name: input.name,
@@ -101,7 +108,7 @@ export class UsersService {
       );
     } catch (dbError) {
       // Rollback Auth user if database insertion fails
-      await supabase.auth.admin.deleteUser(invitedUser.id);
+      await this.db.auth.admin.deleteUser(invitedUser.id);
       throw dbError;
     }
   }
@@ -112,10 +119,10 @@ export class UsersService {
     input: UpdateUserInput,
     expectedUpdatedAt: string
   ): Promise<UserRow> {
-    await requireAdmin(actorId);
+    await this.requireAdmin(actorId);
 
     // 1. Update public.users table
-    const updated = await usersRepository.update(
+    const updated = await this.usersRepository.update(
       targetUserId,
       {
         name: input.name,
@@ -126,7 +133,7 @@ export class UsersService {
     );
 
     // 2. Sync metadata in Supabase Auth
-    const { error: authError } = await supabase.auth.admin.updateUserById(
+    const { error: authError } = await this.db.auth.admin.updateUserById(
       targetUserId,
       {
         user_metadata: {
@@ -154,7 +161,7 @@ export class UsersService {
   ): Promise<UserRow> {
     // Authorize before existence lookup so unauthorized callers cannot probe IDs.
     if (actor.type === 'admin') {
-      await requireAdmin(actor.actorId);
+      await this.requireAdmin(actor.actorId);
     } else if (actor.type === 'self') {
       if (actor.actorId !== targetUserId) {
         throw new UsersServiceError(
@@ -166,7 +173,7 @@ export class UsersService {
       // Authz is enforced at the webhook route (shared secret).
     }
 
-    const target = await usersRepository.findById(targetUserId);
+    const target = await this.usersRepository.findById(targetUserId);
     if (!target) {
       throw new UsersServiceError('User not found.', 404);
     }
@@ -186,7 +193,7 @@ export class UsersService {
     let updated: UserRow;
     try {
       // Atomic last-admin check + deactivate (row lock in Postgres).
-      updated = await usersRepository.deactivateGuarded(
+      updated = await this.usersRepository.deactivateGuarded(
         targetUserId,
         actorIdForAudit,
         expectedUpdatedAt
@@ -241,7 +248,7 @@ export class UsersService {
     banDuration: typeof AUTH_BAN_DURATION | 'none',
     options?: { requireSuccess?: boolean }
   ): Promise<void> {
-    const { error: authError } = await supabase.auth.admin.updateUserById(
+    const { error: authError } = await this.db.auth.admin.updateUserById(
       userId,
       { ban_duration: banDuration }
     );
@@ -263,9 +270,9 @@ export class UsersService {
     expectedUpdatedAt: string
   ): Promise<UserRow> {
     if (active) {
-      await requireAdmin(actorId);
+      await this.requireAdmin(actorId);
 
-      const updated = await usersRepository.update(
+      const updated = await this.usersRepository.update(
         targetUserId,
         { active: true },
         actorId,
@@ -291,6 +298,20 @@ export class UsersService {
       { expectedUpdatedAt }
     );
   }
-}
 
-export const usersService = new UsersService();
+  async listUsersPaginated(query: ListUsersQuery): Promise<UserPaginatedList> {
+    return await this.usersRepository.listPaginated({
+      filters: {
+        role: query.role,
+        active: query.active,
+      },
+      search: query.search,
+      page: query.page,
+      limit: query.limit,
+    });
+  }
+
+  async getUserDetail(userId: string): Promise<UserDetailRow | null> {
+    return await this.usersRepository.getDetailById(userId);
+  }
+}

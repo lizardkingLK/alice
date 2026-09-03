@@ -16,6 +16,7 @@ vi.mock('@/app/chat/_components/chat-client-bootstrap', () => ({
     conversations: [],
     activeConversationId: undefined,
     messages: [],
+    chatModels: [],
   })),
 }));
 

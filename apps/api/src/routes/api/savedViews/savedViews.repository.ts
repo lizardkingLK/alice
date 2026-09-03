@@ -1,12 +1,13 @@
 import {
   normalizeSavedViewSearch,
   uniqueSavedViewIdsFromShares,
-  type CreateSavedViewInput,
+  type CreateSavedViewBody,
+  type Database,
   type Tables,
-  type UpdateSavedViewInput,
+  type UpdateSavedViewBody,
 } from '@repo/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { RecordStatus } from '@repo/types/prisma';
-import { supabase } from '../../../lib/supabase';
 import { prisma } from '../../../lib/prisma';
 import {
   prismaAuditCreate,
@@ -47,9 +48,11 @@ function toSavedViewRow(row: {
 }
 
 export class SavedViewsRepository {
+  constructor(private readonly db: SupabaseClient<Database>) {}
+
   async create(
     ownerId: string,
-    input: CreateSavedViewInput
+    input: CreateSavedViewBody
   ): Promise<SavedViewRow> {
     const pathname = input.pathname;
     const search = normalizeSavedViewSearch(input.search ?? '');
@@ -85,7 +88,7 @@ export class SavedViewsRepository {
     search: string,
     status: 'active' | 'archived'
   ): Promise<SavedViewRow | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('saved_views')
       .select('*')
       .eq('owner_id', ownerId)
@@ -103,7 +106,7 @@ export class SavedViewsRepository {
   private async applyCreateInput(
     id: string,
     ownerId: string,
-    input: CreateSavedViewInput,
+    input: CreateSavedViewBody,
     search: string,
     options: { readonly restore?: boolean } = {}
   ): Promise<SavedViewRow> {
@@ -124,7 +127,7 @@ export class SavedViewsRepository {
 
   private async insertNew(
     ownerId: string,
-    input: CreateSavedViewInput,
+    input: CreateSavedViewBody,
     search: string
   ): Promise<SavedViewRow> {
     const created = await prisma.saved_views.create({
@@ -146,7 +149,7 @@ export class SavedViewsRepository {
     ownerId: string,
     status: 'active' | 'archived'
   ): Promise<SavedViewRow[]> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('saved_views')
       .select('*')
       .eq('owner_id', ownerId)
@@ -166,7 +169,7 @@ export class SavedViewsRepository {
    * This API returns the full list; SSR adds search + pagination.
    */
   async listSharedWithMe(userId: string): Promise<SavedViewRow[]> {
-    const { data: shares, error: sharesError } = await supabase
+    const { data: shares, error: sharesError } = await this.db
       .from('saved_view_shares')
       .select('view_id')
       .eq('user_id', userId)
@@ -181,7 +184,7 @@ export class SavedViewsRepository {
       return [];
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('saved_views')
       .select('*')
       .in('id', viewIds)
@@ -195,7 +198,7 @@ export class SavedViewsRepository {
   }
 
   async getById(id: string): Promise<SavedViewRow | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('saved_views')
       .select('*')
       .eq('id', id)
@@ -210,7 +213,7 @@ export class SavedViewsRepository {
   async update(
     id: string,
     actorId: string,
-    input: UpdateSavedViewInput
+    input: UpdateSavedViewBody
   ): Promise<SavedViewRow> {
     const updated = await prisma.saved_views.update({
       where: { id },
@@ -273,12 +276,12 @@ export class SavedViewsRepository {
   ): Promise<string[]> {
     const query =
       params.table === 'project_members'
-        ? supabase
+        ? this.db
             .from('project_members')
             .select('user_id')
             .eq('project_id', params.id)
             .eq('status', 'active')
-        : supabase
+        : this.db
             .from('team_members')
             .select('user_id')
             .eq('team_id', params.id)
@@ -297,7 +300,7 @@ export class SavedViewsRepository {
   }
 
   async listActiveShareUserIds(viewId: string): Promise<string[]> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('saved_view_shares')
       .select('user_id')
       .eq('view_id', viewId)
@@ -348,5 +351,3 @@ export class SavedViewsRepository {
     return results.length;
   }
 }
-
-export const savedViewsRepository = new SavedViewsRepository();

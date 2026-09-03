@@ -16,8 +16,12 @@ import {
   isValidAccessAllowlistDomain,
   normalizeAccessAllowlistDomain,
   type Tables,
+  type Json,
 } from '@repo/types';
-import { AccessAllowlistKind as AccessAllowlistKindEnum } from '@repo/types/prisma';
+import {
+  AccessAllowlistKind as AccessAllowlistKindEnum,
+  Prisma,
+} from '@repo/types/prisma';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 export type AccessAllowlistRow = Tables<'access_allowlist'>;
@@ -40,6 +44,7 @@ function toAccessAllowlistRow(row: {
   value: string;
   label: string | null;
   expires_at: Date | null;
+  allowed_project_ids: Json | null;
   status: AccessAllowlistStatus;
   created_by: string | null;
   created_at: Date;
@@ -52,6 +57,7 @@ function toAccessAllowlistRow(row: {
     value: row.value,
     label: row.label,
     expires_at: row.expires_at?.toISOString() ?? null,
+    allowed_project_ids: row.allowed_project_ids ?? null,
     status: row.status,
     created_by: row.created_by,
     created_at: row.created_at.toISOString(),
@@ -81,12 +87,36 @@ export class AccessAllowlistRepository {
     return data as AccessAllowlistRow | null;
   }
 
+  async findActiveDomainByValue(
+    domain: string
+  ): Promise<AccessAllowlistRow | null> {
+    const normalizedDomain = normalizeAccessAllowlistDomain(domain);
+    const { data, error } = await this.db
+      .from('access_allowlist')
+      .select('*')
+      .eq('kind', AccessAllowlistKindEnum.domain)
+      .eq('value', normalizedDomain)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (error) {
+      console.error(
+        'error. failed to find active domain allowlist entry:',
+        error.message
+      );
+      throw new Error('Failed to check domain allowlist');
+    }
+
+    return data as AccessAllowlistRow | null;
+  }
+
   async create(params: {
     actorId: string;
     kind: AccessAllowlistKind;
     value: string;
     label?: string | null;
     expires_at?: string | null;
+    allowed_project_ids?: string[] | null;
     status: AccessAllowlistStatus;
   }): Promise<AccessAllowlistRow> {
     const { actorId, kind } = params;
@@ -111,6 +141,7 @@ export class AccessAllowlistRepository {
           value: normalizedValue,
           label: params.label ?? null,
           expires_at: prismaOptionalDate(expires_at) ?? null,
+          allowed_project_ids: params.allowed_project_ids ?? Prisma.DbNull,
           status: params.status,
           ...prismaAuditCreateWithoutStatus(actorId),
         },
@@ -132,6 +163,7 @@ export class AccessAllowlistRepository {
     id: string;
     label?: string | null;
     expires_at?: string | null;
+    allowed_project_ids?: string[] | null;
     status?: AccessAllowlistStatus;
     expectedUpdatedAt: string;
   }): Promise<AccessAllowlistRow> {
@@ -157,6 +189,9 @@ export class AccessAllowlistRepository {
         ...(params.label !== undefined ? { label: params.label ?? null } : {}),
         ...(expires_at !== undefined
           ? { expires_at: prismaOptionalDate(expires_at) }
+          : {}),
+        ...(params.allowed_project_ids !== undefined
+          ? { allowed_project_ids: params.allowed_project_ids ?? Prisma.DbNull }
           : {}),
         ...(params.status !== undefined ? { status: params.status } : {}),
         ...prismaAuditUpdate(params.actorId),

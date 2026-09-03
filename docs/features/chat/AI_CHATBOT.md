@@ -10,6 +10,7 @@ name: **Alice Assistant**. Provider: **Google Gemini** (REST
 Related:
 
 - Feature index: [README.md](./README.md)
+- Workspace integrations (model pool, DB): [SETTINGS_INTEGRATIONS.md](../integrations/SETTINGS_INTEGRATIONS.md)
 - Auth: [AUTHENTICATION.md](../../auth/AUTHENTICATION.md),
   [RBAC](../../auth/RBAC_AUTHORIZATION_SKELETON.md)
 - Domain APIs: `apps/api/src/routes/api/{projects,sprints,workItems}/`
@@ -231,23 +232,26 @@ approval step before tool mutations run.
 
 ## Configuration
 
-| Variable                                     | Where                              | Purpose                                                                     |
-| -------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------- |
-| `GEMINI_API_KEY`                             | `apps/api/.env` (see `sample.env`) | Required for chat                                                           |
-| `GEMINI_API_URL`                             | Optional override                  | Default points at Gemini `generateContent` for the configured model id      |
-| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Zod `env.ts` + sample              | Shared service-role client (`lib/supabase.ts`) used by `chat.repository.ts` |
-| `STORAGE_BUCKET_CHAT_HISTORY`                | Zod `env.ts` + sample              | Chat history bucket name (same pattern as attachments / profile pictures)   |
+### Chat models (Phase 1 — live)
 
-`GEMINI_*` are runtime `process.env` reads (also listed in root `turbo.json`
-`globalEnv`); they are not part of the Zod `env.ts` schema today.
+Admins configure one or more **`integrations`** rows (category `ai_agent`, `config.kind = chat_model`) from **Settings → Integrations**. Alice Chat lists active rows via `GET /api/integrations/chat-models` and sends `integrationId` on `POST /api/chat`. Resolution order: explicit `integrationId` → workspace default row → **400** `"No chat model configured"`.
+
+See [SETTINGS_INTEGRATIONS.md](../integrations/SETTINGS_INTEGRATIONS.md).
+
+Per-model API keys and optional `config.api_url` live in encrypted JSONB — not in app env vars.
+
+| Variable                                     | Where                 | Purpose                                                                     |
+| -------------------------------------------- | --------------------- | --------------------------------------------------------------------------- |
+| `INTEGRATION_TOKEN_ENCRYPTION_KEY`           | `apps/api/.env`       | Encrypt/decrypt integration secrets (shared with GitHub/Jira tokens)        |
+| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Zod `env.ts` + sample | Shared service-role client (`lib/supabase.ts`) used by `chat.repository.ts` |
+| `STORAGE_BUCKET_CHAT_HISTORY`                | Zod `env.ts` + sample | Chat history bucket name (same pattern as attachments / profile pictures)   |
 
 Do **not** introduce `CHAT_SUPABASE_URL` / `CHAT_SUPABASE_SERVICE_ROLE_KEY` —
 chat must not maintain a second Supabase client or project. Prefer importing
 `createClient` from `apps/api/src/lib/supabase` rather than
 `@supabase/supabase-js` directly in API modules.
 
-Missing `GEMINI_API_KEY` → `POST /api/chat` returns **400** with a config
-message.
+No active chat model rows → `POST /api/chat` returns **400** with a configuration message.
 
 ---
 

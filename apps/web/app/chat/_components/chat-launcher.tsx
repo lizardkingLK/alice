@@ -12,6 +12,7 @@ import { usePathname } from 'next/navigation';
 import { Button } from '@repo/ui/components/ui/button';
 import { Sparkles } from '@repo/ui/lib/icons';
 import type { ChatConversation, ChatMessage } from './chat-client.types';
+import type { ChatModelOption } from '@repo/types';
 import { bootstrapLatestChat } from './chat-client-bootstrap';
 import { FloatingChatDrawer } from './floating-chat-widget';
 
@@ -53,9 +54,12 @@ export function ChatLauncherProvider({
   const [bootstrapMessages, setBootstrapMessages] = useState<
     ChatMessage[] | null
   >(null);
+  const [bootstrapChatModels, setBootstrapChatModels] = useState<
+    ChatModelOption[] | null
+  >(null);
 
   const ensureBootstrapLoaded = useCallback(async () => {
-    if (bootstrapConversations) return;
+    if (bootstrapConversations && bootstrapChatModels) return;
     if (isBootstrapLoading) return;
 
     setIsBootstrapLoading(true);
@@ -64,15 +68,17 @@ export function ChatLauncherProvider({
       setBootstrapConversations(bootstrap.conversations);
       setBootstrapActiveConversationId(bootstrap.activeConversationId);
       setBootstrapMessages(bootstrap.messages);
+      setBootstrapChatModels(bootstrap.chatModels);
     } catch (err) {
       console.error('Failed to bootstrap floating chat drawer:', err);
       setBootstrapConversations([]);
       setBootstrapActiveConversationId(undefined);
       setBootstrapMessages([]);
+      setBootstrapChatModels([]);
     } finally {
       setIsBootstrapLoading(false);
     }
-  }, [bootstrapConversations, isBootstrapLoading]);
+  }, [bootstrapChatModels, bootstrapConversations, isBootstrapLoading]);
 
   const openLauncher = useCallback(async () => {
     await ensureBootstrapLoaded();
@@ -95,6 +101,7 @@ export function ChatLauncherProvider({
           bootstrapConversations={bootstrapConversations}
           bootstrapActiveConversationId={bootstrapActiveConversationId}
           bootstrapMessages={bootstrapMessages}
+          bootstrapChatModels={bootstrapChatModels ?? undefined}
         />
       )}
     </ChatLauncherContext.Provider>

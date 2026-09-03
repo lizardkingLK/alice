@@ -1,28 +1,17 @@
 import { Router, type Response } from 'express';
+import { z } from 'zod';
 import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
-import {
-  projectsRepository,
-  type ProjectRowWithOwner,
-} from '../projects/projects.repository';
-import {
-  ChatRoles,
-  parseChatRole,
-  toGeminiRole,
-  GeminiRoles,
-  DEFAULT_CHAT_MODEL_VALUE,
-  resolveChatModel,
-} from '@repo/types';
+import { ChatRoles, parseChatRole } from '@repo/types';
+import { ChatProviderError } from '../integrations/chat-providers/chat-provider.error';
 import { type ChatService, sanitizeLog } from './chat.service';
-import type {
-  ContentPart,
-  ContentTurn,
-  InputMessage,
-  ToolAction,
-  StoredChatMessage,
-} from './chat.route.types';
+import {
+  chatConversationIdParamSchema,
+  postChatMessageBodySchema,
+} from './chat.schemas';
+import type { StoredChatMessage } from './chat.route.types';
 
 export type ChatRouterDeps = {
   chatService: ChatService;
@@ -35,8 +24,62 @@ function sendChatError(
   logLabel: string
 ) {
   const message = error instanceof Error ? error.message : fallback;
+  const statusCode =
+    error instanceof ChatProviderError ? error.statusCode : 500;
   console.error(`${logLabel}:`, sanitizeLog(message));
-  res.status(500).json({ error: message });
+  res.status(statusCode).json({ error: message });
+}
+
+/** Returns false after sending 403 when the user does not own the conversation. */
+async function requireConversationOwner(
+  chatService: ChatService,
+  res: Response,
+  userId: string,
+  conversationId: string
+): Promise<boolean> {
+  const isOwner = await chatService.verifyConversationOwner(
+    userId,
+    conversationId
+  );
+  if (!isOwner) {
+    res.status(403).json({
+      error: 'Access denied: You do not own this conversation.',
+    });
+    return false;
+  }
+  return true;
+}
+
+function parseConversationIdParam(
+  res: Response,
+  rawId: string | undefined
+): string | undefined {
+  const parsed = chatConversationIdParamSchema.safeParse(rawId);
+  if (!parsed.success) {
+    res.status(400).json({ error: z.treeifyError(parsed.error) });
+    return undefined;
+  }
+  return parsed.data;
+}
+
+async function resolveOwnedConversationId(
+  chatService: ChatService,
+  res: Response,
+  userId: string,
+  rawId: string | undefined
+): Promise<string | undefined> {
+  const conversationId = parseConversationIdParam(res, rawId);
+  if (!conversationId) {
+    return undefined;
+  }
+
+  if (
+    !(await requireConversationOwner(chatService, res, userId, conversationId))
+  ) {
+    return undefined;
+  }
+
+  return conversationId;
 }
 
 export function createChatRouter(deps: ChatRouterDeps): Router {
@@ -70,8 +113,16 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const { conversationId } = req.params;
-        const history = await chatService.loadChatHistory(conversationId!);
+        const conversationId = await resolveOwnedConversationId(
+          chatService,
+          res,
+          req.userId!,
+          req.params.conversationId
+        );
+        if (!conversationId) {
+          return;
+        }
+        const history = await chatService.loadChatHistory(conversationId);
         res.json({ history });
       } catch (error: unknown) {
         sendChatError(
@@ -89,8 +140,16 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const { conversationId } = req.params;
-        await chatService.deleteConversation(req.userId!, conversationId!);
+        const conversationId = await resolveOwnedConversationId(
+          chatService,
+          res,
+          req.userId!,
+          req.params.conversationId
+        );
+        if (!conversationId) {
+          return;
+        }
+        await chatService.deleteConversation(req.userId!, conversationId);
         res.json({ success: true });
       } catch (error: unknown) {
         sendChatError(
@@ -107,104 +166,35 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
     '/',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
-      const { messages, conversationId: reqConversationId, modelId } = req.body;
-
-      const resolvedModelValue = resolveChatModel(
-        typeof modelId === 'string' ? modelId : DEFAULT_CHAT_MODEL_VALUE
-      ).value;
-
-      if (!messages || !Array.isArray(messages)) {
-        return res.status(400).json({ error: 'messages array is required' });
+      const validation = postChatMessageBodySchema.safeParse(req.body);
+      if (!validation.success) {
+        return res
+          .status(400)
+          .json({ error: z.treeifyError(validation.error) });
       }
 
-      if (!process.env.GEMINI_API_KEY) {
-        return res.status(400).json({
-          error:
-            'GEMINI_API_KEY is not configured. Please add GEMINI_API_KEY to your apps/api/.env file and restart the server.',
+      const {
+        messages,
+        conversationId: reqConversationId,
+        modelId,
+        integrationId,
+      } = validation.data;
+
+      let chatModelConfig;
+      try {
+        chatModelConfig = await chatService.resolveChatModelForChat({
+          integrationId,
+          legacyModelId: modelId,
         });
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : 'No chat model configured';
+        return res.status(400).json({ error: message });
       }
 
       try {
-        const [projectsRaw, workspace] = await Promise.all([
-          projectsRepository.listAll().catch(() => []),
-          chatService.loadWorkspaceContext(),
-        ]);
-
-        const projects = (projectsRaw || []) as ProjectRowWithOwner[];
-        const { users, activeSprints: sprints } = workspace;
-
-        const contextInstruction = `
-Current Workspace State:
-- Active Projects: ${JSON.stringify(projects.map((p) => ({ id: p.id, name: p.name, key: p.key })))}
-- System Users: ${JSON.stringify(users.map((u) => ({ id: u.id, name: u.name, email: u.email })))}
-- Ongoing Sprints (Active Status Only): ${JSON.stringify(sprints.map((s) => ({ id: s.id, name: s.name, projectId: s.project_id })))}
-`;
-
-        const contents: ContentTurn[] = messages.map((msg: InputMessage) => {
-          const role = toGeminiRole(msg.role);
-
-          let parts = msg.parts;
-          if (!parts) {
-            const textContent = msg.content || msg.text || '';
-            parts = [{ text: textContent }];
-          }
-
-          return { role, parts };
-        });
-
-        let responseText = '';
-        const toolActionsPerformed: ToolAction[] = [];
-        let loopCount = 0;
-        const maxLoops = 5;
-
-        while (loopCount < maxLoops) {
-          const geminiResponse = await chatService.callGeminiAPI(
-            contents,
-            contextInstruction,
-            resolvedModelValue
-          );
-          const candidate = geminiResponse.candidates?.[0];
-          const modelContent = candidate?.content;
-
-          if (!modelContent) {
-            throw new Error('No response content returned from Gemini API');
-          }
-
-          contents.push(modelContent);
-
-          const functionCalls = modelContent.parts?.filter(
-            (p: ContentPart) => p.functionCall
-          );
-          if (!functionCalls || functionCalls.length === 0) {
-            responseText =
-              modelContent.parts
-                ?.map((p: ContentPart) => p.text || '')
-                .join('\n') || '';
-            break;
-          }
-
-          const functionResponseParts = await chatService.processFunctionCalls(
-            req.userId!,
-            functionCalls,
-            toolActionsPerformed
-          );
-          contents.push({
-            role: GeminiRoles.User,
-            parts: functionResponseParts,
-          });
-
-          loopCount++;
-        }
-
-        const newAssistantMessage: StoredChatMessage = {
-          id: `msg-${Date.now()}`,
-          role: ChatRoles.Assistant,
-          content: responseText,
-          actions: toolActionsPerformed,
-        };
-
         const sanitizedInputMessages: StoredChatMessage[] = messages.map(
-          (msg: InputMessage, index: number) => ({
+          (msg, index) => ({
             id: msg.id || `msg-${Date.now()}-${index}`,
             role: parseChatRole(msg.role),
             content: msg.content || msg.text || '',
@@ -212,34 +202,99 @@ Current Workspace State:
           })
         );
 
-        const updatedMessages = [
-          ...sanitizedInputMessages,
-          newAssistantMessage,
-        ];
-
         let conversationId = reqConversationId;
         let title = 'New Chat';
 
         if (!conversationId) {
+          // Process first message synchronously to ensure Gemini succeeds before database/sidebar creation
+          const { responseText, toolActionsPerformed } =
+            await chatService.generateChatResponse(
+              req.userId!,
+              sanitizedInputMessages,
+              chatModelConfig
+            );
+
           const firstMsgText =
             messages[0]?.content || messages[0]?.text || 'New Chat';
           title = firstMsgText.slice(0, 30);
           if (firstMsgText.length > 30) title += '...';
           conversationId = await chatService.createConversation(
             req.userId!,
-            title
+            title,
+            false
           );
+
+          const newAssistantMessage: StoredChatMessage = {
+            id: `msg-${Date.now()}`,
+            role: ChatRoles.Assistant,
+            content: responseText,
+            actions: toolActionsPerformed,
+          };
+          const fullHistory = [...sanitizedInputMessages, newAssistantMessage];
+          await chatService.saveChatHistory(conversationId, fullHistory);
+
+          try {
+            await chatService.notifyChatProcessed({
+              userId: req.userId!,
+              message: `Your request in "${title}" has been processed.`,
+              relatedItemId: conversationId,
+            });
+          } catch (error) {
+            console.error(
+              'Failed to create notification for synchronous chat:',
+              error
+            );
+          }
+
+          return res.json({
+            reply: responseText,
+            history: fullHistory,
+            actions: toolActionsPerformed,
+            conversationId,
+            title,
+            is_processing: false,
+          });
+        } else {
+          if (
+            !(await requireConversationOwner(
+              chatService,
+              res,
+              req.userId!,
+              conversationId
+            ))
+          ) {
+            return;
+          }
+
+          await chatService.setProcessingStatus(conversationId, true);
+
+          // Save the user's incoming message immediately to history
+          await chatService.saveChatHistory(
+            conversationId,
+            sanitizedInputMessages
+          );
+
+          // Start background processing
+          chatService
+            .processChatAsync(
+              req.userId!,
+              conversationId,
+              sanitizedInputMessages,
+              chatModelConfig
+            )
+            .catch((err) => {
+              console.error('Error starting async process:', err);
+            });
+
+          return res.json({
+            reply: 'Processing request...',
+            history: sanitizedInputMessages,
+            actions: [],
+            conversationId,
+            title,
+            is_processing: true,
+          });
         }
-
-        await chatService.saveChatHistory(conversationId, updatedMessages);
-
-        res.json({
-          reply: responseText,
-          history: updatedMessages,
-          actions: toolActionsPerformed,
-          conversationId,
-          title,
-        });
       } catch (error: unknown) {
         sendChatError(
           res,

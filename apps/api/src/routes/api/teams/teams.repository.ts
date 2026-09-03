@@ -1,4 +1,10 @@
-import { supabase } from '../../../lib/supabase';
+import {
+  teamListSelect,
+  type Database,
+  type Tables,
+  type TeamListRow,
+} from '@repo/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { prisma } from '../../../lib/prisma';
 import {
   prismaAuditCreateWithoutStatus,
@@ -6,8 +12,7 @@ import {
   prismaLockTimestamp,
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
-import type { Tables } from '@repo/types';
-import { RecordStatus } from '@repo/types/prisma';
+import { RecordStatus, Prisma } from '@repo/types/prisma';
 
 export type TeamMemberRow = Tables<'team_members'>;
 
@@ -27,19 +32,25 @@ export type TeamRow = {
 
 async function insertTeamMembers(
   teamId: string,
-  memberIds: string[],
+  members: {
+    user_id: string;
+    capacity?: number | null;
+    allocation?: number | null;
+  }[],
   userId: string,
   failureMessage: string
 ): Promise<void> {
-  if (memberIds.length === 0) {
+  if (members.length === 0) {
     return;
   }
 
   try {
     await prisma.team_members.createMany({
-      data: memberIds.map((memberId) => ({
+      data: members.map((member) => ({
         team_id: teamId,
-        user_id: memberId,
+        user_id: member.user_id,
+        capacity: member.capacity ?? null,
+        allocation: member.allocation ?? null,
         status: RecordStatus.active,
         created_by: userId,
         updated_by: userId,
@@ -53,21 +64,135 @@ async function insertTeamMembers(
 }
 
 export class TeamsRepository {
-  async findByName(name: string, excludeId?: string): Promise<TeamRow | null> {
-    let query = supabase.from('teams').select('*').eq('name', name);
-    if (excludeId) {
-      query = query.neq('id', excludeId);
+  constructor(private readonly db: SupabaseClient<Database>) {}
+
+  async listPaginated(input: {
+    projectId?: string;
+    status?: RecordStatus;
+    search?: string;
+    page: number;
+    limit: number;
+  }): Promise<{
+    teams: TeamListRow[];
+    totalCount: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const skip = (input.page - 1) * input.limit;
+    const take = input.limit;
+
+    const where: Prisma.teamsWhereInput = {};
+
+    if (input.projectId) {
+      where.project_id = input.projectId;
     }
-    const { data, error } = await query.maybeSingle();
-    if (error) {
-      console.error('database query error find team by name:', error.message);
+
+    if (input.status) {
+      where.status = input.status;
+    }
+
+    const term = input.search?.trim();
+    if (term) {
+      where.OR = [
+        { name: { contains: term, mode: Prisma.QueryMode.insensitive } },
+        { description: { contains: term, mode: Prisma.QueryMode.insensitive } },
+        { tech_stack: { contains: term, mode: Prisma.QueryMode.insensitive } },
+      ];
+    }
+
+    try {
+      const [teams, totalCount] = await Promise.all([
+        prisma.teams.findMany({
+          where,
+          select: teamListSelect,
+          orderBy: { created_at: Prisma.SortOrder.desc },
+          skip,
+          take,
+        }),
+        prisma.teams.count({ where }),
+      ]);
+
+      const totalPages = Math.ceil(totalCount / input.limit);
+
+      return {
+        teams,
+        totalCount,
+        page: input.page,
+        limit: input.limit,
+        totalPages,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to list teams:', message);
+      throw new Error('Failed to list teams');
+    }
+  }
+
+  async getDetailById(teamId: string): Promise<TeamListRow | null> {
+    try {
+      return await prisma.teams.findUnique({
+        where: { id: teamId },
+        select: teamListSelect,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to get team detail:', message);
+      throw new Error('Failed to get team');
+    }
+  }
+
+  async findByName(
+    name: string,
+    projectId?: string | null,
+    excludeId?: string
+  ): Promise<TeamRow | null> {
+    const where: Prisma.teamsWhereInput = {
+      name,
+    };
+
+    if (projectId !== undefined) {
+      where.project_id = projectId;
+    }
+
+    if (excludeId) {
+      where.id = { not: excludeId };
+    }
+
+    try {
+      const team = await prisma.teams.findFirst({
+        where,
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          manager_id: true,
+          project_id: true,
+          tech_stack: true,
+          status: true,
+          created_at: true,
+          updated_at: true,
+          created_by: true,
+          updated_by: true,
+        },
+      });
+
+      if (!team) return null;
+
+      return {
+        ...team,
+        created_at: team.created_at.toISOString(),
+        updated_at: team.updated_at.toISOString(),
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to get team by name:', message);
       throw new Error('Failed to locate team by name');
     }
-    return data;
   }
 
   async findById(id: string): Promise<TeamRow | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('teams')
       .select('*')
       .eq('id', id)
@@ -83,10 +208,17 @@ export class TeamsRepository {
     teamInput: Omit<
       TeamRow,
       'id' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'
-    > & { member_ids?: string[] },
+    > & {
+      member_ids?: string[];
+      members?: {
+        user_id: string;
+        capacity?: number | null;
+        allocation?: number | null;
+      }[];
+    },
     userId: string
   ): Promise<TeamRow> {
-    const { member_ids, ...teamData } = teamInput;
+    const { member_ids, members, ...teamData } = teamInput;
     const createdTeam = await prisma.teams.create({
       data: {
         ...teamData,
@@ -94,11 +226,14 @@ export class TeamsRepository {
       },
     });
 
-    if (member_ids && member_ids.length > 0) {
+    const parsedMembers =
+      members ?? (member_ids || []).map((id) => ({ user_id: id }));
+
+    if (parsedMembers.length > 0) {
       try {
         await insertTeamMembers(
           createdTeam.id,
-          member_ids,
+          parsedMembers,
           userId,
           'Failed to add team members'
         );
@@ -122,11 +257,18 @@ export class TeamsRepository {
         TeamRow,
         'id' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'
       >
-    > & { member_ids?: string[] },
+    > & {
+      member_ids?: string[];
+      members?: {
+        user_id: string;
+        capacity?: number | null;
+        allocation?: number | null;
+      }[];
+    },
     userId: string,
     expectedUpdatedAt: string
   ): Promise<TeamRow> {
-    const { member_ids, ...teamData } = teamInput;
+    const { member_ids, members, ...teamData } = teamInput;
     const { count } = await prisma.teams.updateMany({
       where: { id: teamId, updated_at: prismaLockTimestamp(expectedUpdatedAt) },
       data: {
@@ -142,12 +284,15 @@ export class TeamsRepository {
       notFoundMessage: 'Team not found',
     });
 
-    if (member_ids) {
+    if (members || member_ids) {
+      const parsedMembers =
+        members ?? (member_ids || []).map((id) => ({ user_id: id }));
+
       try {
         await prisma.team_members.deleteMany({ where: { team_id: teamId } });
         await insertTeamMembers(
           teamId,
-          member_ids,
+          parsedMembers,
           userId,
           'Failed to update team members'
         );
@@ -169,7 +314,7 @@ export class TeamsRepository {
     teamId: string,
     userId: string
   ): Promise<TeamMemberRow | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('team_members')
       .select('*')
       .eq('team_id', teamId)
@@ -216,5 +361,3 @@ export class TeamsRepository {
     await prisma.teams.deleteMany({ where: { id: teamId } });
   }
 }
-
-export const teamsRepository = new TeamsRepository();

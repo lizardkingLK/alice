@@ -13,7 +13,7 @@ import {
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { Textarea } from '@repo/ui/components/ui/textarea';
-import { createSavedView } from '@/app/views/_services/saved-views.client';
+import { createSavedView } from '@/app/views/_services/saved-views.mutations.client';
 import { emitSavedViewsChanged } from '@/app/views/_hooks/use-saved-views-nav';
 
 type SaveViewDialogProps = {

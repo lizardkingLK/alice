@@ -2,49 +2,54 @@ import {
   expandShareRecipients,
   NotificationBuilder,
   ViewSharedNotification,
-  type CreateSavedViewInput,
-  type ShareSavedViewInput,
-  type UpdateSavedViewInput,
+  type CreateSavedViewBody,
+  type ShareSavedViewBody,
+  type UpdateSavedViewBody,
 } from '@repo/types';
-import { supabase } from '../../../lib/supabase';
-import { NotificationsRepository } from '../notifications/notifications.repository';
+import type { NotificationsRepository } from '../notifications/notifications.repository';
 import {
-  savedViewsRepository,
   type SavedViewRow,
+  type SavedViewsRepository,
 } from './savedViews.repository';
 
-const notificationsRepository = new NotificationsRepository(supabase);
-
 export class SavedViewsService {
-  create(ownerId: string, input: CreateSavedViewInput) {
-    return savedViewsRepository.create(ownerId, input);
+  constructor(
+    private readonly savedViewsRepository: SavedViewsRepository,
+    private readonly notificationsRepository: Pick<
+      NotificationsRepository,
+      'getUserName' | 'insertMany'
+    >
+  ) {}
+
+  create(ownerId: string, input: CreateSavedViewBody) {
+    return this.savedViewsRepository.create(ownerId, input);
   }
 
   listOwned(ownerId: string, status: 'active' | 'archived') {
-    return savedViewsRepository.listOwned(ownerId, status);
+    return this.savedViewsRepository.listOwned(ownerId, status);
   }
 
   listSharedWithMe(userId: string) {
-    return savedViewsRepository.listSharedWithMe(userId);
+    return this.savedViewsRepository.listSharedWithMe(userId);
   }
 
   async update(
     actorId: string,
     viewId: string,
-    input: UpdateSavedViewInput
+    input: UpdateSavedViewBody
   ): Promise<SavedViewRow> {
     const view = await this.requireOwnedView(actorId, viewId);
-    return savedViewsRepository.update(view.id, actorId, input);
+    return this.savedViewsRepository.update(view.id, actorId, input);
   }
 
   async archive(actorId: string, viewId: string): Promise<SavedViewRow> {
     await this.requireOwnedView(actorId, viewId);
-    return savedViewsRepository.setStatus(viewId, actorId, 'archived');
+    return this.savedViewsRepository.setStatus(viewId, actorId, 'archived');
   }
 
   async restore(actorId: string, viewId: string): Promise<SavedViewRow> {
     await this.requireOwnedView(actorId, viewId);
-    return savedViewsRepository.setStatus(viewId, actorId, 'active');
+    return this.savedViewsRepository.setStatus(viewId, actorId, 'active');
   }
 
   async hardDelete(actorId: string, viewId: string): Promise<void> {
@@ -52,12 +57,12 @@ export class SavedViewsService {
     if (view.status !== 'archived') {
       throw new Error('Only archived views can be permanently deleted');
     }
-    await savedViewsRepository.hardDelete(viewId);
+    await this.savedViewsRepository.hardDelete(viewId);
   }
 
   /** Recipient removes a shared view from their Shared-with-me list. */
   async deleteShare(actorId: string, viewId: string): Promise<void> {
-    await savedViewsRepository.deleteShare({
+    await this.savedViewsRepository.deleteShare({
       viewId,
       userId: actorId,
     });
@@ -66,7 +71,7 @@ export class SavedViewsService {
   async share(
     actorId: string,
     viewId: string,
-    input: ShareSavedViewInput
+    input: ShareSavedViewBody
   ): Promise<{ view: SavedViewRow; recipientCount: number }> {
     const view = await this.requireOwnedView(actorId, viewId);
     if (view.status !== 'active') {
@@ -83,13 +88,13 @@ export class SavedViewsService {
     }
 
     const existingShareUserIds = new Set(
-      await savedViewsRepository.listActiveShareUserIds(view.id)
+      await this.savedViewsRepository.listActiveShareUserIds(view.id)
     );
     const newRecipientIds = recipients.filter(
       (userId) => !existingShareUserIds.has(userId)
     );
 
-    await savedViewsRepository.upsertShares({
+    await this.savedViewsRepository.upsertShares({
       viewId: view.id,
       actorId,
       userIds: recipients,
@@ -108,7 +113,7 @@ export class SavedViewsService {
     actorId: string,
     viewId: string
   ): Promise<SavedViewRow> {
-    const view = await savedViewsRepository.getById(viewId);
+    const view = await this.savedViewsRepository.getById(viewId);
     if (!view) {
       throw new Error('Saved view not found');
     }
@@ -128,7 +133,8 @@ export class SavedViewsService {
     }
 
     const actorName =
-      (await notificationsRepository.getUserName(params.actorId)) ?? 'Someone';
+      (await this.notificationsRepository.getUserName(params.actorId)) ??
+      'Someone';
     const message = `${actorName} shared the view “${params.view.title}” with you`;
 
     const rows = params.recipientIds.map((userId) =>
@@ -141,8 +147,6 @@ export class SavedViewsService {
         .Build()
     );
 
-    await notificationsRepository.insertMany(rows);
+    await this.notificationsRepository.insertMany(rows);
   }
 }
-
-export const savedViewsService = new SavedViewsService();

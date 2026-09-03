@@ -73,11 +73,43 @@ enum NotificationType {
   sprint
   due_date
   view_shared
+  chat_processed
+  access_request
 }
 
 enum AccessAllowlistKind {
   domain
   email
+}
+
+enum AccessRequestStatus {
+  pending
+  granted
+  denied
+}
+
+enum AccessRequestKind {
+  admission
+  project_expansion
+}
+
+enum JiraConnectionStatus {
+  active
+  revoked
+  expired
+}
+
+enum IntegrationCategory {
+  ai_agent
+  communication
+  design
+  productivity
+}
+
+enum IntegrationStatus {
+  active
+  disabled
+  draft
 }
 
 /// App profile + RBAC. `id` matches Supabase `auth.users.id` (set on invite, no DB default).
@@ -133,6 +165,7 @@ model users {
   updated_notifications   notifications[]   @relation("NotificationUpdatedBy")
   created_access_allowlist access_allowlist[] @relation("AccessAllowlistCreatedBy")
   updated_access_allowlist access_allowlist[] @relation("AccessAllowlistUpdatedBy")
+  resolved_access_requests access_requests[]  @relation("AccessRequestResolvedBy")
   chat_conversations      chat_conversations[]
   owned_saved_views       saved_views[]       @relation("SavedViewOwner")
   created_saved_views     saved_views[]       @relation("SavedViewCreatedBy")
@@ -140,6 +173,9 @@ model users {
   saved_view_shares       saved_view_shares[] @relation("SavedViewShareRecipient")
   created_saved_view_shares saved_view_shares[] @relation("SavedViewShareCreatedBy")
   updated_saved_view_shares saved_view_shares[] @relation("SavedViewShareUpdatedBy")
+  jira_connections        jira_connections[]
+  created_integrations    integrations[]      @relation("IntegrationCreatedBy")
+  updated_integrations    integrations[]      @relation("IntegrationUpdatedBy")
 }
 
 model projects {
@@ -158,10 +194,8 @@ model projects {
   created_at        DateTime      @default(now()) @db.Timestamptz(6)
   updated_by        String?       @db.Uuid
   updated_at        DateTime      @updatedAt @db.Timestamptz(6)
-  jira_url          String?
-  jira_email        String?
-  jira_token        String?
   jira_project_key  String?
+  jira_connection_id String?      @db.Uuid
   github_repo       String?
   github_token      String?
   logo_url          String?
@@ -170,6 +204,7 @@ model projects {
   owner           users             @relation("ProjectOwner", fields: [owner_id], references: [id])
   created_by_user users?            @relation("ProjectCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
   updated_by_user users?            @relation("ProjectUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+  jira_connection jira_connections? @relation(fields: [jira_connection_id], references: [id], onDelete: SetNull)
   members         project_members[]
   teams           teams[]
   sprints         sprints[]
@@ -383,8 +418,9 @@ model access_allowlist {
   kind       AccessAllowlistKind
   value      String
   label      String?
-  expires_at DateTime?           @db.Timestamptz(6)
-  status     RecordStatus        @default(active)
+  expires_at          DateTime?           @db.Timestamptz(6)
+  allowed_project_ids Json?
+  status              RecordStatus        @default(active)
   created_by String?             @db.Uuid
   created_at DateTime            @default(now()) @db.Timestamptz(6)
   updated_by String?             @db.Uuid
@@ -397,23 +433,57 @@ model access_allowlist {
   @@index([kind, status])
 }
 
-model jira_settings {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  jira_url   String
-  jira_email String
-  jira_token String
-  /** Always true; unique so at most one settings row exists. */
-  singleton  Boolean  @default(true) @unique
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @updatedAt @db.Timestamptz(6)
+/// Workspace admission requests from `/contact` (see docs/features/access/ACCESS_REQUESTS.md).
+model access_requests {
+  id                     String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requester_email        String
+  requester_name         String?
+  message                String
+  kind                   AccessRequestKind   @default(admission)
+  status                 AccessRequestStatus @default(pending)
+  request_count          Int                 @default(1)
+  requested_project_keys Json?
+  resolved_by            String?             @db.Uuid
+  resolved_at            DateTime?           @db.Timestamptz(6)
+  last_requested_at      DateTime            @default(now()) @db.Timestamptz(6)
+  created_at             DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime            @updatedAt @db.Timestamptz(6)
+
+  resolved_by_user users? @relation("AccessRequestResolvedBy", fields: [resolved_by], references: [id], onDelete: SetNull)
+
+  @@index([requester_email, status])
+  @@index([status, last_requested_at(sort: Desc)])
+  @@index([requester_email, last_requested_at(sort: Desc)])
+}
+
+model jira_connections {
+  id                      String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                 String               @db.Uuid
+  cloud_id                String
+  site_url                String
+  account_email           String?
+  refresh_token_enc       String
+  access_token_enc        String?
+  access_token_expires_at DateTime?            @db.Timestamptz(6)
+  scopes                  String
+  status                  JiraConnectionStatus @default(active)
+  created_at              DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime             @updatedAt @db.Timestamptz(6)
+
+  user     users      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  projects projects[]
+
+  @@index([user_id])
+  @@unique([user_id, cloud_id])
 }
 
 model chat_conversations {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id    String   @db.Uuid
-  title      String   @default("New Chat")
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @updatedAt @db.Timestamptz(6)
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String   @db.Uuid
+  title         String   @default("New Chat")
+  is_processing Boolean  @default(false)
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @updatedAt @db.Timestamptz(6)
 
   user       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
@@ -483,5 +553,35 @@ model github_pull_requests {
   work_item      work_items @relation(fields: [work_item_id], references: [id], onDelete: Cascade)
 
   @@unique([work_item_id, repo_owner, repo_name, pr_number])
+}
+
+/// Workspace-level integration instance (chat models, Slack, Figma, etc.).
+/// Secrets live encrypted inside `config` JSONB; API access is service-role only.
+model integrations {
+  id         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Static catalog id, e.g. "alice-gemini", "openai", "slack".
+  catalog_id String
+  category   IntegrationCategory
+  /// Provider slug for strategy dispatch: gemini, openai, anthropic, slack, …
+  provider   String
+  /// Admin-facing label, e.g. "Gemini 3.6", "GPT-4o (production)".
+  name       String
+  status     IntegrationStatus   @default(draft)
+  /// Provider-specific JSON; secret fields stored as v1:… ciphertext.
+  config     Json                @default("{}")
+  /// Default Alice Chat model when user has not picked one (ai_agent only).
+  is_default Boolean             @default(false)
+  sort_order Int                 @default(0)
+  created_by String?             @db.Uuid
+  created_at DateTime            @default(now()) @db.Timestamptz(6)
+  updated_by String?             @db.Uuid
+  updated_at DateTime            @updatedAt @db.Timestamptz(6)
+
+  created_by_user users? @relation("IntegrationCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users? @relation("IntegrationUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+
+  @@index([category, status])
+  @@index([catalog_id])
+  @@index([provider, status])
 }
 

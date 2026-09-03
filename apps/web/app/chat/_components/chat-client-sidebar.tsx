@@ -5,7 +5,7 @@ import { Input } from '@repo/ui/components/ui/input';
 import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
 import { Loader2, Trash2 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
-import type { ChatConversation } from '../_services/chat-client.service';
+import type { ChatConversation } from '../_services/chat.mutations.client';
 
 type ChatClientSidebarProps = {
   readonly showHistory: boolean;
@@ -29,10 +29,12 @@ type ChatClientSidebarProps = {
 function ConversationButton({
   title,
   isActive,
+  isProcessing,
   onClick,
 }: Readonly<{
   title: string;
   isActive: boolean;
+  isProcessing?: boolean;
   onClick: () => void;
 }>) {
   return (
@@ -40,13 +42,17 @@ function ConversationButton({
       type="button"
       variant="ghost"
       onClick={onClick}
+      disabled={isProcessing}
       className={cn(
-        'h-auto w-full justify-start px-3 py-2.5 pr-10 text-left text-xs font-normal',
+        'flex h-auto w-full items-center justify-start gap-2 px-3 py-2.5 pr-10 text-left text-xs font-normal',
         isActive
           ? 'bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary font-medium'
           : 'text-muted-foreground'
       )}
     >
+      {isProcessing && (
+        <Loader2 className="text-primary size-3.5 shrink-0 animate-spin" />
+      )}
       <span className="block w-full truncate" title={title}>
         {title}
       </span>
@@ -110,18 +116,21 @@ export default function ChatClientSidebar({
           <ConversationButton
             title={conv.title}
             isActive={isActive}
+            isProcessing={conv.is_processing}
             onClick={() => onSelectConversation(conv.id)}
           />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            onClick={(e) => onDeleteConversationClick(e, conv)}
-            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 absolute right-1.5 z-10 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-            aria-label={`Delete chat session ${conv.title}`}
-          >
-            <Trash2 />
-          </Button>
+          {!conv.is_processing && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={(e) => onDeleteConversationClick(e, conv)}
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 absolute right-1.5 z-10 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+              aria-label={`Delete chat session ${conv.title}`}
+            >
+              <Trash2 />
+            </Button>
+          )}
         </div>
       );
     });

@@ -1,183 +1,52 @@
-import { Router, type Response } from 'express';
+import { Router } from 'express';
 import multer, { type Multer } from 'multer';
 import { z } from 'zod';
 import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
-import { env } from '../../../config/env';
 import {
   handleMultipartImageUpload,
   MAX_PUBLIC_IMAGE_BYTES,
 } from '../../../lib/image-upload-route';
 import {
   sendRouteMutationError,
-  runLockedStatusRoute,
+  registerLockedStatusPatch,
 } from '../../../lib/optimistic-lock';
-import { projectsService } from './projects.service';
+import { jsonErrorFromCaught } from '../../../lib/http-error-status';
+import { ProjectsService } from './projects.service';
 import {
   createProjectSchema,
   projectLockActionSchema,
   updateProjectSchema,
 } from './projects.schemas';
-import { type ProjectRow, withoutJiraToken } from './projects.repository';
-import { workItems } from '../../../config/composition';
+import { withoutIntegrationSecrets } from './projects.repository';
 import { type WorkItemBody } from '../workItems/workItems.schemas';
+import type { WorkItemService } from '../workItems/workItems.service';
 import { supabase } from '../../../lib/supabase';
-import { type WorkItemType, mapToWorkItemType } from '@repo/types';
+import type { JiraService } from '../jira/jira.service';
+import type { ParsedJiraIssue } from '../jira/jira.types';
+import { listProjectsQuerySchema } from '@repo/types';
 
-const projectsRouter: Router = Router();
+const TYPE_STRING = 'string';
 
-const projectImageUpload: Multer = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: MAX_PUBLIC_IMAGE_BYTES,
-  },
-});
+function firstQueryValue(value: unknown): string | undefined {
+  if (typeof value === TYPE_STRING) {
+    return value as string;
+  }
+  if (Array.isArray(value) && typeof value[0] === TYPE_STRING) {
+    return value[0] as string;
+  }
+  return undefined;
+}
 
-type ProjectLockAction = (
-  actorId: string,
-  projectId: string,
-  expectedUpdatedAt: string
-) => Promise<ProjectRow>;
-
-async function handleProjectLockAction(
-  req: AuthenticatedRequest,
-  res: Response,
-  action: ProjectLockAction,
-  failureMessage: string
-) {
-  await runLockedStatusRoute({
-    res,
-    actorId: req.userId!,
-    id: req.params.id,
-    missingIdMessage: 'Project ID is required',
-    parseBody: () => projectLockActionSchema.safeParse(req.body),
-    treeifyError: (error) => z.treeifyError(error as z.ZodError),
-    action,
-    toResponseBody: (project) => ({ project: withoutJiraToken(project) }),
-    failureMessage,
+function listProjectsQueryFromRequest(query: Record<string, unknown>) {
+  return listProjectsQuerySchema.safeParse({
+    page: firstQueryValue(query.page),
+    limit: firstQueryValue(query.limit),
+    status: firstQueryValue(query.status),
+    search: firstQueryValue(query.search),
   });
-}
-
-function registerProjectLockAction(
-  path: '/:id/soft-delete' | '/:id/restore',
-  action: ProjectLockAction,
-  failureMessage: string
-) {
-  projectsRouter.patch(
-    path,
-    requireApiAuth,
-    async (req: AuthenticatedRequest, res) => {
-      await handleProjectLockAction(req, res, action, failureMessage);
-    }
-  );
-}
-
-const jiraSettingsBodySchema = z.object({
-  jiraUrl: z.url({ message: 'Jira URL must be a valid URL' }),
-  jiraEmail: z.email({ message: 'Jira email must be a valid email' }),
-  jiraToken: z.string().trim().min(1, { message: 'Jira token is required' }),
-});
-
-type ResolvedJiraCredentials = {
-  jiraUrl: string;
-  jiraToken: string;
-  jiraProjectKey: string;
-  jiraEmail: string;
-};
-
-type CredentialSeed = {
-  jiraUrl?: string;
-  jiraToken?: string;
-  jiraProjectKey?: string;
-  jiraEmail?: string;
-};
-
-function mergeCredentialSeed(
-  current: CredentialSeed,
-  next: {
-    jira_url?: string | null;
-    jira_token?: string | null;
-    jira_project_key?: string | null;
-    jira_email?: string | null;
-  }
-): CredentialSeed {
-  return {
-    jiraUrl: current.jiraUrl || next.jira_url || undefined,
-    jiraToken: current.jiraToken || next.jira_token || undefined,
-    jiraProjectKey:
-      current.jiraProjectKey || next.jira_project_key || undefined,
-    jiraEmail: current.jiraEmail || next.jira_email || undefined,
-  };
-}
-
-function credentialsIncomplete(seed: CredentialSeed): boolean {
-  return !seed.jiraUrl || !seed.jiraToken || !seed.jiraProjectKey;
-}
-
-/**
- * Resolve Jira credentials from request body → project row → global settings → env.
- * `requireProject` controls 404 vs soft-skip when projectId is missing/not found.
- */
-async function resolveJiraCredentials(params: {
-  actorId: string;
-  projectId?: string;
-  jiraUrl?: string | null;
-  jiraToken?: string | null;
-  jiraProjectKey?: string | null;
-  jiraEmail?: string | null;
-  requireProject: boolean;
-}): Promise<
-  | { ok: true; credentials: ResolvedJiraCredentials }
-  | { ok: false; status: 400 | 404; error: string }
-> {
-  let seed: CredentialSeed = {
-    jiraUrl: params.jiraUrl || undefined,
-    jiraToken: params.jiraToken || env.JIRA_API_TOKEN || undefined,
-    jiraProjectKey: params.jiraProjectKey || undefined,
-    jiraEmail: params.jiraEmail || env.JIRA_EMAIL || undefined,
-  };
-
-  if (params.projectId && credentialsIncomplete(seed)) {
-    try {
-      const project = await projectsService.getProjectById(params.projectId);
-      seed = mergeCredentialSeed(seed, project);
-    } catch {
-      if (params.requireProject) {
-        return { ok: false, status: 404, error: 'Project not found' };
-      }
-    }
-  }
-
-  if (!seed.jiraUrl || !seed.jiraToken) {
-    const globalSettings = await projectsService.getJiraSettings(
-      params.actorId
-    );
-    if (globalSettings) {
-      seed = mergeCredentialSeed(seed, globalSettings);
-    }
-  }
-
-  if (credentialsIncomplete(seed)) {
-    return {
-      ok: false,
-      status: 400,
-      error: params.requireProject
-        ? 'Jira integration is not configured. Please provide credentials or set up global settings.'
-        : 'Jira URL, Token, and Project Key are required',
-    };
-  }
-
-  return {
-    ok: true,
-    credentials: {
-      jiraUrl: seed.jiraUrl!,
-      jiraToken: seed.jiraToken!,
-      jiraProjectKey: seed.jiraProjectKey!,
-      jiraEmail: seed.jiraEmail || 'integration@example.com',
-    },
-  };
 }
 
 async function loadExistingJiraKeys(projectId: string): Promise<Set<string>> {
@@ -202,497 +71,475 @@ function isUniqueViolation(error: unknown): boolean {
   );
 }
 
-async function importParsedJiraIssues(params: {
-  actorId: string;
-  projectId: string;
-  issues: ParsedJiraIssue[];
-  existingKeys: Set<string>;
-}): Promise<number> {
-  let importedCount = 0;
+export type ProjectsRouterDeps = {
+  projectsService: ProjectsService;
+  workItemService: Pick<WorkItemService, 'createWorkItem'>;
+  jiraService: Pick<JiraService, 'fetchIssuesForProjectLink'>;
+};
 
-  for (const issue of params.issues) {
-    if (params.existingKeys.has(issue.key)) {
-      continue;
-    }
+export function createProjectsRouter(deps: ProjectsRouterDeps) {
+  const { projectsService, workItemService, jiraService } = deps;
+  const projectsRouter: Router = Router();
 
-    const workItemInput: WorkItemBody = {
-      title: issue.title,
-      project_id: params.projectId,
-      type: issue.type,
-      assignee_id: null,
-      due_date: null,
-      description: issue.description || null,
-      jira_issue_key: issue.key,
-    };
-
-    try {
-      await workItems.workItemService.createWorkItem(
-        params.actorId,
-        workItemInput
+  projectsRouter.get(
+    '/',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsed = listProjectsQueryFromRequest(
+        req.query as Record<string, unknown>
       );
-      importedCount++;
-      params.existingKeys.add(issue.key);
-    } catch (createError) {
-      if (isUniqueViolation(createError)) {
-        params.existingKeys.add(issue.key);
-        continue;
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
       }
-      throw createError;
-    }
-  }
 
-  return importedCount;
-}
-
-interface JiraIssueField {
-  summary?: string;
-  issuetype?: {
-    name?: string;
-  };
-  description?: unknown;
-  parent?: {
-    key?: string;
-  };
-}
-
-interface JiraIssue {
-  key: string;
-  fields?: JiraIssueField;
-}
-
-interface JiraSearchResponse {
-  issues?: JiraIssue[];
-}
-
-interface JiraNode {
-  type?: string;
-  text?: string;
-  content?: JiraNode[];
-}
-
-interface ParsedJiraIssue {
-  key: string;
-  title: string;
-  description: string;
-  type: WorkItemType;
-  parentKey?: string | null;
-}
-
-function extractText(node: JiraNode | null | undefined): string {
-  if (!node) return '';
-  if (node.type === 'text') return node.text || '';
-  let text = '';
-  if (Array.isArray(node.content)) {
-    for (const child of node.content) {
-      text += extractText(child);
-    }
-  }
-  return text;
-}
-
-function parseJiraDescription(descObj: unknown): string {
-  if (!descObj) return '';
-  if (typeof descObj === 'string') {
-    return descObj;
-  }
-  if (typeof descObj === 'object') {
-    return extractText(descObj as JiraNode);
-  }
-  return '';
-}
-
-async function fetchAndParseJiraIssues(
-  jiraUrl: string,
-  jiraToken: string,
-  jiraProjectKey: string,
-  jiraEmail: string
-): Promise<ParsedJiraIssue[]> {
-  let url = jiraUrl.trim();
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    url = `https://${url}`;
-  }
-
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(url); // NOSONAR
-  } catch {
-    throw new Error('Invalid Jira URL format');
-  }
-
-  const hostname = parsedUrl.hostname.toLowerCase();
-
-  // Whitelist check: Must end with .atlassian.net to prevent SSRF
-  if (!hostname.endsWith('.atlassian.net')) {
-    throw new Error('Only Jira Cloud domains (*.atlassian.net) are allowed');
-  }
-
-  // Extract the subdomain and validate it is alphanumeric + hyphens only
-  const subdomain = hostname.slice(0, -'.atlassian.net'.length);
-  if (!/^[a-zA-Z0-9-]+$/.test(subdomain)) {
-    throw new Error('Invalid Jira Cloud subdomain format');
-  }
-
-  // Reconstruct the URL from the safe, validated components
-  // This breaks the taint chain and guarantees that only public Jira Cloud domains are requested.
-  const cleanUrl = `https://${subdomain}.atlassian.net`;
-
-  const credentials = `${jiraEmail.trim()}:${jiraToken.trim()}`;
-  const authHeader = `Basic ${Buffer.from(credentials).toString('base64')}`;
-  const jql = encodeURIComponent(`project="${jiraProjectKey.trim()}"`);
-  const response = await fetch(
-    `${cleanUrl}/rest/api/3/search/jql?jql=${jql}&fields=summary,description,issuetype,parent`,
-    {
-      // NOSONAR
-      headers: {
-        Authorization: authHeader,
-        Accept: 'application/json',
-      },
+      try {
+        const result = await projectsService.listProjectsPaginated(
+          parsed.data,
+          req.userId!
+        );
+        res.json(result);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to list projects';
+        res.status(500).json({ error: message });
+      }
     }
   );
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `Jira API request failed with status ${response.status}: ${errorText}`
+  projectsRouter.get(
+    '/:id',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsedId = z.uuid().safeParse(req.params.id);
+      if (!parsedId.success) {
+        return res
+          .status(400)
+          .json({ data: null, error: 'Invalid project id' });
+      }
+
+      try {
+        const project = await projectsService.getProjectDetail(
+          parsedId.data,
+          req.userId!
+        );
+        if (!project) {
+          return res
+            .status(404)
+            .json({ data: null, error: 'Project not found' });
+        }
+        const sanitized = withoutIntegrationSecrets(project);
+        res.json({ data: sanitized, error: null });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to get project';
+        res.status(500).json({ data: null, error: message });
+      }
+    }
+  );
+
+  projectsRouter.get(
+    '/:id/members',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsedId = z.uuid().safeParse(req.params.id);
+      if (!parsedId.success) {
+        return res.status(400).json({ error: 'Invalid project id' });
+      }
+
+      try {
+        const members = await projectsService.listProjectMembersPrisma(
+          parsedId.data,
+          req.userId!
+        );
+        res.json({ members });
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Failed to list project members';
+        res.status(500).json({ error: message });
+      }
+    }
+  );
+
+  const projectImageUpload: Multer = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: MAX_PUBLIC_IMAGE_BYTES,
+    },
+  });
+
+  function registerProjectImageRoute(
+    path: '/:id/logo' | '/:id/cover',
+    failureLabel: string,
+    update: (
+      actorId: string,
+      file: Express.Multer.File,
+      expectedUpdatedAt: string,
+      projectId: string
+    ) => Promise<unknown>
+  ) {
+    projectsRouter.post(
+      path,
+      requireApiAuth,
+      projectImageUpload.single('file'),
+      async (req: AuthenticatedRequest, res) => {
+        await handleMultipartImageUpload(req, res, {
+          failureLabel,
+          requireParam: 'id',
+          missingParamMessage: 'Project ID is required',
+          update: (actorId, file, expectedUpdatedAt, params) =>
+            update(actorId, file, expectedUpdatedAt, params.id!),
+        });
+      }
     );
   }
 
-  const data = (await response.json()) as JiraSearchResponse;
-  if (!data.issues || !Array.isArray(data.issues)) {
-    throw new Error('Invalid response format from Jira API');
-  }
-
-  return data.issues.map((issue) => {
-    const jiraType = issue.fields?.issuetype?.name || '';
-    const type = mapToWorkItemType(jiraType);
-    const parentKey = issue.fields?.parent?.key || null;
-
-    return {
-      key: issue.key,
-      title: issue.fields?.summary || 'Untitled',
-      description: parseJiraDescription(issue.fields?.description),
-      type,
-      parentKey,
-    };
-  });
-}
-
-projectsRouter.post(
-  '/',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    const parsed = createProjectSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: z.treeifyError(parsed.error) });
-    }
-
-    try {
-      const project = await projectsService.createProject(req.userId!, {
-        name: parsed.data.name,
-        key: parsed.data.key,
-        description: parsed.data.description ?? null,
-        owner_id: parsed.data.owner_id,
-        start_date: parsed.data.start_date ?? null,
-        end_date: parsed.data.end_date ?? null,
-        status: parsed.data.status ?? 'active',
-        jira_url: parsed.data.jira_url ?? null,
-        jira_email: parsed.data.jira_email ?? null,
-        jira_token: parsed.data.jira_token ?? null,
-        jira_project_key: parsed.data.jira_project_key ?? null,
-        github_repo: parsed.data.github_repo ?? null,
-        github_token: parsed.data.github_token ?? null,
-      });
-      res.status(201).json({ project: withoutJiraToken(project) });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to create project';
-      res.status(500).json({ error: message });
-    }
-  }
-);
-
-projectsRouter.post(
-  '/jira/preview',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    const { projectId, jiraUrl, jiraToken, jiraProjectKey, jiraEmail } =
-      req.body;
-
-    try {
-      const resolved = await resolveJiraCredentials({
-        actorId: req.userId!,
-        projectId,
-        jiraUrl,
-        jiraToken,
-        jiraProjectKey,
-        jiraEmail,
-        requireProject: false,
-      });
-
-      if (!resolved.ok) {
-        return res.status(resolved.status).json({ error: resolved.error });
-      }
-
-      const { credentials } = resolved;
-      const issues = await fetchAndParseJiraIssues(
-        credentials.jiraUrl,
-        credentials.jiraToken,
-        credentials.jiraProjectKey,
-        credentials.jiraEmail
-      );
-      res.json({ issues });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Jira connection test failed';
-      res.status(500).json({ error: message });
-    }
-  }
-);
-
-projectsRouter.post(
-  '/jira/import',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    const { projectId, jiraUrl, jiraToken, jiraProjectKey, jiraEmail } =
-      req.body;
-    if (!projectId) {
-      return res.status(400).json({ error: 'Project ID is required' });
-    }
-
+  async function importParsedJiraIssues(params: {
+    actorId: string;
+    projectId: string;
+    issues: ParsedJiraIssue[];
+    existingKeys: Set<string>;
+  }): Promise<number> {
     let importedCount = 0;
-    try {
-      const resolved = await resolveJiraCredentials({
-        actorId: req.userId!,
-        projectId,
-        jiraUrl,
-        jiraToken,
-        jiraProjectKey,
-        jiraEmail,
-        requireProject: true,
-      });
 
-      if (!resolved.ok) {
-        return res.status(resolved.status).json({ error: resolved.error });
+    for (const issue of params.issues) {
+      if (params.existingKeys.has(issue.key)) {
+        continue;
       }
 
-      const { credentials } = resolved;
-      const existingKeys = await loadExistingJiraKeys(projectId);
-      const issues = await fetchAndParseJiraIssues(
-        credentials.jiraUrl,
-        credentials.jiraToken,
-        credentials.jiraProjectKey,
-        credentials.jiraEmail
-      );
-
-      importedCount = await importParsedJiraIssues({
-        actorId: req.userId!,
-        projectId,
-        issues,
-        existingKeys,
-      });
+      const workItemInput: WorkItemBody = {
+        title: issue.title,
+        project_id: params.projectId,
+        type: issue.type,
+        assignee_id: null,
+        due_date: null,
+        description: issue.description || null,
+        jira_issue_key: issue.key,
+      };
 
       try {
-        await projectsService.linkImportedJiraParents(
-          req.userId!,
-          projectId,
-          issues
-        );
-      } catch (linkError) {
-        console.error(
-          'error. failed to link parents during Jira import:',
-          linkError
-        );
+        await workItemService.createWorkItem(params.actorId, workItemInput);
+        importedCount++;
+        params.existingKeys.add(issue.key);
+      } catch (createError) {
+        if (isUniqueViolation(createError)) {
+          params.existingKeys.add(issue.key);
+          continue;
+        }
+        throw createError;
+      }
+    }
+
+    return importedCount;
+  }
+
+  async function resolveProjectJiraLink(projectId: string): Promise<
+    | {
+        ok: true;
+        connectionId: string;
+        projectKey: string;
+      }
+    | { ok: false; status: 400 | 404; error: string }
+  > {
+    let project;
+    try {
+      project = await projectsService.getProjectById(projectId);
+    } catch {
+      return { ok: false, status: 404, error: 'Project not found' };
+    }
+
+    if (!project.jira_connection_id || !project.jira_project_key) {
+      return {
+        ok: false,
+        status: 400,
+        error:
+          'Jira is not linked on this project. Set jira_connection_id and jira_project_key first.',
+      };
+    }
+
+    return {
+      ok: true,
+      connectionId: project.jira_connection_id,
+      projectKey: project.jira_project_key,
+    };
+  }
+
+  projectsRouter.post(
+    '/',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsed = createProjectSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
       }
 
-      res.json({ success: true, importedCount });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Jira import failed';
-      res.status(500).json({
-        error: message,
-        importedCount,
-        partial: importedCount > 0,
-      });
+      try {
+        const project = await projectsService.createProject(req.userId!, {
+          name: parsed.data.name,
+          key: parsed.data.key,
+          description: parsed.data.description ?? null,
+          owner_id: parsed.data.owner_id,
+          start_date: parsed.data.start_date ?? null,
+          end_date: parsed.data.end_date ?? null,
+          status: parsed.data.status ?? 'active',
+          jira_project_key: parsed.data.jira_project_key ?? null,
+          jira_connection_id: parsed.data.jira_connection_id ?? null,
+          github_repo: parsed.data.github_repo ?? null,
+          github_token: parsed.data.github_token ?? null,
+        });
+        res.status(201).json({ project: withoutIntegrationSecrets(project) });
+      } catch (error) {
+        const { status, error: message } = jsonErrorFromCaught(
+          error,
+          'Failed to create project'
+        );
+        res.status(status).json({ error: message });
+      }
     }
-  }
-);
+  );
 
-projectsRouter.put(
-  '/jira/settings',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    const parsed = jiraSettingsBodySchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: z.treeifyError(parsed.error) });
+  projectsRouter.post(
+    '/:id/jira/preview',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ error: 'Project ID is required' });
+      }
+
+      try {
+        const link = await resolveProjectJiraLink(id);
+        if (!link.ok) {
+          return res.status(link.status).json({ error: link.error });
+        }
+
+        const issues = await jiraService.fetchIssuesForProjectLink(
+          req.userId!,
+          link.connectionId,
+          link.projectKey
+        );
+        res.json({ issues });
+      } catch (error) {
+        const { status, error: message } = jsonErrorFromCaught(
+          error,
+          'Jira connection preview failed'
+        );
+        res.status(status).json({ error: message });
+      }
     }
+  );
 
-    const { jiraUrl, jiraEmail, jiraToken } = parsed.data;
+  projectsRouter.post(
+    '/:id/jira/import',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ error: 'Project ID is required' });
+      }
 
-    try {
-      await projectsService.saveJiraSettings(
-        req.userId!,
-        jiraUrl,
-        jiraEmail,
-        jiraToken
-      );
-      res.json({ success: true, jiraUrl, jiraEmail });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to save settings';
-      res.status(500).json({ error: message });
+      let importedCount = 0;
+      try {
+        const link = await resolveProjectJiraLink(id);
+        if (!link.ok) {
+          return res.status(link.status).json({ error: link.error });
+        }
+
+        const existingKeys = await loadExistingJiraKeys(id);
+        const issues = await jiraService.fetchIssuesForProjectLink(
+          req.userId!,
+          link.connectionId,
+          link.projectKey
+        );
+
+        importedCount = await importParsedJiraIssues({
+          actorId: req.userId!,
+          projectId: id,
+          issues,
+          existingKeys,
+        });
+
+        try {
+          await projectsService.linkImportedJiraParents(
+            req.userId!,
+            id,
+            issues
+          );
+        } catch (linkError) {
+          console.error(
+            'error. failed to link parents during Jira import:',
+            linkError
+          );
+        }
+
+        res.json({ success: true, importedCount });
+      } catch (error) {
+        const { status, error: message } = jsonErrorFromCaught(
+          error,
+          'Jira import failed'
+        );
+        res.status(status).json({
+          error: message,
+          importedCount,
+          partial: importedCount > 0,
+        });
+      }
     }
-  }
-);
+  );
 
-projectsRouter.put(
-  '/:id',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ error: 'Project ID is required' });
+  projectsRouter.put(
+    '/:id',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ error: 'Project ID is required' });
+      }
+
+      const parsed = updateProjectSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+
+      try {
+        const { expectedUpdatedAt, ...input } = parsed.data;
+        const project = await projectsService.updateProject(
+          req.userId!,
+          id,
+          input,
+          expectedUpdatedAt
+        );
+        res.json({ project: withoutIntegrationSecrets(project) });
+      } catch (error) {
+        sendRouteMutationError(res, error, 'Failed to update project');
+      }
     }
+  );
 
-    const parsed = updateProjectSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: z.treeifyError(parsed.error) });
+  registerLockedStatusPatch({
+    router: projectsRouter,
+    path: '/:id/soft-delete',
+    auth: requireApiAuth,
+    missingIdMessage: 'Project ID is required',
+    parseBody: (req) => projectLockActionSchema.safeParse(req.body),
+    treeifyError: (error) => z.treeifyError(error as z.ZodError),
+    action: (actorId, projectId, expectedUpdatedAt) =>
+      projectsService.softDeleteProject(actorId, projectId, expectedUpdatedAt),
+    toResponseBody: (project) => ({
+      project: withoutIntegrationSecrets(project),
+    }),
+    failureMessage: 'Failed to soft delete project',
+  });
+
+  registerLockedStatusPatch({
+    router: projectsRouter,
+    path: '/:id/restore',
+    auth: requireApiAuth,
+    missingIdMessage: 'Project ID is required',
+    parseBody: (req) => projectLockActionSchema.safeParse(req.body),
+    treeifyError: (error) => z.treeifyError(error as z.ZodError),
+    action: (actorId, projectId, expectedUpdatedAt) =>
+      projectsService.restoreProject(actorId, projectId, expectedUpdatedAt),
+    toResponseBody: (project) => ({
+      project: withoutIntegrationSecrets(project),
+    }),
+    failureMessage: 'Failed to restore project',
+  });
+
+  projectsRouter.delete(
+    '/:id',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ error: 'Project ID is required' });
+      }
+
+      try {
+        await projectsService.hardDeleteProject(req.userId!, id);
+        res.json({ success: true });
+      } catch (error) {
+        const { status, error: message } = jsonErrorFromCaught(
+          error,
+          'Failed to hard delete project'
+        );
+        return res.status(status).json({ error: message });
+      }
     }
+  );
 
-    try {
-      const { expectedUpdatedAt, ...input } = parsed.data;
-      const project = await projectsService.updateProject(
-        req.userId!,
-        id,
-        input,
+  registerProjectImageRoute(
+    '/:id/logo',
+    'project logo',
+    (actorId, file, expectedUpdatedAt, projectId) =>
+      projectsService.updateProjectLogo(
+        actorId,
+        projectId,
+        file,
         expectedUpdatedAt
-      );
-      res.json({ project: withoutJiraToken(project) });
-    } catch (error) {
-      sendRouteMutationError(res, error, 'Failed to update project');
+      )
+  );
+
+  registerProjectImageRoute(
+    '/:id/cover',
+    'project cover',
+    (actorId, file, expectedUpdatedAt, projectId) =>
+      projectsService.updateProjectCover(
+        actorId,
+        projectId,
+        file,
+        expectedUpdatedAt
+      )
+  );
+
+  projectsRouter.post(
+    '/:id/members',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ error: 'Project ID is required' });
+      }
+      const { userId } = req.body;
+      if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+      }
+      try {
+        await projectsService.addMember(req.userId!, id, userId);
+        res.json({ success: true });
+      } catch (error) {
+        const { status, error: message } = jsonErrorFromCaught(
+          error,
+          'Failed to add project member'
+        );
+        return res.status(status).json({ error: message });
+      }
     }
-  }
-);
+  );
 
-registerProjectLockAction(
-  '/:id/soft-delete',
-  (actorId, projectId, expectedUpdatedAt) =>
-    projectsService.softDeleteProject(actorId, projectId, expectedUpdatedAt),
-  'Failed to soft delete project'
-);
-
-registerProjectLockAction(
-  '/:id/restore',
-  (actorId, projectId, expectedUpdatedAt) =>
-    projectsService.restoreProject(actorId, projectId, expectedUpdatedAt),
-  'Failed to restore project'
-);
-
-projectsRouter.delete(
-  '/:id',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ error: 'Project ID is required' });
+  projectsRouter.delete(
+    '/:id/members/:userId',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const { id, userId } = req.params;
+      if (!id || !userId) {
+        return res
+          .status(400)
+          .json({ error: 'Project ID and User ID are required' });
+      }
+      try {
+        await projectsService.removeMember(req.userId!, id, userId);
+        res.json({ success: true });
+      } catch (error) {
+        const { status, error: message } = jsonErrorFromCaught(
+          error,
+          'Failed to remove project member'
+        );
+        return res.status(status).json({ error: message });
+      }
     }
+  );
 
-    try {
-      await projectsService.hardDeleteProject(req.userId!, id);
-      res.json({ success: true });
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Failed to hard delete project';
-      res.status(500).json({ error: message });
-    }
-  }
-);
-
-projectsRouter.post(
-  '/:id/logo',
-  requireApiAuth,
-  projectImageUpload.single('file'),
-  async (req: AuthenticatedRequest, res) => {
-    await handleMultipartImageUpload(req, res, {
-      failureLabel: 'project logo',
-      requireParam: 'id',
-      missingParamMessage: 'Project ID is required',
-      update: (actorId, file, expectedUpdatedAt, params) =>
-        projectsService.updateProjectLogo(
-          actorId,
-          params.id!,
-          file,
-          expectedUpdatedAt
-        ),
-    });
-  }
-);
-
-projectsRouter.post(
-  '/:id/cover',
-  requireApiAuth,
-  projectImageUpload.single('file'),
-  async (req: AuthenticatedRequest, res) => {
-    await handleMultipartImageUpload(req, res, {
-      failureLabel: 'project cover',
-      requireParam: 'id',
-      missingParamMessage: 'Project ID is required',
-      update: (actorId, file, expectedUpdatedAt, params) =>
-        projectsService.updateProjectCover(
-          actorId,
-          params.id!,
-          file,
-          expectedUpdatedAt
-        ),
-    });
-  }
-);
-
-projectsRouter.post(
-  '/:id/members',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ error: 'Project ID is required' });
-    }
-    const { userId } = req.body;
-    if (!userId) {
-      return res.status(400).json({ error: 'User ID is required' });
-    }
-    try {
-      await projectsService.addMember(req.userId!, id, userId);
-      res.json({ success: true });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to add project member';
-      res.status(500).json({ error: message });
-    }
-  }
-);
-
-projectsRouter.delete(
-  '/:id/members/:userId',
-  requireApiAuth,
-  async (req: AuthenticatedRequest, res) => {
-    const { id, userId } = req.params;
-    if (!id || !userId) {
-      return res
-        .status(400)
-        .json({ error: 'Project ID and User ID are required' });
-    }
-    try {
-      await projectsService.removeMember(req.userId!, id, userId);
-      res.json({ success: true });
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Failed to remove project member';
-      res.status(500).json({ error: message });
-    }
-  }
-);
-
-export default projectsRouter;
+  return projectsRouter;
+}

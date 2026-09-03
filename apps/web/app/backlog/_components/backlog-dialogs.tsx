@@ -10,11 +10,11 @@ import {
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
 import { SprintForm } from '@/app/sprints/_components/sprint-form';
-import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form-dialog';
-import type { DbWorkItem } from '@/app/work-items/_services/workItem.service.server';
-import type { Project as DbProject } from '@/app/projects/_services/projects.service';
-import type { Sprint } from '@/app/sprints/_services/sprints.service';
-import type { User as DbUser } from '@/app/users/_services/users.service';
+import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form/work-item-form-dialog';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
+import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
+import type { User as DbUser } from '@/app/users/_services/users.mutations.client';
 
 const ERROR_ALERT_CLASS =
   'bg-destructive/15 border-destructive/20 text-destructive flex items-center gap-2 rounded-lg border px-4 py-3 text-sm';
@@ -361,6 +361,72 @@ export function BacklogMismatchDialog({
               e.stopPropagation();
               onAcknowledge();
             }}
+          >
+            OK
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* eslint-disable no-unused-vars */
+type ErrorDialogProps = {
+  readonly open: boolean;
+  readonly error: string | null;
+  readonly onOpenChange: (open: boolean) => void;
+  readonly onClose: () => void;
+};
+/* eslint-enable no-unused-vars */
+
+export function BacklogErrorDialog({
+  open,
+  error,
+  onOpenChange,
+  onClose,
+}: Readonly<ErrorDialogProps>) {
+  if (!error) return null;
+
+  const isCapacityError = error.toLowerCase().includes('capacity');
+  const title = isCapacityError ? 'Sprint Capacity Exceeded' : 'Action Failed';
+  const description = isCapacityError
+    ? 'The task cannot be allocated because the sprint story point limit has been reached.'
+    : 'An error occurred while updating the work item.';
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-card border-border/80 overflow-hidden p-0 backdrop-blur-md sm:max-w-md"
+      >
+        <div className="p-6">
+          <div className="mb-3 flex items-center gap-3 text-rose-500">
+            <div className="rounded-full border border-rose-500/20 bg-rose-500/10 p-2">
+              <AlertCircle className="h-6 w-6" />
+            </div>
+            <h3 className="text-foreground text-lg font-bold">{title}</h3>
+          </div>
+
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            {description}
+          </p>
+          <p className="text-muted-foreground/80 bg-muted/50 border-border/40 mt-2 rounded-lg border p-2.5 text-xs">
+            {error}
+          </p>
+        </div>
+
+        <div className="bg-muted/40 border-border flex justify-end gap-3 border-t px-6 py-4">
+          <Button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
+            className="bg-rose-600 px-4 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
           >
             OK
           </Button>

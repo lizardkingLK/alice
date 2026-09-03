@@ -4,10 +4,10 @@ import { TeamRegistry } from '@/app/manager/_components/team-registry';
 import {
   softDeleteTeam as clientSoftDeleteTeam,
   restoreTeam as clientRestoreTeam,
-} from '@/app/manager/_services/teams.service';
+} from '@/app/manager/_services/teams.mutations.client';
 import { hardDeleteTeam } from '@/app/manager/_components/actions';
-import type { Team } from '@/app/manager/_services/teams.service';
-import type { User } from '@/app/users/_services/users.service';
+import type { Team } from '@/app/manager/_services/teams.mutations.client';
+import type { User } from '@/app/users/_services/users.mutations.client';
 import { assertDebouncedSearchRedirect } from '../helpers/assert-debounced-search';
 
 const mockPush = vi.fn();
@@ -33,7 +33,7 @@ vi.mock(
   () => import('../mocks/dropdown-menu')
 );
 
-vi.mock('@/app/manager/_services/teams.service', () => ({
+vi.mock('@/app/manager/_services/teams.mutations.client', () => ({
   softDeleteTeam: vi.fn(),
   restoreTeam: vi.fn(),
 }));

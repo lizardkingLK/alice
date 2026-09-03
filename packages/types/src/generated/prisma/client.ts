@@ -100,10 +100,15 @@ export type notifications = Prisma.notificationsModel
  */
 export type access_allowlist = Prisma.access_allowlistModel
 /**
- * Model jira_settings
+ * Model access_requests
+ * Workspace admission requests from `/contact` (see docs/features/access/ACCESS_REQUESTS.md).
+ */
+export type access_requests = Prisma.access_requestsModel
+/**
+ * Model jira_connections
  * 
  */
-export type jira_settings = Prisma.jira_settingsModel
+export type jira_connections = Prisma.jira_connectionsModel
 /**
  * Model chat_conversations
  * 
@@ -124,3 +129,9 @@ export type saved_view_shares = Prisma.saved_view_sharesModel
  * 
  */
 export type github_pull_requests = Prisma.github_pull_requestsModel
+/**
+ * Model integrations
+ * Workspace-level integration instance (chat models, Slack, Figma, etc.).
+ * Secrets live encrypted inside `config` JSONB; API access is service-role only.
+ */
+export type integrations = Prisma.integrationsModel

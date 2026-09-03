@@ -27,14 +27,6 @@ vi.mock('../../src/lib/supabase', () => ({
   supabase: mockClient,
 }));
 
-vi.mock('../../src/routes/api/projects/projects.service', () => ({
-  projectsService: {},
-}));
-
-vi.mock('../../src/routes/api/projects/projects.repository', () => ({
-  projectsRepository: {},
-}));
-
 import { ChatRoles } from '@repo/types';
 import {
   chatHistoryToMarkdown,

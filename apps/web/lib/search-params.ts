@@ -6,10 +6,13 @@ export interface RawSearchParams {
   page?: string;
   limit?: string;
   tab?: string;
+  /** Settings integrations marketplace filter (`ai-agents`, etc.). */
+  category?: string;
   /** Work-item lifecycle list filter (`active` | `archived`). */
   recordStatus?: string;
   teamStatus?: string;
   search?: string;
+  requestId?: string;
   project?: string;
   sprint?: string;
   type?: string;
@@ -162,21 +165,49 @@ export function parseManagerTabStatus(
   return 'active';
 }
 
-export type UsersPageTab = 'users' | 'allowlist';
+export type UsersPageTab = 'users' | 'allowlist' | 'requests';
 
 export function parseUsersPageTab(tab?: string | null): UsersPageTab {
-  return tab === 'allowlist' ? 'allowlist' : 'users';
+  if (tab === 'allowlist') return 'allowlist';
+  if (tab === 'requests') return 'requests';
+  return 'users';
+}
+
+/** Board page tabs (`/board?tab=`). Default `board` omits the query param. */
+export type BoardPageTab = 'board' | 'calendar';
+
+export function parseBoardPageTab(tab?: string | null): BoardPageTab {
+  return tab === 'calendar' ? 'calendar' : 'board';
 }
 
 /** Account settings page tabs (`/settings?tab=`). */
 export type SettingsTab =
-  'general' | 'security' | 'notifications' | 'preferences';
+  'general' | 'security' | 'notifications' | 'preferences' | 'integrations';
+
+/** Self-service profile tabs (excludes admin-only Integrations). */
+export type AccountSettingsTab = Exclude<SettingsTab, 'integrations'>;
 
 export function parseSettingsTab(tab?: string | null): SettingsTab {
-  if (tab === 'security' || tab === 'notifications' || tab === 'preferences') {
+  if (
+    tab === 'security' ||
+    tab === 'notifications' ||
+    tab === 'preferences' ||
+    tab === 'integrations'
+  ) {
     return tab;
   }
   return 'general';
+}
+
+/** Coerce admin-only tabs when the signed-in user is not an administrator. */
+export function resolveSettingsTabForUser(
+  tab: SettingsTab,
+  userIsAdmin: boolean
+): SettingsTab {
+  if (tab === 'integrations' && !userIsAdmin) {
+    return 'general';
+  }
+  return tab;
 }
 
 /**

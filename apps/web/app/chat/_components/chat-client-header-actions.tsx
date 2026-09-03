@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Select,
@@ -24,26 +25,101 @@ import {
   TooltipTrigger,
 } from '@repo/ui/components/ui/tooltip';
 import { MoreHorizontal, Plus, X } from '@repo/ui/lib/icons';
-import { CHAT_MODELS, type ChatModelValue } from '@repo/types';
+import type { ChatModelOption } from '@repo/types';
+import { chatModelDisplayLabel } from '@/app/chat/_services/chat-models-api.shared';
+import { chatAiAgentsIntegrationsHref } from '@/app/chat/_services/chat-integrations-navigation.shared';
 
 type ChatClientHeaderActionsProps = {
   readonly variant: 'page' | 'drawer';
   readonly isPending: boolean;
-  readonly selectedModelId: ChatModelValue;
+  readonly chatModels: readonly ChatModelOption[];
+  readonly selectedIntegrationId: string | undefined;
   // eslint-disable-next-line no-unused-vars
-  readonly onSelectedModelIdChange: (value: ChatModelValue) => void;
+  readonly onSelectedIntegrationIdChange: (value: string) => void;
   readonly onNewChat: () => void;
   readonly onClose?: () => void;
 };
 
+function AddModelButton({ disabled }: Readonly<{ disabled?: boolean }>) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button type="button" variant="default" disabled={disabled} asChild>
+          <Link href={chatAiAgentsIntegrationsHref()}>
+            <Plus data-icon="inline-start" />
+            Add Model
+          </Link>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">
+        Configure a chat model in Settings
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function NewChatButton({
+  disabled,
+  onNewChat,
+}: Readonly<{
+  disabled?: boolean;
+  onNewChat: () => void;
+}>) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="default"
+          onClick={onNewChat}
+          disabled={disabled}
+        >
+          <Plus data-icon="inline-start" />
+          New Chat
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">Start a new chat</TooltipContent>
+    </Tooltip>
+  );
+}
+
 export default function ChatClientHeaderActions({
   variant,
   isPending,
-  selectedModelId,
-  onSelectedModelIdChange,
+  chatModels,
+  selectedIntegrationId,
+  onSelectedIntegrationIdChange,
   onNewChat,
   onClose,
 }: Readonly<ChatClientHeaderActionsProps>) {
+  const hasModels = chatModels.length > 0;
+
+  if (!hasModels) {
+    if (variant === 'drawer' && onClose) {
+      return (
+        <div className="flex items-center gap-1">
+          <AddModelButton disabled={isPending} />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                aria-label="Close chat"
+              >
+                <X className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Close</TooltipContent>
+          </Tooltip>
+        </div>
+      );
+    }
+
+    return <AddModelButton disabled={isPending} />;
+  }
+
   if (variant === 'drawer' && onClose) {
     return (
       <DropdownMenu>
@@ -65,12 +141,12 @@ export default function ChatClientHeaderActions({
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Model</DropdownMenuLabel>
           <DropdownMenuRadioGroup
-            value={selectedModelId}
-            onValueChange={(v) => onSelectedModelIdChange(v as ChatModelValue)}
+            value={selectedIntegrationId}
+            onValueChange={onSelectedIntegrationIdChange}
           >
-            {Object.values(CHAT_MODELS).map((model) => (
-              <DropdownMenuRadioItem key={model.value} value={model.value}>
-                {model.label}
+            {chatModels.map((model) => (
+              <DropdownMenuRadioItem key={model.id} value={model.id}>
+                {chatModelDisplayLabel(model)}
               </DropdownMenuRadioItem>
             ))}
           </DropdownMenuRadioGroup>
@@ -87,38 +163,26 @@ export default function ChatClientHeaderActions({
   return (
     <>
       <Select
-        value={selectedModelId}
-        onValueChange={(v) => onSelectedModelIdChange(v as ChatModelValue)}
+        value={selectedIntegrationId}
+        onValueChange={onSelectedIntegrationIdChange}
+        disabled={isPending}
       >
         <SelectTrigger
           aria-label="Chat model"
-          className="bg-background/50 border-border/80 h-9 w-37.5 px-2 text-xs font-medium"
+          className="bg-background/50 border-border/80 h-9 w-56 px-2 text-xs font-medium"
         >
-          <SelectValue />
+          <SelectValue placeholder="Select model" />
         </SelectTrigger>
         <SelectContent>
-          {Object.values(CHAT_MODELS).map((model) => (
-            <SelectItem key={model.value} value={model.value}>
-              {model.label}
+          {chatModels.map((model) => (
+            <SelectItem key={model.id} value={model.id}>
+              {chatModelDisplayLabel(model)}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            type="button"
-            variant="default"
-            onClick={onNewChat}
-            disabled={isPending}
-          >
-            <Plus data-icon="inline-start" />
-            New Chat
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">Start a new chat</TooltipContent>
-      </Tooltip>
+      <NewChatButton disabled={isPending} onNewChat={onNewChat} />
     </>
   );
 }

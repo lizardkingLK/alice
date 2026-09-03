@@ -1,16 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useMemo } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import {
   preferenceMatchesBoardFilters,
   projectFilterToPreference,
 } from '@/app/board/_helpers/workspace-defaults-shared';
 import { useWorkspaceDefaultsSession } from '@/app/board/_hooks/use-workspace-defaults-session';
-import { buildWorkspaceFilterRedirectPath } from '@/app/board/_services/board-defaults';
-import type { Project } from '@/app/projects/_services/projects.service.base';
-import type { Sprint } from '@/app/sprints/_services/sprints.service';
+import { buildWorkspaceFilterRedirectPath } from '@/app/board/_services/board.defaults.shared';
+import type { Project } from '@/app/projects/_services/projects.mutations.shared';
+import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
+import { parseBoardPageTab } from '@/lib/search-params';
 
 type SuggestedDefaults = {
   readonly projectId: string;
@@ -45,12 +46,15 @@ export function useBoardDefaultsBootstrap({
 }: UseBoardDefaultsBootstrapOptions) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const navigateToPreference = useCallback(
     (preference: BoardDefaultsPreference) => {
+      const tab = parseBoardPageTab(searchParams.get('tab'));
       const path = buildWorkspaceFilterRedirectPath(basePath, {
         projectId: preference.projectId,
         sprintId: preference.sprintId ?? undefined,
+        tab: tab === 'board' ? undefined : tab,
       });
       if (path) {
         router.replace(path);
@@ -58,7 +62,7 @@ export function useBoardDefaultsBootstrap({
       }
       router.replace(pathname);
     },
-    [basePath, pathname, router]
+    [basePath, pathname, router, searchParams]
   );
 
   const {

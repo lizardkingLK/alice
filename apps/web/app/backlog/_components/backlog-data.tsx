@@ -1,5 +1,5 @@
 import { BacklogWorkspace } from '@/app/backlog/_components/backlog-workspace';
-import { getBacklogWorkspace } from '@/app/backlog/_services/backlog.service.server';
+import { getBacklogWorkspace } from '@/app/backlog/_services/backlog.reads.server';
 
 export async function BacklogData() {
   const {

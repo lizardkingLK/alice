@@ -35,7 +35,10 @@ export const ATTACHMENT_UPLOADER_SELECT = userRelationSelect(
   'uploader_id'
 );
 
-/** Shared PostgREST select for attachment + uploader embed. */
+/**
+ * Shared PostgREST select for attachment + uploader embed.
+ * Field list must stay aligned with `attachmentListSelect` in `api/v1/attachments.ts`.
+ */
 export const ATTACHMENT_SELECT = `
   id, work_item_id, file_name, file_size, mime_type, storage_path,
   created_at, updated_at, uploader_id, status, created_by, updated_by,

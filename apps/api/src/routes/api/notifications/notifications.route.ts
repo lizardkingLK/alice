@@ -1,8 +1,13 @@
 import { Router, type Response } from 'express';
 import { z } from 'zod';
-import { contactRequestSchema } from '@repo/types';
+import {
+  ACCESS_REQUEST_ALREADY_GRANTED_MESSAGE,
+  ACCESS_REQUEST_LIMIT_MESSAGE,
+  contactRequestSchema,
+} from '@repo/types';
 import { env } from '../../../config/env';
 import { NotificationsService } from './notifications.service';
+import type { AccessRequestsService } from '../accessRequests/accessRequests.service';
 
 const sendSchema = z.object({
   subscriberId: z.string().min(1),
@@ -30,10 +35,11 @@ function assertCronAuthorized(req: {
 
 export type NotificationsRouterDeps = {
   notificationsService: NotificationsService;
+  accessRequestsService: AccessRequestsService;
 };
 
 export function createNotificationsRouter(deps: NotificationsRouterDeps) {
-  const { notificationsService } = deps;
+  const { notificationsService, accessRequestsService } = deps;
 
   const notificationsRouter: Router = Router();
 
@@ -64,18 +70,19 @@ export function createNotificationsRouter(deps: NotificationsRouterDeps) {
       return res.status(400).json({ error: z.treeifyError(parsed.error) });
     }
 
-    const { email, name, title, message } = parsed.data;
-
     try {
-      await notificationsService.sendAdminContactNotification({
-        fromEmail: email,
-        fromName: name,
-        title,
-        message,
-      });
+      await accessRequestsService.submitFromContact(parsed.data);
 
       res.json({ success: true });
     } catch (error) {
+      const messageStr =
+        error instanceof Error ? error.message : 'Failed to send notification';
+      if (
+        messageStr === ACCESS_REQUEST_LIMIT_MESSAGE ||
+        messageStr === ACCESS_REQUEST_ALREADY_GRANTED_MESSAGE
+      ) {
+        return res.status(429).json({ error: messageStr });
+      }
       routeError(res, error);
     }
   });

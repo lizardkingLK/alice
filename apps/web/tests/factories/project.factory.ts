@@ -1,4 +1,4 @@
-import type { Project } from '@/app/projects/_services/projects.service';
+import type { Project } from '@/app/projects/_services/projects.mutations.client';
 
 export const projectFactory = {
   build(overrides: Partial<Project> = {}): Project {
@@ -19,7 +19,9 @@ export const projectFactory = {
       attributes_config: null,
       workflow_config: null,
       github_repo: null,
-      github_token: null,
+      jira_connection_id: null,
+      jira_project_key: null,
+      has_github_token: false,
       logo_url: null,
       cover_picture: null,
       ...overrides,

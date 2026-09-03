@@ -136,12 +136,23 @@ export class ChatRepository {
 
   async createConversation(
     userId: string,
-    title = 'New Chat'
+    title = 'New Chat',
+    isProcessing = false
   ): Promise<string> {
     const created = await prisma.chat_conversations.create({
-      data: { user_id: userId, title },
+      data: { user_id: userId, title, is_processing: isProcessing },
     });
     return created.id;
+  }
+
+  async setProcessingStatus(
+    conversationId: string,
+    isProcessing: boolean
+  ): Promise<void> {
+    await prisma.chat_conversations.update({
+      where: { id: conversationId },
+      data: { is_processing: isProcessing },
+    });
   }
 
   async deleteConversation(

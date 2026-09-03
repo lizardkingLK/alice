@@ -1,14 +1,14 @@
 import { getDbUser } from '@/lib/auth';
 import { SprintsWorkspace } from '@/app/sprints/_components/sprints-workspace';
-import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.service.server';
-import { getProjectList } from '@/app/projects/_services/projects.service.server';
+import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.reads.server';
+import { getProjectList } from '@/app/projects/_services/projects.reads.server';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import {
   parseStandardParams,
   parseTabStatus,
   type RawSearchParams,
 } from '@/lib/search-params';
-import type { PaginatedSprints } from '@/app/sprints/_services/sprints.service';
+import type { PaginatedSprints } from '@/app/sprints/_services/sprints.mutations.client';
 
 const EMPTY_SPRINTS: PaginatedSprints = {
   sprints: [],

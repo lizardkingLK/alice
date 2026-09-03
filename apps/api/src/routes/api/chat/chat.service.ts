@@ -1,23 +1,26 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import {
   getRoleName,
-  DEFAULT_CHAT_MODEL_VALUE,
-  resolveChatModel,
-  type ChatModelValue,
   WorkItemTypeEnum,
   DEFAULT_WORK_ITEM_PRIORITY,
   WORK_ITEM_PRIORITIES,
   ProjectStatusEnum,
   mapToWorkItemType,
+  ChatRoles,
+  GeminiRoles,
+  toGeminiRole,
 } from '@repo/types';
-import { projectsService } from '../projects/projects.service';
-import { projectsRepository } from '../projects/projects.repository';
 import type { WorkItemService } from '../workItems/workItems.service';
 import type { SprintsService } from '../sprints/sprints.service';
+import type { ProjectsService } from '../projects/projects.service';
+import type { ProjectsRepository } from '../projects/projects.repository';
+import type { ProjectRowWithOwner } from '../projects/projects.types';
+import type { IntegrationsService } from '../integrations/integrations.service';
+import type { ResolvedChatModelConfig } from '../integrations/chat-providers/chat-provider.types';
+import { resolveChatProvider } from '../integrations/chat-providers/resolve-chat-provider';
 import { systemInstruction, geminiTools } from './chat.route.data';
 import type { ChatRepository } from './chat.repository';
 import { sanitizeLog } from './chat.utils';
+import { prisma } from '../../../lib/prisma';
 import type {
   ContentPart,
   ContentTurn,
@@ -32,6 +35,9 @@ export type ChatServiceDeps = {
   chat: ChatRepository;
   workItemService: Pick<WorkItemService, 'createWorkItem'>;
   sprintsService: Pick<SprintsService, 'createSprint'>;
+  projectsService: Pick<ProjectsService, 'createProject'>;
+  projectsRepository: Pick<ProjectsRepository, 'listAll' | 'findById'>;
+  integrationsService: Pick<IntegrationsService, 'resolveChatModelForChat'>;
 };
 
 function textToProseMirrorJson(text: string | null | undefined) {
@@ -104,50 +110,36 @@ export function markdownToChatHistory(md: string): StoredChatMessage[] {
   }
 }
 
-function logGeminiError(errorDetails: {
-  timestamp: string;
-  status: number;
-  statusText: string;
-  errorBody: string;
-  attempt: number;
-  messagesCount: number;
-}) {
-  const logMessage: string = [
-    `[${errorDetails.timestamp}]`,
-    'Attempt',
-    errorDetails.attempt,
-    'failed with Status',
-    errorDetails.status,
-    `${errorDetails.statusText}.`,
-    'Body:',
-    `${errorDetails.errorBody}.`,
-    'Messages in history:',
-    `${errorDetails.messagesCount}\n`,
-  ].join(' ');
-
-  console.error(
-    `Gemini Error: Request failed with status ${errorDetails.status}. See gemini-errors.log for details.`
-  );
-  try {
-    const logFilePath = path.join(__dirname, '../../../../gemini-errors.log');
-    fs.appendFileSync(logFilePath, logMessage);
-  } catch (err) {
-    const errorName = err instanceof Error ? err.name : 'UnknownError';
-    console.error(
-      `Failed to write to gemini-errors.log: ${sanitizeLog(errorName)}`
-    );
-  }
-}
-
 export class ChatService {
+  private readonly historyCache = new Map<string, StoredChatMessage[]>();
+
   constructor(private readonly deps: ChatServiceDeps) {}
 
   private get chat() {
     return this.deps.chat;
   }
 
-  private resolveGeminiBaseUrl(modelValue: ChatModelValue): string {
-    return resolveChatModel(modelValue).apiUrl;
+  resolveChatModelForChat(params: {
+    integrationId?: string;
+    legacyModelId?: string;
+  }): Promise<ResolvedChatModelConfig> {
+    return this.deps.integrationsService.resolveChatModelForChat(params);
+  }
+
+  async callChatModelAPI(
+    chatModel: ResolvedChatModelConfig,
+    contents: ContentTurn[],
+    contextInstruction: string
+  ): Promise<GeminiResponse> {
+    const provider = resolveChatProvider(chatModel.provider);
+    return provider.generateWithTools({
+      apiKey: chatModel.apiKey,
+      apiUrl: chatModel.apiUrl,
+      model: chatModel.model,
+      contents,
+      systemInstruction: systemInstruction + '\n' + contextInstruction,
+      tools: geminiTools,
+    });
   }
 
   async processFunctionCalls(
@@ -213,7 +205,7 @@ export class ChatService {
   }
 
   private async handleListProjects(): Promise<unknown> {
-    const projects = await projectsRepository.listAll();
+    const projects = await this.deps.projectsRepository.listAll();
     return projects.map((p) => ({ id: p.id, name: p.name, key: p.key }));
   }
 
@@ -226,7 +218,7 @@ export class ChatService {
     const projKey = typeof args.key === 'string' ? args.key : '';
     const description =
       typeof args.description === 'string' ? args.description : null;
-    const project = await projectsService.createProject(userId, {
+    const project = await this.deps.projectsService.createProject(userId, {
       name: projName,
       key: projKey.toUpperCase(),
       description,
@@ -234,10 +226,8 @@ export class ChatService {
       start_date: null,
       end_date: null,
       owner_id: userId,
-      jira_url: null,
-      jira_email: null,
-      jira_token: null,
       jira_project_key: null,
+      jira_connection_id: null,
       github_repo: null,
       github_token: null,
     });
@@ -327,7 +317,7 @@ export class ChatService {
       description: textToProseMirrorJson(description),
       due_date: null,
     });
-    const project = await projectsRepository.findById(projectId);
+    const project = await this.deps.projectsRepository.findById(projectId);
     const projectKey = project?.key || 'TASK';
     const workItemKey = `${projectKey}-${workItem.id.slice(0, 4).toUpperCase()}`;
     const result = { id: workItem.id, key: workItemKey, title: workItem.title };
@@ -335,113 +325,51 @@ export class ChatService {
     return result;
   }
 
-  async callGeminiAPI(
-    contents: ContentTurn[],
-    contextInstruction: string,
-    modelValue: ChatModelValue = DEFAULT_CHAT_MODEL_VALUE
-  ): Promise<GeminiResponse> {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error(
-        'GEMINI_API_KEY is not configured in backend .env file. Please add it to start chatting.'
-      );
-    }
-
-    const baseUrl =
-      process.env.GEMINI_API_URL || this.resolveGeminiBaseUrl(modelValue);
-    const url = baseUrl.includes('key=')
-      ? `${baseUrl}${apiKey}`
-      : `${baseUrl}?key=${apiKey}`;
-
-    const retries = 3;
-    let delay = 2000;
-
-    for (let i = 0; i < retries; i++) {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents,
-          systemInstruction: {
-            parts: [{ text: systemInstruction + '\n' + contextInstruction }],
-          },
-          tools: geminiTools,
-        }),
-      });
-
-      if (
-        response.status === 429 ||
-        response.status === 503 ||
-        (response.status >= 500 && response.status <= 504)
-      ) {
-        const errorText = await response.text();
-        logGeminiError({
-          timestamp: new Date().toISOString(),
-          status: response.status,
-          statusText: response.statusText,
-          errorBody: errorText,
-          attempt: i + 1,
-          messagesCount: contents.length,
-        });
-
-        if (i < retries - 1) {
-          console.warn(
-            `Gemini transient error ${response.status}. Retrying in ${delay}ms...`
-          );
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          delay *= 2;
-          continue;
-        }
-        throw new Error(
-          `Alice AI service is temporarily unavailable due to Gemini error ${response.status}: ${errorText}`
-        );
-      }
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        logGeminiError({
-          timestamp: new Date().toISOString(),
-          status: response.status,
-          statusText: response.statusText,
-          errorBody: errorText,
-          attempt: i + 1,
-          messagesCount: contents.length,
-        });
-        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
-      }
-
-      return response.json() as Promise<GeminiResponse>;
-    }
-
-    throw new Error(
-      'Failed to contact Gemini API due to repeated rate limits.'
-    );
-  }
-
   async saveChatHistory(
     conversationId: string,
     messages: StoredChatMessage[]
   ): Promise<void> {
+    // 1. Cache the history locally immediately
+    this.historyCache.set(conversationId, messages);
+
     try {
-      const mdContent = chatHistoryToMarkdown(conversationId, messages);
-      await this.chat.uploadHistoryMarkdown(conversationId, mdContent);
+      // 2. Touch the conversation record in the database immediately (fast DB query)
       await this.chat.touchConversationUpdatedAt(conversationId);
+
+      // 3. Upload history to storage asynchronously in the background
+      const mdContent = chatHistoryToMarkdown(conversationId, messages);
+      this.chat
+        .uploadHistoryMarkdown(conversationId, mdContent)
+        .catch((error: unknown) => {
+          const msg = error instanceof Error ? error.message : String(error);
+          console.error(
+            `Failed to upload chat history in background for conversation ${sanitizeLog(conversationId)}:`,
+            sanitizeLog(msg)
+          );
+        });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error(
-        `Failed to save chat history for conversation ${sanitizeLog(conversationId)}:`,
+        `Failed to touch/save chat history for conversation ${sanitizeLog(conversationId)}:`,
         sanitizeLog(msg)
       );
     }
   }
 
   async loadChatHistory(conversationId: string): Promise<StoredChatMessage[]> {
+    // 1. Check in-memory cache first
+    const cached = this.historyCache.get(conversationId);
+    if (cached) {
+      return cached;
+    }
+
     try {
+      // 2. If not cached, fetch from storage and update cache
       const mdText = await this.chat.downloadHistoryMarkdown(conversationId);
       if (!mdText) return [];
-      return markdownToChatHistory(mdText);
+      const messages = markdownToChatHistory(mdText);
+      this.historyCache.set(conversationId, messages);
+      return messages;
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error(
@@ -452,22 +380,95 @@ export class ChatService {
     }
   }
 
+  async verifyConversationOwner(
+    userId: string,
+    conversationId: string
+  ): Promise<boolean> {
+    const conversation = await prisma.chat_conversations.findUnique({
+      where: { id: conversationId },
+      select: { user_id: true },
+    });
+    return conversation?.user_id === userId;
+  }
+
   async listConversations(userId: string) {
     return this.chat.listConversations(userId);
   }
 
   async createConversation(
     userId: string,
-    title = 'New Chat'
+    title = 'New Chat',
+    isProcessing = false
   ): Promise<string> {
-    return this.chat.createConversation(userId, title);
+    return this.chat.createConversation(userId, title, isProcessing);
+  }
+
+  async setProcessingStatus(
+    conversationId: string,
+    isProcessing: boolean
+  ): Promise<void> {
+    await this.chat.setProcessingStatus(conversationId, isProcessing);
+  }
+
+  async notifyChatProcessed(options: {
+    readonly userId: string;
+    readonly message: string;
+    readonly relatedItemId: string | null;
+  }): Promise<void> {
+    await prisma.notifications.create({
+      data: {
+        user_id: options.userId,
+        type: 'chat_processed',
+        message: options.message,
+        related_item_id: options.relatedItemId,
+        created_by: options.userId,
+      },
+    });
   }
 
   async deleteConversation(
     userId: string,
     conversationId: string
   ): Promise<void> {
+    // Clear from in-memory cache
+    this.historyCache.delete(conversationId);
+
+    // Get the conversation title before deleting it
+    const conversation = await prisma.chat_conversations
+      .findUnique({
+        where: { id: conversationId },
+        select: { title: true },
+      })
+      .catch(() => null);
+    const convTitle = conversation?.title || 'Chat';
+
+    // Delete associated notifications in the database
+    await prisma.notifications
+      .deleteMany({
+        where: {
+          related_item_id: conversationId,
+        },
+      })
+      .catch((err) => {
+        console.error(
+          `Failed to delete notifications for conversation ${sanitizeLog(conversationId)}:`,
+          sanitizeLog(err)
+        );
+      });
+
     await this.chat.deleteConversation(userId, conversationId);
+
+    // Create the deleted notification in database
+    await this.notifyChatProcessed({
+      userId,
+      message: `Your chat "${convTitle}" has been deleted.`,
+      relatedItemId: null,
+    }).catch((err) => {
+      console.error(
+        `Failed to create delete notification for conversation ${sanitizeLog(conversationId)}:`,
+        sanitizeLog(err)
+      );
+    });
 
     try {
       await this.chat.removeHistoryMarkdown(conversationId);
@@ -485,5 +486,137 @@ export class ChatService {
       this.chat.listActiveSprintsSnapshot(),
     ]);
     return { users, activeSprints };
+  }
+
+  async generateChatResponse(
+    userId: string,
+    history: StoredChatMessage[],
+    chatModel: ResolvedChatModelConfig
+  ): Promise<{ responseText: string; toolActionsPerformed: ToolAction[] }> {
+    const contents: ContentTurn[] = history.map((msg) => {
+      const role = toGeminiRole(msg.role);
+      const parts = [{ text: msg.content }];
+      return { role, parts };
+    });
+
+    const [projectsRaw, workspace] = await Promise.all([
+      this.deps.projectsRepository.listAll().catch(() => []),
+      this.loadWorkspaceContext(),
+    ]);
+
+    const projects = (projectsRaw || []) as ProjectRowWithOwner[];
+    const { users, activeSprints: sprints } = workspace;
+
+    const contextInstruction = `
+Current Workspace State:
+- Active Projects: ${JSON.stringify(projects.map((p) => ({ id: p.id, name: p.name, key: p.key })))}
+- System Users: ${JSON.stringify(users.map((u) => ({ id: u.id, name: u.name, email: u.email })))}
+- Ongoing Sprints (Active Status Only): ${JSON.stringify(sprints.map((s) => ({ id: s.id, name: s.name, projectId: s.project_id })))}
+`;
+
+    let responseText = '';
+    const toolActionsPerformed: ToolAction[] = [];
+    let loopCount = 0;
+    const maxLoops = 5;
+
+    while (loopCount < maxLoops) {
+      const geminiResponse = await this.callChatModelAPI(
+        chatModel,
+        contents,
+        contextInstruction
+      );
+      const candidate = geminiResponse.candidates?.[0];
+      const modelContent = candidate?.content;
+
+      if (!modelContent) {
+        throw new Error('No response content returned from Gemini API');
+      }
+
+      contents.push(modelContent);
+
+      const functionCalls = modelContent.parts?.filter(
+        (p: ContentPart) => p.functionCall
+      );
+      if (!functionCalls || functionCalls.length === 0) {
+        responseText =
+          modelContent.parts
+            ?.map((p: ContentPart) => p.text || '')
+            .join('\n') || '';
+        break;
+      }
+
+      const functionResponseParts = await this.processFunctionCalls(
+        userId,
+        functionCalls,
+        toolActionsPerformed
+      );
+      contents.push({
+        role: GeminiRoles.User,
+        parts: functionResponseParts,
+      });
+
+      loopCount++;
+    }
+
+    return { responseText, toolActionsPerformed };
+  }
+
+  async processChatAsync(
+    userId: string,
+    conversationId: string,
+    history: StoredChatMessage[],
+    chatModel: ResolvedChatModelConfig
+  ): Promise<void> {
+    try {
+      const { responseText, toolActionsPerformed } =
+        await this.generateChatResponse(userId, history, chatModel);
+
+      const newAssistantMessage: StoredChatMessage = {
+        id: `msg-${Date.now()}`,
+        role: ChatRoles.Assistant,
+        content: responseText,
+        actions: toolActionsPerformed,
+      };
+
+      const updatedMessages = [...history, newAssistantMessage];
+      await this.saveChatHistory(conversationId, updatedMessages);
+
+      const conversation = await prisma.chat_conversations.findUnique({
+        where: { id: conversationId },
+        select: { title: true },
+      });
+      const convTitle = conversation?.title || 'Chat';
+
+      await this.notifyChatProcessed({
+        userId,
+        message: `Your request in "${convTitle}" has been processed.`,
+        relatedItemId: conversationId,
+      });
+    } catch (error: unknown) {
+      console.error('Failed to process chat asynchronously:', error);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      const errorAssistantMessage: StoredChatMessage = {
+        id: `msg-${Date.now()}`,
+        role: ChatRoles.Assistant,
+        content: `Error: Failed to process your request. ${errMsg}`,
+        actions: [],
+      };
+      await this.saveChatHistory(conversationId, [
+        ...history,
+        errorAssistantMessage,
+      ]).catch(() => {});
+
+      await this.notifyChatProcessed({
+        userId,
+        message: `Your chat request failed to process.`,
+        relatedItemId: conversationId,
+      }).catch(() => {});
+    } finally {
+      await this.chat
+        .setProcessingStatus(conversationId, false)
+        .catch((err) => {
+          console.error('Failed to reset processing status:', err);
+        });
+    }
   }
 }

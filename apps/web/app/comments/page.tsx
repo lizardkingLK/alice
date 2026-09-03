@@ -7,11 +7,11 @@ import { CommentsFeed } from './_components/comments-feed';
 import {
   listComments,
   listCommentWorkItemOptions,
-} from './_services/comments.service.server';
+} from './_services/comments.reads.server';
 import type {
   CommentItem,
   CommentWorkItemOption,
-} from './_services/comments.service';
+} from './_services/comments.mutations.client';
 
 function CommentsSkeleton() {
   return (

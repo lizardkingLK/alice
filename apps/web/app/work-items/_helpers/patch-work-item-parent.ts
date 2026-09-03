@@ -1,4 +1,4 @@
-import { updateWorkItem } from '@/app/work-items/_services/workItem.service.client';
+import { updateWorkItem } from '@/app/work-items/_services/work-items.mutations.client';
 
 /** PATCH `parent_id` — pass `null` to unlink (orphan) the work item. */
 export async function patchWorkItemParentId(

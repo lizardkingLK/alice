@@ -13,7 +13,7 @@ vi.mock('@/lib/auth', () => ({
   getDbUser: getDbUserMock,
 }));
 
-vi.mock('@/app/users/_services/users.service.server', () => ({
+vi.mock('@/app/users/_services/users.reads.server', () => ({
   toggleUserActive: toggleUserActiveMock,
 }));
 

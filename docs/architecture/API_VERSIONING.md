@@ -72,7 +72,7 @@ Do **not** implement unused Express GETs with supabase-js. That would still leav
 
 Do **not** mount `/api/v1` on product domains until remaining routers are wired through `composition.ts` ([DI.md](./DI.md)).
 
-Still on module singletons (as of this update): **users, projects, teams, profile, saved-views**. Health can be versioned first because it has no repository.
+Still on module singletons (as of this update): **users, projects, teams, saved-views**. Health can be versioned first because it has no repository. **Profile** is wired through composition but was previously unversioned on the HTTP mount table.
 
 ### Why the composition root is the versioning **factory** switchboard
 
@@ -156,7 +156,7 @@ export type WorkItemListRow = Prisma.work_itemsGetPayload<{
 }>;
 ```
 
-Work-items first cut lives in `packages/types/src/api/v1/work-items.ts` (`workItemListSelect`, `workItemDetailSelect`, `listWorkItemsQuerySchema`).
+Work-items first cut lives in `packages/types/src/api/v1/work-items.ts`. Attachments, sprint, work-log, and profile v1 wire DTOs live in `packages/types/src/api/v1/attachments.ts`, `sprints.ts`, `work-item-worklogs.ts`, and `profile.ts` (profile is self detail only — no list).
 
 Mutation example (unchanged rule):
 
@@ -426,19 +426,74 @@ Anti-pattern: `WorkItemServiceV1` and `V2` that both `findMany` the same table.
 
 ---
 
+## Mutation schema migration (work-items pilot)
+
+**Goal:** one Zod input schema per write DTO in `@repo/types` `api/v1/<resource>.ts`, imported by Express **and** web form/mutation clients. API still `safeParse`s every mutation; web may `safeParse` before `fetch` for faster UX.
+
+### Current state (work-items)
+
+| Layer          | Location                                  | Notes                                                  |
+| -------------- | ----------------------------------------- | ------------------------------------------------------ |
+| API            | `apps/api/.../workItems.schemas.ts`       | Create + PATCH body Zod (to move)                      |
+| Types v1 reads | `packages/types/src/api/v1/work-items.ts` | Prisma selects + `listWorkItemsQuerySchema` only       |
+| Web            | `work-items.mutations.client.ts`          | Hand-built `FormData` → `Record` → JSON; no shared Zod |
+
+### Target layout
+
+```text
+packages/types/src/api/v1/work-items.ts
+  # reads (existing)
+  workItemListSelect, listWorkItemsQuerySchema, …
+  # writes (new)
+  createWorkItemBodySchema, patchWorkItemBodySchema
+  workItemLifecycleActionBodySchema, patchWorkItemStatusBodySchema
+  preprocessWorkItemMutationBody()   # description JSON + labels coerce
+  isBlockedPastDueDateChange()       # PATCH-only due_date rule (pure fn)
+  z.infer types: CreateWorkItemBody, PatchWorkItemBody, …
+
+apps/api/.../workItems.schemas.ts
+  re-export from @repo/types/api/v1 (thin shim until imports updated)
+
+apps/web/app/work-items/_helpers/work-item-mutation-body.ts
+  parseCreateWorkItemFormData(formData)  → safeParse via v1 schema
+  parsePatchWorkItemFormData(formData, expectedUpdatedAt)
+
+apps/web/.../work-items.mutations.client.ts
+  use parsers; typed bodies instead of Record<string, unknown>
+```
+
+### Per-feature checklist (work-items first)
+
+1. **Move wire schemas** from API-local file → `packages/types/src/api/v1/<resource>.ts`; export from `api/v1/index.ts`.
+2. **API route** imports schemas from `@repo/types`; local file becomes re-export shim (or delete when call sites updated).
+3. **Shared preprocessors** (FormData/JSON description parse, labels coerce) live in types when API and web both need them.
+4. **Web mutation client** parses through the same schema before `apiFetch`; throw/ surface `z.treeifyError` for forms.
+5. **Tests:** keep `safeParse` fixtures in API tests importing `@repo/types` (types package has no Vitest yet).
+6. **Rollout order after work-items:** comments → projects → teams → users → sprints (each follows the same checklist).
+
+### Out of scope (this slice)
+
+- Client-side Zod in every form component (optional UX follow-up; mutation client parse is the minimum).
+- Zod output/response schemas for mutation responses (Prisma payload / existing wire shape stays as-is).
+- `/api/v1/workItems` mount (step 5; schemas are version-agnostic until a breaking wire change).
+- Prisma Client inside `apps/web` for reads — use [DATA_RETRIEVAL.md](./DATA_RETRIEVAL.md) (`reads.api.server.ts` + toggle) instead.
+
+---
+
 ## Rollout
 
-| Step | Work                                                                                                    | Status                                                                                                  |
-| ---- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| 0    | This plan                                                                                               | **Now**                                                                                                 |
-| 1    | Composition root for remaining domains (users, projects, teams, profile, saved-views)                   | In progress                                                                                             |
-| 2    | `packages/types/src/api/v1/` directory tree (~1h)                                                       | **Started** (work-items selects + list query Zod)                                                       |
-| 3    | Per feature: unused Prisma GETs (~4h) + Zod isolation (~2h)                                             | **Started** (work-items list/detail; mutation Zod stays in `workItems.schemas.ts` until web imports it) |
-| 4    | Health v1 as `/api/v1/health` (~1h)                                                                     | **Done** (alias `/api/health`; `GET /` is root status)                                                  |
-| 4b   | Health v2 reference (`/api/v2/health`, shared repo, `HealthServiceV2`)                                  | **Done** (template for product v2)                                                                      |
-| 5    | Product `/api/v1` aliases once GETs exist                                                               | After 3–4                                                                                               |
-| 6    | Optional: point RSC at Express GETs via [DATA_RETRIEVAL.md](./DATA_RETRIEVAL.md) (`DATA_READS_VIA_API`) | Plan (default off)                                                                                      |
-| 7    | Mark this doc **Living**                                                                                | After 4                                                                                                 |
+| Step | Work                                                                                                    | Status                                                                                                                                                                                                                                                                                                                         |
+| ---- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0    | This plan                                                                                               | **Now**                                                                                                                                                                                                                                                                                                                        |
+| 1    | Composition root for remaining domains (users, projects, teams, saved-views)                            | In progress (profile composition **done**)                                                                                                                                                                                                                                                                                     |
+| 2    | `packages/types/src/api/v1/` directory tree (~1h)                                                       | **Started** (work-items selects + list query Zod)                                                                                                                                                                                                                                                                              |
+| 3    | Per feature: unused Prisma GETs (~4h) + Zod isolation (~2h)                                             | **Started** (work-items, sprints, **attachments** + **worklogs** list GET; **profile** v1 Zod in `@repo/types`; work-items **mutation** Zod → `@repo/types` v1; **saved-views** + **chat** mutation Zod + wire DTOs in `@repo/types` `api/v1/` — see [Mutation schema migration](#mutation-schema-migration-work-items-pilot)) |
+| 3b   | Web form/mutation clients import v1 input schemas (work-items pilot)                                    | **Done** (create/patch/status/lifecycle + force-patch + link PR; `work-items.mutations.client.ts`)                                                                                                                                                                                                                             |
+| 4    | Health v1 as `/api/v1/health` (~1h)                                                                     | **Done** (alias `/api/health`; `GET /` is root status)                                                                                                                                                                                                                                                                         |
+| 4b   | Health v2 reference (`/api/v2/health`, shared repo, `HealthServiceV2`)                                  | **Done** (template for product v2)                                                                                                                                                                                                                                                                                             |
+| 5    | Product `/api/v1` aliases once GETs exist                                                               | **Started** (`/api/v1/attachments`, `/api/v1/worklogs`, `/api/v1/profile`, `/api/v1/saved-views`, `/api/v1/chat`, `/api/v1/integrations` aliases mounted)                                                                                                                                                                      |
+| 6    | Optional: point RSC at Express GETs via [DATA_RETRIEVAL.md](./DATA_RETRIEVAL.md) (`DATA_READS_VIA_API`) | Plan (default off)                                                                                                                                                                                                                                                                                                             |
+| 7    | Mark this doc **Living**                                                                                | After 4                                                                                                                                                                                                                                                                                                                        |
 
 ---
 

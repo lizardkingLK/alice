@@ -5,13 +5,19 @@ import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { SprintList } from '@/app/sprints/_components/sprint-list';
 import { SprintForm } from '@/app/sprints/_components/sprint-form';
-import { Sprint } from '@/app/sprints/_services/sprints.service';
+import { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { updateSprintStatusWithOptimisticLock } from '@/app/sprints/_helpers/update-sprint-status-with-lock';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Search, Plus } from '@repo/ui/lib/icons';
-import type { Project } from '@/app/projects/_services/projects.service.base';
+import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
+import { RegistryTabSwitcher } from '@/components/registry-tab-switcher';
+
+const SPRINT_STATUS_TABS = [
+  { id: 'active' as const, label: 'Active' },
+  { id: 'archived' as const, label: 'Archived' },
+] as const;
 
 interface SprintsWorkspaceProps {
   readonly sprints: Sprint[];
@@ -135,14 +141,20 @@ export function SprintsWorkspace({
             />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3 self-start">
+            <RegistryTabSwitcher
+              tabs={SPRINT_STATUS_TABS}
+              value={filterTab}
+              onChange={handleTabChange}
+            />
+
             {isManagerOrAdmin ? (
               <Button
                 type="button"
                 onClick={() => setIsAddSprintOpen(true)}
-                className="h-10 text-xs font-semibold shadow-md duration-300 hover:shadow-lg"
+                className="flex h-10 shrink-0 items-center justify-center px-6 text-xs font-semibold shadow-md duration-300 hover:shadow-lg"
               >
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                <Plus className="mr-1.5 h-4 w-4 shrink-0" />
                 Add Sprint
               </Button>
             ) : null}
@@ -154,7 +166,6 @@ export function SprintsWorkspace({
             sprints={sprints}
             pagination={pagination}
             filterTab={filterTab}
-            onTabChange={handleTabChange}
             onPageChange={handlePageChange}
             onLimitChange={handleLimitChange}
             error={error}

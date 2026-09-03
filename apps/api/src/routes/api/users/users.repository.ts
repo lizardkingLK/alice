@@ -1,9 +1,14 @@
-import { supabase } from '../../../lib/supabase';
+import type {
+  Database,
+  UserDetailRow,
+  UserPrismaListFilters,
+} from '@repo/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { prisma } from '../../../lib/prisma';
 import {
   prismaAuditCreate,
   prismaAuditUpdate,
-  prismaLockTimestamp,
+  prismaLockTimestampRange,
 } from '../../../lib/prisma-audit';
 import {
   OptimisticLockError,
@@ -13,7 +18,15 @@ import {
   filterProductUsableUsers,
   UserMembershipStatusEnum,
   UserRoleEnum,
+  userListSelect,
+  userDetailSelect,
+  paginationMeta,
 } from '@repo/types';
+import {
+  buildUserPrismaWhere,
+  userListPageSlice,
+  type UserPaginatedList,
+} from './users.prisma-query';
 
 export type UserRow = {
   id: string;
@@ -29,8 +42,10 @@ export type UserRow = {
 };
 
 export class UsersRepository {
+  constructor(private readonly db: SupabaseClient<Database>) {}
+
   async findById(id: string): Promise<UserRow | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('users')
       .select('*')
       .eq('id', id)
@@ -47,7 +62,7 @@ export class UsersRepository {
   /** Membership-active admins with kill switch on, other than `excludeUserId`. */
   async countOtherActiveAdmins(excludeUserId: string): Promise<number> {
     const { count, error } = await filterProductUsableUsers(
-      supabase
+      this.db
         .from('users')
         .select('id', { count: 'exact', head: true })
         .eq('role', UserRoleEnum.admin)
@@ -73,7 +88,7 @@ export class UsersRepository {
     actorId: string,
     expectedUpdatedAt: string
   ): Promise<UserRow> {
-    const { data, error } = await supabase.rpc('deactivate_user_guarded', {
+    const { data, error } = await this.db.rpc('deactivate_user_guarded', {
       p_user_id: id,
       p_actor_id: actorId,
       p_expected_updated_at: expectedUpdatedAt,
@@ -107,7 +122,7 @@ export class UsersRepository {
   }
 
   async findByEmail(email: string): Promise<UserRow | null> {
-    const { data, error } = await supabase
+    const { data, error } = await this.db
       .from('users')
       .select('*')
       .eq('email', email)
@@ -150,7 +165,7 @@ export class UsersRepository {
     expectedUpdatedAt: string
   ): Promise<UserRow> {
     const { count } = await prisma.users.updateMany({
-      where: { id, updated_at: prismaLockTimestamp(expectedUpdatedAt) },
+      where: { id, updated_at: prismaLockTimestampRange(expectedUpdatedAt) },
       data: {
         ...data,
         ...prismaAuditUpdate(actorId),
@@ -165,9 +180,52 @@ export class UsersRepository {
     });
   }
 
+  async listPaginated(input: {
+    filters?: UserPrismaListFilters;
+    search?: string;
+    page: number;
+    limit: number;
+  }): Promise<UserPaginatedList> {
+    const where = buildUserPrismaWhere(input.filters, input.search);
+    const { skip, take } = userListPageSlice(input.page, input.limit);
+
+    try {
+      const [users, totalCount] = await Promise.all([
+        prisma.users.findMany({
+          where,
+          select: userListSelect,
+          orderBy: { created_at: 'desc' },
+          skip,
+          take,
+        }),
+        prisma.users.count({ where }),
+      ]);
+
+      return {
+        users,
+        ...paginationMeta(totalCount, input.page, input.limit),
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to list users:', message);
+      throw new Error('Failed to list users');
+    }
+  }
+
+  async getDetailById(userId: string): Promise<UserDetailRow | null> {
+    try {
+      return await prisma.users.findUnique({
+        where: { id: userId },
+        select: userDetailSelect,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to get user detail:', message);
+      throw new Error('Failed to get user');
+    }
+  }
+
   async delete(id: string): Promise<void> {
     await prisma.users.deleteMany({ where: { id } });
   }
 }
-
-export const usersRepository = new UsersRepository();

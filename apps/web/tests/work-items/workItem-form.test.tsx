@@ -1,19 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { WorkItemForm } from '@/app/work-items/_components/workItem-form';
+import { WorkItemForm } from '@/app/work-items/_components/work-item-form/work-item-form';
 import {
   createWorkItem,
   updateWorkItem,
-} from '@/app/work-items/_services/workItem.service.client';
+} from '@/app/work-items/_services/work-items.mutations.client';
 import { userFactory } from '../factories/user.factory';
 import { projectFactory } from '../factories/project.factory';
 import { workItemFactory } from '../factories/workItem.factory';
 import { pickComboboxOption } from '../helpers/pick-combobox-option';
 import { fetchProjectMembersForForm } from '@/lib/form-read-actions';
 
-vi.mock('@/app/work-items/_services/workItem.service.client', () => ({
+vi.mock('@/app/work-items/_services/work-items.mutations.client', () => ({
   createWorkItem: vi.fn(),
   updateWorkItem: vi.fn(),
+}));
+
+vi.mock('@/app/work-items/_services/work-items.reads.client', () => ({
   listParentCandidateWorkItems: vi.fn().mockResolvedValue([]),
 }));
 
@@ -139,7 +142,28 @@ describe('WorkItemForm', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('keeps classic fields in edit mode even when createFormMode is modern', () => {
+  it('pre-fills and locks due date in modern create when defaultDueDate is set', () => {
+    render(
+      <WorkItemForm
+        projects={projects}
+        projectMembers={projectMembers}
+        onSuccess={vi.fn()}
+        createFormMode="modern"
+        defaultDueDate="2026-08-27"
+        lockDueDate
+      />
+    );
+
+    const dueDateInput = screen.getByLabelText(/^Due date$/i);
+    expect(dueDateInput).toBeInTheDocument();
+    expect(dueDateInput).toHaveValue('2026-08-27');
+    expect(dueDateInput).toBeDisabled();
+    expect(
+      screen.queryByRole('menuitem', { name: /^Due date$/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it('uses modern fields in edit mode when createFormMode is modern', () => {
     const itemToEdit = workItemFactory.build({
       title: 'Existing item',
       project_id: projects[0]!.id,
@@ -158,8 +182,13 @@ describe('WorkItemForm', () => {
     );
 
     expect(screen.getByLabelText(/^Title$/i)).toBeInTheDocument();
-    expect(screen.queryByLabelText(/^Description$/i)).not.toBeInTheDocument();
-    expect(screen.getByLabelText(/^Labels$/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/^Title$/i)).toHaveValue(
+      'Existing item'
+    );
+    expect(screen.getByLabelText(/^Description$/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /^Save Changes$/i })
+    ).toBeInTheDocument();
   });
 
   it('submits in create mode and calls onSuccess', async () => {
@@ -452,5 +481,19 @@ describe('WorkItemForm', () => {
     expect(
       screen.queryByRole('option', { name: 'Issue' })
     ).not.toBeInTheDocument();
+  });
+
+  it('renders form fields within a scrollable body container', () => {
+    const { container } = render(
+      <WorkItemForm
+        projects={projects}
+        projectMembers={projectMembers}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    const scrollContainer = container.querySelector('.overflow-y-auto');
+    expect(scrollContainer).toBeInTheDocument();
+    expect(scrollContainer).toHaveClass('no-scrollbar', 'flex-1', 'space-y-4', 'overflow-y-auto', 'pr-1');
   });
 });

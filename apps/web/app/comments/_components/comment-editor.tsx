@@ -37,7 +37,7 @@ import {
 import type {
   CommentUser,
   CommentWorkItemOption,
-} from '@/app/comments/_services/comments.service.base';
+} from '@/app/comments/_services/comments.mutations.shared';
 
 export type CommentEditorHandle = {
   focus: () => void;

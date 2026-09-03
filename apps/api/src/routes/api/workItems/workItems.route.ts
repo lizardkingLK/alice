@@ -12,49 +12,24 @@ import {
 import { type WorkItemService } from './workItems.service';
 import type { NotificationsService } from '../notifications/notifications.service';
 import {
-  createUpdateWorkItemBodySchema,
-  createWorkLogSchema,
+  createWorkItemBodySchema,
   isBlockedPastDueDateChange,
-  patchUpdateWorkItemBodySchema,
+  linkWorkItemGithubPrBodySchema,
+  patchWorkItemBodySchema,
+  preprocessWorkItemMutationBody,
+  workItemLifecycleActionBodySchema,
   type WorkItemUpdateBody,
 } from './workItems.schemas';
 import type { DbWorkItem } from './workItems.repository';
 import { coalescePatchField } from './workItems.patch-utils';
-import {
-  coerceLabelsFormField,
-  expectedUpdatedAtSchema,
-  listWorkItemsQuerySchema,
-  parseWorkItemLabels,
-} from '@repo/types';
+import { listWorkItemsQuerySchema, parseWorkItemLabels } from '@repo/types';
 
-const workItemLockActionSchema = z.object({
-  expectedUpdatedAt: expectedUpdatedAtSchema,
-});
-
-type PatchUpdateWorkItemPayload = z.infer<typeof patchUpdateWorkItemBodySchema>;
+type PatchUpdateWorkItemPayload = z.infer<typeof patchWorkItemBodySchema>;
 
 export type WorkItemsRouterDeps = {
   workItemService: WorkItemService;
   notificationsService: Pick<NotificationsService, 'createAssignNotification'>;
 };
-
-function parsePatchBody(body: Record<string, unknown>) {
-  const processedBody = { ...body };
-
-  if (typeof body.description === 'string') {
-    try {
-      processedBody.description = JSON.parse(body.description);
-    } catch {
-      return null;
-    }
-  }
-
-  if ('labels' in body) {
-    processedBody.labels = coerceLabelsFormField(body.labels);
-  }
-
-  return processedBody;
-}
 
 function buildWorkItemPayload(
   parsedData: PatchUpdateWorkItemPayload,
@@ -200,7 +175,7 @@ function createWorkItemLockActionHandler(
       json: (body: Record<string, unknown>) => void;
     }
   ) => {
-    const parsed = workItemLockActionSchema.safeParse(req.body);
+    const parsed = workItemLifecycleActionBodySchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: z.treeifyError(parsed.error) });
     }
@@ -296,18 +271,18 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
     '/:id/github',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
-      const { prUrl } = req.body;
-      if (typeof prUrl !== 'string' || !prUrl.trim()) {
+      const parsed = linkWorkItemGithubPrBodySchema.safeParse(req.body);
+      if (!parsed.success) {
         return res
           .status(400)
-          .json({ error: 'prUrl is required and must be a string' });
+          .json({ data: null, error: z.treeifyError(parsed.error) });
       }
 
       try {
         const linked = await workItemService.linkPR(
           req.userId!,
           req.params.id!,
-          prUrl.trim()
+          parsed.data.prUrl
         );
         res.status(201).json({ data: linked, error: null });
       } catch (error) {
@@ -374,46 +349,10 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
   );
 
   workItemsRouter.post(
-    '/:id/worklogs',
-    requireApiAuth,
-    async (req: AuthenticatedRequest, res) => {
-      const parsed = createWorkLogSchema.safeParse(req.body);
-
-      if (!parsed.success) {
-        return res.status(400).json({ error: z.treeifyError(parsed.error) });
-      }
-
-      const dateOnly =
-        parsed.data.logged_at ?? new Date().toISOString().slice(0, 10);
-      const loggedAtIso = new Date(`${dateOnly}T00:00:00.000Z`).toISOString();
-
-      try {
-        const worklog = await workItemService.createWorkItemWorkLog(
-          req.userId!,
-          req.params.id!,
-          {
-            loggedHours: parsed.data.logged_hours,
-            loggedAtIso,
-            comment: parsed.data.comment ?? null,
-          }
-        );
-
-        res.status(201).json({ worklog });
-      } catch (error) {
-        return sendWorkItemMutationError(
-          res,
-          error,
-          'Failed to create work log'
-        );
-      }
-    }
-  );
-
-  workItemsRouter.post(
     '/',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
-      const parsed = createUpdateWorkItemBodySchema.safeParse(req.body);
+      const parsed = createWorkItemBodySchema.safeParse(req.body);
 
       if (!parsed.success) {
         return res
@@ -445,7 +384,7 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
       try {
-        const processedBody = parsePatchBody(
+        const processedBody = preprocessWorkItemMutationBody(
           req.body as Record<string, unknown>
         );
         if (!processedBody) {
@@ -455,7 +394,7 @@ export function createWorkItemsRouter(deps: WorkItemsRouterDeps): Router {
           });
         }
 
-        const parsed = patchUpdateWorkItemBodySchema.safeParse(processedBody);
+        const parsed = patchWorkItemBodySchema.safeParse(processedBody);
         if (!parsed.success) {
           return res
             .status(400)

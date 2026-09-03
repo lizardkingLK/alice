@@ -3,21 +3,23 @@ import express, { Router } from 'express';
 import { z } from 'zod';
 
 import {
+  archiveAttachmentSchema,
+  createUploadSessionSchema,
+  finalizeUploadSchema,
+  listAttachmentsQuerySchema,
+  workItemIdSchema,
+} from '@repo/types';
+import {
   requireApiAuth,
   type AuthenticatedRequest,
 } from '../../../middlewares/auth';
 import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
+import { WorkItemAccessError } from '../workItems/workItems.errors';
 import {
   AttachmentGoneError,
   AttachmentNotFoundError,
   AttachmentsService,
 } from './attachments.service';
-import {
-  archiveAttachmentSchema,
-  createUploadSessionSchema,
-  finalizeUploadSchema,
-  workItemIdSchema,
-} from './attachments.schemas';
 
 const upload: Multer = multer({
   storage: multer.memoryStorage(),
@@ -46,6 +48,42 @@ export function createAttachmentsRouter(deps: AttachmentsRouterDeps): Router {
   const { attachmentsService } = deps;
 
   const attachmentsRouter: Router = express.Router();
+
+  /**
+   * Unused Express list path (Prisma). Next still lists via RSC supabase-js.
+   */
+  attachmentsRouter.get(
+    '/',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const parsed = listAttachmentsQuerySchema.safeParse(req.query);
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+
+      try {
+        const rows = await attachmentsService.listByWorkItemId(
+          parsed.data.work_item_id,
+          req.userId!
+        );
+        return res.json(rows);
+      } catch (error) {
+        if (error instanceof WorkItemAccessError) {
+          return res.status(403).json({ error: error.message });
+        }
+
+        const message =
+          error instanceof Error ? error.message : 'Failed to list attachments';
+        console.error('error. attachment list failed:', message);
+
+        if (/work item not found/i.test(message)) {
+          return res.status(404).json({ error: message });
+        }
+
+        return res.status(500).json({ error: message });
+      }
+    }
+  );
 
   attachmentsRouter.get(
     '/:id',

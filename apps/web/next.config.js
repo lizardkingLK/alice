@@ -32,6 +32,16 @@ const nextConfig = {
         destination: '/settings?tab=general',
         permanent: true,
       },
+      {
+        source: '/calendar',
+        destination: '/board?tab=calendar',
+        permanent: true,
+      },
+      {
+        source: '/calendar/:id',
+        destination: '/work-items/:id',
+        permanent: true,
+      },
     ];
   },
   async rewrites() {

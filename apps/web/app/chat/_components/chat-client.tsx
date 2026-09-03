@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { cn } from '@repo/ui/lib/utils';
 import { Textarea } from '@repo/ui/components/ui/textarea';
 import { Button } from '@repo/ui/components/ui/button';
@@ -12,31 +12,115 @@ import {
 } from '@repo/ui/components/ui/tooltip';
 import { Send, Sparkles, PanelLeft, PanelLeftClose } from '@repo/ui/lib/icons';
 import { useRouter } from 'next/navigation';
-import {
-  ChatRoles,
-  DEFAULT_CHAT_MODEL_VALUE,
-  type ChatModelValue,
-} from '@repo/types';
+import { ChatRoles, type ChatModelOption } from '@repo/types';
+import { createClient } from '@/lib/supabase/client';
 import type { ChatMessage, ActionItem } from './chat-client.types';
 import {
   sendChatMessage,
   deleteConversation,
   type ChatConversation,
-} from '../_services/chat-client.service';
+} from '../_services/chat.mutations.client';
 import { revalidateAfterChatActions } from '@/lib/cache/revalidate-after-chat';
 import {
   bootstrapLatestChat,
   loadConversationHistory,
 } from './chat-client-bootstrap';
+import {
+  listChatConversationsAction,
+  revalidateChatConversations,
+} from '../_services/chat.reads.actions.server';
 import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import ChatClientSidebar from '@/app/chat/_components/chat-client-sidebar';
 import ChatClientHeaderActions from '@/app/chat/_components/chat-client-header-actions';
 import ChatClientMain from '@/app/chat/_components/chat-client-main';
+import { useWorkspaceChatModels } from '@/app/chat/_components/use-workspace-chat-models';
 
 let messageCounter = 0;
 
 const CHAT_PANEL_HEADER_CLASS =
   'border-border flex h-14 shrink-0 items-center border-b px-4';
+
+const NO_CHAT_MODEL_ERROR =
+  'No chat model is configured. Use Add Model to connect one in Settings.';
+
+/* eslint-disable no-unused-vars */
+type ChatResponseRouter = { replace: (href: string) => void };
+/* eslint-enable no-unused-vars */
+
+function applySuccessfulChatResponse(params: {
+  response: {
+    history?: ChatMessage[];
+    conversationId: string;
+    title: string;
+    is_processing?: boolean;
+    actions?: ActionItem[];
+  };
+  activeConversationId: string | undefined;
+  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+  setActiveConversationId: React.Dispatch<
+    React.SetStateAction<string | undefined>
+  >;
+  setConversations: React.Dispatch<React.SetStateAction<ChatConversation[]>>;
+  hydratedRef: React.MutableRefObject<string | null>;
+  router: ChatResponseRouter;
+}) {
+  const {
+    response,
+    activeConversationId,
+    setMessages,
+    setActiveConversationId,
+    setConversations,
+    hydratedRef,
+    router,
+  } = params;
+
+  if (response.history) {
+    setMessages(response.history);
+  }
+
+  if (!activeConversationId && response.conversationId) {
+    if (!response.is_processing) {
+      hydratedRef.current = response.conversationId;
+    }
+    router.replace(`/chat?conversationId=${response.conversationId}`);
+    setActiveConversationId(response.conversationId);
+    setConversations((prev) => [
+      {
+        id: response.conversationId,
+        title: response.title || 'New Chat',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        is_processing: response.is_processing ?? false,
+      },
+      ...prev,
+    ]);
+    return;
+  }
+
+  if (!activeConversationId) {
+    return;
+  }
+
+  if (!response.is_processing) {
+    hydratedRef.current = activeConversationId;
+  }
+
+  setConversations((prev) => {
+    const others = prev.filter((c) => c.id !== activeConversationId);
+    const activeConv = prev.find((c) => c.id === activeConversationId);
+    if (!activeConv) {
+      return prev;
+    }
+
+    return [
+      {
+        ...activeConv,
+        is_processing: response.is_processing ?? true,
+      },
+      ...others,
+    ];
+  });
+}
 
 interface ChatClientProps {
   readonly variant?: 'page' | 'drawer';
@@ -47,6 +131,8 @@ interface ChatClientProps {
   readonly initialConversations?: ChatConversation[];
   readonly initialConversationId?: string;
   readonly initialMessages?: ChatMessage[];
+  readonly initialChatModels?: ChatModelOption[];
+  readonly currentUserId?: string | null;
 }
 
 export function ChatClient({
@@ -57,6 +143,8 @@ export function ChatClient({
   initialConversations,
   initialConversationId,
   initialMessages,
+  initialChatModels,
+  currentUserId,
 }: Readonly<ChatClientProps>) {
   const router = useRouter();
   const isPage = variant === 'page';
@@ -81,11 +169,11 @@ export function ChatClient({
     useState<ChatConversation | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(true);
   const [conversationSearch, setConversationSearch] = useState('');
-  const [selectedModelId, setSelectedModelId] = useState<ChatModelValue>(
-    () => DEFAULT_CHAT_MODEL_VALUE
-  );
+  const { chatModels, selectedIntegrationId, setSelectedIntegrationId } =
+    useWorkspaceChatModels(initialChatModels);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const hydratedRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!hasServerBootstrap || !activeConversationId) return;
@@ -133,6 +221,154 @@ export function ChatClient({
     void initChat();
   }, [hasServerBootstrap]);
 
+  const handleRealtimeInsert = useCallback((updatedConv: ChatConversation) => {
+    setConversations((prev) => {
+      const exists = prev.some((c) => c.id === updatedConv.id);
+      return exists ? prev : [updatedConv, ...prev];
+    });
+  }, []);
+
+  const handleRealtimeUpdate = useCallback(
+    async (updatedConv: ChatConversation, activeId?: string) => {
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === updatedConv.id ? { ...c, ...updatedConv } : c
+        )
+      );
+
+      if (updatedConv.id === activeId && !updatedConv.is_processing) {
+        if (hydratedRef.current !== activeId) {
+          hydratedRef.current = activeId;
+          setIsLoadingHistory(true);
+          const result = await loadConversationHistory(updatedConv.id);
+          setMessages(result.messages);
+          setError(result.error);
+          setIsLoadingHistory(false);
+        }
+      }
+    },
+    []
+  );
+
+  const handleRealtimeDelete = useCallback(
+    (
+      deletedId: string,
+      activeId?: string,
+      // eslint-disable-next-line no-unused-vars
+      onNewChat?: (force?: boolean) => void
+    ) => {
+      setConversations((prev) => prev.filter((c) => c.id !== deletedId));
+      if (activeId === deletedId && onNewChat) {
+        onNewChat(true);
+      }
+    },
+    []
+  );
+
+  const handleNewChat = useCallback(
+    (force = false) => {
+      if (isPending && !force) return;
+      router.replace('/chat');
+      setActiveConversationId(undefined);
+      setMessages([]);
+      setError(null);
+    },
+    [isPending, router]
+  );
+
+  useEffect(() => {
+    if (!currentUserId) return;
+    const supabase = createClient();
+
+    const handleRealtimeChange = async (payload: {
+      eventType: string;
+      new: unknown;
+      old: unknown;
+    }) => {
+      const updatedConv = payload.new as ChatConversation;
+
+      if (payload.eventType === 'INSERT') {
+        handleRealtimeInsert(updatedConv);
+      } else if (payload.eventType === 'UPDATE') {
+        await handleRealtimeUpdate(
+          updatedConv,
+          activeConversationId || undefined
+        );
+      } else if (payload.eventType === 'DELETE') {
+        const deletedConv = payload.old as { id: string };
+        handleRealtimeDelete(
+          deletedConv.id,
+          activeConversationId || undefined,
+          handleNewChat
+        );
+      }
+    };
+
+    const channel = supabase
+      .channel(`chat_conversations_changes:${currentUserId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'chat_conversations',
+          filter: `user_id=eq.${currentUserId}`,
+        },
+        handleRealtimeChange
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [
+    currentUserId,
+    activeConversationId,
+    handleRealtimeInsert,
+    handleRealtimeUpdate,
+    handleRealtimeDelete,
+    handleNewChat,
+  ]);
+
+  useEffect(() => {
+    if (!activeConversationId) return;
+
+    const isActiveProcessing = conversations.find(
+      (c) => c.id === activeConversationId
+    )?.is_processing;
+
+    if (!isActiveProcessing) return;
+
+    const intervalId = setInterval(async () => {
+      try {
+        const latestConversations = await listChatConversationsAction();
+        setConversations(latestConversations);
+
+        const currentInLatest = latestConversations.find(
+          (c) => c.id === activeConversationId
+        );
+
+        if (currentInLatest && !currentInLatest.is_processing) {
+          clearInterval(intervalId);
+          if (hydratedRef.current !== activeConversationId) {
+            hydratedRef.current = activeConversationId;
+            setIsLoadingHistory(true);
+            const result = await loadConversationHistory(activeConversationId);
+            setMessages(result.messages);
+            setError(result.error);
+            setIsLoadingHistory(false);
+          }
+        }
+      } catch (err) {
+        console.error('Error polling conversation status:', err);
+      }
+    }, 500);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [activeConversationId, conversations]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isPending]);
@@ -141,6 +377,8 @@ export function ChatClient({
     if (isPending) return;
     if (id === activeConversationId && messages.length > 0) return;
 
+    router.replace(`/chat?conversationId=${id}`);
+
     setIsLoadingHistory(true);
     setActiveConversationId(id);
     setError(null);
@@ -148,13 +386,6 @@ export function ChatClient({
     setError(result.error);
     setMessages(result.messages);
     setIsLoadingHistory(false);
-  };
-
-  const handleNewChat = () => {
-    if (isPending) return;
-    setActiveConversationId(undefined);
-    setMessages([]);
-    setError(null);
   };
 
   const handleDeleteConversationClick = (
@@ -174,15 +405,17 @@ export function ChatClient({
     try {
       const response = await deleteConversation(conversationToDelete.id);
       if (response.success) {
+        await revalidateChatConversations();
+        router.refresh();
+
         setConversations((prev) =>
           prev.filter((c) => c.id !== conversationToDelete.id)
         );
+
         if (activeConversationId === conversationToDelete.id) {
-          handleNewChat();
+          handleNewChat(true);
         }
         setConversationToDelete(null);
-      } else if (response.error) {
-        setError(response.error);
       }
     } catch (err) {
       console.error('Failed to delete conversation:', err);
@@ -195,6 +428,11 @@ export function ChatClient({
   const handleSendMessage = async (textToSend: string) => {
     if (!textToSend.trim() || isPending) return;
 
+    if (!selectedIntegrationId) {
+      setError(NO_CHAT_MODEL_ERROR);
+      return;
+    }
+
     const userMessage: ChatMessage = {
       id: `msg-${Date.now()}-${++messageCounter}`,
       role: ChatRoles.User,
@@ -204,6 +442,7 @@ export function ChatClient({
     setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
     setIsPending(true);
+    hydratedRef.current = null;
     setError(null);
 
     const history = [...messages, userMessage];
@@ -212,39 +451,18 @@ export function ChatClient({
       const response = await sendChatMessage(
         history,
         activeConversationId,
-        selectedModelId
+        selectedIntegrationId
       );
 
-      if (response.error) {
-        setError(response.error);
-        return;
-      }
-
-      if (response.history) {
-        setMessages(response.history);
-      }
-
-      if (!activeConversationId && response.conversationId) {
-        setActiveConversationId(response.conversationId);
-        setConversations((prev) => [
-          {
-            id: response.conversationId,
-            title: response.title || 'New Chat',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          ...prev,
-        ]);
-      } else if (activeConversationId) {
-        setConversations((prev) => {
-          const activeConv = prev.find((c) => c.id === activeConversationId);
-          const others = prev.filter((c) => c.id !== activeConversationId);
-          if (activeConv) {
-            return [activeConv, ...others];
-          }
-          return prev;
-        });
-      }
+      applySuccessfulChatResponse({
+        response,
+        activeConversationId,
+        setMessages,
+        setActiveConversationId,
+        setConversations,
+        hydratedRef,
+        router,
+      });
 
       if (response.actions && response.actions.length > 0) {
         await revalidateAfterChatActions(
@@ -257,7 +475,7 @@ export function ChatClient({
       const message =
         err instanceof Error
           ? err.message
-          : 'Something went wrong. Please check if backend API and GEMINI_API_KEY are configured.';
+          : 'Something went wrong. Please try again. If this keeps happening, contact your administrator.';
       setError(message);
     } finally {
       setIsPending(false);
@@ -269,12 +487,18 @@ export function ChatClient({
     void handleSendMessage(inputValue);
   };
 
+  const isActiveConversationProcessing = Boolean(
+    conversations.find((c) => c.id === activeConversationId)?.is_processing
+  );
+  const isInputDisabled =
+    isPending || isLoadingHistory || isActiveConversationProcessing;
+
   const handleComposerKeyDown = (
     e: React.KeyboardEvent<HTMLTextAreaElement>
   ) => {
     if (e.key !== 'Enter' || e.shiftKey) return;
     e.preventDefault();
-    if (!inputValue.trim() || isPending || isLoadingHistory) return;
+    if (!inputValue.trim() || isInputDisabled) return;
     void handleSendMessage(inputValue);
   };
 
@@ -349,9 +573,10 @@ export function ChatClient({
           <div className="flex shrink-0 items-center gap-1">
             <ChatClientHeaderActions
               variant={variant}
-              isPending={isPending}
-              selectedModelId={selectedModelId}
-              onSelectedModelIdChange={setSelectedModelId}
+              isPending={isInputDisabled}
+              chatModels={chatModels}
+              selectedIntegrationId={selectedIntegrationId}
+              onSelectedIntegrationIdChange={setSelectedIntegrationId}
               onNewChat={handleNewChat}
               onClose={onClose}
             />
@@ -364,7 +589,7 @@ export function ChatClient({
           showHero={showHero}
           showEmptyThread={showEmptyThread}
           messages={messages}
-          isPending={isPending}
+          isPending={isPending || isActiveConversationProcessing}
           error={error}
           currentUserName={currentUserName}
           currentUserImageUrl={currentUserImageUrl}
@@ -384,7 +609,7 @@ export function ChatClient({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleComposerKeyDown}
-              disabled={isPending || isLoadingHistory}
+              disabled={isInputDisabled}
               rows={1}
               placeholder="Type your message…"
               className="bg-background max-h-40 min-h-10 flex-1 resize-none px-3 py-2.5 sm:px-4"
@@ -392,7 +617,7 @@ export function ChatClient({
             <Button
               type="submit"
               size="icon-lg"
-              disabled={!inputValue.trim() || isPending || isLoadingHistory}
+              disabled={!inputValue.trim() || isInputDisabled}
               aria-label="Send message"
             >
               <Send />

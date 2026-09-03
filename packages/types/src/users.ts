@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { Constants } from './generated/supabase/database.types.js';
 
 export {
@@ -56,14 +55,4 @@ export function userRelationSelect(
   return `${alias}:users!${foreignKeyHint}(${projection})`;
 }
 
-export const createUserSchema = z.object({
-  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  email: z.email({ message: 'Please enter a valid email address.' }),
-  role: z.enum(USER_ROLES),
-});
-
-export const updateUserSchema = z.object({
-  id: z.uuid({ message: 'Invalid user ID.' }),
-  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  role: z.enum(USER_ROLES),
-});
+export { createUserSchema, updateUserSchema } from './api/v1/users.js';

@@ -329,7 +329,13 @@ signed in.
 
 ---
 
-## Access requests (open discussion)
+## Access requests — **implemented**
+
+See [ACCESS_REQUESTS.md](./ACCESS_REQUESTS.md).
+
+Admins review contact-form admission requests on **`/users?tab=requests`**. Limits: **3 submissions per email per rolling 30 days** (constants in `@repo/types`). Grant via allowlist email row; deny via explicit admin action. Both archive linked notifications.
+
+## Access requests (historical discussion)
 
 How admins learn someone needs access is **not locked**. Candidates:
 

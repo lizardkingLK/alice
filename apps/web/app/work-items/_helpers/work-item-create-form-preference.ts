@@ -17,7 +17,7 @@ function isWorkItemCreateFormMode(
 }
 
 /**
- * Per-browser preference for work-item create layout.
+ * Per-browser preference for work-item form layout (create and edit).
  * Defaults to classic (labeled fields) when missing or corrupt.
  */
 export function readWorkItemCreateFormMode(): WorkItemCreateFormMode {

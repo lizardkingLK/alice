@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AccessAllowlistService } from '../../src/routes/api/accessAllowlist/accessAllowlist.service';
 import type { AccessAllowlistRepository } from '../../src/routes/api/accessAllowlist/accessAllowlist.repository';
+import { EMAIL_ALLOWLIST_DOMAIN_CONFLICT_MESSAGE } from '@repo/types';
 
 const {
   createMock,
   updateMock,
   findByIdMock,
   hardDeleteMock,
+  findActiveDomainByValueMock,
   notifyMock,
   selectSingleMock,
 } = vi.hoisted(() => ({
@@ -14,6 +16,7 @@ const {
   updateMock: vi.fn(),
   findByIdMock: vi.fn(),
   hardDeleteMock: vi.fn(),
+  findActiveDomainByValueMock: vi.fn(),
   notifyMock: vi.fn(),
   selectSingleMock: vi.fn(),
 }));
@@ -42,7 +45,12 @@ const repository = {
   update: updateMock,
   findById: findByIdMock,
   hardDelete: hardDeleteMock,
+  findActiveDomainByValue: findActiveDomainByValueMock,
 } as unknown as AccessAllowlistRepository;
+
+const accessRequestsService = {
+  markGrantedForEmail: vi.fn(),
+} as never;
 
 const emailEntry = {
   id: 'allow-1',
@@ -50,6 +58,7 @@ const emailEntry = {
   value: 'client@partner.com',
   label: 'Pilot',
   expires_at: null,
+  allowed_project_ids: null,
   status: 'active' as const,
   created_by: 'admin-1',
   created_at: '2026-01-01T00:00:00.000Z',
@@ -58,10 +67,11 @@ const emailEntry = {
 };
 
 describe('AccessAllowlistService admission email', () => {
-  const service = new AccessAllowlistService(repository);
+  const service = new AccessAllowlistService(repository, accessRequestsService);
 
   beforeEach(() => {
     vi.clearAllMocks();
+    findActiveDomainByValueMock.mockResolvedValue(null);
     selectSingleMock.mockResolvedValue({
       data: { role: 'admin', email: 'admin@alice.dev' },
       error: null,
@@ -78,6 +88,24 @@ describe('AccessAllowlistService admission email', () => {
     });
 
     expect(notifyMock).toHaveBeenCalledWith('client@partner.com');
+  });
+
+  it('rejects email create when the domain is already allowlisted', async () => {
+    findActiveDomainByValueMock.mockResolvedValue({
+      id: 'domain-1',
+      kind: 'domain',
+      value: 'partner.com',
+      status: 'active',
+    });
+
+    await expect(
+      service.createAccessAllowlist('admin-1', {
+        kind: 'email',
+        value: 'client@partner.com',
+      })
+    ).rejects.toThrow(EMAIL_ALLOWLIST_DOMAIN_CONFLICT_MESSAGE);
+
+    expect(createMock).not.toHaveBeenCalled();
   });
 
   it('does not email domain rows', async () => {
@@ -122,7 +150,7 @@ describe('AccessAllowlistService admission email', () => {
 });
 
 describe('AccessAllowlistService delete own domain', () => {
-  const service = new AccessAllowlistService(repository);
+  const service = new AccessAllowlistService(repository, accessRequestsService);
   const domainEntry = {
     ...emailEntry,
     kind: 'domain' as const,

@@ -2,17 +2,20 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { TeamForm } from '@/app/manager/_components/team-form';
-import { createTeam, updateTeam } from '@/app/manager/_services/teams.service';
-import type { User } from '@/app/users/_services/users.service';
-import type { Team } from '@/app/manager/_services/teams.service';
+import {
+  createTeam,
+  updateTeam,
+} from '@/app/manager/_services/teams.mutations.client';
+import type { User } from '@/app/users/_services/users.mutations.client';
+import type { Team } from '@/app/manager/_services/teams.mutations.client';
 import type {
   Project,
   ProjectMemberWithUser,
   ProjectMembersByProjectId,
-} from '@/app/projects/_services/projects.service.base';
+} from '@/app/projects/_services/projects.mutations.shared';
 import { pickComboboxOption } from '../helpers/pick-combobox-option';
 
-vi.mock('@/app/manager/_services/teams.service', () => ({
+vi.mock('@/app/manager/_services/teams.mutations.client', () => ({
   createTeam: vi.fn(),
   updateTeam: vi.fn(),
 }));
@@ -124,7 +127,9 @@ const mockProjects: Project[] = [
     attributes_config: null,
     workflow_config: null,
     github_repo: null,
-    github_token: null,
+    jira_connection_id: null,
+    jira_project_key: null,
+    has_github_token: false,
     logo_url: null,
     cover_picture: null,
     owner: {
@@ -150,7 +155,9 @@ const mockProjects: Project[] = [
     attributes_config: null,
     workflow_config: null,
     github_repo: null,
-    github_token: null,
+    jira_connection_id: null,
+    jira_project_key: null,
+    has_github_token: false,
     logo_url: null,
     cover_picture: null,
     owner: {
@@ -330,6 +337,7 @@ describe('TeamForm Component', () => {
         project_id: 'proj-1',
         status: 'active',
         member_ids: [],
+        members: [],
       });
     });
 
@@ -373,6 +381,13 @@ describe('TeamForm Component', () => {
           manager_id: 'user-mgr-1',
           project_id: 'proj-1',
           member_ids: ['user-dev-1'],
+          members: [
+            {
+              user_id: 'user-dev-1',
+              capacity: 40,
+              allocation: 100,
+            },
+          ],
         })
       );
     });
@@ -414,6 +429,13 @@ describe('TeamForm Component', () => {
           manager_id: 'user-mgr-1',
           status: 'active',
           member_ids: ['user-dev-1'],
+          members: [
+            {
+              user_id: 'user-dev-1',
+              capacity: 40,
+              allocation: 100,
+            },
+          ],
         }),
         '2026-07-10T10:00:00Z'
       );
@@ -511,6 +533,13 @@ describe('TeamForm Component', () => {
         expect.objectContaining({
           project_id: 'proj-1',
           member_ids: ['user-dev-1'],
+          members: [
+            {
+              user_id: 'user-dev-1',
+              capacity: 40,
+              allocation: 100,
+            },
+          ],
         }),
         '2026-07-10T10:00:00Z'
       );
@@ -560,5 +589,29 @@ describe('TeamForm Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
 
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('contains invisible scroll and overflow classes on the form body for Register New Team', () => {
+    const { container } = renderTeamForm();
+    const card = container.firstElementChild as HTMLElement;
+    expect(card).toHaveClass('overflow-hidden');
+    expect(card).toHaveClass('max-h-[85vh]');
+    const scrollableBody = container.querySelector('.overflow-y-auto');
+    expect(scrollableBody).toHaveClass('no-scrollbar');
+  });
+
+  it('contains invisible scroll and overflow classes on the form body for Modify Team Configuration', () => {
+    const { container } = renderTeamForm({ teamToEdit: mockTeam });
+    const card = container.firstElementChild as HTMLElement;
+    expect(card).toHaveClass('overflow-hidden');
+    expect(card).toHaveClass('max-h-[85vh]');
+    const scrollableBody = container.querySelector('.overflow-y-auto');
+    expect(scrollableBody).toHaveClass('no-scrollbar');
+  });
+
+  it('merges custom className on the form card using cn', () => {
+    const { container } = renderTeamForm({ className: 'custom-test-class' });
+    const card = container.firstElementChild as HTMLElement;
+    expect(card).toHaveClass('custom-test-class');
   });
 });

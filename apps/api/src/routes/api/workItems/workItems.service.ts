@@ -8,6 +8,7 @@ import {
   type WorkItemListRow,
   type WorkItemListRowWithDescription,
   UserRoleEnum,
+  RecordStatusEnum,
 } from '@repo/types';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
 import { env } from '../../../config/env';
@@ -22,6 +23,8 @@ import {
   WorkItemUpdateBody,
 } from './workItems.schemas';
 import { WorkItemValidationError } from './workItems.errors';
+import { prisma } from '../../../lib/prisma';
+import { decryptSecretIfPresent } from '../../../lib/secrets/token-crypto';
 
 async function requireAdmin(actorId: string) {
   return await requireUserWithRole(
@@ -29,6 +32,18 @@ async function requireAdmin(actorId: string) {
     [UserRoleEnum.admin],
     'Unauthorized. Only administrators can permanently delete work items.'
   );
+}
+
+function githubApiHeaders(encryptedOrPlainToken: string | null | undefined) {
+  const headers: Record<string, string> = {
+    'User-Agent': 'Alice-App',
+    Accept: 'application/vnd.github.v3+json',
+  };
+  const token = decryptSecretIfPresent(encryptedOrPlainToken);
+  if (token) {
+    headers.Authorization = `token ${token}`;
+  }
+  return headers;
 }
 
 interface GithubPRApiResponse {
@@ -53,6 +68,18 @@ interface GithubCommitApiResponse {
     login?: string;
   };
 }
+
+export const AllocationConfig = {
+  DEFAULT_CAPACITY: 40,
+  DEFAULT_ALLOCATION: 100,
+} as const;
+
+export const WorkItemDefaults = {
+  BACKLOG: 'Backlog',
+  SPRINT: 'Sprint',
+  UNASSIGNED: 'Unassigned',
+  USER: 'User',
+} as const;
 
 export class WorkItemService {
   constructor(private readonly workItems: WorkItemRepository) {}
@@ -109,10 +136,49 @@ export class WorkItemService {
       childType: input.type,
     });
 
-    return await this.workItems.create({
+    await this.validateAllocation(
+      input.project_id,
+      input.sprint_id,
+      input.assignee_id,
+      input.story_points
+    );
+
+    const created = await this.workItems.create({
       ...input,
       createdBy: userId,
     });
+
+    if (input.sprint_id || input.assignee_id || input.story_points) {
+      let sprintName: string = WorkItemDefaults.BACKLOG;
+      if (input.sprint_id) {
+        const sprint = await prisma.sprints.findUnique({
+          where: { id: input.sprint_id },
+          select: { name: true },
+        });
+        sprintName = sprint?.name || WorkItemDefaults.SPRINT;
+      }
+      let assigneeName: string = WorkItemDefaults.UNASSIGNED;
+      if (input.assignee_id) {
+        const assignee = await prisma.users.findUnique({
+          where: { id: input.assignee_id },
+          select: { name: true },
+        });
+        assigneeName = assignee?.name || WorkItemDefaults.USER;
+      }
+      const comment = `Allocation changed: Assigned to sprint ${sprintName}, Assignee set to ${assigneeName}, Story points set to ${input.story_points || 0}.`;
+      await prisma.work_item_worklogs.create({
+        data: {
+          work_item_id: created.id,
+          user_id: userId,
+          logged_hours: 0,
+          comment,
+          created_by: userId,
+          updated_by: userId,
+        },
+      });
+    }
+
+    return created;
   }
 
   async updateWorkItem(
@@ -138,11 +204,135 @@ export class WorkItemService {
     await this.assertCanBecomeDone(current, workItemId, input.status);
     this.assertDoneIsReadOnlyExceptStatus(current, input);
 
-    return await this.workItems.update({
+    const sprintId = 'sprint_id' in input ? input.sprint_id : current.sprint_id;
+    const assigneeId =
+      'assignee_id' in input ? input.assignee_id : current.assignee_id;
+    const storyPoints =
+      'story_points' in input ? input.story_points : current.story_points;
+
+    await this.validateAllocation(
+      input.project_id,
+      sprintId,
+      assigneeId,
+      storyPoints,
+      workItemId
+    );
+
+    const sprintChanged = !sameNullable(input.sprint_id, current.sprint_id);
+    const assigneeChanged = !sameNullable(
+      input.assignee_id,
+      current.assignee_id
+    );
+    const storyPointsChanged = !sameNullable(
+      input.story_points,
+      current.story_points
+    );
+
+    const updated = await this.workItems.update({
       ...input,
       id: workItemId,
       updatedBy: userId,
       expectedUpdatedAt,
+    });
+
+    if (sprintChanged || assigneeChanged || storyPointsChanged) {
+      await this.createWorkItemUpdateWorklog({
+        userId,
+        workItemId,
+        current,
+        sprintId,
+        assigneeId,
+        storyPoints,
+        sprintChanged,
+        assigneeChanged,
+        storyPointsChanged,
+      });
+    }
+
+    return updated;
+  }
+
+  private async createWorkItemUpdateWorklog(params: {
+    userId: string;
+    workItemId: string;
+    current: DbWorkItem;
+    sprintId: string | null | undefined;
+    assigneeId: string | null | undefined;
+    storyPoints: number | null | undefined;
+    sprintChanged: boolean;
+    assigneeChanged: boolean;
+    storyPointsChanged: boolean;
+  }): Promise<void> {
+    const {
+      userId,
+      workItemId,
+      current,
+      sprintId,
+      assigneeId,
+      storyPoints,
+      sprintChanged,
+      assigneeChanged,
+      storyPointsChanged,
+    } = params;
+    let oldSprintName: string = WorkItemDefaults.BACKLOG;
+    if (current.sprint_id) {
+      const s = await prisma.sprints.findUnique({
+        where: { id: current.sprint_id },
+        select: { name: true },
+      });
+      oldSprintName = s?.name || WorkItemDefaults.SPRINT;
+    }
+    let newSprintName: string = WorkItemDefaults.BACKLOG;
+    if (sprintId) {
+      const s = await prisma.sprints.findUnique({
+        where: { id: sprintId },
+        select: { name: true },
+      });
+      newSprintName = s?.name || WorkItemDefaults.SPRINT;
+    }
+
+    let oldAssigneeName: string = WorkItemDefaults.UNASSIGNED;
+    if (current.assignee_id) {
+      const u = await prisma.users.findUnique({
+        where: { id: current.assignee_id },
+        select: { name: true },
+      });
+      oldAssigneeName = u?.name || WorkItemDefaults.USER;
+    }
+    let newAssigneeName: string = WorkItemDefaults.UNASSIGNED;
+    if (assigneeId) {
+      const u = await prisma.users.findUnique({
+        where: { id: assigneeId },
+        select: { name: true },
+      });
+      newAssigneeName = u?.name || WorkItemDefaults.USER;
+    }
+
+    const commentParts = [];
+    if (sprintChanged)
+      commentParts.push(
+        `sprint changed from ${oldSprintName} to ${newSprintName}`
+      );
+    if (assigneeChanged)
+      commentParts.push(
+        `assignee changed from ${oldAssigneeName} to ${newAssigneeName}`
+      );
+    if (storyPointsChanged)
+      commentParts.push(
+        `story points changed from ${current.story_points || 0} to ${storyPoints || 0}`
+      );
+
+    const comment = `Allocation change: ${commentParts.join(', ')}.`;
+
+    await prisma.work_item_worklogs.create({
+      data: {
+        work_item_id: workItemId,
+        user_id: userId,
+        logged_hours: 0,
+        comment,
+        created_by: userId,
+        updated_by: userId,
+      },
     });
   }
 
@@ -221,35 +411,6 @@ export class WorkItemService {
     await this.workItems.requireProjectMember(workItemId, actorId);
     const ids = await this.workItems.collectDescendantIds(workItemId);
     return Math.max(0, ids.length - 1);
-  }
-
-  async listWorkItemWorkLogs(actorId: string, workItemId: string) {
-    return await this.workItems.listWorkItemWorkLogs(workItemId, actorId);
-  }
-
-  async createWorkItemWorkLog(
-    actorId: string,
-    workItemId: string,
-    input: {
-      loggedHours: number;
-      loggedAtIso: string;
-      comment: string | null;
-    }
-  ) {
-    const current = await this.workItems.getById(workItemId);
-    if (current?.status === 'Done') {
-      throw new WorkItemValidationError(
-        'Done work items are read-only except Status. Change status to log work.'
-      );
-    }
-
-    return await this.workItems.createWorkItemWorkLog({
-      workItemId,
-      actorId,
-      loggedHours: input.loggedHours,
-      loggedAtIso: input.loggedAtIso,
-      comment: input.comment,
-    });
   }
 
   /**
@@ -556,13 +717,7 @@ export class WorkItemService {
     const settings =
       await this.workItems.getProjectGithubSettingsByWorkItem(workItemId);
 
-    const headers: Record<string, string> = {
-      'User-Agent': 'Alice-App',
-      Accept: 'application/vnd.github.v3+json',
-    };
-    if (settings?.github_token) {
-      headers['Authorization'] = `token ${settings.github_token}`;
-    }
+    const headers = githubApiHeaders(settings?.github_token);
 
     const result = [];
     for (const pr of prs) {
@@ -661,13 +816,7 @@ export class WorkItemService {
     let status = 'open';
 
     try {
-      const headers: Record<string, string> = {
-        'User-Agent': 'Alice-App',
-        Accept: 'application/vnd.github.v3+json',
-      };
-      if (settings.github_token) {
-        headers['Authorization'] = `token ${settings.github_token}`;
-      }
+      const headers = githubApiHeaders(settings.github_token);
 
       const res = await fetch(
         `https://api.github.com/repos/${configOwner}/${configRepo}/pulls/${prNumber}`,
@@ -700,6 +849,167 @@ export class WorkItemService {
       branchName,
       status,
     });
+  }
+
+  private async validateAllocation(
+    projectId: string,
+    sprintId: string | null | undefined,
+    assigneeId: string | null | undefined,
+    storyPoints: number | null | undefined,
+    workItemId?: string
+  ): Promise<void> {
+    if (!sprintId) {
+      return;
+    }
+
+    const points = storyPoints || 0;
+
+    await this.validateSprintAllocation(
+      projectId,
+      sprintId,
+      points,
+      workItemId
+    );
+
+    if (assigneeId) {
+      await this.validateMemberAllocation(
+        projectId,
+        sprintId,
+        assigneeId,
+        points,
+        workItemId
+      );
+    }
+  }
+
+  private async validateSprintAllocation(
+    projectId: string,
+    sprintId: string,
+    storyPoints: number,
+    workItemId?: string
+  ): Promise<void> {
+    const teams = await prisma.teams.findMany({
+      where: {
+        project_id: projectId,
+        status: RecordStatusEnum.active,
+      },
+      include: {
+        members: {
+          where: {
+            status: RecordStatusEnum.active,
+          },
+        },
+      },
+    });
+
+    let hasConfiguredCapacity = false;
+    let totalSprintCapacity = 0;
+
+    for (const team of teams) {
+      for (const member of team.members) {
+        const cap =
+          member.capacity !== null
+            ? member.capacity
+            : AllocationConfig.DEFAULT_CAPACITY;
+        const alloc =
+          member.allocation !== null
+            ? member.allocation
+            : AllocationConfig.DEFAULT_ALLOCATION;
+        totalSprintCapacity += cap * (alloc / 100);
+        if (member.capacity !== null || member.allocation !== null) {
+          hasConfiguredCapacity = true;
+        }
+      }
+    }
+
+    const sprintItems = await prisma.work_items.findMany({
+      where: {
+        sprint_id: sprintId,
+        record_status: RecordStatusEnum.active,
+        NOT: workItemId ? { id: workItemId } : undefined,
+      },
+      select: {
+        story_points: true,
+      },
+    });
+    const currentAllocatedPoints = sprintItems.reduce(
+      (sum, item) => sum + (item.story_points || 0),
+      0
+    );
+    const proposedTotalPoints = currentAllocatedPoints + storyPoints;
+
+    if (hasConfiguredCapacity && proposedTotalPoints > totalSprintCapacity) {
+      throw new WorkItemValidationError(
+        `Sprint capacity exceeded. Sprint capacity is ${totalSprintCapacity} story points, but the sprint would have ${proposedTotalPoints} story points allocated.`
+      );
+    }
+  }
+
+  private async validateMemberAllocation(
+    projectId: string,
+    sprintId: string,
+    assigneeId: string,
+    storyPoints: number,
+    workItemId?: string
+  ): Promise<void> {
+    const memberTeams = await prisma.teams.findMany({
+      where: {
+        project_id: projectId,
+        status: RecordStatusEnum.active,
+      },
+      include: {
+        members: {
+          where: {
+            user_id: assigneeId,
+            status: RecordStatusEnum.active,
+          },
+        },
+      },
+    });
+
+    let memberCapacity = 0;
+
+    for (const team of memberTeams) {
+      for (const member of team.members) {
+        const cap =
+          member.capacity !== null
+            ? member.capacity
+            : AllocationConfig.DEFAULT_CAPACITY;
+        const alloc =
+          member.allocation !== null
+            ? member.allocation
+            : AllocationConfig.DEFAULT_ALLOCATION;
+        memberCapacity += cap * (alloc / 100);
+      }
+    }
+
+    const memberSprintItems = await prisma.work_items.findMany({
+      where: {
+        sprint_id: sprintId,
+        assignee_id: assigneeId,
+        record_status: RecordStatusEnum.active,
+        NOT: workItemId ? { id: workItemId } : undefined,
+      },
+      select: {
+        story_points: true,
+      },
+    });
+    const currentMemberPoints = memberSprintItems.reduce(
+      (sum, item) => sum + (item.story_points || 0),
+      0
+    );
+    const proposedMemberPoints = currentMemberPoints + storyPoints;
+
+    if (proposedMemberPoints > memberCapacity) {
+      const assignee = await prisma.users.findUnique({
+        where: { id: assigneeId },
+        select: { name: true },
+      });
+      const assigneeName = assignee?.name || 'Assignee';
+      throw new WorkItemValidationError(
+        `Member capacity exceeded in this sprint. Assignee ${assigneeName} has a capacity of ${memberCapacity} story points, but would have ${proposedMemberPoints} story points assigned.`
+      );
+    }
   }
 
   async unlinkPR(
