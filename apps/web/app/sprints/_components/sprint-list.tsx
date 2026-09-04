@@ -165,7 +165,7 @@ function renderSprintNameCell({ row }: CellContext<Sprint, unknown>) {
         <div className="flex items-center gap-2">
           <Link
             href={`/sprints/${row.original.id}/report`}
-            className="text-foreground hover:text-primary font-semibold hover:underline transition-colors"
+            className="text-foreground hover:text-primary font-semibold transition-colors hover:underline"
           >
             {row.original.name}
           </Link>
@@ -218,9 +218,7 @@ function renderActionsCell({ row, table }: CellContext<Sprint, unknown>) {
   const showEdit = Boolean(meta.onEditSprint && !isArchived);
   const showArchive = Boolean(meta.onArchiveSprint && isCompleted);
   const showRestore = Boolean(meta.onRestoreSprint && isArchived);
-  const showDelete = Boolean(
-    meta.onDeleteSprint && isArchived && meta.isAdmin
-  );
+  const showDelete = Boolean(meta.onDeleteSprint && isArchived && meta.isAdmin);
 
   if (!showEdit && !showArchive && !showRestore && !showDelete) {
     return null;

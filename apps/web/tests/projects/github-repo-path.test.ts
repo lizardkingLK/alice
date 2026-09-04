@@ -8,7 +8,10 @@ describe('github-repo-path utilities', () => {
   describe('parseGithubRepoPath', () => {
     it('returns empty strings for null, undefined, or empty input', () => {
       expect(parseGithubRepoPath(null)).toEqual({ owner: '', repoName: '' });
-      expect(parseGithubRepoPath(undefined)).toEqual({ owner: '', repoName: '' });
+      expect(parseGithubRepoPath(undefined)).toEqual({
+        owner: '',
+        repoName: '',
+      });
       expect(parseGithubRepoPath('')).toEqual({ owner: '', repoName: '' });
       expect(parseGithubRepoPath('   ')).toEqual({ owner: '', repoName: '' });
     });
@@ -21,16 +24,12 @@ describe('github-repo-path utilities', () => {
     });
 
     it('parses full https and http URLs', () => {
-      expect(
-        parseGithubRepoPath('https://github.com/facebook/react')
-      ).toEqual({
+      expect(parseGithubRepoPath('https://github.com/facebook/react')).toEqual({
         owner: 'facebook',
         repoName: 'react',
       });
 
-      expect(
-        parseGithubRepoPath('https://github.com/vercel/next.js')
-      ).toEqual({
+      expect(parseGithubRepoPath('https://github.com/vercel/next.js')).toEqual({
         owner: 'vercel',
         repoName: 'next.js',
       });
@@ -45,7 +44,9 @@ describe('github-repo-path utilities', () => {
       });
 
       expect(
-        parseGithubRepoPath('https://github.com/tailwindlabs/tailwindcss?tab=readme-ov-file#readme')
+        parseGithubRepoPath(
+          'https://github.com/tailwindlabs/tailwindcss?tab=readme-ov-file#readme'
+        )
       ).toEqual({
         owner: 'tailwindlabs',
         repoName: 'tailwindcss',
@@ -53,9 +54,7 @@ describe('github-repo-path utilities', () => {
     });
 
     it('parses git SSH format URIs', () => {
-      expect(
-        parseGithubRepoPath('git@github.com:facebook/react.git')
-      ).toEqual({
+      expect(parseGithubRepoPath('git@github.com:facebook/react.git')).toEqual({
         owner: 'facebook',
         repoName: 'react',
       });

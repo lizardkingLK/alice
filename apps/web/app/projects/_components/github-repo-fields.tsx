@@ -77,7 +77,8 @@ export function GithubRepoFields({
           required={required}
         />
         <p className="text-muted-foreground text-[11px]">
-          Enter or paste a GitHub repository URL (e.g. https://github.com/owner/repository).
+          Enter or paste a GitHub repository URL (e.g.
+          https://github.com/owner/repository).
         </p>
       </div>
       <div className="space-y-2">
@@ -96,5 +97,3 @@ export function GithubRepoFields({
     </div>
   );
 }
-
-

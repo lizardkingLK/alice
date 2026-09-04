@@ -76,7 +76,7 @@ export function WorkItemFormDialog({
         className={cn(
           contentClassName,
           useModernLayout ? 'sm:max-w-4xl' : 'sm:max-w-xl',
-          'flex max-h-[85vh] sm:max-h-[90vh] flex-col overflow-hidden'
+          'flex max-h-[85vh] flex-col overflow-hidden sm:max-h-[90vh]'
         )}
         onPointerDownOutside={(event) => event.preventDefault()}
         onInteractOutside={(event) => event.preventDefault()}

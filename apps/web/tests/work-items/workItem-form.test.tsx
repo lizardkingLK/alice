@@ -496,6 +496,12 @@ describe('WorkItemForm', () => {
 
     const scrollContainer = container.querySelector('.overflow-y-auto');
     expect(scrollContainer).toBeInTheDocument();
-    expect(scrollContainer).toHaveClass('no-scrollbar', 'flex-1', 'space-y-4', 'overflow-y-auto', 'pr-1');
+    expect(scrollContainer).toHaveClass(
+      'no-scrollbar',
+      'flex-1',
+      'space-y-4',
+      'overflow-y-auto',
+      'pr-1'
+    );
   });
 });

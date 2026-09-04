@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  within,
+  waitFor,
+} from '@testing-library/react';
 import { SprintList } from '@/app/sprints/_components/sprint-list';
 import { SprintsWorkspace } from '@/app/sprints/_components/sprints-workspace';
 import {

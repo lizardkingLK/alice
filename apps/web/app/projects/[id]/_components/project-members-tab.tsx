@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useActionState } from 'react';
+import { useState, useTransition, useActionState, type ReactNode } from 'react';
 import {
   Card,
   CardContent,
@@ -25,6 +25,28 @@ import type {
   ProjectMemberWithUser,
 } from '../../_services/projects.mutations.client';
 import type { User } from '@/app/users/_services/users.mutations.client';
+
+function MemberStatusBadge({ children }: Readonly<{ children: ReactNode }>) {
+  return (
+    <span className="bg-primary/20 text-primary py-0.2 shrink-0 rounded-full px-1.5 text-[9px] font-bold uppercase">
+      {children}
+    </span>
+  );
+}
+
+function protectedMemberRemoveTitle(params: {
+  readonly isOwner: boolean;
+  readonly isCreator: boolean;
+  readonly userName: string;
+}): string {
+  if (params.isOwner) {
+    return 'Cannot remove the project owner. Change the owner on the project first.';
+  }
+  if (params.isCreator) {
+    return 'Cannot remove the project creator. The admin who created this project stays assigned.';
+  }
+  return `Remove ${params.userName}`;
+}
 
 export type ProjectMembersTabProps = {
   readonly project: Project;
@@ -108,6 +130,10 @@ export function ProjectMembersTab({
                 const userRole = member.user?.role ?? 'member';
                 const isSelf = member.user_id === currentUserId;
                 const isOwner = member.user_id === project.owner_id;
+                const isCreator =
+                  Boolean(project.created_by) &&
+                  member.user_id === project.created_by;
+                const isProtectedMember = isOwner || isCreator;
 
                 return (
                   <div
@@ -127,14 +153,13 @@ export function ProjectMembersTab({
                             {userRole}
                           </span>
                           {isOwner ? (
-                            <span className="bg-primary/20 text-primary py-0.2 shrink-0 rounded-full px-1.5 text-[9px] font-bold uppercase">
-                              Owner
-                            </span>
+                            <MemberStatusBadge>Owner</MemberStatusBadge>
+                          ) : null}
+                          {isCreator && !isOwner ? (
+                            <MemberStatusBadge>Creator</MemberStatusBadge>
                           ) : null}
                           {isSelf ? (
-                            <span className="bg-primary/20 text-primary py-0.2 shrink-0 rounded-full px-1.5 text-[9px] font-bold uppercase">
-                              You
-                            </span>
+                            <MemberStatusBadge>You</MemberStatusBadge>
                           ) : null}
                         </div>
                         {userEmail ? (
@@ -150,19 +175,19 @@ export function ProjectMembersTab({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        disabled={isPending || isOwner}
+                        disabled={isPending || isProtectedMember}
                         onClick={() => {
-                          if (isOwner) {
+                          if (isProtectedMember) {
                             return;
                           }
                           handleRemoveMember(member.user_id);
                         }}
                         className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8 w-8 cursor-pointer items-center justify-center rounded-md transition-colors disabled:opacity-50"
-                        title={
-                          isOwner
-                            ? 'Cannot remove the project owner. Change the owner on the project first.'
-                            : `Remove ${userName}`
-                        }
+                        title={protectedMemberRemoveTitle({
+                          isOwner,
+                          isCreator,
+                          userName,
+                        })}
                       >
                         {isPending && deletingUserId === member.user_id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />

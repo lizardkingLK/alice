@@ -7,6 +7,7 @@ export type ProjectRow = {
   start_date: string | null;
   end_date: string | null;
   owner_id: string;
+  created_by?: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -51,6 +52,7 @@ export type CreateProjectInput = Omit<
   | 'created_at'
   | 'updated_at'
   | 'deleted_at'
+  | 'created_by'
   | 'logo_url'
   | 'cover_picture'
 > & {

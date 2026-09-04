@@ -177,6 +177,11 @@ export class ProjectsService {
         'Cannot remove the project owner from members. Change the project owner first.'
       );
     }
+    if (project.created_by && project.created_by === userId) {
+      throw new Error(
+        'Cannot remove the project creator from members. The admin who created this project stays assigned.'
+      );
+    }
 
     await this.projectsRepository.removeMember(projectId, userId);
   }

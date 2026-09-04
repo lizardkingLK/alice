@@ -311,7 +311,7 @@ export function TeamForm({
   return (
     <Card
       className={cn(
-        'border-border bg-card text-card-foreground relative flex max-h-[85vh] sm:max-h-[90vh] w-full flex-col overflow-hidden border shadow-2xl transition-all duration-300',
+        'border-border bg-card text-card-foreground relative flex max-h-[85vh] w-full flex-col overflow-hidden border shadow-2xl transition-all duration-300 sm:max-h-[90vh]',
         className
       )}
     >
@@ -490,7 +490,8 @@ export function TeamForm({
                       if (!memberObj) return null;
 
                       const currentCapacity = memberCapacities[userId] ?? 40;
-                      const currentAllocation = memberAllocations[userId] ?? 100;
+                      const currentAllocation =
+                        memberAllocations[userId] ?? 100;
 
                       return (
                         <div
@@ -511,7 +512,10 @@ export function TeamForm({
                                 className="h-8 w-16 p-1 text-center text-xs"
                                 value={currentCapacity}
                                 onChange={(e) => {
-                                  const val = Number.parseInt(e.target.value, 10);
+                                  const val = Number.parseInt(
+                                    e.target.value,
+                                    10
+                                  );
                                   setMemberCapacities((prev) => ({
                                     ...prev,
                                     [userId]: Number.isNaN(val) ? 0 : val,
@@ -530,7 +534,10 @@ export function TeamForm({
                                 className="h-8 w-16 p-1 text-center text-xs"
                                 value={currentAllocation}
                                 onChange={(e) => {
-                                  const val = Number.parseInt(e.target.value, 10);
+                                  const val = Number.parseInt(
+                                    e.target.value,
+                                    10
+                                  );
                                   setMemberAllocations((prev) => ({
                                     ...prev,
                                     [userId]: Number.isNaN(val) ? 0 : val,
@@ -548,7 +555,7 @@ export function TeamForm({
             </div>
           </div>
 
-          <div className="shrink-0 border-t border-border/40 pt-4">
+          <div className="border-border/40 shrink-0 border-t pt-4">
             <FormCancelSubmitActions
               message={message}
               isError={isError}

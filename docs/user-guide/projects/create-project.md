@@ -24,7 +24,9 @@ during setup.
 4. Optionally connect **Jira** or **GitHub** in the same flow if prompted.
 5. Submit **Create Project**.
 
-You become the project **owner** and see the project in your registry.
+You become a **project member** (so the project stays in your accessible list).
+The manager you pick as **Project Owner** becomes the owner and is also added as
+a member.
 
 ---
 
@@ -33,6 +35,9 @@ You become the project **owner** and see the project in your registry.
 - Open the project workspace to add **Members**, **Teams**, and **Work items**
 - Configure **Integrations** on the project **Integrations** tab
 - Adjust metadata with [Project settings](./project-settings.md)
+
+The creating admin and the owner stay on the Members list and cannot be removed
+from membership (see [Project members](./project-members.md)).
 
 ---
 

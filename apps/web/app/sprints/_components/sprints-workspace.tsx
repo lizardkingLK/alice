@@ -68,8 +68,10 @@ function isSprintMovedFromTab(
   status: Sprint['status']
 ): boolean {
   return (
-    (filterTab === SprintTabEnum.Active && status === SprintStatusEnum.Archived) ||
-    (filterTab === SprintTabEnum.Archived && status !== SprintStatusEnum.Archived)
+    (filterTab === SprintTabEnum.Active &&
+      status === SprintStatusEnum.Archived) ||
+    (filterTab === SprintTabEnum.Archived &&
+      status !== SprintStatusEnum.Archived)
   );
 }
 
@@ -246,7 +248,9 @@ export function SprintsWorkspace({
   const onEditSprint = isManagerOrAdmin
     ? (sprint: Sprint) => setEditingSprint(sprint)
     : undefined;
-  const onArchiveSprint = isManagerOrAdmin ? handleArchiveSprintClick : undefined;
+  const onArchiveSprint = isManagerOrAdmin
+    ? handleArchiveSprintClick
+    : undefined;
   const onRestoreSprint = isManagerOrAdmin ? handleRestoreSprint : undefined;
   const onDeleteSprint = isAdmin ? handleDeleteSprintClick : undefined;
 
@@ -352,4 +356,3 @@ export function SprintsWorkspace({
     </>
   );
 }
-

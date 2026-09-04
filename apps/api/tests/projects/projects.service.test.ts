@@ -54,6 +54,7 @@ const mockProject = {
   start_date: '2026-01-01',
   end_date: '2026-12-31',
   owner_id: 'user-manager',
+  created_by: 'user-admin',
   created_at: '2026-01-01T00:00:00.000Z',
   updated_at: '2026-01-01T00:00:00.000Z',
   deleted_at: null,
@@ -361,6 +362,19 @@ describe('ProjectsService backend tests', () => {
         service.removeMember('user-manager', 'project-1', 'user-manager')
       ).rejects.toThrow(
         'Cannot remove the project owner from members. Change the project owner first.'
+      );
+
+      expect(removeMemberMock).not.toHaveBeenCalled();
+    });
+
+    it('rejects removing the project creator', async () => {
+      mockActorRole('manager');
+      findByIdMock.mockResolvedValue(mockProject);
+
+      await expect(
+        service.removeMember('user-manager', 'project-1', 'user-admin')
+      ).rejects.toThrow(
+        'Cannot remove the project creator from members. The admin who created this project stays assigned.'
       );
 
       expect(removeMemberMock).not.toHaveBeenCalled();

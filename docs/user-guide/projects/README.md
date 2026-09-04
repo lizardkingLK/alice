@@ -29,8 +29,8 @@ but they don't open the project registry.
 ## Two layers of access
 
 1. **Platform role** — You need **manager** or **admin** to open `/projects`.
-2. **Project membership** — Even as a manager, you only see projects you **own**
-   or are a **member** of (admins see all projects).
+2. **Project membership** — You only see projects you **own** or are a
+   **member** of (same rule for admins and managers).
 
 If you open a project you're not a member of, you'll see a no-access message
 with a link back to the list.
@@ -39,10 +39,10 @@ with a link back to the list.
 
 ## Getting access to a project
 
-| Situation                        | What happens                                     |
-| -------------------------------- | ------------------------------------------------ |
-| An **admin creates** a project   | They become the **owner** and see it in the list |
-| Someone **adds you** as a member | The project appears in your list                 |
-| You're an **admin**              | All projects appear in the list                  |
+| Situation                      | What happens                                                         |
+| ------------------------------ | -------------------------------------------------------------------- |
+| An **admin creates** a project | They are added as a **member**; the chosen manager becomes **owner** |
+| Someone **adds you** as member | The project appears in your list                                     |
+| You are the **owner**          | The project appears in your list                                     |
 
 Ask a project owner or admin to add you under **Members** if you need access.
