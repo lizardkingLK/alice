@@ -7,6 +7,7 @@ import {
   hardDeleteSprint,
 } from '@/app/sprints/_services/sprints.mutations.client';
 import { updateSprintStatusWithOptimisticLock } from '@/app/sprints/_helpers/update-sprint-status-with-lock';
+import { DeleteSprintWorkItemsActionEnum } from '@repo/types';
 import { assertDebouncedSearchRedirect } from '../helpers/assert-debounced-search';
 
 const mockPush = vi.fn();
@@ -726,7 +727,7 @@ describe('SprintList Component', () => {
 
     await waitFor(() => {
       expect(hardDeleteSprint).toHaveBeenCalledWith('sprint-archived', {
-        workItemsAction: 'delete_content',
+        workItemsAction: DeleteSprintWorkItemsActionEnum.DeleteContent,
       });
       expect(mockRefresh).toHaveBeenCalled();
     });

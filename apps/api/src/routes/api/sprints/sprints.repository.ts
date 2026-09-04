@@ -2,6 +2,7 @@ import {
   WorkItemStatusEnum,
   type Database,
   type DeleteSprintWorkItemsAction,
+  DeleteSprintWorkItemsActionEnum,
   type SprintRowWithProject,
   type Tables,
   sprintListSelect,
@@ -268,7 +269,9 @@ export class SprintsRepository {
     }
   }
 
-  private async cleanupItemAttachments(itemIds: string[]): Promise<void> {
+  private async cleanupItemAttachments(
+    itemIds: string[]
+  ): Promise<string[] | null> {
     const attachments = await prisma.attachments.findMany({
       where: { work_item_id: { in: itemIds } },
       select: { storage_path: true },
@@ -278,41 +281,49 @@ export class SprintsRepository {
       .map((a) => a.storage_path)
       .filter((p): p is string => Boolean(p));
 
-    if (paths.length === 0) return;
+    if (paths.length === 0) {
+      return null;
+    }
 
     try {
       await removeStorageObjects(env.STORAGE_BUCKET_ATTACHMENTS, paths);
+      return paths;
     } catch (storageError) {
       console.error(
         'error. failed to remove attachment storage objects on sprint delete:',
         storageError instanceof Error ? storageError.message : storageError
       );
+      return null;
     }
   }
 
   private async deleteSprintWorkItemsAndAttachments(
     sprintId: string
-  ): Promise<void> {
+  ): Promise<{ deletedItemCount: number } | null> {
     const items = await prisma.work_items.findMany({
       where: { sprint_id: sprintId },
       select: { id: true },
     });
     const itemIds = items.map((i) => i.id);
 
-    if (itemIds.length === 0) return;
+    if (itemIds.length === 0) {
+      return null;
+    }
 
     await this.cleanupItemAttachments(itemIds);
 
-    await prisma.work_items.deleteMany({
+    const result = await prisma.work_items.deleteMany({
       where: { sprint_id: sprintId },
     });
+
+    return { deletedItemCount: result.count };
   }
 
   async deleteSprint(
     sprintId: string,
     workItemsAction: DeleteSprintWorkItemsAction
   ): Promise<void> {
-    if (workItemsAction === 'delete_content') {
+    if (workItemsAction === DeleteSprintWorkItemsActionEnum.DeleteContent) {
       await this.deleteSprintWorkItemsAndAttachments(sprintId);
     } else {
       await prisma.work_items.updateMany({

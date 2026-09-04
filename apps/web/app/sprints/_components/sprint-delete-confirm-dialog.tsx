@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, Loader2 } from '@repo/ui/lib/icons';
 import { Button } from '@repo/ui/components/ui/button';
-import type { DeleteSprintWorkItemsAction } from '@repo/types';
+import {
+  type DeleteSprintWorkItemsAction,
+  DeleteSprintWorkItemsActionEnum,
+} from '@repo/types';
 
 export interface SprintDeleteConfirmDialogProps {
   readonly sprintName: string;
@@ -84,7 +87,7 @@ export function SprintDeleteConfirmDialog({
           <Button
             type="button"
             disabled={isPending}
-            onClick={() => onConfirm('delete_content')}
+            onClick={() => onConfirm(DeleteSprintWorkItemsActionEnum.DeleteContent)}
             className="bg-rose-600 px-4 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
           >
             {isPending ? (

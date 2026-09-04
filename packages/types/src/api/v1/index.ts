@@ -110,6 +110,7 @@ export {
 } from './attachments.js';
 export {
   DELETE_SPRINT_WORK_ITEMS_ACTIONS,
+  DeleteSprintWorkItemsActionEnum,
   deleteSprintActionSchema,
   listSprintsQuerySchema,
   sprintDetailSelect,

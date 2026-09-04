@@ -9,6 +9,7 @@ import type {
 } from '../../src/routes/api/sprints/sprints.service';
 import { createSprintListRow } from '../factories/sprint.factory';
 import { SprintAccessError } from '../../src/routes/api/sprints/sprints.errors';
+import { DeleteSprintWorkItemsActionEnum } from '@repo/types';
 
 const {
   listSprintsPaginatedMock,
@@ -295,14 +296,16 @@ describe('sprints versioned POST and PATCH mutation routes', () => {
         const response = await fetch(`${baseUrl}/api/sprints/${sprintId}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ workItemsAction: 'move_out' }),
+          body: JSON.stringify({
+            workItemsAction: DeleteSprintWorkItemsActionEnum.MoveOut,
+          }),
         });
         const json = await response.json();
 
         expect(response.status).toBe(200);
         expect(json).toEqual({ success: true });
         expect(hardDeleteSprintMock).toHaveBeenCalledWith('user-1', sprintId, {
-          workItemsAction: 'move_out',
+          workItemsAction: DeleteSprintWorkItemsActionEnum.MoveOut,
         });
       });
     });
@@ -316,14 +319,16 @@ describe('sprints versioned POST and PATCH mutation routes', () => {
         const response = await fetch(`${baseUrl}/api/sprints/${sprintId}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ workItemsAction: 'delete_content' }),
+          body: JSON.stringify({
+            workItemsAction: DeleteSprintWorkItemsActionEnum.DeleteContent,
+          }),
         });
         const json = await response.json();
 
         expect(response.status).toBe(200);
         expect(json).toEqual({ success: true });
         expect(hardDeleteSprintMock).toHaveBeenCalledWith('user-1', sprintId, {
-          workItemsAction: 'delete_content',
+          workItemsAction: DeleteSprintWorkItemsActionEnum.DeleteContent,
         });
       });
     });

@@ -70,18 +70,23 @@ export const listSprintsQuerySchema = z
 
 export type ListSprintsQuery = z.infer<typeof listSprintsQuerySchema>;
 
-export const DELETE_SPRINT_WORK_ITEMS_ACTIONS = [
-  'move_out',
-  'delete_content',
-] as const;
+export const DeleteSprintWorkItemsActionEnum = {
+  MoveOut: 'move_out',
+  DeleteContent: 'delete_content',
+} as const;
 
 export type DeleteSprintWorkItemsAction =
-  (typeof DELETE_SPRINT_WORK_ITEMS_ACTIONS)[number];
+  (typeof DeleteSprintWorkItemsActionEnum)[keyof typeof DeleteSprintWorkItemsActionEnum];
+
+export const DELETE_SPRINT_WORK_ITEMS_ACTIONS = [
+  DeleteSprintWorkItemsActionEnum.MoveOut,
+  DeleteSprintWorkItemsActionEnum.DeleteContent,
+] as const;
 
 export const deleteSprintActionSchema = z.object({
   workItemsAction: z
     .enum(DELETE_SPRINT_WORK_ITEMS_ACTIONS)
-    .default('move_out'),
+    .default(DeleteSprintWorkItemsActionEnum.MoveOut),
 });
 
 export type DeleteSprintAction = z.infer<typeof deleteSprintActionSchema>;

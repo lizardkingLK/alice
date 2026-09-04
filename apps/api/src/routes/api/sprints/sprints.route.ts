@@ -12,7 +12,11 @@ import {
 } from './sprints.schemas';
 import type { SprintsService, SprintBurndownService } from './sprints.service';
 import { SprintAccessError } from './sprints.errors';
-import { deleteSprintActionSchema, listSprintsQuerySchema } from '@repo/types';
+import {
+  deleteSprintActionSchema,
+  listSprintsQuerySchema,
+  DeleteSprintWorkItemsActionEnum,
+} from '@repo/types';
 
 export type SprintsRouterDeps = {
   sprintsService: SprintsService;
@@ -234,11 +238,9 @@ export function createSprintsRouter(deps: SprintsRouterDeps): Router {
       }
 
       const rawAction =
-        (req.body &&
-        typeof req.body === 'object' &&
-        'workItemsAction' in req.body
-          ? req.body.workItemsAction
-          : req.query.workItemsAction) ?? 'move_out';
+        req.body?.workItemsAction ??
+        req.query.workItemsAction ??
+        DeleteSprintWorkItemsActionEnum.MoveOut;
 
       const parsed = deleteSprintActionSchema.safeParse({
         workItemsAction: rawAction,
