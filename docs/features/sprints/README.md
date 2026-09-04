@@ -11,3 +11,5 @@ Quick links:
 - Implementation: `apps/web/app/sprints/`
 - API: `apps/api/src/routes/api/sprints/`
 - Related: [board](../board/), [work items](../work-items/), backlog under `apps/web/app/backlog/`
+- Summary report: `/sprints/[id]/report?from=sprints|backlog` — `from` drives
+  unavailable-state back CTA and breadcrumbs (`sprint-report-links.ts`)

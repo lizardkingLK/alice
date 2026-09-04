@@ -22,7 +22,6 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
 import { cn } from '@repo/ui/lib/utils';
-import Link from 'next/link';
 import {
   Calendar,
   Pencil,
@@ -35,8 +34,10 @@ import { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { SprintStatusEnum, SprintTabEnum, type SprintTab } from '@repo/types';
 import { Pagination } from '@/components/pagination';
 import { DataTable } from '@/components/data-table';
+import { RegistryTitleCell } from '@/components/registry-title-cell';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { formatDate } from '@/app/_shared/utility';
+import { sprintReportHref } from '@/app/sprints/_helpers/sprint-report-links';
 
 type SprintListProps = {
   sprints: Sprint[];
@@ -149,35 +150,21 @@ function getSprintTableMeta(table: CellContext<Sprint, unknown>['table']) {
 }
 
 function renderSprintNameCell({ row }: CellContext<Sprint, unknown>) {
+  const projectName = row.original.project?.name;
   return (
-    <div className="flex min-w-48 items-center gap-3">
-      <Link
-        href={`/sprints/${row.original.id}/report`}
-        className={cn(
-          'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 transition-colors',
-          'flex size-8 shrink-0 items-center justify-center',
-          'rounded-lg border text-xs font-bold'
-        )}
-      >
-        {row.original.name.slice(0, 1).toUpperCase()}
-      </Link>
-      <div className="space-y-1 font-medium">
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/sprints/${row.original.id}/report`}
-            className="text-foreground hover:text-primary font-semibold transition-colors hover:underline"
-          >
-            {row.original.name}
-          </Link>
-        </div>
-        {row.original.project ? (
-          <p className="text-muted-foreground text-xs font-normal">
-            Project:{' '}
-            <span className="font-medium">{row.original.project.name}</span>
-          </p>
-        ) : null}
-      </div>
-    </div>
+    <RegistryTitleCell
+      href={sprintReportHref(row.original.id, 'sprints')}
+      title={row.original.name}
+      subtitle={
+        projectName ? (
+          <>
+            Project: <span className="font-medium">{projectName}</span>
+          </>
+        ) : (
+          '—'
+        )
+      }
+    />
   );
 }
 
