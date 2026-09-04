@@ -22,14 +22,17 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
 import { cn } from '@repo/ui/lib/utils';
+import Link from 'next/link';
 import {
   Calendar,
   Pencil,
   Archive,
   RefreshCw,
   MoreHorizontal,
+  Trash2,
 } from '@repo/ui/lib/icons';
 import { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
+import { SprintStatusEnum, SprintTabEnum, type SprintTab } from '@repo/types';
 import { Pagination } from '@/components/pagination';
 import { DataTable } from '@/components/data-table';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
@@ -43,9 +46,7 @@ type SprintListProps = {
     totalCount: number;
     totalPages: number;
   };
-  filterTab: 'active' | 'archived';
-  // eslint-disable-next-line no-unused-vars
-  onTabChange?: (tab: 'active' | 'archived') => void;
+  filterTab: SprintTab;
   // eslint-disable-next-line no-unused-vars
   onPageChange: (page: number) => void;
   // eslint-disable-next-line no-unused-vars
@@ -53,6 +54,8 @@ type SprintListProps = {
   isLoading?: boolean;
   error?: string | null;
   onRetry?: () => void;
+  isAdmin?: boolean;
+  isManagerOrAdmin?: boolean;
   // eslint-disable-next-line no-unused-vars
   onSprintUpdated?: (sprint: Sprint) => void;
   // eslint-disable-next-line no-unused-vars
@@ -61,16 +64,18 @@ type SprintListProps = {
   onArchiveSprint?: (sprint: Sprint) => void;
   // eslint-disable-next-line no-unused-vars
   onRestoreSprint?: (sprint: Sprint) => void;
+  // eslint-disable-next-line no-unused-vars
+  onDeleteSprint?: (sprint: Sprint) => void;
 };
 
 const STATUS_STYLES = {
-  planned:
+  [SprintStatusEnum.Planned]:
     'border-rose-500/20 bg-rose-500/10 text-rose-500 dark:border-rose-500/30 dark:bg-rose-500/20 dark:text-rose-400',
-  active:
+  [SprintStatusEnum.Active]:
     'border-blue-500/20 bg-blue-500/10 text-blue-500 dark:border-blue-500/30 dark:bg-blue-500/20 dark:text-blue-400',
-  closed:
+  [SprintStatusEnum.Closed]:
     'border-emerald-500/20 bg-emerald-500/10 text-emerald-500 dark:border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-400',
-  archived:
+  [SprintStatusEnum.Archived]:
     'border-amber-500/20 bg-amber-500/10 text-amber-500 dark:border-amber-500/30 dark:bg-amber-500/20 dark:text-amber-400',
 } as const;
 
@@ -90,11 +95,11 @@ export function SprintStatusDropdown({
     >
       {(() => {
         switch (sprint.status) {
-          case 'planned':
+          case SprintStatusEnum.Planned:
             return 'Planned';
-          case 'active':
+          case SprintStatusEnum.Active:
             return 'Active';
-          case 'closed':
+          case SprintStatusEnum.Closed:
             return 'Closed';
           default:
             return 'Archived';
@@ -109,7 +114,9 @@ type SprintListContentProps = {
   error: string | null;
   sprintsCount: number;
   filteredSprints: Sprint[];
-  filterTab: 'active' | 'archived';
+  filterTab: SprintTab;
+  isAdmin?: boolean;
+  isManagerOrAdmin?: boolean;
   onRetry?: () => void;
   // eslint-disable-next-line no-unused-vars
   onSprintUpdated?: (sprint: Sprint) => void;
@@ -119,6 +126,8 @@ type SprintListContentProps = {
   onArchiveSprint?: (sprint: Sprint) => void;
   // eslint-disable-next-line no-unused-vars
   onRestoreSprint?: (sprint: Sprint) => void;
+  // eslint-disable-next-line no-unused-vars
+  onDeleteSprint?: (sprint: Sprint) => void;
 };
 
 /* eslint-disable no-unused-vars */
@@ -127,6 +136,10 @@ interface SprintTableMeta {
   readonly onEditSprint?: (sprint: Sprint) => void;
   readonly onArchiveSprint?: (sprint: Sprint) => void;
   readonly onRestoreSprint?: (sprint: Sprint) => void;
+  readonly onDeleteSprint?: (sprint: Sprint) => void;
+  readonly isAdmin?: boolean;
+  readonly isManagerOrAdmin?: boolean;
+  readonly filterTab?: SprintTab;
 }
 
 /* eslint-enable no-unused-vars */
@@ -138,20 +151,24 @@ function getSprintTableMeta(table: CellContext<Sprint, unknown>['table']) {
 function renderSprintNameCell({ row }: CellContext<Sprint, unknown>) {
   return (
     <div className="flex min-w-48 items-center gap-3">
-      <div
+      <Link
+        href={`/sprints/${row.original.id}/report`}
         className={cn(
-          'bg-primary/10 text-primary border-primary/20',
+          'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 transition-colors',
           'flex size-8 shrink-0 items-center justify-center',
           'rounded-lg border text-xs font-bold'
         )}
       >
         {row.original.name.slice(0, 1).toUpperCase()}
-      </div>
+      </Link>
       <div className="space-y-1 font-medium">
         <div className="flex items-center gap-2">
-          <span className="text-foreground font-semibold">
+          <Link
+            href={`/sprints/${row.original.id}/report`}
+            className="text-foreground hover:text-primary font-semibold hover:underline transition-colors"
+          >
             {row.original.name}
-          </span>
+          </Link>
         </div>
         {row.original.project ? (
           <p className="text-muted-foreground text-xs font-normal">
@@ -195,11 +212,17 @@ function renderActionsHeader() {
 function renderActionsCell({ row, table }: CellContext<Sprint, unknown>) {
   const meta = getSprintTableMeta(table);
   const sprint = row.original;
-  const showEdit = meta.onEditSprint && sprint.status !== 'archived';
-  const showArchive = meta.onArchiveSprint && sprint.status === 'closed';
-  const showRestore = meta.onRestoreSprint && sprint.status === 'archived';
+  const isArchived = sprint.status === SprintStatusEnum.Archived;
+  const isCompleted = sprint.status === SprintStatusEnum.Closed;
 
-  if (!showEdit && !showArchive && !showRestore) {
+  const showEdit = Boolean(meta.onEditSprint && !isArchived);
+  const showArchive = Boolean(meta.onArchiveSprint && isCompleted);
+  const showRestore = Boolean(meta.onRestoreSprint && isArchived);
+  const showDelete = Boolean(
+    meta.onDeleteSprint && isArchived && meta.isAdmin
+  );
+
+  if (!showEdit && !showArchive && !showRestore && !showDelete) {
     return null;
   }
 
@@ -231,7 +254,7 @@ function renderActionsCell({ row, table }: CellContext<Sprint, unknown>) {
             <DropdownMenuItem
               onClick={() => meta.onArchiveSprint?.(sprint)}
               aria-label="Archive Sprint"
-              className="text-rose-600 focus:bg-rose-50 focus:text-rose-600 dark:text-rose-400 dark:focus:bg-rose-950/20 dark:focus:text-rose-400"
+              className="text-amber-600 focus:bg-amber-50 focus:text-amber-600 dark:text-amber-400 dark:focus:bg-amber-950/20 dark:focus:text-amber-400"
             >
               <Archive className="mr-2 h-4 w-4" />
               Archive
@@ -245,6 +268,16 @@ function renderActionsCell({ row, table }: CellContext<Sprint, unknown>) {
             >
               <RefreshCw className="mr-2 h-4 w-4" />
               Restore
+            </DropdownMenuItem>
+          ) : null}
+          {showDelete ? (
+            <DropdownMenuItem
+              onClick={() => meta.onDeleteSprint?.(sprint)}
+              aria-label="Delete Sprint"
+              className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
             </DropdownMenuItem>
           ) : null}
         </DropdownMenuContent>
@@ -287,11 +320,14 @@ function SprintListContent({
   sprintsCount,
   filteredSprints,
   filterTab,
+  isAdmin,
+  isManagerOrAdmin,
   onRetry,
   onSprintUpdated,
   onEditSprint,
   onArchiveSprint,
   onRestoreSprint,
+  onDeleteSprint,
 }: Readonly<SprintListContentProps>) {
   const tableMeta = useMemo<SprintTableMeta>(
     () => ({
@@ -299,8 +335,21 @@ function SprintListContent({
       onEditSprint,
       onArchiveSprint,
       onRestoreSprint,
+      onDeleteSprint,
+      isAdmin,
+      isManagerOrAdmin,
+      filterTab,
     }),
-    [onSprintUpdated, onEditSprint, onArchiveSprint, onRestoreSprint]
+    [
+      onSprintUpdated,
+      onEditSprint,
+      onArchiveSprint,
+      onRestoreSprint,
+      onDeleteSprint,
+      isAdmin,
+      isManagerOrAdmin,
+      filterTab,
+    ]
   );
 
   const table = useReactTable({
@@ -342,7 +391,7 @@ function SprintListContent({
   if (filteredSprints.length === 0) {
     return (
       <div className="text-muted-foreground bg-muted/30 flex min-h-64 items-center justify-center rounded-lg border border-dashed text-sm">
-        {filterTab === 'active'
+        {filterTab === SprintTabEnum.Active
           ? 'No active, upcoming, or completed sprints.'
           : 'No archived sprints.'}
       </div>
@@ -366,61 +415,33 @@ export function SprintList({
   sprints,
   pagination,
   filterTab,
-  onTabChange,
   onPageChange,
   onLimitChange,
   isLoading = false,
   error = null,
+  isAdmin,
+  isManagerOrAdmin,
   onRetry,
   onSprintUpdated,
   onEditSprint,
   onArchiveSprint,
   onRestoreSprint,
+  onDeleteSprint,
 }: Readonly<SprintListProps>) {
   const filteredSprints = sprints;
 
   return (
     <Card className="border-border bg-card/50 relative backdrop-blur-md">
-      <CardHeader className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <CardTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight">
-            <Calendar className="text-primary h-5 w-5" />
-            Sprints
-          </CardTitle>
-          <CardDescription className="text-muted-foreground text-sm">
-            {filterTab === 'active'
-              ? 'Active, upcoming, and completed sprints for your workspace.'
-              : 'Archived sprints.'}
-          </CardDescription>
-        </div>
-        {onTabChange && (
-          <div className="bg-muted/50 border-border text-muted-foreground inline-flex h-10 items-center justify-center rounded-md border p-1">
-            <Button
-              variant="ghost"
-              onClick={() => onTabChange('active')}
-              className={cn(
-                'h-8 cursor-pointer rounded-sm px-3 text-xs font-semibold transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
-                filterTab === 'active'
-                  ? 'bg-background text-foreground hover:bg-background shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
-              )}
-            >
-              Active
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => onTabChange('archived')}
-              className={cn(
-                'h-8 cursor-pointer rounded-sm px-3 text-xs font-semibold transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
-                filterTab === 'archived'
-                  ? 'bg-background text-foreground hover:bg-background shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
-              )}
-            >
-              Archived
-            </Button>
-          </div>
-        )}
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight">
+          <Calendar className="text-primary h-5 w-5" />
+          Sprints
+        </CardTitle>
+        <CardDescription className="text-muted-foreground text-sm">
+          {filterTab === SprintTabEnum.Active
+            ? 'Active, upcoming, and completed sprints for your workspace.'
+            : 'Archived sprints.'}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <SprintListContent
@@ -429,11 +450,14 @@ export function SprintList({
           sprintsCount={pagination.totalCount}
           filteredSprints={filteredSprints}
           filterTab={filterTab}
+          isAdmin={isAdmin}
+          isManagerOrAdmin={isManagerOrAdmin}
           onRetry={onRetry}
           onSprintUpdated={onSprintUpdated}
           onEditSprint={onEditSprint}
           onArchiveSprint={onArchiveSprint}
           onRestoreSprint={onRestoreSprint}
+          onDeleteSprint={onDeleteSprint}
         />
         {pagination && pagination.totalCount > 0 && (
           <Pagination

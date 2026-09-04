@@ -3,6 +3,7 @@ import {
   mapSprintRowToResponse,
   SprintStatusEnum,
   UserRoleEnum,
+  type DeleteSprintAction,
   type SprintBurndownPayload,
   type SprintResponse,
   type ListSprintsQuery,
@@ -29,6 +30,14 @@ async function requireManagerOrAdmin(actorId: string) {
     actorId,
     [UserRoleEnum.admin, UserRoleEnum.manager],
     'Unauthorized. Only admins and managers can perform this action on sprints.'
+  );
+}
+
+async function requireAdmin(actorId: string) {
+  return await requireUserWithRole(
+    actorId,
+    [UserRoleEnum.admin],
+    'Unauthorized. Only administrators can permanently delete sprints.'
   );
 }
 
@@ -63,6 +72,11 @@ export class SprintsService {
   ): Promise<SprintResponse> {
     await requireManagerOrAdmin(userId);
 
+    const currentSprint = await this.sprints.findById(sprintId);
+    if (!currentSprint) {
+      throw new Error('Sprint not found');
+    }
+
     if (status === SprintStatusEnum.Active) {
       const count = await this.sprints.getWorkItemCount(sprintId);
       if (count === 0) {
@@ -72,7 +86,10 @@ export class SprintsService {
       }
     }
 
-    if (status === SprintStatusEnum.Closed) {
+    if (
+      status === SprintStatusEnum.Closed &&
+      currentSprint.status !== SprintStatusEnum.Archived
+    ) {
       const count = await this.sprints.getWorkItemCount(sprintId);
       if (count === 0) {
         throw new Error(
@@ -90,15 +107,8 @@ export class SprintsService {
     }
 
     if (status === SprintStatusEnum.Archived) {
-      const currentSprint = await this.sprints.findById(sprintId);
-      if (!currentSprint) {
-        throw new Error('Sprint not found');
-      }
-      if (
-        currentSprint.status === SprintStatusEnum.Planned ||
-        currentSprint.status === SprintStatusEnum.Active
-      ) {
-        throw new Error('Cannot archive active or planned sprints.');
+      if (currentSprint.status !== SprintStatusEnum.Closed) {
+        throw new Error('Only completed sprints can be archived.');
       }
     }
 
@@ -181,6 +191,25 @@ export class SprintsService {
   ): Promise<SprintDetailRow | null> {
     await this.sprints.requireProjectMember(sprintId, actorId);
     return await this.sprints.getDetailById(sprintId);
+  }
+
+  async hardDeleteSprint(
+    actorId: string,
+    sprintId: string,
+    options: DeleteSprintAction
+  ): Promise<void> {
+    await requireAdmin(actorId);
+
+    const currentSprint = await this.sprints.findById(sprintId);
+    if (!currentSprint) {
+      throw new Error('Sprint not found');
+    }
+
+    if (currentSprint.status !== SprintStatusEnum.Archived) {
+      throw new Error('Only archived sprints can be permanently deleted.');
+    }
+
+    await this.sprints.deleteSprint(sprintId, options.workItemsAction);
   }
 
   private resolveScopedListFilters(

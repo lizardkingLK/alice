@@ -299,11 +299,16 @@ describe('AccessAllowlistForm', () => {
     ).toBeInTheDocument();
   });
 
-  it('contains invisible scroll and overflow classes on the form card', () => {
+  it('contains layout classes for fixed header/buttons and scrollable fields', () => {
     const { container } = render(<AccessAllowlistForm />);
     const card = container.firstElementChild as HTMLElement;
-    expect(card).toHaveClass('no-scrollbar');
-    expect(card).toHaveClass('overflow-y-auto');
     expect(card).toHaveClass('max-h-[85vh]');
+    expect(card).toHaveClass('flex');
+    expect(card).toHaveClass('flex-col');
+    expect(card).toHaveClass('overflow-hidden');
+
+    const scrollArea = container.querySelector('.no-scrollbar');
+    expect(scrollArea).toBeInTheDocument();
+    expect(scrollArea).toHaveClass('overflow-y-auto');
   });
 });

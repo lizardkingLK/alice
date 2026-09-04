@@ -591,26 +591,27 @@ describe('TeamForm Component', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('contains invisible scroll and overflow classes on the form card for Register New Team', () => {
+  it('contains invisible scroll and overflow classes on the form body for Register New Team', () => {
     const { container } = renderTeamForm();
     const card = container.firstElementChild as HTMLElement;
-    expect(card).toHaveClass('no-scrollbar');
-    expect(card).toHaveClass('overflow-y-auto');
-    expect(card).toHaveClass('max-h-[90vh]');
+    expect(card).toHaveClass('overflow-hidden');
+    expect(card).toHaveClass('max-h-[85vh]');
+    const scrollableBody = container.querySelector('.overflow-y-auto');
+    expect(scrollableBody).toHaveClass('no-scrollbar');
   });
 
-  it('contains invisible scroll and overflow classes on the form card for Modify Team Configuration', () => {
+  it('contains invisible scroll and overflow classes on the form body for Modify Team Configuration', () => {
     const { container } = renderTeamForm({ teamToEdit: mockTeam });
     const card = container.firstElementChild as HTMLElement;
-    expect(card).toHaveClass('no-scrollbar');
-    expect(card).toHaveClass('overflow-y-auto');
-    expect(card).toHaveClass('max-h-[90vh]');
+    expect(card).toHaveClass('overflow-hidden');
+    expect(card).toHaveClass('max-h-[85vh]');
+    const scrollableBody = container.querySelector('.overflow-y-auto');
+    expect(scrollableBody).toHaveClass('no-scrollbar');
   });
 
   it('merges custom className on the form card using cn', () => {
     const { container } = renderTeamForm({ className: 'custom-test-class' });
     const card = container.firstElementChild as HTMLElement;
-    expect(card).toHaveClass('no-scrollbar');
     expect(card).toHaveClass('custom-test-class');
   });
 });

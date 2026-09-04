@@ -1,42 +1,65 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useLayoutEffect, useRef, type RefObject } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@repo/ui/lib/utils';
 import { docHref } from '@/lib/docs/docs-shared';
-import type { DocsIndexEntry } from '@/lib/docs/docs-shared';
+import type { DocsSectionGroup } from '@/lib/docs/docs-shared';
 
 type DocsNavProps = {
-  readonly sections: ReadonlyArray<{
-    readonly section: string;
-    readonly entries: DocsIndexEntry[];
-  }>;
+  readonly sections: ReadonlyArray<DocsSectionGroup>;
+  readonly scrollViewportRef: RefObject<HTMLDivElement | null>;
 };
 
-export function DocsNav({ sections }: DocsNavProps) {
-  const pathname = usePathname();
-  const activeLinkRef = useRef<HTMLAnchorElement | null>(null);
+function scrollActiveLinkIntoViewport(
+  viewport: HTMLElement,
+  activeLink: HTMLElement
+): void {
+  const linkTop = activeLink.offsetTop;
+  const linkBottom = linkTop + activeLink.offsetHeight;
+  const viewTop = viewport.scrollTop;
+  const viewBottom = viewTop + viewport.clientHeight;
 
-  useEffect(() => {
-    const node = activeLinkRef.current;
-    if (!node) {
+  if (linkTop < viewTop) {
+    viewport.scrollTop = linkTop;
+    return;
+  }
+
+  if (linkBottom > viewBottom) {
+    viewport.scrollTop = linkBottom - viewport.clientHeight;
+  }
+}
+
+export function DocsNav({ sections, scrollViewportRef }: DocsNavProps) {
+  const pathname = usePathname();
+  const navRootRef = useRef<HTMLElement | null>(null);
+
+  useLayoutEffect(() => {
+    const viewport = scrollViewportRef.current;
+    const navRoot = navRootRef.current;
+    if (!viewport || !navRoot) {
       return;
     }
 
-    // Keep the active index entry in view when navigating via article links
-    // or previous/next — only scrolls the docs rail viewport when needed.
-    node.scrollIntoView({
-      block: 'nearest',
-      inline: 'nearest',
-      behavior: 'smooth',
-    });
-  }, [pathname]);
+    const activeLink = navRoot.querySelector<HTMLElement>(
+      '[data-docs-nav-active="true"]'
+    );
+    if (!activeLink) {
+      return;
+    }
+
+    scrollActiveLinkIntoViewport(viewport, activeLink);
+  }, [pathname, scrollViewportRef, sections]);
 
   return (
-    <nav aria-label="Documentation" className="flex flex-col gap-6">
-      {sections.map(({ section, entries }) => (
-        <div key={section} className="flex flex-col gap-2">
+    <nav
+      ref={navRootRef}
+      aria-label="Documentation"
+      className="flex flex-col gap-6"
+    >
+      {sections.map(({ id, section, entries }) => (
+        <div key={id} className="flex flex-col gap-2">
           <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
             {section}
           </p>
@@ -49,8 +72,8 @@ export function DocsNav({ sections }: DocsNavProps) {
               return (
                 <li key={entry.slug}>
                   <Link
-                    ref={isActive ? activeLinkRef : undefined}
                     href={href}
+                    data-docs-nav-active={isActive ? 'true' : undefined}
                     className={cn(
                       'hover:bg-muted block rounded-md px-2 py-1.5 text-sm transition-colors',
                       isActive

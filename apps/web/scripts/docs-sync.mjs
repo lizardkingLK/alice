@@ -20,6 +20,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const webRoot = path.resolve(__dirname, '..');
 const repoRoot = path.resolve(webRoot, '../..');
 const sourceDocs = path.join(repoRoot, 'docs');
+const publishManifestPath = path.join(sourceDocs, 'docs-publish.json');
 const contentRoot = path.join(webRoot, 'content');
 const targetDocs = path.join(contentRoot, 'docs');
 const indexPath = path.join(contentRoot, 'docs-index.json');
@@ -27,7 +28,18 @@ const indexPath = path.join(contentRoot, 'docs-index.json');
 const jiti = createJiti(import.meta.url);
 /** @type {typeof import('../lib/docs/docs-shared.js')} */
 const shared = jiti('./../lib/docs/docs-shared.ts');
-const { buildDocsIndexEntry } = shared;
+/** @type {typeof import('../lib/docs/docs-publish.js')} */
+const publish = jiti('./../lib/docs/docs-publish.ts');
+const {
+  buildDocsIndexEntry,
+  applyDocsPublishEnrichment,
+} = shared;
+const {
+  flattenDocsPublishManifest,
+  normalizePublishPath,
+  parseDocsPublishManifest,
+  docsPublishEnrichmentFromPageRef,
+} = publish;
 
 /**
  * @param {string} dir
@@ -68,16 +80,57 @@ function syncDocs() {
   cpSync(sourceDocs, targetDocs, { recursive: true });
 
   const relativeFiles = listMarkdownFiles(targetDocs);
+  const publishByPath = loadPublishManifest();
+
   const index = relativeFiles.map((relativePath) => {
+    const normalizedPath = normalizePublishPath(relativePath);
     const markdown = readFileSync(path.join(targetDocs, relativePath), 'utf8');
-    return buildDocsIndexEntry(relativePath, markdown);
+    const entry = buildDocsIndexEntry(relativePath, markdown);
+    const published = publishByPath.get(normalizedPath);
+
+    if (!published) {
+      return entry;
+    }
+
+    return applyDocsPublishEnrichment(
+      entry,
+      docsPublishEnrichmentFromPageRef(published)
+    );
   });
+
+  validatePublishManifestPaths(publishByPath, relativeFiles);
 
   writeFileSync(indexPath, `${JSON.stringify(index, null, 2)}\n`, 'utf8');
 
   console.log(
     `docs:sync copied ${relativeFiles.length} markdown files → content/docs and wrote docs-index.json`
   );
+}
+
+function loadPublishManifest() {
+  if (!existsSync(publishManifestPath)) {
+    throw new Error(`Docs publish manifest not found: ${publishManifestPath}`);
+  }
+
+  const raw = JSON.parse(readFileSync(publishManifestPath, 'utf8'));
+  const manifest = parseDocsPublishManifest(raw);
+  return flattenDocsPublishManifest(manifest);
+}
+
+/**
+ * @param {Map<string, import('../lib/docs/docs-publish.ts').DocsPublishPageRef>} publishByPath
+ * @param {string[]} relativeFiles
+ */
+function validatePublishManifestPaths(publishByPath, relativeFiles) {
+  const available = new Set(relativeFiles.map((path) => normalizePublishPath(path)));
+
+  for (const path of publishByPath.keys()) {
+    if (!available.has(path)) {
+      throw new Error(
+        `docs-publish.json references missing markdown file: ${path}`
+      );
+    }
+  }
 }
 
 syncDocs();

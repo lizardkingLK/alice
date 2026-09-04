@@ -9,6 +9,7 @@ import type {
 } from '../../src/routes/api/sprints/sprints.service';
 import { createSprintListRow } from '../factories/sprint.factory';
 import { SprintAccessError } from '../../src/routes/api/sprints/sprints.errors';
+import { DeleteSprintWorkItemsActionEnum } from '@repo/types';
 
 const {
   listSprintsPaginatedMock,
@@ -16,12 +17,14 @@ const {
   createSprintMock,
   updateSprintStatusMock,
   updateSprintMock,
+  hardDeleteSprintMock,
 } = vi.hoisted(() => ({
   listSprintsPaginatedMock: vi.fn(),
   getSprintDetailMock: vi.fn(),
   createSprintMock: vi.fn(),
   updateSprintStatusMock: vi.fn(),
   updateSprintMock: vi.fn(),
+  hardDeleteSprintMock: vi.fn(),
 }));
 
 vi.mock('../../src/middlewares/auth', () => ({
@@ -41,6 +44,7 @@ const sprintsService = {
   createSprint: createSprintMock,
   updateSprintStatus: updateSprintStatusMock,
   updateSprint: updateSprintMock,
+  hardDeleteSprint: hardDeleteSprintMock,
 } as unknown as SprintsService;
 
 const sprintBurndownService = {} as unknown as SprintBurndownService;
@@ -279,6 +283,66 @@ describe('sprints versioned POST and PATCH mutation routes', () => {
         'sprint-1',
         expect.objectContaining({ name: 'Updated name' })
       );
+    });
+  });
+
+  describe('DELETE /api/sprints/:id', () => {
+    it('deletes sprint with move_out option successfully', async () => {
+      hardDeleteSprintMock.mockResolvedValue(undefined);
+
+      const sprintId = '11111111-1111-4111-8111-111111111111';
+
+      await withApp(async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/api/sprints/${sprintId}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            workItemsAction: DeleteSprintWorkItemsActionEnum.MoveOut,
+          }),
+        });
+        const json = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(json).toEqual({ success: true });
+        expect(hardDeleteSprintMock).toHaveBeenCalledWith('user-1', sprintId, {
+          workItemsAction: DeleteSprintWorkItemsActionEnum.MoveOut,
+        });
+      });
+    });
+
+    it('deletes sprint with delete_content option successfully', async () => {
+      hardDeleteSprintMock.mockResolvedValue(undefined);
+
+      const sprintId = '22222222-2222-4222-8222-222222222222';
+
+      await withApp(async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/api/sprints/${sprintId}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            workItemsAction: DeleteSprintWorkItemsActionEnum.DeleteContent,
+          }),
+        });
+        const json = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(json).toEqual({ success: true });
+        expect(hardDeleteSprintMock).toHaveBeenCalledWith('user-1', sprintId, {
+          workItemsAction: DeleteSprintWorkItemsActionEnum.DeleteContent,
+        });
+      });
+    });
+
+    it('returns 400 when sprint id is invalid', async () => {
+      await withApp(async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/api/sprints/invalid-id`, {
+          method: 'DELETE',
+        });
+        const json = await response.json();
+
+        expect(response.status).toBe(400);
+        expect(json.error).toBe('Invalid sprint id');
+      });
     });
   });
 });

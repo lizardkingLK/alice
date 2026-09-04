@@ -1,7 +1,8 @@
 import {
-  projectRelationSelect,
   WorkItemStatusEnum,
   type Database,
+  type DeleteSprintWorkItemsAction,
+  DeleteSprintWorkItemsActionEnum,
   type SprintRowWithProject,
   type Tables,
   sprintListSelect,
@@ -11,6 +12,8 @@ import {
   paginationMeta,
 } from '@repo/types';
 import { prisma } from '../../../lib/prisma';
+import { env } from '../../../config/env';
+import { removeStorageObjects } from '../../../lib/file-helpers';
 import {
   prismaAuditCreateWithoutStatus,
   prismaAuditUpdate,
@@ -28,8 +31,6 @@ import {
 } from './sprints.prisma-query';
 
 export type SprintRow = Tables<'sprints'>;
-
-const SPRINT_WITH_PROJECT = `*, ${projectRelationSelect()}`;
 
 export type CreateSprintRecord = {
   name: string;
@@ -120,18 +121,28 @@ export class SprintsRepository {
   }
 
   async findById(sprintId: string): Promise<SprintRowWithProject | null> {
-    const { data, error } = await this.db
-      .from('sprints')
-      .select(SPRINT_WITH_PROJECT)
-      .eq('id', sprintId)
-      .maybeSingle();
+    try {
+      const row = await prisma.sprints.findUnique({
+        where: { id: sprintId },
+        select: sprintListSelect,
+      });
 
-    if (error) {
-      console.error('error. failed to find sprint:', error.message);
+      if (!row) {
+        return null;
+      }
+
+      return {
+        ...row,
+        start_date: row.start_date.toISOString().split('T')[0]!,
+        end_date: row.end_date.toISOString().split('T')[0]!,
+        created_at: row.created_at.toISOString(),
+        updated_at: row.updated_at.toISOString(),
+      } as unknown as SprintRowWithProject;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to find sprint:', message);
       throw new Error('Failed to find sprint');
     }
-
-    return data as unknown as SprintRowWithProject | null;
   }
 
   async update(
@@ -187,16 +198,17 @@ export class SprintsRepository {
     sprintId: string,
     actorId: string
   ): Promise<{ projectId: string }> {
-    const { data: sprint, error: sprintError } = await this.db
-      .from('sprints')
-      .select('project_id')
-      .eq('id', sprintId)
-      .maybeSingle();
-
-    if (sprintError) {
+    let sprint;
+    try {
+      sprint = await prisma.sprints.findUnique({
+        where: { id: sprintId },
+        select: { project_id: true },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       console.error(
         'error. failed to load sprint for project access:',
-        sprintError.message
+        message
       );
       throw new Error('Failed to authorize sprint access');
     }
@@ -253,6 +265,74 @@ export class SprintsRepository {
       throw new Error('Failed to get sprint');
     }
   }
+
+  private async cleanupItemAttachments(
+    itemIds: string[]
+  ): Promise<string[] | null> {
+    const attachments = await prisma.attachments.findMany({
+      where: { work_item_id: { in: itemIds } },
+      select: { storage_path: true },
+    });
+
+    const paths = attachments
+      .map((a) => a.storage_path)
+      .filter((p): p is string => Boolean(p));
+
+    if (paths.length === 0) {
+      return null;
+    }
+
+    try {
+      await removeStorageObjects(env.STORAGE_BUCKET_ATTACHMENTS, paths);
+      return paths;
+    } catch (storageError) {
+      console.error(
+        'error. failed to remove attachment storage objects on sprint delete:',
+        storageError instanceof Error ? storageError.message : storageError
+      );
+      return null;
+    }
+  }
+
+  private async deleteSprintWorkItemsAndAttachments(
+    sprintId: string
+  ): Promise<{ deletedItemCount: number } | null> {
+    const items = await prisma.work_items.findMany({
+      where: { sprint_id: sprintId },
+      select: { id: true },
+    });
+    const itemIds = items.map((i) => i.id);
+
+    if (itemIds.length === 0) {
+      return null;
+    }
+
+    await this.cleanupItemAttachments(itemIds);
+
+    const result = await prisma.work_items.deleteMany({
+      where: { sprint_id: sprintId },
+    });
+
+    return { deletedItemCount: result.count };
+  }
+
+  async deleteSprint(
+    sprintId: string,
+    workItemsAction: DeleteSprintWorkItemsAction
+  ): Promise<void> {
+    if (workItemsAction === DeleteSprintWorkItemsActionEnum.DeleteContent) {
+      await this.deleteSprintWorkItemsAndAttachments(sprintId);
+    } else {
+      await prisma.work_items.updateMany({
+        where: { sprint_id: sprintId },
+        data: { sprint_id: null },
+      });
+    }
+
+    await prisma.sprints.deleteMany({
+      where: { id: sprintId },
+    });
+  }
 }
 
 export type BurndownWorkItem = {
@@ -265,21 +345,33 @@ export class SprintBurndownRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
   async getSprintById(sprintId: string): Promise<SprintRow | null> {
-    const { data, error } = await this.db
-      .from('sprints')
-      .select('id, name, start_date, end_date, status, project_id')
-      .eq('id', sprintId)
-      .maybeSingle();
+    try {
+      const sprint = await prisma.sprints.findUnique({
+        where: { id: sprintId },
+        select: {
+          id: true,
+          name: true,
+          start_date: true,
+          end_date: true,
+          status: true,
+          project_id: true,
+        },
+      });
 
-    if (error) {
-      console.error(
-        'error. failed to fetch sprint for burndown:',
-        error.message
-      );
+      if (!sprint) {
+        return null;
+      }
+
+      return {
+        ...sprint,
+        start_date: sprint.start_date.toISOString().split('T')[0]!,
+        end_date: sprint.end_date.toISOString().split('T')[0]!,
+      } as unknown as SprintRow;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('error. failed to fetch sprint for burndown:', message);
       throw new Error('Failed to fetch sprint');
     }
-
-    return data as SprintRow | null;
   }
 
   async getWorkItemsForBurndown(sprintId: string): Promise<BurndownWorkItem[]> {

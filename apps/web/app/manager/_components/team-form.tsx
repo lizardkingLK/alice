@@ -311,7 +311,7 @@ export function TeamForm({
   return (
     <Card
       className={cn(
-        'border-border bg-card text-card-foreground no-scrollbar relative max-h-[90vh] overflow-y-auto border shadow-2xl transition-all duration-300',
+        'border-border bg-card text-card-foreground relative flex max-h-[85vh] sm:max-h-[90vh] w-full flex-col overflow-hidden border shadow-2xl transition-all duration-300',
         className
       )}
     >
@@ -321,14 +321,14 @@ export function TeamForm({
           variant="ghost"
           size="icon"
           onClick={onClose}
-          className="text-muted-foreground absolute top-4 right-4 h-8 w-8 cursor-pointer rounded-full transition-colors"
+          className="text-muted-foreground absolute top-4 right-4 z-10 h-8 w-8 cursor-pointer rounded-full transition-colors"
           aria-label="Dismiss form"
         >
           <X className="h-4 w-4" />
         </Button>
       )}
 
-      <CardHeader className="space-y-1 pb-4">
+      <CardHeader className="shrink-0 space-y-1 pb-4">
         <CardTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight">
           <Users className="text-primary h-5 w-5" />
           {editActionActive ? 'Modify Team Configuration' : 'Register New Team'}
@@ -339,217 +339,224 @@ export function TeamForm({
             : 'Register a new engineering team workspace to organize resources.'}
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="name" className="text-sm font-medium">
-                Team Identifier / Name
-              </Label>
-              <Input
-                id="name"
-                name="name"
-                placeholder="e.g. Platform Team"
-                required
-                value={name}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setName(e.target.value)
-                }
-                className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
-              />
-            </div>
+      <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <form
+          onSubmit={handleSubmit}
+          className="flex min-h-0 flex-1 flex-col justify-between overflow-hidden"
+        >
+          <div className="no-scrollbar flex-1 space-y-4 overflow-y-auto pr-1">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="name" className="text-sm font-medium">
+                  Team Identifier / Name
+                </Label>
+                <Input
+                  id="name"
+                  name="name"
+                  placeholder="e.g. Platform Team"
+                  required
+                  value={name}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setName(e.target.value)
+                  }
+                  className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="tech_stack" className="text-sm font-medium">
-                Primary Technology Stack
-              </Label>
-              <Input
-                id="tech_stack"
-                name="tech_stack"
-                placeholder="e.g. Next.js, Node, Postgres"
-                value={techStack}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setTechStack(e.target.value)
-                }
-                className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="status" className="text-sm font-medium">
-                Team Status
-              </Label>
-              <Select
-                value={status}
-                onValueChange={(val) =>
-                  setStatus(val as 'active' | 'inactive' | 'archived')
-                }
-              >
-                <SelectTrigger
-                  id="status"
-                  className="bg-background/80 h-10 w-full cursor-pointer"
-                >
-                  <SelectValue placeholder="Select status..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="archived">Archived</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="description" className="text-sm font-medium">
-                Role Description
-              </Label>
-              <Input
-                id="description"
-                name="description"
-                placeholder="e.g. Core team responsible for monorepo and API infrastructure"
-                value={description}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setDescription(e.target.value)
-                }
-                className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="manager_id" className="text-sm font-medium">
-                Designated Team Manager
-              </Label>
-              <SearchableSelect
-                id="manager_id"
-                value={managerId}
-                onValueChange={setManagerId}
-                placeholder="Search managers…"
-                className="bg-background/80 h-10 w-full"
-                options={users
-                  .filter((u) => u.role === 'manager' || u.role === 'admin')
-                  .map((u) => ({
-                    value: u.id,
-                    label: `${u.name} (${u.email})`,
-                  }))}
-                emptyText="No matching managers."
-              />
-            </div>
-
-            {!lockedProjectId ? (
               <div className="space-y-2">
-                <Label htmlFor="project_id" className="text-sm font-medium">
-                  Associated Project
+                <Label htmlFor="tech_stack" className="text-sm font-medium">
+                  Primary Technology Stack
+                </Label>
+                <Input
+                  id="tech_stack"
+                  name="tech_stack"
+                  placeholder="e.g. Next.js, Node, Postgres"
+                  value={techStack}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setTechStack(e.target.value)
+                  }
+                  className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="status" className="text-sm font-medium">
+                  Team Status
+                </Label>
+                <Select
+                  value={status}
+                  onValueChange={(val) =>
+                    setStatus(val as 'active' | 'inactive' | 'archived')
+                  }
+                >
+                  <SelectTrigger
+                    id="status"
+                    className="bg-background/80 h-10 w-full cursor-pointer"
+                  >
+                    <SelectValue placeholder="Select status..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="description" className="text-sm font-medium">
+                  Role Description
+                </Label>
+                <Input
+                  id="description"
+                  name="description"
+                  placeholder="e.g. Core team responsible for monorepo and API infrastructure"
+                  value={description}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setDescription(e.target.value)
+                  }
+                  className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="manager_id" className="text-sm font-medium">
+                  Designated Team Manager
                 </Label>
                 <SearchableSelect
-                  id="project_id"
-                  value={selectedProjectId}
-                  onValueChange={handleProjectChange}
-                  disabled={projectLocked}
-                  placeholder="Search projects…"
+                  id="manager_id"
+                  value={managerId}
+                  onValueChange={setManagerId}
+                  placeholder="Search managers…"
                   className="bg-background/80 h-10 w-full"
-                  options={projectOptions.map((p) => ({
-                    value: p.id,
-                    label: `${p.name} (${p.key})`,
-                  }))}
-                  emptyText="No matching projects."
-                />
-                <p className="text-muted-foreground text-[11px]">
-                  {projectSelectInfo}
-                </p>
-              </div>
-            ) : null}
-
-            {showMembersSection && (
-              <div className="space-y-2 sm:col-span-2">
-                <Label className="text-sm font-medium">
-                  Project Members to Add to Team
-                </Label>
-                <MemberCheckboxList
-                  members={memberCheckboxOptions}
-                  selectedUserIds={selectedMemberIds}
-                  onSelectedUserIdsChange={setSelectedMemberIds}
-                  listClassName="no-scrollbar"
+                  options={users
+                    .filter((u) => u.role === 'manager' || u.role === 'admin')
+                    .map((u) => ({
+                      value: u.id,
+                      label: `${u.name} (${u.email})`,
+                    }))}
+                  emptyText="No matching managers."
                 />
               </div>
-            )}
 
-            {showMembersSection && selectedMemberIds.length > 0 && (
-              <div className="border-border/50 mt-2 space-y-3 border-t pt-4 sm:col-span-2">
-                <Label className="text-sm font-semibold">
-                  Configure Member Capacity & Allocation
-                </Label>
-                <div className="no-scrollbar max-h-60 space-y-2 overflow-y-auto pr-2">
-                  {selectedMemberIds.map((userId) => {
-                    const memberObj = memberCheckboxOptions.find(
-                      (m) => m.userId === userId
-                    );
-                    if (!memberObj) return null;
+              {!lockedProjectId ? (
+                <div className="space-y-2">
+                  <Label htmlFor="project_id" className="text-sm font-medium">
+                    Associated Project
+                  </Label>
+                  <SearchableSelect
+                    id="project_id"
+                    value={selectedProjectId}
+                    onValueChange={handleProjectChange}
+                    disabled={projectLocked}
+                    placeholder="Search projects…"
+                    className="bg-background/80 h-10 w-full"
+                    options={projectOptions.map((p) => ({
+                      value: p.id,
+                      label: `${p.name} (${p.key})`,
+                    }))}
+                    emptyText="No matching projects."
+                  />
+                  <p className="text-muted-foreground text-[11px]">
+                    {projectSelectInfo}
+                  </p>
+                </div>
+              ) : null}
 
-                    const currentCapacity = memberCapacities[userId] ?? 40;
-                    const currentAllocation = memberAllocations[userId] ?? 100;
+              {showMembersSection && (
+                <div className="space-y-2 sm:col-span-2">
+                  <Label className="text-sm font-medium">
+                    Project Members to Add to Team
+                  </Label>
+                  <MemberCheckboxList
+                    members={memberCheckboxOptions}
+                    selectedUserIds={selectedMemberIds}
+                    onSelectedUserIdsChange={setSelectedMemberIds}
+                    listClassName="no-scrollbar"
+                  />
+                </div>
+              )}
 
-                    return (
-                      <div
-                        key={userId}
-                        className="bg-muted/40 border-border/40 flex items-center justify-between gap-4 rounded-lg border p-2"
-                      >
-                        <span className="flex-1 truncate text-sm font-medium">
-                          {memberObj.name} ({memberObj.email})
-                        </span>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <div className="flex items-center gap-1">
-                            <span className="text-muted-foreground text-xs">
-                              Capacity:
-                            </span>
-                            <Input
-                              type="number"
-                              min={0}
-                              className="h-8 w-16 p-1 text-center text-xs"
-                              value={currentCapacity}
-                              onChange={(e) => {
-                                const val = Number.parseInt(e.target.value, 10);
-                                setMemberCapacities((prev) => ({
-                                  ...prev,
-                                  [userId]: Number.isNaN(val) ? 0 : val,
-                                }));
-                              }}
-                            />
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span className="text-muted-foreground text-xs">
-                              Allocation %:
-                            </span>
-                            <Input
-                              type="number"
-                              min={0}
-                              max={100}
-                              className="h-8 w-16 p-1 text-center text-xs"
-                              value={currentAllocation}
-                              onChange={(e) => {
-                                const val = Number.parseInt(e.target.value, 10);
-                                setMemberAllocations((prev) => ({
-                                  ...prev,
-                                  [userId]: Number.isNaN(val) ? 0 : val,
-                                }));
-                              }}
-                            />
+              {showMembersSection && selectedMemberIds.length > 0 && (
+                <div className="border-border/50 mt-2 space-y-3 border-t pt-4 sm:col-span-2">
+                  <Label className="text-sm font-semibold">
+                    Configure Member Capacity & Allocation
+                  </Label>
+                  <div className="no-scrollbar max-h-60 space-y-2 overflow-y-auto pr-2">
+                    {selectedMemberIds.map((userId) => {
+                      const memberObj = memberCheckboxOptions.find(
+                        (m) => m.userId === userId
+                      );
+                      if (!memberObj) return null;
+
+                      const currentCapacity = memberCapacities[userId] ?? 40;
+                      const currentAllocation = memberAllocations[userId] ?? 100;
+
+                      return (
+                        <div
+                          key={userId}
+                          className="bg-muted/40 border-border/40 flex items-center justify-between gap-4 rounded-lg border p-2"
+                        >
+                          <span className="flex-1 truncate text-sm font-medium">
+                            {memberObj.name} ({memberObj.email})
+                          </span>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <div className="flex items-center gap-1">
+                              <span className="text-muted-foreground text-xs">
+                                Capacity:
+                              </span>
+                              <Input
+                                type="number"
+                                min={0}
+                                className="h-8 w-16 p-1 text-center text-xs"
+                                value={currentCapacity}
+                                onChange={(e) => {
+                                  const val = Number.parseInt(e.target.value, 10);
+                                  setMemberCapacities((prev) => ({
+                                    ...prev,
+                                    [userId]: Number.isNaN(val) ? 0 : val,
+                                  }));
+                                }}
+                              />
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-muted-foreground text-xs">
+                                Allocation %:
+                              </span>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={100}
+                                className="h-8 w-16 p-1 text-center text-xs"
+                                value={currentAllocation}
+                                onChange={(e) => {
+                                  const val = Number.parseInt(e.target.value, 10);
+                                  setMemberAllocations((prev) => ({
+                                    ...prev,
+                                    [userId]: Number.isNaN(val) ? 0 : val,
+                                  }));
+                                }}
+                              />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
-          <FormCancelSubmitActions
-            message={message}
-            isError={isError}
-            isBusy={isSubmitting || isSuccess}
-            onCancel={onClose}
-            submitLabel={buttonLabelContent}
-          />
+          <div className="shrink-0 border-t border-border/40 pt-4">
+            <FormCancelSubmitActions
+              message={message}
+              isError={isError}
+              isBusy={isSubmitting || isSuccess}
+              onCancel={onClose}
+              submitLabel={buttonLabelContent}
+            />
+          </div>
         </form>
       </CardContent>
     </Card>

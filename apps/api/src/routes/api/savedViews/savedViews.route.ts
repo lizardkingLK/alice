@@ -15,25 +15,25 @@ export type SavedViewsRouterDeps = {
   savedViewsService: SavedViewsService;
 };
 
+function sendError(res: Response, error: unknown, fallback: string) {
+  const message = error instanceof Error ? error.message : fallback;
+  let status = 500;
+  if (message === 'Forbidden') {
+    status = 403;
+  } else if (
+    message === 'Saved view not found' ||
+    message === 'Shared view not found'
+  ) {
+    status = 404;
+  } else if (message === 'Only archived views can be permanently deleted') {
+    status = 400;
+  }
+  res.status(status).json({ error: message });
+}
+
 export function createSavedViewsRouter(deps: SavedViewsRouterDeps) {
   const { savedViewsService } = deps;
   const savedViewsRouter: Router = Router();
-
-  function sendError(res: Response, error: unknown, fallback: string) {
-    const message = error instanceof Error ? error.message : fallback;
-    let status = 500;
-    if (message === 'Forbidden') {
-      status = 403;
-    } else if (
-      message === 'Saved view not found' ||
-      message === 'Shared view not found'
-    ) {
-      status = 404;
-    } else if (message === 'Only archived views can be permanently deleted') {
-      status = 400;
-    }
-    res.status(status).json({ error: message });
-  }
 
   function postOwnedViewStatusAction(
     action: 'archive' | 'restore',

@@ -49,6 +49,28 @@ function listProjectsQueryFromRequest(query: Record<string, unknown>) {
   });
 }
 
+async function loadExistingJiraKeys(projectId: string): Promise<Set<string>> {
+  const { data: existingWorkItems } = await supabase
+    .from('work_items')
+    .select('jira_issue_key')
+    .eq('project_id', projectId)
+    .not('jira_issue_key', 'is', null);
+
+  return new Set(
+    (existingWorkItems || [])
+      .map((item: { jira_issue_key: string | null }) => item.jira_issue_key)
+      .filter((key: string | null): key is string => Boolean(key))
+  );
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : '';
+  return (
+    /duplicate|unique|already exists/i.test(message) ||
+    message.includes('23505')
+  );
+}
+
 export type ProjectsRouterDeps = {
   projectsService: ProjectsService;
   workItemService: Pick<WorkItemService, 'createWorkItem'>;
@@ -170,28 +192,6 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
             update(actorId, file, expectedUpdatedAt, params.id!),
         });
       }
-    );
-  }
-
-  async function loadExistingJiraKeys(projectId: string): Promise<Set<string>> {
-    const { data: existingWorkItems } = await supabase
-      .from('work_items')
-      .select('jira_issue_key')
-      .eq('project_id', projectId)
-      .not('jira_issue_key', 'is', null);
-
-    return new Set(
-      (existingWorkItems || [])
-        .map((item: { jira_issue_key: string | null }) => item.jira_issue_key)
-        .filter((key: string | null): key is string => Boolean(key))
-    );
-  }
-
-  function isUniqueViolation(error: unknown): boolean {
-    const message = error instanceof Error ? error.message : '';
-    return (
-      /duplicate|unique|already exists/i.test(message) ||
-      message.includes('23505')
     );
   }
 
