@@ -70,5 +70,3 @@ export function formatGithubRepoPath(
 
   return `${trimmedOwner}/${trimmedRepo}`;
 }
-
-

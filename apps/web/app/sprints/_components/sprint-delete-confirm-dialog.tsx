@@ -63,8 +63,8 @@ export function SprintDeleteConfirmDialog({
             purged from the database.
           </p>
 
-          <div className="border-rose-500/30 bg-rose-500/10 mt-4 rounded-lg border p-3">
-            <p className="text-rose-600 dark:text-rose-400 text-xs font-bold">
+          <div className="mt-4 rounded-lg border border-rose-500/30 bg-rose-500/10 p-3">
+            <p className="text-xs font-bold text-rose-600 dark:text-rose-400">
               Delete all work-item content with sprint
             </p>
             <p className="text-muted-foreground mt-1 text-[11px] leading-relaxed">
@@ -87,7 +87,9 @@ export function SprintDeleteConfirmDialog({
           <Button
             type="button"
             disabled={isPending}
-            onClick={() => onConfirm(DeleteSprintWorkItemsActionEnum.DeleteContent)}
+            onClick={() =>
+              onConfirm(DeleteSprintWorkItemsActionEnum.DeleteContent)
+            }
             className="bg-rose-600 px-4 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
           >
             {isPending ? (

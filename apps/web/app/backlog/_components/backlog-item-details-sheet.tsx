@@ -239,10 +239,13 @@ export function BacklogItemDetailsSheet({
                     ...sprints
                       .filter((s) => {
                         const sprintProjectId =
-                          s.project?.id ?? (s as { project_id?: string }).project_id;
+                          s.project?.id ??
+                          (s as { project_id?: string }).project_id;
                         const isMatchingProject =
                           !projectId ||
-                          (sprintProjectId ? sprintProjectId === projectId : true);
+                          (sprintProjectId
+                            ? sprintProjectId === projectId
+                            : true);
                         const isAllowedStatusOrCurrent =
                           s.status === SprintStatusEnum.Planned ||
                           s.status === SprintStatusEnum.Active ||

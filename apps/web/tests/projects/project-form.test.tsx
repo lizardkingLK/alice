@@ -498,8 +498,6 @@ describe('ProjectForm Component', () => {
     });
   });
 
-
-
   it('omits blank github_token on edit so existing PAT is unchanged', async () => {
     const onProjectUpdated = vi.fn();
     const projectWithGithub = {

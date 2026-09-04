@@ -361,13 +361,16 @@ export class ProjectsRepository {
         },
       });
 
-      // Owner is always a project member so ACL and Members UI stay consistent.
-      await tx.project_members.create({
-        data: {
+      // Owner (manager) is always a project member so ACL and Members UI stay
+      // consistent. The creating admin is also a member when they are not the
+      // owner, so they keep workspace access under membership-scoped ACL.
+      const memberUserIds = [...new Set([data.owner_id, actorId])];
+      await tx.project_members.createMany({
+        data: memberUserIds.map((userId) => ({
           project_id: project.id,
-          user_id: data.owner_id,
+          user_id: userId,
           ...prismaAuditCreate(actorId),
-        },
+        })),
       });
 
       return project;

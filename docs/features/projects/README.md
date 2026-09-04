@@ -22,7 +22,10 @@ Quick links:
 Two layers apply:
 
 1. **Platform RBAC** — `/projects` (list + detail) requires **manager+** (`RoleGatedLayout`). Members never open the projects area.
-2. **Project workspace membership** — within that, only **admin**, **owner**, or active **`project_members`** may open a given `/projects/[id]` workspace and see that project on the registry list.
+2. **Project workspace membership** — within that, only **owner** or active
+   **`project_members`** may open a given `/projects/[id]` workspace and see
+   that project on the registry list (same for admins; there is no admin
+   “all projects” bypass).
 
 There is no separate “private project” setting; membership is the ACL.
 
@@ -32,8 +35,7 @@ There is no separate “private project” setting; membership is the ACL.
 
 | Viewer                 | Projects shown                                          |
 | ---------------------- | ------------------------------------------------------- |
-| `admin`                | All projects                                            |
-| Other manager+         | Union of `owner_id = self` and active `project_members` |
+| Any authenticated role | Union of `owner_id = self` and active `project_members` |
 | No accessible projects | Empty list (create a project or get added as a member)  |
 
 Inaccessible projects are **omitted** from the list (not shown as disabled rows), so users do not navigate into a deny screen from the registry.
@@ -44,17 +46,19 @@ Inaccessible projects are **omitted** from the list (not shown as disabled rows)
 
 | Who                      | Result                                                                   |
 | ------------------------ | ------------------------------------------------------------------------ |
-| `admin`                  | Full workspace                                                           |
 | Project `owner_id`       | Full workspace                                                           |
 | Active `project_members` | Full workspace                                                           |
 | Otherwise                | In-shell **“No access to this project”** card + link back to `/projects` |
 
 Hierarchy **expand all** uses the same membership family (`canAccessProjectWorkspace`), plus assignee/reporter (and ancestors) for My Work contexts. Membership denial message: _You're not a member of this project._
 
-### How managers get access
+### How users get access
 
-1. **Create** a project → they become `owner_id` → project appears in the list and workspace opens.
-2. **Be added** to `project_members` (or become owner) by an admin/owner → same.
+1. **Admin creates** a project → picks a manager as `owner_id` → create inserts
+   both the **owner** and the **creating admin** into `project_members`
+   (creator stays assigned; owners cannot remove them).
+2. **Ownership** → `owner_id` (and `ensureOwnerIsMember` on reassignment).
+3. **Be added** to `project_members` by an admin/manager with access.
 
 Dropdown caches used by board/backlog/forms (`getProjectList`) are separate from the registry filter; registry visibility is the membership-scoped list above.
 
