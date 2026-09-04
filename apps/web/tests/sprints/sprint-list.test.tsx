@@ -1,12 +1,35 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
 import { SprintList } from '@/app/sprints/_components/sprint-list';
 import { SprintsWorkspace } from '@/app/sprints/_components/sprints-workspace';
-import { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
+import {
+  Sprint,
+  hardDeleteSprint,
+} from '@/app/sprints/_services/sprints.mutations.client';
+import { updateSprintStatusWithOptimisticLock } from '@/app/sprints/_helpers/update-sprint-status-with-lock';
+import { DeleteSprintWorkItemsActionEnum } from '@repo/types';
 import { assertDebouncedSearchRedirect } from '../helpers/assert-debounced-search';
 
 const mockPush = vi.fn();
 const mockRefresh = vi.fn();
+
+vi.mock('@/app/sprints/_helpers/update-sprint-status-with-lock', () => ({
+  updateSprintStatusWithOptimisticLock: vi.fn(),
+}));
+
+vi.mock(
+  '@/app/sprints/_services/sprints.mutations.client',
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import('@/app/sprints/_services/sprints.mutations.client')
+      >();
+    return {
+      ...actual,
+      hardDeleteSprint: vi.fn(),
+    };
+  }
+);
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -330,7 +353,7 @@ describe('SprintList Component', () => {
     expect(screen.getByText(/No archived sprints/i)).toBeInTheDocument();
   });
 
-  it('renders Archive button only for Completed sprints and triggers callback', () => {
+  it('renders Archive button for sprints in active registry and triggers callback', () => {
     const onArchiveSprint = vi.fn();
     const testSprints: Sprint[] = [
       {
@@ -392,7 +415,7 @@ describe('SprintList Component', () => {
     });
     expect(archiveBtn).toBeInTheDocument();
 
-    // Verify Archive button is NOT rendered for Ongoing or Planned Sprint
+    // Verify Archive button is NOT rendered for Ongoing and Planned Sprint in active registry
     const ongoingLi = screen.getByText('Ongoing Sprint').closest('tr')!;
     expect(
       within(ongoingLi).queryByRole('button', { name: 'Archive Sprint' })
@@ -502,5 +525,256 @@ describe('SprintList Component', () => {
     expect(
       within(archivedLi).queryByRole('button', { name: 'Edit Sprint' })
     ).not.toBeInTheDocument();
+  });
+
+  it('renders Delete button for Admin in Archived tab and triggers callback', () => {
+    const onDeleteSprint = vi.fn();
+    const testSprints: Sprint[] = [
+      {
+        id: 'sprint-archived',
+        name: 'Archived Sprint',
+        goal: null,
+        status: 'archived' as const,
+        startDate: '2026-07-01',
+        endDate: '2026-07-14',
+        createdBy: 'user-1',
+        updatedBy: null,
+        createdAt: '2026-07-01T00:00:00Z',
+        updatedAt: '2026-07-01T00:00:00Z',
+        project: null,
+      },
+    ];
+
+    render(
+      <SprintList
+        sprints={testSprints}
+        pagination={{ page: 1, limit: 10, totalCount: 1, totalPages: 1 }}
+        filterTab="archived"
+        isAdmin={true}
+        onPageChange={vi.fn()}
+        onLimitChange={vi.fn()}
+        onDeleteSprint={onDeleteSprint}
+      />
+    );
+
+    const archivedLi = screen.getByText('Archived Sprint').closest('tr')!;
+    const deleteBtn = within(archivedLi).getByRole('button', {
+      name: 'Delete Sprint',
+    });
+    expect(deleteBtn).toBeInTheDocument();
+
+    fireEvent.click(deleteBtn);
+    expect(onDeleteSprint).toHaveBeenCalledWith(testSprints[0]);
+  });
+
+  it('does not render Delete button for non-Admin in Archived tab', () => {
+    const onDeleteSprint = vi.fn();
+    const testSprints: Sprint[] = [
+      {
+        id: 'sprint-archived',
+        name: 'Archived Sprint',
+        goal: null,
+        status: 'archived' as const,
+        startDate: '2026-07-01',
+        endDate: '2026-07-14',
+        createdBy: 'user-1',
+        updatedBy: null,
+        createdAt: '2026-07-01T00:00:00Z',
+        updatedAt: '2026-07-01T00:00:00Z',
+        project: null,
+      },
+    ];
+
+    render(
+      <SprintList
+        sprints={testSprints}
+        pagination={{ page: 1, limit: 10, totalCount: 1, totalPages: 1 }}
+        filterTab="archived"
+        isAdmin={false}
+        onPageChange={vi.fn()}
+        onLimitChange={vi.fn()}
+        onDeleteSprint={onDeleteSprint}
+      />
+    );
+
+    const archivedLi = screen.getByText('Archived Sprint').closest('tr')!;
+    expect(
+      within(archivedLi).queryByRole('button', { name: 'Delete Sprint' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('renders Sprint Name as link navigating to sprint report view', () => {
+    render(
+      <SprintList
+        sprints={mockSprints}
+        pagination={mockPagination}
+        filterTab="active"
+        onPageChange={vi.fn()}
+        onLimitChange={vi.fn()}
+      />
+    );
+
+    const sprintLink = screen.getByRole('link', { name: 'Sprint Alpha' });
+    expect(sprintLink).toBeInTheDocument();
+    expect(sprintLink).toHaveAttribute('href', '/sprints/sprint-1/report');
+  });
+
+  it('opens archive modal for completed sprint and on confirm updates status to archived without moving to archive tab', async () => {
+    const completedSprint: Sprint = {
+      ...mockSprints[0]!,
+      status: 'closed',
+    };
+
+    vi.mocked(updateSprintStatusWithOptimisticLock).mockResolvedValue({
+      ...completedSprint,
+      status: 'archived',
+    });
+
+    render(
+      <SprintsWorkspace
+        sprints={[completedSprint]}
+        pagination={mockPagination}
+        projects={[]}
+        filterTab="active"
+        search=""
+        userRole="admin"
+      />
+    );
+
+    // Click Archive button on the completed sprint
+    const archiveBtn = screen.getByRole('button', { name: 'Archive Sprint' });
+    fireEvent.click(archiveBtn);
+
+    // Modal should be open
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(/Are you sure you want to archive/i)
+    ).toBeInTheDocument();
+
+    // Confirm Archive
+    const confirmBtn = within(dialog).getByRole('button', {
+      name: 'Archive Sprint',
+    });
+    fireEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(updateSprintStatusWithOptimisticLock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sprint: completedSprint,
+          status: 'archived',
+        })
+      );
+      // Ensure page does NOT automatically move to archive tab
+      expect(mockPush).not.toHaveBeenCalledWith('/sprints?tab=archived&page=1');
+      expect(mockRefresh).toHaveBeenCalled();
+    });
+  });
+
+  it('opens delete modal for admin in archived tab with permanent delete notice and no move_out option', async () => {
+    vi.mocked(hardDeleteSprint).mockResolvedValue({
+      data: { id: 'sprint-archived' },
+    } as never);
+
+    const archivedSprints: Sprint[] = [
+      {
+        id: 'sprint-archived',
+        name: 'Archived Sprint',
+        goal: 'Goal',
+        status: 'archived' as const,
+        startDate: '2026-07-01',
+        endDate: '2026-07-14',
+        createdBy: 'user-1',
+        updatedBy: null,
+        createdAt: '2026-07-01T00:00:00Z',
+        updatedAt: '2026-07-01T00:00:00Z',
+        project: null,
+      },
+    ];
+
+    render(
+      <SprintsWorkspace
+        sprints={archivedSprints}
+        pagination={{ page: 1, limit: 10, totalCount: 1, totalPages: 1 }}
+        projects={[]}
+        filterTab="archived"
+        search=""
+        userRole="admin"
+      />
+    );
+
+    const deleteBtn = screen.getByRole('button', { name: 'Delete Sprint' });
+    fireEvent.click(deleteBtn);
+
+    // Delete confirmation dialog should open
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Are you sure you want to permanently delete/i)
+    ).toBeInTheDocument();
+    // Ensure "Move all work items out of the sprint" option is REMOVED
+    expect(
+      screen.queryByText('Move all work items out of the sprint')
+    ).not.toBeInTheDocument();
+    // Ensure "Delete all work-item content with sprint" notice is present
+    expect(
+      screen.getByText('Delete all work-item content with sprint')
+    ).toBeInTheDocument();
+
+    const confirmBtn = screen.getByRole('button', {
+      name: 'Delete Permanently',
+    });
+    fireEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(hardDeleteSprint).toHaveBeenCalledWith('sprint-archived', {
+        workItemsAction: DeleteSprintWorkItemsActionEnum.DeleteContent,
+      });
+      expect(mockRefresh).toHaveBeenCalled();
+    });
+  });
+
+  it('restores an archived sprint back to closed status and refreshes list', async () => {
+    const archivedSprint: Sprint = {
+      id: 'sprint-archived',
+      name: 'Archived Sprint',
+      goal: 'Goal',
+      status: 'archived' as const,
+      startDate: '2026-07-01',
+      endDate: '2026-07-14',
+      createdBy: 'user-1',
+      updatedBy: null,
+      createdAt: '2026-07-01T00:00:00Z',
+      updatedAt: '2026-07-01T00:00:00Z',
+      project: null,
+    };
+
+    vi.mocked(updateSprintStatusWithOptimisticLock).mockResolvedValue({
+      ...archivedSprint,
+      status: 'closed',
+    });
+
+    render(
+      <SprintsWorkspace
+        sprints={[archivedSprint]}
+        pagination={{ page: 1, limit: 10, totalCount: 1, totalPages: 1 }}
+        projects={[]}
+        filterTab="archived"
+        search=""
+        userRole="admin"
+      />
+    );
+
+    const restoreBtn = screen.getByRole('button', { name: 'Restore Sprint' });
+    fireEvent.click(restoreBtn);
+
+    await waitFor(() => {
+      expect(updateSprintStatusWithOptimisticLock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sprint: archivedSprint,
+          status: 'closed',
+        })
+      );
+      expect(mockRefresh).toHaveBeenCalled();
+    });
   });
 });

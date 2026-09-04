@@ -109,10 +109,17 @@ export {
   type UploadedAttachmentResult,
 } from './attachments.js';
 export {
+  DELETE_SPRINT_WORK_ITEMS_ACTIONS,
+  DeleteSprintWorkItemsActionEnum,
+  deleteSprintActionSchema,
   listSprintsQuerySchema,
+  SprintTabEnum,
+  type SprintTab,
   sprintDetailSelect,
   sprintListSelect,
   sprintProjectSelect,
+  type DeleteSprintAction,
+  type DeleteSprintWorkItemsAction,
   type ListSprintsQuery,
   type SprintDetailRow,
   type SprintListRow,
