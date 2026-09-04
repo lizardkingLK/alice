@@ -32,6 +32,7 @@ import {
   Trash2,
 } from '@repo/ui/lib/icons';
 import { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
+import { SprintStatusEnum, SprintTabEnum, type SprintTab } from '@repo/types';
 import { Pagination } from '@/components/pagination';
 import { DataTable } from '@/components/data-table';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
@@ -45,7 +46,7 @@ type SprintListProps = {
     totalCount: number;
     totalPages: number;
   };
-  filterTab: 'active' | 'archived';
+  filterTab: SprintTab;
   // eslint-disable-next-line no-unused-vars
   onPageChange: (page: number) => void;
   // eslint-disable-next-line no-unused-vars
@@ -68,13 +69,13 @@ type SprintListProps = {
 };
 
 const STATUS_STYLES = {
-  planned:
+  [SprintStatusEnum.Planned]:
     'border-rose-500/20 bg-rose-500/10 text-rose-500 dark:border-rose-500/30 dark:bg-rose-500/20 dark:text-rose-400',
-  active:
+  [SprintStatusEnum.Active]:
     'border-blue-500/20 bg-blue-500/10 text-blue-500 dark:border-blue-500/30 dark:bg-blue-500/20 dark:text-blue-400',
-  closed:
+  [SprintStatusEnum.Closed]:
     'border-emerald-500/20 bg-emerald-500/10 text-emerald-500 dark:border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-400',
-  archived:
+  [SprintStatusEnum.Archived]:
     'border-amber-500/20 bg-amber-500/10 text-amber-500 dark:border-amber-500/30 dark:bg-amber-500/20 dark:text-amber-400',
 } as const;
 
@@ -94,11 +95,11 @@ export function SprintStatusDropdown({
     >
       {(() => {
         switch (sprint.status) {
-          case 'planned':
+          case SprintStatusEnum.Planned:
             return 'Planned';
-          case 'active':
+          case SprintStatusEnum.Active:
             return 'Active';
-          case 'closed':
+          case SprintStatusEnum.Closed:
             return 'Closed';
           default:
             return 'Archived';
@@ -113,7 +114,7 @@ type SprintListContentProps = {
   error: string | null;
   sprintsCount: number;
   filteredSprints: Sprint[];
-  filterTab: 'active' | 'archived';
+  filterTab: SprintTab;
   isAdmin?: boolean;
   isManagerOrAdmin?: boolean;
   onRetry?: () => void;
@@ -138,7 +139,7 @@ interface SprintTableMeta {
   readonly onDeleteSprint?: (sprint: Sprint) => void;
   readonly isAdmin?: boolean;
   readonly isManagerOrAdmin?: boolean;
-  readonly filterTab?: 'active' | 'archived';
+  readonly filterTab?: SprintTab;
 }
 
 /* eslint-enable no-unused-vars */
@@ -211,8 +212,8 @@ function renderActionsHeader() {
 function renderActionsCell({ row, table }: CellContext<Sprint, unknown>) {
   const meta = getSprintTableMeta(table);
   const sprint = row.original;
-  const isArchived = sprint.status === 'archived';
-  const isCompleted = sprint.status === 'closed';
+  const isArchived = sprint.status === SprintStatusEnum.Archived;
+  const isCompleted = sprint.status === SprintStatusEnum.Closed;
 
   const showEdit = Boolean(meta.onEditSprint && !isArchived);
   const showArchive = Boolean(meta.onArchiveSprint && isCompleted);
@@ -390,7 +391,7 @@ function SprintListContent({
   if (filteredSprints.length === 0) {
     return (
       <div className="text-muted-foreground bg-muted/30 flex min-h-64 items-center justify-center rounded-lg border border-dashed text-sm">
-        {filterTab === 'active'
+        {filterTab === SprintTabEnum.Active
           ? 'No active, upcoming, or completed sprints.'
           : 'No archived sprints.'}
       </div>
@@ -437,7 +438,7 @@ export function SprintList({
           Sprints
         </CardTitle>
         <CardDescription className="text-muted-foreground text-sm">
-          {filterTab === 'active'
+          {filterTab === SprintTabEnum.Active
             ? 'Active, upcoming, and completed sprints for your workspace.'
             : 'Archived sprints.'}
         </CardDescription>

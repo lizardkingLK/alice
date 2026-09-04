@@ -14,7 +14,13 @@ import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Search, Plus } from '@repo/ui/lib/icons';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
-import type { DeleteSprintWorkItemsAction } from '@repo/types';
+import {
+  SprintTabEnum,
+  type SprintTab,
+  SprintStatusEnum,
+  UserRoleEnum,
+  type DeleteSprintWorkItemsAction,
+} from '@repo/types';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { RegistryTabSwitcher } from '@/components/registry-tab-switcher';
 import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
@@ -22,8 +28,8 @@ import { SprintDeleteConfirmDialog } from './sprint-delete-confirm-dialog';
 import { DismissibleError } from '@/components/dismissible-error';
 
 const SPRINT_STATUS_TABS = [
-  { id: 'active' as const, label: 'Active' },
-  { id: 'archived' as const, label: 'Archived' },
+  { id: SprintTabEnum.Active, label: 'Active' },
+  { id: SprintTabEnum.Archived, label: 'Archived' },
 ] as const;
 
 interface SprintsWorkspaceProps {
@@ -35,7 +41,7 @@ interface SprintsWorkspaceProps {
     totalPages: number;
   };
   readonly projects: Project[];
-  readonly filterTab: 'active' | 'archived';
+  readonly filterTab: SprintTab;
   readonly search: string;
   readonly error?: string | null;
   readonly userRole: string;
@@ -49,7 +55,7 @@ function getErrorMessage(error: unknown, fallback: string): string {
 function buildTabPath(
   pathname: string,
   searchParams: { toString: () => string },
-  tab: 'active' | 'archived'
+  tab: SprintTab
 ): string {
   const params = new URLSearchParams(searchParams.toString());
   params.set('tab', tab);
@@ -58,12 +64,12 @@ function buildTabPath(
 }
 
 function isSprintMovedFromTab(
-  filterTab: 'active' | 'archived',
+  filterTab: SprintTab,
   status: Sprint['status']
 ): boolean {
   return (
-    (filterTab === 'active' && status === 'archived') ||
-    (filterTab === 'archived' && status !== 'archived')
+    (filterTab === SprintTabEnum.Active && status === SprintStatusEnum.Archived) ||
+    (filterTab === SprintTabEnum.Archived && status !== SprintStatusEnum.Archived)
   );
 }
 
@@ -118,8 +124,8 @@ export function SprintsWorkspace({
     searchParams,
   } = usePaginationNavigation(pagination.totalPages, pagination.limit);
 
-  const isAdmin = userRole === 'admin';
-  const isManagerOrAdmin = isAdmin || userRole === 'manager';
+  const isAdmin = userRole === UserRoleEnum.admin;
+  const isManagerOrAdmin = isAdmin || userRole === UserRoleEnum.manager;
   const { handleMutationError } = useOptimisticLock();
 
   const [isPending, startTransition] = useTransition();
@@ -139,12 +145,12 @@ export function SprintsWorkspace({
       currentUserId,
     });
 
-  const handleTabChange = (nextTab: 'active' | 'archived') => {
+  const handleTabChange = (nextTab: SprintTab) => {
     router.push(buildTabPath(pathname, searchParams, nextTab));
   };
 
   const handleSprintCreated = () => {
-    router.push(buildTabPath(pathname, searchParams, 'active'));
+    router.push(buildTabPath(pathname, searchParams, SprintTabEnum.Active));
     router.refresh();
   };
 
@@ -175,7 +181,10 @@ export function SprintsWorkspace({
 
     startTransition(async () => {
       try {
-        const updated = await updateStatusWithLock(sprintToArchive, 'archived');
+        const updated = await updateStatusWithLock(
+          sprintToArchive,
+          SprintStatusEnum.Archived
+        );
         if (updated) {
           setSprintToArchive(null);
           handleSprintUpdated(updated);
@@ -193,7 +202,10 @@ export function SprintsWorkspace({
     setActionError(null);
     startTransition(async () => {
       try {
-        const updated = await updateStatusWithLock(sprint, 'closed');
+        const updated = await updateStatusWithLock(
+          sprint,
+          SprintStatusEnum.Closed
+        );
         if (updated) {
           handleSprintUpdated(updated);
         }

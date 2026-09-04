@@ -260,19 +260,24 @@ export function createSprintsRouter(deps: SprintsRouterDeps): Router {
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Failed to delete sprint';
+
+        // 1. Handle 403 authorization error edge case first
         if (
           error instanceof SprintAccessError ||
           message.startsWith('Unauthorized')
         ) {
           return res.status(403).json({ error: message });
         }
-        if (message.includes('not found')) {
-          return res.status(404).json({ error: message });
-        }
-        if (message.includes('Only archived sprints')) {
-          return res.status(400).json({ error: message });
-        }
-        res.status(500).json({ error: message });
+
+        const errorRules = [
+          { search: 'not found', status: 404 },
+          { search: 'Only archived sprints', status: 400 },
+        ];
+
+        const match = errorRules.find((rule) => message.includes(rule.search));
+        const statusCode = match ? match.status : 500;
+
+        return res.status(statusCode).json({ error: message });
       }
     }
   );

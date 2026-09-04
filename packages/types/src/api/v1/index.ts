@@ -113,6 +113,8 @@ export {
   DeleteSprintWorkItemsActionEnum,
   deleteSprintActionSchema,
   listSprintsQuerySchema,
+  SprintTabEnum,
+  type SprintTab,
   sprintDetailSelect,
   sprintListSelect,
   sprintProjectSelect,

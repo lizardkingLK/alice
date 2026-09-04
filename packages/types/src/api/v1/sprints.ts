@@ -47,6 +47,13 @@ export type SprintPrismaListFilters = {
 
 const optionalUuid = z.preprocess(emptyToUndefined, z.uuid().optional());
 
+export const SprintTabEnum = {
+  Active: 'active',
+  Archived: 'archived',
+} as const;
+
+export type SprintTab = (typeof SprintTabEnum)[keyof typeof SprintTabEnum];
+
 export const listSprintsQuerySchema = z
   .object({
     page: paginatedListPageField,
@@ -55,7 +62,7 @@ export const listSprintsQuerySchema = z
     projectId: optionalUuid,
     tab: z.preprocess(
       emptyToUndefined,
-      z.enum(['active', 'archived']).optional()
+      z.enum([SprintTabEnum.Active, SprintTabEnum.Archived]).optional()
     ),
   })
   .transform((query) => {
