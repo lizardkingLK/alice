@@ -13,7 +13,7 @@ import {
 } from '@/lib/db/query';
 import { getCachedProjectList } from '@/lib/cache/dropdown-cache';
 import { listAccessibleProjectIds } from '@/lib/projects/project-workspace-access';
-import { withoutGithubToken } from '@/lib/projects/sanitize-project-secrets';
+import { withoutIntegrationSecrets } from '@/lib/projects/sanitize-project-secrets';
 import { createProjectsService } from './projects.mutations.shared';
 import type {
   GetProjectsPaginatedResponse,
@@ -36,7 +36,7 @@ type ProjectRowWithSecrets = Project & {
 };
 
 function sanitizeProjectRow(row: ProjectRowWithSecrets): Project {
-  return withoutGithubToken(row) as Project;
+  return withoutIntegrationSecrets(row) as Project;
 }
 
 /**
@@ -61,11 +61,9 @@ export async function getProjectListPaginated(
 ): Promise<GetProjectsPaginatedResponse> {
   const supabase = await createClient();
   const dbUser = await getDbUser();
-  const accessibleIds = dbUser
-    ? await listAccessibleProjectIds(dbUser.id, dbUser.role)
-    : [];
+  const accessibleIds = dbUser ? await listAccessibleProjectIds(dbUser.id) : [];
 
-  if (accessibleIds !== 'all' && accessibleIds.length === 0) {
+  if (accessibleIds.length === 0) {
     return {
       projects: [],
       ...paginationMeta(0, page, limit),
@@ -76,9 +74,7 @@ export async function getProjectListPaginated(
     .from('projects')
     .select(`*, ${OWNER_SELECT}`, { count: 'exact' });
 
-  if (accessibleIds !== 'all') {
-    query = query.in('id', accessibleIds);
-  }
+  query = query.in('id', accessibleIds);
 
   if (status === 'archived') {
     query = query.not('deleted_at', 'is', null);

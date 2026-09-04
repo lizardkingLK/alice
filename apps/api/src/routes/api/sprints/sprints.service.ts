@@ -185,7 +185,7 @@ export class SprintsService {
 
   private resolveScopedListFilters(
     query: ListSprintsQuery,
-    accessible: 'all' | string[]
+    accessible: string[]
   ): SprintPrismaListFilters | null {
     const statuses =
       query.tab === 'archived'
@@ -199,10 +199,6 @@ export class SprintsService {
     const base = {
       status: statuses,
     };
-
-    if (accessible === 'all') {
-      return { ...base, projectId: query.projectId };
-    }
 
     if (accessible.length === 0) {
       return null;

@@ -3,7 +3,6 @@ import {
   EMPTY_ACTIVE_SPRINTS_PAGE,
   getSuggestedBoardDefaults,
 } from '@/app/board/_services/board.reads.defaults.server';
-import { getProjectList } from '@/app/projects/_services/projects.reads.server';
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.reads.server';
@@ -14,7 +13,9 @@ import {
   type DbWorkItem,
 } from '@/app/work-items/_services/work-items.reads.server';
 import { getDbUser } from '@/lib/auth';
+import { getAccessibleProjectList } from '@/lib/projects/accessible-project-list';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
+import { listAccessibleProjectIds } from '@/lib/projects/project-workspace-access';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 
 export type BacklogWorkspaceData = {
@@ -34,12 +35,25 @@ export async function getBacklogWorkspace(): Promise<BacklogWorkspaceData> {
 
   const dbUser = await getDbUser();
   const userRole = dbUser?.role ?? 'member';
+  const accessibleIds = dbUser ? await listAccessibleProjectIds(dbUser.id) : [];
 
   const [projects, projectMembers, initialWorkItems, sprintsResult] =
     await Promise.all([
-      safeServerFetch(getProjectList(), [], 'fetch projects for backlog'),
+      dbUser
+        ? safeServerFetch(
+            getAccessibleProjectList(dbUser.id),
+            [],
+            'fetch projects for backlog'
+          )
+        : Promise.resolve([]),
       safeServerFetch(getUserList(), [], 'fetch users for backlog'),
-      safeServerFetch(getWorkItems(), [], 'fetch work items for backlog'),
+      accessibleIds.length === 0
+        ? Promise.resolve([])
+        : safeServerFetch(
+            getWorkItems({ projectIds: accessibleIds }),
+            [],
+            'fetch work items for backlog'
+          ),
       getSprintsPaginatedServer('active', 1, 100).catch((error: unknown) => {
         fetchError =
           error instanceof Error
@@ -51,19 +65,18 @@ export async function getBacklogWorkspace(): Promise<BacklogWorkspaceData> {
     ]);
 
   const activeProjects = filterActiveProjects(projects);
+  const sprints = sprintsResult.sprints.filter(
+    (sprint) => !sprint.project?.id || accessibleIds.includes(sprint.project.id)
+  );
   const suggestedDefaults = dbUser
-    ? await getSuggestedBoardDefaults(
-        dbUser,
-        activeProjects,
-        sprintsResult.sprints
-      )
+    ? await getSuggestedBoardDefaults(dbUser, activeProjects, sprints)
     : null;
 
   return {
     projects: activeProjects,
     projectMembers,
     initialWorkItems,
-    sprints: sprintsResult.sprints,
+    sprints,
     userRole,
     currentUserId: dbUser?.id,
     suggestedDefaults,

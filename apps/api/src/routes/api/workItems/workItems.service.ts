@@ -448,7 +448,7 @@ export class WorkItemService {
    */
   private resolveScopedListFilters(
     query: ListWorkItemsQuery,
-    accessible: 'all' | string[]
+    accessible: string[]
   ): {
     sprintId?: string | null;
     projectId?: string;
@@ -467,10 +467,6 @@ export class WorkItemService {
       labels: query.labels,
       recordStatus: query.recordStatus,
     };
-
-    if (accessible === 'all') {
-      return { ...base, projectId: query.projectId };
-    }
 
     if (accessible.length === 0) {
       return null;
@@ -907,14 +903,8 @@ export class WorkItemService {
 
     for (const team of teams) {
       for (const member of team.members) {
-        const cap =
-          member.capacity !== null
-            ? member.capacity
-            : AllocationConfig.DEFAULT_CAPACITY;
-        const alloc =
-          member.allocation !== null
-            ? member.allocation
-            : AllocationConfig.DEFAULT_ALLOCATION;
+        const cap = member.capacity ?? AllocationConfig.DEFAULT_CAPACITY;
+        const alloc = member.allocation ?? AllocationConfig.DEFAULT_ALLOCATION;
         totalSprintCapacity += cap * (alloc / 100);
         if (member.capacity !== null || member.allocation !== null) {
           hasConfiguredCapacity = true;
@@ -971,14 +961,8 @@ export class WorkItemService {
 
     for (const team of memberTeams) {
       for (const member of team.members) {
-        const cap =
-          member.capacity !== null
-            ? member.capacity
-            : AllocationConfig.DEFAULT_CAPACITY;
-        const alloc =
-          member.allocation !== null
-            ? member.allocation
-            : AllocationConfig.DEFAULT_ALLOCATION;
+        const cap = member.capacity ?? AllocationConfig.DEFAULT_CAPACITY;
+        const alloc = member.allocation ?? AllocationConfig.DEFAULT_ALLOCATION;
         memberCapacity += cap * (alloc / 100);
       }
     }

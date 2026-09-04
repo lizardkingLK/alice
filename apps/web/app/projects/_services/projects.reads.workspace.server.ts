@@ -168,11 +168,7 @@ export async function getProjectWorkspace(
     return { access: 'denied', project };
   }
 
-  const allowed = await canAccessProjectWorkspace(
-    dbUser.id,
-    dbUser.role,
-    projectId
-  );
+  const allowed = await canAccessProjectWorkspace(dbUser.id, projectId);
   if (!allowed) {
     console.warn('warn. project workspace access denied: role gate');
     return { access: 'denied', project };
