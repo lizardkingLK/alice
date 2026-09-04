@@ -12,7 +12,7 @@ import {
 } from './sprints.schemas';
 import type { SprintsService, SprintBurndownService } from './sprints.service';
 import { SprintAccessError } from './sprints.errors';
-import { listSprintsQuerySchema } from '@repo/types';
+import { deleteSprintActionSchema, listSprintsQuerySchema } from '@repo/types';
 
 export type SprintsRouterDeps = {
   sprintsService: SprintsService;
@@ -215,6 +215,62 @@ export function createSprintsRouter(deps: SprintsRouterDeps): Router {
         const message =
           error instanceof Error ? error.message : 'Failed to get sprint';
         res.status(500).json({ data: null, error: message });
+      }
+    }
+  );
+
+  sprintsRouter.delete(
+    '/:id',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ error: 'Sprint ID is required' });
+      }
+
+      const parsedId = z.uuid().safeParse(id);
+      if (!parsedId.success) {
+        return res.status(400).json({ error: 'Invalid sprint id' });
+      }
+
+      const rawAction =
+        (req.body &&
+        typeof req.body === 'object' &&
+        'workItemsAction' in req.body
+          ? req.body.workItemsAction
+          : req.query.workItemsAction) ?? 'move_out';
+
+      const parsed = deleteSprintActionSchema.safeParse({
+        workItemsAction: rawAction,
+      });
+
+      if (!parsed.success) {
+        return res.status(400).json({ error: z.treeifyError(parsed.error) });
+      }
+
+      try {
+        await sprintsService.hardDeleteSprint(
+          req.userId!,
+          parsedId.data,
+          parsed.data
+        );
+        res.json({ success: true });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to delete sprint';
+        if (
+          error instanceof SprintAccessError ||
+          message.startsWith('Unauthorized')
+        ) {
+          return res.status(403).json({ error: message });
+        }
+        if (message.includes('not found')) {
+          return res.status(404).json({ error: message });
+        }
+        if (message.includes('Only archived sprints')) {
+          return res.status(400).json({ error: message });
+        }
+        res.status(500).json({ error: message });
       }
     }
   );

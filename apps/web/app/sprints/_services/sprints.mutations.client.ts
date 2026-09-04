@@ -1,6 +1,11 @@
 import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
-import type { SprintResponse, SprintRowWithProject, Tables } from '@repo/types';
+import type {
+  DeleteSprintAction,
+  SprintResponse,
+  SprintRowWithProject,
+  Tables,
+} from '@repo/types';
 import type { ResponseDTO } from '@repo/types/connection';
 export { mapSprintRowToResponse as mapDbSprintToSprint } from '@repo/types';
 
@@ -104,3 +109,31 @@ export async function forceUpdateSprintStatus(
 
   return data.data!;
 }
+
+export async function archiveSprint(
+  id: string,
+  expectedUpdatedAt: string
+): Promise<Sprint> {
+  return updateSprintStatus(id, 'archived', expectedUpdatedAt);
+}
+
+export async function restoreSprint(
+  id: string,
+  expectedUpdatedAt: string
+): Promise<Sprint> {
+  return updateSprintStatus(id, 'closed', expectedUpdatedAt);
+}
+
+export async function hardDeleteSprint(
+  id: string,
+  options: DeleteSprintAction = { workItemsAction: 'move_out' }
+): Promise<void> {
+  await apiFetch<void>(
+    `${apiSprints}/${id}?workItemsAction=${options.workItemsAction}`,
+    {
+      method: 'DELETE',
+      body: JSON.stringify(options),
+    }
+  );
+}
+
