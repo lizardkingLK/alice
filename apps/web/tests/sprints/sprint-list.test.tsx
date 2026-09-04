@@ -609,7 +609,7 @@ describe('SprintList Component', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('renders Sprint Name as link navigating to sprint report view', () => {
+  it('renders Sprint Name cell as link navigating to sprint report view', () => {
     render(
       <SprintList
         sprints={mockSprints}
@@ -620,9 +620,12 @@ describe('SprintList Component', () => {
       />
     );
 
-    const sprintLink = screen.getByRole('link', { name: 'Sprint Alpha' });
+    const sprintLink = screen.getByRole('link', { name: /Sprint Alpha/i });
     expect(sprintLink).toBeInTheDocument();
-    expect(sprintLink).toHaveAttribute('href', '/sprints/sprint-1/report');
+    expect(sprintLink).toHaveAttribute(
+      'href',
+      '/sprints/sprint-1/report?from=sprints'
+    );
   });
 
   it('opens archive modal for completed sprint and on confirm updates status to archived without moving to archive tab', async () => {
