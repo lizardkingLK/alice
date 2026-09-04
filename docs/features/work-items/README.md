@@ -12,7 +12,7 @@ Quick links:
 - Implementation: `apps/web/app/work-items/`
 - Client services: `apps/web/app/work-items/_services/workItem.service.client.ts`
 - Server reads: `apps/web/app/work-items/_services/workItem.service.server.ts`
-- Retrieval toggle (Plan): [DATA_RETRIEVAL.md](../../architecture/DATA_RETRIEVAL.md) — list/detail can switch to Express Prisma GETs; default remains SSR
+- Retrieval toggle: [DATA_RETRIEVAL.md](../../architecture/DATA_RETRIEVAL.md) + [API_VERSIONING.md](../../architecture/API_VERSIONING.md) — **work-items** has dual readers (`reads.supabase` / `reads.api`); default remains SSR unless `DATA_READS_VIA_API=true`
 - API: `apps/api/src/routes/api/workItems/`
 - Schema: `work_items` in `packages/db/prisma/schema.prisma`
 - Shared hierarchy helpers: `packages/types/src/work-item-types.ts`

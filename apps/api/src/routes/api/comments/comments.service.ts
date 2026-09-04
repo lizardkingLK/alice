@@ -183,7 +183,7 @@ export class CommentsService {
     const accessible =
       await this.commentsRepository.listAccessibleProjectIds(actorId);
 
-    if (accessible !== 'all' && accessible.length === 0) {
+    if (accessible.length === 0) {
       return {
         comments: [],
         ...paginationMeta(0, query.page, query.limit),
@@ -199,7 +199,7 @@ export class CommentsService {
 
     const filters = {
       workItemId: query.workItemId,
-      projectIds: accessible === 'all' ? undefined : accessible,
+      projectIds: accessible,
     };
 
     return await this.commentsRepository.listPaginated({

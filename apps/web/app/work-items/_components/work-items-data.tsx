@@ -10,7 +10,7 @@ import {
   getSuggestedBoardDefaults,
 } from '@/app/board/_services/board.reads.defaults.server';
 import { getUserList } from '@/app/users/_services/users.reads.server';
-import { getProjectList } from '@/app/projects/_services/projects.reads.server';
+import { getAccessibleProjectList } from '@/lib/projects/accessible-project-list';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.reads.server';
 import { getDbUser } from '@/lib/auth';
 import { filterActiveProjects } from '@/lib/projects/active-projects';
@@ -44,7 +44,7 @@ type WorkItemsDataProps = {
 };
 
 function resolveScopedWorkItemFilters(options: {
-  readonly accessible: 'all' | string[];
+  readonly accessible: string[];
   readonly projectId?: string;
   readonly type: WorkItemListFilters['type'];
   readonly assigneeId?: string;
@@ -61,10 +61,6 @@ function resolveScopedWorkItemFilters(options: {
     recordStatus: options.recordStatus,
     ...options.hierarchy,
   };
-
-  if (options.accessible === 'all') {
-    return { ...base, projectId: options.projectId };
-  }
 
   if (options.accessible.length === 0) {
     return null;
@@ -105,7 +101,7 @@ export async function WorkItemsData({
     needsWorkspaceProjectBootstrap(resolvedSearchParams.project);
 
   const accessibleProjects = dbUser
-    ? await listAccessibleProjectIds(dbUser.id, dbUser.role)
+    ? await listAccessibleProjectIds(dbUser.id)
     : [];
 
   const [
@@ -116,7 +112,13 @@ export async function WorkItemsData({
     workItemsResult,
   ] = await Promise.all([
     readWorkItemTableColumnVisibilityBootstrap(),
-    safeServerFetch(getProjectList(), [], 'fetch projects for work items'),
+    dbUser
+      ? safeServerFetch(
+          getAccessibleProjectList(dbUser.id),
+          [],
+          'fetch projects for work items'
+        )
+      : Promise.resolve([]),
     safeServerFetch(getUserList(), [], 'fetch users for work items'),
     safeServerFetch(
       getSprintsPaginatedServer('active', 1, 100),
@@ -151,12 +153,7 @@ export async function WorkItemsData({
     })(),
   ]);
 
-  const visibleProjects =
-    accessibleProjects === 'all'
-      ? projects
-      : projects.filter((project) => accessibleProjects.includes(project.id));
-
-  const activeProjects = filterActiveProjects(visibleProjects);
+  const activeProjects = filterActiveProjects(projects);
   const sprints = sprintsResult.sprints;
   const suggestedDefaults =
     !isProjectLocked && !isAssigneeLocked && dbUser
@@ -165,7 +162,7 @@ export async function WorkItemsData({
 
   return (
     <WorkItemsWorkspace
-      projects={isProjectLocked ? visibleProjects : activeProjects}
+      projects={isProjectLocked ? projects : activeProjects}
       projectMembers={projectMembers}
       sprints={sprints}
       initialWorkItems={workItemsResult.workItems}

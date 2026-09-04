@@ -1,7 +1,8 @@
 import { getDbUser } from '@/lib/auth';
 import { SprintsWorkspace } from '@/app/sprints/_components/sprints-workspace';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.reads.server';
-import { getProjectList } from '@/app/projects/_services/projects.reads.server';
+import { getAccessibleProjectList } from '@/lib/projects/accessible-project-list';
+import { filterActiveProjects } from '@/lib/projects/active-projects';
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import {
   parseStandardParams,
@@ -28,8 +29,8 @@ export async function SprintsData({
 
   let fetchError: string | null = null;
 
-  const [dbUser, sprintsData, projects] = await Promise.all([
-    getDbUser(),
+  const dbUser = await getDbUser();
+  const [sprintsData, projects] = await Promise.all([
     getSprintsPaginatedServer(status, page, limit, search).catch(
       (error: unknown) => {
         fetchError =
@@ -38,7 +39,13 @@ export async function SprintsData({
         return EMPTY_SPRINTS;
       }
     ),
-    safeServerFetch(getProjectList(), [], 'fetch projects for sprint form'),
+    dbUser
+      ? safeServerFetch(
+          getAccessibleProjectList(dbUser.id),
+          [],
+          'fetch projects for sprint form'
+        )
+      : Promise.resolve([]),
   ]);
 
   const userRole = dbUser?.role ?? 'member';
@@ -47,7 +54,7 @@ export async function SprintsData({
     <SprintsWorkspace
       sprints={sprintsData.sprints}
       pagination={sprintsData.pagination}
-      projects={projects}
+      projects={filterActiveProjects(projects)}
       filterTab={status}
       search={search}
       userRole={userRole}

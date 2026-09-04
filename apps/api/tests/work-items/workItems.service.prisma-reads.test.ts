@@ -56,7 +56,9 @@ const query: ListWorkItemsQuery = {
 describe('WorkItemService Prisma reads', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    listAccessibleProjectIdsMock.mockResolvedValue('all');
+    listAccessibleProjectIdsMock.mockResolvedValue([
+      '33333333-3333-4333-8333-333333333333',
+    ]);
     requireProjectMemberMock.mockResolvedValue({
       projectId: query.projectId,
     });

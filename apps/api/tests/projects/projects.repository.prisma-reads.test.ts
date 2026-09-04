@@ -76,7 +76,7 @@ describe('ProjectsRepository Prisma reads', () => {
     ]);
 
     const result = await repository.listPaginated({
-      accessibleIds: 'all',
+      accessibleIds: ['project-1'],
       filters: { status: 'active', search: 'Alice' },
       page: 1,
       limit: 10,
@@ -84,6 +84,7 @@ describe('ProjectsRepository Prisma reads', () => {
 
     expect(findManyMock).toHaveBeenCalledWith({
       where: {
+        id: { in: ['project-1'] },
         deleted_at: null,
         OR: [
           { name: { contains: 'Alice', mode: 'insensitive' } },

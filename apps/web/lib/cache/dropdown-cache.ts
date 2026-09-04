@@ -1,7 +1,7 @@
 import { unstable_cache, updateTag } from 'next/cache';
 import { filterProductUsableUsers } from '@repo/types';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { withoutGithubToken } from '@/lib/projects/sanitize-project-secrets';
+import { withoutIntegrationSecrets } from '@/lib/projects/sanitize-project-secrets';
 import { getUser } from '@/lib/auth';
 
 /**
@@ -61,7 +61,7 @@ async function fetchProjectsForDropdown(): Promise<unknown[]> {
   }
 
   return (data ?? []).map((row) =>
-    withoutGithubToken(
+    withoutIntegrationSecrets(
       row as { github_token?: string | null } & Record<string, unknown>
     )
   );

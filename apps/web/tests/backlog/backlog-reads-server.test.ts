@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const getDbUserMock = vi.hoisted(() => vi.fn());
 const listAccessibleProjectIdsMock = vi.hoisted(() => vi.fn());
-const getProjectListMock = vi.hoisted(() => vi.fn());
+const getAccessibleProjectListMock = vi.hoisted(() => vi.fn());
 const getUserListMock = vi.hoisted(() => vi.fn());
 const getWorkItemsMock = vi.hoisted(() => vi.fn());
 const getSprintsPaginatedServerMock = vi.hoisted(() => vi.fn());
@@ -16,8 +16,8 @@ vi.mock('@/lib/projects/project-workspace-access', () => ({
   listAccessibleProjectIds: listAccessibleProjectIdsMock,
 }));
 
-vi.mock('@/app/projects/_services/projects.reads.server', () => ({
-  getProjectList: getProjectListMock,
+vi.mock('@/lib/projects/accessible-project-list', () => ({
+  getAccessibleProjectList: getAccessibleProjectListMock,
 }));
 
 vi.mock('@/app/users/_services/users.reads.server', () => ({
@@ -39,10 +39,9 @@ vi.mock('@/app/board/_services/board.reads.defaults.server', () => ({
 
 import { getBacklogWorkspace } from '@/app/backlog/_services/backlog.reads.server';
 
-const MOCK_PROJECTS = [
+const MOCK_ACCESSIBLE_PROJECTS = [
   { id: 'proj-1', name: 'Project 1', status: 'active' },
   { id: 'proj-2', name: 'Project 2', status: 'active' },
-  { id: 'proj-3', name: 'Project 3', status: 'archived' },
 ];
 
 const MOCK_WORK_ITEMS = [
@@ -58,25 +57,25 @@ const MOCK_SPRINTS = [
 describe('getBacklogWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getProjectListMock.mockResolvedValue(MOCK_PROJECTS);
+    getAccessibleProjectListMock.mockResolvedValue(MOCK_ACCESSIBLE_PROJECTS);
     getUserListMock.mockResolvedValue([]);
     getWorkItemsMock.mockResolvedValue(MOCK_WORK_ITEMS);
     getSprintsPaginatedServerMock.mockResolvedValue({ sprints: MOCK_SPRINTS });
     getSuggestedBoardDefaultsMock.mockResolvedValue(null);
   });
 
-  it('returns all active projects, work items, and sprints for admin user', async () => {
+  it('scopes admin the same as any role (membership-only project list)', async () => {
     getDbUserMock.mockResolvedValue({ id: 'admin-1', role: 'admin' });
-    listAccessibleProjectIdsMock.mockResolvedValue('all');
+    listAccessibleProjectIdsMock.mockResolvedValue(['proj-1', 'proj-2']);
 
     const result = await getBacklogWorkspace();
 
-    expect(listAccessibleProjectIdsMock).toHaveBeenCalledWith('admin-1', 'admin');
-    expect(getWorkItemsMock).toHaveBeenCalledWith(undefined);
-    expect(result.projects).toEqual([
-      { id: 'proj-1', name: 'Project 1', status: 'active' },
-      { id: 'proj-2', name: 'Project 2', status: 'active' },
-    ]);
+    expect(listAccessibleProjectIdsMock).toHaveBeenCalledWith('admin-1');
+    expect(getAccessibleProjectListMock).toHaveBeenCalledWith('admin-1');
+    expect(getWorkItemsMock).toHaveBeenCalledWith({
+      projectIds: ['proj-1', 'proj-2'],
+    });
+    expect(result.projects).toEqual(MOCK_ACCESSIBLE_PROJECTS);
     expect(result.initialWorkItems).toEqual(MOCK_WORK_ITEMS);
     expect(result.sprints).toEqual(MOCK_SPRINTS);
   });
@@ -84,10 +83,13 @@ describe('getBacklogWorkspace', () => {
   it('scopes projects, work items, and sprints for member/manager user based on accessible projects', async () => {
     getDbUserMock.mockResolvedValue({ id: 'member-1', role: 'member' });
     listAccessibleProjectIdsMock.mockResolvedValue(['proj-1']);
+    getAccessibleProjectListMock.mockResolvedValue([
+      { id: 'proj-1', name: 'Project 1', status: 'active' },
+    ]);
 
     const result = await getBacklogWorkspace();
 
-    expect(listAccessibleProjectIdsMock).toHaveBeenCalledWith('member-1', 'member');
+    expect(listAccessibleProjectIdsMock).toHaveBeenCalledWith('member-1');
     expect(getWorkItemsMock).toHaveBeenCalledWith({ projectIds: ['proj-1'] });
     expect(result.projects).toEqual([
       { id: 'proj-1', name: 'Project 1', status: 'active' },
@@ -100,6 +102,7 @@ describe('getBacklogWorkspace', () => {
   it('returns empty lists when user has no accessible projects', async () => {
     getDbUserMock.mockResolvedValue({ id: 'member-2', role: 'member' });
     listAccessibleProjectIdsMock.mockResolvedValue([]);
+    getAccessibleProjectListMock.mockResolvedValue([]);
 
     const result = await getBacklogWorkspace();
 

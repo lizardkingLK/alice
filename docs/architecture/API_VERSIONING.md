@@ -1,10 +1,10 @@
 # API versioning, Prisma reads, and mutation DTOs
 
 Status: **Plan**  
-Last updated: 2026-08-18 (versioned `@repo/types` schemas as wire DTOs)  
+Last updated: 2026-09-04 (dual-path retrieval checklist + work-items status)  
 Scope: `@repo/types`, `apps/api` HTTP contract, `apps/web` RSC + mutation fetches
 
-Adopted direction (engineering): keep **SSR list/detail on supabase-js** for speed; **add matching Express GET/list handlers** (route → service → repository) so a future team can switch those reads to Prisma without rewriting the domain; **do not call those GETs from Next yet**. Those unused Express reads use **Prisma only** — not supabase-js — so the escape hatch is explicit. Zod + `z.infer` stay required for **mutation inputs**. Prisma `select` payload types cover **read** shapes inside the API. Existing mutation `getById` / optimistic-lock follow-up reads stay on supabase-js.
+Adopted direction (engineering): keep **SSR list/detail on supabase-js** for speed; **add matching Express GET/list handlers** (route → service → repository) so a future team can switch those reads to Prisma without rewriting the domain; **do not call those GETs from Next by default**. Those Express reads use **Prisma only** — not supabase-js — so the escape hatch is explicit. Zod + `z.infer` stay required for **mutation inputs**. Prisma `select` payload types cover **read** shapes inside the API. Existing mutation `getById` / optimistic-lock follow-up reads stay on supabase-js.
 
 Related:
 
@@ -46,10 +46,10 @@ This matches current constraints and is the right maintainability trade:
 Now (used):
   Browser → Next proxy → RSC → supabase-js → Postgres
 
-Now (implemented, unused — Prisma, not supabase-js):
+Now (implemented — Prisma Express GETs; Next optional):
   GET /api/…  →  route  →  service  →  repository (Prisma select)  →  Postgres
 
-Later (optional switch via app toggle — see [DATA_RETRIEVAL.md](./DATA_RETRIEVAL.md)):
+Later / trial (app toggle — see [DATA_RETRIEVAL.md](./DATA_RETRIEVAL.md)):
   Browser → Next → HTTP Express GET → Prisma → Postgres
   (extra hop; one query stack to maintain; `DATA_READS_VIA_API=true`)
 ```
@@ -65,6 +65,42 @@ Mutations stay on Express as today (`POST`/`PATCH`/`DELETE` + Zod). Mutation-sid
 | New Express GET/list/detail (mounted, unused by Next) | **Prisma**                                            | Clear replacement for frontend fetches; tests required |
 
 Do **not** implement unused Express GETs with supabase-js. That would still leave PostgREST to maintain and would not be an escape hatch.
+
+### Domain status — RSC dual retrieval (`DATA_READS_VIA_API`)
+
+Only domains on the allowlist can honor the toggle. Source of truth:
+`packages/types/src/data-retrieval.ts` → `DATA_RETRIEVAL_DOMAINS`.
+
+| Domain         | Express Prisma GET | Web `reads.supabase` + `reads.api` + facade | On allowlist | Notes                              |
+| -------------- | ------------------ | ------------------------------------------- | ------------ | ---------------------------------- |
+| **work-items** | Yes                | **Done**                                    | **Yes**      | Default stays SSR; toggle optional |
+| comments       | Partial / TBD      | Not wired                                   | No           |                                    |
+| projects       | Partial / TBD      | Not wired                                   | No           |                                    |
+| sprints        | Partial / TBD      | Not wired                                   | No           |                                    |
+| teams          | Partial / TBD      | Not wired                                   | No           |                                    |
+| users          | Partial / TBD      | Not wired                                   | No           |                                    |
+| saved-views    | Partial / TBD      | Not wired                                   | No           |                                    |
+| attachments    | List GET exists    | Not wired as domain toggle                  | No           | Nested under work-items UX         |
+| worklogs       | List GET exists    | Not wired as domain toggle                  | No           | Nested under work-items UX         |
+
+**Correct as of 2026-09-04:** the full dual-path rewrite (split supabase/api readers + `shouldReadViaApi` in the facade) has been done for **work-items only**.
+
+### Per-domain checklist — dual retrieval strategy
+
+Use this when adding or rewriting a domain so RSC can choose supabase-js **or** Express Prisma. Full procedure and file naming: [DATA_RETRIEVAL.md](./DATA_RETRIEVAL.md). Complete **after** that domain’s unused Prisma GET exists (per-feature slice below).
+
+1. **Shared select / list query** in `packages/types` `api/v1/` (PostgREST string + Prisma `select` stay aligned).
+2. **Express** list/detail GET: route → service → repository (Prisma only); unit tests for filters/`select`/pagination.
+3. **Web split readers** under `apps/web/app/<domain>/_services/`:
+   - `<domain>.reads.supabase.server.ts` — default SSR
+   - `<domain>.reads.api.server.ts` — optional Express path
+   - `<domain>.reads.server.ts` — facade; call `shouldReadViaApi('<domain>')` at the top
+4. **Allowlist** — add the domain to `DATA_RETRIEVAL_DOMAINS` in `@repo/types` (keep web helper in sync).
+5. **Tests** — mock `shouldReadViaApi` true/false; assert supabase **or** `apiFetch`, never both.
+6. **Ops** — leave `DATA_READS_VIA_API` **off** by default; trial on Preview only.
+7. **Docs** — tick the domain row in the table above; link from the feature README.
+
+Do **not** import Prisma / `@repo/db` into `apps/web`. The web “Prisma path” is always HTTP → API.
 
 ---
 
@@ -492,7 +528,7 @@ apps/web/.../work-items.mutations.client.ts
 | 4    | Health v1 as `/api/v1/health` (~1h)                                                                     | **Done** (alias `/api/health`; `GET /` is root status)                                                                                                                                                                                                                                                                         |
 | 4b   | Health v2 reference (`/api/v2/health`, shared repo, `HealthServiceV2`)                                  | **Done** (template for product v2)                                                                                                                                                                                                                                                                                             |
 | 5    | Product `/api/v1` aliases once GETs exist                                                               | **Started** (`/api/v1/attachments`, `/api/v1/worklogs`, `/api/v1/profile`, `/api/v1/saved-views`, `/api/v1/chat`, `/api/v1/integrations` aliases mounted)                                                                                                                                                                      |
-| 6    | Optional: point RSC at Express GETs via [DATA_RETRIEVAL.md](./DATA_RETRIEVAL.md) (`DATA_READS_VIA_API`) | Plan (default off)                                                                                                                                                                                                                                                                                                             |
+| 6    | Optional: point RSC at Express GETs via [DATA_RETRIEVAL.md](./DATA_RETRIEVAL.md) (`DATA_READS_VIA_API`) | **Started** — **work-items** dual readers + allowlist done (default **off**); other domains not wired — see [Domain status](#domain-status--rsc-dual-retrieval-data_reads_via_api)                                                                                                                                             |
 | 7    | Mark this doc **Living**                                                                                | After 4                                                                                                                                                                                                                                                                                                                        |
 
 ---

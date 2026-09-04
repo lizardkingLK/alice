@@ -1,5 +1,4 @@
 import { getActiveMemberProjectIds } from '@/app/board/_services/board.reads.defaults.server';
-import { isAdmin, isAppRole } from '@/lib/rbac/roles';
 import { createClient } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@repo/types';
@@ -59,19 +58,15 @@ export async function isActiveProjectMember(
 
 /**
  * Who may open `/projects/[id]` workspace (all tabs):
- * admin, project owner, or active project member.
+ * project owner, active project member, or email-guest allowlist ACL.
+ * All roles (including admin) use the same “my projects” rule.
  */
 export async function canAccessProjectWorkspace(
   userId: string,
-  role: string | null | undefined,
   projectId: string
 ): Promise<boolean> {
   if (!userId || !projectId) {
     return false;
-  }
-
-  if (isAppRole(role) && isAdmin(role)) {
-    return true;
   }
 
   try {
@@ -146,20 +141,15 @@ async function resolveAllowedProjectIdsFromAcl(
 }
 
 /**
- * Project ids visible in the `/projects` registry for this user.
- * - `'all'` — admins see every project
- * - `string[]` — owners ∪ active members (may be empty)
+ * Project ids visible for this user (registry, dropdowns, filters, defaults).
+ * Same for every role (“my projects”): owners ∪ active members, or guest
+ * allowlist ACL when present. Never returns every project for admins.
  */
 export async function listAccessibleProjectIds(
-  userId: string,
-  role: string | null | undefined
-): Promise<'all' | string[]> {
+  userId: string
+): Promise<string[]> {
   if (!userId) {
     return [];
-  }
-
-  if (isAppRole(role) && isAdmin(role)) {
-    return 'all';
   }
 
   const memberIds = await listMemberProjectIdsSafe(userId);

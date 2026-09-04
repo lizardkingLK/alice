@@ -1,18 +1,22 @@
 'use server';
 
-import { getProjectList } from '@/app/projects/_services/projects.reads.server';
+import { getDbUser } from '@/lib/auth';
+import { getAccessibleProjectList } from '@/lib/projects/accessible-project-list';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
-import {
-  DROPDOWN_CACHE_TAGS,
-  invalidateDropdownCache,
-} from '@/lib/cache/dropdown-cache';
 
 /**
  * Create-sprint (and similar) dialogs keep RSC `projects` from page load.
  * Expire the 60s dropdown cache and re-read so Express/chat-created
- * projects appear without waiting for TTL.
+ * projects appear without waiting for TTL — then filter to the caller's
+ * accessible (“my”) projects.
  */
 export async function loadProjectsForSprintForm(): Promise<Project[]> {
-  invalidateDropdownCache(DROPDOWN_CACHE_TAGS.projects);
-  return getProjectList();
+  const dbUser = await getDbUser();
+  if (!dbUser) {
+    return [];
+  }
+
+  return getAccessibleProjectList(dbUser.id, {
+    refreshCache: true,
+  });
 }

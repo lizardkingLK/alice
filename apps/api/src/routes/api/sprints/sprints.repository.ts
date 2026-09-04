@@ -180,7 +180,7 @@ export class SprintsRepository {
     });
   }
 
-  async listAccessibleProjectIds(actorId: string): Promise<'all' | string[]> {
+  async listAccessibleProjectIds(actorId: string): Promise<string[]> {
     return listAccessibleProjectIds(this.db, actorId);
   }
 
@@ -189,9 +189,6 @@ export class SprintsRepository {
     projectId: string
   ): Promise<void> {
     const accessible = await this.listAccessibleProjectIds(actorId);
-    if (accessible === 'all') {
-      return;
-    }
     if (!accessible.includes(projectId)) {
       throw new SprintAccessError();
     }
