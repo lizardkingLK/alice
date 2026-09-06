@@ -51,8 +51,8 @@ describe('defaultModelForProvider', () => {
 
   it('returns SpaceXAI / Grok defaults for spacexai', () => {
     expect(defaultModelForProvider('spacexai')).toEqual({
-      value: 'grok-3',
-      label: 'Grok 3',
+      value: 'grok-4.3',
+      label: 'Grok 4.3',
     });
   });
 });
@@ -104,8 +104,8 @@ describe('createFormStateForNewModel', () => {
 
   it('seeds SpaceXAI defaults when adding a model for spacexai', () => {
     expect(createFormStateForNewModel([], 'spacexai')).toMatchObject({
-      modelId: 'grok-3',
-      displayLabel: 'Grok 3',
+      modelId: 'grok-4.3',
+      displayLabel: 'Grok 4.3',
       isDefault: true,
     });
   });
@@ -115,8 +115,8 @@ describe('createFormStateFromRows', () => {
   it('seeds provider defaults when no rows are configured', () => {
     expect(createFormStateFromRows([], 'spacexai')).toMatchObject({
       selectedRowId: null,
-      modelId: 'grok-3',
-      displayLabel: 'Grok 3',
+      modelId: 'grok-4.3',
+      displayLabel: 'Grok 4.3',
       isDefault: true,
     });
   });
