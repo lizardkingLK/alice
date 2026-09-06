@@ -22,8 +22,9 @@ import {
   createFormStateForNewModel,
   createFormStateFromRow,
   createFormStateFromRows,
-  DEFAULT_GEMINI_MODEL,
+  defaultModelForProvider,
   integrationDialogStatusLabel,
+  providerForCatalog,
   saveIntegrationModel,
   type IntegrationSaveFeedback,
 } from '@/app/settings/_components/settings-integration-detail-dialog.helpers';
@@ -74,10 +75,14 @@ export function IntegrationDetailDialog({
   onOpenChange,
   onSaved,
 }: Readonly<IntegrationDetailDialogProps>) {
+  const provider =
+    (integration ? providerForCatalog(integration.id) : null) ?? 'gemini';
+  const providerDefault = defaultModelForProvider(provider);
+
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
-  const [modelId, setModelId] = useState<string>(DEFAULT_GEMINI_MODEL.value);
+  const [modelId, setModelId] = useState<string>(providerDefault.value);
   const [displayLabel, setDisplayLabel] = useState<string>(
-    DEFAULT_GEMINI_MODEL.label
+    providerDefault.label
   );
   const [apiKey, setApiKey] = useState('');
   const [isDefault, setIsDefault] = useState(true);
@@ -102,14 +107,14 @@ export function IntegrationDetailDialog({
       return;
     }
 
-    const nextState = createFormStateFromRows(activeRows);
+    const nextState = createFormStateFromRows(activeRows, provider);
     setSelectedRowId(nextState.selectedRowId);
     setModelId(nextState.modelId);
     setDisplayLabel(nextState.displayLabel);
     setIsDefault(nextState.isDefault);
     setApiKey('');
     setFeedback({ success: null, error: null });
-  }, [open, integration, activeRows]);
+  }, [open, integration, activeRows, provider]);
 
   if (!integration) {
     return null;
@@ -137,12 +142,21 @@ export function IntegrationDetailDialog({
   };
 
   const handleAddModel = () => {
-    const nextState = createFormStateForNewModel(activeRows);
+    const nextState = createFormStateForNewModel(activeRows, provider);
     setSelectedRowId(nextState.selectedRowId);
     setModelId(nextState.modelId);
     setDisplayLabel(nextState.displayLabel);
     setIsDefault(nextState.isDefault);
     setApiKey('');
+    resetFeedback();
+  };
+
+  const handleApplySuggestedModel = (
+    nextModelId: string,
+    nextDisplayLabel: string
+  ) => {
+    setModelId(nextModelId);
+    setDisplayLabel(nextDisplayLabel);
     resetFeedback();
   };
 
@@ -193,6 +207,7 @@ export function IntegrationDetailDialog({
 
         {canConfigure ? (
           <IntegrationConfigForm
+            provider={provider}
             activeRows={activeRows}
             selectedRowId={selectedRowId}
             selectedRow={selectedRow}
@@ -207,6 +222,7 @@ export function IntegrationDetailDialog({
             onModelIdChange={setModelId}
             onApiKeyChange={setApiKey}
             onIsDefaultChange={setIsDefault}
+            onApplySuggestedModel={handleApplySuggestedModel}
           />
         ) : null}
 

@@ -6,8 +6,8 @@ import {
   ProjectStatusEnum,
   mapToWorkItemType,
   ChatRoles,
-  GeminiRoles,
-  toGeminiRole,
+  ChatTurnRoles,
+  toChatTurnRole,
 } from '@repo/types';
 import type { WorkItemService } from '../workItems/workItems.service';
 import type { SprintsService } from '../sprints/sprints.service';
@@ -17,14 +17,14 @@ import type { ProjectRowWithOwner } from '../projects/projects.types';
 import type { IntegrationsService } from '../integrations/integrations.service';
 import type { ResolvedChatModelConfig } from '../integrations/chat-providers/chat-provider.types';
 import { resolveChatProvider } from '../integrations/chat-providers/resolve-chat-provider';
-import { systemInstruction, geminiTools } from './chat.route.data';
+import { systemInstruction, aliceChatTools } from './chat.route.data';
 import type { ChatRepository } from './chat.repository';
 import { sanitizeLog } from './chat.utils';
 import { prisma } from '../../../lib/prisma';
 import type {
-  ContentPart,
-  ContentTurn,
-  GeminiResponse,
+  ChatContentPart,
+  ChatContentTurn,
+  ChatLlmResponse,
   ToolAction,
   StoredChatMessage,
 } from './chat.route.types';
@@ -128,9 +128,9 @@ export class ChatService {
 
   async callChatModelAPI(
     chatModel: ResolvedChatModelConfig,
-    contents: ContentTurn[],
+    contents: ChatContentTurn[],
     contextInstruction: string
-  ): Promise<GeminiResponse> {
+  ): Promise<ChatLlmResponse> {
     const provider = resolveChatProvider(chatModel.provider);
     return provider.generateWithTools({
       apiKey: chatModel.apiKey,
@@ -138,16 +138,16 @@ export class ChatService {
       model: chatModel.model,
       contents,
       systemInstruction: systemInstruction + '\n' + contextInstruction,
-      tools: geminiTools,
+      tools: aliceChatTools,
     });
   }
 
   async processFunctionCalls(
     userId: string,
-    functionCalls: ContentPart[],
+    functionCalls: ChatContentPart[],
     toolActionsPerformed: ToolAction[]
-  ): Promise<ContentPart[]> {
-    const functionResponseParts: ContentPart[] = [];
+  ): Promise<ChatContentPart[]> {
+    const functionResponseParts: ChatContentPart[] = [];
     for (const call of functionCalls) {
       if (!call.functionCall) continue;
       const { name, args } = call.functionCall;
@@ -493,8 +493,8 @@ export class ChatService {
     history: StoredChatMessage[],
     chatModel: ResolvedChatModelConfig
   ): Promise<{ responseText: string; toolActionsPerformed: ToolAction[] }> {
-    const contents: ContentTurn[] = history.map((msg) => {
-      const role = toGeminiRole(msg.role);
+    const contents: ChatContentTurn[] = history.map((msg) => {
+      const role = toChatTurnRole(msg.role);
       const parts = [{ text: msg.content }];
       return { role, parts };
     });
@@ -520,27 +520,27 @@ Current Workspace State:
     const maxLoops = 5;
 
     while (loopCount < maxLoops) {
-      const geminiResponse = await this.callChatModelAPI(
+      const llmResponse = await this.callChatModelAPI(
         chatModel,
         contents,
         contextInstruction
       );
-      const candidate = geminiResponse.candidates?.[0];
+      const candidate = llmResponse.candidates?.[0];
       const modelContent = candidate?.content;
 
       if (!modelContent) {
-        throw new Error('No response content returned from Gemini API');
+        throw new Error('No response content returned from chat provider');
       }
 
       contents.push(modelContent);
 
       const functionCalls = modelContent.parts?.filter(
-        (p: ContentPart) => p.functionCall
+        (p: ChatContentPart) => p.functionCall
       );
       if (!functionCalls || functionCalls.length === 0) {
         responseText =
           modelContent.parts
-            ?.map((p: ContentPart) => p.text || '')
+            ?.map((p: ChatContentPart) => p.text || '')
             .join('\n') || '';
         break;
       }
@@ -551,7 +551,7 @@ Current Workspace State:
         toolActionsPerformed
       );
       contents.push({
-        role: GeminiRoles.User,
+        role: ChatTurnRoles.User,
         parts: functionResponseParts,
       });
 

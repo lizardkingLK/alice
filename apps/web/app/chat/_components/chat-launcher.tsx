@@ -15,6 +15,7 @@ import type { ChatConversation, ChatMessage } from './chat-client.types';
 import type { ChatModelOption } from '@repo/types';
 import { bootstrapLatestChat } from './chat-client-bootstrap';
 import { FloatingChatDrawer } from './floating-chat-widget';
+import type { AppRole } from '@/lib/rbac';
 
 type ChatLauncherContextValue = {
   openLauncher: () => Promise<void>;
@@ -36,12 +37,14 @@ type ChatLauncherProviderProps = {
   readonly children: ReactNode;
   readonly currentUserName?: string | null;
   readonly currentUserImageUrl?: string | null;
+  readonly currentUserRole?: AppRole | null;
 };
 
 export function ChatLauncherProvider({
   children,
   currentUserName,
   currentUserImageUrl,
+  currentUserRole,
 }: Readonly<ChatLauncherProviderProps>) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
@@ -98,6 +101,7 @@ export function ChatLauncherProvider({
           onClose={() => setIsOpen(false)}
           currentUserName={currentUserName}
           currentUserImageUrl={currentUserImageUrl}
+          currentUserRole={currentUserRole}
           bootstrapConversations={bootstrapConversations}
           bootstrapActiveConversationId={bootstrapActiveConversationId}
           bootstrapMessages={bootstrapMessages}

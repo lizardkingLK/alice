@@ -14,6 +14,20 @@
     ]
   },
   {
+    "id": "alice-spacexai",
+    "name": "SpaceXAI",
+    "websiteUrl": "x.ai",
+    "description": "Power Alice Chat with XAI models and workspace-aware project context.",
+    "filterTab": "ai-agents",
+    "status": "mock",
+    "defaultConnected": true,
+    "highlights": [
+      "Same models available in the chat sidebar",
+      "Ask Alice about projects, sprints, and work items",
+      "Set a default model for your workspace"
+    ]
+  },
+  {
     "id": "coderabbit",
     "name": "CodeRabbit",
     "websiteUrl": "coderabbit.ai",

@@ -1,19 +1,21 @@
 'use client';
 
 import type { IntegrationWire } from '@repo/types';
+import { chatModelSuggestionsForProvider } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import {
   configuredModelLabel,
-  DEFAULT_GEMINI_MODEL,
+  defaultModelForProvider,
   integrationApiKeyPlaceholder,
   type IntegrationSaveFeedback,
 } from '@/app/settings/_components/settings-integration-detail-dialog.helpers';
 import { FormStatusAlerts } from '@/app/work-items/_components/work-item-form/work-item-form-alerts';
 
 type IntegrationConfigFormProps = {
+  readonly provider: string;
   readonly activeRows: readonly IntegrationWire[];
   readonly selectedRowId: string | null;
   readonly selectedRow: IntegrationWire | null;
@@ -29,10 +31,15 @@ type IntegrationConfigFormProps = {
   readonly onModelIdChange: (value: string) => void;
   readonly onApiKeyChange: (value: string) => void;
   readonly onIsDefaultChange: (value: boolean) => void;
+  readonly onApplySuggestedModel: (
+    modelId: string,
+    displayLabel: string
+  ) => void;
   /* eslint-enable no-unused-vars */
 };
 
 export function IntegrationConfigForm({
+  provider,
   activeRows,
   selectedRowId,
   selectedRow,
@@ -47,7 +54,11 @@ export function IntegrationConfigForm({
   onModelIdChange,
   onApiKeyChange,
   onIsDefaultChange,
+  onApplySuggestedModel,
 }: Readonly<IntegrationConfigFormProps>) {
+  const suggestions = chatModelSuggestionsForProvider(provider);
+  const providerDefault = defaultModelForProvider(provider);
+
   return (
     <div className="space-y-4">
       <FormStatusAlerts error={feedback.error} success={feedback.success} />
@@ -83,13 +94,38 @@ export function IntegrationConfigForm({
         </div>
       ) : null}
 
+      {suggestions.length > 0 ? (
+        <div className="space-y-2">
+          <Label>Suggested {provider} models</Label>
+          <div className="flex flex-wrap gap-2">
+            {suggestions.map((suggestion) => {
+              const isActive = modelId === suggestion.value;
+              return (
+                <Button
+                  key={suggestion.value}
+                  type="button"
+                  size="sm"
+                  variant={isActive ? 'secondary' : 'outline'}
+                  className="cursor-pointer"
+                  onClick={() =>
+                    onApplySuggestedModel(suggestion.value, suggestion.label)
+                  }
+                >
+                  {suggestion.label}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
       <div className="space-y-2">
         <Label htmlFor="integration-display-label">Display label</Label>
         <Input
           id="integration-display-label"
           value={displayLabel}
           onChange={(event) => onDisplayLabelChange(event.target.value)}
-          placeholder="Gemini 3.6"
+          placeholder={providerDefault.label}
         />
       </div>
 
@@ -99,10 +135,10 @@ export function IntegrationConfigForm({
           id="integration-model-id"
           value={modelId}
           onChange={(event) => onModelIdChange(event.target.value)}
-          placeholder={DEFAULT_GEMINI_MODEL.value}
+          placeholder={providerDefault.value}
         />
         <p className="text-muted-foreground text-xs">
-          Provider model id sent to the API (e.g. gemini-3.6-flash).
+          Provider model id sent to the API (e.g. {providerDefault.value}).
         </p>
       </div>
 
