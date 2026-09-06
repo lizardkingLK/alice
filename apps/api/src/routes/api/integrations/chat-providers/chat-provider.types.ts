@@ -1,21 +1,24 @@
-import type { ContentTurn, GeminiResponse } from '../../chat/chat.route.types';
+import type {
+  AliceChatTools,
+  ChatContentTurn,
+  ChatLlmResponse,
+} from '../../chat/chat.route.types';
 
-/** Normalized LLM response — Gemini wire shape for the existing tool loop. */
-export type LlmResponse = GeminiResponse;
+export type { AliceChatTools, ChatContentTurn, ChatLlmResponse };
 
 export type ChatModelGenerateInput = {
   apiKey: string;
   apiUrl: string;
   model: string;
-  contents: ContentTurn[];
+  contents: ChatContentTurn[];
   systemInstruction: string;
-  tools: unknown;
+  tools: AliceChatTools;
 };
 
 /** Minimal contract — tools + system instruction stay in ChatService. */
 export interface ChatModelProvider {
   readonly provider: string;
-  generateWithTools(input: ChatModelGenerateInput): Promise<LlmResponse>;
+  generateWithTools(input: ChatModelGenerateInput): Promise<ChatLlmResponse>;
 }
 
 export type ResolvedChatModelConfig = {

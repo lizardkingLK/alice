@@ -198,7 +198,10 @@ export function SettingsIntegrationsView({
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
-                  className={cn(FILTER_TAB_TRIGGER_CLASS, 'shrink-0')}
+                  className={cn(
+                    FILTER_TAB_TRIGGER_CLASS,
+                    'shrink-0 cursor-pointer'
+                  )}
                 >
                   {tab.label}
                 </TabsTrigger>

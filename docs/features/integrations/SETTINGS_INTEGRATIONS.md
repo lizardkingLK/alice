@@ -284,7 +284,7 @@ Chat sends `integration_id` (UUID) on `POST /api/chat` instead of a free-form mo
 
 ### Provider strategy (backend)
 
-Replace the monolithic `callGeminiAPI` path with a small registry in `apps/api`:
+Chat providers live in a small registry under `apps/api`:
 
 ```text
 apps/api/src/routes/api/integrations/
@@ -292,8 +292,10 @@ apps/api/src/routes/api/integrations/
   integrations.service.ts      # CRUD, encrypt config secrets, strip for JSON
   integrations.repository.ts
   chat-providers/
-    chat-provider.types.ts     # ChatModelProvider interface
-    gemini-chat.provider.ts
+    chat-provider.types.ts     # ChatModelProvider (ChatService shapes)
+    fetch-chat-provider-with-retries.ts  # shared retry / error loop
+    gemini/                    # Gemini wire adapters + provider
+    spacexai/                  # OpenAI-compatible xAI adapters + provider
     openai-chat.provider.ts
     anthropic-chat.provider.ts
     resolve-chat-provider.ts   # provider slug → implementation
@@ -307,12 +309,15 @@ interface ChatModelProvider {
     apiKey: string;
     apiUrl: string;
     model: string;
-    contents: ContentTurn[];
+    contents: ChatContentTurn[];
     systemInstruction: string;
-    tools: unknown;
-  }): Promise<LlmResponse>;
+    tools: AliceChatTools;
+  }): Promise<ChatLlmResponse>;
 }
 ```
+
+Strategies map `AliceChatTools` / `ChatContentTurn` / `ChatLlmResponse` to each
+vendor’s wire format (Gemini `functionDeclarations`, OpenAI `tools`, etc.).
 
 Flow:
 
@@ -327,9 +332,9 @@ sequenceDiagram
   API->>Repo: findActiveChatModel(integrationId)
   Repo-->>API: row + decrypted api_key (server only)
   API->>Strat: resolveChatProvider(row.provider)
-  Strat-->>API: GeminiChatProvider | OpenAIChatProvider | …
-  API->>Strat: generateWithTools(…)
-  Strat-->>API: LlmResponse
+  Strat-->>API: GeminiChatProvider | SpaceXAIChatProvider | …
+  API->>Strat: generateWithTools(ChatService shapes)
+  Strat-->>API: ChatLlmResponse
   API-->>UI: assistant message + tool actions
 ```
 

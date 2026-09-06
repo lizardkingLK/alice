@@ -33,6 +33,7 @@ async function ChatPageData({
       currentUserName={dbUser?.name}
       currentUserImageUrl={dbUser?.profile_picture}
       currentUserId={dbUser?.id}
+      currentUserRole={dbUser?.role}
     />
   );
 }

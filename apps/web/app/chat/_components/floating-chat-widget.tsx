@@ -3,12 +3,14 @@
 import { ChatClient } from './chat-client';
 import type { ChatConversation, ChatMessage } from './chat-client.types';
 import type { ChatModelOption } from '@repo/types';
+import type { AppRole } from '@/lib/rbac';
 
 type FloatingChatDrawerProps = {
   readonly isOpen: boolean;
   readonly onClose: () => void;
   readonly currentUserName?: string | null;
   readonly currentUserImageUrl?: string | null;
+  readonly currentUserRole?: AppRole | null;
   readonly bootstrapConversations: ChatConversation[] | null;
   readonly bootstrapActiveConversationId?: string;
   readonly bootstrapMessages: ChatMessage[] | null;
@@ -20,6 +22,7 @@ export function FloatingChatDrawer({
   onClose,
   currentUserName,
   currentUserImageUrl,
+  currentUserRole,
   bootstrapConversations,
   bootstrapActiveConversationId,
   bootstrapMessages,
@@ -44,6 +47,7 @@ export function FloatingChatDrawer({
           onClose={onClose}
           currentUserName={currentUserName}
           currentUserImageUrl={currentUserImageUrl}
+          currentUserRole={currentUserRole}
           initialConversations={bootstrapConversations ?? undefined}
           initialConversationId={bootstrapActiveConversationId}
           initialMessages={bootstrapMessages ?? undefined}

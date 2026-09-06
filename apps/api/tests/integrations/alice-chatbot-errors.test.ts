@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   parseGeminiApiErrorMessage,
   resolveGeminiUserFacingError,
-} from '../../src/routes/api/integrations/chat-providers/gemini-api-errors';
+} from '../../src/routes/api/integrations/chat-providers/gemini/alice-chatbot-errors';
 
 const UNAVAILABLE_MODEL_BODY = JSON.stringify({
   error: {

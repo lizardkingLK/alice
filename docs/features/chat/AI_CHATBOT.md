@@ -129,7 +129,7 @@ Mounted in `apps/api/src/config/routing.ts` as `/api/chat`.
 | Repository      | `ChatRepository` in `chat.repository.ts` (`db` injected)                             |
 | Prompt + tools  | `apps/api/src/routes/api/chat/chat.route.data.ts`                                    |
 | Types (API)     | `apps/api/src/routes/api/chat/chat.route.types.ts`                                   |
-| Shared roles    | `packages/types/src/chat.ts` (`ChatRoles`, `GeminiRoles`, `getRoleName`)             |
+| Shared roles    | `packages/types/src/chat.ts` (`ChatRoles`, `ChatTurnRoles`, `getRoleName`)           |
 | Chat models     | `packages/types/src/chat-models.ts` (shared model dropdown + backend defaults)       |
 | Composition     | `apps/api/src/config/composition.ts` → `chat`                                        |
 | Supabase client | `apps/api/src/lib/supabase.ts` (`supabase` + re-exported `createClient`)             |
@@ -143,8 +143,9 @@ Layering: **composition root → route factory → service → repository**.
   `sprintsService` for tool mutations.
 - `chat.repository.ts` owns all Supabase table + Storage I/O for conversations
   and history files via the injected `SupabaseClient`.
-- `ChatService` owns Gemini calls, markdown serialize/deserialize, and
-  orchestration; it does not construct its own Supabase client.
+- `ChatService` owns chat-provider calls (via strategies), markdown
+  serialize/deserialize, and orchestration; it does not construct its own
+  Supabase client.
 - Pure markdown helpers remain module-level exports for unit tests.
 
 There are **no** `CHAT_SUPABASE_*` env vars and no second `createClient` for
@@ -236,6 +237,12 @@ approval step before tool mutations run.
 
 Admins configure one or more **`integrations`** rows (category `ai_agent`, `config.kind = chat_model`) from **Settings → Integrations**. Alice Chat lists active rows via `GET /api/integrations/chat-models` and sends `integrationId` on `POST /api/chat`. Resolution order: explicit `integrationId` → workspace default row → **400** `"No chat model configured"`.
 
+The header model control is a **provider → model** nested menu (`DropdownMenuSub`):
+models are grouped by `ChatModelOption.provider` (Gemini, SpaceXAI, …); selection
+remains the integration row UUID. Left of the title: always-visible **Add model**
+(plus → Settings AI agents) and, for admins, a **Mark as default** star that hides
+once the selected integration is already `is_default`.
+
 See [SETTINGS_INTEGRATIONS.md](../integrations/SETTINGS_INTEGRATIONS.md).
 
 Per-model API keys and optional `config.api_url` live in encrypted JSONB — not in app env vars.
@@ -257,15 +264,15 @@ No active chat model rows → `POST /api/chat` returns **400** with a configurat
 
 ## Reliability
 
-| Topic              | Behavior                                                                                                                                                                                                                                      |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Streaming          | None — full JSON response; UI shows a “Thinking…” state                                                                                                                                                                                       |
-| Gemini 429 / 5xx   | Up to 3 retries with exponential backoff; errors appended to `gemini-errors.log` (gitignored)                                                                                                                                                 |
-| HTTP timeouts      | Express socket inactivity **120s** (`server.setTimeout`); chat `apiFetch` **90s**. A 15s socket timeout was destroying the POST mid-Gemini; Next’s rewrite then returned a non-JSON 500 and the UI showed “Could not connect to the backend.” |
-| Dropdown cache     | After `create_project` (and related tools), chat calls `revalidateAfterChatActions` so `/sprints` Create Sprint is not stuck on the 60s `dropdown-projects` cache. See [PERFORMANCE.md](../../guides/PERFORMANCE.md) §2.7.                    |
-| Tool errors        | Returned as function-response `{ error }`; loop may continue                                                                                                                                                                                  |
-| Rate limiting      | No app-level chat quota beyond Gemini retries                                                                                                                                                                                                 |
-| Request validation | Manual `messages` checks; no Zod body schema on the chat router yet                                                                                                                                                                           |
+| Topic                   | Behavior                                                                                                                                                                                                                                      |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Streaming               | None — full JSON response; UI shows a “Thinking…” state                                                                                                                                                                                       |
+| Chat provider 429 / 5xx | Up to 3 retries with exponential backoff; errors appended to `alice-chatbot-errors.log` (gitignored)                                                                                                                                          |
+| HTTP timeouts           | Express socket inactivity **120s** (`server.setTimeout`); chat `apiFetch` **90s**. A 15s socket timeout was destroying the POST mid-Gemini; Next’s rewrite then returned a non-JSON 500 and the UI showed “Could not connect to the backend.” |
+| Dropdown cache          | After `create_project` (and related tools), chat calls `revalidateAfterChatActions` so `/sprints` Create Sprint is not stuck on the 60s `dropdown-projects` cache. See [PERFORMANCE.md](../../guides/PERFORMANCE.md) §2.7.                    |
+| Tool errors             | Returned as function-response `{ error }`; loop may continue                                                                                                                                                                                  |
+| Rate limiting           | No app-level chat quota beyond Gemini retries                                                                                                                                                                                                 |
+| Request validation      | Manual `messages` checks; no Zod body schema on the chat router yet                                                                                                                                                                           |
 
 ---
 
