@@ -6,6 +6,10 @@ describe('resolveChatProvider', () => {
     expect(resolveChatProvider('gemini').provider).toBe('gemini');
   });
 
+  it('returns the spacexai provider', () => {
+    expect(resolveChatProvider('spacexai').provider).toBe('spacexai');
+  });
+
   it('throws for unknown providers', () => {
     expect(() => resolveChatProvider('unknown')).toThrow(
       'Unsupported chat provider: unknown'

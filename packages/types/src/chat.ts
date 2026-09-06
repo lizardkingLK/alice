@@ -1,6 +1,6 @@
 import { toNameCase } from './string.js';
 
-/** App-facing chat message roles (Storage / UI). Not Gemini wire roles. */
+/** App-facing chat message roles (Storage / UI). */
 export const ChatRoles = {
   User: 'user',
   Assistant: 'assistant',
@@ -8,17 +8,21 @@ export const ChatRoles = {
 
 export type ChatRole = (typeof ChatRoles)[keyof typeof ChatRoles];
 
-/** Gemini generateContent turn roles. */
-export const GeminiRoles = {
+/**
+ * Internal ChatService turn roles used by the tool loop.
+ * Provider strategies map these to their wire formats (Gemini `model`,
+ * OpenAI `assistant`, etc.).
+ */
+export const ChatTurnRoles = {
   User: 'user',
   Model: 'model',
 } as const;
 
-export type GeminiRole = (typeof GeminiRoles)[keyof typeof GeminiRoles];
+export type ChatTurnRole = (typeof ChatTurnRoles)[keyof typeof ChatTurnRoles];
 
 /**
  * Normalize an unknown role to a stored ChatRole.
- * Only exact `user` stays User; everything else (incl. Gemini `model`) → Assistant.
+ * Only exact `user` stays User; everything else (incl. turn `model`) → Assistant.
  */
 export function parseChatRole(value: unknown): ChatRole {
   return value === ChatRoles.User || value === 'user'
@@ -26,13 +30,13 @@ export function parseChatRole(value: unknown): ChatRole {
     : ChatRoles.Assistant;
 }
 
-/** Map app / client roles onto Gemini wire roles. */
-export function toGeminiRole(value: unknown): GeminiRole {
+/** Map app / client roles onto ChatService turn roles. */
+export function toChatTurnRole(value: unknown): ChatTurnRole {
   return value === ChatRoles.Assistant ||
-    value === GeminiRoles.Model ||
+    value === ChatTurnRoles.Model ||
     value === 'assistant'
-    ? GeminiRoles.Model
-    : GeminiRoles.User;
+    ? ChatTurnRoles.Model
+    : ChatTurnRoles.User;
 }
 
 /** Display label for a stored chat role (`user` → `User`). */

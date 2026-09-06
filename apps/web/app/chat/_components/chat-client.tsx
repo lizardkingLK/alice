@@ -32,8 +32,10 @@ import {
 import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
 import ChatClientSidebar from '@/app/chat/_components/chat-client-sidebar';
 import ChatClientHeaderActions from '@/app/chat/_components/chat-client-header-actions';
+import ChatClientHeaderLeading from '@/app/chat/_components/chat-client-header-leading';
 import ChatClientMain from '@/app/chat/_components/chat-client-main';
 import { useWorkspaceChatModels } from '@/app/chat/_components/use-workspace-chat-models';
+import { isAdmin, type AppRole } from '@/lib/rbac';
 
 let messageCounter = 0;
 
@@ -133,6 +135,7 @@ interface ChatClientProps {
   readonly initialMessages?: ChatMessage[];
   readonly initialChatModels?: ChatModelOption[];
   readonly currentUserId?: string | null;
+  readonly currentUserRole?: AppRole | null;
 }
 
 export function ChatClient({
@@ -145,9 +148,11 @@ export function ChatClient({
   initialMessages,
   initialChatModels,
   currentUserId,
+  currentUserRole,
 }: Readonly<ChatClientProps>) {
   const router = useRouter();
   const isPage = variant === 'page';
+  const canManageChatModels = isAdmin(currentUserRole);
   const hasServerBootstrap = initialConversations !== undefined;
   const [conversations, setConversations] = useState<ChatConversation[]>(
     () => initialConversations ?? []
@@ -169,8 +174,13 @@ export function ChatClient({
     useState<ChatConversation | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(true);
   const [conversationSearch, setConversationSearch] = useState('');
-  const { chatModels, selectedIntegrationId, setSelectedIntegrationId } =
-    useWorkspaceChatModels(initialChatModels);
+  const {
+    chatModels,
+    selectedIntegrationId,
+    setSelectedIntegrationId,
+    isMarkingDefault,
+    markSelectedAsDefault,
+  } = useWorkspaceChatModels(initialChatModels);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const hydratedRef = useRef<string | null>(null);
@@ -569,6 +579,14 @@ export function ChatClient({
             <div className="min-w-0">
               <h2 className="truncate text-sm font-semibold">Alice</h2>
             </div>
+            <ChatClientHeaderLeading
+              chatModels={chatModels}
+              selectedIntegrationId={selectedIntegrationId}
+              canManageChatModels={canManageChatModels}
+              isPending={isInputDisabled}
+              isMarkingDefault={isMarkingDefault}
+              onMarkSelectedAsDefault={markSelectedAsDefault}
+            />
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <ChatClientHeaderActions

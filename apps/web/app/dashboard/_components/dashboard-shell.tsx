@@ -82,6 +82,7 @@ export async function DashboardShell({
           <ChatLauncherProvider
             currentUserName={dbUser?.name}
             currentUserImageUrl={dbUser?.profile_picture}
+            currentUserRole={dbUser?.role}
           >
             {stickyHeader ? (
               <>

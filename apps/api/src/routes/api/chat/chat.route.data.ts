@@ -1,4 +1,5 @@
 import { WORK_ITEM_PRIORITIES } from '@repo/types';
+import type { AliceChatTools } from './chat.route.types';
 
 export const systemInstruction = `You are Alice Assistant, an AI assistant built into the Alice monorepo.
 Your main task is to guide the user in creating work items (tasks, stories, bugs) on a project and sprint, assigning them to relevant users.
@@ -45,103 +46,99 @@ MANDATORY CONFIRMATION PROTOCOL BEFORE MUTATING ACTIONS:
 Keep your responses friendly, helpful, and concise. Always confirm with the user before performing actions.
 `;
 
-export const geminiTools = [
+/** Provider-agnostic Alice chat tools. Strategies map these to wire formats. */
+export const aliceChatTools: AliceChatTools = [
   {
-    functionDeclarations: [
-      {
-        name: 'list_projects',
-        description:
-          'Retrieve all active projects in the system. Use this to see if a project exists.',
-      },
-      {
-        name: 'create_project',
-        description: 'Create a new project in the system.',
-        parameters: {
-          type: 'OBJECT',
-          properties: {
-            name: { type: 'STRING', description: 'Name of the project.' },
-            key: {
-              type: 'STRING',
-              description: 'Short unique capitalized key (2-10 letters).',
-            },
-            description: {
-              type: 'STRING',
-              description: 'Description of the project (optional).',
-            },
-          },
-          required: ['name', 'key'],
+    name: 'list_projects',
+    description:
+      'Retrieve all active projects in the system. Use this to see if a project exists.',
+  },
+  {
+    name: 'create_project',
+    description: 'Create a new project in the system.',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Name of the project.' },
+        key: {
+          type: 'string',
+          description: 'Short unique capitalized key (2-10 letters).',
+        },
+        description: {
+          type: 'string',
+          description: 'Description of the project (optional).',
         },
       },
-      {
-        name: 'list_sprints',
-        description: 'Retrieve all sprints for a specific project.',
-        parameters: {
-          type: 'OBJECT',
-          properties: {
-            projectId: { type: 'STRING', description: 'UUID of the project.' },
-          },
-          required: ['projectId'],
+      required: ['name', 'key'],
+    },
+  },
+  {
+    name: 'list_sprints',
+    description: 'Retrieve all sprints for a specific project.',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'string', description: 'UUID of the project.' },
+      },
+      required: ['projectId'],
+    },
+  },
+  {
+    name: 'create_sprint',
+    description: 'Create a new sprint for a specific project.',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Name of the sprint.' },
+        projectId: { type: 'string', description: 'UUID of the project.' },
+        startDate: {
+          type: 'string',
+          description: 'Start date YYYY-MM-DD (optional).',
+        },
+        endDate: {
+          type: 'string',
+          description: 'End date YYYY-MM-DD (optional).',
         },
       },
-      {
-        name: 'create_sprint',
-        description: 'Create a new sprint for a specific project.',
-        parameters: {
-          type: 'OBJECT',
-          properties: {
-            name: { type: 'STRING', description: 'Name of the sprint.' },
-            projectId: { type: 'STRING', description: 'UUID of the project.' },
-            startDate: {
-              type: 'STRING',
-              description: 'Start date YYYY-MM-DD (optional).',
-            },
-            endDate: {
-              type: 'STRING',
-              description: 'End date YYYY-MM-DD (optional).',
-            },
-          },
-          required: ['name', 'projectId'],
+      required: ['name', 'projectId'],
+    },
+  },
+  {
+    name: 'list_users',
+    description: 'Retrieve list of all users in the system to find assignees.',
+  },
+  {
+    name: 'create_work_item',
+    description: 'Create a new work item.',
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Title of the work item.' },
+        projectId: { type: 'string', description: 'UUID of the project.' },
+        sprintId: {
+          type: 'string',
+          description: 'UUID of the sprint (optional).',
+        },
+        assigneeId: {
+          type: 'string',
+          description: 'UUID of the user assigned (optional).',
+        },
+        type: {
+          type: 'string',
+          enum: ['story', 'task', 'bug'],
+          description: 'Type of work item.',
+        },
+        priority: {
+          type: 'string',
+          enum: [...WORK_ITEM_PRIORITIES],
+          description: 'Priority level.',
+        },
+        description: {
+          type: 'string',
+          description: 'Description of the work item (optional).',
         },
       },
-      {
-        name: 'list_users',
-        description:
-          'Retrieve list of all users in the system to find assignees.',
-      },
-      {
-        name: 'create_work_item',
-        description: 'Create a new work item.',
-        parameters: {
-          type: 'OBJECT',
-          properties: {
-            title: { type: 'STRING', description: 'Title of the work item.' },
-            projectId: { type: 'STRING', description: 'UUID of the project.' },
-            sprintId: {
-              type: 'STRING',
-              description: 'UUID of the sprint (optional).',
-            },
-            assigneeId: {
-              type: 'STRING',
-              description: 'UUID of the user assigned (optional).',
-            },
-            type: {
-              type: 'STRING',
-              enum: ['story', 'task', 'bug'],
-              description: 'Type of work item.',
-            },
-            priority: {
-              type: 'STRING',
-              enum: [...WORK_ITEM_PRIORITIES],
-              description: 'Priority level.',
-            },
-            description: {
-              type: 'STRING',
-              description: 'Description of the work item (optional).',
-            },
-          },
-          required: ['title', 'projectId', 'type', 'priority'],
-        },
-      },
-    ],
+      required: ['title', 'projectId', 'type', 'priority'],
+    },
   },
 ];

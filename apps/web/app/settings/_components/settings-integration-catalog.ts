@@ -124,6 +124,10 @@ export const CONFIGURABLE_CATALOG_PROVIDERS = {
     provider: 'gemini',
     category: 'ai_agent',
   },
+  'alice-spacexai': {
+    provider: 'spacexai',
+    category: 'ai_agent',
+  },
   openai: {
     provider: 'openai',
     category: 'ai_agent',

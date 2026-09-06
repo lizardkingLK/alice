@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ChatProviderError } from '../../src/routes/api/integrations/chat-providers/chat-provider.error';
-import { GeminiChatProvider } from '../../src/routes/api/integrations/chat-providers/gemini-chat.provider';
+import { GeminiChatProvider } from '../../src/routes/api/integrations/chat-providers/gemini/gemini-chat.provider';
 
 describe('GeminiChatProvider', () => {
   afterEach(() => {
