@@ -26,7 +26,7 @@ import {
 } from '@repo/ui/components/ui/avatar';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
-import { Card, CardContent } from '@repo/ui/components/ui/card';
+import { Card } from '@repo/ui/components/ui/card';
 import {
   Dialog,
   DialogClose,
@@ -45,13 +45,11 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
 import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
-import { Separator } from '@repo/ui/components/ui/separator';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@repo/ui/components/ui/tooltip';
-import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { formatLabelWithSpace, getInitials } from '@/app/_shared/utility';
 import {
   pickWorkspaceDefaultsDialogController,
@@ -78,6 +76,7 @@ import { updateWorkItemStatus } from '@/app/work-items/_services/work-items.muta
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { SearchInput } from '@/components/search-input';
 import { UserAvatar } from '@/components/user-avatar';
+import { WorkItemPreviewCardBody } from '@/components/work-item-preview-card';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import {
   QUERY_FILTER_ALL_VALUE,
@@ -696,7 +695,6 @@ export function KanbanBoard({
                       const description = descriptionToPlainText(
                         item.description ?? null
                       );
-                      const name = assigneeName(item);
 
                       return (
                         <Card
@@ -717,43 +715,15 @@ export function KanbanBoard({
                               'opacity-40'
                           )}
                         >
-                          <CardContent className="flex min-w-0 flex-col gap-2 p-3.5">
-                            <div className="flex items-start justify-between gap-2">
-                              <TruncatedText className="text-foreground group-hover:text-primary min-w-0 flex-1 text-sm leading-snug font-semibold transition-colors">
-                                {item.title}
-                              </TruncatedText>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="inline-flex shrink-0">
-                                    <UserAvatar
-                                      name={name}
-                                      imageUrl={item.assignee?.profile_picture}
-                                      title={name}
-                                    />
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent side="top">
-                                  {name}
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-
-                            {description ? (
-                              <p className="text-muted-foreground line-clamp-2 text-xs leading-relaxed">
-                                {description}
-                              </p>
-                            ) : null}
-
-                            <Separator className="my-1" />
-
-                            <div className="flex min-w-0 flex-wrap items-center gap-2">
-                              <WorkItemTypeBadge
-                                type={item.type}
-                                className="max-w-full truncate"
-                              />
-                              <PriorityBadge priority={item.priority} />
-                            </div>
-                          </CardContent>
+                          <WorkItemPreviewCardBody
+                            title={item.title}
+                            type={item.type}
+                            priority={item.priority}
+                            descriptionPlain={description || null}
+                            assigneeName={assigneeName(item)}
+                            assigneeImageUrl={item.assignee?.profile_picture}
+                            titleClassName="group-hover:text-primary transition-colors"
+                          />
                         </Card>
                       );
                     })

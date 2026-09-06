@@ -3,7 +3,11 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import type { JSONContent } from '@tiptap/react';
 import { createClient } from '@/lib/supabase/client';
-import { USER_PROJECTION, isCommentDocEmpty, type Json } from '@repo/types';
+import {
+  USER_PROJECTION_WITH_ROLE,
+  isCommentDocEmpty,
+  type Json,
+} from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card, CardContent } from '@repo/ui/components/ui/card';
 import {
@@ -61,6 +65,7 @@ import {
   groupRepliesByParent,
   sortParentComments,
   toMentionWorkItems,
+  scopeMentionWorkItems,
   type CommentsSortOrder,
   type CommentsStatusFilter,
 } from '@/app/comments/_components/comments-feed-helpers';
@@ -130,42 +135,28 @@ function collectUserIds(ownerIds: string[], memberIds: string[]): Set<string> {
   return userIds;
 }
 
-async function fetchUsersByIds(
+async function fetchSortedUsersForIds(
   supabase: ReturnType<typeof createClient>,
   userIds: Set<string>
 ): Promise<CommentUser[]> {
   if (userIds.size === 0) return [];
   const { data: fetchedUsers } = await supabase
     .from('users')
-    .select(USER_PROJECTION)
+    .select(USER_PROJECTION_WITH_ROLE)
     .eq('status', 'active')
     .in('id', Array.from(userIds));
-  return fetchedUsers && Array.isArray(fetchedUsers)
-    ? (fetchedUsers as CommentUser[])
-    : [];
-}
-
-function mergeAndSortUsers(
-  adminUsers: CommentUser[],
-  otherUsers: CommentUser[]
-): CommentUser[] {
-  const userMap = new Map<string, CommentUser>();
-  for (const user of adminUsers) {
-    if (user?.id) userMap.set(user.id, user);
-  }
-  for (const user of otherUsers) {
-    if (user?.id) userMap.set(user.id, user);
-  }
-  const result = Array.from(userMap.values());
-  result.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  return result;
+  const users =
+    fetchedUsers && Array.isArray(fetchedUsers)
+      ? (fetchedUsers as CommentUser[])
+      : [];
+  return [...users].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 }
 
 async function loadProjectCommentUsers(
   supabase: ReturnType<typeof createClient>,
   projectId: string
 ): Promise<CommentUser[]> {
-  const [projectRes, membersRes, adminsRes] = await Promise.all([
+  const [projectRes, membersRes] = await Promise.all([
     supabase
       .from('projects')
       .select('owner_id')
@@ -176,11 +167,6 @@ async function loadProjectCommentUsers(
       .select('user_id')
       .eq('project_id', projectId)
       .eq('status', 'active'),
-    supabase
-      .from('users')
-      .select(USER_PROJECTION)
-      .eq('status', 'active')
-      .eq('role', 'admin'),
   ]);
 
   const ownerIds = projectRes.data?.owner_id ? [projectRes.data.owner_id] : [];
@@ -188,24 +174,16 @@ async function loadProjectCommentUsers(
     (membersRes.data as { user_id: string }[])
       ?.map((m) => m.user_id)
       .filter(Boolean) ?? [];
-  const allowedUserIds = collectUserIds(ownerIds, memberIds);
 
-  const projectUsers = await fetchUsersByIds(supabase, allowedUserIds);
-  const admins = (adminsRes.data as CommentUser[]) ?? [];
-  return mergeAndSortUsers(admins, projectUsers);
+  return fetchSortedUsersForIds(supabase, collectUserIds(ownerIds, memberIds));
 }
 
 async function loadGlobalCommentUsers(
   supabase: ReturnType<typeof createClient>
 ): Promise<CommentUser[]> {
-  const [projectsRes, membersRes, adminsRes] = await Promise.all([
+  const [projectsRes, membersRes] = await Promise.all([
     supabase.from('projects').select('owner_id').eq('status', 'active'),
     supabase.from('project_members').select('user_id').eq('status', 'active'),
-    supabase
-      .from('users')
-      .select(USER_PROJECTION)
-      .eq('status', 'active')
-      .eq('role', 'admin'),
   ]);
 
   const ownerIds =
@@ -216,11 +194,8 @@ async function loadGlobalCommentUsers(
     (membersRes.data as { user_id: string }[])
       ?.map((m) => m.user_id)
       .filter(Boolean) ?? [];
-  const allowedUserIds = collectUserIds(ownerIds, memberIds);
 
-  const memberAndOwnerUsers = await fetchUsersByIds(supabase, allowedUserIds);
-  const admins = (adminsRes.data as CommentUser[]) ?? [];
-  return mergeAndSortUsers(admins, memberAndOwnerUsers);
+  return fetchSortedUsersForIds(supabase, collectUserIds(ownerIds, memberIds));
 }
 
 export async function loadActiveCommentUsers(
@@ -247,7 +222,7 @@ export async function loadActiveCommentUsers(
     console.error('error. failed to load work item mention users', error);
     const { data } = await supabase
       .from('users')
-      .select(USER_PROJECTION)
+      .select(USER_PROJECTION_WITH_ROLE)
       .eq('status', 'active')
       .order('name');
     return ((data as CommentUser[] | null) ?? []).filter(Boolean);
@@ -365,9 +340,14 @@ export function CommentsFeed({
     [filteredComments]
   );
 
+  const scopedWorkItems = useMemo(
+    () => scopeMentionWorkItems(workItems, targetWorkItemId),
+    [workItems, targetWorkItemId]
+  );
+
   const mentionWorkItems = useMemo(
-    () => toMentionWorkItems(workItems),
-    [workItems]
+    () => toMentionWorkItems(scopedWorkItems),
+    [scopedWorkItems]
   );
 
   const handleCreateComment = async (
@@ -544,7 +524,7 @@ export function CommentsFeed({
         replyingParentId={replyingParentId}
         isSubmitting={isSubmitting}
         users={users}
-        workItems={mentionWorkItems}
+        workItems={scopedWorkItems}
         currentUserName={currentUserName}
         currentUserImageUrl={currentUserImageUrl}
         onUserMentionClick={handleUserMentionClick}

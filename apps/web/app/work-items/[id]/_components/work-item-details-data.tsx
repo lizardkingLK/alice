@@ -10,6 +10,7 @@ import { getWorkItemAttachments } from '@/app/attachments/_services/attachments.
 import {
   getCommentCountsByWorkItemIds,
   getWorkItemDiscussion,
+  listCommentWorkItemOptions,
 } from '@/app/comments/_services/comments.reads.server';
 import {
   getProject,
@@ -90,20 +91,30 @@ export async function WorkItemDetailsData({
     (item) => item.id !== workItemId && !childIds.has(item.id)
   );
 
-  const [projectMembers, childCommentCounts] = await Promise.all([
-    workItem.project_id
-      ? safeServerFetch(
-          getProjectMembers(workItem.project_id),
-          [],
-          'fetch project members for work item details'
-        )
-      : Promise.resolve([]),
-    safeServerFetch(
-      getCommentCountsByWorkItemIds(childWorkItems.map((child) => child.id)),
-      zeroCountsById(childWorkItems.map((child) => child.id)),
-      'fetch subtask comment counts for work item details'
-    ),
-  ]);
+  const [projectMembers, childCommentCounts, discussionWorkItems] =
+    await Promise.all([
+      workItem.project_id
+        ? safeServerFetch(
+            getProjectMembers(workItem.project_id),
+            [],
+            'fetch project members for work item details'
+          )
+        : Promise.resolve([]),
+      safeServerFetch(
+        getCommentCountsByWorkItemIds(childWorkItems.map((child) => child.id)),
+        zeroCountsById(childWorkItems.map((child) => child.id)),
+        'fetch subtask comment counts for work item details'
+      ),
+      workItem.project_id
+        ? safeServerFetch(
+            listCommentWorkItemOptions(100, {
+              projectId: workItem.project_id,
+            }),
+            [],
+            'fetch project work items for discussion mentions'
+          )
+        : Promise.resolve([]),
+    ]);
 
   const memberOptions: WorkItemPatchMemberOption[] = projectMembers
     .map((member) => member.user)
@@ -130,6 +141,7 @@ export async function WorkItemDetailsData({
       initialWorkLogs={initialWorkLogs}
       currentUserId={currentUserId}
       projectMembers={memberOptions}
+      discussionWorkItems={discussionWorkItems}
     />
   );
 }
