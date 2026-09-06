@@ -5,6 +5,7 @@ import { CommentsFeed } from '@/app/comments/_components/comments-feed';
 import { CommentsSortMenu } from '@/app/comments/_components/comments-sort-menu';
 import type { CommentsSortOrder } from '@/app/comments/_components/comments-feed-helpers';
 import type { CommentItem } from '@/app/comments/_services/comments.mutations.client';
+import type { CommentWorkItemOption } from '@/app/comments/_services/comments.mutations.shared';
 import { WorkItemWorkLogPanel } from '@/app/work-items/_components/work-item-work-logs/work-item-work-log-panel';
 import type { WorkItemWorkLog } from '@repo/types';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
@@ -29,13 +30,7 @@ type WorkItemActivityTabsProps = {
   onActiveTabChange: (tab: WorkItemActivityTab) => void;
   initialComments: CommentItem[];
   workItem: DbWorkItem;
-  discussionWorkItems: Array<{
-    id: string;
-    title: string;
-    key: string;
-    type: DbWorkItem['type'];
-    project_id: string;
-  }>;
+  discussionWorkItems: CommentWorkItemOption[];
   currentUserId?: string;
   workLogs: WorkItemWorkLog[];
   loggedHoursInput: string;

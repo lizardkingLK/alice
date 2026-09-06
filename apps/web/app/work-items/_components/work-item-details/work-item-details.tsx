@@ -70,6 +70,7 @@ import {
 } from '@/app/work-items/_helpers/work-item-sidebar-storage';
 import { toast } from '@repo/ui/components/ui/sonner';
 import { CommentItem } from '@/app/comments/_services/comments.mutations.client';
+import type { CommentWorkItemOption } from '@/app/comments/_services/comments.mutations.shared';
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import type { WorkItemAncestor } from '@/app/work-items/_services/work-items.reads.server';
 import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
@@ -94,6 +95,7 @@ export default function WorkItemDetails({
   initialWorkLogs = [],
   currentUserId,
   projectMembers = [],
+  discussionWorkItems: discussionWorkItemsProp = [],
 }: Readonly<{
   workItemDetails: DbWorkItem;
   childWorkItems?: DbWorkItem[];
@@ -110,6 +112,7 @@ export default function WorkItemDetails({
   initialWorkLogs?: WorkItemWorkLog[];
   currentUserId?: string;
   projectMembers?: readonly WorkItemPatchMemberOption[];
+  discussionWorkItems?: CommentWorkItemOption[];
 }>) {
   const router = useRouter();
   const { handleMutationError } = useOptimisticLock();
@@ -208,8 +211,11 @@ export default function WorkItemDetails({
     [childWorkItems, subtaskSortField, subtaskSortDirection]
   );
 
-  const discussionWorkItems = useMemo(
-    () => [
+  const discussionWorkItems = useMemo(() => {
+    if (discussionWorkItemsProp.length > 0) {
+      return discussionWorkItemsProp;
+    }
+    return [
       {
         id: workItem.id,
         title: workItem.title,
@@ -217,9 +223,8 @@ export default function WorkItemDetails({
         type: workItem.type,
         project_id: workItem.project_id || '',
       },
-    ],
-    [workItem]
-  );
+    ];
+  }, [discussionWorkItemsProp, workItem]);
 
   const handleDescriptionUpdate = async (content: Json) => {
     const formData = new FormData();

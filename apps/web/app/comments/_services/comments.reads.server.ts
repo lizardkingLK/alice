@@ -1,5 +1,6 @@
 import {
   USER_PROJECTION_WITH_ROLE,
+  WORK_ITEM_ASSIGNEE_POSTGREST_SELECT,
   projectRelationSelect,
   userRelationSelect,
 } from '@repo/types';
@@ -64,19 +65,30 @@ export async function listComments(
   return (data ?? []) as unknown as CommentItem[];
 }
 
+const COMMENT_WORK_ITEM_OPTION_SELECT = `
+  id, title, type, project_id, jira_issue_key, priority, description,
+  ${projectRelationSelect()},
+  ${WORK_ITEM_ASSIGNEE_POSTGREST_SELECT}
+`;
+
 /** Work-item options for the comments compose/filter dropdown (direct RSC read). */
 export async function listCommentWorkItemOptions(
-  limit = 50
+  limit = 50,
+  options?: { projectId?: string }
 ): Promise<CommentWorkItemOption[]> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('work_items')
-    .select(
-      `id, title, type, project_id, jira_issue_key, ${projectRelationSelect()}`
-    )
+    .select(COMMENT_WORK_ITEM_OPTION_SELECT)
     .eq('record_status', 'active')
     .limit(limit);
+
+  if (options?.projectId) {
+    query = query.eq('project_id', options.projectId);
+  }
+
+  const { data, error } = await query;
 
   throwIfError(
     error,

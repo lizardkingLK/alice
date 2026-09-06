@@ -47,7 +47,7 @@ type CommentListItemProps = {
   isEditing: boolean;
   isReplying: boolean;
   users: CommentUser[];
-  workItems: Pick<CommentWorkItemOption, 'id' | 'key' | 'title'>[];
+  workItems: CommentWorkItemOption[];
   replySlot?: ReactNode;
   // eslint-disable-next-line no-unused-vars -- click callback
   onUserMentionClick?: (mention: CommentUserMentionTarget) => void;
