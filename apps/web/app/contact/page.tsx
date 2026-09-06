@@ -40,7 +40,7 @@ export default async function ContactPage({
 
   return (
     <MarketingShell>
-      <div className="px-6 py-8 sm:py-10">
+      <section className="relative flex min-h-full flex-col justify-center px-6 py-6 sm:py-8">
         <div className="mx-auto w-full max-w-xl">
           <p className="text-primary text-sm font-medium tracking-wide">
             Contact
@@ -93,8 +93,8 @@ export default async function ContactPage({
                 name="message"
                 required
                 placeholder="Tell us how we can help."
-                rows={5}
-                className="min-h-28"
+                rows={4}
+                className="min-h-24"
               />
             </div>
 
@@ -119,7 +119,7 @@ export default async function ContactPage({
             </div>
           </form>
         </div>
-      </div>
+      </section>
     </MarketingShell>
   );
 }

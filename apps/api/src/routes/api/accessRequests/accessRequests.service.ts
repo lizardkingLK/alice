@@ -6,6 +6,7 @@ import {
   UserRoleEnum,
   isAccessRequestContactTitle,
   normalizeAccessRequestEmail,
+  parseRequestedProjectKeysInput,
   type ContactRequestInput,
 } from '@repo/types';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
@@ -18,6 +19,15 @@ async function requireAdmin(actorId: string) {
     [UserRoleEnum.admin],
     'Unauthorized. Only administrators can manage access requests.'
   );
+}
+
+function requestedKeysFromContact(
+  input: ContactRequestInput
+): string[] | undefined {
+  if (input.requestedProjectKeys === undefined) {
+    return undefined;
+  }
+  return parseRequestedProjectKeysInput(input.requestedProjectKeys);
 }
 
 export class AccessRequestsService {
@@ -44,6 +54,7 @@ export class AccessRequestsService {
       throw new Error('Please enter a valid email address.');
     }
 
+    const requestedProjectKeys = requestedKeysFromContact(input);
     const now = Date.now();
     const windowStart = this.accessRequestsRepository.rollingWindowStart();
     const pending =
@@ -54,7 +65,8 @@ export class AccessRequestsService {
       if (now - lastMs < ACCESS_REQUEST_IDEMPOTENCY_MS) {
         await this.accessRequestsRepository.updateMessageOnly(
           pending.id,
-          input.message
+          input.message,
+          requestedProjectKeys
         );
         return { requestId: pending.id };
       }
@@ -87,13 +99,18 @@ export class AccessRequestsService {
       }
       request = await this.accessRequestsRepository.updatePendingSubmission(
         pending.id,
-        { message: input.message, requestCount: nextCount }
+        {
+          message: input.message,
+          requestCount: nextCount,
+          requestedProjectKeys,
+        }
       );
     } else {
       request = await this.accessRequestsRepository.create({
         requesterEmail: email,
         requesterName: input.name,
         message: input.message,
+        requestedProjectKeys: requestedProjectKeys ?? null,
       });
     }
 

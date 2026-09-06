@@ -7,6 +7,10 @@ export const contactRequestSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   title: z.string().min(1).max(200).optional(),
   message: z.string().min(1).max(4000),
+  /** Optional project keys the requester needs (access requests only). */
+  requestedProjectKeys: z
+    .union([z.string().max(500), z.array(z.string().max(64)).max(20)])
+    .optional(),
 });
 
 export type ContactRequestInput = z.infer<typeof contactRequestSchema>;

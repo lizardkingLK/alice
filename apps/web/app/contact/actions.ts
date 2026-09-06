@@ -4,12 +4,20 @@ import { redirect } from 'next/navigation';
 import { contactRequestSchema } from '@repo/types';
 import { getAPIUrl } from '@/lib/api/api-fetch.helper';
 
+function safeContactReturnPath(
+  returnTo: FormDataEntryValue | null
+): '/contact' | '/access-denied' {
+  return returnTo === '/access-denied' ? '/access-denied' : '/contact';
+}
+
 export async function submitContact(formData: FormData) {
   const emailEntry = formData.get('email');
   const nameEntry = formData.get('name');
   const titleEntry = formData.get('title');
   const subjectOtherEntry = formData.get('subjectOther');
   const messageEntry = formData.get('message');
+  const projectKeysEntry = formData.get('requestedProjectKeys');
+  const returnPath = safeContactReturnPath(formData.get('returnTo'));
 
   const titleFromSelect =
     typeof titleEntry === 'string' ? titleEntry.trim() : '';
@@ -21,17 +29,21 @@ export async function submitContact(formData: FormData) {
     name: typeof nameEntry === 'string' && nameEntry ? nameEntry : undefined,
     title: titleFromSelect || titleFromOther || undefined,
     message: typeof messageEntry === 'string' ? messageEntry : '',
+    requestedProjectKeys:
+      typeof projectKeysEntry === 'string' && projectKeysEntry.trim()
+        ? projectKeysEntry
+        : undefined,
   };
 
   const parsed = contactRequestSchema.safeParse(input);
   if (!parsed.success) {
     const firstIssue = parsed.error.issues[0]?.message ?? 'Invalid input';
-    redirect(`/contact?error=${encodeURIComponent(firstIssue)}`);
+    redirect(`${returnPath}?error=${encodeURIComponent(firstIssue)}`);
   }
 
   const apiUrl = getAPIUrl();
   if (!apiUrl) {
-    redirect(`/contact?error=${encodeURIComponent('API unavailable')}`);
+    redirect(`${returnPath}?error=${encodeURIComponent('API unavailable')}`);
   }
 
   const response = await fetch(`${apiUrl}/api/notifications/contact`, {
@@ -47,8 +59,8 @@ export async function submitContact(formData: FormData) {
 
     const message =
       typeof data?.error === 'string' ? data.error : 'Request failed';
-    redirect(`/contact?error=${encodeURIComponent(message)}`);
+    redirect(`${returnPath}?error=${encodeURIComponent(message)}`);
   }
 
-  redirect('/contact?sent=1');
+  redirect(`${returnPath}?sent=1`);
 }

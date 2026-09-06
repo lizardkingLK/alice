@@ -308,11 +308,23 @@ sequenceDiagram
 
 Route: `/access-denied` (`apps/web/app/access-denied/page.tsx`).
 
+Used when **sign-up** or **Google** (auth callback / session gate) fails
+admission — **not** when email/password **sign-in** fails for an unknown email
+(that stays on `/login` with invalid credentials).
+
 - Short explanation (“Your email isn’t approved for this workspace yet.”)
-- Primary CTA: **Contact admin** → `/contact`
+- Inline **Request access** form (email, optional name, optional project keys,
+  message) → upserts `access_requests` via the contact API
 - Secondary: **Back to home** → `/`
 - If a session exists: **Sign out** (clears cookies via `auth/actions.signOut`)
 - If anonymous: link to **Sign in**
+- Full `/contact` form remains available for other subjects
+
+### 3b. Check-email page (allowlisted sign-in failure) — **implemented**
+
+Route: `/check-email`. When email/password sign-in is allowlisted but Auth
+returns invalid credentials, redirect here (invite / set-password guidance)
+instead of the access-denied form.
 
 ### 4. Home footer — **implemented**
 
@@ -333,11 +345,16 @@ signed in.
 
 See [ACCESS_REQUESTS.md](./ACCESS_REQUESTS.md).
 
-Admins review contact-form admission requests on **`/users?tab=requests`**. Limits: **3 submissions per email per rolling 30 days** (constants in `@repo/types`). Grant via allowlist email row; deny via explicit admin action. Both archive linked notifications.
+Admins review admission requests from **`/access-denied`** and Contact (subject
+**Access request**) on **`/users?tab=requests`**. Requesters can name project
+keys; grant opens the email allowlist form with those keys prefilled. Limits:
+**3 submissions per email per rolling 30 days** (constants in `@repo/types`).
+Grant via allowlist email row; deny via explicit admin action. Both archive
+linked notifications.
 
 ## Access requests (historical discussion)
 
-How admins learn someone needs access is **not locked**. Candidates:
+How admins learn someone needs access was discussed as:
 
 | Option                                  | Flow                                                           | Pros                         | Cons                           |
 | --------------------------------------- | -------------------------------------------------------------- | ---------------------------- | ------------------------------ |
@@ -345,8 +362,9 @@ How admins learn someone needs access is **not locked**. Candidates:
 | **B. Dedicated request on denied page** | Form stores `access_requests` table; admins review in Users UI | Clear audit trail            | More schema/UI                 |
 | **C. Manual only**                      | User emails admin outside app; admin inserts allowlist row     | Simplest v1                  | No in-app trail                |
 
-**Lean recommendation:** v1 = **A or C**; v1.1 = **B** if request volume grows.
-**Locked decision (implemented):** **A. Contact → admin notification.**
+**Locked decision (implemented):** **A + B** — Contact and `/access-denied`
+both write `access_requests` (with optional `requested_project_keys`) and notify
+admins; admins review under **Users → Requests**.
 
 ```mermaid
 sequenceDiagram
@@ -390,6 +408,11 @@ are logged; the allowlist row still saves.
 
 Implementation: `apps/api/src/routes/api/accessAllowlist/notify-allowlisted-email.ts`.
 Customize copy in the Supabase dashboard email templates (Invite / Magic Link).
+
+Until the invitee sets a password (invite link or **Forgot password**),
+`signInWithPassword` fails. Allowlisted failures redirect to `/check-email`;
+unknown emails stay on `/login` with a generic invalid-credentials message
+(`apps/web/lib/auth-login-errors.ts`).
 
 ---
 

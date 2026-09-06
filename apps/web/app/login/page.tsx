@@ -87,6 +87,15 @@ export default async function LoginPage({
         <p className="text-muted-foreground text-center">or</p>
 
         <GoogleLogin next={next || undefined} />
+
+        <p className="pt-2 text-center">
+          <Link
+            href="/contact"
+            className="text-muted-foreground text-xs underline-offset-4 hover:underline"
+          >
+            Contact admin
+          </Link>
+        </p>
       </div>
     </main>
   );

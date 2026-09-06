@@ -66,13 +66,44 @@ describe('AccessRequestsService.submitFromContact', () => {
       name: 'Guest',
       title: 'Access request',
       message: 'Please add me',
+      requestedProjectKeys: 'acme, beta',
     });
 
     expect(result.requestId).toBe('req-1');
+    expect(repository.create).toHaveBeenCalledWith({
+      requesterEmail: 'guest@partner.com',
+      requesterName: 'Guest',
+      message: 'Please add me',
+      requestedProjectKeys: ['ACME', 'BETA'],
+    });
     expect(
       notificationsRepository.createManyForAccessRequest
     ).toHaveBeenCalled();
     expect(notificationsRepository.createMany).not.toHaveBeenCalled();
+  });
+
+  it('updates message and project keys inside the idempotency window', async () => {
+    vi.mocked(repository.findPendingByEmail).mockResolvedValue({
+      ...baseRequest,
+      last_requested_at: new Date().toISOString(),
+    });
+
+    const result = await service.submitFromContact({
+      email: 'guest@partner.com',
+      title: 'Access request',
+      message: 'Need ACME only',
+      requestedProjectKeys: ['acme'],
+    });
+
+    expect(result.requestId).toBe('req-1');
+    expect(repository.updateMessageOnly).toHaveBeenCalledWith(
+      'req-1',
+      'Need ACME only',
+      ['ACME']
+    );
+    expect(
+      notificationsRepository.createManyForAccessRequest
+    ).not.toHaveBeenCalled();
   });
 
   it('uses legacy notifications for non-access contact subjects', async () => {

@@ -5,23 +5,29 @@ import type { ReactNode } from 'react';
 
 type MarketingShellProps = {
   readonly children: ReactNode;
-  readonly mainClassName?: string;
 };
 
+/**
+ * Marketing pages aligned with home: first viewport = navbar + content,
+ * then a full-viewport snap footer.
+ */
 export async function MarketingShell({
   children,
-  mainClassName,
 }: Readonly<MarketingShellProps>) {
   const { user, dbUser, showAppLinks } = await getMarketingSession();
 
   return (
-    <div className="bg-background flex min-h-dvh flex-col">
-      <HomeNavbar
-        email={user?.email}
-        profilePicture={dbUser?.profile_picture}
-      />
-      <main className={mainClassName ?? 'flex-1'}>{children}</main>
-      <HomeFooter showAppLinks={showAppLinks} variant="inline" />
-    </div>
+    <main className="bg-background h-dvh snap-y snap-proximity overflow-x-hidden overflow-y-auto">
+      <div className="flex h-dvh shrink-0 snap-start flex-col">
+        <HomeNavbar
+          email={user?.email}
+          profilePicture={dbUser?.profile_picture}
+        />
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          {children}
+        </div>
+      </div>
+      <HomeFooter showAppLinks={showAppLinks} />
+    </main>
   );
 }

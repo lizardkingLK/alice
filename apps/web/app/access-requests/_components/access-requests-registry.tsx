@@ -59,6 +59,82 @@ import { AccessAllowlistForm } from '@/app/access-allowlist/_components/access-a
 import type { AccessRequestEntry } from '@/app/access-requests/_services/access-requests.mutations.shared';
 import { denyAccessRequestClient } from '@/app/access-requests/_services/access-requests.mutations.client';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
+import { accessRequestProjectKeysFromValue } from '@repo/types';
+
+function resolveRequestedProjectKeysForForm(
+  entry: AccessRequestEntry | null | undefined,
+  projects: readonly Project[]
+): string[] {
+  const requested = accessRequestProjectKeysFromValue(
+    entry?.requested_project_keys
+  );
+  if (requested.length === 0 || projects.length === 0) {
+    return requested;
+  }
+  const byUpper = new Map(
+    projects.map((project) => [project.key.trim().toUpperCase(), project.key])
+  );
+  return requested
+    .map((key) => byUpper.get(key) ?? key)
+    .filter((key, index, all) => all.indexOf(key) === index);
+}
+
+function AccessRequestProjectKeyBadges({
+  keys,
+  empty = null,
+  className,
+}: Readonly<{
+  keys: readonly string[];
+  empty?: ReactNode;
+  className?: string;
+}>) {
+  if (keys.length === 0) {
+    return empty;
+  }
+  return (
+    <div className={cn('flex flex-wrap gap-1', className)}>
+      {keys.map((key) => (
+        <Badge key={key} variant="outline" className="font-mono text-[11px]">
+          {key}
+        </Badge>
+      ))}
+    </div>
+  );
+}
+
+function RequestedProjectsCell({
+  entry,
+}: Readonly<{ entry: AccessRequestEntry }>) {
+  const keys = accessRequestProjectKeysFromValue(entry.requested_project_keys);
+  return (
+    <AccessRequestProjectKeyBadges
+      keys={keys}
+      className="max-w-48"
+      empty={<span className="text-muted-foreground text-xs">—</span>}
+    />
+  );
+}
+
+function ActiveRequestSummary({
+  entry,
+}: Readonly<{ entry: AccessRequestEntry }>) {
+  const keys = accessRequestProjectKeysFromValue(entry.requested_project_keys);
+  return (
+    <div className="space-y-3">
+      {keys.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-muted-foreground text-xs">
+            Requested projects
+          </span>
+          <AccessRequestProjectKeyBadges keys={keys} />
+        </div>
+      ) : null}
+      <div className="bg-muted max-h-48 overflow-y-auto rounded-md border p-3 font-mono text-xs whitespace-pre-wrap">
+        {entry.message}
+      </div>
+    </div>
+  );
+}
 
 interface AccessRequestsRegistryProps {
   readonly requests: AccessRequestEntry[];
@@ -173,6 +249,11 @@ const COLUMNS: ColumnDef<AccessRequestEntry>[] = [
     accessorKey: 'status',
     header: 'Status',
     cell: ({ row }) => <StatusBadge status={row.original.status} />,
+  },
+  {
+    id: 'projects',
+    header: 'Projects',
+    cell: ({ row }) => <RequestedProjectsCell entry={row.original} />,
   },
   {
     accessorKey: 'request_count',
@@ -391,8 +472,9 @@ export function AccessRequestsRegistry({
             Access requests
           </CardTitle>
           <CardDescription>
-            Contact-form admission requests. Review pending items to add an
-            email allowlist entry or deny explicitly.
+            Contact and access-denied admission requests. Review pending items
+            to add an email allowlist entry (projects prefilled when requested)
+            or deny explicitly.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -442,6 +524,10 @@ export function AccessRequestsRegistry({
             initialValue={
               activeRequest?.requester_email ?? addEmailParam ?? undefined
             }
+            initialProjectKeys={resolveRequestedProjectKeysForForm(
+              activeRequest,
+              projects
+            )}
           />
         </DialogContent>
       </Dialog>
@@ -468,9 +554,7 @@ export function AccessRequestsRegistry({
             </DialogDescription>
           </DialogHeader>
           {activeRequest ? (
-            <div className="bg-muted max-h-48 overflow-y-auto rounded-md border p-3 font-mono text-xs whitespace-pre-wrap">
-              {activeRequest.message}
-            </div>
+            <ActiveRequestSummary entry={activeRequest} />
           ) : null}
           <DialogFooter>
             <Button

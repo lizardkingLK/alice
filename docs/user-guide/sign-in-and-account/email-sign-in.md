@@ -20,16 +20,22 @@ taken to the **Dashboard**.
 
 ## Troubleshooting
 
-| Issue                      | What to do                                                                          |
-| -------------------------- | ----------------------------------------------------------------------------------- |
-| "Access denied" or similar | Your email may not be on the allowlist — see [Request access](./request-access.md). |
-| Wrong password             | Use [Forgot password](./forgot-password.md).                                        |
-| Account deactivated        | Contact an admin — they can reactivate you under **Users**.                         |
-| Email not confirmed        | Check your inbox for a confirmation link, then try again.                           |
+| Issue                     | What to do                                                                                                                                                                                                                                                    |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Invalid email or password | Wrong password, unknown email, or access not granted yet. Try again, use [Forgot password](./forgot-password.md), or [Sign up](./request-access.md) / Google if you still need access. You can also open **Contact** (`/contact`) if your request is pending. |
+| Check your email page     | Your email is allowlisted but sign-in failed — open the invite email or [set a password](./forgot-password.md), then try again.                                                                                                                               |
+| Account deactivated       | Contact an admin — they can reactivate you under **Users**.                                                                                                                                                                                                   |
+| Email not confirmed       | Check your inbox for a confirmation link, then try again.                                                                                                                                                                                                     |
+
+Need access for the first time? Use **Sign up** or **Google**, not sign-in —
+you'll land on the access request form if you aren't allowlisted yet. See
+[Request access](./request-access.md).
 
 ---
 
 ## Related
 
 - [Sign in with Google](./google-sign-in.md)
+- [Request access](./request-access.md)
+- [Forgot password](./forgot-password.md)
 - [Sign out](./sign-out.md)
