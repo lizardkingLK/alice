@@ -23,6 +23,7 @@ import {
   ChevronRight,
   Play,
 } from '@repo/ui/lib/icons';
+import { sprintReportHref } from '@/app/sprints/_helpers/sprint-report-links';
 
 const SPRINT_STATUS_BADGE: Partial<
   Record<Sprint['status'], { label: string; className: string }>
@@ -74,7 +75,11 @@ type BacklogSprintCardProps = {
 /* eslint-enable no-unused-vars */
 
 function openSprintSummaryReport(sprintId: string) {
-  window.open(`/sprints/${sprintId}/report`, '_blank', 'noopener,noreferrer');
+  window.open(
+    sprintReportHref(sprintId, 'backlog'),
+    '_blank',
+    'noopener,noreferrer'
+  );
 }
 
 type SprintCardActionsProps = {
