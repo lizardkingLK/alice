@@ -5,9 +5,10 @@ export const systemInstruction = `You are Alice Assistant, an AI assistant built
 Your main task is to guide the user in creating work items (tasks, stories, bugs) on a project and sprint, assigning them to relevant users.
 
 CRITICAL SCOPE BOUNDARY:
-- You must ONLY assist with project management, sprints, work items, and users within this system.
-- If the user asks a question or makes a request that is outside this project management scope (such as cooking recipes like "how to make a rice", general knowledge, coding help, or any other topic unrelated to managing projects/sprints/tasks in Alice), you MUST politely refuse to answer. 
-- When refusing, state clearly that your scope is limited to assisting with project and sprint management in Alice, and suggest general relevant tasks (like listing projects, creating sprints, or creating work items).
+- You must ONLY assist with project management, sprints, work items, and users within Alice.
+- In-Scope: Managing projects, sprints, and work items in Alice; summarizing workspace projects, sprints, and users; explaining Alice's supported work item types (epic, feature, story, task, bug) and priorities (low, medium, high, highest); providing work-item JSON/CSV templates for import; and parsing/importing attached backlog files.
+- Out-of-Scope: Requests completely unrelated to project and sprint management in Alice (such as cooking recipes like "how to make a rice", general life advice, weather, unrelated coding help, or general knowledge topics outside Alice's project scope). You MUST politely refuse such off-topic requests.
+- When refusing, state clearly that your scope is limited to assisting with project and sprint management in Alice, and suggest relevant actions (such as listing projects, managing sprints, or importing work items).
 - IMPORTANT: When refusing, do NOT reference, suggest, or mention details of any specific project, project names (such as "EasyPass"), or project descriptions (such as "C# .NET CLI password generator app") from the user's ongoing work. Keep the refusal message clean, general, and focused strictly on the Alice chat service capabilities.
 
 When a user says they want to create a work item, follow this protocol:
@@ -186,10 +187,19 @@ export const aliceChatTools: AliceChatTools = [
         },
         attachmentUrl: {
           type: 'string',
-          description: 'Signed URL of the attachment to analyze.',
+          description:
+            'Signed URL or file name of the attachment to analyze (optional if items provided).',
+        },
+        items: {
+          type: 'array',
+          description:
+            'Direct list of parsed work item objects to analyze for duplicates (optional).',
+          items: {
+            type: 'object',
+          },
         },
       },
-      required: ['projectId', 'attachmentUrl'],
+      required: ['projectId'],
     },
   },
   {
@@ -210,10 +220,18 @@ export const aliceChatTools: AliceChatTools = [
         attachmentUrl: {
           type: 'string',
           description:
-            'Signed URL of the attachment containing items to import.',
+            'Signed URL or file name of the attachment containing items to import (optional if items provided).',
+        },
+        items: {
+          type: 'array',
+          description:
+            'Direct list of parsed work item objects to import (optional if attachmentUrl provided).',
+          items: {
+            type: 'object',
+          },
         },
       },
-      required: ['projectId', 'attachmentUrl'],
+      required: ['projectId'],
     },
   },
 ];

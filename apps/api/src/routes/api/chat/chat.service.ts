@@ -192,7 +192,8 @@ export class ChatService {
   async processFunctionCalls(
     userId: string,
     functionCalls: ChatContentPart[],
-    toolActionsPerformed: ToolAction[]
+    toolActionsPerformed: ToolAction[],
+    history: StoredChatMessage[] = []
   ): Promise<ChatContentPart[]> {
     const functionResponseParts: ChatContentPart[] = [];
     for (const call of functionCalls) {
@@ -205,7 +206,8 @@ export class ChatService {
           userId,
           name,
           args || {},
-          toolActionsPerformed
+          toolActionsPerformed,
+          history
         );
       } catch (err: unknown) {
         console.error(`Error executing tool ${sanitizeLog(name)}`);
@@ -228,7 +230,8 @@ export class ChatService {
     userId: string,
     name: string,
     args: Record<string, unknown>,
-    toolActionsPerformed: ToolAction[]
+    toolActionsPerformed: ToolAction[],
+    history: StoredChatMessage[]
   ): Promise<unknown> {
     const toolHandlers: Record<string, () => Promise<unknown>> = {
       list_projects: () => this.handleListProjects(),
@@ -241,14 +244,15 @@ export class ChatService {
       create_work_item: () =>
         this.handleCreateWorkItem(userId, args, toolActionsPerformed),
       parse_work_item_attachment: () =>
-        this.handleParseWorkItemAttachment(args),
+        this.handleParseWorkItemAttachment(args, history),
       check_work_item_duplicates: () =>
-        this.handleCheckWorkItemDuplicates(args),
+        this.handleCheckWorkItemDuplicates(args, history),
       batch_import_work_items: () =>
         this.handleBatchImportWorkItems(
           userId,
           args,
-          toolActionsPerformed
+          toolActionsPerformed,
+          history
         ),
     };
 
@@ -381,22 +385,90 @@ export class ChatService {
     return result;
   }
 
-  private async handleParseWorkItemAttachment(
-    args: Record<string, unknown>
-  ): Promise<unknown> {
-    const attachmentUrl =
-      typeof args.attachmentUrl === 'string' ? args.attachmentUrl : '';
-    const fileName =
-      typeof args.fileName === 'string' ? args.fileName : 'attachment';
+  private resolveAttachment(
+    providedRef: string | undefined,
+    history: StoredChatMessage[]
+  ): {
+    url: string;
+    fileName: string;
+    fileType?: ChatAttachmentFileTypeEnum;
+  } | null {
+    const allAttachments = history.flatMap((m) => m.attachments || []);
 
-    if (!attachmentUrl) {
-      throw new Error('attachmentUrl is required');
+    let cleanRef = providedRef?.trim();
+    if (cleanRef) {
+      const markdownUrlMatch = /\((https?:\/\/[^\s)]+)\)/.exec(cleanRef);
+      if (markdownUrlMatch?.[1]) {
+        cleanRef = markdownUrlMatch[1];
+      }
     }
 
+    if (
+      cleanRef &&
+      (cleanRef.startsWith('http://') || cleanRef.startsWith('https://'))
+    ) {
+      const matched = allAttachments.find((a) => a.url === cleanRef);
+      return {
+        url: cleanRef,
+        fileName: matched?.fileName || 'attachment',
+        fileType: matched?.fileType,
+      };
+    }
+
+    if (cleanRef) {
+      const lower = cleanRef.toLowerCase();
+      const matched = allAttachments.find(
+        (a) =>
+          a.fileName.toLowerCase() === lower ||
+          a.fileName.toLowerCase().includes(lower) ||
+          lower.includes(a.fileName.toLowerCase()) ||
+          a.id.toLowerCase() === lower
+      );
+      if (matched?.url) {
+        return {
+          url: matched.url,
+          fileName: matched.fileName,
+          fileType: matched.fileType,
+        };
+      }
+    }
+
+    const latestAttachment = allAttachments[allAttachments.length - 1];
+    if (latestAttachment?.url) {
+      return {
+        url: latestAttachment.url,
+        fileName: latestAttachment.fileName,
+        fileType: latestAttachment.fileType,
+      };
+    }
+
+    return null;
+  }
+
+  private async handleParseWorkItemAttachment(
+    args: Record<string, unknown>,
+    history: StoredChatMessage[]
+  ): Promise<unknown> {
+    const rawAttachmentUrl =
+      typeof args.attachmentUrl === 'string' ? args.attachmentUrl : undefined;
+    const resolved = this.resolveAttachment(rawAttachmentUrl, history);
+
+    if (!resolved?.url) {
+      throw new Error(
+        'attachmentUrl could not be resolved from provided reference or chat history.'
+      );
+    }
+
+    const fileName =
+      typeof args.fileName === 'string' && args.fileName
+        ? args.fileName
+        : resolved.fileName;
+    const fileType = resolved.fileType || ChatAttachmentFileTypeEnum.Other;
+
     const { items, summary } = await fetchAndParseWorkItemAttachment(
-      attachmentUrl,
+      resolved.url,
       fileName,
-      ChatAttachmentFileTypeEnum.Other
+      fileType
     );
 
     return {
@@ -407,7 +479,8 @@ export class ChatService {
   }
 
   private async handleCheckWorkItemDuplicates(
-    args: Record<string, unknown>
+    args: Record<string, unknown>,
+    history: StoredChatMessage[]
   ): Promise<unknown> {
     const projectId =
       typeof args.projectId === 'string' ? args.projectId : '';
@@ -416,13 +489,20 @@ export class ChatService {
     }
 
     let itemsToAnalyze: ParsedWorkItemNode[] = [];
-    if (typeof args.attachmentUrl === 'string' && args.attachmentUrl) {
-      const parsed = await fetchAndParseWorkItemAttachment(
-        args.attachmentUrl,
-        'attachment',
-        ChatAttachmentFileTypeEnum.Other
-      );
-      itemsToAnalyze = parsed.items;
+    if (Array.isArray(args.items) && args.items.length > 0) {
+      itemsToAnalyze = args.items as ParsedWorkItemNode[];
+    } else {
+      const rawAttachmentUrl =
+        typeof args.attachmentUrl === 'string' ? args.attachmentUrl : undefined;
+      const resolved = this.resolveAttachment(rawAttachmentUrl, history);
+      if (resolved?.url) {
+        const parsed = await fetchAndParseWorkItemAttachment(
+          resolved.url,
+          resolved.fileName,
+          resolved.fileType || ChatAttachmentFileTypeEnum.Other
+        );
+        itemsToAnalyze = parsed.items;
+      }
     }
 
     const report = await this.deduplicationAgent.inspectAndDeduplicate(
@@ -433,30 +513,46 @@ export class ChatService {
     return report;
   }
 
+  private async resolveItemsForImport(
+    args: Record<string, unknown>,
+    history: StoredChatMessage[]
+  ): Promise<ParsedWorkItemNode[]> {
+    if (Array.isArray(args.items) && args.items.length > 0) {
+      return args.items as ParsedWorkItemNode[];
+    }
+
+    const rawAttachmentUrl =
+      typeof args.attachmentUrl === 'string' ? args.attachmentUrl : undefined;
+    const resolved = this.resolveAttachment(rawAttachmentUrl, history);
+    if (!resolved?.url) {
+      throw new Error(
+        'attachmentUrl could not be resolved from provided reference or chat history, and no items list was provided.'
+      );
+    }
+    const parsed = await fetchAndParseWorkItemAttachment(
+      resolved.url,
+      resolved.fileName,
+      resolved.fileType || ChatAttachmentFileTypeEnum.Other
+    );
+    return parsed.items;
+  }
+
   private async handleBatchImportWorkItems(
     userId: string,
     args: Record<string, unknown>,
-    toolActionsPerformed: ToolAction[]
+    toolActionsPerformed: ToolAction[],
+    history: StoredChatMessage[]
   ): Promise<unknown> {
     const projectId =
       typeof args.projectId === 'string' ? args.projectId : '';
     const sprintId =
       typeof args.sprintId === 'string' ? args.sprintId : null;
-    const attachmentUrl =
-      typeof args.attachmentUrl === 'string' ? args.attachmentUrl : '';
 
     if (!projectId) {
       throw new Error('projectId is required');
     }
-    if (!attachmentUrl) {
-      throw new Error('attachmentUrl is required');
-    }
 
-    const { items } = await fetchAndParseWorkItemAttachment(
-      attachmentUrl,
-      'attachment',
-      ChatAttachmentFileTypeEnum.Other
-    );
+    const items = await this.resolveItemsForImport(args, history);
 
     const project = await this.deps.projectsRepository.findById(projectId);
     const projectKey = project?.key || 'TASK';
@@ -491,8 +587,12 @@ export class ChatService {
       createdItems.push(summary);
       toolActionsPerformed.push({ type: 'create_work_item', entity: summary });
 
-      idMapping.set(node.temporaryIdentifier, created.id);
-      idMapping.set(node.title.toLowerCase().trim(), created.id);
+      if (node.temporaryIdentifier) {
+        idMapping.set(node.temporaryIdentifier, created.id);
+      }
+      if (node.title) {
+        idMapping.set(node.title.toLowerCase().trim(), created.id);
+      }
 
       if (node.children && node.children.length > 0) {
         for (const child of node.children) {
@@ -513,7 +613,10 @@ export class ChatService {
     }
 
     for (const item of items) {
-      if (item.parentReference && !idMapping.has(item.temporaryIdentifier)) {
+      if (
+        item.parentReference &&
+        (!item.temporaryIdentifier || !idMapping.has(item.temporaryIdentifier))
+      ) {
         const parentId =
           idMapping.get(item.parentReference) ||
           idMapping.get(item.parentReference.toLowerCase().trim()) ||
@@ -698,7 +801,14 @@ export class ChatService {
   ): Promise<{ responseText: string; toolActionsPerformed: ToolAction[] }> {
     const contents: ChatContentTurn[] = history.map((msg) => {
       const role = toChatTurnRole(msg.role);
-      const parts = [{ text: msg.content }];
+      let text = msg.content;
+      if (msg.attachments && msg.attachments.length > 0) {
+        const attachInfo = msg.attachments
+          .map((a) => `[Attachment: ${a.fileName} (URL: ${a.url})]`)
+          .join('\n');
+        text = text ? `${text}\n\n${attachInfo}` : attachInfo;
+      }
+      const parts = [{ text }];
       return { role, parts };
     });
 
@@ -710,21 +820,19 @@ export class ChatService {
     const projects = (projectsRaw || []) as ProjectRowWithOwner[];
     const { users, activeSprints: sprints } = workspace;
 
-    const lastUserMessage = [...history]
-      .reverse()
-      .find((m) => m.role === ChatRoles.User);
+    const allAttachments = history.flatMap((m) => m.attachments || []);
     let attachmentsInstruction = '';
-    if (lastUserMessage?.attachments && lastUserMessage.attachments.length > 0) {
-      const attachmentsList = lastUserMessage.attachments
+    if (allAttachments.length > 0) {
+      const attachmentsList = allAttachments
         .map(
           (a) =>
             `- File: "${a.fileName}" (type: ${a.fileType}, URL: ${a.url})`
         )
         .join('\n');
       attachmentsInstruction = `
-User Attached Documents in Current Request:
+User Attached Documents in Conversation:
 ${attachmentsList}
-You should access and parse these attachments using "parse_work_item_attachment".
+You should access and parse these attachments using "parse_work_item_attachment". When calling "check_work_item_duplicates" or "batch_import_work_items", pass the attachmentUrl (or file name) or the parsed items.
 `;
     }
 
@@ -770,7 +878,8 @@ ${attachmentsInstruction}
       const functionResponseParts = await this.processFunctionCalls(
         userId,
         functionCalls,
-        toolActionsPerformed
+        toolActionsPerformed,
+        history
       );
       contents.push({
         role: ChatTurnRoles.User,
