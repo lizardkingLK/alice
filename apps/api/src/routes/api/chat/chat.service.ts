@@ -230,38 +230,34 @@ export class ChatService {
     args: Record<string, unknown>,
     toolActionsPerformed: ToolAction[]
   ): Promise<unknown> {
-    if (name === 'list_projects') {
-      return this.handleListProjects();
+    const toolHandlers: Record<string, () => Promise<unknown>> = {
+      list_projects: () => this.handleListProjects(),
+      create_project: () =>
+        this.handleCreateProject(userId, args, toolActionsPerformed),
+      list_sprints: () => this.handleListSprints(args),
+      create_sprint: () =>
+        this.handleCreateSprint(userId, args, toolActionsPerformed),
+      list_users: () => this.chat.listUsersSnapshot(),
+      create_work_item: () =>
+        this.handleCreateWorkItem(userId, args, toolActionsPerformed),
+      parse_work_item_attachment: () =>
+        this.handleParseWorkItemAttachment(args),
+      check_work_item_duplicates: () =>
+        this.handleCheckWorkItemDuplicates(args),
+      batch_import_work_items: () =>
+        this.handleBatchImportWorkItems(
+          userId,
+          args,
+          toolActionsPerformed
+        ),
+    };
+
+    const handler = toolHandlers[name];
+    if (!handler) {
+      throw new Error(`Unknown function: ${name}`);
     }
-    if (name === 'create_project') {
-      return this.handleCreateProject(userId, args, toolActionsPerformed);
-    }
-    if (name === 'list_sprints') {
-      return this.handleListSprints(args);
-    }
-    if (name === 'create_sprint') {
-      return this.handleCreateSprint(userId, args, toolActionsPerformed);
-    }
-    if (name === 'list_users') {
-      return this.chat.listUsersSnapshot();
-    }
-    if (name === 'create_work_item') {
-      return this.handleCreateWorkItem(userId, args, toolActionsPerformed);
-    }
-    if (name === 'parse_work_item_attachment') {
-      return this.handleParseWorkItemAttachment(args);
-    }
-    if (name === 'check_work_item_duplicates') {
-      return this.handleCheckWorkItemDuplicates(args);
-    }
-    if (name === 'batch_import_work_items') {
-      return this.handleBatchImportWorkItems(
-        userId,
-        args,
-        toolActionsPerformed
-      );
-    }
-    throw new Error(`Unknown function: ${name}`);
+
+    return handler();
   }
 
   private async handleListProjects(): Promise<unknown> {

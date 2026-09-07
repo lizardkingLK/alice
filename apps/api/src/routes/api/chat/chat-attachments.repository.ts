@@ -18,6 +18,41 @@ export interface UploadChatAttachmentParameters {
   readonly fileSize: number;
 }
 
+type ChatAttachmentTypeRule = {
+  readonly type: ChatAttachmentFileTypeEnum;
+  readonly matches: (fileName: string, mimeType: string) => boolean;
+};
+
+const CHAT_ATTACHMENT_TYPE_RULES: readonly ChatAttachmentTypeRule[] = [
+  {
+    type: ChatAttachmentFileTypeEnum.Json,
+    matches: (name, mime) =>
+      name.endsWith('.json') || mime.includes('application/json'),
+  },
+  {
+    type: ChatAttachmentFileTypeEnum.Csv,
+    matches: (name, mime) =>
+      name.endsWith('.csv') ||
+      mime.includes('text/csv') ||
+      mime.includes('application/csv') ||
+      mime.includes('text/comma-separated-values'),
+  },
+  {
+    type: ChatAttachmentFileTypeEnum.Text,
+    matches: (name, mime) =>
+      name.endsWith('.txt') || name.endsWith('.md') || mime.startsWith('text/'),
+  },
+  {
+    type: ChatAttachmentFileTypeEnum.Image,
+    matches: (name, mime) =>
+      mime.startsWith('image/') ||
+      name.endsWith('.png') ||
+      name.endsWith('.jpg') ||
+      name.endsWith('.jpeg') ||
+      name.endsWith('.webp'),
+  },
+];
+
 export function detectChatAttachmentFileType(
   fileName: string,
   mimeType: string
@@ -25,41 +60,11 @@ export function detectChatAttachmentFileType(
   const normalizedFileName = fileName.toLowerCase();
   const normalizedMimeType = mimeType.toLowerCase();
 
-  if (
-    normalizedFileName.endsWith('.json') ||
-    normalizedMimeType.includes('application/json')
-  ) {
-    return ChatAttachmentFileTypeEnum.Json;
-  }
+  const matchedRule = CHAT_ATTACHMENT_TYPE_RULES.find((rule) =>
+    rule.matches(normalizedFileName, normalizedMimeType)
+  );
 
-  if (
-    normalizedFileName.endsWith('.csv') ||
-    normalizedMimeType.includes('text/csv') ||
-    normalizedMimeType.includes('application/csv') ||
-    normalizedMimeType.includes('text/comma-separated-values')
-  ) {
-    return ChatAttachmentFileTypeEnum.Csv;
-  }
-
-  if (
-    normalizedFileName.endsWith('.txt') ||
-    normalizedFileName.endsWith('.md') ||
-    normalizedMimeType.startsWith('text/')
-  ) {
-    return ChatAttachmentFileTypeEnum.Text;
-  }
-
-  if (
-    normalizedMimeType.startsWith('image/') ||
-    normalizedFileName.endsWith('.png') ||
-    normalizedFileName.endsWith('.jpg') ||
-    normalizedFileName.endsWith('.jpeg') ||
-    normalizedFileName.endsWith('.webp')
-  ) {
-    return ChatAttachmentFileTypeEnum.Image;
-  }
-
-  return ChatAttachmentFileTypeEnum.Other;
+  return matchedRule ? matchedRule.type : ChatAttachmentFileTypeEnum.Other;
 }
 
 export class ChatAttachmentsRepository {

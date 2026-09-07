@@ -12,10 +12,7 @@ const serverSchema = z.object({
   STORAGE_BUCKET_PROJECT_LOGOS: z.string().min(1),
   STORAGE_BUCKET_PROJECT_COVERS: z.string().min(1),
   STORAGE_BUCKET_CHAT_HISTORY: z.string().min(1),
-  STORAGE_BUCKET_CHAT_ATTACHMENTS: z
-    .string()
-    .min(1)
-    .default('alice_storage_chat_attachments'),
+  STORAGE_BUCKET_CHAT_ATTACHMENTS: z.string().min(1),
   /**
    * Base64-encoded 32-byte key for AES-256-GCM encryption of integration
    * secrets (GitHub PATs, Jira OAuth tokens). Server-only.
