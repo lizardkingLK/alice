@@ -6,13 +6,13 @@ import { PendingSubmitButton } from '@/components/pending-submit-button';
 import { RecoveryHashGuard } from './_components/recovery-hash-guard';
 
 type ForgotPasswordPageProps = {
-  searchParams: Promise<{ sent?: string; error?: string }>;
+  searchParams: Promise<{ sent?: string; error?: string; email?: string }>;
 };
 
 export default async function ForgotPasswordPage({
   searchParams,
 }: Readonly<ForgotPasswordPageProps>) {
-  const { sent, error } = await searchParams;
+  const { sent, error, email } = await searchParams;
   const isSent = sent === '1';
   const isExpired = error === 'expired';
 
@@ -56,6 +56,7 @@ export default async function ForgotPasswordPage({
                 type="email"
                 autoComplete="email"
                 required
+                defaultValue={email?.trim() || undefined}
               />
             </div>
             <PendingSubmitButton

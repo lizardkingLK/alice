@@ -19,14 +19,20 @@ Add an **email** (not domain) entry when:
 
 ## Steps
 
-1. Go to **Users → Allowlist**.
-2. Select **Add email**.
+1. Go to **Users → Allowlist** (or **Review & allow** from
+   [Access requests](./access-requests.md) — email and requested projects are
+   prefilled when available).
+2. Select **Add email** if you are not coming from a request.
 3. Enter the full address (e.g. `alex@partner.com`).
-4. Set status to **active**.
-5. Save.
+4. Select at least one **project** the guest may open.
+5. Set status to **active**.
+6. Save.
 
-Tell the person they can [sign in](../sign-in-and-account/README.md). Optionally
-[invite them](./invite-users.md) so they receive a setup link.
+Alice emails an invite (or magic link) for new addresses. Tell the person to
+open that email or use [Forgot password](../sign-in-and-account/forgot-password.md)
+to set a password before email sign-in. Optionally also
+[invite them](./invite-users.md) from the Users directory if you want a separate
+pending member record.
 
 ---
 

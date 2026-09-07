@@ -4,7 +4,7 @@ import {
   evaluateEmailAdmission,
 } from '@/lib/access-allowlist';
 
-/** Redirect to access-denied when `email` fails admission (login/signup). */
+/** Redirect to access-denied when `email` fails admission (signup / Google). */
 export async function redirectUnlessEmailAdmitted(
   email: string
 ): Promise<void> {

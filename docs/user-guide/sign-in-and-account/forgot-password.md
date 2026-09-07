@@ -23,6 +23,9 @@ Reset your password when you can't sign in with email and password.
 - The reset link is time-limited. Request a new one if it expires.
 - You must still be on the **allowlist** and have an **active** account for
   sign-in to succeed after resetting.
+- If an admin **allowlisted** or **invited** you and password sign-in fails with
+  “invalid credentials,” use this flow (or the invite email) to set a password
+  before trying again.
 - Google-only users who never set a password should use
   [Sign in with Google](./google-sign-in.md) or ask an admin for an invite
   email flow.

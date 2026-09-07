@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import {
   buildAuthCallbackUrl,
+  buildCheckEmailPath,
   buildLoginPath,
   resolveSafeRedirectPath,
 } from '@/lib/auth-redirect';
@@ -14,6 +15,7 @@ import {
   isObfuscatedDuplicateSignup,
 } from '@/lib/auth-existing-account';
 import { ensurePublicUser } from '@/lib/ensure-public-user';
+import { evaluateEmailAdmission } from '@/lib/access-allowlist';
 import { redirectUnlessEmailAdmitted } from '@/lib/access-allowlist/auth-gate.server';
 import { createClient } from '@/lib/supabase/server';
 
@@ -21,7 +23,12 @@ const requestPasswordResetSchema = z.object({
   email: z.email({ message: 'Please enter a valid email address.' }),
 });
 
-import { loginErrorMessage } from '@/lib/auth-login-errors';
+import {
+  LOGIN_DEACTIVATED_MESSAGE,
+  LOGIN_INVALID_CREDENTIALS_MESSAGE,
+  isInvalidLoginCredentialsError,
+  loginErrorMessage,
+} from '@/lib/auth-login-errors';
 
 export async function login(formData: FormData) {
   const supabase = await createClient();
@@ -36,15 +43,25 @@ export async function login(formData: FormData) {
     typeof nextEntry === 'string' ? nextEntry : null
   );
 
-  await redirectUnlessEmailAdmitted(email);
+  const admission = await evaluateEmailAdmission(email);
+  if (!admission.allowed) {
+    redirect(
+      buildLoginPath(next, {
+        error: LOGIN_INVALID_CREDENTIALS_MESSAGE,
+      })
+    );
+  }
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
-    redirect(
-      buildLoginPath(next, {
-        error: loginErrorMessage(error.message),
-      })
-    );
+    const mapped = loginErrorMessage(error.message);
+    if (mapped === LOGIN_DEACTIVATED_MESSAGE) {
+      redirect(buildLoginPath(next, { error: mapped }));
+    }
+    if (isInvalidLoginCredentialsError(error.message)) {
+      redirect(buildCheckEmailPath({ email, next }));
+    }
+    redirect(buildLoginPath(next, { error: mapped }));
   }
 
   const {
