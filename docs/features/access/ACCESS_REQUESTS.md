@@ -83,8 +83,9 @@ Saving an active **email** allowlist row (create or reactivate) automatically:
 3. Sends the allowlist invite / magic-link email (see ACCESS_ALLOWLIST.md)
 
 Invitees must open the invite (or use **Forgot password**) to set a password —
-allowlisted password failures redirect to `/check-email`; unknown emails on
-sign-in see a generic invalid-credentials error on `/login`.
+password failures on sign-in stay on `/login` with invalid credentials (Auth
+cannot tell mistype vs unset invite password). Unknown emails also see that
+generic error on `/login`.
 
 ### Deny
 

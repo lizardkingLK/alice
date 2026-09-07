@@ -55,8 +55,8 @@ latest message and project keys without counting as a new submission.
 
 - Check your email for an **invite** (or use
   [Forgot password](./forgot-password.md)) to **set a password** before signing
-  in with email/password. Allowlisted sign-in failures also open a **Check your
-  email** page with the same guidance.
+  in with email/password. A wrong password on sign-in shows **Invalid email or
+  password** on the sign-in page (same as a mistype).
 - Then sign in with [email](./email-sign-in.md) or [Google](./google-sign-in.md).
 - Guest allowlist access is limited to the projects the admin selected. Ask an
   admin or project owner if you need more projects or full membership.

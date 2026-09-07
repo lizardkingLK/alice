@@ -320,11 +320,13 @@ admission — **not** when email/password **sign-in** fails for an unknown email
 - If anonymous: link to **Sign in**
 - Full `/contact` form remains available for other subjects
 
-### 3b. Check-email page (allowlisted sign-in failure) — **implemented**
+### 3b. Check-email page — **available**
 
-Route: `/check-email`. When email/password sign-in is allowlisted but Auth
-returns invalid credentials, redirect here (invite / set-password guidance)
-instead of the access-denied form.
+Route: `/check-email` remains a public helper for invite / set-password copy
+(e.g. deep links). Email/password **sign-in** failures stay on `/login` with
+**Invalid email or password** (or deactivated copy) — Auth cannot tell a
+mistyped password from an unset invite password, so we do not redirect
+allowlisted failures to `/check-email`.
 
 ### 4. Home footer — **implemented**
 
@@ -410,9 +412,10 @@ Implementation: `apps/api/src/routes/api/accessAllowlist/notify-allowlisted-emai
 Customize copy in the Supabase dashboard email templates (Invite / Magic Link).
 
 Until the invitee sets a password (invite link or **Forgot password**),
-`signInWithPassword` fails. Allowlisted failures redirect to `/check-email`;
-unknown emails stay on `/login` with a generic invalid-credentials message
-(`apps/web/lib/auth-login-errors.ts`).
+`signInWithPassword` fails. Failures stay on `/login` with
+invalid-credentials (or deactivated) copy — Auth cannot distinguish mistyped
+passwords from unset invite passwords (`apps/web/lib/auth-login-errors.ts`).
+Invitees should use the invite email or **Forgot password**.
 
 ---
 
