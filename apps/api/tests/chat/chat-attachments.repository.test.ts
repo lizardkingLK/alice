@@ -1,15 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.hoisted(() => {
+const { mockSupabaseClient } = vi.hoisted(() => {
   process.env.GITHUB_ACTIONS = 'true';
+  return {
+    mockSupabaseClient: {
+      from: vi.fn(),
+      storage: {
+        listBuckets: vi.fn(),
+        createBucket: vi.fn(),
+        from: vi.fn(),
+      },
+    },
+  };
 });
 
-import {
-  ChatAttachmentsRepository,
-  detectChatAttachmentFileType,
-} from '../../src/routes/api/chat/chat-attachments.repository';
-import { ChatAttachmentFileTypeEnum } from '@repo/types';
-import { prisma } from '../../src/lib/prisma';
+vi.mock('../../src/lib/supabase', () => ({
+  createClient: () => mockSupabaseClient,
+  supabase: mockSupabaseClient,
+}));
 
 vi.mock('../../src/lib/prisma', () => ({
   prisma: {
@@ -20,6 +28,13 @@ vi.mock('../../src/lib/prisma', () => ({
     },
   },
 }));
+
+import {
+  ChatAttachmentsRepository,
+  detectChatAttachmentFileType,
+} from '../../src/routes/api/chat/chat-attachments.repository';
+import { ChatAttachmentFileTypeEnum } from '@repo/types';
+import { prisma } from '../../src/lib/prisma';
 
 describe('ChatAttachmentsRepository', () => {
   describe('detectChatAttachmentFileType', () => {
