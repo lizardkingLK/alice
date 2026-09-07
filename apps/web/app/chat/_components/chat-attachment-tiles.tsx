@@ -34,7 +34,7 @@ function formatBytes(bytes: number): string {
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+  return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
 export function getAttachmentIcon(fileType: ChatAttachmentFileTypeEnum) {
@@ -63,21 +63,19 @@ export function ChatAttachmentTiles({
   }
 
   return (
-    <div
+    <ul
       className={cn(
         'flex flex-wrap items-center gap-2 px-1 pb-2',
         className
       )}
-      role="list"
       aria-label="Attached files"
     >
       {attachments.map((attachment) => {
         const isUploading = attachment.isUploading ?? false;
 
         return (
-          <div
+          <li
             key={attachment.id}
-            role="listitem"
             className={cn(
               'group bg-background border-border/80 text-foreground relative flex items-center gap-2.5 rounded-lg border px-3 py-1.5 shadow-xs transition-colors',
               isUploading && 'opacity-80'
@@ -113,9 +111,9 @@ export function ChatAttachmentTiles({
                 <X className="size-3.5" />
               </Button>
             ) : null}
-          </div>
+          </li>
         );
       })}
-    </div>
+    </ul>
   );
 }

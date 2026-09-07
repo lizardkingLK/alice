@@ -84,3 +84,52 @@ export interface WorkItemDeduplicationReport {
   potentialDuplicateCount: number;
   items: WorkItemDeduplicationItemResult[];
 }
+
+export type ChatAttachmentTypeRule = {
+  readonly type: ChatAttachmentFileTypeEnum;
+  readonly matches: (fileName: string, mimeType: string) => boolean;
+};
+
+export const CHAT_ATTACHMENT_TYPE_RULES: readonly ChatAttachmentTypeRule[] = [
+  {
+    type: ChatAttachmentFileTypeEnum.Json,
+    matches: (name, mime) =>
+      name.endsWith('.json') || mime.includes('application/json'),
+  },
+  {
+    type: ChatAttachmentFileTypeEnum.Csv,
+    matches: (name, mime) =>
+      name.endsWith('.csv') ||
+      mime.includes('text/csv') ||
+      mime.includes('application/csv') ||
+      mime.includes('text/comma-separated-values'),
+  },
+  {
+    type: ChatAttachmentFileTypeEnum.Text,
+    matches: (name, mime) =>
+      name.endsWith('.txt') || name.endsWith('.md') || mime.startsWith('text/'),
+  },
+  {
+    type: ChatAttachmentFileTypeEnum.Image,
+    matches: (name, mime) =>
+      mime.startsWith('image/') ||
+      name.endsWith('.png') ||
+      name.endsWith('.jpg') ||
+      name.endsWith('.jpeg') ||
+      name.endsWith('.webp'),
+  },
+];
+
+export function detectChatAttachmentFileType(
+  fileName: string,
+  mimeType: string
+): ChatAttachmentFileTypeEnum {
+  const normalizedFileName = fileName.toLowerCase();
+  const normalizedMimeType = mimeType.toLowerCase();
+
+  const matchedRule = CHAT_ATTACHMENT_TYPE_RULES.find((rule) =>
+    rule.matches(normalizedFileName, normalizedMimeType)
+  );
+
+  return matchedRule ? matchedRule.type : ChatAttachmentFileTypeEnum.Other;
+}

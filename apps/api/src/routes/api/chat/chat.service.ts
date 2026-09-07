@@ -49,6 +49,20 @@ export type ChatServiceDeps = {
   integrationsService: Pick<IntegrationsService, 'resolveChatModelForChat'>;
 };
 
+function serializeDynamicFieldValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    return String(value);
+  }
+  return JSON.stringify(value);
+}
+
 function textToProseMirrorJson(
   text: string | null | undefined,
   dynamicFields?: Record<string, unknown>
@@ -70,10 +84,7 @@ function textToProseMirrorJson(
 
   if (dynamicFields && Object.keys(dynamicFields).length > 0) {
     const formattedFields = Object.entries(dynamicFields)
-      .map(
-        ([key, value]) =>
-          `${key}: ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`
-      )
+      .map(([key, value]) => `${key}: ${serializeDynamicFieldValue(value)}`)
       .join('\n');
     paragraphs.push({
       type: 'paragraph',
@@ -433,7 +444,7 @@ export class ChatService {
       }
     }
 
-    const latestAttachment = allAttachments[allAttachments.length - 1];
+    const latestAttachment = allAttachments.at(-1);
     if (latestAttachment?.url) {
       return {
         url: latestAttachment.url,
