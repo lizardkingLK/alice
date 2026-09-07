@@ -12,6 +12,10 @@ const serverSchema = z.object({
   STORAGE_BUCKET_PROJECT_LOGOS: z.string().min(1),
   STORAGE_BUCKET_PROJECT_COVERS: z.string().min(1),
   STORAGE_BUCKET_CHAT_HISTORY: z.string().min(1),
+  STORAGE_BUCKET_CHAT_ATTACHMENTS: z
+    .string()
+    .min(1)
+    .default('alice_storage_chat_attachments'),
   /**
    * Base64-encoded 32-byte key for AES-256-GCM encryption of integration
    * secrets (GitHub PATs, Jira OAuth tokens). Server-only.
@@ -41,6 +45,7 @@ const mock: EnvSchemaType = {
   STORAGE_BUCKET_PROJECT_LOGOS: 'alice_storage_project_logos',
   STORAGE_BUCKET_PROJECT_COVERS: 'alice_storage_project_covers',
   STORAGE_BUCKET_CHAT_HISTORY: 'alice_storage_chat_history',
+  STORAGE_BUCKET_CHAT_ATTACHMENTS: 'alice_storage_chat_attachments',
   INTEGRATION_TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 1).toString('base64'),
   ATLASSIAN_CLIENT_ID: 'mock-atlassian-client-id',
   ATLASSIAN_CLIENT_SECRET: 'mock-atlassian-client-secret',
@@ -61,6 +66,7 @@ const processEnv = {
   STORAGE_BUCKET_PROJECT_LOGOS: process.env.STORAGE_BUCKET_PROJECT_LOGOS,
   STORAGE_BUCKET_PROJECT_COVERS: process.env.STORAGE_BUCKET_PROJECT_COVERS,
   STORAGE_BUCKET_CHAT_HISTORY: process.env.STORAGE_BUCKET_CHAT_HISTORY,
+  STORAGE_BUCKET_CHAT_ATTACHMENTS: process.env.STORAGE_BUCKET_CHAT_ATTACHMENTS,
   INTEGRATION_TOKEN_ENCRYPTION_KEY:
     process.env.INTEGRATION_TOKEN_ENCRYPTION_KEY,
   ATLASSIAN_CLIENT_ID: process.env.ATLASSIAN_CLIENT_ID,

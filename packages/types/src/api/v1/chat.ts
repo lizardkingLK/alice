@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ChatRoles } from '../../chat.js';
+import { ChatAttachmentFileTypeEnum } from '../../chat-attachments.js';
 import { emptyToUndefined } from './query-preprocess.js';
 
 /** PostgREST column list for chat conversation list reads (RSC + API parity). */
@@ -8,8 +9,23 @@ export const CHAT_CONVERSATION_POSTGREST_SELECT =
 
 const chatRoleSchema = z.enum([ChatRoles.User, ChatRoles.Assistant]);
 
+export const chatAttachmentWireSchema = z.object({
+  id: z.string(),
+  fileName: z.string(),
+  fileSize: z.number(),
+  mimeType: z.string(),
+  storagePath: z.string(),
+  url: z.string(),
+  fileType: z.nativeEnum(ChatAttachmentFileTypeEnum),
+});
+
 export const chatToolActionSchema = z.object({
-  type: z.enum(['create_project', 'create_sprint', 'create_work_item']),
+  type: z.enum([
+    'create_project',
+    'create_sprint',
+    'create_work_item',
+    'batch_import_work_items',
+  ]),
   entity: z.object({
     id: z.string(),
     name: z.string().optional(),
@@ -27,6 +43,7 @@ export const chatMessageWireSchema = z.object({
   role: chatRoleSchema,
   content: z.string(),
   actions: z.array(chatToolActionSchema).optional(),
+  attachments: z.array(chatAttachmentWireSchema).optional(),
 });
 
 export type ChatMessageWire = z.infer<typeof chatMessageWireSchema>;
@@ -51,6 +68,7 @@ export const chatInputMessageSchema = z.object({
   content: z.string().optional(),
   text: z.string().optional(),
   actions: z.array(chatToolActionSchema).optional(),
+  attachments: z.array(chatAttachmentWireSchema).optional(),
 });
 
 export type ChatInputMessage = z.infer<typeof chatInputMessageSchema>;
@@ -60,6 +78,7 @@ export const postChatMessageBodySchema = z.object({
   conversationId: z.preprocess(emptyToUndefined, z.uuid().optional()),
   integrationId: z.preprocess(emptyToUndefined, z.uuid().optional()),
   modelId: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  attachments: z.array(chatAttachmentWireSchema).optional(),
 });
 
 export type PostChatMessageBody = z.infer<typeof postChatMessageBodySchema>;

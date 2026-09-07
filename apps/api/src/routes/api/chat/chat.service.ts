@@ -8,6 +8,9 @@ import {
   ChatRoles,
   ChatTurnRoles,
   toChatTurnRole,
+  getAllowedChildType,
+  ChatAttachmentFileTypeEnum,
+  type ParsedWorkItemNode,
 } from '@repo/types';
 import type { WorkItemService } from '../workItems/workItems.service';
 import type { SprintsService } from '../sprints/sprints.service';
@@ -19,8 +22,12 @@ import type { ResolvedChatModelConfig } from '../integrations/chat-providers/cha
 import { resolveChatProvider } from '../integrations/chat-providers/resolve-chat-provider';
 import { systemInstruction, aliceChatTools } from './chat.route.data';
 import type { ChatRepository } from './chat.repository';
+import { ChatAttachmentsRepository } from './chat-attachments.repository';
+import { fetchAndParseWorkItemAttachment } from './chat-attachment-parser';
+import { WorkItemDeduplicationAgent } from './work-item-deduplication.agent';
 import { sanitizeLog } from './chat.utils';
 import { prisma } from '../../../lib/prisma';
+import { supabase } from '../../../lib/supabase';
 import type {
   ChatContentPart,
   ChatContentTurn,
@@ -33,6 +40,8 @@ export { sanitizeLog } from './chat.utils';
 
 export type ChatServiceDeps = {
   chat: ChatRepository;
+  chatAttachments?: ChatAttachmentsRepository;
+  deduplicationAgent?: WorkItemDeduplicationAgent;
   workItemService: Pick<WorkItemService, 'createWorkItem'>;
   sprintsService: Pick<SprintsService, 'createSprint'>;
   projectsService: Pick<ProjectsService, 'createProject'>;
@@ -40,21 +49,41 @@ export type ChatServiceDeps = {
   integrationsService: Pick<IntegrationsService, 'resolveChatModelForChat'>;
 };
 
-function textToProseMirrorJson(text: string | null | undefined) {
-  if (!text) return null;
+function textToProseMirrorJson(
+  text: string | null | undefined,
+  dynamicFields?: Record<string, unknown>
+) {
+  if (!text && (!dynamicFields || Object.keys(dynamicFields).length === 0)) {
+    return null;
+  }
+  const paragraphs: Array<{
+    type: string;
+    content: Array<{ type: string; text: string }>;
+  }> = [];
+
+  if (text) {
+    paragraphs.push({
+      type: 'paragraph',
+      content: [{ type: 'text', text }],
+    });
+  }
+
+  if (dynamicFields && Object.keys(dynamicFields).length > 0) {
+    const formattedFields = Object.entries(dynamicFields)
+      .map(
+        ([key, value]) =>
+          `${key}: ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`
+      )
+      .join('\n');
+    paragraphs.push({
+      type: 'paragraph',
+      content: [{ type: 'text', text: `[Dynamic Fields]\n${formattedFields}` }],
+    });
+  }
+
   return {
     type: 'doc',
-    content: [
-      {
-        type: 'paragraph',
-        content: [
-          {
-            type: 'text',
-            text: text,
-          },
-        ],
-      },
-    ],
+    content: paragraphs,
   };
 }
 
@@ -71,6 +100,13 @@ export function chatHistoryToMarkdown(
 
   for (const msg of messages) {
     md += `### ${getRoleName(msg.role)}\n\n${msg.content || ''}\n\n`;
+    if (msg.attachments?.length) {
+      md += `*Attached Files:*\n`;
+      for (const att of msg.attachments) {
+        md += `- [${att.fileName}](${att.url}) (${att.fileType})\n`;
+      }
+      md += `\n`;
+    }
     if (msg.actions?.length) {
       md += `*Executed Actions:*\n`;
       for (const act of msg.actions) {
@@ -112,11 +148,22 @@ export function markdownToChatHistory(md: string): StoredChatMessage[] {
 
 export class ChatService {
   private readonly historyCache = new Map<string, StoredChatMessage[]>();
+  private readonly chatAttachmentsRepository: ChatAttachmentsRepository;
+  private readonly deduplicationAgent: WorkItemDeduplicationAgent;
 
-  constructor(private readonly deps: ChatServiceDeps) {}
+  constructor(private readonly deps: ChatServiceDeps) {
+    this.chatAttachmentsRepository =
+      deps.chatAttachments ?? new ChatAttachmentsRepository(supabase);
+    this.deduplicationAgent =
+      deps.deduplicationAgent ?? new WorkItemDeduplicationAgent();
+  }
 
   private get chat() {
     return this.deps.chat;
+  }
+
+  get chatAttachments(): ChatAttachmentsRepository {
+    return this.chatAttachmentsRepository;
   }
 
   resolveChatModelForChat(params: {
@@ -200,6 +247,19 @@ export class ChatService {
     }
     if (name === 'create_work_item') {
       return this.handleCreateWorkItem(userId, args, toolActionsPerformed);
+    }
+    if (name === 'parse_work_item_attachment') {
+      return this.handleParseWorkItemAttachment(args);
+    }
+    if (name === 'check_work_item_duplicates') {
+      return this.handleCheckWorkItemDuplicates(args);
+    }
+    if (name === 'batch_import_work_items') {
+      return this.handleBatchImportWorkItems(
+        userId,
+        args,
+        toolActionsPerformed
+      );
     }
     throw new Error(`Unknown function: ${name}`);
   }
@@ -323,6 +383,153 @@ export class ChatService {
     const result = { id: workItem.id, key: workItemKey, title: workItem.title };
     toolActionsPerformed.push({ type: 'create_work_item', entity: result });
     return result;
+  }
+
+  private async handleParseWorkItemAttachment(
+    args: Record<string, unknown>
+  ): Promise<unknown> {
+    const attachmentUrl =
+      typeof args.attachmentUrl === 'string' ? args.attachmentUrl : '';
+    const fileName =
+      typeof args.fileName === 'string' ? args.fileName : 'attachment';
+
+    if (!attachmentUrl) {
+      throw new Error('attachmentUrl is required');
+    }
+
+    const { items, summary } = await fetchAndParseWorkItemAttachment(
+      attachmentUrl,
+      fileName,
+      ChatAttachmentFileTypeEnum.Other
+    );
+
+    return {
+      summary,
+      totalItemsFound: items.length,
+      items,
+    };
+  }
+
+  private async handleCheckWorkItemDuplicates(
+    args: Record<string, unknown>
+  ): Promise<unknown> {
+    const projectId =
+      typeof args.projectId === 'string' ? args.projectId : '';
+    if (!projectId) {
+      throw new Error('projectId is required');
+    }
+
+    let itemsToAnalyze: ParsedWorkItemNode[] = [];
+    if (typeof args.attachmentUrl === 'string' && args.attachmentUrl) {
+      const parsed = await fetchAndParseWorkItemAttachment(
+        args.attachmentUrl,
+        'attachment',
+        ChatAttachmentFileTypeEnum.Other
+      );
+      itemsToAnalyze = parsed.items;
+    }
+
+    const report = await this.deduplicationAgent.inspectAndDeduplicate(
+      projectId,
+      itemsToAnalyze
+    );
+
+    return report;
+  }
+
+  private async handleBatchImportWorkItems(
+    userId: string,
+    args: Record<string, unknown>,
+    toolActionsPerformed: ToolAction[]
+  ): Promise<unknown> {
+    const projectId =
+      typeof args.projectId === 'string' ? args.projectId : '';
+    const sprintId =
+      typeof args.sprintId === 'string' ? args.sprintId : null;
+    const attachmentUrl =
+      typeof args.attachmentUrl === 'string' ? args.attachmentUrl : '';
+
+    if (!projectId) {
+      throw new Error('projectId is required');
+    }
+    if (!attachmentUrl) {
+      throw new Error('attachmentUrl is required');
+    }
+
+    const { items } = await fetchAndParseWorkItemAttachment(
+      attachmentUrl,
+      'attachment',
+      ChatAttachmentFileTypeEnum.Other
+    );
+
+    const project = await this.deps.projectsRepository.findById(projectId);
+    const projectKey = project?.key || 'TASK';
+
+    const createdItems: Array<{ id: string; key: string; title: string }> = [];
+    const idMapping = new Map<string, string>();
+
+    const createSingleNode = async (
+      node: ParsedWorkItemNode,
+      resolvedParentId: string | null
+    ) => {
+      const typeValue = node.type || WorkItemTypeEnum.Task;
+      const priorityValue = node.priority || DEFAULT_WORK_ITEM_PRIORITY;
+
+      const created = await this.deps.workItemService.createWorkItem(userId, {
+        title: node.title,
+        project_id: projectId,
+        sprint_id: sprintId,
+        assignee_id: null,
+        type: typeValue,
+        priority: priorityValue,
+        description: textToProseMirrorJson(node.description, node.dynamicFields),
+        due_date: node.dueDate || null,
+        parent_id: resolvedParentId,
+        labels: node.labels,
+        story_points: node.storyPoints ?? null,
+        jira_issue_key: node.jiraIssueKey || null,
+      });
+
+      const workItemKey = `${projectKey}-${created.id.slice(0, 4).toUpperCase()}`;
+      const summary = { id: created.id, key: workItemKey, title: created.title };
+      createdItems.push(summary);
+      toolActionsPerformed.push({ type: 'create_work_item', entity: summary });
+
+      idMapping.set(node.temporaryIdentifier, created.id);
+      idMapping.set(node.title.toLowerCase().trim(), created.id);
+
+      if (node.children && node.children.length > 0) {
+        for (const child of node.children) {
+          const allowedChildType = getAllowedChildType(typeValue);
+          const effectiveChildNode: ParsedWorkItemNode = {
+            ...child,
+            type: allowedChildType || child.type,
+          };
+          await createSingleNode(effectiveChildNode, created.id);
+        }
+      }
+    };
+
+    for (const item of items) {
+      if (!item.parentReference) {
+        await createSingleNode(item, null);
+      }
+    }
+
+    for (const item of items) {
+      if (item.parentReference && !idMapping.has(item.temporaryIdentifier)) {
+        const parentId =
+          idMapping.get(item.parentReference) ||
+          idMapping.get(item.parentReference.toLowerCase().trim()) ||
+          null;
+        await createSingleNode(item, parentId);
+      }
+    }
+
+    return {
+      importedCount: createdItems.length,
+      items: createdItems,
+    };
   }
 
   async saveChatHistory(
@@ -507,11 +714,30 @@ export class ChatService {
     const projects = (projectsRaw || []) as ProjectRowWithOwner[];
     const { users, activeSprints: sprints } = workspace;
 
+    const lastUserMessage = [...history]
+      .reverse()
+      .find((m) => m.role === ChatRoles.User);
+    let attachmentsInstruction = '';
+    if (lastUserMessage?.attachments && lastUserMessage.attachments.length > 0) {
+      const attachmentsList = lastUserMessage.attachments
+        .map(
+          (a) =>
+            `- File: "${a.fileName}" (type: ${a.fileType}, URL: ${a.url})`
+        )
+        .join('\n');
+      attachmentsInstruction = `
+User Attached Documents in Current Request:
+${attachmentsList}
+You should access and parse these attachments using "parse_work_item_attachment".
+`;
+    }
+
     const contextInstruction = `
 Current Workspace State:
 - Active Projects: ${JSON.stringify(projects.map((p) => ({ id: p.id, name: p.name, key: p.key })))}
 - System Users: ${JSON.stringify(users.map((u) => ({ id: u.id, name: u.name, email: u.email })))}
 - Ongoing Sprints (Active Status Only): ${JSON.stringify(sprints.map((s) => ({ id: s.id, name: s.name, projectId: s.project_id })))}
+${attachmentsInstruction}
 `;
 
     let responseText = '';

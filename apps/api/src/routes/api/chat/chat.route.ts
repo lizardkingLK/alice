@@ -1,3 +1,4 @@
+import multer, { Multer } from 'multer';
 import { Router, type Response } from 'express';
 import { z } from 'zod';
 import {
@@ -12,6 +13,14 @@ import {
   postChatMessageBodySchema,
 } from './chat.schemas';
 import type { StoredChatMessage } from './chat.route.types';
+
+const chatUpload: Multer = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    // eslint-disable-next-line sonarjs/content-length
+    fileSize: 10 * 1024 * 1024,
+  },
+});
 
 export type ChatRouterDeps = {
   chatService: ChatService;
@@ -163,6 +172,77 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
   );
 
   chatRouter.post(
+    '/attachments',
+    requireApiAuth,
+    chatUpload.single('file'),
+    async (req: AuthenticatedRequest, res) => {
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      const conversationId =
+        typeof req.body?.conversationId === 'string'
+          ? req.body.conversationId
+          : undefined;
+
+      try {
+        const attachment = await chatService.chatAttachments.uploadAttachment({
+          userId: req.userId!,
+          conversationId,
+          fileName: file.originalname,
+          fileBuffer: file.buffer,
+          mimeType: file.mimetype || 'application/octet-stream',
+          fileSize: file.size,
+        });
+
+        return res.status(201).json({
+          success: true,
+          attachment,
+        });
+      } catch (error: unknown) {
+        sendChatError(
+          res,
+          error,
+          'Failed to upload attachment',
+          'error. chat attachment upload failed'
+        );
+      }
+    }
+  );
+
+  chatRouter.delete(
+    '/attachments/:id',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const attachmentId = req.params.id;
+      if (!attachmentId) {
+        return res.status(400).json({ error: 'Attachment id is required' });
+      }
+
+      try {
+        const deleted = await chatService.chatAttachments.deleteAttachment(
+          req.userId!,
+          attachmentId
+        );
+
+        if (!deleted) {
+          return res.status(404).json({ error: 'Attachment not found' });
+        }
+
+        return res.json({ success: true });
+      } catch (error: unknown) {
+        sendChatError(
+          res,
+          error,
+          'Failed to delete attachment',
+          'error. chat attachment delete failed'
+        );
+      }
+    }
+  );
+
+  chatRouter.post(
     '/',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
@@ -178,6 +258,7 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
         conversationId: reqConversationId,
         modelId,
         integrationId,
+        attachments: requestAttachments,
       } = validation.data;
 
       let chatModelConfig;
@@ -194,12 +275,22 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
 
       try {
         const sanitizedInputMessages: StoredChatMessage[] = messages.map(
-          (msg, index) => ({
-            id: msg.id || `msg-${Date.now()}-${index}`,
-            role: parseChatRole(msg.role),
-            content: msg.content || msg.text || '',
-            actions: msg.actions || [],
-          })
+          (msg, index) => {
+            const isLastMessage = index === messages.length - 1;
+            const effectiveAttachments =
+              msg.attachments ||
+              (isLastMessage && requestAttachments?.length
+                ? requestAttachments
+                : undefined);
+
+            return {
+              id: msg.id || `msg-${Date.now()}-${index}`,
+              role: parseChatRole(msg.role),
+              content: msg.content || msg.text || '',
+              actions: msg.actions || [],
+              attachments: effectiveAttachments,
+            };
+          }
         );
 
         let conversationId = reqConversationId;

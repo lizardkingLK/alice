@@ -44,6 +44,19 @@ MANDATORY CONFIRMATION PROTOCOL BEFORE MUTATING ACTIONS:
 - If the user mentions a project name from the list, or answers a clarifying question about the project, you must still present the confirmation table and ask for confirmation before creating the item.
 
 Keep your responses friendly, helpful, and concise. Always confirm with the user before performing actions.
+
+ATTACHMENTS & WORK ITEM IMPORT PROTOCOL:
+- When the user attaches a document (JSON or CSV) or asks to import work items from an attachment:
+  1. Call \`parse_work_item_attachment\` using the attachment's signed URL to parse the items, hierarchy (parents and children), and dynamic fields.
+  2. If the target project is not specified by the user, list active projects using \`list_projects\` and ask the user which project to import into.
+  3. Once the project is selected, call \`check_work_item_duplicates\` to detect existing duplicates in that project.
+  4. Present a clear Markdown summary table to the user detailing:
+     - Target project
+     - Work items identified (with types, priorities, and hierarchy: parent -> child)
+     - Dynamic / custom fields identified from the file
+     - Deduplication summary: count of new items to be created, exact duplicates to skip, and potential duplicates
+  5. Ask the user for explicit confirmation before importing (e.g. "Should I proceed with importing these work items into project [Name]?").
+  6. Upon confirmation, call \`batch_import_work_items\` to create the hierarchy of work items in the project and report the created items.
 `;
 
 /** Provider-agnostic Alice chat tools. Strategies map these to wire formats. */
@@ -125,7 +138,7 @@ export const aliceChatTools: AliceChatTools = [
         },
         type: {
           type: 'string',
-          enum: ['story', 'task', 'bug'],
+          enum: ['epic', 'feature', 'story', 'task', 'bug'],
           description: 'Type of work item.',
         },
         priority: {
@@ -139,6 +152,68 @@ export const aliceChatTools: AliceChatTools = [
         },
       },
       required: ['title', 'projectId', 'type', 'priority'],
+    },
+  },
+  {
+    name: 'parse_work_item_attachment',
+    description:
+      'Download and parse an attached JSON or CSV work item document, extracting work items, hierarchy, and dynamic fields.',
+    parameters: {
+      type: 'object',
+      properties: {
+        attachmentUrl: {
+          type: 'string',
+          description: 'The signed URL of the attachment to parse.',
+        },
+        fileName: {
+          type: 'string',
+          description: 'The original file name (optional).',
+        },
+      },
+      required: ['attachmentUrl'],
+    },
+  },
+  {
+    name: 'check_work_item_duplicates',
+    description:
+      'Analyze parsed work items against existing work items in a project to detect duplicates, matching keys, and high similarity.',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: {
+          type: 'string',
+          description: 'UUID of the target project.',
+        },
+        attachmentUrl: {
+          type: 'string',
+          description: 'Signed URL of the attachment to analyze.',
+        },
+      },
+      required: ['projectId', 'attachmentUrl'],
+    },
+  },
+  {
+    name: 'batch_import_work_items',
+    description:
+      'Import and create a batch of work items with hierarchy (parents and children) and dynamic fields into a project.',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: {
+          type: 'string',
+          description: 'UUID of the target project.',
+        },
+        sprintId: {
+          type: 'string',
+          description: 'UUID of the sprint (optional).',
+        },
+        attachmentUrl: {
+          type: 'string',
+          description:
+            'Signed URL of the attachment containing items to import.',
+        },
+      },
+      required: ['projectId', 'attachmentUrl'],
     },
   },
 ];

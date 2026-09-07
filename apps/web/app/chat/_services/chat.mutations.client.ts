@@ -6,6 +6,7 @@ import {
   type ChatPostResponse,
   type ChatToolActionWire,
 } from '@repo/types/api/v1';
+import type { ChatAttachmentWire } from '@repo/types';
 import { formatZodError } from '@/lib/zod/format-zod-error';
 import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
 
@@ -21,12 +22,14 @@ export type { ChatConversationSummaryWire as ChatConversation } from '@repo/type
 export async function sendChatMessage(
   history: ChatMessage[],
   conversationId: string | undefined,
-  integrationId: string | undefined
+  integrationId: string | undefined,
+  attachments?: ChatAttachmentWire[]
 ): Promise<ChatPostResponse> {
   const parsed = postChatMessageBodySchema.safeParse({
     messages: history,
     conversationId,
     integrationId,
+    attachments,
   });
   if (!parsed.success) {
     throw new Error(formatZodError(parsed.error));

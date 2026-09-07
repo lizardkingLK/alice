@@ -5,6 +5,8 @@ import { cn } from '@repo/ui/lib/utils';
 import { ChatRoles } from '@repo/types';
 import type { ChatMessage } from './chat-client.types';
 import { ChatExecutedActionCard } from './chat-executed-action-card';
+import { ChatMarkdown } from './chat-markdown';
+import { getAttachmentIcon } from './chat-attachment-tiles';
 import ChatBotAvatar from '@/app/chat/_components/chat-client-bot-avatar';
 import ChatUserAvatar from '@/app/chat/_components/chat-client-user-avatar';
 import ChatAliceStatusRow from '@/app/chat/_components/chat-client-alice-status-row';
@@ -65,13 +67,46 @@ export default function ChatClientThread({
 
                   <div
                     className={cn(
-                      'w-full rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap',
+                      'w-full rounded-2xl px-4 py-3 text-sm',
                       isUser
-                        ? 'bg-primary text-primary-foreground rounded-tr-md font-medium'
+                        ? 'bg-primary text-primary-foreground rounded-tr-md font-medium whitespace-pre-wrap'
                         : 'bg-muted/50 border-border text-foreground rounded-tl-md border leading-relaxed'
                     )}
                   >
-                    <div>{message.content}</div>
+                    {isUser ? (
+                      <div>{message.content}</div>
+                    ) : (
+                      <ChatMarkdown content={message.content} />
+                    )}
+
+                    {message.attachments && message.attachments.length > 0 ? (
+                      <div
+                        className={cn(
+                          'flex flex-wrap gap-1.5',
+                          message.content ? 'mt-2.5' : ''
+                        )}
+                      >
+                        {message.attachments.map((attachment) => (
+                          <a
+                            key={attachment.id}
+                            href={attachment.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={cn(
+                              'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-colors',
+                              isUser
+                                ? 'bg-primary-foreground/15 hover:bg-primary-foreground/25 text-primary-foreground'
+                                : 'bg-background hover:bg-accent border-border/80 text-foreground border shadow-2xs'
+                            )}
+                          >
+                            {getAttachmentIcon(attachment.fileType)}
+                            <span className="max-w-[10rem] truncate font-medium">
+                              {attachment.fileName}
+                            </span>
+                          </a>
+                        ))}
+                      </div>
+                    ) : null}
 
                     {message.actions && message.actions.length > 0 ? (
                       <div className="border-border/40 mt-3 space-y-2 border-t pt-3">
