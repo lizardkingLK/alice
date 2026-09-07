@@ -5,7 +5,6 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import {
   buildAuthCallbackUrl,
-  buildCheckEmailPath,
   buildLoginPath,
   resolveSafeRedirectPath,
 } from '@/lib/auth-redirect';
@@ -24,9 +23,7 @@ const requestPasswordResetSchema = z.object({
 });
 
 import {
-  LOGIN_DEACTIVATED_MESSAGE,
   LOGIN_INVALID_CREDENTIALS_MESSAGE,
-  isInvalidLoginCredentialsError,
   loginErrorMessage,
 } from '@/lib/auth-login-errors';
 
@@ -54,14 +51,11 @@ export async function login(formData: FormData) {
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
-    const mapped = loginErrorMessage(error.message);
-    if (mapped === LOGIN_DEACTIVATED_MESSAGE) {
-      redirect(buildLoginPath(next, { error: mapped }));
-    }
-    if (isInvalidLoginCredentialsError(error.message)) {
-      redirect(buildCheckEmailPath({ email, next }));
-    }
-    redirect(buildLoginPath(next, { error: mapped }));
+    redirect(
+      buildLoginPath(next, {
+        error: loginErrorMessage(error.message),
+      })
+    );
   }
 
   const {
