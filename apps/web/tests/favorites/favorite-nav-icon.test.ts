@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  BarChart3,
   ClipboardPenIcon,
   FolderKanban,
   Kanban,
@@ -24,6 +25,8 @@ describe('resolveFavoriteNavIcon', () => {
     expect(resolveFavoriteNavIcon('/dashboard')).toBe(LayoutDashboard);
     expect(resolveFavoriteNavIcon('/views')).toBe(Layers);
     expect(resolveFavoriteNavIcon('/chat')).toBe(Sparkles);
+    expect(resolveFavoriteNavIcon('/charts')).toBe(BarChart3);
+    expect(resolveFavoriteNavIcon('/charts/my-board')).toBe(BarChart3);
   });
 
   it('strips query before matching and falls back for unknown paths', () => {

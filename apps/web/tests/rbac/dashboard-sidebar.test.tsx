@@ -100,6 +100,10 @@ describe('DashboardSidebar RBAC', () => {
       'href',
       '/views'
     );
+    expect(screen.getByRole('link', { name: /^Charts$/i })).toHaveAttribute(
+      'href',
+      '/charts'
+    );
   });
 
   it('shows collapsible Favorites with path icons when favorites exist', () => {
@@ -132,12 +136,16 @@ describe('DashboardSidebar RBAC', () => {
     ).toBeInTheDocument();
   });
 
-  it('always shows Views and Alice under Platform', () => {
+  it('always shows Views, Charts, and Alice under Platform', () => {
     renderSidebar('member');
 
     expect(screen.getByRole('link', { name: /^Views$/i })).toHaveAttribute(
       'href',
       '/views'
+    );
+    expect(screen.getByRole('link', { name: /^Charts$/i })).toHaveAttribute(
+      'href',
+      '/charts'
     );
     const aliceChatLink = screen
       .getAllByRole('link', { name: /^Alice$/i })

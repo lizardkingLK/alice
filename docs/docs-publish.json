@@ -57,12 +57,16 @@
           "order": 2
         },
         {
-          "path": "user-guide/navigation/keyboard-shortcuts.md",
+          "path": "user-guide/navigation/charts.md",
           "order": 3
         },
         {
-          "path": "user-guide/navigation/favorites-and-views.md",
+          "path": "user-guide/navigation/keyboard-shortcuts.md",
           "order": 4
+        },
+        {
+          "path": "user-guide/navigation/favorites-and-views.md",
+          "order": 5
         }
       ]
     },

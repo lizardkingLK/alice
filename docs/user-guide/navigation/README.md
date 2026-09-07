@@ -11,6 +11,7 @@ Find your way around Alice — sidebar, dashboard, shortcuts, and saved views.
 | Page                                            | What you'll learn                  |
 | ----------------------------------------------- | ---------------------------------- |
 | [Dashboard overview](./dashboard-overview.md)   | Overview widgets and layout        |
+| [Charts](./charts.md)                           | Custom chart boards and widgets    |
 | [Keyboard shortcuts](./keyboard-shortcuts.md)   | Speed up common actions            |
 | [Favorites and views](./favorites-and-views.md) | Star pages and save filtered views |
 
@@ -20,14 +21,14 @@ Find your way around Alice — sidebar, dashboard, shortcuts, and saved views.
 
 After sign-in, the left sidebar organizes the app:
 
-| Group         | Examples                                                    |
-| ------------- | ----------------------------------------------------------- |
-| **Platform**  | Overview, Backlog, Board, Work Items, My Work, Alice, Views |
-| **Favorites** | Pages you starred (appears when you have at least one)      |
-| **Projects**  | Projects list; **Sprints** (managers and admins)            |
-| **System**    | **Users** (admins only)                                     |
-| **Account**   | Profile, Settings                                           |
-| **Help**      | Help, Docs, Roadmap                                         |
+| Group         | Examples                                                            |
+| ------------- | ------------------------------------------------------------------- |
+| **Platform**  | Overview, Charts, Backlog, Board, Work Items, My Work, Alice, Views |
+| **Favorites** | Pages you starred (appears when you have at least one)              |
+| **Projects**  | Projects list; **Sprints** (managers and admins)                    |
+| **System**    | **Users** (admins only)                                             |
+| **Account**   | Profile, Settings                                                   |
+| **Help**      | Help, Docs, Roadmap                                                 |
 
 Select any item to open that area. Collapse the sidebar with the trigger at the
 top or **Ctrl/⌘+B**.
