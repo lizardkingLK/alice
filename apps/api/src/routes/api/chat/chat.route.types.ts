@@ -43,6 +43,7 @@ export type AliceChatToolParameterProperty = {
   type: string;
   description?: string;
   enum?: readonly string[];
+  items?: AliceChatToolParameterProperty;
 };
 
 /** One Alice chat tool declaration (provider-agnostic). */
