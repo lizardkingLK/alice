@@ -23,6 +23,10 @@ export interface RawSearchParams {
   fromAssignee?: string;
   /** Work-items list layout: flat (default) or hierarchy (roots + expand). */
   view?: string;
+  /** Charts board ownership filter (`all` | `mine` | `shared`). */
+  ownership?: string;
+  /** Charts board status filter (`all` | `active` | `archived`). */
+  status?: string;
 }
 
 export interface ParsedStandardParams {
