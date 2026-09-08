@@ -22,7 +22,13 @@ Related:
 
 - Let signed-in users ask in natural language to list/create **projects**,
   **sprints**, and **work items**.
-- Persist multi-turn conversations per user (sidebar history on `/chat`).
+- Attach and process documents (**JSON**, **CSV**, **Text**, and **Images**) directly in the chat composer.
+- Use a **direct-to-storage upload session** flow to avoid Vercel/serverless request payload size limits.
+- Automatically parse attached documents into hierarchical and flat work item trees (`parse_work_item_attachment`).
+- Run **duplicate checking and similarity analysis** against existing project items (`check_work_item_duplicates`).
+- Execute **batch work item imports** with hierarchy links and sprint assignments (`batch_import_work_items`).
+- Enforce strict **project scope guardrails** keeping Alice dedicated solely to ALICE system operations.
+- Persist multi-turn conversations and attachment metadata per user (sidebar history on `/chat`).
 - Surface Alice from the dashboard **navbar** (between notifications and
   profile) without leaving the current route.
 - Confirm intent in conversation before mutating (prompt-guided; no separate
@@ -104,35 +110,44 @@ All routes require `requireApiAuth`. Wired via composition root
 (`config/composition.ts` → `chat.router` mounted in `routing.ts`). See
 [DI.md](../../architecture/DI.md).
 
-| Method   | Path                        | Purpose                                                |
-| -------- | --------------------------- | ------------------------------------------------------ |
-| `GET`    | `/api/chat`                 | Latest conversation history from Storage (or empty)    |
-| `GET`    | `/api/chat/:conversationId` | Load one conversation’s history from Storage           |
-| `DELETE` | `/api/chat/:conversationId` | Delete conversation row (+ best-effort Storage remove) |
-| `POST`   | `/api/chat`                 | Send messages; run agent loop; return assistant reply  |
+| Method   | Path                                    | Purpose                                                                |
+| -------- | --------------------------------------- | ---------------------------------------------------------------------- |
+| `POST`   | `/api/v1/chat/attachments/upload-session`| Mints direct-to-storage signed upload URL and token                    |
+| `POST`   | `/api/v1/chat/attachments/finalize`     | Strictly validates storage file and records database row in Prisma     |
+| `GET`    | `/api/v1/chat/attachments/:id`          | Mint signed preview and download URLs for active attachment            |
+| `DELETE` | `/api/v1/chat/attachments/:id`          | Soft-delete attachment row (`status: 'archived'`) and removes file     |
+| `POST`   | `/api/v1/chat/attachments`              | Multipart fallback upload                                              |
+| `GET`    | `/api/v1/chat`                          | Latest conversation history from Storage (or empty)                    |
+| `GET`    | `/api/v1/chat/:conversationId`          | Load one conversation’s history from Storage                           |
+| `DELETE` | `/api/v1/chat/:conversationId`          | Delete conversation row (+ best-effort Storage remove)                 |
+| `POST`   | `/api/v1/chat`                          | Send messages; run agent loop; return assistant reply                  |
 
-Mounted in `apps/api/src/config/routing.ts` as `/api/chat`.
+Mounted in `apps/api/src/config/routing.ts` as `/api/chat` and `/api/v1/chat`.
 
 ### Key files
 
-| Layer           | Path                                                                                 |
-| --------------- | ------------------------------------------------------------------------------------ |
-| Page            | `apps/web/app/chat/page.tsx` (RSC bootstrap + Suspense)                              |
-| Client UI       | `apps/web/app/chat/_components/chat-client.tsx`                                      |
-| Client API      | `apps/web/app/chat/_components/chat-client.service.ts` (mutations + Storage history) |
-| Server reads    | `apps/web/app/chat/_services/chat.service.server.ts`                                 |
-| Client list     | `apps/web/app/chat/_services/chat-read-actions.ts` (`listChatConversationsAction`)   |
-| Launcher        | `apps/web/app/chat/_components/chat-launcher.tsx`                                    |
-| Drawer          | `apps/web/app/chat/_components/floating-chat-widget.tsx`                             |
-| Routes          | `createChatRouter` in `chat.route.ts` (mounted as `chat.router`)                     |
-| Service         | `ChatService` in `chat.service.ts`                                                   |
-| Repository      | `ChatRepository` in `chat.repository.ts` (`db` injected)                             |
-| Prompt + tools  | `apps/api/src/routes/api/chat/chat.route.data.ts`                                    |
-| Types (API)     | `apps/api/src/routes/api/chat/chat.route.types.ts`                                   |
-| Shared roles    | `packages/types/src/chat.ts` (`ChatRoles`, `ChatTurnRoles`, `getRoleName`)           |
-| Chat models     | `packages/types/src/chat-models.ts` (shared model dropdown + backend defaults)       |
-| Composition     | `apps/api/src/config/composition.ts` → `chat`                                        |
-| Supabase client | `apps/api/src/lib/supabase.ts` (`supabase` + re-exported `createClient`)             |
+| Layer           | Path                                                                                                   |
+| --------------- | ------------------------------------------------------------------------------------------------------ |
+| Page            | `apps/web/app/chat/page.tsx` (RSC bootstrap + Suspense)                                                |
+| Client UI       | `apps/web/app/chat/_components/chat-client.tsx`                                                        |
+| Attachment UI   | `apps/web/app/chat/_components/chat-attachment-tiles.tsx`                                              |
+| Action Cards    | `apps/web/app/chat/_components/chat-executed-action-card.tsx`                                           |
+| Client API      | `apps/web/app/chat/_services/chat-attachments.client.ts` (upload-session, finalize, mint, delete)        |
+| Client Mutation | `apps/web/app/chat/_services/chat.mutations.client.ts`                                                 |
+| Server reads    | `apps/web/app/chat/_services/chat.reads.server.ts`                                                      |
+| Launcher        | `apps/web/app/chat/_components/chat-launcher.tsx`                                                      |
+| Drawer          | `apps/web/app/chat/_components/floating-chat-widget.tsx`                                               |
+| Routes          | `createChatRouter` in `chat.route.ts` (mounted as `chat.router`)                                       |
+| Service         | `ChatService` in `chat.service.ts`                                                                     |
+| Chat Repo       | `ChatRepository` in `chat.repository.ts` (`db` injected)                                               |
+| Attachment Repo | `ChatAttachmentsRepository` in `chat-attachments.repository.ts` (Prisma + Storage)                      |
+| Attachment Parse| `fetchAndParseWorkItemAttachment` in `chat-attachment-parser.ts`                                       |
+| Deduplication   | `WorkItemDeduplicationAgent` in `work-item-deduplication.agent.ts`                                      |
+| Prompt + tools  | `apps/api/src/routes/api/chat/chat.route.data.ts`                                                      |
+| Schemas         | `apps/api/src/routes/api/chat/chat.schemas.ts` + `packages/types/src/api/v1/chat.ts`                   |
+| Shared types    | `packages/types/src/chat-attachments.ts`                                                               |
+| Composition     | `apps/api/src/config/composition.ts` → `chat`                                                          |
+| Supabase client | `apps/api/src/lib/supabase.ts` (`supabase` + re-exported `createClient`)                               |
 
 ### Data access
 
@@ -158,26 +173,29 @@ needed elsewhere in the API.
 
 Declared in `chat.route.data.ts` and executed server-side:
 
-| Tool               | Effect                                                                      |
-| ------------------ | --------------------------------------------------------------------------- |
-| `list_projects`    | List projects (id, name, key)                                               |
-| `create_project`   | Create project via projects service                                         |
-| `list_sprints`     | List sprints for a `projectId`                                              |
-| `create_sprint`    | Create sprint via sprints service                                           |
-| `list_users`       | List users (id, name, email) for assignee matching                          |
-| `create_work_item` | Create work item; maps chat types (bug → Issue, task → Task, story → Story) |
+| Tool                         | Effect                                                                                     |
+| ---------------------------- | ------------------------------------------------------------------------------------------ |
+| `list_projects`              | List projects (id, name, key)                                                              |
+| `create_project`             | Create project via projects service                                                        |
+| `list_sprints`               | List sprints for a `projectId`                                                             |
+| `create_sprint`              | Create sprint via sprints service                                                          |
+| `list_users`                 | List users (id, name, email) for assignee matching                                         |
+| `create_work_item`           | Create single work item; maps chat types (bug → Issue, task → Task, story → Story)         |
+| `parse_work_item_attachment` | Fetch and parse attached document (JSON, CSV, Text) into structured work item nodes       |
+| `check_work_item_duplicates` | Compare parsed items against existing project items to identify new vs duplicate items    |
+| `batch_import_work_items`    | Bulk create validated work items in a project with parent-child hierarchy links            |
 
 **Protocol (system prompt):** resolve project (list / optionally create) →
-resolve sprint (optional) → resolve assignee → `create_work_item` → summarize.
+resolve sprint (optional) → resolve assignee → `create_work_item` or `parse_work_item_attachment` →
+`check_work_item_duplicates` → `batch_import_work_items` → summarize.
 
 Agent loop: up to **5** tool rounds per user message, then return text +
 `actions` for the UI.
 
-### Context injection (not RAG)
+### Context injection & Document Context
 
 Each `POST` builds a **workspace snapshot** into the system instruction:
-projects, users, and active sprints. There is no embedding index or retrieval
-pipeline.
+projects, users, and active sprints. When the user attaches files, Alice injects the file metadata and signed URLs directly into the conversation prompt, guiding Gemini to call `parse_work_item_attachment` when processing documents.
 
 ---
 
@@ -193,27 +211,33 @@ pipeline.
 | `created_at` / `updated_at` | Timestamps                         |
 
 Index on `user_id`. RLS policies exist for owner access; the API uses the
-**service-role** client, so ownership checks must stay in application code.
+**service-role** client, so ownership checks stay in application code.
 
-Migrations: `add_chat_conversations`, `add_chat_conversations_rls`,
-`add_chat_conversations_updated_at_default`.
+### Postgres — `chat_attachments`
 
-### Message history — Supabase Storage
+| Column            | Type           | Notes                                          |
+| ----------------- | -------------- | ---------------------------------------------- |
+| `id`              | `uuid`         | Primary key (`gen_random_uuid()`)              |
+| `user_id`         | `uuid`         | FK → `users` (`ON DELETE CASCADE`)             |
+| `conversation_id` | `uuid?`        | FK → `chat_conversations` (`ON DELETE CASCADE`)|
+| `file_name`       | `string`       | Original file name                             |
+| `storage_path`    | `string`       | Path in Supabase Storage                       |
+| `file_size`       | `int`          | File size in bytes                             |
+| `mime_type`       | `string`       | File MIME type                                 |
+| `status`          | `RecordStatus` | `'active'` or `'archived'` (soft-delete)       |
+| `created_at`      | `timestamptz`  | Created timestamp                              |
+| `updated_at`      | `timestamptz`  | Updated timestamp                              |
 
-- Bucket: `STORAGE_BUCKET_CHAT_HISTORY` (default `alice_storage_chat_history`)
-- Object path: `chat-history/{conversationId}.md`
-- Format: readable Markdown plus an embedded JSON block between
-  `JSON_HISTORY_DATA_START` / `JSON_HISTORY_DATA_END` markers for round-trip
-  load
+Indexes on `user_id` and `conversation_id`. Managed exclusively via Prisma (`await prisma.chat_attachments......`).
 
-History Storage and `chat_conversations` table access both go through
-`chat.repository.ts`, which uses the shared API service-role client in
-`apps/api/src/lib/supabase.ts` (same helper other repositories use:
-`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`). There is **no** separate chat
-Supabase project or `CHAT_SUPABASE_*` credentials.
+### Storage Buckets — Supabase Storage
 
-There is **no** `chat_messages` table — threads are DB rows; turns are Storage
-files.
+- **Attachments Bucket**: `STORAGE_BUCKET_CHAT_ATTACHMENTS` (default `alice_storage_chat_attachments`).
+  - Path format: `chat-attachments/{userId}/{timestamp}-{safeFileName}`
+  - Upload mechanism: Browser uploads directly via signed upload URL (`uploadToSignedUrl`), avoiding Next.js/Express payload limits.
+- **Message History Bucket**: `STORAGE_BUCKET_CHAT_HISTORY` (default `alice_storage_chat_history`).
+  - Path format: `chat-history/{conversationId}.md`
+  - Format: Readable Markdown plus embedded JSON round-trip data block.
 
 ---
 
@@ -278,12 +302,29 @@ No active chat model rows → `POST /api/chat` returns **400** with a configurat
 
 ## Testing
 
-| Area                                   | Status                                     |
-| -------------------------------------- | ------------------------------------------ |
-| Markdown history serialize/deserialize | `apps/api/tests/chat/chat.service.test.ts` |
-| Route / tools / Gemini mocks           | Not covered                                |
-| Web `ChatClient` / widget              | Not covered                                |
-| Cypress E2E                            | Not covered                                |
+### Automated Test Coverage
+
+| Area                                   | Test File                                                         | Status  |
+| -------------------------------------- | ----------------------------------------------------------------- | ------- |
+| Attachment repository & direct upload  | `apps/api/tests/chat/chat-attachments.repository.test.ts`         | Covered |
+| Attachment file parsing (JSON/CSV)     | `apps/api/tests/chat/chat-attachment-parser.test.ts`              | Covered |
+| Deduplication engine & recommendations | `apps/api/tests/chat/work-item-deduplication.agent.test.ts`       | Covered |
+| Chat service orchestration & tools     | `apps/api/tests/chat/chat.service.test.ts`                        | Covered |
+| Chat API routes & auth                 | `apps/api/tests/chat/chat.route.test.ts`                          | Covered |
+| Web client upload & mutations          | `apps/web/tests/chat/chat-attachments.client.test.ts`             | Covered |
+| Web attachment tiles rendering         | `apps/web/tests/chat/chat-attachment-tiles.test.tsx`              | Covered |
+| Web full chat client UI                | `apps/web/tests/chat/chat-client.test.tsx`                        | Covered |
+
+Run tests via:
+```powershell
+pnpm --filter api test tests/chat/
+pnpm --filter web test tests/chat/
+```
+
+### User End-to-End Testing
+
+For full step-by-step instructions for testing from the browser UI (with sample JSON and CSV payloads), see:
+👉 **[USER_TEST_GUIDE.md](./USER_TEST_GUIDE.md)**
 
 ---
 
@@ -307,3 +348,4 @@ No active chat model rows → `POST /api/chat` returns **400** with a configurat
 2. Gemini tools for list/create project, sprint, work item, users
 3. Full-page `/chat` + navbar launcher drawer on dashboard shell
 4. Action cards after successful mutations
+5. Document attachment processing (upload-session, Supabase Storage direct upload, JSON/CSV parsing, deduplication engine, batch work item import, and strict project scope guardrails)

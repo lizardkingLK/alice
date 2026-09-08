@@ -8,9 +8,10 @@ Ask Alice to create projects, sprints, and work items in natural language.
 
 ## In this topic
 
-| Page                                          | What you'll learn                    |
-| --------------------------------------------- | ------------------------------------ |
-| [Use the AI assistant](./use-ai-assistant.md) | Full page chat and the header drawer |
+| Page                                          | What you'll learn                                 |
+| --------------------------------------------- | ------------------------------------------------- |
+| [Use the AI assistant](./use-ai-assistant.md) | Full page chat and the header drawer              |
+| [User testing guide](./user-test-guide.md)   | Testing document attachments, parsing, and batch import |
 
 Alice is the workspace AI assistant (powered by configured chat models such as
 Gemini). Use it for quick questions and guided mutations — not as a replacement
