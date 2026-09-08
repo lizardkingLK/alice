@@ -11,6 +11,7 @@ import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work
 import { WorkItemStatusBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-status';
 import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-type';
 import { UserAvatar } from '@/components/user-avatar';
+import { useRealtime } from '@/components/realtime/realtime-provider';
 
 type CalendarDayItemProps = {
   readonly item: DbWorkItem;
@@ -27,6 +28,14 @@ type CalendarDayItemProps = {
   readonly onOpen: (item: DbWorkItem) => void;
 };
 
+function resolveOnlineStatus(
+  userId: string | null,
+  // eslint-disable-next-line no-unused-vars -- callback signature
+  isUserOnline: (userId: string) => boolean
+) {
+  return userId ? isUserOnline(userId) : false;
+}
+
 export function CalendarDayItem({
   item,
   compact,
@@ -38,6 +47,7 @@ export function CalendarDayItem({
   onDragEnd,
   onOpen,
 }: Readonly<CalendarDayItemProps>) {
+  const { isUserOnline } = useRealtime();
   const isIssue = item.type === WorkItemTypeEnum.Issue;
   const isStory = item.type === WorkItemTypeEnum.Story;
 
@@ -118,6 +128,7 @@ export function CalendarDayItem({
           name={item.assignee?.name}
           imageUrl={item.assignee?.profile_picture}
           title={item.assignee?.name ?? 'Unassigned'}
+          isOnline={resolveOnlineStatus(item.assignee_id, isUserOnline)}
         />
       </div>
     </button>

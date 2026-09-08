@@ -16,6 +16,10 @@ import { commentFactory } from '../factories/comment.factory';
 import { formatDateToISOString } from '@/app/_shared/utility';
 import { plainTextToCommentDoc } from '@repo/types';
 
+vi.mock('@/components/realtime/realtime-provider', () => ({
+  useRealtime: () => ({ isUserOnline: () => false }),
+}));
+
 vi.mock('@/lib/supabase/client', () => {
   const mockQueryBuilder = {
     eq: vi.fn().mockImplementation(() => mockQueryBuilder),

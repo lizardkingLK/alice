@@ -188,6 +188,7 @@ describe('ProjectRegistry Component', () => {
 
     // Verify owner details
     expect(screen.getAllByText('Bob Manager')).toHaveLength(2);
+    expect(screen.queryByLabelText('Online')).not.toBeInTheDocument();
   });
 
   it('handles tab changes', () => {

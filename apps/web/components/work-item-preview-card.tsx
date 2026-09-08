@@ -21,6 +21,7 @@ export type WorkItemPreviewCardProps = {
   readonly descriptionPlain?: string | null;
   readonly assigneeName?: string | null;
   readonly assigneeImageUrl?: string | null;
+  readonly isAssigneeOnline?: boolean;
   readonly workItemKey?: string | null;
   readonly titleClassName?: string;
 };
@@ -33,6 +34,7 @@ export function WorkItemPreviewCardBody({
   descriptionPlain,
   assigneeName,
   assigneeImageUrl,
+  isAssigneeOnline,
   workItemKey,
   titleClassName,
 }: Readonly<WorkItemPreviewCardProps>) {
@@ -63,6 +65,7 @@ export function WorkItemPreviewCardBody({
                 name={name}
                 imageUrl={assigneeImageUrl}
                 title={name}
+                isOnline={isAssigneeOnline}
               />
             </span>
           </TooltipTrigger>

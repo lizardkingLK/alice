@@ -13,6 +13,7 @@ import {
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import { UserAvatar } from '@/components/user-avatar';
+import { useRealtime } from '@/components/realtime/realtime-provider';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';
 import { GripVertical } from '@repo/ui/lib/icons';
@@ -34,6 +35,7 @@ export function BacklogIssueRow({
   onSelect,
   onDragStart,
 }: Readonly<BacklogIssueRowProps>) {
+  const { isUserOnline } = useRealtime();
   const projectKey = projects.find((p) => p.id === item.project_id)?.key;
   const displayKey = projectDisplayKey(projectKey, item.id);
   const membersById = useMemo(
@@ -79,6 +81,7 @@ export function BacklogIssueRow({
           name={item.assignee?.name}
           imageUrl={avatarUrl}
           title={item.assignee?.name ?? 'Unassigned'}
+          isOnline={Boolean(item.assignee_id && isUserOnline(item.assignee_id))}
         />
       </div>
     </button>

@@ -19,6 +19,7 @@ import {
 } from '@repo/ui/lib/icons';
 import {
   Avatar,
+  AvatarBadge,
   AvatarFallback,
   AvatarGroup,
   AvatarGroupCount,
@@ -78,6 +79,7 @@ import { SearchInput } from '@/components/search-input';
 import { UserAvatar } from '@/components/user-avatar';
 import { WorkItemPreviewCardBody } from '@/components/work-item-preview-card';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
+import { useRealtime } from '@/components/realtime/realtime-provider';
 import {
   QUERY_FILTER_ALL_VALUE,
   useQueryFilter,
@@ -131,6 +133,7 @@ export function KanbanBoard({
   suggestedDefaults,
   needsClientBootstrap,
 }: Readonly<KanbanBoardProps>) {
+  const { isUserOnline } = useRealtime();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -552,6 +555,12 @@ export function KanbanBoard({
                       <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
                         {getInitials(assignee.name)}
                       </AvatarFallback>
+                      {isUserOnline(assignee.id) ? (
+                        <AvatarBadge
+                          aria-label="Online"
+                          className="top-0 right-0 bottom-auto size-2 bg-emerald-500"
+                        />
+                      ) : null}
                     </Avatar>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
@@ -722,6 +731,9 @@ export function KanbanBoard({
                             descriptionPlain={description || null}
                             assigneeName={assigneeName(item)}
                             assigneeImageUrl={item.assignee?.profile_picture}
+                            isAssigneeOnline={Boolean(
+                              item.assignee_id && isUserOnline(item.assignee_id)
+                            )}
                             titleClassName="group-hover:text-primary transition-colors"
                           />
                         </Card>
@@ -777,6 +789,10 @@ export function KanbanBoard({
                         name={assigneeName(selectedTask)}
                         imageUrl={selectedTask.assignee?.profile_picture}
                         title={assigneeName(selectedTask)}
+                        isOnline={Boolean(
+                          selectedTask.assignee_id &&
+                          isUserOnline(selectedTask.assignee_id)
+                        )}
                         className="size-6"
                         fallbackClassName="bg-primary text-primary-foreground text-[10px] font-medium"
                       />

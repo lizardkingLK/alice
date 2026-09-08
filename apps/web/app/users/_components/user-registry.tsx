@@ -51,6 +51,7 @@ import { DataTable } from '@/components/data-table';
 import { UserAvatar } from '@/components/user-avatar';
 import { SearchInput } from '@/components/search-input';
 import { DismissibleError } from '@/components/dismissible-error';
+import { useRealtime } from '@/components/realtime/realtime-provider';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { toggleUserActive } from '../_services/users.mutations.client';
@@ -136,6 +137,7 @@ function UserCell({
   isSelf,
 }: Readonly<{ row: UserRow; isSelf: boolean }>) {
   const usr = row.original;
+  const { isUserOnline } = useRealtime();
 
   return (
     <div className="flex min-w-56 items-center gap-3">
@@ -152,6 +154,7 @@ function UserCell({
             ? 'bg-primary/10 text-primary'
             : 'bg-muted text-muted-foreground'
         )}
+        isOnline={isUserOnline(usr.id)}
       />
       <div className="min-w-0 space-y-0.5">
         <div className="flex items-center gap-2">
