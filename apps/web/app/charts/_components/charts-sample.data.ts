@@ -62,111 +62,36 @@ export const CHARTS_SAMPLE_MEMBERS: readonly ChartsSampleMember[] = (
   profilePicture: null,
 }));
 
-/** Compact rows avoid Sonar CPD matching near-identical object literals. */
-const CHARTS_SAMPLE_WORK_ITEM_ROWS: readonly (readonly [
-  id: string,
-  title: string,
-  status: WorkItemStatus,
-  type: WorkItemType,
-  priority: WorkItemPriority,
-  assigneeId: string | null,
-  projectId: string,
-])[] = [
-  [
-    'wi-1',
-    'Database Setup and Prisma Migration',
-    'Done',
-    'Task',
-    'highest',
-    'user-alice',
-    'proj-alice',
-  ],
-  [
-    'wi-2',
-    'Implement Core User Model',
-    'Done',
-    'Story',
-    'highest',
-    'user-bob',
-    'proj-alice',
-  ],
-  [
-    'wi-3',
-    'Projects & Memberships',
-    'InProgress',
-    'Story',
-    'high',
-    'user-cara',
-    'proj-alice',
-  ],
-  [
-    'wi-4',
-    'Teams and Reporting Lines',
-    'InProgress',
-    'Story',
-    'medium',
-    'user-dan',
-    'proj-alice',
-  ],
-  [
-    'wi-5',
-    'Sprints Engine',
-    'Testing',
-    'Story',
-    'high',
-    'user-eve',
-    'proj-alice',
-  ],
-  [
-    'wi-6',
-    'Work Items Hierarchy',
-    'ToDo',
-    'Epic',
-    'highest',
-    'user-alice',
-    'proj-alice',
-  ],
-  [
-    'wi-7',
-    'Comments and Attachments',
-    'New',
-    'Story',
-    'high',
-    'user-bob',
-    'proj-demo',
-  ],
-  [
-    'wi-8',
-    'Access Allowlist',
-    'InProgress',
-    'Story',
-    'medium',
-    'user-cara',
-    'proj-demo',
-  ],
-  [
-    'wi-9',
-    'Jira OAuth Sync',
-    'ToDo',
-    'Story',
-    'high',
-    null,
-    'proj-demo',
-  ],
-];
+/** Pipe-delimited fixture — single blob avoids Sonar CPD on repeated row shapes. */
+const CHARTS_SAMPLE_WORK_ITEMS_TSV = `
+wi-1|Database Setup and Prisma Migration|Done|Task|highest|user-alice|proj-alice
+wi-2|Implement Core User Model|Done|Story|highest|user-bob|proj-alice
+wi-3|Projects & Memberships|InProgress|Story|high|user-cara|proj-alice
+wi-4|Teams and Reporting Lines|InProgress|Story|medium|user-dan|proj-alice
+wi-5|Sprints Engine|Testing|Story|high|user-eve|proj-alice
+wi-6|Work Items Hierarchy|ToDo|Epic|highest|user-alice|proj-alice
+wi-7|Comments and Attachments|New|Story|high|user-bob|proj-demo
+wi-8|Access Allowlist|InProgress|Story|medium|user-cara|proj-demo
+wi-9|Jira OAuth Sync|ToDo|Story|high||proj-demo
+`.trim();
 
 export const CHARTS_SAMPLE_WORK_ITEMS: readonly ChartsSampleWorkItem[] =
-  CHARTS_SAMPLE_WORK_ITEM_ROWS.map(
-    ([id, title, status, type, priority, assigneeId, projectId]) => ({
-      id,
-      title,
-      status,
-      type,
-      priority,
-      assigneeId,
-      projectId,
-    })
-  );
+  CHARTS_SAMPLE_WORK_ITEMS_TSV.split('\n').map((line) => {
+    const parts = line.split('|');
+    if (parts.length !== 7) {
+      throw new Error(`Invalid charts sample work-item row: ${line}`);
+    }
+    return {
+      id: parts[0] as string,
+      title: parts[1] as string,
+      status: parts[2] as WorkItemStatus,
+      type: parts[3] as WorkItemType,
+      priority: parts[4] as WorkItemPriority,
+      assigneeId: parts[5] ? parts[5] : null,
+      projectId: parts[6] as string,
+    };
+  });
+
 
 export type ChartsStatusPieSlice = {
   readonly status: string;
