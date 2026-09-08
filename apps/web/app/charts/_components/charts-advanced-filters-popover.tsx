@@ -24,6 +24,7 @@ import {
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { CircleHelp, X } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
+import { FilterFieldNavItem } from '@/components/filter-field-nav-item';
 import {
   CHARTS_FILTER_COLUMNS,
   CHARTS_SAMPLE_PROJECTS,
@@ -437,28 +438,15 @@ export function ChartsAdvancedFiltersPopover({
               aria-label="Quick filter fields"
             >
               {QUICK_FIELDS.map((field) => (
-                <button
+                <FilterFieldNavItem
                   key={field.id}
-                  type="button"
-                  onClick={() => {
+                  label={field.label}
+                  active={quickField === field.id}
+                  onSelect={() => {
                     setQuickField(field.id);
                     setQuickSearch('');
                   }}
-                  className={cn(
-                    'relative flex w-full cursor-pointer items-center rounded-md px-3 py-2 text-left text-sm transition-colors',
-                    quickField === field.id
-                      ? 'bg-primary/10 text-foreground font-medium'
-                      : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-                  )}
-                >
-                  {quickField === field.id ? (
-                    <span
-                      aria-hidden
-                      className="bg-primary absolute top-1 bottom-1 left-0 w-0.5 rounded-full"
-                    />
-                  ) : null}
-                  {field.label}
-                </button>
+                />
               ))}
             </nav>
             <div className="flex min-h-0 flex-col gap-2 p-3">

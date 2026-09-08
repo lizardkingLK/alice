@@ -2,12 +2,6 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from '@repo/ui/components/ui/dialog';
 import { DropdownMenuItem } from '@repo/ui/components/ui/dropdown-menu';
 import {
   Tooltip,
@@ -25,6 +19,7 @@ import { SearchInput } from '@/components/search-input';
 import { preventDismissForFloatingPortal } from '@/lib/dialog-outside-events';
 import { ChartsAdvancedFiltersPopover } from '@/app/charts/_components/charts-advanced-filters-popover';
 import { ChartsAssigneeAvatarFilter } from '@/app/charts/_components/charts-assignee-avatar-filter';
+import { ChartsFullscreenDialogShell } from '@/app/charts/_components/charts-fullscreen-dialog-shell';
 import { ChartsStatusPiePreview } from '@/app/charts/_components/charts-status-pie-preview';
 import { ChartsWidgetActionsMenu } from '@/app/charts/_components/charts-widget-actions-menu';
 import {
@@ -98,23 +93,19 @@ export function ChartsWidgetConfigDialog({
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="flex h-[min(92vh,860px)] w-[min(96vw,1100px)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none"
-        dismissOnOutsideClick={false}
-        onPointerDownOutside={preventDismissForFloatingPortal}
-        onInteractOutside={preventDismissForFloatingPortal}
-        onFocusOutside={(event) => event.preventDefault()}
-      >
-        <div className="border-border flex shrink-0 items-center gap-2 border-b px-4 py-3 pr-12">
-          <DialogTitle className="text-base font-semibold tracking-tight">
-            {title}
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            Configure filters and preview for the {title} chart widget.
-          </DialogDescription>
-        </div>
-
+    <ChartsFullscreenDialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      description={`Configure filters and preview for the ${title} chart widget.`}
+      sizeClassName="h-[min(92vh,860px)] w-[min(96vw,1100px)]"
+      contentProps={{
+        dismissOnOutsideClick: false,
+        onPointerDownOutside: preventDismissForFloatingPortal,
+        onInteractOutside: preventDismissForFloatingPortal,
+        onFocusOutside: (event) => event.preventDefault(),
+      }}
+    >
         <div className="border-border flex shrink-0 flex-wrap items-center gap-2 border-b px-4 py-2.5">
           <SearchInput
             value={searchQuery}
@@ -202,8 +193,7 @@ export function ChartsWidgetConfigDialog({
         <div className="bg-background flex min-h-0 flex-1 flex-col overflow-hidden p-4 sm:p-6">
           <ChartsStatusPiePreview size="dialog" workItems={filteredWorkItems} />
         </div>
-      </DialogContent>
-    </Dialog>
+    </ChartsFullscreenDialogShell>
   );
 }
 

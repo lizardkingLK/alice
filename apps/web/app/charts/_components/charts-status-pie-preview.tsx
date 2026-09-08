@@ -1,14 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useMemo } from 'react';
 import {
   Cell,
-  ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   Pie,
   PieChart,
-  type ChartConfig,
 } from '@repo/ui/components/ui/chart';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';
@@ -16,11 +14,7 @@ import {
   buildChartsStatusPieFromSample,
   type ChartsSampleWorkItem,
 } from '@/app/charts/_components/charts-sample.data';
-
-type ChartSize = {
-  width: number;
-  height: number;
-};
+import { ChartViewport } from '@/components/chart-viewport';
 
 type ChartsStatusPiePreviewProps = {
   readonly className?: string;
@@ -47,7 +41,9 @@ export function ChartsStatusPiePreview({
         className
       )}
     >
-      <PieViewport
+      <ChartViewport
+        square
+        config={config}
         className={cn(
           'relative min-h-0 min-w-0 flex-1',
           // Cap pie so it stays medium — scales with the widget, not huge.
@@ -55,7 +51,6 @@ export function ChartsStatusPiePreview({
             ? 'mx-auto aspect-square h-full max-h-[min(100%,22rem)] max-w-[min(100%,22rem)]'
             : 'mx-auto aspect-square h-full max-h-full max-w-[min(100%,14rem)]'
         )}
-        config={config}
       >
         <PieChart>
           <ChartTooltip
@@ -76,7 +71,7 @@ export function ChartsStatusPiePreview({
             ))}
           </Pie>
         </PieChart>
-      </PieViewport>
+      </ChartViewport>
 
       <ul
         className={cn(
@@ -115,60 +110,6 @@ export function ChartsStatusPiePreview({
           </li>
         ) : null}
       </ul>
-    </div>
-  );
-}
-
-function PieViewport({
-  config,
-  children,
-  className,
-}: Readonly<{
-  config: ChartConfig;
-  children: ReactNode;
-  className?: string;
-}>) {
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState<ChartSize | null>(null);
-
-  useEffect(() => {
-    const element = viewportRef.current;
-    if (!element) {
-      return;
-    }
-
-    const measure = () => {
-      const { width, height } = element.getBoundingClientRect();
-      const side = Math.floor(Math.min(width, height));
-      if (side <= 0) {
-        return;
-      }
-      setSize((previous) => {
-        if (previous?.width === side && previous.height === side) {
-          return previous;
-        }
-        return { width: side, height: side };
-      });
-    };
-
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div ref={viewportRef} className={cn('relative', className)}>
-      {size ? (
-        <ChartContainer
-          config={config}
-          width={size.width}
-          height={size.height}
-          className="absolute inset-0 m-auto aspect-auto h-full w-full justify-center"
-        >
-          {children}
-        </ChartContainer>
-      ) : null}
     </div>
   );
 }

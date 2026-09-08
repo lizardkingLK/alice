@@ -33,6 +33,7 @@ import {
   filterChartsSampleWorkItems,
   type ChartsWidgetFilterDraft,
 } from '@/app/charts/_components/charts-sample.data';
+import { ChartsFullscreenDialogShell } from '@/app/charts/_components/charts-fullscreen-dialog-shell';
 import { ChartsStatusPiePreview } from '@/app/charts/_components/charts-status-pie-preview';
 import { ChartsWidgetActionsMenu } from '@/app/charts/_components/charts-widget-actions-menu';
 import { ChartsWidgetConfigDialog } from '@/app/charts/_components/charts-widget-config-dialog';
@@ -266,19 +267,15 @@ export function ChartsWidgetCard({
           onDelete={onRemove}
         />
       ) : (
-        <Dialog open={fullscreenOpen} onOpenChange={setFullscreenOpen}>
-          <DialogContent className="flex h-[min(90vh,800px)] w-[min(96vw,1100px)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none">
-            <div className="border-border flex shrink-0 items-center gap-2 border-b px-4 py-3 pr-12">
-              <DialogTitle className="text-base font-semibold tracking-tight">
-                {title}
-              </DialogTitle>
-              <DialogDescription className="sr-only">
-                Full screen view of the {title} widget.
-              </DialogDescription>
-            </div>
-            <div className="flex min-h-0 flex-1 flex-col p-6">{body}</div>
-          </DialogContent>
-        </Dialog>
+        <ChartsFullscreenDialogShell
+          open={fullscreenOpen}
+          onOpenChange={setFullscreenOpen}
+          title={title}
+          description={`Full screen view of the ${title} widget.`}
+          sizeClassName="h-[min(90vh,800px)] w-[min(96vw,1100px)]"
+        >
+          <div className="flex min-h-0 flex-1 flex-col p-6">{body}</div>
+        </ChartsFullscreenDialogShell>
       )}
     </>
   );

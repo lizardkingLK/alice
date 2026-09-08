@@ -439,23 +439,11 @@ export function filterChartsSampleWorkItems(
 
     if (filters.mode === 'quick') {
       return (
-        matchesQuickSelection(
-          item,
-          'project',
-          filters.quickSelections.project
-        ) &&
-        matchesQuickSelection(item, 'status', filters.quickSelections.status) &&
-        matchesQuickSelection(item, 'type', filters.quickSelections.type) &&
-        matchesQuickSelection(
-          item,
-          'assignee',
-          filters.quickSelections.assignee
-        ) &&
-        matchesQuickSelection(
-          item,
-          'priority',
-          filters.quickSelections.priority
-        )
+        Object.entries(filters.quickSelections) as Array<
+          [ChartsQuickFieldId, string]
+        >
+      ).every(([field, selected]) =>
+        matchesQuickSelection(item, field, selected)
       );
     }
 
