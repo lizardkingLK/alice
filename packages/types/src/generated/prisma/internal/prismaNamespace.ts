@@ -412,6 +412,7 @@ export const ModelName = {
   access_requests: 'access_requests',
   jira_connections: 'jira_connections',
   chat_conversations: 'chat_conversations',
+  chat_attachments: 'chat_attachments',
   saved_views: 'saved_views',
   saved_view_shares: 'saved_view_shares',
   github_pull_requests: 'github_pull_requests',
@@ -431,7 +432,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "jira_connections" | "chat_conversations" | "saved_views" | "saved_view_shares" | "github_pull_requests" | "integrations"
+    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "jira_connections" | "chat_conversations" | "chat_attachments" | "saved_views" | "saved_view_shares" | "github_pull_requests" | "integrations"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1545,6 +1546,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    chat_attachments: {
+      payload: Prisma.$chat_attachmentsPayload<ExtArgs>
+      fields: Prisma.chat_attachmentsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.chat_attachmentsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_attachmentsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.chat_attachmentsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_attachmentsPayload>
+        }
+        findFirst: {
+          args: Prisma.chat_attachmentsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_attachmentsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.chat_attachmentsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_attachmentsPayload>
+        }
+        findMany: {
+          args: Prisma.chat_attachmentsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_attachmentsPayload>[]
+        }
+        create: {
+          args: Prisma.chat_attachmentsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_attachmentsPayload>
+        }
+        createMany: {
+          args: Prisma.chat_attachmentsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.chat_attachmentsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_attachmentsPayload>[]
+        }
+        delete: {
+          args: Prisma.chat_attachmentsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_attachmentsPayload>
+        }
+        update: {
+          args: Prisma.chat_attachmentsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_attachmentsPayload>
+        }
+        deleteMany: {
+          args: Prisma.chat_attachmentsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.chat_attachmentsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.chat_attachmentsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_attachmentsPayload>[]
+        }
+        upsert: {
+          args: Prisma.chat_attachmentsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chat_attachmentsPayload>
+        }
+        aggregate: {
+          args: Prisma.Chat_attachmentsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateChat_attachments>
+        }
+        groupBy: {
+          args: Prisma.chat_attachmentsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Chat_attachmentsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.chat_attachmentsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Chat_attachmentsCountAggregateOutputType> | number
+        }
+      }
+    }
     saved_views: {
       payload: Prisma.$saved_viewsPayload<ExtArgs>
       fields: Prisma.saved_viewsFieldRefs
@@ -2154,6 +2229,22 @@ export const Chat_conversationsScalarFieldEnum = {
 export type Chat_conversationsScalarFieldEnum = (typeof Chat_conversationsScalarFieldEnum)[keyof typeof Chat_conversationsScalarFieldEnum]
 
 
+export const Chat_attachmentsScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  conversation_id: 'conversation_id',
+  file_name: 'file_name',
+  storage_path: 'storage_path',
+  file_size: 'file_size',
+  mime_type: 'mime_type',
+  status: 'status',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Chat_attachmentsScalarFieldEnum = (typeof Chat_attachmentsScalarFieldEnum)[keyof typeof Chat_attachmentsScalarFieldEnum]
+
+
 export const Saved_viewsScalarFieldEnum = {
   id: 'id',
   owner_id: 'owner_id',
@@ -2728,6 +2819,7 @@ export type GlobalOmitConfig = {
   access_requests?: Prisma.access_requestsOmit
   jira_connections?: Prisma.jira_connectionsOmit
   chat_conversations?: Prisma.chat_conversationsOmit
+  chat_attachments?: Prisma.chat_attachmentsOmit
   saved_views?: Prisma.saved_viewsOmit
   saved_view_shares?: Prisma.saved_view_sharesOmit
   github_pull_requests?: Prisma.github_pull_requestsOmit

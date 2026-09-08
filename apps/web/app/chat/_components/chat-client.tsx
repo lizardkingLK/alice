@@ -10,9 +10,20 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@repo/ui/components/ui/tooltip';
-import { Send, Sparkles, PanelLeft, PanelLeftClose } from '@repo/ui/lib/icons';
+import {
+  Send,
+  Sparkles,
+  PanelLeft,
+  PanelLeftClose,
+  Paperclip,
+} from '@repo/ui/lib/icons';
 import { useRouter } from 'next/navigation';
-import { ChatRoles, type ChatModelOption } from '@repo/types';
+import {
+  ChatRoles,
+  detectChatAttachmentFileType,
+  type ChatModelOption,
+  type ChatAttachmentWire,
+} from '@repo/types';
 import { createClient } from '@/lib/supabase/client';
 import type { ChatMessage, ActionItem } from './chat-client.types';
 import {
@@ -20,6 +31,14 @@ import {
   deleteConversation,
   type ChatConversation,
 } from '../_services/chat.mutations.client';
+import {
+  uploadChatAttachment,
+  deleteChatAttachment,
+} from '../_services/chat-attachments.client';
+import {
+  ChatAttachmentTiles,
+  type PendingChatAttachment,
+} from './chat-attachment-tiles';
 import { revalidateAfterChatActions } from '@/lib/cache/revalidate-after-chat';
 import {
   bootstrapLatestChat,
@@ -38,12 +57,15 @@ import { useWorkspaceChatModels } from '@/app/chat/_components/use-workspace-cha
 import { isAdmin, type AppRole } from '@/lib/rbac';
 
 let messageCounter = 0;
+let attachmentCounter = 0;
 
 const CHAT_PANEL_HEADER_CLASS =
   'border-border flex h-14 shrink-0 items-center border-b px-4';
 
 const NO_CHAT_MODEL_ERROR =
   'No chat model is configured. Use Add Model to connect one in Settings.';
+
+const inferChatAttachmentFileType = detectChatAttachmentFileType;
 
 /* eslint-disable no-unused-vars */
 type ChatResponseRouter = { replace: (href: string) => void };
@@ -164,6 +186,9 @@ export function ChatClient({
     () => initialMessages ?? []
   );
   const [inputValue, setInputValue] = useState('');
+  const [pendingAttachments, setPendingAttachments] = useState<
+    PendingChatAttachment[]
+  >([]);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -183,6 +208,7 @@ export function ChatClient({
   } = useWorkspaceChatModels(initialChatModels);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const hydratedRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -281,6 +307,7 @@ export function ChatClient({
       router.replace('/chat');
       setActiveConversationId(undefined);
       setMessages([]);
+      setPendingAttachments([]);
       setError(null);
     },
     [isPending, router]
@@ -435,22 +462,124 @@ export function ChatClient({
     }
   };
 
+  const handleFileSelect = useCallback(
+    async (selectedFiles: FileList | File[]) => {
+      const fileArray = Array.from(selectedFiles);
+      if (fileArray.length === 0) return;
+
+      for (const file of fileArray) {
+        const tempId = `temp-${Date.now()}-${++attachmentCounter}`;
+        const optimisticAttachment: PendingChatAttachment = {
+          id: tempId,
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type || 'application/octet-stream',
+          storagePath: '',
+          url: '',
+          fileType: inferChatAttachmentFileType(file.name, file.type || ''),
+          isUploading: true,
+        };
+
+        setPendingAttachments((prev) => [...prev, optimisticAttachment]);
+
+        try {
+          const uploaded = await uploadChatAttachment(
+            file,
+            activeConversationId
+          );
+          setPendingAttachments((prev) => {
+            const stillPresent = prev.some((item) => item.id === tempId);
+            if (!stillPresent) {
+              void deleteChatAttachment(uploaded.id);
+              return prev;
+            }
+            return prev.map((item) =>
+              item.id === tempId ? { ...uploaded, isUploading: false } : item
+            );
+          });
+        } catch (uploadError) {
+          console.error('Failed to upload chat attachment:', uploadError);
+          setPendingAttachments((prev) =>
+            prev.filter((item) => item.id !== tempId)
+          );
+          setError(
+            `Failed to upload ${file.name}: ${uploadError instanceof Error ? uploadError.message : 'Upload failed'}`
+          );
+        }
+      }
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    },
+    [activeConversationId]
+  );
+
+  const handleRemoveAttachment = useCallback(async (attachmentId: string) => {
+    setPendingAttachments((prev) =>
+      prev.filter((item) => item.id !== attachmentId)
+    );
+    if (!attachmentId.startsWith('temp-')) {
+      try {
+        await deleteChatAttachment(attachmentId);
+      } catch (err) {
+        console.error('Failed to delete chat attachment:', err);
+      }
+    }
+  }, []);
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    if (e.clipboardData.files && e.clipboardData.files.length > 0) {
+      e.preventDefault();
+      void handleFileSelect(e.clipboardData.files);
+    }
+  };
+
   const handleSendMessage = async (textToSend: string) => {
-    if (!textToSend.trim() || isPending) return;
+    const trimmedText = textToSend.trim();
+    const isUploadingAny = pendingAttachments.some((a) => a.isUploading);
+    if (
+      (!trimmedText && pendingAttachments.length === 0) ||
+      isPending ||
+      isUploadingAny
+    ) {
+      return;
+    }
 
     if (!selectedIntegrationId) {
       setError(NO_CHAT_MODEL_ERROR);
       return;
     }
 
+    const attachmentsToSend: ChatAttachmentWire[] = pendingAttachments
+      .filter((a) => !a.isUploading)
+      .map((a) => ({
+        id: a.id,
+        fileName: a.fileName,
+        fileSize: a.fileSize,
+        mimeType: a.mimeType,
+        storagePath: a.storagePath,
+        url: a.url,
+        fileType: a.fileType,
+      }));
+
+    const messageContent =
+      trimmedText ||
+      (attachmentsToSend.length > 0
+        ? `Please process the attached document(s): ${attachmentsToSend.map((a) => a.fileName).join(', ')}`
+        : '');
+
     const userMessage: ChatMessage = {
       id: `msg-${Date.now()}-${++messageCounter}`,
       role: ChatRoles.User,
-      content: textToSend,
+      content: messageContent,
+      attachments:
+        attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
+    setPendingAttachments([]);
     setIsPending(true);
     hydratedRef.current = null;
     setError(null);
@@ -461,7 +590,8 @@ export function ChatClient({
       const response = await sendChatMessage(
         history,
         activeConversationId,
-        selectedIntegrationId
+        selectedIntegrationId,
+        attachmentsToSend.length > 0 ? attachmentsToSend : undefined
       );
 
       applySuccessfulChatResponse({
@@ -508,7 +638,11 @@ export function ChatClient({
   ) => {
     if (e.key !== 'Enter' || e.shiftKey) return;
     e.preventDefault();
-    if (!inputValue.trim() || isInputDisabled) return;
+    const canSend =
+      (Boolean(inputValue.trim()) || pendingAttachments.length > 0) &&
+      !isInputDisabled &&
+      !pendingAttachments.some((a) => a.isUploading);
+    if (!canSend) return;
     void handleSendMessage(inputValue);
   };
 
@@ -619,28 +753,69 @@ export function ChatClient({
 
         <Separator />
         <div className="bg-muted/20 shrink-0 p-3 sm:p-4">
-          <form
-            onSubmit={handleFormSubmit}
-            className="mx-auto flex max-w-3xl items-end gap-2 sm:gap-3"
-          >
-            <Textarea
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleComposerKeyDown}
+          <div className="mx-auto max-w-3xl">
+            <ChatAttachmentTiles
+              attachments={pendingAttachments}
+              onRemove={handleRemoveAttachment}
               disabled={isInputDisabled}
-              rows={1}
-              placeholder="Type your message…"
-              className="bg-background max-h-40 min-h-10 flex-1 resize-none px-3 py-2.5 sm:px-4"
             />
-            <Button
-              type="submit"
-              size="icon-lg"
-              disabled={!inputValue.trim() || isInputDisabled}
-              aria-label="Send message"
+            <form
+              onSubmit={handleFormSubmit}
+              className="flex items-end gap-2 sm:gap-3"
             >
-              <Send />
-            </Button>
-          </form>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    void handleFileSelect(e.target.files);
+                  }
+                }}
+              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-lg"
+                    disabled={isInputDisabled}
+                    onClick={() => fileInputRef.current?.click()}
+                    aria-label="Attach files (JSON, CSV, etc.)"
+                  >
+                    <Paperclip className="size-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  Attach files (or paste with Ctrl+V)
+                </TooltipContent>
+              </Tooltip>
+
+              <Textarea
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleComposerKeyDown}
+                onPaste={handlePaste}
+                disabled={isInputDisabled}
+                rows={1}
+                placeholder="Type your message, attach files, or paste with Ctrl+V…"
+                className="bg-background max-h-40 min-h-10 flex-1 resize-none px-3 py-2.5 sm:px-4"
+              />
+              <Button
+                type="submit"
+                size="icon-lg"
+                disabled={
+                  (!inputValue.trim() && pendingAttachments.length === 0) ||
+                  isInputDisabled ||
+                  pendingAttachments.some((a) => a.isUploading)
+                }
+                aria-label="Send message"
+              >
+                <Send />
+              </Button>
+            </form>
+          </div>
         </div>
       </div>
       {conversationToDelete ? (

@@ -27,7 +27,7 @@ vi.mock('../../src/lib/supabase', () => ({
   supabase: mockClient,
 }));
 
-import { ChatRoles } from '@repo/types';
+import { ChatRoles, ChatAttachmentFileTypeEnum } from '@repo/types';
 import {
   chatHistoryToMarkdown,
   markdownToChatHistory,
@@ -70,6 +70,37 @@ describe('Chat History Markdown Serialization', () => {
     expect(secondMsg).toBeDefined();
     expect(secondMsg?.actions).toBeDefined();
     expect(secondMsg?.actions?.[0]?.type).toBe('create_project');
+  });
+
+  it('should serialize messages with attachments and format them in markdown', () => {
+    const conversationId = 'conv-with-attachments';
+    const messages: StoredChatMessage[] = [
+      {
+        id: 'msg-1',
+        role: ChatRoles.User,
+        content: 'Please import these items',
+        attachments: [
+          {
+            id: 'att-1',
+            fileName: 'tasks.json',
+            fileSize: 2048,
+            mimeType: 'application/json',
+            storagePath: 'chat-attachments/user-1/tasks.json',
+            url: 'https://storage.example.com/file.json',
+            fileType: ChatAttachmentFileTypeEnum.Json,
+          },
+        ],
+      },
+    ];
+
+    const md = chatHistoryToMarkdown(conversationId, messages);
+    expect(md).toContain('*Attached Files:*');
+    expect(md).toContain('[tasks.json](https://storage.example.com/file.json)');
+
+    const parsed = markdownToChatHistory(md);
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0]?.attachments).toHaveLength(1);
+    expect(parsed[0]?.attachments?.[0]?.fileName).toBe('tasks.json');
   });
 
   it('should return empty array on invalid or missing metadata', () => {

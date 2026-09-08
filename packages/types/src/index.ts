@@ -37,6 +37,7 @@ export * from './date-only.js';
 export * from './work-item-labels.js';
 export * from './chat.js';
 export * from './chat-models.js';
+export * from './chat-attachments.js';
 export * from './saved-views.js';
 export * from './string.js';
 export * from './api/v1/index.js';

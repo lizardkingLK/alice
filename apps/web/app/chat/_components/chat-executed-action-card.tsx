@@ -135,6 +135,20 @@ export function ChatExecutedActionCard({
           {workItemActionLabel(action.entity)}
         </ActionCardFrame>
       );
+    case 'batch_import_work_items':
+      return (
+        <ActionCardFrame
+          tone="emerald"
+          icon={ClipboardPenIcon}
+          href="/work-items"
+          linkLabel="View Work Items"
+        >
+          Work Items Imported:{' '}
+          <strong>
+            {action.entity.title ?? action.entity.name ?? 'Batch Import'}
+          </strong>
+        </ActionCardFrame>
+      );
     default:
       return null;
   }
