@@ -240,6 +240,10 @@
         {
           "path": "user-guide/chat/use-ai-assistant.md",
           "order": 2
+        },
+        {
+          "path": "user-guide/chat/user-test-guide.md",
+          "order": 3
         }
       ]
     },
