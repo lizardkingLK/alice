@@ -12,7 +12,10 @@ import {
 import { Plus } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { BrowseWidgetsDialog } from '@/app/charts/_components/charts-browse-widgets-dialog';
-import { CHART_QUICK_ADD_WIDGETS } from '@/app/charts/_components/charts-widget-catalog';
+import {
+  CHART_QUICK_ADD_WIDGETS,
+  type ChartWidgetDefinition,
+} from '@/app/charts/_components/charts-widget-catalog';
 import type { ChartWidgetTypeId } from '@/app/charts/_components/charts.types';
 
 type ChartsAddWidgetMenuProps = {
@@ -20,6 +23,32 @@ type ChartsAddWidgetMenuProps = {
   readonly onSelectWidget: (typeId: ChartWidgetTypeId) => void;
   readonly className?: string;
 };
+
+function QuickAddMenuItem({
+  item,
+  onSelect,
+}: Readonly<{
+  item: ChartWidgetDefinition;
+  onSelect: () => void;
+}>) {
+  const Icon = item.icon;
+  return (
+    <DropdownMenuItem
+      className="cursor-pointer items-start gap-3 rounded-lg px-2.5 py-2.5"
+      onSelect={onSelect}
+    >
+      <span className="bg-primary/10 text-primary mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg">
+        <Icon className="size-4" aria-hidden />
+      </span>
+      <span className="min-w-0 space-y-0.5">
+        <span className="block text-sm font-semibold">{item.title}</span>
+        <span className="text-muted-foreground block text-xs leading-snug whitespace-normal">
+          {item.description}
+        </span>
+      </span>
+    </DropdownMenuItem>
+  );
+}
 
 export function ChartsAddWidgetMenu({
   onSelectWidget,
@@ -32,7 +61,6 @@ export function ChartsAddWidgetMenu({
     (item) => item.id !== 'apps'
   );
   const appsItem = CHART_QUICK_ADD_WIDGETS.find((item) => item.id === 'apps');
-  const AppsIcon = appsItem?.icon;
 
   const handleSelect = (typeId: ChartWidgetTypeId) => {
     onSelectWidget(typeId);
@@ -53,48 +81,21 @@ export function ChartsAddWidgetMenu({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-80 p-1.5">
-          {quickPrimary.map((item) => {
-            const Icon = item.icon;
-            return (
-              <DropdownMenuItem
-                key={item.id}
-                className="cursor-pointer items-start gap-3 rounded-lg px-2.5 py-2.5"
-                onSelect={() => handleSelect(item.id)}
-              >
-                <span className="bg-primary/10 text-primary mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg">
-                  <Icon className="size-4" aria-hidden />
-                </span>
-                <span className="min-w-0 space-y-0.5">
-                  <span className="block text-sm font-semibold">
-                    {item.title}
-                  </span>
-                  <span className="text-muted-foreground block text-xs leading-snug whitespace-normal">
-                    {item.description}
-                  </span>
-                </span>
-              </DropdownMenuItem>
-            );
-          })}
+          {quickPrimary.map((item) => (
+            <QuickAddMenuItem
+              key={item.id}
+              item={item}
+              onSelect={() => handleSelect(item.id)}
+            />
+          ))}
 
-          {appsItem && AppsIcon ? (
+          {appsItem ? (
             <>
               <DropdownMenuSeparator className="my-1.5" />
-              <DropdownMenuItem
-                className="cursor-pointer items-start gap-3 rounded-lg px-2.5 py-2.5"
+              <QuickAddMenuItem
+                item={appsItem}
                 onSelect={() => handleSelect(appsItem.id)}
-              >
-                <span className="bg-primary/10 text-primary mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg">
-                  <AppsIcon className="size-4" aria-hidden />
-                </span>
-                <span className="min-w-0 space-y-0.5">
-                  <span className="block text-sm font-semibold">
-                    {appsItem.title}
-                  </span>
-                  <span className="text-muted-foreground block text-xs leading-snug whitespace-normal">
-                    {appsItem.description}
-                  </span>
-                </span>
-              </DropdownMenuItem>
+              />
             </>
           ) : null}
 

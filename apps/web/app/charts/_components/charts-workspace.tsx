@@ -24,6 +24,7 @@ import {
   readStoredChartBoard,
   removeChartWidget,
   renameChartWidget,
+  updateChartWidgetFilters,
 } from '@/app/charts/_components/charts-board-canvas';
 import {
   ChartsFilterDialog,
@@ -35,6 +36,7 @@ import type {
   ChartBoardWidgetInstance,
   ChartWidgetTypeId,
 } from '@/app/charts/_components/charts.types';
+import type { ChartsWidgetFilterDraft } from '@/app/charts/_components/charts-sample.data';
 
 type ChartsWorkspaceProps = {
   readonly search: string;
@@ -105,16 +107,35 @@ export function ChartsWorkspace({
     setSearchQuery('');
   }, [setSearchQuery]);
 
-  const handleSelectWidget = useCallback(
-    (typeId: ChartWidgetTypeId) => {
-      const next = appendChartWidget(typeId, instances, layout);
+  const commitBoard = useCallback(
+    (next: {
+      instances: ChartBoardWidgetInstance[];
+      layout: LayoutItem[];
+    }) => {
       setInstances(next.instances);
       setLayout(next.layout);
       if (hydrated) {
         persistChartBoard(next.instances, next.layout);
       }
     },
-    [hydrated, instances, layout]
+    [hydrated]
+  );
+
+  const commitInstances = useCallback(
+    (nextInstances: ChartBoardWidgetInstance[]) => {
+      setInstances(nextInstances);
+      if (hydrated) {
+        persistChartBoard(nextInstances, layout);
+      }
+    },
+    [hydrated, layout]
+  );
+
+  const handleSelectWidget = useCallback(
+    (typeId: ChartWidgetTypeId) => {
+      commitBoard(appendChartWidget(typeId, instances, layout));
+    },
+    [commitBoard, instances, layout]
   );
 
   const handleLayoutChange = useCallback(
@@ -135,37 +156,35 @@ export function ChartsWorkspace({
 
   const handleRemoveWidget = useCallback(
     (instanceId: string) => {
-      const next = removeChartWidget(instanceId, instances, layout);
-      setInstances(next.instances);
-      setLayout(next.layout);
-      if (hydrated) {
-        persistChartBoard(next.instances, next.layout);
-      }
+      commitBoard(removeChartWidget(instanceId, instances, layout));
     },
-    [hydrated, instances, layout]
+    [commitBoard, instances, layout]
   );
 
   const handleDuplicateWidget = useCallback(
     (instanceId: string) => {
-      const next = duplicateChartWidget(instanceId, instances, layout);
-      setInstances(next.instances);
-      setLayout(next.layout);
-      if (hydrated) {
-        persistChartBoard(next.instances, next.layout);
-      }
+      commitBoard(duplicateChartWidget(instanceId, instances, layout));
     },
-    [hydrated, instances, layout]
+    [commitBoard, instances, layout]
   );
 
   const handleRenameWidget = useCallback(
     (instanceId: string, title: string) => {
-      const nextInstances = renameChartWidget(instanceId, title, instances);
-      setInstances(nextInstances);
-      if (hydrated) {
-        persistChartBoard(nextInstances, layout);
-      }
+      commitInstances(renameChartWidget(instanceId, title, instances));
     },
-    [hydrated, instances, layout]
+    [commitInstances, instances]
+  );
+
+  const handleFiltersChange = useCallback(
+    (
+      instanceId: string,
+      filters: ChartsWidgetFilterDraft | null | undefined
+    ) => {
+      commitInstances(
+        updateChartWidgetFilters(instanceId, filters ?? null, instances)
+      );
+    },
+    [commitInstances, instances]
   );
 
   return (
@@ -218,10 +237,12 @@ export function ChartsWorkspace({
           <ChartsBoardCanvas
             instances={instances}
             layout={layout}
+            hydrated={hydrated}
             onLayoutChange={handleLayoutChange}
             onRemoveWidget={handleRemoveWidget}
             onDuplicateWidget={handleDuplicateWidget}
             onRenameWidget={handleRenameWidget}
+            onFiltersChange={handleFiltersChange}
             onClearBoard={handleClearBoard}
           />
         </CardContent>

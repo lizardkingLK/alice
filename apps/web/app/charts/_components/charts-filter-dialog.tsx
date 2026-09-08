@@ -47,6 +47,39 @@ type ChartsFilterDialogProps = {
   readonly onApplyFilters: (draft: ChartsFilterDraft) => void;
 };
 
+function ChartsBoardFilterSelectField({
+  id,
+  label,
+  value,
+  onValueChange,
+  options,
+}: Readonly<{
+  id: string;
+  label: string;
+  value: string;
+  // eslint-disable-next-line no-unused-vars -- select change
+  onValueChange: (value: string) => void;
+  options: readonly { value: string; label: string }[];
+}>) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Select value={value} onValueChange={onValueChange}>
+        <SelectTrigger id={id} className="w-full">
+          <SelectValue placeholder={label} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
 export function ChartsFilterDialog({
   ownership,
   status,
@@ -116,49 +149,39 @@ export function ChartsFilterDialog({
         </DialogHeader>
 
         <div className="grid gap-4 py-2">
-          <div className="space-y-2">
-            <Label htmlFor="charts-filter-ownership">Ownership</Label>
-            <Select
-              value={draft.ownership}
-              onValueChange={(value) =>
-                setDraft((prev) => ({
-                  ...prev,
-                  ownership: value as ChartBoardOwnershipFilter,
-                }))
-              }
-            >
-              <SelectTrigger id="charts-filter-ownership" className="w-full">
-                <SelectValue placeholder="Ownership" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="mine">Mine</SelectItem>
-                <SelectItem value="shared">Shared with me</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <ChartsBoardFilterSelectField
+            id="charts-filter-ownership"
+            label="Ownership"
+            value={draft.ownership}
+            onValueChange={(value) =>
+              setDraft((prev) => ({
+                ...prev,
+                ownership: value as ChartBoardOwnershipFilter,
+              }))
+            }
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'mine', label: 'Mine' },
+              { value: 'shared', label: 'Shared with me' },
+            ]}
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor="charts-filter-status">Status</Label>
-            <Select
-              value={draft.status}
-              onValueChange={(value) =>
-                setDraft((prev) => ({
-                  ...prev,
-                  status: value as ChartBoardStatusFilter,
-                }))
-              }
-            >
-              <SelectTrigger id="charts-filter-status" className="w-full">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <ChartsBoardFilterSelectField
+            id="charts-filter-status"
+            label="Status"
+            value={draft.status}
+            onValueChange={(value) =>
+              setDraft((prev) => ({
+                ...prev,
+                status: value as ChartBoardStatusFilter,
+              }))
+            }
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'active', label: 'Active' },
+              { value: 'archived', label: 'Archived' },
+            ]}
+          />
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">

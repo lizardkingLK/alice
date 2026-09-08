@@ -44,13 +44,37 @@ instance (for example two Numbers widgets with different filters later).
 
 - Hold the **grip** on the left of a widget to **drag** it
 - Resize from the **bottom-right** corner
-- Use the **filter** icon to open per-widget filters (placeholder for now)
 - Open the **⋯** menu for **Full screen**, **Rename**, **Duplicate**, or
   **Delete** (**Settings** and **Dock this widget** are disabled for now)
 - Use **Clear board** to remove all widgets on this device
 
 Layout is saved in the browser for now. Cloud save and shareable chart boards
 are coming later.
+
+---
+
+## Chart widget filters
+
+For a **Chart** widget (sample title **Tasks by status** when untitled):
+
+1. Select the **filter** icon on the widget header.
+2. A fullscreen configuration window opens with **Advanced filters** already
+   shown (Project and Where rows). Use **X** on a row to remove it (at least
+   one row always remains). Changing the column updates the value options.
+3. Select **Switch to quick filters** for the work-items-style field list
+   (status, type, assignee, priority, project). Switch back with
+   **Switch to advanced filters**.
+4. Use **Type to filter** to search sample work items by title, status, type,
+   priority, assignee, or project. Use the overlapped **assignee avatars** to
+   the right of Filter to narrow the sample pie by person.
+5. Open **⋯** for Exit full screen, Rename, Duplicate, Export formats, or
+   Delete (**Settings** is disabled for now).
+6. Select **Apply** to update the pie in fullscreen **and** on the board
+   canvas. Applied filters are stored with the widget in local board data
+   (reload-safe). Toolbar search and assignee stay preview-only in fullscreen.
+   **Save filters** (named presets) stays disabled until that lands later.
+
+Other widget types do not use this filter flow yet.
 
 ---
 

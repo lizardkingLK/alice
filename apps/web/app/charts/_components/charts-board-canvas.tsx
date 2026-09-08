@@ -1,16 +1,21 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import ReactGridLayout, {
-  useContainerWidth,
   type Layout,
   type LayoutItem,
 } from 'react-grid-layout';
 import { Button } from '@repo/ui/components/ui/button';
+import { Skeleton } from '@repo/ui/components/ui/skeleton';
 import { RotateCcw } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { ChartsWidgetCard } from '@/app/charts/_components/charts-widget-card';
-import { useSidebarLayoutSettling } from '@/hooks/use-sidebar-layout-settling';
+import {
+  DASHBOARD_DRAG_CONFIG,
+  DASHBOARD_GRID_CONFIG,
+  DASHBOARD_RESIZE_CONFIG,
+  useStableDashboardGridWidth,
+} from '@/lib/dashboard-grid';
 import {
   getLocalStorageJson,
   removeLocalStorageItem,
@@ -37,6 +42,26 @@ const DEFAULT_SIZE = {
   minH: 3,
 } as const;
 
+/** Pie / chart widgets need a medium footprint so the viz stays readable. */
+const CHART_TYPE_SIZE = {
+  w: 5,
+  h: 6,
+  minW: 3,
+  minH: 4,
+} as const;
+
+export function layoutSizeForWidgetType(typeId: ChartWidgetTypeId): {
+  readonly w: number;
+  readonly h: number;
+  readonly minW: number;
+  readonly minH: number;
+} {
+  if (typeId === 'chart') {
+    return CHART_TYPE_SIZE;
+  }
+  return DEFAULT_SIZE;
+}
+
 export function createChartWidgetInstanceId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID();
@@ -46,8 +71,10 @@ export function createChartWidgetInstanceId(): string {
 
 export function nextChartLayoutItem(
   instanceId: string,
-  existing: LayoutItem[]
+  existing: LayoutItem[],
+  typeId: ChartWidgetTypeId = 'chart'
 ): LayoutItem {
+  const size = layoutSizeForWidgetType(typeId);
   const maxY = existing.reduce(
     (acc, item) => Math.max(acc, item.y + item.h),
     0
@@ -56,10 +83,10 @@ export function nextChartLayoutItem(
     i: instanceId,
     x: 0,
     y: maxY,
-    w: DEFAULT_SIZE.w,
-    h: DEFAULT_SIZE.h,
-    minW: DEFAULT_SIZE.minW,
-    minH: DEFAULT_SIZE.minH,
+    w: size.w,
+    h: size.h,
+    minW: size.minW,
+    minH: size.minH,
   };
 }
 
@@ -83,13 +110,19 @@ export function readStoredChartBoard(): {
   );
 
   const syncedLayout = instances.map((instance, index) => {
+    const size = layoutSizeForWidgetType(instance.typeId);
     const stored = layoutById.get(instance.instanceId);
     if (stored) {
-      return stored;
+      return {
+        ...stored,
+        minW: size.minW,
+        minH: size.minH,
+      };
     }
     return nextChartLayoutItem(
       instance.instanceId,
-      syncedLayoutSlice(instances, layoutById, index)
+      syncedLayoutSlice(instances, layoutById, index),
+      instance.typeId
     );
   });
 
@@ -103,15 +136,17 @@ function syncedLayoutSlice(
 ): LayoutItem[] {
   const items: LayoutItem[] = [];
   for (let i = 0; i < untilIndex; i += 1) {
-    const id = instances[i]?.instanceId;
-    if (!id) {
+    const instance = instances[i];
+    if (!instance) {
       continue;
     }
-    const stored = layoutById.get(id);
+    const stored = layoutById.get(instance.instanceId);
     if (stored) {
       items.push(stored);
     } else {
-      items.push(nextChartLayoutItem(id, items));
+      items.push(
+        nextChartLayoutItem(instance.instanceId, items, instance.typeId)
+      );
     }
   }
   return items;
@@ -141,7 +176,15 @@ type ChartsBoardCanvasProps = {
   readonly onDuplicateWidget: (instanceId: string) => void;
   // eslint-disable-next-line no-unused-vars -- rename instance
   readonly onRenameWidget: (instanceId: string, title: string) => void;
+  readonly onFiltersChange: (
+    // eslint-disable-next-line no-unused-vars
+    instanceId: string,
+    // eslint-disable-next-line no-unused-vars
+    filters: ChartBoardWidgetInstance['filters'] | null
+  ) => void;
   readonly onClearBoard: () => void;
+  /** False until localStorage board JSON has been read on the client. */
+  readonly hydrated?: boolean;
   readonly className?: string;
 };
 
@@ -152,20 +195,13 @@ export function ChartsBoardCanvas({
   onRemoveWidget,
   onDuplicateWidget,
   onRenameWidget,
+  onFiltersChange,
   onClearBoard,
+  hydrated = true,
   className,
 }: Readonly<ChartsBoardCanvasProps>) {
-  const { width, containerRef, mounted } = useContainerWidth({
-    initialWidth: 1200,
-  });
-  const isSidebarSettling = useSidebarLayoutSettling();
-  const [stableWidth, setStableWidth] = useState(width);
-
-  useEffect(() => {
-    if (!isSidebarSettling) {
-      setStableWidth(width);
-    }
-  }, [width, isSidebarSettling]);
+  const { stableWidth, containerRef, mounted, isSidebarSettling } =
+    useStableDashboardGridWidth();
 
   const instanceById = useMemo(() => {
     const map = new Map<
@@ -184,11 +220,15 @@ export function ChartsBoardCanvas({
     return map;
   }, [instances]);
 
-  const isEmpty = instances.length === 0;
+  const isEmpty = hydrated && instances.length === 0;
 
   const handleLayoutChange = (next: Layout) => {
     onLayoutChange([...next]);
   };
+
+  if (!hydrated) {
+    return <ChartsBoardCanvasSkeleton className={className} />;
+  }
 
   return (
     <div className={cn('flex min-h-0 flex-1 flex-col gap-3', className)}>
@@ -228,7 +268,30 @@ export function ChartsBoardCanvas({
           onRemoveWidget={onRemoveWidget}
           onDuplicateWidget={onDuplicateWidget}
           onRenameWidget={onRenameWidget}
+          onFiltersChange={onFiltersChange}
         />
+      </div>
+    </div>
+  );
+}
+
+function ChartsBoardCanvasSkeleton({
+  className,
+}: Readonly<{ className?: string }>) {
+  return (
+    <div
+      className={cn('flex min-h-0 flex-1 flex-col gap-3', className)}
+      aria-busy="true"
+      aria-label="Loading chart board"
+    >
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
+        <Skeleton className="h-4 w-72 max-w-full" />
+        <Skeleton className="h-8 w-28" />
+      </div>
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <Skeleton className="min-h-56 rounded-xl" />
+        <Skeleton className="min-h-56 rounded-xl" />
+        <Skeleton className="min-h-56 rounded-xl sm:col-span-2 xl:col-span-1" />
       </div>
     </div>
   );
@@ -244,6 +307,7 @@ function BoardCanvasBody({
   onRemoveWidget,
   onDuplicateWidget,
   onRenameWidget,
+  onFiltersChange,
 }: Readonly<{
   isEmpty: boolean;
   mounted: boolean;
@@ -264,6 +328,12 @@ function BoardCanvasBody({
   onDuplicateWidget: (instanceId: string) => void;
   // eslint-disable-next-line no-unused-vars
   onRenameWidget: (instanceId: string, title: string) => void;
+  onFiltersChange: (
+    // eslint-disable-next-line no-unused-vars
+    instanceId: string,
+    // eslint-disable-next-line no-unused-vars
+    filters: ChartBoardWidgetInstance['filters'] | null
+  ) => void;
 }>) {
   if (isEmpty) {
     return (
@@ -284,36 +354,34 @@ function BoardCanvasBody({
       className="layout"
       width={stableWidth}
       layout={layout}
-      gridConfig={{
-        cols: 12,
-        rowHeight: 48,
-        margin: [16, 16],
-        containerPadding: [0, 0],
-      }}
-      dragConfig={{
-        enabled: true,
-        handle: '.widget-drag-handle',
-      }}
-      resizeConfig={{
-        enabled: true,
-        handles: ['se'],
-      }}
+      gridConfig={DASHBOARD_GRID_CONFIG}
+      dragConfig={DASHBOARD_DRAG_CONFIG}
+      resizeConfig={DASHBOARD_RESIZE_CONFIG}
       onLayoutChange={onLayoutChange}
     >
       {layout.map((item) => {
         const entry = instanceById.get(item.i);
         const meta = entry?.meta;
+        const catalogTitle = meta?.title || 'Widget';
         const displayTitle =
-          entry?.instance.title?.trim() || meta?.title || 'Widget';
+          entry?.instance.title?.trim() ||
+          (entry?.instance.typeId === 'chart'
+            ? 'Tasks by status'
+            : catalogTitle);
         return (
           <div key={item.i} className="dashboard-widget-root">
             <ChartsWidgetCard
               title={displayTitle}
+              typeId={entry?.instance.typeId ?? 'chart'}
               description={meta?.description}
               Icon={meta?.icon}
+              filters={entry?.instance.filters}
               onRemove={() => onRemoveWidget(item.i)}
               onDuplicate={() => onDuplicateWidget(item.i)}
               onRename={(nextTitle) => onRenameWidget(item.i, nextTitle)}
+              onFiltersChange={(nextFilters) =>
+                onFiltersChange(item.i, nextFilters)
+              }
             />
           </div>
         );
@@ -341,7 +409,10 @@ export function appendChartWidget(
       ...(title ? { title } : {}),
     },
   ];
-  const nextLayout = [...layout, nextChartLayoutItem(instanceId, layout)];
+  const nextLayout = [
+    ...layout,
+    nextChartLayoutItem(instanceId, layout, typeId),
+  ];
   return { instances: nextInstances, layout: nextLayout };
 }
 
@@ -374,12 +445,27 @@ export function duplicateChartWidget(
 
   const catalogTitle = chartWidgetById(source.typeId)?.title;
   const baseTitle = source.title?.trim() || catalogTitle || 'Widget';
-  return appendChartWidget(
+  const next = appendChartWidget(
     source.typeId,
     instances,
     layout,
     `${baseTitle} (copy)`
   );
+  if (!source.filters) {
+    return next;
+  }
+  const copiedId = next.instances.at(-1)?.instanceId;
+  if (!copiedId) {
+    return next;
+  }
+  return {
+    ...next,
+    instances: updateChartWidgetFilters(
+      copiedId,
+      source.filters,
+      next.instances
+    ),
+  };
 }
 
 export function renameChartWidget(
@@ -391,4 +477,24 @@ export function renameChartWidget(
   return instances.map((item) =>
     item.instanceId === instanceId ? { ...item, title: trimmed } : item
   );
+}
+
+export function updateChartWidgetFilters(
+  instanceId: string,
+  filters: ChartBoardWidgetInstance['filters'] | null,
+  instances: ChartBoardWidgetInstance[]
+): ChartBoardWidgetInstance[] {
+  return instances.map((item) => {
+    if (item.instanceId !== instanceId) {
+      return item;
+    }
+    if (!filters) {
+      return {
+        instanceId: item.instanceId,
+        typeId: item.typeId,
+        ...(item.title ? { title: item.title } : {}),
+      };
+    }
+    return { ...item, filters };
+  });
 }

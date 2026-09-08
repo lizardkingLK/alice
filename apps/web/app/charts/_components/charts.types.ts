@@ -32,10 +32,14 @@ export type ChartWidgetCatalogItem = {
   readonly description: string;
 };
 
+import type { ChartsWidgetFilterDraft } from '@/app/charts/_components/charts-sample.data';
+
 /** Instance placed on the board canvas (drag / resize). */
 export type ChartBoardWidgetInstance = {
   readonly instanceId: string;
   readonly typeId: ChartWidgetTypeId;
   /** User-renamed label; falls back to catalog title when unset. */
   readonly title?: string;
+  /** Applied Advanced/Quick filters for chart widgets (local board JSON). */
+  readonly filters?: ChartsWidgetFilterDraft;
 };
