@@ -21,7 +21,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@repo/ui/components/ui/tooltip';
-import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { CircleHelp, X } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { FilterFieldNavItem } from '@/components/filter-field-nav-item';
@@ -481,10 +480,11 @@ export function ChartsAdvancedFiltersPopover({
                           }
                           className="border-input size-4 rounded border"
                         />
-                        <span className="min-w-0 flex-1">
-                          <TruncatedText className="text-sm">
-                            {option.label}
-                          </TruncatedText>
+                        <span
+                          className="min-w-0 flex-1 truncate"
+                          title={option.label}
+                        >
+                          {option.label}
                         </span>
                       </label>
                     );
