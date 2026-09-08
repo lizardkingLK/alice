@@ -1,12 +1,25 @@
 import {
   detectChatAttachmentFileType,
+  type ChatAttachmentSignedUrls,
+  type ChatAttachmentUploadSession,
   type ChatAttachmentWire,
   type Database,
+  type UploadedChatAttachmentResult,
 } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { env } from '../../../config/env';
 import { prisma } from '../../../lib/prisma';
-import { sanitizeFileName } from '../../../lib/file-helpers';
+import {
+  createSignedStorageUploadUrl,
+  createSignedStorageUrl,
+  DEFAULT_SIGNED_URL_SECONDS,
+  removeStorageObjects,
+  sanitizeFileName,
+  signedUrlExpiresAt,
+  storageObjectExists,
+  storageObjectExistsStrict,
+  uploadToStorage,
+} from '../../../lib/file-helpers';
 import { sanitizeLog } from './chat.utils';
 
 export { detectChatAttachmentFileType } from '@repo/types';
@@ -19,6 +32,25 @@ export interface UploadChatAttachmentParameters {
   readonly mimeType: string;
   readonly fileSize: number;
 }
+
+export interface CreateChatAttachmentUploadSessionParameters {
+  readonly userId: string;
+  readonly conversationId?: string;
+  readonly fileName: string;
+  readonly contentType: string;
+  readonly fileSize: number;
+}
+
+export interface FinalizeChatAttachmentUploadParameters {
+  readonly userId: string;
+  readonly conversationId?: string;
+  readonly storagePath: string;
+  readonly fileName: string;
+  readonly fileSize: number;
+  readonly mimeType: string;
+}
+
+const TWENTY_FOUR_HOURS_IN_SECONDS = 24 * 60 * 60;
 
 export class ChatAttachmentsRepository {
   private isBucketVerified = false;
@@ -63,6 +95,111 @@ export class ChatAttachmentsRepository {
     return bucketName;
   }
 
+  async createUploadSession(
+    params: CreateChatAttachmentUploadSessionParameters
+  ): Promise<ChatAttachmentUploadSession> {
+    const { userId, conversationId, fileName } = params;
+    const bucketName = await this.ensureChatAttachmentsBucketExists();
+
+    if (conversationId) {
+      const conversation = await prisma.chat_conversations.findFirst({
+        where: { id: conversationId, user_id: userId },
+        select: { id: true },
+      });
+      if (!conversation) {
+        throw new Error('Conversation not found');
+      }
+    }
+
+    const safeFileName = sanitizeFileName(fileName);
+    const storagePath = `chat-attachments/${userId}/${Date.now()}-${safeFileName}`;
+
+    const { signedUrl, token } = await createSignedStorageUploadUrl(
+      bucketName,
+      storagePath
+    );
+
+    return {
+      upload: {
+        bucket: bucketName,
+        signedUrl,
+        token,
+        path: storagePath,
+      },
+    };
+  }
+
+  async finalizeUpload(
+    params: FinalizeChatAttachmentUploadParameters
+  ): Promise<UploadedChatAttachmentResult> {
+    const {
+      userId,
+      conversationId,
+      storagePath,
+      fileName,
+      fileSize,
+      mimeType,
+    } = params;
+
+    const bucketName = await this.ensureChatAttachmentsBucketExists();
+
+    if (!storagePath.startsWith(`chat-attachments/${userId}/`)) {
+      throw new Error('Invalid upload target');
+    }
+
+    if (conversationId) {
+      const conversation = await prisma.chat_conversations.findFirst({
+        where: { id: conversationId, user_id: userId },
+        select: { id: true },
+      });
+      if (!conversation) {
+        throw new Error('Conversation not found');
+      }
+    }
+
+    const exists = await storageObjectExistsStrict(bucketName, storagePath);
+    if (!exists) {
+      throw new Error('Uploaded file not found in storage');
+    }
+
+    const url = await createSignedStorageUrl(
+      bucketName,
+      storagePath,
+      TWENTY_FOUR_HOURS_IN_SECONDS
+    );
+
+    const detectedFileType = detectChatAttachmentFileType(fileName, mimeType);
+
+    const attachmentRecord = await prisma.chat_attachments.create({
+      data: {
+        user_id: userId,
+        conversation_id: conversationId || null,
+        file_name: fileName,
+        storage_path: storagePath,
+        file_size: fileSize,
+        mime_type: mimeType || 'application/octet-stream',
+        status: 'active',
+      },
+    });
+
+    const attachment: ChatAttachmentWire = {
+      id: attachmentRecord.id,
+      fileName: attachmentRecord.file_name,
+      fileSize: attachmentRecord.file_size,
+      mimeType: attachmentRecord.mime_type,
+      storagePath: attachmentRecord.storage_path,
+      url,
+      fileType: detectedFileType,
+    };
+
+    return {
+      success: true,
+      path: storagePath,
+      url,
+      attachment,
+    };
+  }
+
   async uploadAttachment(
     parameters: UploadChatAttachmentParameters
   ): Promise<ChatAttachmentWire> {
@@ -76,56 +213,61 @@ export class ChatAttachmentsRepository {
     } = parameters;
 
     const bucketName = await this.ensureChatAttachmentsBucketExists();
+
+    if (conversationId) {
+      const conversation = await prisma.chat_conversations.findFirst({
+        where: { id: conversationId, user_id: userId },
+        select: { id: true },
+      });
+      if (!conversation) {
+        throw new Error('Conversation not found');
+      }
+    }
+
     const safeFileName = sanitizeFileName(fileName);
     const storagePath = `chat-attachments/${userId}/${Date.now()}-${safeFileName}`;
 
-    const { error: uploadError } = await this.supabaseClient.storage
-      .from(bucketName)
-      .upload(storagePath, fileBuffer, {
-        contentType: mimeType || 'application/octet-stream',
-        upsert: false,
-      });
-
-    if (uploadError) {
-      console.error(
-        'Failed to upload chat attachment to storage:',
-        sanitizeLog(uploadError.message)
-      );
-      throw new Error('Failed to upload attachment file to storage.');
-    }
-
-    const twentyFourHoursInSeconds = 24 * 60 * 60;
-    const { data: signedData, error: signedError } =
-      await this.supabaseClient.storage
-        .from(bucketName)
-        .createSignedUrl(storagePath, twentyFourHoursInSeconds);
-
-    if (signedError || !signedData?.signedUrl) {
-      throw new Error('Failed to create signed URL for attachment.');
-    }
-
-    const detectedFileType = detectChatAttachmentFileType(fileName, mimeType);
-
-    const attachmentRecord = await prisma.chat_attachments.create({
-      data: {
-        user_id: userId,
-        conversation_id: conversationId || null,
-        file_name: fileName,
-        storage_path: storagePath,
-        file_size: fileSize,
-        mime_type: mimeType,
-      },
+    const uploaded = await uploadToStorage({
+      bucket: bucketName,
+      path: storagePath,
+      buffer: fileBuffer,
+      contentType: mimeType || 'application/octet-stream',
     });
 
-    return {
-      id: attachmentRecord.id,
-      fileName: attachmentRecord.file_name,
-      fileSize: attachmentRecord.file_size,
-      mimeType: attachmentRecord.mime_type,
-      storagePath: attachmentRecord.storage_path,
-      url: signedData.signedUrl,
-      fileType: detectedFileType,
-    };
+    try {
+      const url = await createSignedStorageUrl(
+        bucketName,
+        uploaded.path,
+        TWENTY_FOUR_HOURS_IN_SECONDS
+      );
+
+      const detectedFileType = detectChatAttachmentFileType(fileName, mimeType);
+
+      const attachmentRecord = await prisma.chat_attachments.create({
+        data: {
+          user_id: userId,
+          conversation_id: conversationId || null,
+          file_name: fileName,
+          storage_path: uploaded.path,
+          file_size: fileSize,
+          mime_type: mimeType || 'application/octet-stream',
+          status: 'active',
+        },
+      });
+
+      return {
+        id: attachmentRecord.id,
+        fileName: attachmentRecord.file_name,
+        fileSize: attachmentRecord.file_size,
+        mimeType: attachmentRecord.mime_type,
+        storagePath: attachmentRecord.storage_path,
+        url,
+        fileType: detectedFileType,
+      };
+    } catch (error) {
+      await removeStorageObjects(bucketName, [uploaded.path]);
+      throw error;
+    }
   }
 
   async getAttachmentById(
@@ -140,18 +282,19 @@ export class ChatAttachmentsRepository {
     }
 
     const bucketName = await this.ensureChatAttachmentsBucketExists();
-    const twentyFourHoursInSeconds = 24 * 60 * 60;
-    const { data: signedData, error: signedError } =
-      await this.supabaseClient.storage
-        .from(bucketName)
-        .createSignedUrl(
-          attachmentRecord.storage_path,
-          twentyFourHoursInSeconds
-        );
-
-    if (signedError || !signedData?.signedUrl) {
+    const objectExists = await storageObjectExists(
+      bucketName,
+      attachmentRecord.storage_path
+    );
+    if (!objectExists) {
       return null;
     }
+
+    const url = await createSignedStorageUrl(
+      bucketName,
+      attachmentRecord.storage_path,
+      TWENTY_FOUR_HOURS_IN_SECONDS
+    );
 
     const detectedFileType = detectChatAttachmentFileType(
       attachmentRecord.file_name,
@@ -164,8 +307,46 @@ export class ChatAttachmentsRepository {
       fileSize: attachmentRecord.file_size,
       mimeType: attachmentRecord.mime_type,
       storagePath: attachmentRecord.storage_path,
-      url: signedData.signedUrl,
+      url,
       fileType: detectedFileType,
+    };
+  }
+
+  async getAttachmentSignedUrls(
+    attachmentId: string
+  ): Promise<ChatAttachmentSignedUrls> {
+    const attachmentRecord = await prisma.chat_attachments.findUnique({
+      where: { id: attachmentId },
+    });
+
+    if (attachmentRecord?.status !== 'active') {
+      throw new Error('Attachment not found');
+    }
+
+    const bucketName = await this.ensureChatAttachmentsBucketExists();
+    const objectExists = await storageObjectExists(
+      bucketName,
+      attachmentRecord.storage_path
+    );
+    if (!objectExists) {
+      throw new Error('Attachment file is no longer available');
+    }
+
+    const expiresInSeconds = DEFAULT_SIGNED_URL_SECONDS;
+    const [previewUrl, downloadUrl] = await Promise.all([
+      createSignedStorageUrl(bucketName, attachmentRecord.storage_path, {
+        expiresInSeconds,
+      }),
+      createSignedStorageUrl(bucketName, attachmentRecord.storage_path, {
+        expiresInSeconds,
+        download: sanitizeFileName(attachmentRecord.file_name),
+      }),
+    ]);
+
+    return {
+      previewUrl,
+      downloadUrl,
+      expiresAt: signedUrlExpiresAt(expiresInSeconds),
     };
   }
 
@@ -177,7 +358,7 @@ export class ChatAttachmentsRepository {
       where: { id: attachmentId },
     });
 
-    if (!attachmentRecord) {
+    if (!attachmentRecord || attachmentRecord.status !== 'active') {
       return false;
     }
 
@@ -187,14 +368,53 @@ export class ChatAttachmentsRepository {
 
     const bucketName = await this.ensureChatAttachmentsBucketExists();
 
-    await this.supabaseClient.storage
-      .from(bucketName)
-      .remove([attachmentRecord.storage_path]);
-
-    await prisma.chat_attachments.delete({
+    await prisma.chat_attachments.update({
       where: { id: attachmentId },
+      data: {
+        status: 'archived',
+      },
     });
 
+    await removeStorageObjects(bucketName, [attachmentRecord.storage_path]);
+
     return true;
+  }
+
+  async listAttachmentsByConversation(
+    userId: string,
+    conversationId: string
+  ): Promise<ChatAttachmentWire[]> {
+    const records = await prisma.chat_attachments.findMany({
+      where: {
+        user_id: userId,
+        conversation_id: conversationId,
+        status: 'active',
+      },
+      orderBy: { created_at: 'desc' },
+    });
+
+    const bucketName = await this.ensureChatAttachmentsBucketExists();
+
+    return Promise.all(
+      records.map(async (record) => {
+        const url = await createSignedStorageUrl(
+          bucketName,
+          record.storage_path,
+          TWENTY_FOUR_HOURS_IN_SECONDS
+        );
+        return {
+          id: record.id,
+          fileName: record.file_name,
+          fileSize: record.file_size,
+          mimeType: record.mime_type,
+          storagePath: record.storage_path,
+          url,
+          fileType: detectChatAttachmentFileType(
+            record.file_name,
+            record.mime_type
+          ),
+        };
+      })
+    );
   }
 }
