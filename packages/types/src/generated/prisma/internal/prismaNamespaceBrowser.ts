@@ -66,6 +66,7 @@ export const ModelName = {
   access_requests: 'access_requests',
   jira_connections: 'jira_connections',
   chat_conversations: 'chat_conversations',
+  chat_attachments: 'chat_attachments',
   saved_views: 'saved_views',
   saved_view_shares: 'saved_view_shares',
   github_pull_requests: 'github_pull_requests',
@@ -360,6 +361,22 @@ export const Chat_conversationsScalarFieldEnum = {
 } as const
 
 export type Chat_conversationsScalarFieldEnum = (typeof Chat_conversationsScalarFieldEnum)[keyof typeof Chat_conversationsScalarFieldEnum]
+
+
+export const Chat_attachmentsScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  conversation_id: 'conversation_id',
+  file_name: 'file_name',
+  storage_path: 'storage_path',
+  file_size: 'file_size',
+  mime_type: 'mime_type',
+  status: 'status',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Chat_attachmentsScalarFieldEnum = (typeof Chat_attachmentsScalarFieldEnum)[keyof typeof Chat_attachmentsScalarFieldEnum]
 
 
 export const Saved_viewsScalarFieldEnum = {

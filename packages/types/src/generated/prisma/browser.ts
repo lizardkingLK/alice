@@ -93,6 +93,11 @@ export type jira_connections = Prisma.jira_connectionsModel
  */
 export type chat_conversations = Prisma.chat_conversationsModel
 /**
+ * Model chat_attachments
+ * 
+ */
+export type chat_attachments = Prisma.chat_attachmentsModel
+/**
  * Model saved_views
  * Personal saved navigation snapshots (pathname + query); shareable via saved_view_shares.
  */

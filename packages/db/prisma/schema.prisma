@@ -167,6 +167,7 @@ model users {
   updated_access_allowlist access_allowlist[] @relation("AccessAllowlistUpdatedBy")
   resolved_access_requests access_requests[]  @relation("AccessRequestResolvedBy")
   chat_conversations      chat_conversations[]
+  chat_attachments        chat_attachments[]
   owned_saved_views       saved_views[]       @relation("SavedViewOwner")
   created_saved_views     saved_views[]       @relation("SavedViewCreatedBy")
   updated_saved_views     saved_views[]       @relation("SavedViewUpdatedBy")
@@ -485,9 +486,29 @@ model chat_conversations {
   created_at    DateTime @default(now()) @db.Timestamptz(6)
   updated_at    DateTime @updatedAt @db.Timestamptz(6)
 
-  user       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user        users              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  attachments chat_attachments[]
 
   @@index([user_id])
+}
+
+model chat_attachments {
+  id              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id         String              @db.Uuid
+  conversation_id String?             @db.Uuid
+  file_name       String
+  storage_path    String
+  file_size       Int
+  mime_type       String
+  status          RecordStatus        @default(active)
+  created_at      DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime            @updatedAt @db.Timestamptz(6)
+
+  user         users               @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  conversation chat_conversations? @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([conversation_id])
 }
 
 /// Personal saved navigation snapshots (pathname + query); shareable via saved_view_shares.

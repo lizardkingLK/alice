@@ -8,6 +8,9 @@ import {
   ChatRoles,
   ChatTurnRoles,
   toChatTurnRole,
+  getAllowedChildType,
+  ChatAttachmentFileTypeEnum,
+  type ParsedWorkItemNode,
 } from '@repo/types';
 import type { WorkItemService } from '../workItems/workItems.service';
 import type { SprintsService } from '../sprints/sprints.service';
@@ -19,8 +22,12 @@ import type { ResolvedChatModelConfig } from '../integrations/chat-providers/cha
 import { resolveChatProvider } from '../integrations/chat-providers/resolve-chat-provider';
 import { systemInstruction, aliceChatTools } from './chat.route.data';
 import type { ChatRepository } from './chat.repository';
+import { ChatAttachmentsRepository } from './chat-attachments.repository';
+import { fetchAndParseWorkItemAttachment } from './chat-attachment-parser';
+import { WorkItemDeduplicationAgent } from './work-item-deduplication.agent';
 import { sanitizeLog } from './chat.utils';
 import { prisma } from '../../../lib/prisma';
+import { supabase } from '../../../lib/supabase';
 import type {
   ChatContentPart,
   ChatContentTurn,
@@ -33,6 +40,8 @@ export { sanitizeLog } from './chat.utils';
 
 export type ChatServiceDeps = {
   chat: ChatRepository;
+  chatAttachments?: ChatAttachmentsRepository;
+  deduplicationAgent?: WorkItemDeduplicationAgent;
   workItemService: Pick<WorkItemService, 'createWorkItem'>;
   sprintsService: Pick<SprintsService, 'createSprint'>;
   projectsService: Pick<ProjectsService, 'createProject'>;
@@ -40,21 +49,52 @@ export type ChatServiceDeps = {
   integrationsService: Pick<IntegrationsService, 'resolveChatModelForChat'>;
 };
 
-function textToProseMirrorJson(text: string | null | undefined) {
-  if (!text) return null;
+function serializeDynamicFieldValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    return String(value);
+  }
+  return JSON.stringify(value);
+}
+
+function textToProseMirrorJson(
+  text: string | null | undefined,
+  dynamicFields?: Record<string, unknown>
+) {
+  if (!text && (!dynamicFields || Object.keys(dynamicFields).length === 0)) {
+    return null;
+  }
+  const paragraphs: Array<{
+    type: string;
+    content: Array<{ type: string; text: string }>;
+  }> = [];
+
+  if (text) {
+    paragraphs.push({
+      type: 'paragraph',
+      content: [{ type: 'text', text }],
+    });
+  }
+
+  if (dynamicFields && Object.keys(dynamicFields).length > 0) {
+    const formattedFields = Object.entries(dynamicFields)
+      .map(([key, value]) => `${key}: ${serializeDynamicFieldValue(value)}`)
+      .join('\n');
+    paragraphs.push({
+      type: 'paragraph',
+      content: [{ type: 'text', text: `[Dynamic Fields]\n${formattedFields}` }],
+    });
+  }
+
   return {
     type: 'doc',
-    content: [
-      {
-        type: 'paragraph',
-        content: [
-          {
-            type: 'text',
-            text: text,
-          },
-        ],
-      },
-    ],
+    content: paragraphs,
   };
 }
 
@@ -71,6 +111,13 @@ export function chatHistoryToMarkdown(
 
   for (const msg of messages) {
     md += `### ${getRoleName(msg.role)}\n\n${msg.content || ''}\n\n`;
+    if (msg.attachments?.length) {
+      md += `*Attached Files:*\n`;
+      for (const att of msg.attachments) {
+        md += `- [${att.fileName}](${att.url}) (${att.fileType})\n`;
+      }
+      md += `\n`;
+    }
     if (msg.actions?.length) {
       md += `*Executed Actions:*\n`;
       for (const act of msg.actions) {
@@ -112,11 +159,22 @@ export function markdownToChatHistory(md: string): StoredChatMessage[] {
 
 export class ChatService {
   private readonly historyCache = new Map<string, StoredChatMessage[]>();
+  private readonly chatAttachmentsRepository: ChatAttachmentsRepository;
+  private readonly deduplicationAgent: WorkItemDeduplicationAgent;
 
-  constructor(private readonly deps: ChatServiceDeps) {}
+  constructor(private readonly deps: ChatServiceDeps) {
+    this.chatAttachmentsRepository =
+      deps.chatAttachments ?? new ChatAttachmentsRepository(supabase);
+    this.deduplicationAgent =
+      deps.deduplicationAgent ?? new WorkItemDeduplicationAgent();
+  }
 
   private get chat() {
     return this.deps.chat;
+  }
+
+  get chatAttachments(): ChatAttachmentsRepository {
+    return this.chatAttachmentsRepository;
   }
 
   resolveChatModelForChat(params: {
@@ -145,7 +203,8 @@ export class ChatService {
   async processFunctionCalls(
     userId: string,
     functionCalls: ChatContentPart[],
-    toolActionsPerformed: ToolAction[]
+    toolActionsPerformed: ToolAction[],
+    history: StoredChatMessage[] = []
   ): Promise<ChatContentPart[]> {
     const functionResponseParts: ChatContentPart[] = [];
     for (const call of functionCalls) {
@@ -158,7 +217,8 @@ export class ChatService {
           userId,
           name,
           args || {},
-          toolActionsPerformed
+          toolActionsPerformed,
+          history
         );
       } catch (err: unknown) {
         console.error(`Error executing tool ${sanitizeLog(name)}`);
@@ -181,27 +241,38 @@ export class ChatService {
     userId: string,
     name: string,
     args: Record<string, unknown>,
-    toolActionsPerformed: ToolAction[]
+    toolActionsPerformed: ToolAction[],
+    history: StoredChatMessage[]
   ): Promise<unknown> {
-    if (name === 'list_projects') {
-      return this.handleListProjects();
+    const toolHandlers: Record<string, () => Promise<unknown>> = {
+      list_projects: () => this.handleListProjects(),
+      create_project: () =>
+        this.handleCreateProject(userId, args, toolActionsPerformed),
+      list_sprints: () => this.handleListSprints(args),
+      create_sprint: () =>
+        this.handleCreateSprint(userId, args, toolActionsPerformed),
+      list_users: () => this.chat.listUsersSnapshot(),
+      create_work_item: () =>
+        this.handleCreateWorkItem(userId, args, toolActionsPerformed),
+      parse_work_item_attachment: () =>
+        this.handleParseWorkItemAttachment(args, history),
+      check_work_item_duplicates: () =>
+        this.handleCheckWorkItemDuplicates(args, history),
+      batch_import_work_items: () =>
+        this.handleBatchImportWorkItems(
+          userId,
+          args,
+          toolActionsPerformed,
+          history
+        ),
+    };
+
+    const handler = toolHandlers[name];
+    if (!handler) {
+      throw new Error(`Unknown function: ${name}`);
     }
-    if (name === 'create_project') {
-      return this.handleCreateProject(userId, args, toolActionsPerformed);
-    }
-    if (name === 'list_sprints') {
-      return this.handleListSprints(args);
-    }
-    if (name === 'create_sprint') {
-      return this.handleCreateSprint(userId, args, toolActionsPerformed);
-    }
-    if (name === 'list_users') {
-      return this.chat.listUsersSnapshot();
-    }
-    if (name === 'create_work_item') {
-      return this.handleCreateWorkItem(userId, args, toolActionsPerformed);
-    }
-    throw new Error(`Unknown function: ${name}`);
+
+    return handler();
   }
 
   private async handleListProjects(): Promise<unknown> {
@@ -323,6 +394,252 @@ export class ChatService {
     const result = { id: workItem.id, key: workItemKey, title: workItem.title };
     toolActionsPerformed.push({ type: 'create_work_item', entity: result });
     return result;
+  }
+
+  private resolveAttachment(
+    providedRef: string | undefined,
+    history: StoredChatMessage[]
+  ): {
+    url: string;
+    fileName: string;
+    fileType?: ChatAttachmentFileTypeEnum;
+  } | null {
+    const allAttachments = history.flatMap((m) => m.attachments || []);
+
+    let cleanRef = providedRef?.trim();
+    if (cleanRef) {
+      const markdownUrlMatch = /\((https?:\/\/[^\s)]+)\)/.exec(cleanRef);
+      if (markdownUrlMatch?.[1]) {
+        cleanRef = markdownUrlMatch[1];
+      }
+    }
+
+    if (
+      cleanRef &&
+      (cleanRef.startsWith('http://') || cleanRef.startsWith('https://'))
+    ) {
+      const matched = allAttachments.find((a) => a.url === cleanRef);
+      return {
+        url: cleanRef,
+        fileName: matched?.fileName || 'attachment',
+        fileType: matched?.fileType,
+      };
+    }
+
+    if (cleanRef) {
+      const lower = cleanRef.toLowerCase();
+      const matched = allAttachments.find(
+        (a) =>
+          a.fileName.toLowerCase() === lower ||
+          a.fileName.toLowerCase().includes(lower) ||
+          lower.includes(a.fileName.toLowerCase()) ||
+          a.id.toLowerCase() === lower
+      );
+      if (matched?.url) {
+        return {
+          url: matched.url,
+          fileName: matched.fileName,
+          fileType: matched.fileType,
+        };
+      }
+    }
+
+    const latestAttachment = allAttachments.at(-1);
+    if (latestAttachment?.url) {
+      return {
+        url: latestAttachment.url,
+        fileName: latestAttachment.fileName,
+        fileType: latestAttachment.fileType,
+      };
+    }
+
+    return null;
+  }
+
+  private async handleParseWorkItemAttachment(
+    args: Record<string, unknown>,
+    history: StoredChatMessage[]
+  ): Promise<unknown> {
+    const rawAttachmentUrl =
+      typeof args.attachmentUrl === 'string' ? args.attachmentUrl : undefined;
+    const resolved = this.resolveAttachment(rawAttachmentUrl, history);
+
+    if (!resolved?.url) {
+      throw new Error(
+        'attachmentUrl could not be resolved from provided reference or chat history.'
+      );
+    }
+
+    const fileName =
+      typeof args.fileName === 'string' && args.fileName
+        ? args.fileName
+        : resolved.fileName;
+    const fileType = resolved.fileType || ChatAttachmentFileTypeEnum.Other;
+
+    const { items, summary } = await fetchAndParseWorkItemAttachment(
+      resolved.url,
+      fileName,
+      fileType
+    );
+
+    return {
+      summary,
+      totalItemsFound: items.length,
+      items,
+    };
+  }
+
+  private async handleCheckWorkItemDuplicates(
+    args: Record<string, unknown>,
+    history: StoredChatMessage[]
+  ): Promise<unknown> {
+    const projectId =
+      typeof args.projectId === 'string' ? args.projectId : '';
+    if (!projectId) {
+      throw new Error('projectId is required');
+    }
+
+    let itemsToAnalyze: ParsedWorkItemNode[] = [];
+    if (Array.isArray(args.items) && args.items.length > 0) {
+      itemsToAnalyze = args.items as ParsedWorkItemNode[];
+    } else {
+      const rawAttachmentUrl =
+        typeof args.attachmentUrl === 'string' ? args.attachmentUrl : undefined;
+      const resolved = this.resolveAttachment(rawAttachmentUrl, history);
+      if (resolved?.url) {
+        const parsed = await fetchAndParseWorkItemAttachment(
+          resolved.url,
+          resolved.fileName,
+          resolved.fileType || ChatAttachmentFileTypeEnum.Other
+        );
+        itemsToAnalyze = parsed.items;
+      }
+    }
+
+    const report = await this.deduplicationAgent.inspectAndDeduplicate(
+      projectId,
+      itemsToAnalyze
+    );
+
+    return report;
+  }
+
+  private async resolveItemsForImport(
+    args: Record<string, unknown>,
+    history: StoredChatMessage[]
+  ): Promise<ParsedWorkItemNode[]> {
+    if (Array.isArray(args.items) && args.items.length > 0) {
+      return args.items as ParsedWorkItemNode[];
+    }
+
+    const rawAttachmentUrl =
+      typeof args.attachmentUrl === 'string' ? args.attachmentUrl : undefined;
+    const resolved = this.resolveAttachment(rawAttachmentUrl, history);
+    if (!resolved?.url) {
+      throw new Error(
+        'attachmentUrl could not be resolved from provided reference or chat history, and no items list was provided.'
+      );
+    }
+    const parsed = await fetchAndParseWorkItemAttachment(
+      resolved.url,
+      resolved.fileName,
+      resolved.fileType || ChatAttachmentFileTypeEnum.Other
+    );
+    return parsed.items;
+  }
+
+  private async handleBatchImportWorkItems(
+    userId: string,
+    args: Record<string, unknown>,
+    toolActionsPerformed: ToolAction[],
+    history: StoredChatMessage[]
+  ): Promise<unknown> {
+    const projectId =
+      typeof args.projectId === 'string' ? args.projectId : '';
+    const sprintId =
+      typeof args.sprintId === 'string' ? args.sprintId : null;
+
+    if (!projectId) {
+      throw new Error('projectId is required');
+    }
+
+    const items = await this.resolveItemsForImport(args, history);
+
+    const project = await this.deps.projectsRepository.findById(projectId);
+    const projectKey = project?.key || 'TASK';
+
+    const createdItems: Array<{ id: string; key: string; title: string }> = [];
+    const idMapping = new Map<string, string>();
+
+    const createSingleNode = async (
+      node: ParsedWorkItemNode,
+      resolvedParentId: string | null
+    ) => {
+      const typeValue = node.type || WorkItemTypeEnum.Task;
+      const priorityValue = node.priority || DEFAULT_WORK_ITEM_PRIORITY;
+
+      const created = await this.deps.workItemService.createWorkItem(userId, {
+        title: node.title,
+        project_id: projectId,
+        sprint_id: sprintId,
+        assignee_id: null,
+        type: typeValue,
+        priority: priorityValue,
+        description: textToProseMirrorJson(node.description, node.dynamicFields),
+        due_date: node.dueDate || null,
+        parent_id: resolvedParentId,
+        labels: node.labels,
+        story_points: node.storyPoints ?? null,
+        jira_issue_key: node.jiraIssueKey || null,
+      });
+
+      const workItemKey = `${projectKey}-${created.id.slice(0, 4).toUpperCase()}`;
+      const summary = { id: created.id, key: workItemKey, title: created.title };
+      createdItems.push(summary);
+      toolActionsPerformed.push({ type: 'create_work_item', entity: summary });
+
+      if (node.temporaryIdentifier) {
+        idMapping.set(node.temporaryIdentifier, created.id);
+      }
+      if (node.title) {
+        idMapping.set(node.title.toLowerCase().trim(), created.id);
+      }
+
+      if (node.children && node.children.length > 0) {
+        for (const child of node.children) {
+          const allowedChildType = getAllowedChildType(typeValue);
+          const effectiveChildNode: ParsedWorkItemNode = {
+            ...child,
+            type: allowedChildType || child.type,
+          };
+          await createSingleNode(effectiveChildNode, created.id);
+        }
+      }
+    };
+
+    for (const item of items) {
+      if (!item.parentReference) {
+        await createSingleNode(item, null);
+      }
+    }
+
+    for (const item of items) {
+      if (
+        item.parentReference &&
+        (!item.temporaryIdentifier || !idMapping.has(item.temporaryIdentifier))
+      ) {
+        const parentId =
+          idMapping.get(item.parentReference) ||
+          idMapping.get(item.parentReference.toLowerCase().trim()) ||
+          null;
+        await createSingleNode(item, parentId);
+      }
+    }
+
+    return {
+      importedCount: createdItems.length,
+      items: createdItems,
+    };
   }
 
   async saveChatHistory(
@@ -495,7 +812,14 @@ export class ChatService {
   ): Promise<{ responseText: string; toolActionsPerformed: ToolAction[] }> {
     const contents: ChatContentTurn[] = history.map((msg) => {
       const role = toChatTurnRole(msg.role);
-      const parts = [{ text: msg.content }];
+      let text = msg.content;
+      if (msg.attachments && msg.attachments.length > 0) {
+        const attachInfo = msg.attachments
+          .map((a) => `[Attachment: ${a.fileName} (URL: ${a.url})]`)
+          .join('\n');
+        text = text ? `${text}\n\n${attachInfo}` : attachInfo;
+      }
+      const parts = [{ text }];
       return { role, parts };
     });
 
@@ -507,11 +831,28 @@ export class ChatService {
     const projects = (projectsRaw || []) as ProjectRowWithOwner[];
     const { users, activeSprints: sprints } = workspace;
 
+    const allAttachments = history.flatMap((m) => m.attachments || []);
+    let attachmentsInstruction = '';
+    if (allAttachments.length > 0) {
+      const attachmentsList = allAttachments
+        .map(
+          (a) =>
+            `- File: "${a.fileName}" (type: ${a.fileType}, URL: ${a.url})`
+        )
+        .join('\n');
+      attachmentsInstruction = `
+User Attached Documents in Conversation:
+${attachmentsList}
+You should access and parse these attachments using "parse_work_item_attachment". When calling "check_work_item_duplicates" or "batch_import_work_items", pass the attachmentUrl (or file name) or the parsed items.
+`;
+    }
+
     const contextInstruction = `
 Current Workspace State:
 - Active Projects: ${JSON.stringify(projects.map((p) => ({ id: p.id, name: p.name, key: p.key })))}
 - System Users: ${JSON.stringify(users.map((u) => ({ id: u.id, name: u.name, email: u.email })))}
 - Ongoing Sprints (Active Status Only): ${JSON.stringify(sprints.map((s) => ({ id: s.id, name: s.name, projectId: s.project_id })))}
+${attachmentsInstruction}
 `;
 
     let responseText = '';
@@ -548,7 +889,8 @@ Current Workspace State:
       const functionResponseParts = await this.processFunctionCalls(
         userId,
         functionCalls,
-        toolActionsPerformed
+        toolActionsPerformed,
+        history
       );
       contents.push({
         role: ChatTurnRoles.User,

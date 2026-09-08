@@ -13,6 +13,8 @@ import {
 } from '../routes/api/sprints/sprints.service';
 import { createSprintsRouter } from '../routes/api/sprints/sprints.route';
 import { ChatRepository } from '../routes/api/chat/chat.repository';
+import { ChatAttachmentsRepository } from '../routes/api/chat/chat-attachments.repository';
+import { WorkItemDeduplicationAgent } from '../routes/api/chat/work-item-deduplication.agent';
 import { ChatService } from '../routes/api/chat/chat.service';
 import { createChatRouter } from '../routes/api/chat/chat.route';
 import { AttachmentsRepository } from '../routes/api/attachments/attachments.repository';
@@ -313,8 +315,12 @@ function createChatConfig(
   integrationsService: IntegrationsService
 ) {
   const chatRepository = new ChatRepository(supabase);
+  const chatAttachmentsRepository = new ChatAttachmentsRepository(supabase);
+  const deduplicationAgent = new WorkItemDeduplicationAgent();
   const chatService = new ChatService({
     chat: chatRepository,
+    chatAttachments: chatAttachmentsRepository,
+    deduplicationAgent,
     workItemService,
     sprintsService,
     projectsService,
@@ -325,6 +331,7 @@ function createChatConfig(
 
   return {
     chatRepository,
+    chatAttachmentsRepository,
     chatService,
     router,
   };

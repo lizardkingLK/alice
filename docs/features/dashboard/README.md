@@ -2,13 +2,15 @@
 
 Authenticated workspace hub with a customizable overview (drag / resize widgets).
 
-| Document | Description                                                                                                  | Status |
-| -------- | ------------------------------------------------------------------------------------------------------------ | ------ |
-| —        | See [ARD](../../product/ARD.md) and [TRD](../../architecture/TRD.md); add widget/layout notes here as needed | Living |
+| Document                 | Description                                                                                                  | Status |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------ | ------ |
+| [CHARTS.md](./CHARTS.md) | Custom chart boards UI (`/charts`); JSON persistence + sharing next                                          | Living |
+| —                        | See [ARD](../../product/ARD.md) and [TRD](../../architecture/TRD.md); add widget/layout notes here as needed | Living |
 
 Quick links:
 
 - Implementation: `apps/web/app/dashboard/`
+- Charts UI: `apps/web/app/charts/`
 - Favorites / Saved Views: [views feature](../views/FAVORITES_AND_VIEWS.md)
 - Auth / role access: [RBAC plan](../../auth/RBAC_AUTHORIZATION_SKELETON.md)
 - SEO: dashboards are `noindex` — see [SEO guide](../../guides/SEO.md)

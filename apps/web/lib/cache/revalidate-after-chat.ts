@@ -5,9 +5,11 @@ import {
   invalidateDropdownCache,
 } from '@/lib/cache/dropdown-cache';
 
-/** Tool action types emitted by Express `POST /api/chat`. */
 export type ChatMutationActionType =
-  'create_project' | 'create_sprint' | 'create_work_item';
+  | 'create_project'
+  | 'create_sprint'
+  | 'create_work_item'
+  | 'batch_import_work_items';
 
 /**
  * Chat mutations go through Express, not project Server Actions, so they

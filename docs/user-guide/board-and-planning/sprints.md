@@ -45,7 +45,19 @@ Assign work to a sprint from the backlog, work-item sidebar, or create forms.
 
 ---
 
+## Create sprints with Alice
+
+You can also create and manage sprints conversationally using Alice:
+
+- Ask: *"List active sprints in Project Mobile"*
+- Ask: *"Create Sprint 12 for Project Mobile from October 1 to October 15 with goal 'Launch Auth flow'"*
+
+Alice validates the dates, project permissions, and returns an action card linking directly to the new sprint.
+
+---
+
 ## Related
 
 - [Backlog](./backlog.md)
 - [Kanban board](./kanban-board.md)
+- [Use the AI assistant](../chat/use-ai-assistant.md)

@@ -17,14 +17,6 @@ import {
   SquareArrowOutUpRight,
   X,
 } from '@repo/ui/lib/icons';
-import {
-  Avatar,
-  AvatarBadge,
-  AvatarFallback,
-  AvatarGroup,
-  AvatarGroupCount,
-  AvatarImage,
-} from '@repo/ui/components/ui/avatar';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card } from '@repo/ui/components/ui/card';
@@ -37,21 +29,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@repo/ui/components/ui/dropdown-menu';
 import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@repo/ui/components/ui/tooltip';
-import { formatLabelWithSpace, getInitials } from '@/app/_shared/utility';
+import { formatLabelWithSpace } from '@/app/_shared/utility';
 import {
   pickWorkspaceDefaultsDialogController,
   WorkspaceDefaultsDialogHost,
@@ -76,6 +60,7 @@ import { BOARD_STATUS_COLUMNS } from '@/app/work-items/_helpers/work-item-status
 import { updateWorkItemStatus } from '@/app/work-items/_services/work-items.mutations.client';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { SearchInput } from '@/components/search-input';
+import { AssigneeAvatarFilter } from '@/components/assignee-avatar-filter';
 import { UserAvatar } from '@/components/user-avatar';
 import { WorkItemPreviewCardBody } from '@/components/work-item-preview-card';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
@@ -89,8 +74,6 @@ import { tryHandleLockedMutationError } from '@/lib/optimistic-lock/run-locked-m
 type BoardStatus = Exclude<DbWorkItem['status'], 'Draft'>;
 
 const COLUMNS = BOARD_STATUS_COLUMNS;
-
-const MAX_VISIBLE_ASSIGNEES = 3;
 
 const IDLE_FILTER_QUERY: FilterQuery = {
   value: QUERY_FILTER_ALL_VALUE,
@@ -210,12 +193,6 @@ export function KanbanBoard({
     return Array.from(byId.values());
   }, [workItems]);
 
-  const visibleAssignees = uniqueAssignees.slice(0, MAX_VISIBLE_ASSIGNEES);
-  const overflowAssignees = uniqueAssignees.slice(MAX_VISIBLE_ASSIGNEES);
-  const isOverflowAssigneeSelected = overflowAssignees.some(
-    (assignee) => assignee.id === assigneeFilter
-  );
-
   const boardFilterFieldIds = useMemo(() => {
     const fields: Array<'project' | 'sprint' | 'priority'> = [];
     if (allowAllFilters || projects.length > 0) {
@@ -234,12 +211,6 @@ export function KanbanBoard({
     }),
     [priorityFilter]
   );
-
-  const toggleAssignee = (assigneeId: string) => {
-    setAssigneeFilter((previous) =>
-      previous === assigneeId ? null : assigneeId
-    );
-  };
 
   const hasLocalFilters =
     search.trim() !== '' ||
@@ -516,96 +487,13 @@ export function KanbanBoard({
             className="sm:w-64"
           />
 
-          <AvatarGroup
-            className="*:data-[slot=avatar]:size-8"
-            role="group"
-            aria-label="Filter by assignee"
-          >
-            {visibleAssignees.map((assignee) => {
-              const isSelected = assigneeFilter === assignee.id;
-              return (
-                <Tooltip key={assignee.id}>
-                  <TooltipTrigger asChild>
-                    <Avatar
-                      size="default"
-                      role="button"
-                      tabIndex={0}
-                      aria-pressed={isSelected}
-                      aria-label={`Filter by ${assignee.name}`}
-                      className={cn(
-                        'focus-visible:ring-ring cursor-pointer outline-none focus-visible:ring-2',
-                        isSelected &&
-                          'ring-primary ring-offset-background z-10 ring-2 ring-offset-2',
-                        assigneeFilter && !isSelected && 'opacity-40'
-                      )}
-                      onClick={() => toggleAssignee(assignee.id)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          toggleAssignee(assignee.id);
-                        }
-                      }}
-                    >
-                      {assignee.profilePicture ? (
-                        <AvatarImage
-                          src={assignee.profilePicture}
-                          alt={assignee.name}
-                        />
-                      ) : null}
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-                        {getInitials(assignee.name)}
-                      </AvatarFallback>
-                      {isUserOnline(assignee.id) ? (
-                        <AvatarBadge
-                          aria-label="Online"
-                          className="top-0 right-0 bottom-auto size-2 bg-emerald-500"
-                        />
-                      ) : null}
-                    </Avatar>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    {assignee.name}
-                    {isSelected ? ' · filtering' : ''}
-                  </TooltipContent>
-                </Tooltip>
-              );
-            })}
-
-            {overflowAssignees.length > 0 ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <AvatarGroupCount
-                    role="button"
-                    tabIndex={0}
-                    aria-label="Show more assignees"
-                    className={cn(
-                      'focus-visible:ring-ring cursor-pointer text-xs font-medium outline-none focus-visible:ring-2',
-                      assigneeFilter &&
-                        !isOverflowAssigneeSelected &&
-                        'opacity-40',
-                      isOverflowAssigneeSelected &&
-                        'ring-primary ring-offset-background z-10 ring-2 ring-offset-2'
-                    )}
-                  >
-                    +{overflowAssignees.length}
-                  </AvatarGroupCount>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56">
-                  <DropdownMenuLabel>More assignees</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {overflowAssignees.map((assignee) => (
-                    <DropdownMenuCheckboxItem
-                      key={assignee.id}
-                      checked={assigneeFilter === assignee.id}
-                      onCheckedChange={() => toggleAssignee(assignee.id)}
-                    >
-                      {assignee.name}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : null}
-          </AvatarGroup>
+          <AssigneeAvatarFilter
+            members={uniqueAssignees}
+            selectedId={assigneeFilter}
+            onSelectedIdChange={setAssigneeFilter}
+            visibleCount={3}
+            isUserOnline={isUserOnline}
+          />
         </div>
 
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">

@@ -41,14 +41,18 @@ On any dashboard page (except `/chat`):
 Examples:
 
 - List or summarize **projects**, **sprints**, and **work items**
-- **Create** entities when you describe what you need
-- Answer questions about items you can already access
+- **Create** projects, sprints, and work items through guided prompts
+- **Attach and inspect documents**: Click the paperclip icon (📎) to attach JSON, CSV, text, or image files
+- **Parse attached files**: Ask Alice to extract work item definitions, story points, and priorities directly from your files
+- **Check duplicates**: Ask Alice to check if items in your attached document already exist in the project
+- **Batch import**: Have Alice create all new items in bulk and link parent/child tasks automatically
+- Answer questions about projects and sprints you can already access
 
 Alice confirms intent in conversation before making changes. Successful actions
-may show cards with links to the created record.
+show interactive cards with links to the created records.
 
 Alice respects your sign-in and role — it cannot bypass project membership or
-admin-only areas.
+admin-only areas. Alice is focused exclusively on ALICE workspace management and will politely decline unrelated general requests.
 
 ---
 
@@ -63,6 +67,7 @@ admin-only areas.
 ---
 
 ## Related
-
-- [Alice (AI chat)](./README.md)
-- [Create a work item](../work-items/create-work-item.md)
+ 
+ - [Alice (AI chat)](./README.md)
+ - [User testing guide](./user-test-guide.md)
+ - [Create a work item](../work-items/create-work-item.md)
