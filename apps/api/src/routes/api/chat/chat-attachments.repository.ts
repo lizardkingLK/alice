@@ -358,7 +358,7 @@ export class ChatAttachmentsRepository {
       where: { id: attachmentId },
     });
 
-    if (!attachmentRecord || attachmentRecord.status !== 'active') {
+    if (attachmentRecord?.status !== 'active') {
       return false;
     }
 
