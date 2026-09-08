@@ -47,122 +47,126 @@ export const CHARTS_SAMPLE_PROJECTS: readonly ChartsSampleProject[] = [
   },
 ] as const;
 
-export const CHARTS_SAMPLE_MEMBERS: readonly ChartsSampleMember[] = [
-  {
-    id: 'user-alice',
-    name: 'Alice Admin',
-    email: 'admin@alice.dev',
-    profilePicture: null,
-  },
-  {
-    id: 'user-bob',
-    name: 'Bob Member',
-    email: 'bob@alice.dev',
-    profilePicture: null,
-  },
-  {
-    id: 'user-cara',
-    name: 'Cara Manager',
-    email: 'cara@alice.dev',
-    profilePicture: null,
-  },
-  {
-    id: 'user-dan',
-    name: 'Dan Designer',
-    email: 'dan@alice.dev',
-    profilePicture: null,
-  },
-  {
-    id: 'user-eve',
-    name: 'Eve Engineer',
-    email: 'eve@alice.dev',
-    profilePicture: null,
-  },
-] as const;
+export const CHARTS_SAMPLE_MEMBERS: readonly ChartsSampleMember[] = (
+  [
+    ['user-alice', 'Alice Admin', 'admin@alice.dev'],
+    ['user-bob', 'Bob Member', 'bob@alice.dev'],
+    ['user-cara', 'Cara Manager', 'cara@alice.dev'],
+    ['user-dan', 'Dan Designer', 'dan@alice.dev'],
+    ['user-eve', 'Eve Engineer', 'eve@alice.dev'],
+  ] as const
+).map(([id, name, email]) => ({
+  id,
+  name,
+  email,
+  profilePicture: null,
+}));
 
-export const CHARTS_SAMPLE_WORK_ITEMS: readonly ChartsSampleWorkItem[] = [
-  {
-    id: 'wi-1',
-    title: 'Database Setup and Prisma Migration',
-    status: 'Done',
-    type: 'Task',
-    priority: 'highest',
-    assigneeId: 'user-alice',
-    projectId: 'proj-alice',
-  },
-  {
-    id: 'wi-2',
-    title: 'Implement Core User Model',
-    status: 'Done',
-    type: 'Story',
-    priority: 'highest',
-    assigneeId: 'user-bob',
-    projectId: 'proj-alice',
-  },
-  {
-    id: 'wi-3',
-    title: 'Projects & Memberships',
-    status: 'InProgress',
-    type: 'Story',
-    priority: 'high',
-    assigneeId: 'user-cara',
-    projectId: 'proj-alice',
-  },
-  {
-    id: 'wi-4',
-    title: 'Teams and Reporting Lines',
-    status: 'InProgress',
-    type: 'Story',
-    priority: 'medium',
-    assigneeId: 'user-dan',
-    projectId: 'proj-alice',
-  },
-  {
-    id: 'wi-5',
-    title: 'Sprints Engine',
-    status: 'Testing',
-    type: 'Story',
-    priority: 'high',
-    assigneeId: 'user-eve',
-    projectId: 'proj-alice',
-  },
-  {
-    id: 'wi-6',
-    title: 'Work Items Hierarchy',
-    status: 'ToDo',
-    type: 'Epic',
-    priority: 'highest',
-    assigneeId: 'user-alice',
-    projectId: 'proj-alice',
-  },
-  {
-    id: 'wi-7',
-    title: 'Comments and Attachments',
-    status: 'New',
-    type: 'Story',
-    priority: 'high',
-    assigneeId: 'user-bob',
-    projectId: 'proj-demo',
-  },
-  {
-    id: 'wi-8',
-    title: 'Access Allowlist',
-    status: 'InProgress',
-    type: 'Story',
-    priority: 'medium',
-    assigneeId: 'user-cara',
-    projectId: 'proj-demo',
-  },
-  {
-    id: 'wi-9',
-    title: 'Jira OAuth Sync',
-    status: 'ToDo',
-    type: 'Story',
-    priority: 'high',
-    assigneeId: null,
-    projectId: 'proj-demo',
-  },
-] as const;
+/** Compact rows avoid Sonar CPD matching near-identical object literals. */
+const CHARTS_SAMPLE_WORK_ITEM_ROWS: readonly (readonly [
+  id: string,
+  title: string,
+  status: WorkItemStatus,
+  type: WorkItemType,
+  priority: WorkItemPriority,
+  assigneeId: string | null,
+  projectId: string,
+])[] = [
+  [
+    'wi-1',
+    'Database Setup and Prisma Migration',
+    'Done',
+    'Task',
+    'highest',
+    'user-alice',
+    'proj-alice',
+  ],
+  [
+    'wi-2',
+    'Implement Core User Model',
+    'Done',
+    'Story',
+    'highest',
+    'user-bob',
+    'proj-alice',
+  ],
+  [
+    'wi-3',
+    'Projects & Memberships',
+    'InProgress',
+    'Story',
+    'high',
+    'user-cara',
+    'proj-alice',
+  ],
+  [
+    'wi-4',
+    'Teams and Reporting Lines',
+    'InProgress',
+    'Story',
+    'medium',
+    'user-dan',
+    'proj-alice',
+  ],
+  [
+    'wi-5',
+    'Sprints Engine',
+    'Testing',
+    'Story',
+    'high',
+    'user-eve',
+    'proj-alice',
+  ],
+  [
+    'wi-6',
+    'Work Items Hierarchy',
+    'ToDo',
+    'Epic',
+    'highest',
+    'user-alice',
+    'proj-alice',
+  ],
+  [
+    'wi-7',
+    'Comments and Attachments',
+    'New',
+    'Story',
+    'high',
+    'user-bob',
+    'proj-demo',
+  ],
+  [
+    'wi-8',
+    'Access Allowlist',
+    'InProgress',
+    'Story',
+    'medium',
+    'user-cara',
+    'proj-demo',
+  ],
+  [
+    'wi-9',
+    'Jira OAuth Sync',
+    'ToDo',
+    'Story',
+    'high',
+    null,
+    'proj-demo',
+  ],
+];
+
+export const CHARTS_SAMPLE_WORK_ITEMS: readonly ChartsSampleWorkItem[] =
+  CHARTS_SAMPLE_WORK_ITEM_ROWS.map(
+    ([id, title, status, type, priority, assigneeId, projectId]) => ({
+      id,
+      title,
+      status,
+      type,
+      priority,
+      assigneeId,
+      projectId,
+    })
+  );
 
 export type ChartsStatusPieSlice = {
   readonly status: string;
