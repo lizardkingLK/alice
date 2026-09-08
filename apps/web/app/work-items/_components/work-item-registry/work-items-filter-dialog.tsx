@@ -6,17 +6,10 @@ import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogTrigger,
 } from '@repo/ui/components/ui/dialog';
 import { Input } from '@repo/ui/components/ui/input';
 import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@repo/ui/components/ui/tooltip';
-import { Filter, Plus, Search } from '@repo/ui/lib/icons';
+import { Plus, Search } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { useToggleKeyboardShortcut } from '@repo/ui/hooks/use-keyboard-shortcut';
 import { isShiftLetter } from '@repo/ui/lib/shortcut-gate';
@@ -36,6 +29,8 @@ import { PRIORITY_LABELS } from '@/app/work-items/_helpers/work-item-priority-ui
 import { formatLabelWithSpace } from '@/app/_shared/utility';
 import { QUERY_FILTER_ALL_VALUE } from '@/hooks/use-query-filter';
 import { WorkItemLabelsInput } from '@/app/work-items/_components/work-item-labels/work-item-labels-input';
+import { FilterFieldNavItem } from '@/components/filter-field-nav-item';
+import { FilterShortcutTrigger } from '@/components/filter-shortcut-trigger';
 
 /** Fixed options list height so long filter lists scroll inside the pane. */
 const FILTER_OPTIONS_SCROLL_CLASS = 'h-64';
@@ -160,37 +155,6 @@ export type WorkItemsFilterDialogProps = {
   readonly onApplyFilters: (draft: WorkItemsFilterDraft) => void;
 };
 /* eslint-enable no-unused-vars */
-
-function FilterFieldNavItem({
-  label,
-  active,
-  onSelect,
-}: Readonly<{
-  label: string;
-  active: boolean;
-  onSelect: () => void;
-}>) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={cn(
-        'relative flex w-full cursor-pointer items-center rounded-md px-3 py-2 text-left text-sm transition-colors',
-        active
-          ? 'bg-primary/10 text-foreground font-medium'
-          : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-      )}
-    >
-      {active ? (
-        <span
-          aria-hidden
-          className="bg-primary absolute top-1 bottom-1 left-0 w-0.5 rounded-full"
-        />
-      ) : null}
-      {label}
-    </button>
-  );
-}
 
 function FilterOptionRow({
   id,
@@ -711,32 +675,12 @@ export function WorkItemsFilterDialog(
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <TooltipProvider delayDuration={600}>
-        <Tooltip open={open ? false : undefined}>
-          <TooltipTrigger asChild>
-            <DialogTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                aria-label="Open filters"
-                aria-keyshortcuts="Shift+F"
-                className={cn(
-                  'h-9 cursor-pointer gap-1.5 px-3',
-                  (open || hasActiveFilters) &&
-                    'border-primary text-primary hover:text-primary'
-                )}
-              >
-                <Filter className="size-3.5" />
-                Filter
-              </Button>
-            </DialogTrigger>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            Press Shift + F to open and close
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <FilterShortcutTrigger
+        open={open}
+        hasActiveFilters={hasActiveFilters}
+        hideTooltipWhileOpen
+        delayDuration={600}
+      />
 
       <DialogContent
         showCloseButton

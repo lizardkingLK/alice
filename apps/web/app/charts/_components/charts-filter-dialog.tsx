@@ -9,16 +9,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@repo/ui/components/ui/dialog';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@repo/ui/components/ui/tooltip';
-import { Filter } from '@repo/ui/lib/icons';
-import { cn } from '@repo/ui/lib/utils';
 import { useToggleKeyboardShortcut } from '@repo/ui/hooks/use-keyboard-shortcut';
 import { isShiftLetter } from '@repo/ui/lib/shortcut-gate';
 import { Label } from '@repo/ui/components/ui/label';
@@ -33,6 +24,7 @@ import type {
   ChartBoardOwnershipFilter,
   ChartBoardStatusFilter,
 } from '@/app/charts/_components/charts.types';
+import { FilterShortcutTrigger } from '@/components/filter-shortcut-trigger';
 
 export type ChartsFilterDraft = {
   readonly ownership: ChartBoardOwnershipFilter;
@@ -46,6 +38,39 @@ type ChartsFilterDialogProps = {
   // eslint-disable-next-line no-unused-vars -- apply staged filters
   readonly onApplyFilters: (draft: ChartsFilterDraft) => void;
 };
+
+function ChartsBoardFilterSelectField({
+  id,
+  label,
+  value,
+  onValueChange,
+  options,
+}: Readonly<{
+  id: string;
+  label: string;
+  value: string;
+  // eslint-disable-next-line no-unused-vars -- select change
+  onValueChange: (value: string) => void;
+  options: readonly { value: string; label: string }[];
+}>) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Select value={value} onValueChange={onValueChange}>
+        <SelectTrigger id={id} className="w-full">
+          <SelectValue placeholder={label} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
 
 export function ChartsFilterDialog({
   ownership,
@@ -79,32 +104,7 @@ export function ChartsFilterDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <DialogTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                aria-label="Open filters"
-                aria-keyshortcuts="Shift+F"
-                className={cn(
-                  'h-9 cursor-pointer gap-1.5 px-3',
-                  (open || hasActiveFilters) &&
-                    'border-primary text-primary hover:text-primary'
-                )}
-              >
-                <Filter className="size-3.5" />
-                Filter
-              </Button>
-            </DialogTrigger>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            Press Shift + F to open and close
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <FilterShortcutTrigger open={open} hasActiveFilters={hasActiveFilters} />
 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -116,49 +116,39 @@ export function ChartsFilterDialog({
         </DialogHeader>
 
         <div className="grid gap-4 py-2">
-          <div className="space-y-2">
-            <Label htmlFor="charts-filter-ownership">Ownership</Label>
-            <Select
-              value={draft.ownership}
-              onValueChange={(value) =>
-                setDraft((prev) => ({
-                  ...prev,
-                  ownership: value as ChartBoardOwnershipFilter,
-                }))
-              }
-            >
-              <SelectTrigger id="charts-filter-ownership" className="w-full">
-                <SelectValue placeholder="Ownership" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="mine">Mine</SelectItem>
-                <SelectItem value="shared">Shared with me</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <ChartsBoardFilterSelectField
+            id="charts-filter-ownership"
+            label="Ownership"
+            value={draft.ownership}
+            onValueChange={(value) =>
+              setDraft((prev) => ({
+                ...prev,
+                ownership: value as ChartBoardOwnershipFilter,
+              }))
+            }
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'mine', label: 'Mine' },
+              { value: 'shared', label: 'Shared with me' },
+            ]}
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor="charts-filter-status">Status</Label>
-            <Select
-              value={draft.status}
-              onValueChange={(value) =>
-                setDraft((prev) => ({
-                  ...prev,
-                  status: value as ChartBoardStatusFilter,
-                }))
-              }
-            >
-              <SelectTrigger id="charts-filter-status" className="w-full">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <ChartsBoardFilterSelectField
+            id="charts-filter-status"
+            label="Status"
+            value={draft.status}
+            onValueChange={(value) =>
+              setDraft((prev) => ({
+                ...prev,
+                status: value as ChartBoardStatusFilter,
+              }))
+            }
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'active', label: 'Active' },
+              { value: 'archived', label: 'Archived' },
+            ]}
+          />
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
