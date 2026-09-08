@@ -27,6 +27,10 @@ import { workItemFactory } from '../factories/workItem.factory';
 import { assertDebouncedSearchRedirect } from '../helpers/assert-debounced-search';
 import { paginationFactory } from '../factories/pagination.factory';
 
+vi.mock('@/components/realtime/realtime-provider', () => ({
+  useRealtime: () => ({ isUserOnline: () => false }),
+}));
+
 async function ensureFilterDialogOpen() {
   const existing = screen.queryByRole('dialog');
   if (existing) {

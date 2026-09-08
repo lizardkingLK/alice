@@ -64,6 +64,7 @@ import { AssigneeAvatarFilter } from '@/components/assignee-avatar-filter';
 import { UserAvatar } from '@/components/user-avatar';
 import { WorkItemPreviewCardBody } from '@/components/work-item-preview-card';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
+import { useRealtime } from '@/components/realtime/realtime-provider';
 import {
   QUERY_FILTER_ALL_VALUE,
   useQueryFilter,
@@ -115,6 +116,7 @@ export function KanbanBoard({
   suggestedDefaults,
   needsClientBootstrap,
 }: Readonly<KanbanBoardProps>) {
+  const { isUserOnline } = useRealtime();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -490,6 +492,7 @@ export function KanbanBoard({
             selectedId={assigneeFilter}
             onSelectedIdChange={setAssigneeFilter}
             visibleCount={3}
+            isUserOnline={isUserOnline}
           />
         </div>
 
@@ -616,6 +619,9 @@ export function KanbanBoard({
                             descriptionPlain={description || null}
                             assigneeName={assigneeName(item)}
                             assigneeImageUrl={item.assignee?.profile_picture}
+                            isAssigneeOnline={Boolean(
+                              item.assignee_id && isUserOnline(item.assignee_id)
+                            )}
                             titleClassName="group-hover:text-primary transition-colors"
                           />
                         </Card>
@@ -671,6 +677,10 @@ export function KanbanBoard({
                         name={assigneeName(selectedTask)}
                         imageUrl={selectedTask.assignee?.profile_picture}
                         title={assigneeName(selectedTask)}
+                        isOnline={Boolean(
+                          selectedTask.assignee_id &&
+                          isUserOnline(selectedTask.assignee_id)
+                        )}
                         className="size-6"
                         fallbackClassName="bg-primary text-primary-foreground text-[10px] font-medium"
                       />

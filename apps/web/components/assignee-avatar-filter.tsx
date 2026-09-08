@@ -2,6 +2,7 @@
 
 import {
   Avatar,
+  AvatarBadge,
   AvatarFallback,
   AvatarGroup,
   AvatarGroupCount,
@@ -36,6 +37,9 @@ type AssigneeAvatarFilterProps = {
   readonly onSelectedIdChange: (id: string | null) => void;
   readonly visibleCount?: number;
   readonly className?: string;
+  /** Optional presence check (e.g. Pusher) for a green online badge. */
+  // eslint-disable-next-line no-unused-vars -- online lookup
+  readonly isUserOnline?: (userId: string) => boolean;
 };
 
 export function AssigneeAvatarFilter({
@@ -44,6 +48,7 @@ export function AssigneeAvatarFilter({
   onSelectedIdChange,
   visibleCount = 4,
   className,
+  isUserOnline,
 }: Readonly<AssigneeAvatarFilterProps>) {
   const visibleAssignees = members.slice(0, visibleCount);
   const overflowAssignees = members.slice(visibleCount);
@@ -63,6 +68,7 @@ export function AssigneeAvatarFilter({
     >
       {visibleAssignees.map((assignee) => {
         const isSelected = selectedId === assignee.id;
+        const online = isUserOnline?.(assignee.id) ?? false;
         return (
           <Tooltip key={assignee.id} delayDuration={400}>
             <TooltipTrigger asChild>
@@ -95,11 +101,18 @@ export function AssigneeAvatarFilter({
                 <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
                   {getInitials(assignee.name)}
                 </AvatarFallback>
+                {online ? (
+                  <AvatarBadge
+                    aria-label="Online"
+                    className="top-0 right-0 bottom-auto size-2 bg-emerald-500"
+                  />
+                ) : null}
               </Avatar>
             </TooltipTrigger>
             <TooltipContent side="bottom">
               {assignee.name}
               {isSelected ? ' · filtering' : ''}
+              {online ? ' · online' : ''}
             </TooltipContent>
           </Tooltip>
         );
@@ -132,6 +145,7 @@ export function AssigneeAvatarFilter({
                 onCheckedChange={() => toggleAssignee(assignee.id)}
               >
                 {assignee.name}
+                {isUserOnline?.(assignee.id) ? ' · online' : ''}
               </DropdownMenuCheckboxItem>
             ))}
           </DropdownMenuContent>

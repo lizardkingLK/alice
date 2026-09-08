@@ -11,6 +11,7 @@ import {
   notifications,
   profile,
   projects,
+  pusher,
   root,
   savedViews,
   sprints,
@@ -44,6 +45,7 @@ routesConfig.use('/api/profile', profile.router);
 routesConfig.use('/api/v1/profile', profile.router);
 routesConfig.use('/api/projects', projects.router);
 routesConfig.use('/api/v1/projects', projects.router);
+routesConfig.use('/api/pusher', pusher.router);
 routesConfig.use('/api/saved-views', savedViews.router);
 routesConfig.use('/api/v1/saved-views', savedViews.router);
 routesConfig.use('/api/sprints', sprints.router);

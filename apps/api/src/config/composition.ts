@@ -65,6 +65,9 @@ import { createSavedViewsRouter } from '../routes/api/savedViews/savedViews.rout
 import { IntegrationsRepository } from '../routes/api/integrations/integrations.repository';
 import { IntegrationsService } from '../routes/api/integrations/integrations.service';
 import { createIntegrationsRouter } from '../routes/api/integrations/integrations.route';
+import { pusher as pusherClient } from '../lib/pusher';
+import { PusherService } from '../routes/api/pusher/pusher.service';
+import { createPusherRouter } from '../routes/api/pusher/pusher.route';
 
 function createRootConfig() {
   const router = createRootRouter();
@@ -362,6 +365,18 @@ function createIntegrationsConfig() {
   };
 }
 
+function createPusherConfig(
+  usersRepository: Pick<UsersRepository, 'findById'>
+) {
+  const pusherService = new PusherService(usersRepository, pusherClient);
+  const router = createPusherRouter({ pusherService });
+
+  return {
+    pusherService,
+    router,
+  };
+}
+
 /** Production configs graph (repo → service → router). */
 export const root = createRootConfig();
 export const health = createHealthConfig();
@@ -395,6 +410,7 @@ export const savedViews = createSavedViewsConfig(
   notifications.notificationsRepository
 );
 export const integrations = createIntegrationsConfig();
+export const pusher = createPusherConfig(users.usersRepository);
 export const chat = createChatConfig(
   workItems.workItemService,
   sprints.sprintsService,

@@ -26,6 +26,7 @@ import {
 } from '@repo/ui/lib/icons';
 import { formatDateTime } from '@/app/_shared/utility';
 import { UserAvatar } from '@/components/user-avatar';
+import { useRealtime } from '@/components/realtime/realtime-provider';
 import {
   CommentContentView,
   type CommentUserMentionTarget,
@@ -83,6 +84,7 @@ export function CommentListItem({
   onPurge,
   onQuickEmoji,
 }: Readonly<CommentListItemProps>) {
+  const { isUserOnline } = useRealtime();
   const isOwner = comment.author_id === activeUserId;
 
   return (
@@ -95,6 +97,7 @@ export function CommentListItem({
       <UserAvatar
         name={comment.author?.name}
         imageUrl={comment.author?.profile_picture}
+        isOnline={isUserOnline(comment.author_id)}
         className="mt-0.5 size-8 shrink-0 border-0"
         fallbackClassName="bg-primary/10 text-primary text-xs font-semibold"
       />
