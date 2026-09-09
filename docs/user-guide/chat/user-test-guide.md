@@ -101,7 +101,7 @@ Verify that files upload directly to Supabase Storage via signed upload URLs:
 
 1. Attach `test-work-items.json` via the paperclip icon.
 2. Type:
-   > *"Please inspect and parse the attached file, and tell me what work items are in it."*
+   > _"Please inspect and parse the attached file, and tell me what work items are in it."_
 3. Send the message.
 4. Alice runs `parse_work_item_attachment` and lists:
    - `Implement User Notification Center` (Story, High, 5 pts)
@@ -113,7 +113,7 @@ Verify that files upload directly to Supabase Storage via signed upload URLs:
 ### 4. Duplicate checking
 
 1. In the same thread, ask Alice:
-   > *"Check if any of these items already exist in project [Your Project Key or Name]."*
+   > _"Check if any of these items already exist in project [Your Project Key or Name]."_
 2. Alice invokes `check_work_item_duplicates` and summarizes:
    - Number of new items ready to import.
    - Any matching items found in the project.
@@ -123,7 +123,7 @@ Verify that files upload directly to Supabase Storage via signed upload URLs:
 ### 5. Batch work item import
 
 1. Ask Alice:
-   > *"Go ahead and import the new items into project [Your Project Key or Name]."*
+   > _"Go ahead and import the new items into project [Your Project Key or Name]."_
 2. Alice executes `batch_import_work_items`.
 3. An **Executed Action Card** appears below Alice's reply with clickable links to the newly created work items.
 4. Click a created item link to verify its details on `/work-items/[id]`.
@@ -140,7 +140,7 @@ Verify that files upload directly to Supabase Storage via signed upload URLs:
 ### 7. Scope guardrails
 
 1. Ask Alice an out-of-scope question, such as:
-   > *"Write an essay about project management theory."*
+   > _"Write an essay about project management theory."_
 2. Alice politely declines, clarifying its scope is project and sprint management in ALICE.
 
 ---

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
@@ -16,6 +17,7 @@ import {
   CHART_WIDGET_CATALOG,
   CHART_WIDGET_CATEGORIES,
   chartWidgetsForCategory,
+  isChartWidgetAvailable,
   type ChartWidgetCategoryId,
   type ChartWidgetDefinition,
 } from '@/app/charts/_components/charts-widget-catalog';
@@ -159,12 +161,28 @@ function WidgetCenterCard({
   onAdd: () => void;
 }>) {
   const Icon = widget.icon;
+  const available = isChartWidgetAvailable(widget.id);
+
   return (
-    <article className="border-border bg-card flex h-full min-w-0 flex-col rounded-2xl border p-5 shadow-sm">
+    <article
+      className={cn(
+        'border-border bg-card flex h-full min-w-0 flex-col rounded-2xl border p-5 shadow-sm',
+        !available && 'opacity-80'
+      )}
+    >
       <div className="bg-primary/10 text-primary mb-4 flex size-12 shrink-0 items-center justify-center rounded-xl">
         <Icon className="size-6" aria-hidden />
       </div>
-      <h4 className="text-sm font-semibold tracking-tight">{widget.title}</h4>
+      <div className="flex items-start gap-2">
+        <h4 className="min-w-0 flex-1 text-sm font-semibold tracking-tight">
+          {widget.title}
+        </h4>
+        {!available ? (
+          <Badge variant="secondary" className="shrink-0 text-[10px]">
+            Coming soon
+          </Badge>
+        ) : null}
+      </div>
       <p className="text-muted-foreground mt-1.5 min-h-10 flex-1 text-sm leading-relaxed">
         {widget.description}
       </p>
@@ -172,10 +190,14 @@ function WidgetCenterCard({
         type="button"
         variant="secondary"
         size="sm"
-        className="mt-5 w-full shrink-0 cursor-pointer"
+        className={cn(
+          'mt-5 w-full shrink-0',
+          available ? 'cursor-pointer' : 'cursor-not-allowed'
+        )}
+        disabled={!available}
         onClick={onAdd}
       >
-        Add widget
+        {available ? 'Add widget' : 'Coming soon'}
       </Button>
     </article>
   );

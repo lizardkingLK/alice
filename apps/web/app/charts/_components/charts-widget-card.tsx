@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import type { WorkItemStatus } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card, CardContent, CardHeader } from '@repo/ui/components/ui/card';
 import {
@@ -27,10 +28,14 @@ import {
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import type { ChartWidgetDefinition } from '@/app/charts/_components/charts-widget-catalog';
-import type { ChartWidgetTypeId } from '@/app/charts/_components/charts.types';
+import type {
+  ChartWidgetTypeId,
+  ChartWidgetViewMode,
+} from '@/app/charts/_components/charts.types';
 import {
   CHARTS_SAMPLE_WORK_ITEMS,
   filterChartsSampleWorkItems,
+  type ChartsSampleWorkItem,
   type ChartsWidgetFilterDraft,
 } from '@/app/charts/_components/charts-sample.data';
 import { ChartsFullscreenDialogShell } from '@/app/charts/_components/charts-fullscreen-dialog-shell';
@@ -44,12 +49,21 @@ type ChartsWidgetCardProps = {
   readonly description?: string;
   readonly Icon?: ChartWidgetDefinition['icon'];
   readonly filters?: ChartsWidgetFilterDraft;
+  /** Fullscreen-only layout; canvas always shows the chart. */
+  readonly viewMode?: ChartWidgetViewMode;
+  readonly focusedStatus?: WorkItemStatus;
   readonly onRemove: () => void;
   readonly onDuplicate: () => void;
   // eslint-disable-next-line no-unused-vars -- rename callback
   readonly onRename: (title: string) => void;
   // eslint-disable-next-line no-unused-vars -- persist applied filters
   readonly onFiltersChange?: (filters: ChartsWidgetFilterDraft | null) => void;
+  readonly onViewModeChange?: (
+    // eslint-disable-next-line no-unused-vars
+    viewMode: ChartWidgetViewMode,
+    // eslint-disable-next-line no-unused-vars
+    focusedStatus?: WorkItemStatus | null
+  ) => void;
   readonly className?: string;
 };
 
@@ -59,10 +73,13 @@ export function ChartsWidgetCard({
   description,
   Icon,
   filters,
+  viewMode,
+  focusedStatus,
   onRemove,
   onDuplicate,
   onRename,
   onFiltersChange,
+  onViewModeChange,
   className,
 }: Readonly<ChartsWidgetCardProps>) {
   const isChart = typeId === 'chart';
@@ -72,11 +89,14 @@ export function ChartsWidgetCard({
   const [configFiltersOpen, setConfigFiltersOpen] = useState(false);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const [renameDraft, setRenameDraft] = useState(title);
+  /** Session mock rows — resets to catalog sample on full page reload. */
+  const [sessionWorkItems, setSessionWorkItems] = useState<
+    ChartsSampleWorkItem[]
+  >(() => CHARTS_SAMPLE_WORK_ITEMS.map((item) => ({ ...item })));
 
   const canvasWorkItems = useMemo(
-    () =>
-      filterChartsSampleWorkItems(CHARTS_SAMPLE_WORK_ITEMS, filters ?? null),
-    [filters]
+    () => filterChartsSampleWorkItems(sessionWorkItems, filters ?? null),
+    [filters, sessionWorkItems]
   );
 
   const openRename = () => {
@@ -259,7 +279,12 @@ export function ChartsWidgetCard({
           title={title}
           initialFiltersOpen={configFiltersOpen}
           filters={filters ?? null}
+          viewMode={viewMode}
+          focusedStatus={focusedStatus}
+          sessionWorkItems={sessionWorkItems}
+          onSessionWorkItemsChange={setSessionWorkItems}
           onFiltersChange={onFiltersChange}
+          onViewModeChange={onViewModeChange}
           onRename={() => {
             window.setTimeout(() => openRename(), 0);
           }}

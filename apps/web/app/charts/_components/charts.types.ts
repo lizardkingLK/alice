@@ -1,3 +1,6 @@
+import type { WorkItemStatus } from '@repo/types';
+import type { ChartsWidgetFilterDraft } from '@/app/charts/_components/charts-sample.data';
+
 export type ChartBoardOwnershipFilter = 'all' | 'mine' | 'shared';
 export type ChartBoardStatusFilter = 'all' | 'active' | 'archived';
 
@@ -32,7 +35,8 @@ export type ChartWidgetCatalogItem = {
   readonly description: string;
 };
 
-import type { ChartsWidgetFilterDraft } from '@/app/charts/_components/charts-sample.data';
+/** How a Chart widget body is composed (persisted on the instance). */
+export type ChartWidgetViewMode = 'chart' | 'table' | 'split';
 
 /** Instance placed on the board canvas (drag / resize). */
 export type ChartBoardWidgetInstance = {
@@ -42,4 +46,12 @@ export type ChartBoardWidgetInstance = {
   readonly title?: string;
   /** Applied Advanced/Quick filters for chart widgets (local board JSON). */
   readonly filters?: ChartsWidgetFilterDraft;
+  /** Chart / Table / Split — fullscreen preview only; canvas always shows the pie. */
+  readonly viewMode?: ChartWidgetViewMode;
+  /**
+   * When set (e.g. after a pie-slice click), the table shows only this
+   * status group. Cleared when the user picks Chart / Table / Split from
+   * the layout menu without a slice filter.
+   */
+  readonly focusedStatus?: WorkItemStatus;
 };

@@ -1,3 +1,10 @@
+/* Measured width host — must stretch to the shell/card content box so RGL
+   `width` tracks sidebar collapse the same way Overview does. */
+.dashboard-grid {
+  width: 100%;
+  min-width: 0;
+}
+
 /* RGL items set an explicit pixel box. Absolute-fill the widget so charts
    measure a non-zero width/height instead of collapsing in nested flex. */
 .dashboard-grid .react-grid-item > .dashboard-widget-root {

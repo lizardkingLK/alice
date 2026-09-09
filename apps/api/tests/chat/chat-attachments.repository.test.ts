@@ -46,9 +46,9 @@ import { prisma } from '../../src/lib/prisma';
 describe('ChatAttachmentsRepository', () => {
   describe('detectChatAttachmentFileType', () => {
     it('detects json file types', () => {
-      expect(detectChatAttachmentFileType('items.json', 'application/json')).toBe(
-        ChatAttachmentFileTypeEnum.Json
-      );
+      expect(
+        detectChatAttachmentFileType('items.json', 'application/json')
+      ).toBe(ChatAttachmentFileTypeEnum.Json);
       expect(detectChatAttachmentFileType('data.JSON', 'text/plain')).toBe(
         ChatAttachmentFileTypeEnum.Json
       );
@@ -58,9 +58,9 @@ describe('ChatAttachmentsRepository', () => {
       expect(detectChatAttachmentFileType('export.csv', 'text/csv')).toBe(
         ChatAttachmentFileTypeEnum.Csv
       );
-      expect(detectChatAttachmentFileType('sheet.CSV', 'application/octet-stream')).toBe(
-        ChatAttachmentFileTypeEnum.Csv
-      );
+      expect(
+        detectChatAttachmentFileType('sheet.CSV', 'application/octet-stream')
+      ).toBe(ChatAttachmentFileTypeEnum.Csv);
     });
 
     it('detects text file types', () => {
@@ -79,9 +79,9 @@ describe('ChatAttachmentsRepository', () => {
     });
 
     it('detects other file types', () => {
-      expect(detectChatAttachmentFileType('archive.zip', 'application/zip')).toBe(
-        ChatAttachmentFileTypeEnum.Other
-      );
+      expect(
+        detectChatAttachmentFileType('archive.zip', 'application/zip')
+      ).toBe(ChatAttachmentFileTypeEnum.Other);
     });
   });
 
@@ -95,10 +95,14 @@ describe('ChatAttachmentsRepository', () => {
         data: [{ name: 'alice_storage_chat_attachments' }],
         error: null,
       });
-      mockSupabaseClient.storage.createBucket.mockResolvedValue({ error: null });
+      mockSupabaseClient.storage.createBucket.mockResolvedValue({
+        error: null,
+      });
 
       storageFromMock.mockReturnValue({
-        upload: vi.fn().mockResolvedValue({ data: { path: 'test-path' }, error: null }),
+        upload: vi
+          .fn()
+          .mockResolvedValue({ data: { path: 'test-path' }, error: null }),
         createSignedUrl: vi.fn().mockResolvedValue({
           data: { signedUrl: 'https://supabase.co/signed-url-test' },
           error: null,
@@ -139,7 +143,9 @@ describe('ChatAttachmentsRepository', () => {
       });
 
       expect(session.upload.bucket).toBe('alice_storage_chat_attachments');
-      expect(session.upload.signedUrl).toBe('https://supabase.co/signed-upload-test');
+      expect(session.upload.signedUrl).toBe(
+        'https://supabase.co/signed-upload-test'
+      );
       expect(session.upload.token).toBe('test-token');
       expect(session.upload.path).toContain('chat-attachments/user-uuid-1/');
     });

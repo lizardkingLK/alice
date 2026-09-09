@@ -13,7 +13,7 @@ interface ChatMarkdownProps {
 const chatMarkdownComponents: Components = {
   table({ children, ...props }) {
     return (
-      <div className="my-3 w-full overflow-x-auto rounded-lg border border-border/70 bg-background/50 shadow-xs">
+      <div className="border-border/70 bg-background/50 my-3 w-full overflow-x-auto rounded-lg border shadow-xs">
         <table className="w-full border-collapse text-left text-xs" {...props}>
           {children}
         </table>
@@ -23,7 +23,7 @@ const chatMarkdownComponents: Components = {
   thead({ children, ...props }) {
     return (
       <thead
-        className="bg-muted/70 text-muted-foreground border-b border-border/70 text-[11px] font-semibold uppercase tracking-wider"
+        className="bg-muted/70 text-muted-foreground border-border/70 border-b text-[11px] font-semibold tracking-wider uppercase"
         {...props}
       >
         {children}
@@ -33,7 +33,7 @@ const chatMarkdownComponents: Components = {
   th({ children, ...props }) {
     return (
       <th
-        className="px-3 py-2 font-semibold text-foreground whitespace-nowrap"
+        className="text-foreground px-3 py-2 font-semibold whitespace-nowrap"
         {...props}
       >
         {children}
@@ -110,7 +110,7 @@ const chatMarkdownComponents: Components = {
   blockquote({ children, ...props }) {
     return (
       <blockquote
-        className="border-primary/50 text-muted-foreground my-2.5 border-l-2 pl-3 italic text-xs leading-relaxed"
+        className="border-primary/50 text-muted-foreground my-2.5 border-l-2 pl-3 text-xs leading-relaxed italic"
         {...props}
       >
         {children}
@@ -154,7 +154,7 @@ const chatMarkdownComponents: Components = {
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-primary hover:underline font-medium break-all"
+        className="text-primary font-medium break-all hover:underline"
         {...props}
       >
         {children}

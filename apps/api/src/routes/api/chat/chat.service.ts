@@ -493,8 +493,7 @@ export class ChatService {
     args: Record<string, unknown>,
     history: StoredChatMessage[]
   ): Promise<unknown> {
-    const projectId =
-      typeof args.projectId === 'string' ? args.projectId : '';
+    const projectId = typeof args.projectId === 'string' ? args.projectId : '';
     if (!projectId) {
       throw new Error('projectId is required');
     }
@@ -554,10 +553,8 @@ export class ChatService {
     toolActionsPerformed: ToolAction[],
     history: StoredChatMessage[]
   ): Promise<unknown> {
-    const projectId =
-      typeof args.projectId === 'string' ? args.projectId : '';
-    const sprintId =
-      typeof args.sprintId === 'string' ? args.sprintId : null;
+    const projectId = typeof args.projectId === 'string' ? args.projectId : '';
+    const sprintId = typeof args.sprintId === 'string' ? args.sprintId : null;
 
     if (!projectId) {
       throw new Error('projectId is required');
@@ -585,7 +582,10 @@ export class ChatService {
         assignee_id: null,
         type: typeValue,
         priority: priorityValue,
-        description: textToProseMirrorJson(node.description, node.dynamicFields),
+        description: textToProseMirrorJson(
+          node.description,
+          node.dynamicFields
+        ),
         due_date: node.dueDate || null,
         parent_id: resolvedParentId,
         labels: node.labels,
@@ -594,7 +594,11 @@ export class ChatService {
       });
 
       const workItemKey = `${projectKey}-${created.id.slice(0, 4).toUpperCase()}`;
-      const summary = { id: created.id, key: workItemKey, title: created.title };
+      const summary = {
+        id: created.id,
+        key: workItemKey,
+        title: created.title,
+      };
       createdItems.push(summary);
       toolActionsPerformed.push({ type: 'create_work_item', entity: summary });
 
@@ -836,8 +840,7 @@ export class ChatService {
     if (allAttachments.length > 0) {
       const attachmentsList = allAttachments
         .map(
-          (a) =>
-            `- File: "${a.fileName}" (type: ${a.fileType}, URL: ${a.url})`
+          (a) => `- File: "${a.fileName}" (type: ${a.fileType}, URL: ${a.url})`
         )
         .join('\n');
       attachmentsInstruction = `

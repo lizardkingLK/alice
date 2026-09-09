@@ -24,10 +24,7 @@ type ChartsFullscreenDialogShellProps = {
   /** e.g. `h-[min(90vh,800px)] w-[min(96vw,1100px)]` */
   readonly sizeClassName: string;
   readonly headerExtra?: ReactNode;
-  readonly contentProps?: Omit<
-    DialogContentProps,
-    'className' | 'children'
-  >;
+  readonly contentProps?: Omit<DialogContentProps, 'className' | 'children'>;
 };
 
 /** Shared full-bleed title chrome for chart widget fullscreen dialogs. */

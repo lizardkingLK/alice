@@ -51,12 +51,10 @@ describe('chat-attachments.client', () => {
         fileType: ChatAttachmentFileTypeEnum.Json,
       };
 
-      apiFetchMock
-        .mockResolvedValueOnce(mockSession)
-        .mockResolvedValueOnce({
-          success: true,
-          attachment: mockAttachment,
-        });
+      apiFetchMock.mockResolvedValueOnce(mockSession).mockResolvedValueOnce({
+        success: true,
+        attachment: mockAttachment,
+      });
 
       uploadToSignedUrlMock.mockResolvedValueOnce({ error: null });
 

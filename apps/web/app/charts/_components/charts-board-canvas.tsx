@@ -14,6 +14,7 @@ import {
   DASHBOARD_DRAG_CONFIG,
   DASHBOARD_GRID_CONFIG,
   DASHBOARD_RESIZE_CONFIG,
+  useCancelGridDragOnEscape,
   useStableDashboardGridWidth,
 } from '@/lib/dashboard-grid';
 import {
@@ -28,7 +29,9 @@ import {
 import type {
   ChartBoardWidgetInstance,
   ChartWidgetTypeId,
+  ChartWidgetViewMode,
 } from '@/app/charts/_components/charts.types';
+import type { WorkItemStatus } from '@repo/types';
 import 'react-grid-layout/css/styles.css';
 import '@/app/dashboard/_components/dashboard-grid.css';
 
@@ -69,20 +72,62 @@ export function createChartWidgetInstanceId(): string {
   return `widget-${Date.now()}`;
 }
 
+function layoutItemsCollide(
+  a: Pick<LayoutItem, 'x' | 'y' | 'w' | 'h'>,
+  b: Pick<LayoutItem, 'x' | 'y' | 'w' | 'h'>
+): boolean {
+  return !(
+    a.x + a.w <= b.x ||
+    b.x + b.w <= a.x ||
+    a.y + a.h <= b.y ||
+    b.y + b.h <= a.y
+  );
+}
+
+function findOpenLayoutSlot(
+  existing: LayoutItem[],
+  size: Pick<LayoutItem, 'w' | 'h'>,
+  cols: number
+): { x: number; y: number } {
+  if (existing.length === 0) {
+    return { x: 0, y: 0 };
+  }
+
+  const occupiedHeight = existing.reduce(
+    (acc, item) => Math.max(acc, item.y + item.h),
+    0
+  );
+  // Scan existing rows (and one row past the bottom) for the first free fit.
+  const maxScanY = occupiedHeight;
+
+  for (let y = 0; y <= maxScanY; y += 1) {
+    for (let x = 0; x <= cols - size.w; x += 1) {
+      const candidate = { x, y, w: size.w, h: size.h };
+      const collides = existing.some((item) =>
+        layoutItemsCollide(candidate, item)
+      );
+      if (!collides) {
+        return { x, y };
+      }
+    }
+  }
+
+  return { x: 0, y: occupiedHeight };
+}
+
 export function nextChartLayoutItem(
   instanceId: string,
   existing: LayoutItem[],
   typeId: ChartWidgetTypeId = 'chart'
 ): LayoutItem {
   const size = layoutSizeForWidgetType(typeId);
-  const maxY = existing.reduce(
-    (acc, item) => Math.max(acc, item.y + item.h),
-    0
-  );
+  const cols = DASHBOARD_GRID_CONFIG.cols;
+  const slot = findOpenLayoutSlot(existing, size, cols);
+
   return {
     i: instanceId,
-    x: 0,
-    y: maxY,
+    x: slot.x,
+    y: slot.y,
     w: size.w,
     h: size.h,
     minW: size.minW,
@@ -182,6 +227,14 @@ type ChartsBoardCanvasProps = {
     // eslint-disable-next-line no-unused-vars
     filters: ChartBoardWidgetInstance['filters'] | null
   ) => void;
+  readonly onViewModeChange: (
+    // eslint-disable-next-line no-unused-vars
+    instanceId: string,
+    // eslint-disable-next-line no-unused-vars
+    viewMode: ChartWidgetViewMode,
+    // eslint-disable-next-line no-unused-vars
+    focusedStatus?: WorkItemStatus | null
+  ) => void;
   readonly onClearBoard: () => void;
   /** False until localStorage board JSON has been read on the client. */
   readonly hydrated?: boolean;
@@ -196,6 +249,7 @@ export function ChartsBoardCanvas({
   onDuplicateWidget,
   onRenameWidget,
   onFiltersChange,
+  onViewModeChange,
   onClearBoard,
   hydrated = true,
   className,
@@ -231,11 +285,17 @@ export function ChartsBoardCanvas({
   }
 
   return (
-    <div className={cn('flex min-h-0 flex-1 flex-col gap-3', className)}>
+    <div
+      className={cn(
+        'flex min-h-0 w-full min-w-0 flex-1 flex-col gap-3',
+        className
+      )}
+    >
       {!isEmpty ? (
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
           <p className="text-muted-foreground text-xs">
             Hold the grip to drag widgets. Resize from the bottom-right corner.
+            Press Esc to cancel a drag.
           </p>
           <Button
             type="button"
@@ -253,8 +313,8 @@ export function ChartsBoardCanvas({
       <div
         ref={containerRef}
         className={cn(
-          'dashboard-grid min-h-0 w-full flex-1 transition-opacity duration-150',
-          isEmpty && 'flex min-h-0',
+          'dashboard-grid min-h-0 w-full min-w-0 flex-1 transition-opacity duration-150',
+          isEmpty && 'flex',
           isSidebarSettling && 'pointer-events-none opacity-80'
         )}
       >
@@ -269,6 +329,7 @@ export function ChartsBoardCanvas({
           onDuplicateWidget={onDuplicateWidget}
           onRenameWidget={onRenameWidget}
           onFiltersChange={onFiltersChange}
+          onViewModeChange={onViewModeChange}
         />
       </div>
     </div>
@@ -308,6 +369,7 @@ function BoardCanvasBody({
   onDuplicateWidget,
   onRenameWidget,
   onFiltersChange,
+  onViewModeChange,
 }: Readonly<{
   isEmpty: boolean;
   mounted: boolean;
@@ -334,7 +396,18 @@ function BoardCanvasBody({
     // eslint-disable-next-line no-unused-vars
     filters: ChartBoardWidgetInstance['filters'] | null
   ) => void;
+  onViewModeChange: (
+    // eslint-disable-next-line no-unused-vars
+    instanceId: string,
+    // eslint-disable-next-line no-unused-vars
+    viewMode: ChartWidgetViewMode,
+    // eslint-disable-next-line no-unused-vars
+    focusedStatus?: WorkItemStatus | null
+  ) => void;
 }>) {
+  const { dragSessionKey, onDragStart, onDragStop } =
+    useCancelGridDragOnEscape(onLayoutChange);
+
   if (isEmpty) {
     return (
       <div className="border-border text-muted-foreground flex min-h-0 flex-1 flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-6 py-12 text-center text-sm">
@@ -351,6 +424,7 @@ function BoardCanvasBody({
 
   return (
     <ReactGridLayout
+      key={dragSessionKey}
       className="layout"
       width={stableWidth}
       layout={layout}
@@ -358,6 +432,8 @@ function BoardCanvasBody({
       dragConfig={DASHBOARD_DRAG_CONFIG}
       resizeConfig={DASHBOARD_RESIZE_CONFIG}
       onLayoutChange={onLayoutChange}
+      onDragStart={onDragStart}
+      onDragStop={onDragStop}
     >
       {layout.map((item) => {
         const entry = instanceById.get(item.i);
@@ -376,11 +452,16 @@ function BoardCanvasBody({
               description={meta?.description}
               Icon={meta?.icon}
               filters={entry?.instance.filters}
+              viewMode={entry?.instance.viewMode}
+              focusedStatus={entry?.instance.focusedStatus}
               onRemove={() => onRemoveWidget(item.i)}
               onDuplicate={() => onDuplicateWidget(item.i)}
               onRename={(nextTitle) => onRenameWidget(item.i, nextTitle)}
               onFiltersChange={(nextFilters) =>
                 onFiltersChange(item.i, nextFilters)
+              }
+              onViewModeChange={(nextMode, nextFocused) =>
+                onViewModeChange(item.i, nextMode, nextFocused)
               }
             />
           </div>
@@ -451,21 +532,28 @@ export function duplicateChartWidget(
     layout,
     `${baseTitle} (copy)`
   );
-  if (!source.filters) {
-    return next;
-  }
   const copiedId = next.instances.at(-1)?.instanceId;
   if (!copiedId) {
     return next;
   }
-  return {
-    ...next,
-    instances: updateChartWidgetFilters(
+
+  let nextInstances = next.instances;
+  if (source.filters) {
+    nextInstances = updateChartWidgetFilters(
       copiedId,
       source.filters,
-      next.instances
-    ),
-  };
+      nextInstances
+    );
+  }
+  if (source.viewMode || source.focusedStatus) {
+    nextInstances = updateChartWidgetViewMode(
+      copiedId,
+      source.viewMode ?? 'chart',
+      source.focusedStatus ?? null,
+      nextInstances
+    );
+  }
+  return { ...next, instances: nextInstances };
 }
 
 export function renameChartWidget(
@@ -479,6 +567,50 @@ export function renameChartWidget(
   );
 }
 
+function withInstanceFields(
+  item: ChartBoardWidgetInstance,
+  patch: Partial<
+    Pick<
+      ChartBoardWidgetInstance,
+      'title' | 'filters' | 'viewMode' | 'focusedStatus'
+    >
+  > & {
+    readonly clearFilters?: boolean;
+    readonly clearFocusedStatus?: boolean;
+  }
+): ChartBoardWidgetInstance {
+  const next: ChartBoardWidgetInstance = {
+    instanceId: item.instanceId,
+    typeId: item.typeId,
+  };
+
+  const title = patch.title ?? item.title;
+  if (title) {
+    Object.assign(next, { title });
+  }
+
+  if (!patch.clearFilters) {
+    const filters = patch.filters ?? item.filters;
+    if (filters) {
+      Object.assign(next, { filters });
+    }
+  }
+
+  const viewMode = patch.viewMode ?? item.viewMode;
+  if (viewMode && viewMode !== 'chart') {
+    Object.assign(next, { viewMode });
+  }
+
+  if (!patch.clearFocusedStatus) {
+    const focusedStatus = patch.focusedStatus ?? item.focusedStatus;
+    if (focusedStatus) {
+      Object.assign(next, { focusedStatus });
+    }
+  }
+
+  return next;
+}
+
 export function updateChartWidgetFilters(
   instanceId: string,
   filters: ChartBoardWidgetInstance['filters'] | null,
@@ -489,12 +621,26 @@ export function updateChartWidgetFilters(
       return item;
     }
     if (!filters) {
-      return {
-        instanceId: item.instanceId,
-        typeId: item.typeId,
-        ...(item.title ? { title: item.title } : {}),
-      };
+      return withInstanceFields(item, { clearFilters: true });
     }
-    return { ...item, filters };
+    return withInstanceFields(item, { filters });
+  });
+}
+
+export function updateChartWidgetViewMode(
+  instanceId: string,
+  viewMode: ChartWidgetViewMode,
+  focusedStatus: WorkItemStatus | null | undefined,
+  instances: ChartBoardWidgetInstance[]
+): ChartBoardWidgetInstance[] {
+  return instances.map((item) => {
+    if (item.instanceId !== instanceId) {
+      return item;
+    }
+    return withInstanceFields(item, {
+      viewMode,
+      focusedStatus: focusedStatus ?? undefined,
+      clearFocusedStatus: focusedStatus == null,
+    });
   });
 }
