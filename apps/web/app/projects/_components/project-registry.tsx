@@ -32,17 +32,18 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '@repo/ui/components/ui/avatar';
-import { ProjectForm } from './project-form';
+import { ProjectForm } from '@/app/projects/_components/project-form';
 import {
   softDeleteProject as clientSoftDeleteProject,
   restoreProject as clientRestoreProject,
   hardDeleteProject as clientHardDeleteProject,
-} from '../_services/projects.mutations.client';
+  type Project,
+} from '@/app/projects/_services/projects.mutations.client';
 import {
   ProjectStatusEnum,
   PROJECT_STATUS_TABS,
   type ProjectStatusTab,
-} from '../_helpers/project-status';
+} from '@/app/projects/_helpers/project-status';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runRegistryLockedAction } from '@/lib/optimistic-lock/run-locked-mutation';
 import {
@@ -63,7 +64,6 @@ import {
   registryActionsHeader,
 } from '@/components/registry-row-actions';
 import { RegistryTabSwitcher } from '@/components/registry-tab-switcher';
-import type { Project } from '../_services/projects.mutations.client';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import { cn } from '@repo/ui/lib/utils';
 import { formatMonthYear } from '@/app/_shared/utility';

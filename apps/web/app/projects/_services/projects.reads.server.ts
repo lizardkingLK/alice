@@ -17,14 +17,14 @@ import { withoutIntegrationSecrets } from '@/lib/projects/sanitize-project-secre
 import {
   ProjectStatusEnum,
   type ProjectStatusTab,
-} from '../_helpers/project-status';
-import { createProjectsService } from './projects.mutations.shared';
+} from '@/app/projects/_helpers/project-status';
+import { createProjectsService } from '@/app/projects/_services/projects.mutations.shared';
 import type {
   GetProjectsPaginatedResponse,
   Project,
   ProjectMemberWithUser,
   ProjectMembersByProjectId,
-} from './projects.mutations.shared';
+} from '@/app/projects/_services/projects.mutations.shared';
 
 const service = createProjectsService(apiFetch);
 
@@ -247,4 +247,4 @@ export type {
   UpdateProjectInput,
   ProjectMemberWithUser,
   ProjectMembersByProjectId,
-} from './projects.mutations.shared';
+} from '@/app/projects/_services/projects.mutations.shared';

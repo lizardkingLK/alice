@@ -1,8 +1,8 @@
 'use client';
 
-import { JiraSettingsCard } from './jira-settings-card';
-import { GithubSettingsCard } from './github-settings-card';
-import type { Project } from '../../_services/projects.mutations.client';
+import { JiraSettingsCard } from '@/app/projects/_components/project-details/jira-settings-card';
+import { GithubSettingsCard } from '@/app/projects/_components/project-details/github-settings-card';
+import type { Project } from '@/app/projects/_services/projects.mutations.client';
 
 export type ProjectIntegrationsTabProps = {
   readonly project: Project;

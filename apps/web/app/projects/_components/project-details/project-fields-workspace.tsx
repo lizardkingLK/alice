@@ -24,8 +24,10 @@ import {
   SlidersHorizontal,
 } from '@repo/ui/lib/icons';
 import { toast } from '@repo/ui/components/ui/sonner';
-import { updateProjectFieldsConfig } from '../../_services/projects.mutations.client';
-import type { Project } from '../../_services/projects.mutations.client';
+import {
+  updateProjectFieldsConfig,
+  type Project,
+} from '@/app/projects/_services/projects.mutations.client';
 
 const DEFAULT_EMPTY_SCHEMA = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',

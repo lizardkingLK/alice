@@ -19,13 +19,13 @@ import {
   Users,
 } from '@repo/ui/lib/icons';
 import { SearchableSelect } from '@/components/searchable-select';
-import { REPORT_CARD_CLASS } from './project-details-shared';
+import { REPORT_CARD_CLASS } from '@/app/projects/_components/project-details/project-details-shared';
 import {
   addProjectMember,
   removeProjectMember,
   type Project,
   type ProjectMemberWithUser,
-} from '../../_services/projects.mutations.client';
+} from '@/app/projects/_services/projects.mutations.client';
 import type { User } from '@/app/users/_services/users.mutations.client';
 
 function MemberStatusBadge({ children }: Readonly<{ children: ReactNode }>) {

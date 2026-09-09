@@ -1,5 +1,5 @@
 import { apiFetch } from '@/lib/api/api-fetch.mutations.use.client';
-import { createProjectsService } from './projects.mutations.shared';
+import { createProjectsService } from '@/app/projects/_services/projects.mutations.shared';
 
 const service = createProjectsService(apiFetch);
 
@@ -21,4 +21,4 @@ export type {
   UpdateProjectInput,
   ProjectMemberWithUser,
   ProjectMembersByProjectId,
-} from '../_types/projects.types';
+} from '@/app/projects/_types/projects.types';

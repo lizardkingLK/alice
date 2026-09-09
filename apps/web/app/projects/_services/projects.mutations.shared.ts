@@ -4,7 +4,7 @@ import type {
   Project,
   CreateProjectInput,
   UpdateProjectInput,
-} from '../_types/projects.types';
+} from '@/app/projects/_types/projects.types';
 
 export type {
   Project,
@@ -13,7 +13,7 @@ export type {
   UpdateProjectInput,
   ProjectMemberWithUser,
   ProjectMembersByProjectId,
-} from '../_types/projects.types';
+} from '@/app/projects/_types/projects.types';
 
 export function createProjectsService(
   apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>

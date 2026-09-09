@@ -25,7 +25,7 @@ import {
   getProjectMembers,
   type Project,
   type ProjectMemberWithUser,
-} from './projects.reads.server';
+} from '@/app/projects/_services/projects.reads.server';
 
 const EMPTY_WORK_ITEMS = {
   workItems: [] as DbWorkItem[],

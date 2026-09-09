@@ -10,16 +10,16 @@ import {
   Users,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
-import { ProjectTeamsPanel } from './project-teams-panel';
-import { ProjectSummaryBanner } from './project-summary-banner';
-import { ProjectDetailsTab } from './project-details-tab';
-import { ProjectMembersTab } from './project-members-tab';
-import { ProjectIntegrationsTab } from './project-integrations-tab';
-import { ProjectFieldsWorkspace } from './project-fields-workspace';
+import { ProjectTeamsPanel } from '@/app/projects/_components/project-details/project-teams-panel';
+import { ProjectSummaryBanner } from '@/app/projects/_components/project-details/project-summary-banner';
+import { ProjectDetailsTab } from '@/app/projects/_components/project-details/project-details-tab';
+import { ProjectMembersTab } from '@/app/projects/_components/project-details/project-members-tab';
+import { ProjectIntegrationsTab } from '@/app/projects/_components/project-details/project-integrations-tab';
+import { ProjectFieldsWorkspace } from '@/app/projects/_components/project-details/project-fields-workspace';
 import type {
   Project,
   ProjectMemberWithUser,
-} from '../../_services/projects.mutations.client';
+} from '@/app/projects/_services/projects.mutations.client';
 import type { Team } from '@/app/manager/_services/teams.mutations.client';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import WorkItemsWorkspace from '@/app/work-items/_components/work-items-workspace';
