@@ -596,17 +596,13 @@ function withInstanceFields(
     }
   }
 
-  const viewMode =
-    patch.viewMode !== undefined ? patch.viewMode : item.viewMode;
+  const viewMode = patch.viewMode ?? item.viewMode;
   if (viewMode && viewMode !== 'chart') {
     Object.assign(next, { viewMode });
   }
 
   if (!patch.clearFocusedStatus) {
-    const focusedStatus =
-      patch.focusedStatus !== undefined
-        ? patch.focusedStatus
-        : item.focusedStatus;
+    const focusedStatus = patch.focusedStatus ?? item.focusedStatus;
     if (focusedStatus) {
       Object.assign(next, { focusedStatus });
     }

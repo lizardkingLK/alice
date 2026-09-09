@@ -31,8 +31,11 @@ export type ChartsSampleWorkItem = {
   readonly priority: WorkItemPriority;
   readonly assigneeId: string | null;
   readonly projectId: string;
-  /** TipTap JSON (or null) — same shape the work-item form stores. */
-  readonly description: unknown | null;
+  /**
+   * TipTap JSON or plain text — same shapes the work-item form can store.
+   * `null` means no description.
+   */
+  readonly description: string | Record<string, unknown> | null;
   /** ISO date `YYYY-MM-DD` or null. */
   readonly dueDate: string | null;
   readonly storyPoints: number | null;

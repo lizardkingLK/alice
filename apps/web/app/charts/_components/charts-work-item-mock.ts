@@ -75,7 +75,9 @@ function memberById(id: string | null | undefined) {
   };
 }
 
-function normalizeDescription(value: unknown): unknown | null {
+function normalizeDescription(
+  value: unknown
+): string | Record<string, unknown> | null {
   if (value == null || value === '') {
     return null;
   }
@@ -85,13 +87,23 @@ function normalizeDescription(value: unknown): unknown | null {
       return null;
     }
     try {
-      return JSON.parse(trimmed) as unknown;
+      const parsed: unknown = JSON.parse(trimmed);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+      if (typeof parsed === 'string') {
+        return parsed;
+      }
+      return trimmed;
     } catch {
       // TipTap also accepts plain text as initial content.
       return trimmed;
     }
   }
-  return value;
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
 }
 
 function normalizeDueDate(value: unknown): string | null {
@@ -191,7 +203,7 @@ function sampleFromDbFallback(item: DbWorkItem): ChartsSampleWorkItem {
     priority: item.priority,
     assigneeId: item.assignee_id,
     projectId: item.project_id,
-    description: item.description ?? null,
+    description: normalizeDescription(item.description),
     dueDate: normalizeDueDate(item.due_date),
     storyPoints: item.story_points ?? null,
     labels: parseWorkItemLabels(item.labels),
