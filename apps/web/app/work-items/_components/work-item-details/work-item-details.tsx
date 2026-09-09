@@ -622,6 +622,7 @@ export default function WorkItemDetails({
           workItem={workItem}
           childStatuses={childWorkItems.map((child) => child.status)}
           projectMembers={projectMembers}
+          project={project}
           workLogs={workLogs}
           detailsOpen={detailsOpen}
           setDetailsOpen={setDetailsOpen}

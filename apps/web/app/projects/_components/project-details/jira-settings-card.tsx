@@ -11,13 +11,13 @@ import {
 } from '@repo/ui/components/ui/card';
 import { Button } from '@repo/ui/components/ui/button';
 import { Edit, Loader2, Plug, RefreshCw, Unplug } from '@repo/ui/lib/icons';
-import { REPORT_CARD_CLASS } from '@/app/projects/[id]/_components/project-details-shared';
-import { JiraLogo } from '@/app/projects/[id]/_components/integration-brand-logos';
+import { REPORT_CARD_CLASS } from './project-details-shared';
+import { JiraLogo } from './integration-brand-logos';
 import {
   IntegrationEditForm,
   IntegrationFeedbackBanner,
   IntegrationSummaryFields,
-} from '@/app/projects/[id]/_components/integration-settings-shared';
+} from './integration-settings-shared';
 import {
   connectionLabel,
   deleteJiraConnection,

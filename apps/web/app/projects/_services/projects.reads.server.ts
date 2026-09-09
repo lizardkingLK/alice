@@ -14,6 +14,10 @@ import {
 import { getCachedProjectList } from '@/lib/cache/dropdown-cache';
 import { listAccessibleProjectIds } from '@/lib/projects/project-workspace-access';
 import { withoutIntegrationSecrets } from '@/lib/projects/sanitize-project-secrets';
+import {
+  ProjectStatusEnum,
+  type ProjectStatusTab,
+} from '../_helpers/project-status';
 import { createProjectsService } from './projects.mutations.shared';
 import type {
   GetProjectsPaginatedResponse,
@@ -56,7 +60,7 @@ export async function getProjectList(): Promise<Project[]> {
 export async function getProjectListPaginated(
   page: number,
   limit: number,
-  status?: 'active' | 'archived',
+  status?: ProjectStatusTab,
   search?: string
 ): Promise<GetProjectsPaginatedResponse> {
   const supabase = await createClient();
@@ -76,7 +80,7 @@ export async function getProjectListPaginated(
 
   query = query.in('id', accessibleIds);
 
-  if (status === 'archived') {
+  if (status === ProjectStatusEnum.archived) {
     query = query.not('deleted_at', 'is', null);
   } else {
     query = query.is('deleted_at', null);

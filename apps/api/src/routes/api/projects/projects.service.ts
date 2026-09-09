@@ -269,7 +269,7 @@ export class ProjectsService {
       projectId,
       {
         deleted_at: new Date().toISOString(),
-        status: 'archived',
+        status: ProjectStatusEnum.archived,
       },
       actorId,
       expectedUpdatedAt

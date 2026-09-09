@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useTransition, useActionState, type ReactNode } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Card,
   CardContent,
@@ -18,11 +19,12 @@ import {
   Users,
 } from '@repo/ui/lib/icons';
 import { SearchableSelect } from '@/components/searchable-select';
-import { REPORT_CARD_CLASS } from '@/app/projects/[id]/_components/project-details-shared';
-import { addMemberAction, removeMemberAction } from './actions';
-import type {
-  Project,
-  ProjectMemberWithUser,
+import { REPORT_CARD_CLASS } from './project-details-shared';
+import {
+  addProjectMember,
+  removeProjectMember,
+  type Project,
+  type ProjectMemberWithUser,
 } from '../../_services/projects.mutations.client';
 import type { User } from '@/app/users/_services/users.mutations.client';
 
@@ -63,9 +65,12 @@ export function ProjectMembersTab({
   currentUserId,
   currentUserRole,
 }: Readonly<ProjectMembersTabProps>) {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [addError, setAddError] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [isAddPending, setIsAddPending] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
 
   const isManagerOrAdmin =
     currentUserRole === 'admin' || currentUserRole === 'manager';
@@ -73,22 +78,44 @@ export function ProjectMembersTab({
   const memberUserIds = new Set(members.map((m) => m.user_id));
   const candidateUsers = allUsers.filter((u) => !memberUserIds.has(u.id));
 
-  const boundAddMember = addMemberAction.bind(null, project.id);
-  const [addFormState, executeAddAction, isAddPending] = useActionState(
-    boundAddMember,
-    { success: false, error: null }
-  );
+  const handleAddMember = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const userId = (formData.get('userId') as string) || selectedUserId;
+    if (!userId) {
+      setAddError('User selection is required.');
+      return;
+    }
+    setAddError(null);
+    setIsAddPending(true);
+    try {
+      await addProjectMember(project.id, userId);
+      form.reset();
+      setSelectedUserId('');
+      router.refresh();
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : 'Failed to add member.');
+    } finally {
+      setIsAddPending(false);
+    }
+  };
 
-  const handleRemoveMember = (userId: string) => {
+  const handleRemoveMember = async (userId: string) => {
     setError(null);
     setDeletingUserId(userId);
-    startTransition(async () => {
-      const result = await removeMemberAction(project.id, userId);
-      if (!result.success) {
-        setError(result.error || 'Failed to remove member from project.');
-      }
+    try {
+      await removeProjectMember(project.id, userId);
+      router.refresh();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to remove member from project.'
+      );
+    } finally {
       setDeletingUserId(null);
-    });
+    }
   };
 
   return (
@@ -175,7 +202,11 @@ export function ProjectMembersTab({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        disabled={isPending || isProtectedMember}
+                        disabled={
+                          Boolean(deletingUserId) ||
+                          isAddPending ||
+                          isProtectedMember
+                        }
                         onClick={() => {
                           if (isProtectedMember) {
                             return;
@@ -189,7 +220,7 @@ export function ProjectMembersTab({
                           userName,
                         })}
                       >
-                        {isPending && deletingUserId === member.user_id ? (
+                        {deletingUserId === member.user_id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                           <Trash2 className="h-4 w-4" />
@@ -221,7 +252,7 @@ export function ProjectMembersTab({
                 All available users are already assigned to this project.
               </p>
             ) : (
-              <form action={executeAddAction} className="space-y-4">
+              <form onSubmit={handleAddMember} className="space-y-4">
                 <div className="space-y-1.5">
                   <SearchableSelect
                     id="userId"
@@ -238,10 +269,10 @@ export function ProjectMembersTab({
                   />
                 </div>
 
-                {addFormState.error ? (
+                {addError ? (
                   <div className="text-destructive bg-destructive/10 border-destructive/20 flex items-center gap-1.5 rounded-lg border p-2.5 text-xs">
                     <AlertTriangle className="h-4 w-4 shrink-0" />
-                    <span>{addFormState.error}</span>
+                    <span>{addError}</span>
                   </div>
                 ) : null}
 

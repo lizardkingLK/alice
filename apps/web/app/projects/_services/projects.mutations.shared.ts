@@ -1,64 +1,22 @@
 /* eslint-disable no-unused-vars */
-import { Tables } from '@repo/types';
-import type { User } from '@/app/users/_services/users.mutations.client';
 import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
+import type {
+  Project,
+  GetProjectsPaginatedResponse,
+  CreateProjectInput,
+  UpdateProjectInput,
+  ProjectMemberWithUser,
+  ProjectMembersByProjectId,
+} from '../_types/projects.types';
 
-export type Project = Omit<Tables<'projects'>, 'github_token'> & {
-  owner?: Pick<User, 'id' | 'name' | 'email'> | null;
-  /** Active engineering teams scoped to this project (list views). */
-  team_count?: number;
-  /** True when a GitHub PAT is stored server-side (value never returned). */
-  has_github_token?: boolean;
+export type {
+  Project,
+  GetProjectsPaginatedResponse,
+  CreateProjectInput,
+  UpdateProjectInput,
+  ProjectMemberWithUser,
+  ProjectMembersByProjectId,
 };
-
-export type GetProjectsPaginatedResponse = {
-  projects: Project[];
-  totalCount: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-};
-
-export type CreateProjectInput = Omit<
-  Tables<'projects'>,
-  | 'id'
-  | 'created_at'
-  | 'updated_at'
-  | 'deleted_at'
-  | 'created_by'
-  | 'updated_by'
-  | 'jira_connection_id'
-  | 'jira_project_key'
-  | 'github_repo'
-  | 'github_token'
-  | 'logo_url'
-  | 'cover_picture'
-> & {
-  jira_connection_id?: string | null;
-  jira_project_key?: string | null;
-  github_repo?: string | null;
-  /** Write-only; omit on edit when blank to leave existing PAT unchanged. */
-  github_token?: string | null;
-  logo_url?: string | null;
-  cover_picture?: string | null;
-};
-
-export type UpdateProjectInput = Partial<CreateProjectInput>;
-
-export type ProjectMemberWithUser = {
-  project_id: string;
-  user_id: string;
-  status: 'active' | 'inactive' | 'archived' | 'deleted';
-  created_at: string;
-  user:
-    | (Pick<User, 'id' | 'name' | 'email' | 'role'> & {
-        profile_picture?: string | null;
-      })
-    | null;
-};
-
-/** Prefetched project → active members map for form UIs (e.g. team form). */
-export type ProjectMembersByProjectId = Record<string, ProjectMemberWithUser[]>;
 
 export function createProjectsService(
   apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>
@@ -151,6 +109,20 @@ export function createProjectsService(
       await apiFetch<void>(`${apiProjects}/${projectId}/members/${userId}`, {
         method: 'DELETE',
       });
+    },
+
+    async updateProjectFieldsConfig(
+      projectId: string,
+      attributes_config: unknown
+    ): Promise<Project> {
+      const data = await apiFetch<{ project: Project }>(
+        `${apiProjects}/${projectId}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({ attributes_config }),
+        }
+      );
+      return data.project;
     },
   };
 }

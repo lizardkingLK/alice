@@ -11,11 +11,14 @@ export const restoreProject = service.restoreProject;
 export const hardDeleteProject = service.hardDeleteProject;
 export const addProjectMember = service.addProjectMember;
 export const removeProjectMember = service.removeProjectMember;
+export const updateProjectFieldsConfig = service.updateProjectFieldsConfig;
 
 export type {
   Project,
+  DbProject,
   GetProjectsPaginatedResponse,
   CreateProjectInput,
   UpdateProjectInput,
   ProjectMemberWithUser,
-} from './projects.mutations.shared';
+  ProjectMembersByProjectId,
+} from '../_types/projects.types';

@@ -78,6 +78,9 @@ function buildProjectUpdateData(data: ProjectUpdateInput, actorId: string) {
   if (data.deleted_at !== undefined) {
     patch.deleted_at = prismaOptionalDate(data.deleted_at);
   }
+  if (data.attributes_config !== undefined) {
+    patch.attributes_config = data.attributes_config;
+  }
 
   applyOptionalProjectIntegrations(patch, data);
   return patch;
@@ -356,6 +359,8 @@ export class ProjectsRepository {
           github_token: data.github_token,
           logo_url: data.logo_url ?? null,
           cover_picture: data.cover_picture ?? null,
+          attributes_config:
+            (data.attributes_config as Prisma.InputJsonValue) ?? null,
           deleted_at: null,
           ...prismaAuditCreateWithoutStatus(actorId),
         },
