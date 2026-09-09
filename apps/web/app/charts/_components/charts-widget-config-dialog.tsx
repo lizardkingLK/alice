@@ -1,26 +1,26 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { WorkItemStatus } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { DropdownMenuItem } from '@repo/ui/components/ui/dropdown-menu';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@repo/ui/components/ui/tooltip';
-import { Columns2, Filter, LogOut, MoreHorizontal } from '@repo/ui/lib/icons';
+import { Filter, LogOut, MoreHorizontal } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { SearchInput } from '@/components/search-input';
 import { preventDismissForFloatingPortal } from '@/lib/dialog-outside-events';
+import type { ChartWidgetViewMode } from '@/app/charts/_components/charts.types';
 import { ChartsAdvancedFiltersPopover } from '@/app/charts/_components/charts-advanced-filters-popover';
 import { ChartsAssigneeAvatarFilter } from '@/app/charts/_components/charts-assignee-avatar-filter';
 import { ChartsFullscreenDialogShell } from '@/app/charts/_components/charts-fullscreen-dialog-shell';
+import { ChartsStatusGroupedTable } from '@/app/charts/_components/charts-status-grouped-table';
 import { ChartsStatusPiePreview } from '@/app/charts/_components/charts-status-pie-preview';
 import { ChartsWidgetActionsMenu } from '@/app/charts/_components/charts-widget-actions-menu';
+import { ChartsWidgetLayoutMenu } from '@/app/charts/_components/charts-widget-layout-menu';
 import {
   CHARTS_SAMPLE_WORK_ITEMS,
   filterChartsSampleWorkItems,
   type ChartsExportFormatId,
+  type ChartsSampleWorkItem,
   type ChartsWidgetFilterDraft,
 } from '@/app/charts/_components/charts-sample.data';
 
@@ -31,8 +31,21 @@ type ChartsWidgetConfigDialogProps = {
   readonly title: string;
   readonly initialFiltersOpen?: boolean;
   readonly filters?: ChartsWidgetFilterDraft | null;
+  readonly viewMode?: ChartWidgetViewMode;
+  readonly focusedStatus?: WorkItemStatus;
+  readonly sessionWorkItems?: readonly ChartsSampleWorkItem[];
+  readonly onSessionWorkItemsChange?: (
+    // eslint-disable-next-line no-unused-vars
+    next: ChartsSampleWorkItem[]
+  ) => void;
   // eslint-disable-next-line no-unused-vars -- persist applied filters
   readonly onFiltersChange?: (filters: ChartsWidgetFilterDraft | null) => void;
+  readonly onViewModeChange?: (
+    // eslint-disable-next-line no-unused-vars
+    viewMode: ChartWidgetViewMode,
+    // eslint-disable-next-line no-unused-vars
+    focusedStatus?: WorkItemStatus | null
+  ) => void;
   readonly onRename?: () => void;
   readonly onDuplicate?: () => void;
   readonly onDelete?: () => void;
@@ -46,7 +59,12 @@ export function ChartsWidgetConfigDialog({
   title,
   initialFiltersOpen = false,
   filters = null,
+  viewMode = 'chart',
+  focusedStatus,
+  sessionWorkItems = CHARTS_SAMPLE_WORK_ITEMS,
+  onSessionWorkItemsChange,
   onFiltersChange,
+  onViewModeChange,
   onRename,
   onDuplicate,
   onDelete,
@@ -80,12 +98,20 @@ export function ChartsWidgetConfigDialog({
 
   const filteredWorkItems = useMemo(
     () =>
-      filterChartsSampleWorkItems(CHARTS_SAMPLE_WORK_ITEMS, filters, {
+      filterChartsSampleWorkItems(sessionWorkItems, filters, {
         search: searchQuery,
         assigneeId: assigneeFilter,
       }),
-    [assigneeFilter, filters, searchQuery]
+    [assigneeFilter, filters, searchQuery, sessionWorkItems]
   );
+
+  const handleLayoutChange = (mode: ChartWidgetViewMode) => {
+    onViewModeChange?.(mode, null);
+  };
+
+  const handleSliceClick = (status: WorkItemStatus) => {
+    onViewModeChange?.('split', status);
+  };
 
   return (
     <ChartsFullscreenDialogShell
@@ -144,9 +170,10 @@ export function ChartsWidgetConfigDialog({
         />
 
         <div className="ml-auto flex items-center gap-1">
-          <ToolbarIconButton label="Split view" disabled>
-            <Columns2 className="size-4" />
-          </ToolbarIconButton>
+          <ChartsWidgetLayoutMenu
+            viewMode={viewMode}
+            onViewModeChange={handleLayoutChange}
+          />
 
           <ChartsWidgetActionsMenu
             contentClassName="w-52"
@@ -186,38 +213,41 @@ export function ChartsWidgetConfigDialog({
       </div>
 
       <div className="bg-background flex min-h-0 flex-1 flex-col overflow-hidden p-4 sm:p-6">
-        <ChartsStatusPiePreview size="dialog" workItems={filteredWorkItems} />
+        {viewMode === 'split' ? (
+          <div className="flex min-h-0 flex-1 flex-col gap-3">
+            <div className="border-border flex min-h-0 flex-[1.2] flex-col overflow-hidden border-b pb-3">
+              <ChartsStatusPiePreview
+                size="dialog"
+                workItems={filteredWorkItems}
+                onSliceClick={handleSliceClick}
+              />
+            </div>
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <ChartsStatusGroupedTable
+                workItems={filteredWorkItems}
+                sourceWorkItems={sessionWorkItems}
+                onWorkItemsChange={onSessionWorkItemsChange}
+                focusedStatus={focusedStatus}
+              />
+            </div>
+          </div>
+        ) : null}
+        {viewMode === 'chart' ? (
+          <ChartsStatusPiePreview
+            size="dialog"
+            workItems={filteredWorkItems}
+            onSliceClick={handleSliceClick}
+          />
+        ) : null}
+        {viewMode === 'table' ? (
+          <ChartsStatusGroupedTable
+            workItems={filteredWorkItems}
+            sourceWorkItems={sessionWorkItems}
+            onWorkItemsChange={onSessionWorkItemsChange}
+            focusedStatus={focusedStatus}
+          />
+        ) : null}
       </div>
     </ChartsFullscreenDialogShell>
-  );
-}
-
-function ToolbarIconButton({
-  label,
-  disabled,
-  children,
-}: Readonly<{
-  label: string;
-  disabled?: boolean;
-  children: ReactNode;
-}>) {
-  return (
-    <Tooltip delayDuration={500}>
-      <TooltipTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label={label}
-          className="text-muted-foreground shrink-0"
-          disabled={disabled}
-        >
-          {children}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom">
-        {disabled ? `${label} (coming soon)` : label}
-      </TooltipContent>
-    </Tooltip>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   DropdownMenu,
@@ -14,6 +15,7 @@ import { cn } from '@repo/ui/lib/utils';
 import { BrowseWidgetsDialog } from '@/app/charts/_components/charts-browse-widgets-dialog';
 import {
   CHART_QUICK_ADD_WIDGETS,
+  isChartWidgetAvailable,
   type ChartWidgetDefinition,
 } from '@/app/charts/_components/charts-widget-catalog';
 import type { ChartWidgetTypeId } from '@/app/charts/_components/charts.types';
@@ -32,16 +34,35 @@ function QuickAddMenuItem({
   onSelect: () => void;
 }>) {
   const Icon = item.icon;
+  const available = isChartWidgetAvailable(item.id);
+
   return (
     <DropdownMenuItem
-      className="cursor-pointer items-start gap-3 rounded-lg px-2.5 py-2.5"
-      onSelect={onSelect}
+      className={cn(
+        'items-start gap-3 rounded-lg px-2.5 py-2.5',
+        available ? 'cursor-pointer' : 'cursor-not-allowed opacity-70'
+      )}
+      disabled={!available}
+      onSelect={(event) => {
+        if (!available) {
+          event.preventDefault();
+          return;
+        }
+        onSelect();
+      }}
     >
       <span className="bg-primary/10 text-primary mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg">
         <Icon className="size-4" aria-hidden />
       </span>
-      <span className="min-w-0 space-y-0.5">
-        <span className="block text-sm font-semibold">{item.title}</span>
+      <span className="min-w-0 flex-1 space-y-0.5">
+        <span className="flex items-center gap-2">
+          <span className="block text-sm font-semibold">{item.title}</span>
+          {!available ? (
+            <Badge variant="secondary" className="shrink-0 text-[10px]">
+              Coming soon
+            </Badge>
+          ) : null}
+        </span>
         <span className="text-muted-foreground block text-xs leading-snug whitespace-normal">
           {item.description}
         </span>
@@ -63,6 +84,9 @@ export function ChartsAddWidgetMenu({
   const appsItem = CHART_QUICK_ADD_WIDGETS.find((item) => item.id === 'apps');
 
   const handleSelect = (typeId: ChartWidgetTypeId) => {
+    if (!isChartWidgetAvailable(typeId)) {
+      return;
+    }
     onSelectWidget(typeId);
     setMenuOpen(false);
     setCenterOpen(false);

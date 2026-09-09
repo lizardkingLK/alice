@@ -116,7 +116,7 @@ function hydrateFromApplied(
  * Radix Select sets `disableOutsidePointerEvents`, so a second click on the
  * trigger (or elsewhere in the popover) is hit-tested as outside the popover.
  * Always swallow outside dismiss while this panel is open; close via Apply,
- * Escape, or the Filter trigger instead.
+ * Close, Escape, or the Filter trigger instead.
  */
 function preventOutsideDismiss(event: { preventDefault: () => void }) {
   event.preventDefault();
@@ -512,14 +512,25 @@ export function ChartsAdvancedFiltersPopover({
               ? 'Switch to quick filters'
               : 'Switch to advanced filters'}
           </button>
-          <Button
-            type="button"
-            size="sm"
-            className="h-8 cursor-pointer"
-            onClick={handleApply}
-          >
-            Apply
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 cursor-pointer"
+              onClick={() => onOpenChange(false)}
+            >
+              Close
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="h-8 cursor-pointer"
+              onClick={handleApply}
+            >
+              Apply
+            </Button>
+          </div>
         </div>
       </PopoverContent>
     </Popover>

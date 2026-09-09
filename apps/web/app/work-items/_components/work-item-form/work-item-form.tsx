@@ -69,6 +69,21 @@ export interface WorkItemFormProps {
    * Defaults to classic when omitted.
    */
   createFormMode?: WorkItemCreateFormMode;
+  /**
+   * When set, skips API create/update and uses this handler instead
+   * (charts mock board / local-only demos). Still calls `onSuccess`.
+   */
+  // eslint-disable-next-line no-unused-vars -- local mutate signature
+  localMutate?: (args: {
+    mode: 'create' | 'update';
+    formData: FormData;
+    itemToEdit: DbWorkItem | null;
+  }) => Promise<DbWorkItem> | DbWorkItem;
+  /**
+   * Keep the provided `projectMembers` list and skip fetching members for the
+   * selected project (charts sample projects are not real API ids).
+   */
+  preferProvidedMembers?: boolean;
 }
 
 const taskTypes = WORK_ITEM_TYPES;
@@ -135,6 +150,8 @@ export function WorkItemForm({
   defaultDueDate,
   lockDueDate = false,
   createFormMode = 'classic',
+  localMutate,
+  preferProvidedMembers = false,
 }: Readonly<WorkItemFormProps>) {
   const { handleMutationError } = useOptimisticLock();
   const availableTypes =
@@ -184,6 +201,7 @@ export function WorkItemForm({
     projectMembers,
     assigneeId,
     lockAssignee,
+    preferProvidedMembers,
     onAssigneeChange: (val) => setAssigneeId(val ?? ''),
   });
 
@@ -257,7 +275,15 @@ export function WorkItemForm({
     try {
       const isUpdate = isEditMode && itemToEdit;
       let response: ResponseDTO<DbWorkItem> | null = null;
-      if (isUpdate) {
+
+      if (localMutate) {
+        const data = await localMutate({
+          mode: isUpdate ? 'update' : 'create',
+          formData,
+          itemToEdit: isUpdate ? itemToEdit : null,
+        });
+        response = { data, error: null };
+      } else if (isUpdate) {
         const expectedUpdatedAt = itemToEdit.updated_at;
         response = await runLockedMutationOrThrow({
           mutate: () =>

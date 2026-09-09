@@ -25,18 +25,22 @@ import {
   removeChartWidget,
   renameChartWidget,
   updateChartWidgetFilters,
+  updateChartWidgetViewMode,
 } from '@/app/charts/_components/charts-board-canvas';
 import {
   ChartsFilterDialog,
   type ChartsFilterDraft,
 } from '@/app/charts/_components/charts-filter-dialog';
+import { isChartWidgetAvailable } from '@/app/charts/_components/charts-widget-catalog';
 import type {
   ChartBoardOwnershipFilter,
   ChartBoardStatusFilter,
   ChartBoardWidgetInstance,
   ChartWidgetTypeId,
+  ChartWidgetViewMode,
 } from '@/app/charts/_components/charts.types';
 import type { ChartsWidgetFilterDraft } from '@/app/charts/_components/charts-sample.data';
+import type { WorkItemStatus } from '@repo/types';
 
 type ChartsWorkspaceProps = {
   readonly search: string;
@@ -130,6 +134,9 @@ export function ChartsWorkspace({
 
   const handleSelectWidget = useCallback(
     (typeId: ChartWidgetTypeId) => {
+      if (!isChartWidgetAvailable(typeId)) {
+        return;
+      }
       commitBoard(appendChartWidget(typeId, instances, layout));
     },
     [commitBoard, instances, layout]
@@ -184,6 +191,24 @@ export function ChartsWorkspace({
     [commitInstances, instances]
   );
 
+  const handleViewModeChange = useCallback(
+    (
+      instanceId: string,
+      viewMode: ChartWidgetViewMode,
+      focusedStatus?: WorkItemStatus | null
+    ) => {
+      commitInstances(
+        updateChartWidgetViewMode(
+          instanceId,
+          viewMode,
+          focusedStatus ?? null,
+          instances
+        )
+      );
+    },
+    [commitInstances, instances]
+  );
+
   return (
     <div className="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
       <div className="flex shrink-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -219,7 +244,7 @@ export function ChartsWorkspace({
         </div>
       </div>
 
-      <Card className="border-border bg-card/50 flex min-h-0 flex-1 flex-col overflow-hidden backdrop-blur-md">
+      <Card className="border-border bg-card/50 flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden backdrop-blur-md">
         <CardHeader className="shrink-0 pb-3">
           <CardTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight">
             <BarChart3 className="text-primary size-5" />
@@ -230,7 +255,7 @@ export function ChartsWorkspace({
             next — layout is saved locally for now.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex min-h-0 flex-1 flex-col overflow-y-auto pt-0">
+        <CardContent className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto pt-0">
           <ChartsBoardCanvas
             instances={instances}
             layout={layout}
@@ -240,6 +265,7 @@ export function ChartsWorkspace({
             onDuplicateWidget={handleDuplicateWidget}
             onRenameWidget={handleRenameWidget}
             onFiltersChange={handleFiltersChange}
+            onViewModeChange={handleViewModeChange}
             onClearBoard={handleClearBoard}
           />
         </CardContent>
