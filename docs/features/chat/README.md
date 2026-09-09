@@ -4,10 +4,10 @@ In-app **Alice** (sidebar label: **Alice**) backed by **Google Gemini**
 function-calling. Helps authenticated users list and create projects, sprints,
 and work items through natural language.
 
-| Document                               | Description                                                                                                   | Status      |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ----------- |
-| [AI_CHATBOT.md](./AI_CHATBOT.md)       | Complete architecture, 9 Gemini tools, document attachments, storage, deduplication, and auth configuration | Implemented |
-| [USER_TEST_GUIDE.md](./USER_TEST_GUIDE.md) | Step-by-step user testing guide with copy-pasteable sample JSON & CSV files                                   | Implemented |
+| Document                                   | Description                                                                                                 | Status      |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ----------- |
+| [AI_CHATBOT.md](./AI_CHATBOT.md)           | Complete architecture, 9 Gemini tools, document attachments, storage, deduplication, and auth configuration | Implemented |
+| [USER_TEST_GUIDE.md](./USER_TEST_GUIDE.md) | Step-by-step user testing guide with copy-pasteable sample JSON & CSV files                                 | Implemented |
 
 Quick links:
 

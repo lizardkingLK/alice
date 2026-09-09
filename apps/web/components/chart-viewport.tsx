@@ -1,15 +1,7 @@
 'use client';
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
-import {
-  ChartContainer,
-  type ChartConfig,
-} from '@repo/ui/components/ui/chart';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { ChartContainer, type ChartConfig } from '@repo/ui/components/ui/chart';
 import { cn } from '@repo/ui/lib/utils';
 
 type ChartSize = {

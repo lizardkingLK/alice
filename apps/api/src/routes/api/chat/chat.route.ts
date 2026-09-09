@@ -177,7 +177,9 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
     '/attachments/upload-session',
     requireApiAuth,
     async (req: AuthenticatedRequest, res) => {
-      const parsed = createChatAttachmentUploadSessionSchema.safeParse(req.body);
+      const parsed = createChatAttachmentUploadSessionSchema.safeParse(
+        req.body
+      );
       if (!parsed.success) {
         return res.status(400).json({ error: z.treeifyError(parsed.error) });
       }
@@ -185,19 +187,17 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
       const conversationId =
         parsed.data.conversationId ?? parsed.data.conversation_id;
       const fileName = parsed.data.fileName ?? parsed.data.file_name!;
-      const contentType =
-        parsed.data.contentType ?? parsed.data.content_type!;
+      const contentType = parsed.data.contentType ?? parsed.data.content_type!;
       const fileSize = parsed.data.fileSize ?? parsed.data.file_size!;
 
       try {
-        const session =
-          await chatService.chatAttachments.createUploadSession({
-            userId: req.userId!,
-            conversationId,
-            fileName,
-            contentType,
-            fileSize,
-          });
+        const session = await chatService.chatAttachments.createUploadSession({
+          userId: req.userId!,
+          conversationId,
+          fileName,
+          contentType,
+          fileSize,
+        });
 
         return res.json(session);
       } catch (error: unknown) {
@@ -222,8 +222,7 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
 
       const conversationId =
         parsed.data.conversationId ?? parsed.data.conversation_id;
-      const storagePath =
-        parsed.data.storagePath ?? parsed.data.storage_path!;
+      const storagePath = parsed.data.storagePath ?? parsed.data.storage_path!;
       const fileName = parsed.data.fileName ?? parsed.data.file_name!;
       const fileSize = parsed.data.fileSize ?? parsed.data.file_size!;
       const mimeType = parsed.data.mimeType ?? parsed.data.mime_type!;

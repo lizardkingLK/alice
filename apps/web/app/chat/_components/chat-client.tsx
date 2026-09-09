@@ -573,8 +573,7 @@ export function ChatClient({
       id: `msg-${Date.now()}-${++messageCounter}`,
       role: ChatRoles.User,
       content: messageContent,
-      attachments:
-        attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
+      attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
     };
 
     setMessages((prev) => [...prev, userMessage]);

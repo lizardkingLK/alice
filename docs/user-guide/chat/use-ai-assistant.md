@@ -67,7 +67,7 @@ admin-only areas. Alice is focused exclusively on ALICE workspace management and
 ---
 
 ## Related
- 
- - [Alice (AI chat)](./README.md)
- - [User testing guide](./user-test-guide.md)
- - [Create a work item](../work-items/create-work-item.md)
+
+- [Alice (AI chat)](./README.md)
+- [User testing guide](./user-test-guide.md)
+- [Create a work item](../work-items/create-work-item.md)

@@ -27,6 +27,11 @@ export type ChartWidgetDefinition = ChartWidgetCatalogItem & {
   readonly category: ChartWidgetCategoryId;
   /** Shown in the quick + Add Widget dropdown. */
   readonly quickAdd?: boolean;
+  /**
+   * When false/undefined, Add Widget menus show the option as disabled
+   * with a “Coming soon” label. Only Chart is enabled for now.
+   */
+  readonly available?: boolean;
 };
 
 export type ChartWidgetCategory = {
@@ -51,6 +56,7 @@ export const CHART_WIDGET_CATALOG: readonly ChartWidgetDefinition[] = [
     icon: ChartPie,
     category: 'staying-on-top',
     quickAdd: true,
+    available: true,
   },
   {
     id: 'data-over-time',
@@ -146,6 +152,10 @@ export function chartWidgetById(
   id: ChartWidgetTypeId
 ): ChartWidgetDefinition | undefined {
   return CHART_WIDGET_CATALOG.find((item) => item.id === id);
+}
+
+export function isChartWidgetAvailable(id: ChartWidgetTypeId): boolean {
+  return chartWidgetById(id)?.available === true;
 }
 
 export function chartWidgetsForCategory(

@@ -93,7 +93,8 @@ function evaluateIncomingItemMatch(
 
   // Check 2: Exact normalized title match
   const titleExactMatch = existingWorkItems.find(
-    (existing) => existing.title.trim().toLowerCase() === normalizedIncomingTitle
+    (existing) =>
+      existing.title.trim().toLowerCase() === normalizedIncomingTitle
   );
 
   if (titleExactMatch) {

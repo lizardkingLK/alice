@@ -3,10 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Constants } from '@repo/types/database';
 import { Button } from '@repo/ui/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-} from '@repo/ui/components/ui/dialog';
+import { Dialog, DialogContent } from '@repo/ui/components/ui/dialog';
 import { Input } from '@repo/ui/components/ui/input';
 import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
 import { Plus, Search } from '@repo/ui/lib/icons';

@@ -82,25 +82,44 @@ describe('WorkItemDeduplicationAgent', () => {
       },
     ];
 
-    const report = await agent.inspectAndDeduplicate('project-123', incomingItems);
+    const report = await agent.inspectAndDeduplicate(
+      'project-123',
+      incomingItems
+    );
 
     expect(report.totalCount).toBe(4);
     expect(report.exactDuplicateCount).toBe(2);
     expect(report.newCount).toBe(1);
 
     // Exact title match check
-    const match1 = report.items.find((i) => i.incomingItem.temporaryIdentifier === 'item-1');
-    expect(match1?.matchStatus).toBe(WorkItemDeduplicationMatchStatusEnum.ExactDuplicate);
-    expect(match1?.recommendedAction).toBe(WorkItemDeduplicationActionEnum.Skip);
+    const match1 = report.items.find(
+      (i) => i.incomingItem.temporaryIdentifier === 'item-1'
+    );
+    expect(match1?.matchStatus).toBe(
+      WorkItemDeduplicationMatchStatusEnum.ExactDuplicate
+    );
+    expect(match1?.recommendedAction).toBe(
+      WorkItemDeduplicationActionEnum.Skip
+    );
 
     // Exact Jira key match check
-    const match2 = report.items.find((i) => i.incomingItem.temporaryIdentifier === 'item-2');
-    expect(match2?.matchStatus).toBe(WorkItemDeduplicationMatchStatusEnum.ExactDuplicate);
-    expect(match2?.recommendedAction).toBe(WorkItemDeduplicationActionEnum.Skip);
+    const match2 = report.items.find(
+      (i) => i.incomingItem.temporaryIdentifier === 'item-2'
+    );
+    expect(match2?.matchStatus).toBe(
+      WorkItemDeduplicationMatchStatusEnum.ExactDuplicate
+    );
+    expect(match2?.recommendedAction).toBe(
+      WorkItemDeduplicationActionEnum.Skip
+    );
 
     // Brand new item check
-    const match4 = report.items.find((i) => i.incomingItem.temporaryIdentifier === 'item-4');
+    const match4 = report.items.find(
+      (i) => i.incomingItem.temporaryIdentifier === 'item-4'
+    );
     expect(match4?.matchStatus).toBe(WorkItemDeduplicationMatchStatusEnum.New);
-    expect(match4?.recommendedAction).toBe(WorkItemDeduplicationActionEnum.Create);
+    expect(match4?.recommendedAction).toBe(
+      WorkItemDeduplicationActionEnum.Create
+    );
   });
 });

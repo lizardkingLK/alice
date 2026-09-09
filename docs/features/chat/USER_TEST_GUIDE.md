@@ -24,6 +24,7 @@ This guide provides step-by-step instructions for testing the enhanced Alice con
 Create two test files on your machine to test the document upload and parsing workflows:
 
 ### File 1: `test-work-items.json`
+
 ```json
 {
   "items": [
@@ -56,6 +57,7 @@ Create two test files on your machine to test the document upload and parsing wo
 ```
 
 ### File 2: `test-work-items.csv`
+
 ```csv
 Title,Type,Priority,StoryPoints,Description
 Setup Redis Caching,task,medium,3,Cache frequent query results for sprint board
@@ -116,7 +118,7 @@ Refactor Navigation Header,story,low,1,Modernize responsive navigation menu bar
 
 1. Attach `test-work-items.json` via the paperclip icon.
 2. Type the message:
-   > *"Please inspect and parse the attached file, and tell me what work items are in it."*
+   > _"Please inspect and parse the attached file, and tell me what work items are in it."_
 3. Press **Enter** or click **Send**.
 4. **Expected Behavior**:
    - Alice executes the `parse_work_item_attachment` tool.
@@ -133,7 +135,7 @@ Refactor Navigation Header,story,low,1,Modernize responsive navigation menu bar
 **Goal**: Verify that Alice compares parsed items against existing project work items before importing.
 
 1. In the same chat conversation, type:
-   > *"Check if any of these items already exist in project [Your Project Key or Name]."*
+   > _"Check if any of these items already exist in project [Your Project Key or Name]."_
 2. **Expected Behavior**:
    - Alice executes `check_work_item_duplicates`.
    - Alice returns a clear breakdown:
@@ -149,7 +151,7 @@ Refactor Navigation Header,story,low,1,Modernize responsive navigation menu bar
 **Goal**: Verify that Alice creates work items in bulk from the parsed document.
 
 1. In the chat conversation, type:
-   > *"Go ahead and import the new items into project [Your Project Key or Name]."*
+   > _"Go ahead and import the new items into project [Your Project Key or Name]."_
 2. **Expected Behavior**:
    - Alice executes `batch_import_work_items`.
    - Below Alice's reply, an **Executed Action Card** appears listing the newly created work items.
@@ -166,7 +168,7 @@ Refactor Navigation Header,story,low,1,Modernize responsive navigation menu bar
 
 1. Upload `test-work-items.csv`:
    - Verify badge displays `CSV`.
-   - Ask Alice: *"Parse this CSV file and list the items."*
+   - Ask Alice: _"Parse this CSV file and list the items."_
    - Verify Alice reads the CSV columns and correctly maps Title, Type, Priority, and StoryPoints.
 2. Upload an image (`.png`, `.jpg`, or `.webp`):
    - Verify badge displays `IMAGE`.
@@ -180,12 +182,12 @@ Refactor Navigation Header,story,low,1,Modernize responsive navigation menu bar
 **Goal**: Verify that Alice strictly adheres to the ALICE system scope and politely declines out-of-scope requests.
 
 1. Ask Alice:
-   > *"Can you write an essay comparing Agile and Waterfall?"*
+   > _"Can you write an essay comparing Agile and Waterfall?"_
 2. **Expected Behavior**:
    - Alice politely declines:
-     > *"I'm sorry, but my scope is limited to assisting with project and sprint management in Alice (such as listing projects, creating sprints, or managing work items)..."*
+     > _"I'm sorry, but my scope is limited to assisting with project and sprint management in Alice (such as listing projects, creating sprints, or managing work items)..."_
 3. Ask Alice:
-   > *"List all projects in Alice."*
+   > _"List all projects in Alice."_
 4. **Expected Behavior**:
    - Alice successfully executes `list_projects` and displays your workspace projects.
 

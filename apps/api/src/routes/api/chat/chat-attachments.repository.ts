@@ -70,9 +70,7 @@ export class ChatAttachmentsRepository {
         throw listError;
       }
 
-      const bucketExists = buckets.some(
-        (bucket) => bucket.name === bucketName
-      );
+      const bucketExists = buckets.some((bucket) => bucket.name === bucketName);
       if (!bucketExists) {
         const { error: createError } =
           await this.supabaseClient.storage.createBucket(bucketName, {
@@ -203,14 +201,8 @@ export class ChatAttachmentsRepository {
   async uploadAttachment(
     parameters: UploadChatAttachmentParameters
   ): Promise<ChatAttachmentWire> {
-    const {
-      userId,
-      conversationId,
-      fileName,
-      fileBuffer,
-      mimeType,
-      fileSize,
-    } = parameters;
+    const { userId, conversationId, fileName, fileBuffer, mimeType, fileSize } =
+      parameters;
 
     const bucketName = await this.ensureChatAttachmentsBucketExists();
 
