@@ -10,6 +10,7 @@ import {
   Users,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
+import { UserRoleEnum } from '@repo/types';
 import { ProjectTeamsPanel } from '@/app/projects/_components/project-details/project-teams-panel';
 import { ProjectSummaryBanner } from '@/app/projects/_components/project-details/project-summary-banner';
 import { ProjectDetailsTab } from '@/app/projects/_components/project-details/project-details-tab';
@@ -120,7 +121,8 @@ export function ProjectDetailsWorkspace({
   const activeTab = parseProjectDetailsTab(searchParams.get('tab'));
 
   const isManagerOrAdmin =
-    currentUserRole === 'admin' || currentUserRole === 'manager';
+    currentUserRole === UserRoleEnum.admin ||
+    currentUserRole === UserRoleEnum.manager;
 
   const handleTabChange = (nextTab: ProjectDetailsTabId) => {
     const params = new URLSearchParams(searchParams.toString());

@@ -19,6 +19,7 @@ import {
   Users,
 } from '@repo/ui/lib/icons';
 import { SearchableSelect } from '@/components/searchable-select';
+import { UserRoleEnum } from '@repo/types';
 import { REPORT_CARD_CLASS } from '@/app/projects/_components/project-details/project-details-shared';
 import {
   addProjectMember,
@@ -73,7 +74,8 @@ export function ProjectMembersTab({
   const [selectedUserId, setSelectedUserId] = useState<string>('');
 
   const isManagerOrAdmin =
-    currentUserRole === 'admin' || currentUserRole === 'manager';
+    currentUserRole === UserRoleEnum.admin ||
+    currentUserRole === UserRoleEnum.manager;
 
   const memberUserIds = new Set(members.map((m) => m.user_id));
   const candidateUsers = allUsers.filter((u) => !memberUserIds.has(u.id));

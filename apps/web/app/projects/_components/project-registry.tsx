@@ -64,6 +64,7 @@ import {
   registryActionsHeader,
 } from '@/components/registry-row-actions';
 import { RegistryTabSwitcher } from '@/components/registry-tab-switcher';
+import { UserRoleEnum } from '@repo/types';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import { cn } from '@repo/ui/lib/utils';
 import { formatMonthYear } from '@/app/_shared/utility';
@@ -269,8 +270,9 @@ export function ProjectRegistry({
   const [isPending, startTransition] = useTransition();
 
   const isManagerOrAdmin =
-    currentUserRole === 'admin' || currentUserRole === 'manager';
-  const isAdmin = currentUserRole === 'admin';
+    currentUserRole === UserRoleEnum.admin ||
+    currentUserRole === UserRoleEnum.manager;
+  const isAdmin = currentUserRole === UserRoleEnum.admin;
   const isSoftDelete = deleteMode === 'soft';
 
   const handleTabChange = (newTab: ProjectStatusTab) => {
