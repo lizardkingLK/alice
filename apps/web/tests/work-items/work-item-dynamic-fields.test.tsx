@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import WorkItemSidebar from '@/app/work-items/_components/work-item-details/work-item-details-sidebar';
 import { workItemFactory } from '../factories/workItem.factory';
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
+import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 
 vi.mock(
   '@repo/ui/components/ui/dropdown-menu',
@@ -76,7 +77,7 @@ describe('WorkItemSidebar Dynamic Fields', () => {
           },
         },
         content: [],
-      } as unknown as Record<string, unknown>,
+      } as unknown as DbWorkItem['description'],
     });
 
     render(
