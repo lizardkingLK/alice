@@ -145,7 +145,22 @@ function inboxLoadErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof error.message === 'string'
+  ) {
+    return error.message;
+  }
   return 'unknown error';
+}
+
+function warnInboxLoadFailed(error: unknown): void {
+  console.warn(
+    'warn. failed to load dashboard notifications:',
+    inboxLoadErrorMessage(error)
+  );
 }
 
 export function NotificationInbox({
@@ -183,10 +198,7 @@ export function NotificationInbox({
     );
 
     if (error) {
-      console.warn(
-        'warn. failed to load dashboard notifications:',
-        error.message
-      );
+      warnInboxLoadFailed(error);
       setLoadFailed(true);
       setNotifications([]);
       setLoading(false);
@@ -197,6 +209,12 @@ export function NotificationInbox({
     setLoading(false);
   }, [userId]);
 
+  const onInboxLoadRejected = useCallback((error: unknown) => {
+    warnInboxLoadFailed(error);
+    setLoadFailed(true);
+    setLoading(false);
+  }, []);
+
   useEffect(() => {
     if (skipClientFetch) {
       setNotifications(initialNotifications ?? []);
@@ -205,15 +223,14 @@ export function NotificationInbox({
       return;
     }
 
-    loadInbox().catch((error: unknown) => {
-      console.warn(
-        'warn. failed to load dashboard notifications:',
-        inboxLoadErrorMessage(error)
-      );
-      setLoadFailed(true);
-      setLoading(false);
-    });
-  }, [initialLoadFailed, initialNotifications, loadInbox, skipClientFetch]);
+    loadInbox().catch(onInboxLoadRejected);
+  }, [
+    initialLoadFailed,
+    initialNotifications,
+    loadInbox,
+    onInboxLoadRejected,
+    skipClientFetch,
+  ]);
 
   useEffect(() => {
     if (!userId) return;
@@ -259,14 +276,7 @@ export function NotificationInbox({
   }, [userId]);
 
   const handleRetry = () => {
-    loadInbox().catch((error: unknown) => {
-      console.warn(
-        'warn. failed to load dashboard notifications:',
-        inboxLoadErrorMessage(error)
-      );
-      setLoadFailed(true);
-      setLoading(false);
-    });
+    loadInbox().catch(onInboxLoadRejected);
   };
 
   const unreadCount = notifications.filter((n) => !n.read_status).length;

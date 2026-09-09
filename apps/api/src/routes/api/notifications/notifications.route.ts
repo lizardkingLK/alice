@@ -33,6 +33,24 @@ function assertCronAuthorized(req: {
   return header === `Bearer ${secret}`;
 }
 
+async function runAuthorizedCron<T extends object>(
+  req: { headers: { authorization?: string } },
+  res: Response,
+  run: () => Promise<T>
+): Promise<void> {
+  if (!assertCronAuthorized(req)) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  try {
+    const result = await run();
+    res.json({ success: true, ...result });
+  } catch (error) {
+    routeError(res, error);
+  }
+}
+
 export type NotificationsRouterDeps = {
   notificationsService: NotificationsService;
   accessRequestsService: AccessRequestsService;
@@ -88,30 +106,15 @@ export function createNotificationsRouter(deps: NotificationsRouterDeps) {
   });
 
   notificationsRouter.get('/check-due-dates', async (req, res) => {
-    if (!assertCronAuthorized(req)) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    try {
-      const result =
-        await notificationsService.checkAndSendDueDateNotifications();
-      res.json({ success: true, ...result });
-    } catch (error) {
-      routeError(res, error);
-    }
+    await runAuthorizedCron(req, res, () =>
+      notificationsService.checkAndSendDueDateNotifications()
+    );
   });
 
   notificationsRouter.get('/prune-read', async (req, res) => {
-    if (!assertCronAuthorized(req)) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    try {
-      const result = await notificationsService.pruneReadNotifications();
-      res.json({ success: true, ...result });
-    } catch (error) {
-      routeError(res, error);
-    }
+    await runAuthorizedCron(req, res, () =>
+      notificationsService.pruneReadNotifications()
+    );
   });
 
   return notificationsRouter;
