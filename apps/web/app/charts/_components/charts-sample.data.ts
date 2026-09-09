@@ -92,7 +92,6 @@ export const CHARTS_SAMPLE_WORK_ITEMS: readonly ChartsSampleWorkItem[] =
     };
   });
 
-
 export type ChartsStatusPieSlice = {
   readonly status: string;
   readonly label: string;
@@ -218,11 +217,7 @@ export type ChartsAdvancedFilterRow = {
 };
 
 export type ChartsQuickFieldId =
-  | 'project'
-  | 'status'
-  | 'type'
-  | 'assignee'
-  | 'priority';
+  'project' | 'status' | 'type' | 'assignee' | 'priority';
 
 const QUICK_FIELD_ALL_LABELS: Record<
   Exclude<ChartsQuickFieldId, 'project' | 'assignee'>,

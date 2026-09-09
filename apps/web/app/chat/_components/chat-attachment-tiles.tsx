@@ -40,13 +40,13 @@ function formatBytes(bytes: number): string {
 export function getAttachmentIcon(fileType: ChatAttachmentFileTypeEnum) {
   switch (fileType) {
     case ChatAttachmentFileTypeEnum.Json:
-      return <FileCode className="text-amber-500 size-4 shrink-0" />;
+      return <FileCode className="size-4 shrink-0 text-amber-500" />;
     case ChatAttachmentFileTypeEnum.Csv:
-      return <FileSpreadsheet className="text-emerald-500 size-4 shrink-0" />;
+      return <FileSpreadsheet className="size-4 shrink-0 text-emerald-500" />;
     case ChatAttachmentFileTypeEnum.Text:
-      return <FileText className="text-blue-500 size-4 shrink-0" />;
+      return <FileText className="size-4 shrink-0 text-blue-500" />;
     case ChatAttachmentFileTypeEnum.Image:
-      return <ImageIcon className="text-purple-500 size-4 shrink-0" />;
+      return <ImageIcon className="size-4 shrink-0 text-purple-500" />;
     default:
       return <File className="text-muted-foreground size-4 shrink-0" />;
   }
@@ -64,10 +64,7 @@ export function ChatAttachmentTiles({
 
   return (
     <ul
-      className={cn(
-        'flex flex-wrap items-center gap-2 px-1 pb-2',
-        className
-      )}
+      className={cn('flex flex-wrap items-center gap-2 px-1 pb-2', className)}
       aria-label="Attached files"
     >
       {attachments.map((attachment) => {

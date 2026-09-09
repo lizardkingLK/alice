@@ -178,4 +178,15 @@ export class NotificationsRepository {
 
     return existingNotifications ?? [];
   }
+
+  async deleteReadOrArchivedOlderThan(cutoff: Date): Promise<number> {
+    const result = await prisma.notifications.deleteMany({
+      where: {
+        created_at: { lt: cutoff },
+        OR: [{ read_status: true }, { status: RecordStatus.archived }],
+      },
+    });
+
+    return result.count;
+  }
 }

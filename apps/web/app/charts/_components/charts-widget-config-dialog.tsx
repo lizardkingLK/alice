@@ -8,12 +8,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@repo/ui/components/ui/tooltip';
-import {
-  Columns2,
-  Filter,
-  LogOut,
-  MoreHorizontal,
-} from '@repo/ui/lib/icons';
+import { Columns2, Filter, LogOut, MoreHorizontal } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { SearchInput } from '@/components/search-input';
 import { preventDismissForFloatingPortal } from '@/lib/dialog-outside-events';
@@ -106,93 +101,93 @@ export function ChartsWidgetConfigDialog({
         onFocusOutside: (event) => event.preventDefault(),
       }}
     >
-        <div className="border-border flex shrink-0 flex-wrap items-center gap-2 border-b px-4 py-2.5">
-          <SearchInput
-            value={searchQuery}
-            onValueChange={setSearchQuery}
-            onClear={() => setSearchQuery('')}
-            placeholder="Type to filter"
-            enableFocusShortcut={false}
-            className="w-full max-w-xs sm:w-56"
-          />
+      <div className="border-border flex shrink-0 flex-wrap items-center gap-2 border-b px-4 py-2.5">
+        <SearchInput
+          value={searchQuery}
+          onValueChange={setSearchQuery}
+          onClear={() => setSearchQuery('')}
+          placeholder="Type to filter"
+          enableFocusShortcut={false}
+          className="w-full max-w-xs sm:w-56"
+        />
 
-          <ChartsAdvancedFiltersPopover
-            open={filtersOpen}
-            onOpenChange={setFiltersOpen}
-            appliedFilters={filters}
-            onApply={(draft) => onFiltersChange?.(draft)}
-            searchQuery={searchQuery}
-            assigneeId={assigneeFilter}
+        <ChartsAdvancedFiltersPopover
+          open={filtersOpen}
+          onOpenChange={setFiltersOpen}
+          appliedFilters={filters}
+          onApply={(draft) => onFiltersChange?.(draft)}
+          searchQuery={searchQuery}
+          assigneeId={assigneeFilter}
+          trigger={
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-label="Filter"
+              aria-expanded={filtersOpen}
+              title={undefined}
+              className={cn(
+                'h-9 cursor-pointer gap-1.5 px-3',
+                (filtersOpen || filters) &&
+                  'border-primary bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary'
+              )}
+            >
+              <Filter className="size-3.5" />
+              Filter
+            </Button>
+          }
+        />
+
+        <ChartsAssigneeAvatarFilter
+          selectedId={assigneeFilter}
+          onSelectedIdChange={setAssigneeFilter}
+        />
+
+        <div className="ml-auto flex items-center gap-1">
+          <ToolbarIconButton label="Split view" disabled>
+            <Columns2 className="size-4" />
+          </ToolbarIconButton>
+
+          <ChartsWidgetActionsMenu
+            contentClassName="w-52"
+            showExport
+            onExport={onExport}
+            onRename={() => {
+              onOpenChange(false);
+              onRename?.();
+            }}
+            onDuplicate={() => onDuplicate?.()}
+            onDelete={() => {
+              onOpenChange(false);
+              onDelete?.();
+            }}
+            leadingItem={
+              <DropdownMenuItem
+                className="cursor-pointer gap-2"
+                onSelect={() => onOpenChange(false)}
+              >
+                <LogOut className="size-4" />
+                Exit full screen
+              </DropdownMenuItem>
+            }
             trigger={
               <Button
                 type="button"
-                variant="outline"
-                size="sm"
-                aria-label="Filter"
-                aria-expanded={filtersOpen}
-                title={undefined}
-                className={cn(
-                  'h-9 cursor-pointer gap-1.5 px-3',
-                  (filtersOpen || filters) &&
-                    'border-primary bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary'
-                )}
+                variant="ghost"
+                size="icon-sm"
+                aria-label="More options"
+                className="text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
               >
-                <Filter className="size-3.5" />
-                Filter
+                <MoreHorizontal className="size-4" />
               </Button>
             }
           />
-
-          <ChartsAssigneeAvatarFilter
-            selectedId={assigneeFilter}
-            onSelectedIdChange={setAssigneeFilter}
-          />
-
-          <div className="ml-auto flex items-center gap-1">
-            <ToolbarIconButton label="Split view" disabled>
-              <Columns2 className="size-4" />
-            </ToolbarIconButton>
-
-            <ChartsWidgetActionsMenu
-              contentClassName="w-52"
-              showExport
-              onExport={onExport}
-              onRename={() => {
-                onOpenChange(false);
-                onRename?.();
-              }}
-              onDuplicate={() => onDuplicate?.()}
-              onDelete={() => {
-                onOpenChange(false);
-                onDelete?.();
-              }}
-              leadingItem={
-                <DropdownMenuItem
-                  className="cursor-pointer gap-2"
-                  onSelect={() => onOpenChange(false)}
-                >
-                  <LogOut className="size-4" />
-                  Exit full screen
-                </DropdownMenuItem>
-              }
-              trigger={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="More options"
-                  className="text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
-                >
-                  <MoreHorizontal className="size-4" />
-                </Button>
-              }
-            />
-          </div>
         </div>
+      </div>
 
-        <div className="bg-background flex min-h-0 flex-1 flex-col overflow-hidden p-4 sm:p-6">
-          <ChartsStatusPiePreview size="dialog" workItems={filteredWorkItems} />
-        </div>
+      <div className="bg-background flex min-h-0 flex-1 flex-col overflow-hidden p-4 sm:p-6">
+        <ChartsStatusPiePreview size="dialog" workItems={filteredWorkItems} />
+      </div>
     </ChartsFullscreenDialogShell>
   );
 }

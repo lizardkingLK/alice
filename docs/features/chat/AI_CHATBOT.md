@@ -110,44 +110,44 @@ All routes require `requireApiAuth`. Wired via composition root
 (`config/composition.ts` → `chat.router` mounted in `routing.ts`). See
 [DI.md](../../architecture/DI.md).
 
-| Method   | Path                                    | Purpose                                                                |
-| -------- | --------------------------------------- | ---------------------------------------------------------------------- |
-| `POST`   | `/api/v1/chat/attachments/upload-session`| Mints direct-to-storage signed upload URL and token                    |
-| `POST`   | `/api/v1/chat/attachments/finalize`     | Strictly validates storage file and records database row in Prisma     |
-| `GET`    | `/api/v1/chat/attachments/:id`          | Mint signed preview and download URLs for active attachment            |
-| `DELETE` | `/api/v1/chat/attachments/:id`          | Soft-delete attachment row (`status: 'archived'`) and removes file     |
-| `POST`   | `/api/v1/chat/attachments`              | Multipart fallback upload                                              |
-| `GET`    | `/api/v1/chat`                          | Latest conversation history from Storage (or empty)                    |
-| `GET`    | `/api/v1/chat/:conversationId`          | Load one conversation’s history from Storage                           |
-| `DELETE` | `/api/v1/chat/:conversationId`          | Delete conversation row (+ best-effort Storage remove)                 |
-| `POST`   | `/api/v1/chat`                          | Send messages; run agent loop; return assistant reply                  |
+| Method   | Path                                      | Purpose                                                            |
+| -------- | ----------------------------------------- | ------------------------------------------------------------------ |
+| `POST`   | `/api/v1/chat/attachments/upload-session` | Mints direct-to-storage signed upload URL and token                |
+| `POST`   | `/api/v1/chat/attachments/finalize`       | Strictly validates storage file and records database row in Prisma |
+| `GET`    | `/api/v1/chat/attachments/:id`            | Mint signed preview and download URLs for active attachment        |
+| `DELETE` | `/api/v1/chat/attachments/:id`            | Soft-delete attachment row (`status: 'archived'`) and removes file |
+| `POST`   | `/api/v1/chat/attachments`                | Multipart fallback upload                                          |
+| `GET`    | `/api/v1/chat`                            | Latest conversation history from Storage (or empty)                |
+| `GET`    | `/api/v1/chat/:conversationId`            | Load one conversation’s history from Storage                       |
+| `DELETE` | `/api/v1/chat/:conversationId`            | Delete conversation row (+ best-effort Storage remove)             |
+| `POST`   | `/api/v1/chat`                            | Send messages; run agent loop; return assistant reply              |
 
 Mounted in `apps/api/src/config/routing.ts` as `/api/chat` and `/api/v1/chat`.
 
 ### Key files
 
-| Layer           | Path                                                                                                   |
-| --------------- | ------------------------------------------------------------------------------------------------------ |
-| Page            | `apps/web/app/chat/page.tsx` (RSC bootstrap + Suspense)                                                |
-| Client UI       | `apps/web/app/chat/_components/chat-client.tsx`                                                        |
-| Attachment UI   | `apps/web/app/chat/_components/chat-attachment-tiles.tsx`                                              |
-| Action Cards    | `apps/web/app/chat/_components/chat-executed-action-card.tsx`                                           |
-| Client API      | `apps/web/app/chat/_services/chat-attachments.client.ts` (upload-session, finalize, mint, delete)        |
-| Client Mutation | `apps/web/app/chat/_services/chat.mutations.client.ts`                                                 |
-| Server reads    | `apps/web/app/chat/_services/chat.reads.server.ts`                                                      |
-| Launcher        | `apps/web/app/chat/_components/chat-launcher.tsx`                                                      |
-| Drawer          | `apps/web/app/chat/_components/floating-chat-widget.tsx`                                               |
-| Routes          | `createChatRouter` in `chat.route.ts` (mounted as `chat.router`)                                       |
-| Service         | `ChatService` in `chat.service.ts`                                                                     |
-| Chat Repo       | `ChatRepository` in `chat.repository.ts` (`db` injected)                                               |
-| Attachment Repo | `ChatAttachmentsRepository` in `chat-attachments.repository.ts` (Prisma + Storage)                      |
-| Attachment Parse| `fetchAndParseWorkItemAttachment` in `chat-attachment-parser.ts`                                       |
-| Deduplication   | `WorkItemDeduplicationAgent` in `work-item-deduplication.agent.ts`                                      |
-| Prompt + tools  | `apps/api/src/routes/api/chat/chat.route.data.ts`                                                      |
-| Schemas         | `apps/api/src/routes/api/chat/chat.schemas.ts` + `packages/types/src/api/v1/chat.ts`                   |
-| Shared types    | `packages/types/src/chat-attachments.ts`                                                               |
-| Composition     | `apps/api/src/config/composition.ts` → `chat`                                                          |
-| Supabase client | `apps/api/src/lib/supabase.ts` (`supabase` + re-exported `createClient`)                               |
+| Layer            | Path                                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------------------- |
+| Page             | `apps/web/app/chat/page.tsx` (RSC bootstrap + Suspense)                                           |
+| Client UI        | `apps/web/app/chat/_components/chat-client.tsx`                                                   |
+| Attachment UI    | `apps/web/app/chat/_components/chat-attachment-tiles.tsx`                                         |
+| Action Cards     | `apps/web/app/chat/_components/chat-executed-action-card.tsx`                                     |
+| Client API       | `apps/web/app/chat/_services/chat-attachments.client.ts` (upload-session, finalize, mint, delete) |
+| Client Mutation  | `apps/web/app/chat/_services/chat.mutations.client.ts`                                            |
+| Server reads     | `apps/web/app/chat/_services/chat.reads.server.ts`                                                |
+| Launcher         | `apps/web/app/chat/_components/chat-launcher.tsx`                                                 |
+| Drawer           | `apps/web/app/chat/_components/floating-chat-widget.tsx`                                          |
+| Routes           | `createChatRouter` in `chat.route.ts` (mounted as `chat.router`)                                  |
+| Service          | `ChatService` in `chat.service.ts`                                                                |
+| Chat Repo        | `ChatRepository` in `chat.repository.ts` (`db` injected)                                          |
+| Attachment Repo  | `ChatAttachmentsRepository` in `chat-attachments.repository.ts` (Prisma + Storage)                |
+| Attachment Parse | `fetchAndParseWorkItemAttachment` in `chat-attachment-parser.ts`                                  |
+| Deduplication    | `WorkItemDeduplicationAgent` in `work-item-deduplication.agent.ts`                                |
+| Prompt + tools   | `apps/api/src/routes/api/chat/chat.route.data.ts`                                                 |
+| Schemas          | `apps/api/src/routes/api/chat/chat.schemas.ts` + `packages/types/src/api/v1/chat.ts`              |
+| Shared types     | `packages/types/src/chat-attachments.ts`                                                          |
+| Composition      | `apps/api/src/config/composition.ts` → `chat`                                                     |
+| Supabase client  | `apps/api/src/lib/supabase.ts` (`supabase` + re-exported `createClient`)                          |
 
 ### Data access
 
@@ -173,17 +173,17 @@ needed elsewhere in the API.
 
 Declared in `chat.route.data.ts` and executed server-side:
 
-| Tool                         | Effect                                                                                     |
-| ---------------------------- | ------------------------------------------------------------------------------------------ |
-| `list_projects`              | List projects (id, name, key)                                                              |
-| `create_project`             | Create project via projects service                                                        |
-| `list_sprints`               | List sprints for a `projectId`                                                             |
-| `create_sprint`              | Create sprint via sprints service                                                          |
-| `list_users`                 | List users (id, name, email) for assignee matching                                         |
-| `create_work_item`           | Create single work item; maps chat types (bug → Issue, task → Task, story → Story)         |
-| `parse_work_item_attachment` | Fetch and parse attached document (JSON, CSV, Text) into structured work item nodes       |
-| `check_work_item_duplicates` | Compare parsed items against existing project items to identify new vs duplicate items    |
-| `batch_import_work_items`    | Bulk create validated work items in a project with parent-child hierarchy links            |
+| Tool                         | Effect                                                                                 |
+| ---------------------------- | -------------------------------------------------------------------------------------- |
+| `list_projects`              | List projects (id, name, key)                                                          |
+| `create_project`             | Create project via projects service                                                    |
+| `list_sprints`               | List sprints for a `projectId`                                                         |
+| `create_sprint`              | Create sprint via sprints service                                                      |
+| `list_users`                 | List users (id, name, email) for assignee matching                                     |
+| `create_work_item`           | Create single work item; maps chat types (bug → Issue, task → Task, story → Story)     |
+| `parse_work_item_attachment` | Fetch and parse attached document (JSON, CSV, Text) into structured work item nodes    |
+| `check_work_item_duplicates` | Compare parsed items against existing project items to identify new vs duplicate items |
+| `batch_import_work_items`    | Bulk create validated work items in a project with parent-child hierarchy links        |
 
 **Protocol (system prompt):** resolve project (list / optionally create) →
 resolve sprint (optional) → resolve assignee → `create_work_item` or `parse_work_item_attachment` →
@@ -215,18 +215,18 @@ Index on `user_id`. RLS policies exist for owner access; the API uses the
 
 ### Postgres — `chat_attachments`
 
-| Column            | Type           | Notes                                          |
-| ----------------- | -------------- | ---------------------------------------------- |
-| `id`              | `uuid`         | Primary key (`gen_random_uuid()`)              |
-| `user_id`         | `uuid`         | FK → `users` (`ON DELETE CASCADE`)             |
-| `conversation_id` | `uuid?`        | FK → `chat_conversations` (`ON DELETE CASCADE`)|
-| `file_name`       | `string`       | Original file name                             |
-| `storage_path`    | `string`       | Path in Supabase Storage                       |
-| `file_size`       | `int`          | File size in bytes                             |
-| `mime_type`       | `string`       | File MIME type                                 |
-| `status`          | `RecordStatus` | `'active'` or `'archived'` (soft-delete)       |
-| `created_at`      | `timestamptz`  | Created timestamp                              |
-| `updated_at`      | `timestamptz`  | Updated timestamp                              |
+| Column            | Type           | Notes                                           |
+| ----------------- | -------------- | ----------------------------------------------- |
+| `id`              | `uuid`         | Primary key (`gen_random_uuid()`)               |
+| `user_id`         | `uuid`         | FK → `users` (`ON DELETE CASCADE`)              |
+| `conversation_id` | `uuid?`        | FK → `chat_conversations` (`ON DELETE CASCADE`) |
+| `file_name`       | `string`       | Original file name                              |
+| `storage_path`    | `string`       | Path in Supabase Storage                        |
+| `file_size`       | `int`          | File size in bytes                              |
+| `mime_type`       | `string`       | File MIME type                                  |
+| `status`          | `RecordStatus` | `'active'` or `'archived'` (soft-delete)        |
+| `created_at`      | `timestamptz`  | Created timestamp                               |
+| `updated_at`      | `timestamptz`  | Updated timestamp                               |
 
 Indexes on `user_id` and `conversation_id`. Managed exclusively via Prisma (`await prisma.chat_attachments......`).
 
@@ -304,18 +304,19 @@ No active chat model rows → `POST /api/chat` returns **400** with a configurat
 
 ### Automated Test Coverage
 
-| Area                                   | Test File                                                         | Status  |
-| -------------------------------------- | ----------------------------------------------------------------- | ------- |
-| Attachment repository & direct upload  | `apps/api/tests/chat/chat-attachments.repository.test.ts`         | Covered |
-| Attachment file parsing (JSON/CSV)     | `apps/api/tests/chat/chat-attachment-parser.test.ts`              | Covered |
-| Deduplication engine & recommendations | `apps/api/tests/chat/work-item-deduplication.agent.test.ts`       | Covered |
-| Chat service orchestration & tools     | `apps/api/tests/chat/chat.service.test.ts`                        | Covered |
-| Chat API routes & auth                 | `apps/api/tests/chat/chat.route.test.ts`                          | Covered |
-| Web client upload & mutations          | `apps/web/tests/chat/chat-attachments.client.test.ts`             | Covered |
-| Web attachment tiles rendering         | `apps/web/tests/chat/chat-attachment-tiles.test.tsx`              | Covered |
-| Web full chat client UI                | `apps/web/tests/chat/chat-client.test.tsx`                        | Covered |
+| Area                                   | Test File                                                   | Status  |
+| -------------------------------------- | ----------------------------------------------------------- | ------- |
+| Attachment repository & direct upload  | `apps/api/tests/chat/chat-attachments.repository.test.ts`   | Covered |
+| Attachment file parsing (JSON/CSV)     | `apps/api/tests/chat/chat-attachment-parser.test.ts`        | Covered |
+| Deduplication engine & recommendations | `apps/api/tests/chat/work-item-deduplication.agent.test.ts` | Covered |
+| Chat service orchestration & tools     | `apps/api/tests/chat/chat.service.test.ts`                  | Covered |
+| Chat API routes & auth                 | `apps/api/tests/chat/chat.route.test.ts`                    | Covered |
+| Web client upload & mutations          | `apps/web/tests/chat/chat-attachments.client.test.ts`       | Covered |
+| Web attachment tiles rendering         | `apps/web/tests/chat/chat-attachment-tiles.test.tsx`        | Covered |
+| Web full chat client UI                | `apps/web/tests/chat/chat-client.test.tsx`                  | Covered |
 
 Run tests via:
+
 ```powershell
 pnpm --filter api test tests/chat/
 pnpm --filter web test tests/chat/

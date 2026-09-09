@@ -6,7 +6,7 @@ import {
   contactRequestSchema,
 } from '@repo/types';
 import { env } from '../../../config/env';
-import { NotificationsService } from './notifications.service';
+import type { NotificationsService } from './notifications.service';
 import type { AccessRequestsService } from '../accessRequests/accessRequests.service';
 
 const sendSchema = z.object({
@@ -95,6 +95,19 @@ export function createNotificationsRouter(deps: NotificationsRouterDeps) {
     try {
       const result =
         await notificationsService.checkAndSendDueDateNotifications();
+      res.json({ success: true, ...result });
+    } catch (error) {
+      routeError(res, error);
+    }
+  });
+
+  notificationsRouter.get('/prune-read', async (req, res) => {
+    if (!assertCronAuthorized(req)) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+      const result = await notificationsService.pruneReadNotifications();
       res.json({ success: true, ...result });
     } catch (error) {
       routeError(res, error);

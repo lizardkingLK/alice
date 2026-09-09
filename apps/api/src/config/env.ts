@@ -26,7 +26,7 @@ const serverSchema = z.object({
   ATLASSIAN_CLIENT_ID: z.string().min(1).optional(),
   ATLASSIAN_CLIENT_SECRET: z.string().min(1).optional(),
   ATLASSIAN_REDIRECT_URI: z.string().min(1).optional(),
-  /** Optional; when set, `/notifications/check-due-dates` requires `Authorization: Bearer <CRON_SECRET>`. */
+  /** Optional; when set, notification cron routes require `Authorization: Bearer <CRON_SECRET>`. */
   CRON_SECRET: z.string().min(1).optional(),
   /** Pooled Postgres URL for Prisma Client (Supavisor session mode, port 5432). */
   DATABASE_URL: z.string().min(1),

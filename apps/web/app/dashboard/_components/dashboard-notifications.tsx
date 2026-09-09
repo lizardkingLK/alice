@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Database } from '@repo/types';
+import { fetchDashboardInboxNotifications } from '@/lib/notifications/fetch-dashboard-inbox';
 import {
   Bell,
   AtSign,
@@ -140,29 +141,79 @@ function extractEmailFromNotification(message: string): string | null {
   return extractEmailFromAccessRequestMessage(message);
 }
 
+function inboxLoadErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return 'unknown error';
+}
+
 export function NotificationInbox({
   userId,
-  initialNotifications = [],
+  initialNotifications,
   initialLoadFailed = false,
 }: Readonly<{
   userId: string;
   initialNotifications?: Notification[];
-  /** True when the server-side initial query timed out or failed. */
+  /** True when a caller already failed to load the inbox (tests / optional SSR). */
   initialLoadFailed?: boolean;
 }>) {
-  const [notifications, setNotifications] =
-    useState<Notification[]>(initialNotifications);
+  const skipClientFetch = initialNotifications !== undefined;
+  const [notifications, setNotifications] = useState<Notification[]>(
+    initialNotifications ?? []
+  );
   const [loadFailed, setLoadFailed] = useState(initialLoadFailed);
-  const loading = false;
+  const [loading, setLoading] = useState(!skipClientFetch);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedAccessRequest, setSelectedAccessRequest] =
     useState<Notification | null>(null);
   const router = useRouter();
 
+  const loadInbox = useCallback(async () => {
+    if (!userId) {
+      return;
+    }
+
+    setLoading(true);
+    setLoadFailed(false);
+    const supabase = createClient();
+    const { data, error } = await fetchDashboardInboxNotifications(
+      supabase,
+      userId
+    );
+
+    if (error) {
+      console.warn(
+        'warn. failed to load dashboard notifications:',
+        error.message
+      );
+      setLoadFailed(true);
+      setNotifications([]);
+      setLoading(false);
+      return;
+    }
+
+    setNotifications(data ?? []);
+    setLoading(false);
+  }, [userId]);
+
   useEffect(() => {
-    setNotifications(initialNotifications);
-    setLoadFailed(initialLoadFailed);
-  }, [initialNotifications, initialLoadFailed]);
+    if (skipClientFetch) {
+      setNotifications(initialNotifications ?? []);
+      setLoadFailed(initialLoadFailed);
+      setLoading(false);
+      return;
+    }
+
+    loadInbox().catch((error: unknown) => {
+      console.warn(
+        'warn. failed to load dashboard notifications:',
+        inboxLoadErrorMessage(error)
+      );
+      setLoadFailed(true);
+      setLoading(false);
+    });
+  }, [initialLoadFailed, initialNotifications, loadInbox, skipClientFetch]);
 
   useEffect(() => {
     if (!userId) return;
@@ -206,6 +257,17 @@ export function NotificationInbox({
       supabase.removeChannel(channel);
     };
   }, [userId]);
+
+  const handleRetry = () => {
+    loadInbox().catch((error: unknown) => {
+      console.warn(
+        'warn. failed to load dashboard notifications:',
+        inboxLoadErrorMessage(error)
+      );
+      setLoadFailed(true);
+      setLoading(false);
+    });
+  };
 
   const unreadCount = notifications.filter((n) => !n.read_status).length;
 
@@ -260,13 +322,7 @@ export function NotificationInbox({
     if (error) {
       console.error('Failed to mark all notifications as read:', error);
       // Re-fetch notifications to restore correct state
-      const { data } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(50);
+      const { data } = await fetchDashboardInboxNotifications(supabase, userId);
       if (data) setNotifications(data);
     }
   };
@@ -295,13 +351,10 @@ export function NotificationInbox({
       console.error('Failed to archive notification:', error);
       // Re-fetch to restore state on error
       if (userId) {
-        const { data } = await supabase
-          .from('notifications')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('status', 'active')
-          .order('created_at', { ascending: false })
-          .limit(50);
+        const { data } = await fetchDashboardInboxNotifications(
+          supabase,
+          userId
+        );
         if (data) setNotifications(data);
       }
     }
@@ -360,6 +413,12 @@ export function NotificationInbox({
   };
 
   const getSubTitleText = () => {
+    if (loading) {
+      return 'Loading notifications';
+    }
+    if (loadFailed) {
+      return 'Could not load notifications';
+    }
     if (unreadCount === 0) return 'You are all caught up';
     const label = unreadCount === 1 ? 'notification' : 'notifications';
     return `${unreadCount} unread ${label}`;
@@ -377,11 +436,22 @@ export function NotificationInbox({
 
     if (loadFailed) {
       return (
-        <NotificationsEmptyState
-          icon={<AlertCircle className="text-destructive/80 size-6" />}
-          title="Couldn't load notifications"
-          description="Refresh the page to try again. New alerts may still arrive in realtime."
-        />
+        <div className="flex flex-col items-center">
+          <NotificationsEmptyState
+            icon={<AlertCircle className="text-destructive/80 size-6" />}
+            title="Couldn't load notifications"
+            description="Check your connection and try again. New alerts may still arrive in realtime."
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mb-4"
+            onClick={handleRetry}
+          >
+            Try again
+          </Button>
+        </div>
       );
     }
 
@@ -426,6 +496,7 @@ export function NotificationInbox({
             </div>
             <div className="min-w-0 flex-1 space-y-1 pr-2">
               <p
+                title={notif.message}
                 className={cn(
                   'line-clamp-3 text-xs leading-relaxed wrap-break-word',
                   notif.read_status

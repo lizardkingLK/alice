@@ -323,6 +323,17 @@ projects/
 
 Both tracked pairs (`work-items`, `projects`) use this grouping.
 
+### 2.14 Non-blocking notification inbox
+
+The dashboard header used to `await` the inbox query (5s abort) inside the RSC
+shell. A slow Next.js → Supabase hop then logged `console.error` during render,
+which Next.js surfaces as a blocking error overlay on every dashboard route
+(including `/users`).
+
+The bell now loads the latest 50 active rows **after** the page paints
+(`NotificationInbox` client fetch, with retry). See
+[notifications feature](../features/notifications/README.md).
+
 ---
 
 ## 3. Contributor patterns
@@ -429,6 +440,7 @@ Legend:
 | `GET /api/attachments/:id`               | **Kept**                        | Attachments UI       | Mints signed preview/download URLs (private bucket)                                                                                                |
 | `GET /api/accessAllowlist`               | **Removed**                     | —                    | `/users` uses `listAccessAllowlist` in `accessAllowlist.service.server.ts` (admin-gated); mutations stay Express                                   |
 | `GET /api/notifications/check-due-dates` | **Kept**                        | Vercel cron          | Not a page read                                                                                                                                    |
+| `GET /api/notifications/prune-read`      | **Kept**                        | Vercel cron          | Deletes read/archived rows older than 30 days                                                                                                      |
 | `GET /api/health`, `GET /api/v1/health`  | **Kept**                        | Deploy / probes      | v1 health router; static version details, no DB                                                                                                    |
 | `GET /api/v2/health`                     | **Kept**                        | Deploy / probes      | v2 reference (adds `checkedAt`); shared repository, separate service/router                                                                        |
 | `GET /`                                  | **Kept**                        | Deploy / probes      | Root status line (`createRootRouter`); not aliased to health JSON                                                                                  |

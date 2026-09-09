@@ -4,10 +4,7 @@ import {
   parseCsvWorkItemDocument,
   fetchAndParseWorkItemAttachment,
 } from '../../src/routes/api/chat/chat-attachment-parser';
-import {
-  ChatAttachmentFileTypeEnum,
-  WorkItemTypeEnum,
-} from '@repo/types';
+import { ChatAttachmentFileTypeEnum, WorkItemTypeEnum } from '@repo/types';
 
 describe('chat-attachment-parser', () => {
   describe('parseJsonWorkItemDocument', () => {
@@ -136,13 +133,17 @@ Setup Database,Task,medium,Postgres setup,,DevOps,ACME`;
       expect(item.title).toBe('Feature: Multi-tenant Support');
       expect(item.type).toBe(WorkItemTypeEnum.Feature);
       expect(item.priority).toBe('highest');
-      expect(item.description).toBe('Supports multiple organizations; isolated DB');
+      expect(item.description).toBe(
+        'Supports multiple organizations; isolated DB'
+      );
     });
   });
 
   describe('fetchAndParseWorkItemAttachment', () => {
     it('downloads and parses JSON from signed URL', async () => {
-      const mockPayload = [{ title: 'Downloaded Task', type: 'Task', priority: 'low' }];
+      const mockPayload = [
+        { title: 'Downloaded Task', type: 'Task', priority: 'low' },
+      ];
 
       const originalFetch = globalThis.fetch;
       globalThis.fetch = vi.fn().mockResolvedValue({

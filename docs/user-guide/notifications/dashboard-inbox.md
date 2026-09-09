@@ -9,9 +9,12 @@ Read and clear alerts from the header bell menu.
 ## Open the inbox
 
 1. On any dashboard page, select the **bell** icon in the header (aria-label:
-   **View notifications**).
+   **View notifications**). The page itself does not wait for this list — the
+   inbox loads in the background so slow connections still open Users, Board,
+   and other dashboard routes.
 
-A dropdown panel opens with your recent notifications.
+A dropdown panel opens with your recent notifications. If the list fails to
+load, select **Try again**.
 
 ---
 
@@ -24,6 +27,10 @@ A dropdown panel opens with your recent notifications.
 | **Archive** (X on hover) | Remove item from the list                        |
 
 When empty: **No notifications yet** — mentions and updates will appear here.
+
+The inbox shows up to **50** recent active items. Each alert is for you only
+(not a shared feed). Notifications you have already read, or archived, that are
+older than **30 days** are removed automatically.
 
 ---
 

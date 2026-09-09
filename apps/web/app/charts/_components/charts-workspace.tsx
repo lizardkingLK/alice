@@ -108,10 +108,7 @@ export function ChartsWorkspace({
   }, [setSearchQuery]);
 
   const commitBoard = useCallback(
-    (next: {
-      instances: ChartBoardWidgetInstance[];
-      layout: LayoutItem[];
-    }) => {
+    (next: { instances: ChartBoardWidgetInstance[]; layout: LayoutItem[] }) => {
       setInstances(next.instances);
       setLayout(next.layout);
       if (hydrated) {

@@ -411,6 +411,8 @@ model notifications {
   user            users  @relation(fields: [user_id], references: [id], onDelete: Cascade)
   created_by_user users? @relation("NotificationCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
   updated_by_user users? @relation("NotificationUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+
+  @@index([user_id, status, created_at(sort: Desc)])
 }
 
 /// Admission allowlist: approved email domains or exact emails (see docs/features/access).
