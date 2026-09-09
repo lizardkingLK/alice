@@ -147,6 +147,18 @@
           "path": "user-guide/projects/project-integrations.md",
           "order": 6,
           "minimumRole": "manager"
+        },
+        {
+          "path": "user-guide/projects/dynamic-fields.md",
+          "title": "Dynamic fields & sidebar",
+          "order": 7,
+          "minimumRole": "member"
+        },
+        {
+          "path": "features/projects/PROJECT_DETAILS_AND_DYNAMIC_FIELDS.md",
+          "title": "Technical spec: Dynamic fields & sidebar",
+          "order": 8,
+          "minimumRole": "member"
         }
       ]
     },
