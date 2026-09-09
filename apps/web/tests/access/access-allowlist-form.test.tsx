@@ -163,6 +163,9 @@ describe('AccessAllowlistForm', () => {
         status: 'active',
       });
     });
+    expect(
+      await screen.findByText(/Allowlist entry created/i)
+    ).toBeInTheDocument();
 
     await vi.advanceTimersByTimeAsync(1200);
     expect(onSuccess).toHaveBeenCalled();
