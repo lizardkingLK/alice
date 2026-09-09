@@ -2,11 +2,8 @@
 import { forceOptimisticPatch } from '@/lib/optimistic-lock/force-patch';
 import type {
   Project,
-  GetProjectsPaginatedResponse,
   CreateProjectInput,
   UpdateProjectInput,
-  ProjectMemberWithUser,
-  ProjectMembersByProjectId,
 } from '../_types/projects.types';
 
 export type {
@@ -16,7 +13,7 @@ export type {
   UpdateProjectInput,
   ProjectMemberWithUser,
   ProjectMembersByProjectId,
-};
+} from '../_types/projects.types';
 
 export function createProjectsService(
   apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>

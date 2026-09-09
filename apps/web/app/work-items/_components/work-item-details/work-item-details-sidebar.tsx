@@ -465,18 +465,35 @@ function extractDynamicFieldValues(
   return {};
 }
 
+function formatDisplayValue(value: unknown): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (typeof value === 'object' && value !== null) {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return '';
+    }
+  }
+  return '';
+}
+
 function DynamicFieldValueDisplay({
   property,
   value,
-}: {
+}: Readonly<{
   property: {
-    type?: string;
-    format?: string;
-    enum?: unknown[];
-    title?: string;
+    readonly type?: string;
+    readonly format?: string;
+    readonly enum?: readonly unknown[];
+    readonly title?: string;
   };
   value: unknown;
-}) {
+}>) {
   if (value === undefined || value === null || value === '') {
     return <span className="text-muted-foreground text-xs italic">Not set</span>;
   }
@@ -495,19 +512,24 @@ function DynamicFieldValueDisplay({
     }
     return (
       <div className="flex flex-wrap gap-1">
-        {value.map((v, i) => (
-          <Badge key={i} variant="secondary" className="text-xs">
-            {String(v)}
-          </Badge>
-        ))}
+        {value.map((v) => {
+          const itemText = formatDisplayValue(v);
+          return (
+            <Badge key={itemText} variant="secondary" className="text-xs">
+              {itemText}
+            </Badge>
+          );
+        })}
       </div>
     );
   }
 
+  const displayString = formatDisplayValue(value);
+
   if (property.enum && Array.isArray(property.enum)) {
     return (
       <Badge variant="secondary" className="text-xs font-normal">
-        {String(value)}
+        {displayString}
       </Badge>
     );
   }
@@ -515,7 +537,7 @@ function DynamicFieldValueDisplay({
   if (property.format === 'multiline') {
     return (
       <span className="text-foreground text-xs whitespace-pre-wrap line-clamp-3">
-        {String(value)}
+        {displayString}
       </span>
     );
   }
@@ -523,9 +545,9 @@ function DynamicFieldValueDisplay({
   return (
     <span
       className="text-foreground text-xs truncate max-w-[200px]"
-      title={String(value)}
+      title={displayString}
     >
-      {String(value)}
+      {displayString}
     </span>
   );
 }

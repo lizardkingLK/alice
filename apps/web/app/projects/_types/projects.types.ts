@@ -1,14 +1,13 @@
-import type {
-  ProjectDetailRow,
-  ProjectListRow,
-  ProjectMemberRow,
-  ListProjectsQuery,
-} from '@repo/types/api/v1';
-import { ProjectStatusEnum } from '@repo/types/api/v1';
 import type { Tables } from '@repo/types';
 import type { User } from '@/app/users/_services/users.mutations.client';
 
-export { ProjectStatusEnum };
+export {
+  ProjectStatusEnum,
+  type ProjectDetailRow,
+  type ProjectListRow,
+  type ProjectMemberRow,
+  type ListProjectsQuery,
+} from '@repo/types/api/v1';
 
 export type Project = Omit<Tables<'projects'>, 'github_token'> & {
   owner?: Pick<User, 'id' | 'name' | 'email'> | null;
@@ -69,10 +68,3 @@ export type ProjectMemberWithUser = {
 
 /** Prefetched project → active members map for form UIs (e.g. team form). */
 export type ProjectMembersByProjectId = Record<string, ProjectMemberWithUser[]>;
-
-export type {
-  ProjectDetailRow,
-  ProjectListRow,
-  ProjectMemberRow,
-  ListProjectsQuery,
-};
