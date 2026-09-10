@@ -20,7 +20,11 @@ export default async function WorkItemPage({
 
   const breadcrumbOverrides = buildWorkItemBreadcrumbOverrides(
     id,
-    workItem.project_id
+    workItem.project_id,
+    {
+      workItemTitle: workItem.title,
+      projectName: workItem.project?.name,
+    }
   );
 
   return (

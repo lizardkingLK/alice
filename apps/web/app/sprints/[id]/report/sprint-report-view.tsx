@@ -34,6 +34,7 @@ import {
 } from '@/app/work-items/_helpers/work-item-status';
 import { SprintReportCharts } from './sprint-report-charts';
 import { SprintReportDeliverables } from './sprint-report-deliverables';
+import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 
 type SprintReportViewProps = {
   sprint: Sprint;
@@ -211,7 +212,9 @@ export function SprintReportView({
               )}
             </div>
             <h1 className="text-foreground mt-2 text-2xl font-bold tracking-tight md:text-3xl">
-              {sprint.name} Summary Report
+              <TruncatedText as="span" className="block max-w-full md:max-w-3xl">
+                {`${sprint.name} Summary Report`}
+              </TruncatedText>
             </h1>
             <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
               <div className="flex items-center gap-1">

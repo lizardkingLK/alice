@@ -31,7 +31,7 @@ Open an item from the calendar to edit other fields on the detail page.
 
 ## Tips
 
-- Combine calendar with board filters for project or assignee focus.
+- Use the **Filter** icon (**Shift+F**) for project, sprint, assignee, and type.
 - Items without due dates won't appear on the grid until scheduled.
 
 ---

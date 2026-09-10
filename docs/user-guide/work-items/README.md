@@ -37,7 +37,8 @@ shows the same table filtered to items assigned to you.
 | **Flat** / **Hierarchy**          | Flat list vs parent/child tree            |
 | **Expand all** / **Collapse all** | Hierarchy mode only                       |
 | Search (**Ctrl/⌘+K**)             | Filter by text                            |
-| Filters (**Shift+F**)             | Project, sprint, type, assignee, and more |
+| Filters (**Shift+F**)             | Filter icon → project, sprint, type, assignee, and more |
+| Defaults (gear icon)              | Save or apply workspace project/sprint defaults         |
 
 Select a row to open the item detail page.
 

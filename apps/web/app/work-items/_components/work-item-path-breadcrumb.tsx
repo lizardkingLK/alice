@@ -10,7 +10,6 @@ import {
   BreadcrumbSeparator,
 } from '@repo/ui/components/ui/breadcrumb';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
-import { toShortId } from '@/app/_shared/utility';
 import { WorkItemTypeBadge } from '@/app/work-items/_components/work-item-badge/work-item-badge-type';
 import type {
   DbWorkItem,
@@ -21,7 +20,7 @@ import type { WorkItemType } from '@repo/types';
 type WorkItemPathBreadcrumbProps = {
   readonly workItem: Pick<
     DbWorkItem,
-    'id' | 'type' | 'sprint_id' | 'project' | 'sprint'
+    'id' | 'type' | 'title' | 'sprint_id' | 'project' | 'sprint'
   >;
   /** Hierarchy ancestors root-first (Epic → … → immediate parent). */
   readonly ancestors?: readonly WorkItemAncestor[];
@@ -29,21 +28,22 @@ type WorkItemPathBreadcrumbProps = {
 
 function PathTypeChip({
   type,
-  id,
-}: Readonly<{ type: WorkItemType; id: string }>) {
+  title,
+}: Readonly<{ type: WorkItemType; title: string }>) {
+  const label = title.trim() || 'Untitled';
   return (
-    <span className="flex items-center gap-2">
-      <WorkItemTypeBadge type={type} className="font-normal" />
-      <span className="text-muted-foreground font-mono text-xs">
-        {toShortId(id)}
-      </span>
+    <span className="flex min-w-0 items-center gap-2">
+      <WorkItemTypeBadge type={type} className="shrink-0 font-normal" />
+      <TruncatedText as="span" className="max-w-28 text-xs sm:max-w-40">
+        {label}
+      </TruncatedText>
     </span>
   );
 }
 
 /**
  * In-page path above the title:
- * `PROJECT_KEY > Sprint name > [Epic] … > [Type] SHORT_ID`
+ * `PROJECT_KEY > Sprint name > [Epic] … > [Type] Title`
  * Unassigned sprint renders an ellipsis segment.
  * Ancestors (when present) link to parent work-item details.
  */
@@ -78,7 +78,10 @@ export function WorkItemPathBreadcrumb({
 
         <BreadcrumbItem>
           {hasSprint ? (
-            <TruncatedText className="text-muted-foreground max-w-40 text-xs sm:max-w-56">
+            <TruncatedText
+              as="span"
+              className="text-muted-foreground max-w-40 text-xs sm:max-w-56"
+            >
               {sprintName!}
             </TruncatedText>
           ) : (
@@ -89,13 +92,13 @@ export function WorkItemPathBreadcrumb({
         {ancestors.map((ancestor) => (
           <Fragment key={ancestor.id}>
             <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild className="hover:text-primary">
+            <BreadcrumbItem className="min-w-0">
+              <BreadcrumbLink asChild className="hover:text-primary min-w-0">
                 <Link
                   href={`/work-items/${ancestor.id}`}
-                  title={ancestor.title}
+                  className="min-w-0"
                 >
-                  <PathTypeChip type={ancestor.type} id={ancestor.id} />
+                  <PathTypeChip type={ancestor.type} title={ancestor.title} />
                 </Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
@@ -104,9 +107,9 @@ export function WorkItemPathBreadcrumb({
 
         <BreadcrumbSeparator />
 
-        <BreadcrumbItem>
-          <BreadcrumbPage>
-            <PathTypeChip type={workItem.type} id={workItem.id} />
+        <BreadcrumbItem className="min-w-0">
+          <BreadcrumbPage className="min-w-0">
+            <PathTypeChip type={workItem.type} title={workItem.title} />
           </BreadcrumbPage>
         </BreadcrumbItem>
       </BreadcrumbList>

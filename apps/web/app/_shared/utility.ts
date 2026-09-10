@@ -163,12 +163,12 @@ export const getInitials = (name: string | null | undefined): string => {
 const UUID_SEGMENT =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-/** First 8 chars of a UUID (or any id), uppercased — breadcrumb / list key display. */
+/** First 8 chars of a UUID (or any id), uppercased — fallback when a name is unavailable. */
 export function toShortId(id: string): string {
   return id.slice(0, 8).toUpperCase();
 }
 
-/** True when a path segment looks like a UUID (used to shorten breadcrumb labels). */
+/** True when a path segment looks like a UUID (breadcrumb short-id fallback). */
 export function isUuidSegment(segment: string): boolean {
   return UUID_SEGMENT.test(segment);
 }

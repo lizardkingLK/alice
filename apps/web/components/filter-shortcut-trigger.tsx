@@ -1,6 +1,5 @@
 'use client';
 
-import type { ReactNode } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { DialogTrigger } from '@repo/ui/components/ui/dialog';
 import {
@@ -18,16 +17,14 @@ type FilterShortcutTriggerProps = {
   /** When set, tooltip stays closed while the dialog is open. */
   readonly hideTooltipWhileOpen?: boolean;
   readonly delayDuration?: number;
-  readonly children?: ReactNode;
 };
 
-/** Shared Shift+F Filter outline button used by registry filter dialogs. */
+/** Shared Shift+F Filter icon button used by registry filter dialogs. */
 export function FilterShortcutTrigger({
   open,
   hasActiveFilters,
   hideTooltipWhileOpen = false,
   delayDuration,
-  children = 'Filter',
 }: Readonly<FilterShortcutTriggerProps>) {
   return (
     <TooltipProvider delayDuration={delayDuration}>
@@ -37,17 +34,16 @@ export function FilterShortcutTrigger({
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              size="icon"
               aria-label="Open filters"
               aria-keyshortcuts="Shift+F"
               className={cn(
-                'h-9 cursor-pointer gap-1.5 px-3',
+                'size-9 shrink-0 cursor-pointer',
                 (open || hasActiveFilters) &&
                   'border-primary text-primary hover:text-primary'
               )}
             >
-              <Filter className="size-3.5" />
-              {children}
+              <Filter className="size-4" />
             </Button>
           </DialogTrigger>
         </TooltipTrigger>

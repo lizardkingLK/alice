@@ -158,13 +158,6 @@ export function WorkItemsTableToolbar({
           onApply={onApplyColumnVisibility}
         />
 
-        {showWorkspaceDefaults ? (
-          <WorkspaceDefaultsControls
-            onOpenDefaultsDialog={onOpenDefaultsDialog}
-            savedDefaultsApplied={savedDefaultsApplied}
-          />
-        ) : null}
-
         {hasActiveFilters ? (
           <Button
             type="button"
@@ -185,6 +178,13 @@ export function WorkItemsTableToolbar({
           value={tab}
           onChange={onTabChange}
         />
+
+        {showWorkspaceDefaults ? (
+          <WorkspaceDefaultsControls
+            onOpenDefaultsDialog={onOpenDefaultsDialog}
+            savedDefaultsApplied={savedDefaultsApplied}
+          />
+        ) : null}
 
         {hideCreate ? null : (
           <Button onClick={onCreate} className="shrink-0">
