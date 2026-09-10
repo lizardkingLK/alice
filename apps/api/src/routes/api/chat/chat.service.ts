@@ -11,6 +11,8 @@ import {
   getAllowedChildType,
   ChatAttachmentFileTypeEnum,
   type ParsedWorkItemNode,
+  ProjectFieldsConfigSchema,
+  type ProjectFieldsConfig,
 } from '@repo/types';
 import type { WorkItemService } from '../workItems/workItems.service';
 import type { SprintsService } from '../sprints/sprints.service';
@@ -157,6 +159,118 @@ export function markdownToChatHistory(md: string): StoredChatMessage[] {
   }
 }
 
+function parseFieldProperty(
+  rawField: unknown
+): { key: string; prop: Record<string, unknown> } | null {
+  if (!rawField || typeof rawField !== 'object') return null;
+  const f = rawField as Record<string, unknown>;
+  const key = typeof f.key === 'string' ? f.key.trim() : '';
+  if (!key) return null;
+
+  const prop: Record<string, unknown> = {
+    type: typeof f.type === 'string' ? f.type : 'string',
+    title: typeof f.title === 'string' ? f.title : key,
+  };
+  if (typeof f.description === 'string' && f.description) {
+    prop.description = f.description;
+  }
+  if (Array.isArray(f.enum) && f.enum.length > 0) {
+    prop.enum = f.enum;
+  }
+  if (typeof f.format === 'string' && f.format) {
+    prop.format = f.format;
+  }
+  if (f.type === 'array' && f.items) {
+    prop.items = f.items;
+  }
+  return { key, prop };
+}
+
+function extractJsonFromText(text: string): unknown {
+  const cleaned = text
+    .replace(/```json/gi, '')
+    .replace(/```/g, '')
+    .trim();
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  if (firstBrace === -1 || lastBrace === -1) {
+    throw new Error(
+      'AI could not generate a valid JSON schema for the given request.'
+    );
+  }
+  return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
+}
+
+function buildSchemaFromRawFields(rawFields: unknown[]): {
+  $schema: string;
+  type: 'object';
+  properties: Record<string, unknown>;
+  additionalProperties: true;
+} {
+  const properties: Record<string, unknown> = {};
+  for (const field of rawFields) {
+    const parsed = parseFieldProperty(field);
+    if (parsed) {
+      properties[parsed.key] = parsed.prop;
+    }
+  }
+  return {
+    $schema: 'https://json-schema.org/draft/2020-12/schema',
+    type: 'object',
+    properties,
+    additionalProperties: true,
+  };
+}
+
+function tryExtractToolCallSchema(
+  parts: ChatContentPart[]
+): ProjectFieldsConfig | null {
+  for (const part of parts) {
+    if (
+      part.functionCall?.name === 'generate_project_fields_schema' &&
+      part.functionCall.args
+    ) {
+      const rawFields = Array.isArray(part.functionCall.args.fields)
+        ? part.functionCall.args.fields
+        : [];
+      const schema = buildSchemaFromRawFields(rawFields);
+      const validated = ProjectFieldsConfigSchema.safeParse(schema);
+      if (validated.success) return validated.data;
+    }
+  }
+  return null;
+}
+
+function mergeWithCurrentSchema(
+  generatedSchema: ProjectFieldsConfig,
+  currentSchema?: unknown
+): ProjectFieldsConfig {
+  if (
+    !currentSchema ||
+    typeof currentSchema !== 'object' ||
+    !('properties' in currentSchema) ||
+    !currentSchema.properties ||
+    typeof currentSchema.properties !== 'object'
+  ) {
+    return generatedSchema;
+  }
+
+  const merged = {
+    ...generatedSchema,
+    properties: {
+      ...(currentSchema.properties as Record<string, unknown>),
+      ...(generatedSchema.properties ?? {}),
+    },
+  };
+
+  const validated = ProjectFieldsConfigSchema.safeParse(merged);
+  if (validated.success) {
+    return validated.data;
+  }
+
+  return generatedSchema;
+}
+
 export class ChatService {
   private readonly historyCache = new Map<string, StoredChatMessage[]>();
   private readonly chatAttachmentsRepository: ChatAttachmentsRepository;
@@ -265,6 +379,8 @@ export class ChatService {
           toolActionsPerformed,
           history
         ),
+      generate_project_fields_schema: () =>
+        Promise.resolve(this.handleGenerateProjectFieldsSchema(args)),
     };
 
     const handler = toolHandlers[name];
@@ -963,5 +1079,75 @@ ${attachmentsInstruction}
           console.error('Failed to reset processing status:', err);
         });
     }
+  }
+
+  handleGenerateProjectFieldsSchema(
+    args: Record<string, unknown>
+  ): unknown {
+    const rawFields = Array.isArray(args.fields) ? args.fields : [];
+    const schema = buildSchemaFromRawFields(rawFields);
+    return {
+      success: true,
+      schema,
+    };
+  }
+
+  async generateProjectFieldsSchema(
+    prompt: string,
+    currentSchema?: unknown
+  ): Promise<ProjectFieldsConfig> {
+    const chatModel = await this.resolveChatModelForChat({});
+    const systemPrompt = `You are Alice, an AI assistant configuring custom dynamic fields for project management.
+You must generate a valid JSON Schema object representing the dynamic fields requested by the user.
+Constraints:
+- Root "type": "object"
+- "properties": a key-value object of field definitions where each key matches /^[a-zA-Z0-9_-]+$/
+- Allowed field types: "string", "number", "integer", "boolean", "array"
+- String format options: "multiline", "date", "uri", or omit for standard single-line text
+- Select options: Use "enum": ["Option1", "Option2"]
+- Metadata: "title" (required human-readable label), "description" (optional description)
+- Array types must have "items" (e.g. { "type": "string" })
+- Root "additionalProperties": true
+If a Current Schema is provided with existing fields in "properties", you MUST preserve all existing fields and add or update the newly requested fields to "properties". Do not omit or delete existing fields unless explicitly requested.
+Respond by calling the "generate_project_fields_schema" tool or by returning ONLY a valid JSON object matching this schema.`;
+
+    const userMessage = currentSchema
+      ? `Current Schema:\n${JSON.stringify(currentSchema, null, 2)}\n\nUser Request: ${prompt}`
+      : `User Request: ${prompt}`;
+
+    const contents: ChatContentTurn[] = [
+      {
+        role: 'user',
+        parts: [{ text: userMessage }],
+      },
+    ];
+
+    const response = await this.callChatModelAPI(
+      chatModel,
+      contents,
+      systemPrompt
+    );
+
+    const parts = response.candidates?.[0]?.content?.parts ?? [];
+    const toolCallParsed = tryExtractToolCallSchema(parts);
+    if (toolCallParsed) {
+      return mergeWithCurrentSchema(toolCallParsed, currentSchema);
+    }
+
+    let jsonText = '';
+    for (const part of parts) {
+      if (part.text) {
+        jsonText += part.text;
+      }
+    }
+
+    const rawObj = extractJsonFromText(jsonText);
+    const validated = ProjectFieldsConfigSchema.safeParse(rawObj);
+    if (!validated.success) {
+      throw new Error(
+        `Generated schema is invalid: ${validated.error.issues.map((i) => i.message).join(', ')}`
+      );
+    }
+    return mergeWithCurrentSchema(validated.data, currentSchema);
   }
 }

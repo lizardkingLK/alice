@@ -29,6 +29,7 @@ vi.mock('../../src/lib/supabase', () => ({
 
 import { ChatRoles, ChatAttachmentFileTypeEnum } from '@repo/types';
 import {
+  ChatService,
   chatHistoryToMarkdown,
   markdownToChatHistory,
 } from '../../src/routes/api/chat/chat.service';
@@ -109,3 +110,131 @@ describe('Chat History Markdown Serialization', () => {
     expect(parsed).toEqual([]);
   });
 });
+
+describe('Dynamic Fields Schema Generation and Merging', () => {
+  it('should generate fields from raw tool call fields', () => {
+    const chatService = new ChatService({
+      chat: {} as never,
+      workItemService: {} as never,
+      sprintsService: {} as never,
+      projectsService: {} as never,
+      projectsRepository: {} as never,
+      integrationsService: {} as never,
+    });
+
+    const res = chatService.handleGenerateProjectFieldsSchema({
+      fields: [
+        {
+          key: 'securityClassification',
+          type: 'string',
+          title: 'Security Classification',
+          enum: ['Public', 'Internal', 'Confidential', 'Restricted'],
+        },
+        {
+          key: 'complianceTier',
+          type: 'string',
+          title: 'Compliance Tier',
+          enum: ['Tier 1', 'Tier 2', 'Tier 3', 'Tier 4'],
+        },
+      ],
+    }) as { success: boolean; schema: { properties: Record<string, unknown> } };
+
+    expect(res.success).toBe(true);
+    expect(res.schema.properties).toHaveProperty('securityClassification');
+    expect(res.schema.properties).toHaveProperty('complianceTier');
+  });
+
+  it('should preserve and merge existing fields when currentSchema is provided', async () => {
+    const chatService = new ChatService({
+      chat: {} as never,
+      workItemService: {} as never,
+      sprintsService: {} as never,
+      projectsService: {} as never,
+      projectsRepository: {} as never,
+      integrationsService: {
+        resolveChatModelForChat: vi.fn().mockResolvedValue({}),
+      } as never,
+    });
+
+    // Mock callChatModelAPI to return 2 new fields
+    vi.spyOn(
+      chatService as unknown as {
+        callChatModelAPI: (
+          _model: unknown,
+          _messages: unknown
+        ) => Promise<unknown>;
+      },
+      'callChatModelAPI'
+    ).mockResolvedValue({
+      candidates: [
+        {
+          content: {
+            role: 'model',
+            parts: [
+              {
+                text: JSON.stringify({
+                  $schema: 'https://json-schema.org/draft/2020-12/schema',
+                  type: 'object',
+                  properties: {
+                    securityClassification: {
+                      type: 'string',
+                      title: 'Security Classification',
+                      enum: ['Public', 'Internal', 'Confidential', 'Restricted'],
+                    },
+                    complianceTier: {
+                      type: 'string',
+                      title: 'Compliance Tier',
+                      enum: ['Tier 1', 'Tier 2', 'Tier 3', 'Tier 4'],
+                    },
+                  },
+                  additionalProperties: true,
+                }),
+              },
+            ],
+          },
+        },
+      ],
+    } as never);
+
+    const existingTemplateSchema = {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      properties: {
+        moscowRating: {
+          type: 'string',
+          title: 'MoSCoW Rating',
+          enum: ['Must Have', 'Should Have', 'Could Have', "Won't Have"],
+        },
+        acceptanceCriteria: {
+          type: 'string',
+          title: 'Acceptance Criteria',
+          format: 'multiline',
+        },
+        businessValue: {
+          type: 'integer',
+          title: 'Business Value',
+        },
+        releaseNotesIncluded: {
+          type: 'boolean',
+          title: 'Release Notes Included',
+        },
+      },
+      additionalProperties: true,
+    };
+
+    const merged = await chatService.generateProjectFieldsSchema(
+      'Security classification and compliance tier',
+      existingTemplateSchema
+    );
+
+    // Verify that ALL 6 fields are preserved!
+    expect(Object.keys(merged.properties || {})).toHaveLength(6);
+    expect(merged.properties).toHaveProperty('moscowRating');
+    expect(merged.properties).toHaveProperty('acceptanceCriteria');
+    expect(merged.properties).toHaveProperty('businessValue');
+    expect(merged.properties).toHaveProperty('releaseNotesIncluded');
+    expect(merged.properties).toHaveProperty('securityClassification');
+    expect(merged.properties).toHaveProperty('complianceTier');
+  });
+});
+

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { parseProjectDetailsTab } from '@/lib/search-params';
 import { ProjectDetailsWorkspace } from '@/app/projects/_components/project-details/project-details-workspace';
 import { ProjectFieldsWorkspace } from '@/app/projects/_components/project-details/project-fields-workspace';
@@ -225,7 +225,7 @@ describe('ProjectFieldsWorkspace component', () => {
     expect(screen.getByRole('button', { name: /load template/i })).toBeDisabled();
   });
 
-  it('allows loading template and validates syntax', () => {
+  it('allows loading template via dialog and validates syntax', () => {
     render(
       <ProjectFieldsWorkspace
         project={{ ...mockProject, attributes_config: null }}
@@ -233,14 +233,117 @@ describe('ProjectFieldsWorkspace component', () => {
       />
     );
 
-    // Click load template
+    // Click load template to open dialog
     const loadBtn = screen.getByRole('button', { name: /load template/i });
     fireEvent.click(loadBtn);
+
+    // Dialog title appears
+    expect(screen.getByText('Load Field Templates')).toBeInTheDocument();
+
+    // Click Add Selected button
+    const addBtn = screen.getByRole('button', { name: /add selected/i });
+    fireEvent.click(addBtn);
 
     // Validate button
     const validateBtn = screen.getByRole('button', { name: /validate/i });
     fireEvent.click(validateBtn);
 
     expect(screen.getByText(/schema is syntactically valid/i)).toBeInTheDocument();
+  });
+
+  it('calls updateProjectFieldsConfig with expectedUpdatedAt on save', async () => {
+    const { updateProjectFieldsConfig } = await import(
+      '@/app/projects/_services/projects.mutations.client'
+    );
+    render(
+      <ProjectFieldsWorkspace
+        project={mockProject}
+        isManagerOrAdmin={true}
+      />
+    );
+
+    const saveBtn = screen.getByRole('button', { name: /save changes/i });
+    fireEvent.click(saveBtn);
+
+    expect(updateProjectFieldsConfig).toHaveBeenCalledWith(
+      mockProject.id,
+      expect.objectContaining({
+        properties: expect.any(Object),
+      }),
+      mockProject.updated_at
+    );
+  });
+
+  it('renders line numbers in the editor corresponding to schema lines', () => {
+    render(
+      <ProjectFieldsWorkspace
+        project={mockProject}
+        isManagerOrAdmin={true}
+      />
+    );
+
+    // Verify line count text
+    expect(screen.getByText(/lines? • draft 2020-12/i)).toBeInTheDocument();
+
+    // Verify line numbers gutter contains line 1
+    expect(screen.getByText('1')).toBeInTheDocument();
+  });
+
+  it('displays status messages in the green banner area and auto-dismisses after timer', () => {
+    vi.useFakeTimers();
+    render(
+      <ProjectFieldsWorkspace
+        project={{ ...mockProject, attributes_config: null }}
+        isManagerOrAdmin={true}
+      />
+    );
+
+    // Beautify
+    fireEvent.click(screen.getByRole('button', { name: /beautify/i }));
+    expect(screen.getByText(/json formatted successfully/i)).toBeInTheDocument();
+
+    // Fast-forward 5000ms
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    // Banner has auto-dismissed
+    expect(screen.queryByText(/json formatted successfully/i)).not.toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
+  it('merges selected template fields into existing schema without wiping out existing fields', () => {
+    render(
+      <ProjectFieldsWorkspace
+        project={mockProject}
+        isManagerOrAdmin={true}
+      />
+    );
+
+    // Initial schema has MoSCoW Rating
+    expect(screen.getByText('MoSCoW Rating')).toBeInTheDocument();
+
+    // Click Load Template
+    const loadBtn = screen.getByRole('button', { name: /load template/i });
+    fireEvent.click(loadBtn);
+
+    // Dialog opens; already added fields show "Added" badge
+    expect(screen.getByText('Load Field Templates')).toBeInTheDocument();
+    expect(screen.getAllByText('Added')).toHaveLength(1);
+
+    // Select an unadded template field, e.g. Defect Severity
+    const severityCard = screen.getByText('Defect Severity');
+    fireEvent.click(severityCard);
+
+    // Click Add Selected
+    const addBtn = screen.getByRole('button', { name: /add selected \(1\)/i });
+    fireEvent.click(addBtn);
+
+    // Success banner displays
+    expect(screen.getByText(/added 1 template field/i)).toBeInTheDocument();
+
+    // Both previous fields and newly added field are present in Configured Fields preview
+    expect(screen.getByText('MoSCoW Rating')).toBeInTheDocument();
+    expect(screen.getByText('Defect Severity')).toBeInTheDocument();
   });
 });

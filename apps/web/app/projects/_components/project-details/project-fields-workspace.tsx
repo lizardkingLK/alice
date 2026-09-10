@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Card,
@@ -22,12 +22,16 @@ import {
   Save,
   Sparkles,
   SlidersHorizontal,
+  X,
 } from '@repo/ui/lib/icons';
-import { toast } from '@repo/ui/components/ui/sonner';
+import { ProjectFieldsConfigSchema } from '@repo/types';
 import {
   updateProjectFieldsConfig,
   type Project,
 } from '@/app/projects/_services/projects.mutations.client';
+import { ProjectFieldsErrorDialog } from './project-fields-error-dialog';
+import { GenerateFieldsAliceDialog } from './generate-fields-alice-dialog';
+import { LoadTemplateDialog } from './load-template-dialog';
 
 const DEFAULT_EMPTY_SCHEMA = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
@@ -35,41 +39,6 @@ const DEFAULT_EMPTY_SCHEMA = {
   title: 'Project Dynamic Work-Item Fields',
   description: 'Custom metadata fields configured for project work items',
   properties: {},
-  additionalProperties: true,
-};
-
-const SAMPLE_STARTER_SCHEMA = {
-  $schema: 'https://json-schema.org/draft/2020-12/schema',
-  type: 'object',
-  title: 'Project Dynamic Work-Item Fields',
-  description: 'Custom metadata fields configured for project work items',
-  properties: {
-    moscowRating: {
-      type: 'string',
-      title: 'MoSCoW Rating',
-      description: 'Agile MoSCoW prioritization category',
-      enum: ['Must', 'Should', 'Could', "Won't"],
-    },
-    acceptanceCriteria: {
-      type: 'string',
-      title: 'Acceptance Criteria',
-      description: 'Conditions that must be met for this work item to be accepted',
-      format: 'multiline',
-    },
-    businessValue: {
-      type: 'number',
-      title: 'Business Value',
-      description: 'Relative business value score (1-100)',
-      minimum: 1,
-      maximum: 100,
-    },
-    releaseNotesIncluded: {
-      type: 'boolean',
-      title: 'Include in Release Notes',
-      description: 'Whether this item should be highlighted in customer release notes',
-      default: false,
-    },
-  },
   additionalProperties: true,
 };
 
@@ -105,11 +74,88 @@ export function ProjectFieldsWorkspace({
   }, [project.attributes_config]);
 
   const [schemaText, setSchemaText] = useState<string>(initialConfigText);
+  const [currentUpdatedAt, setCurrentUpdatedAt] = useState<string>(
+    () => project.updated_at || new Date().toISOString()
+  );
+
+  useEffect(() => {
+    if (project.updated_at) {
+      setCurrentUpdatedAt(project.updated_at);
+    }
+  }, [project.updated_at]);
+
   const [isSaving, setIsSaving] = useState(false);
+  const [isAliceDialogOpen, setIsAliceDialogOpen] = useState(false);
+  const [isLoadTemplateDialogOpen, setIsLoadTemplateDialogOpen] =
+    useState(false);
   const [validationResult, setValidationResult] = useState<{
     status: 'valid' | 'invalid' | 'unvalidated';
     message?: string;
   }>({ status: 'unvalidated' });
+
+  // Auto-dismiss green success messages after a few seconds
+  useEffect(() => {
+    if (validationResult.status === 'valid') {
+      const timer = setTimeout(() => {
+        setValidationResult({ status: 'unvalidated' });
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [validationResult]);
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const lineNumbersRef = useRef<HTMLDivElement>(null);
+
+  const lineCount = useMemo(() => {
+    return schemaText ? schemaText.split('\n').length : 1;
+  }, [schemaText]);
+
+  const [errorDialogState, setErrorDialogState] = useState<{
+    open: boolean;
+    error: string | null;
+    title?: string;
+    description?: string;
+  }>({
+    open: false,
+    error: null,
+  });
+
+  const showErrorDialog = (
+    error: string,
+    title?: string,
+    description?: string
+  ) => {
+    setErrorDialogState({
+      open: true,
+      error,
+      title,
+      description,
+    });
+  };
+
+  const handleEditorScroll = () => {
+    if (lineNumbersRef.current && textareaRef.current) {
+      lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const textarea = e.currentTarget;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const value = textarea.value;
+      const newValue = value.substring(0, start) + '  ' + value.substring(end);
+      setSchemaText(newValue);
+      if (validationResult.status !== 'unvalidated') {
+        setValidationResult({ status: 'unvalidated' });
+      }
+      requestAnimationFrame(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + 2;
+      });
+    }
+  };
 
   // Parse properties from current schema text for the visual cards
   const { parsedProperties, parseError } = useMemo(() => {
@@ -130,7 +176,11 @@ export function ProjectFieldsWorkspace({
       }
 
       const properties = parsed.properties;
-      if (!properties || typeof properties !== 'object' || Array.isArray(properties)) {
+      if (
+        !properties ||
+        typeof properties !== 'object' ||
+        Array.isArray(properties)
+      ) {
         return { parsedProperties: [] as ParsedProperty[], parseError: null };
       }
 
@@ -175,53 +225,122 @@ export function ProjectFieldsWorkspace({
     }
   }, [schemaText]);
 
+  // Extract error line number if parse error mentions "line X" (as seen in user image 1)
+  const highlightedErrorLine = useMemo(() => {
+    const errorStr =
+      parseError ||
+      (validationResult.status === 'invalid' ? validationResult.message : null);
+    if (!errorStr) return null;
+    const match = errorStr.match(/line\s+(\d+)/i);
+    const line = match?.[1];
+    return line ? parseInt(line, 10) : null;
+  }, [parseError, validationResult]);
+
   const handleBeautify = () => {
     try {
       const parsed = JSON.parse(schemaText);
       setSchemaText(JSON.stringify(parsed, null, 2));
-      toast.success('JSON formatted successfully.');
+      setValidationResult({
+        status: 'valid',
+        message: 'JSON formatted successfully.',
+      });
     } catch (err) {
       const detail = err instanceof Error ? `: ${err.message}` : '';
-      toast.error(`Cannot format invalid JSON${detail}. Please fix syntax errors first.`);
+      showErrorDialog(
+        `Cannot format invalid JSON${detail}. Please fix syntax errors first.`,
+        'JSON Syntax Error'
+      );
     }
   };
 
-  const handleLoadStarterTemplate = () => {
-    setSchemaText(JSON.stringify(SAMPLE_STARTER_SCHEMA, null, 2));
+  const existingPropertiesMap = useMemo(() => {
+    try {
+      const parsed = JSON.parse(schemaText);
+      if (
+        parsed &&
+        typeof parsed === 'object' &&
+        parsed.properties &&
+        typeof parsed.properties === 'object' &&
+        !Array.isArray(parsed.properties)
+      ) {
+        return parsed.properties as Record<string, unknown>;
+      }
+    } catch {
+      // ignore
+    }
+    return {} as Record<string, unknown>;
+  }, [schemaText]);
+
+  const handleOpenLoadTemplate = () => {
+    setIsLoadTemplateDialogOpen(true);
+  };
+
+  const handleAddTemplates = (newFields: Record<string, unknown>) => {
+    const count = Object.keys(newFields).length;
+    if (count === 0) return;
+
+    let currentSchema: Record<string, unknown> = {};
+    try {
+      const parsed = JSON.parse(schemaText);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        currentSchema = parsed as Record<string, unknown>;
+      }
+    } catch {
+      // Keep empty base schema
+    }
+
+    const existingProps =
+      currentSchema.properties &&
+      typeof currentSchema.properties === 'object' &&
+      !Array.isArray(currentSchema.properties)
+        ? (currentSchema.properties as Record<string, unknown>)
+        : {};
+
+    const mergedProps = {
+      ...existingProps,
+      ...newFields,
+    };
+
+    const updatedSchema = {
+      $schema:
+        currentSchema.$schema ||
+        'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      title:
+        currentSchema.title || 'Project Dynamic Work-Item Fields',
+      description:
+        currentSchema.description ||
+        'Custom metadata fields configured for project work items',
+      ...currentSchema,
+      properties: mergedProps,
+      additionalProperties: currentSchema.additionalProperties ?? true,
+    };
+
+    const formatted = JSON.stringify(updatedSchema, null, 2);
+    setSchemaText(formatted);
     setValidationResult({
       status: 'valid',
-      message: 'Loaded standard starter template. Click Save Changes to apply.',
+      message: `Added ${count} template ${count === 1 ? 'field' : 'fields'}. Review and save when ready.`,
     });
-    toast.info('Loaded standard template with MoSCoW and Acceptance Criteria.');
   };
 
   const handleValidate = () => {
     try {
       const parsed = JSON.parse(schemaText);
-      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      const validation = ProjectFieldsConfigSchema.safeParse(parsed);
+      if (!validation.success) {
+        const issues = validation.error.issues
+          .map((i) => `• ${i.path.join('.') || 'root'}: ${i.message}`)
+          .join('\n');
         setValidationResult({
           status: 'invalid',
-          message: 'Root schema must be a JSON object.',
+          message: 'Schema failed validation rules.',
         });
-        return;
-      }
-      if (parsed.type && parsed.type !== 'object') {
-        setValidationResult({
-          status: 'invalid',
-          message: 'Root schema "type" must be "object".',
-        });
-        return;
-      }
-      if (
-        parsed.properties !== undefined &&
-        (typeof parsed.properties !== 'object' ||
-          parsed.properties === null ||
-          Array.isArray(parsed.properties))
-      ) {
-        setValidationResult({
-          status: 'invalid',
-          message: 'The "properties" field must be an object dictionary.',
-        });
+        showErrorDialog(
+          `The schema failed validation with the following issues:\n\n${issues}`,
+          'Schema Validation Error',
+          'The dynamic fields configuration must adhere to the Project Fields JSON Schema standard.'
+        );
         return;
       }
 
@@ -231,20 +350,27 @@ export function ProjectFieldsWorkspace({
           parsedProperties.length === 1 ? 'field' : 'fields'
         } defined). Ready to save.`,
       });
-      toast.success('Schema is valid!');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Invalid JSON';
       setValidationResult({
         status: 'invalid',
         message: `JSON Syntax Error: ${msg}`,
       });
-      toast.error(`Invalid JSON: ${msg}`);
+      showErrorDialog(
+        `JSON Syntax Error: ${msg}`,
+        'JSON Syntax Error',
+        'The schema contains invalid JSON syntax. Please correct the syntax before proceeding.'
+      );
     }
   };
 
   const handleSave = async () => {
     if (!isManagerOrAdmin) {
-      toast.error('Only project managers and administrators can save field schemas.');
+      showErrorDialog(
+        'Only project managers and administrators can save field schemas.',
+        'Permission Denied',
+        'You do not have permission to modify dynamic field configurations.'
+      );
       return;
     }
 
@@ -253,14 +379,37 @@ export function ProjectFieldsWorkspace({
       parsedConfig = JSON.parse(schemaText);
     } catch (err) {
       const detail = err instanceof Error ? `: ${err.message}` : '';
-      toast.error(`Cannot save invalid JSON${detail}. Please correct syntax errors.`);
+      showErrorDialog(
+        `Cannot save invalid JSON${detail}. Please correct syntax errors first.`,
+        'JSON Syntax Error'
+      );
+      return;
+    }
+
+    const validation = ProjectFieldsConfigSchema.safeParse(parsedConfig);
+    if (!validation.success) {
+      const issues = validation.error.issues
+        .map((i) => `• ${i.path.join('.') || 'root'}: ${i.message}`)
+        .join('\n');
+      showErrorDialog(
+        `Cannot save schema due to validation errors:\n\n${issues}`,
+        'Schema Validation Error'
+      );
       return;
     }
 
     setIsSaving(true);
     try {
-      await updateProjectFieldsConfig(project.id, parsedConfig);
-      toast.success('Dynamic fields schema saved successfully.');
+      const targetUpdatedAt =
+        currentUpdatedAt || project.updated_at || new Date().toISOString();
+      const updated = await updateProjectFieldsConfig(
+        project.id,
+        validation.data,
+        targetUpdatedAt
+      );
+      if (updated?.updated_at) {
+        setCurrentUpdatedAt(updated.updated_at);
+      }
       setValidationResult({
         status: 'valid',
         message: 'Changes saved to project.',
@@ -271,11 +420,11 @@ export function ProjectFieldsWorkspace({
         error instanceof Error
           ? error.message
           : 'Failed to save dynamic fields schema.';
-      toast.error(msg);
-      setValidationResult({
-        status: 'invalid',
-        message: msg,
-      });
+      showErrorDialog(
+        msg,
+        'Save Failed',
+        'An error occurred while saving the dynamic fields schema to the server.'
+      );
     } finally {
       setIsSaving(false);
     }
@@ -288,14 +437,15 @@ export function ProjectFieldsWorkspace({
         <div>
           <div className="flex items-center gap-2">
             <SlidersHorizontal className="text-primary size-5" />
-            <h2 className="text-xl font-semibold tracking-tight text-foreground">
+            <h2 className="text-foreground text-xl font-semibold tracking-tight">
               Dynamic Fields
             </h2>
           </div>
           <p className="text-muted-foreground mt-1 max-w-3xl text-sm leading-relaxed">
-            Configure custom metadata fields for work items in this project using standard
-            JSON Schema. Dynamic fields adapt to agile workflows (Scrum, Kanban, SAFe)
-            and appear on work-item details without blocking core workflows.
+            Configure custom metadata fields for work items in this project
+            using standard JSON Schema. Dynamic fields adapt to agile workflows
+            (Scrum, Kanban, SAFe) and appear on work-item details without
+            blocking core workflows.
           </p>
         </div>
 
@@ -305,9 +455,9 @@ export function ProjectFieldsWorkspace({
             type="button"
             variant="outline"
             size="sm"
-            onClick={handleLoadStarterTemplate}
+            onClick={handleOpenLoadTemplate}
             disabled={!isManagerOrAdmin || isSaving}
-            title="Populate standard starter template"
+            title="Select and load standard templates"
           >
             <RotateCcw className="mr-1.5 size-3.5" />
             Load Template
@@ -341,9 +491,9 @@ export function ProjectFieldsWorkspace({
             type="button"
             variant="secondary"
             size="sm"
-            disabled
-            className="cursor-not-allowed opacity-75"
-            title="Alice AI Schema Generator (Phase 2)"
+            onClick={() => setIsAliceDialogOpen(true)}
+            disabled={!isManagerOrAdmin || isSaving}
+            title="Generate Schema with Alice AI"
           >
             <Sparkles className="mr-1.5 size-3.5 text-amber-500" />
             Generate with Alice
@@ -364,20 +514,31 @@ export function ProjectFieldsWorkspace({
 
       {/* Access Warning if not Manager/Admin */}
       {!isManagerOrAdmin && (
-        <div className="border-border bg-muted/40 flex items-center gap-3 rounded-lg border p-3 text-sm text-muted-foreground">
+        <div className="border-border bg-muted/40 text-muted-foreground flex items-center gap-3 rounded-lg border p-3 text-sm">
           <Lock className="size-4 shrink-0 text-amber-500" />
           <span>
-            You have view-only access to this project&apos;s dynamic fields configuration.
-            Only project managers and administrators can edit and save schemas.
+            You have view-only access to this project&apos;s dynamic fields
+            configuration. Only project managers and administrators can edit and
+            save schemas.
           </span>
         </div>
       )}
 
       {/* Validation Status Banner */}
       {validationResult.status === 'valid' && (
-        <div className="border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 flex items-center gap-2.5 rounded-lg border px-3.5 py-2.5 text-sm">
-          <CheckCircle2 className="size-4 shrink-0" />
-          <span>{validationResult.message}</span>
+        <div className="border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 flex items-center justify-between gap-2.5 rounded-lg border px-3.5 py-2.5 text-sm transition-all duration-300">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="size-4 shrink-0" />
+            <span>{validationResult.message}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setValidationResult({ status: 'unvalidated' })}
+            className="text-emerald-700/60 hover:text-emerald-700 dark:text-emerald-400/60 dark:hover:text-emerald-400 p-0.5 rounded transition-colors"
+            aria-label="Dismiss message"
+          >
+            <X className="size-3.5" />
+          </button>
         </div>
       )}
 
@@ -397,7 +558,7 @@ export function ProjectFieldsWorkspace({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Layers className="text-muted-foreground size-4" />
-            <h3 className="text-sm font-semibold tracking-tight text-foreground">
+            <h3 className="text-foreground text-sm font-semibold tracking-tight">
               Configured Fields ({parsedProperties.length})
             </h3>
           </div>
@@ -407,15 +568,15 @@ export function ProjectFieldsWorkspace({
         </div>
 
         {parsedProperties.length === 0 ? (
-          <Card className="border-dashed border-border/80 bg-card/40">
+          <Card className="border-border/80 bg-card/40 border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-8 text-center">
               <SlidersHorizontal className="text-muted-foreground/60 mb-2 size-8 stroke-1" />
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-foreground text-sm font-medium">
                 No dynamic fields configured yet
               </p>
               <p className="text-muted-foreground mt-1 max-w-sm text-xs">
-                Define field properties in the JSON Schema editor below, or click &quot;Load
-                Template&quot; to populate common fields.
+                Define field properties in the JSON Schema editor below, or
+                click &quot;Load Template&quot; to populate common fields.
               </p>
             </CardContent>
           </Card>
@@ -424,22 +585,25 @@ export function ProjectFieldsWorkspace({
             {parsedProperties.map((prop) => (
               <Card
                 key={prop.key}
-                className="border-border/60 bg-card/60 transition-colors hover:border-border"
+                className="border-border/60 bg-card/60 hover:border-border transition-colors"
               >
                 <CardHeader className="p-4 pb-2">
                   <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-sm font-semibold text-foreground truncate">
+                    <CardTitle className="text-foreground truncate text-sm font-semibold">
                       {prop.title}
                     </CardTitle>
-                    <Badge variant="secondary" className="font-mono text-[10px] shrink-0">
+                    <Badge
+                      variant="secondary"
+                      className="shrink-0 font-mono text-[10px]"
+                    >
                       {prop.format ? `${prop.type}:${prop.format}` : prop.type}
                     </Badge>
                   </div>
-                  <CardDescription className="font-mono text-xs text-muted-foreground truncate">
+                  <CardDescription className="text-muted-foreground truncate font-mono text-xs">
                     key: {prop.key}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="p-4 pt-1 space-y-2 text-xs">
+                <CardContent className="space-y-2 p-4 pt-1 text-xs">
                   {prop.description && (
                     <p className="text-muted-foreground line-clamp-2">
                       {prop.description}
@@ -447,7 +611,7 @@ export function ProjectFieldsWorkspace({
                   )}
                   {prop.enum && prop.enum.length > 0 && (
                     <div className="space-y-1">
-                      <span className="text-muted-foreground font-medium text-[11px]">
+                      <span className="text-muted-foreground text-[11px] font-medium">
                         Allowed options:
                       </span>
                       <div className="flex flex-wrap gap-1">
@@ -465,7 +629,8 @@ export function ProjectFieldsWorkspace({
                   )}
                   {prop.default !== undefined && (
                     <p className="text-muted-foreground text-[11px]">
-                      Default: <code className="font-mono">{String(prop.default)}</code>
+                      Default:{' '}
+                      <code className="font-mono">{String(prop.default)}</code>
                     </p>
                   )}
                 </CardContent>
@@ -480,17 +645,45 @@ export function ProjectFieldsWorkspace({
         <div className="flex items-center justify-between">
           <label
             htmlFor="json-schema-editor"
-            className="text-sm font-semibold tracking-tight text-foreground"
+            className="text-foreground text-sm font-semibold tracking-tight"
           >
             JSON Schema Specification
           </label>
           <span className="text-muted-foreground font-mono text-xs">
-            Draft 2020-12 / Draft-07 Compatible
+            {lineCount} {lineCount === 1 ? 'line' : 'lines'} • Draft 2020-12 / Draft-07 Compatible
           </span>
         </div>
 
-        <div className="relative rounded-lg border border-border bg-muted/20 focus-within:border-ring focus-within:ring-1 focus-within:ring-ring">
+        <div className="border-border bg-muted/20 focus-within:border-ring focus-within:ring-ring relative flex rounded-lg border focus-within:ring-1 overflow-hidden font-mono text-xs md:text-sm">
+          {/* Line Numbers Gutter */}
+          <div
+            ref={lineNumbersRef}
+            aria-hidden="true"
+            className="border-border/60 bg-muted/35 text-muted-foreground/45 select-none border-r py-4 pl-3 pr-2 text-right overflow-hidden shrink-0 font-mono text-xs md:text-sm leading-6"
+            style={{ minWidth: '3.25rem' }}
+          >
+            {Array.from({ length: lineCount }, (_, i) => {
+              const lineNum = i + 1;
+              const isError = highlightedErrorLine === lineNum;
+              return (
+                <div
+                  key={lineNum}
+                  className={`h-6 leading-6 transition-colors ${
+                    isError
+                      ? 'bg-destructive/20 text-destructive font-bold rounded-sm px-0.5'
+                      : ''
+                  }`}
+                  title={isError ? `Error near line ${lineNum}` : undefined}
+                >
+                  {lineNum}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Textarea Code Editor */}
           <textarea
+            ref={textareaRef}
             id="json-schema-editor"
             rows={18}
             value={schemaText}
@@ -500,19 +693,101 @@ export function ProjectFieldsWorkspace({
                 setValidationResult({ status: 'unvalidated' });
               }
             }}
+            onScroll={handleEditorScroll}
+            onKeyDown={handleKeyDown}
             disabled={!isManagerOrAdmin || isSaving}
-            className="font-mono text-xs md:text-sm leading-relaxed w-full resize-y bg-transparent p-4 outline-none placeholder:text-muted-foreground disabled:opacity-75 disabled:cursor-not-allowed"
+            wrap="off"
+            className="placeholder:text-muted-foreground w-full resize-y bg-transparent py-4 px-4 font-mono text-xs md:text-sm leading-6 outline-none disabled:cursor-not-allowed disabled:opacity-75 whitespace-pre overflow-x-auto"
             placeholder="Enter JSON Schema..."
             spellCheck={false}
           />
         </div>
 
-        <p className="text-muted-foreground text-xs flex items-center gap-1.5 pt-1">
+        <p className="text-muted-foreground flex items-center gap-1.5 pt-1 text-xs">
           <Info className="size-3.5 shrink-0" />
-          Dynamic field definitions support standard types: string, number, boolean, array,
-          and select options (enum).
+          Dynamic field definitions support standard types: string, number,
+          boolean, array, and select options (enum).
         </p>
       </div>
+
+      {/* Generate with Alice Modal Dialog */}
+      <GenerateFieldsAliceDialog
+        open={isAliceDialogOpen}
+        onOpenChange={setIsAliceDialogOpen}
+        currentSchema={(() => {
+          try {
+            return JSON.parse(schemaText);
+          } catch {
+            return undefined;
+          }
+        })()}
+        onGenerated={(newSchema) => {
+          let mergedSchema = newSchema;
+          try {
+            const current = JSON.parse(schemaText);
+            if (
+              current &&
+              typeof current === 'object' &&
+              current.properties &&
+              typeof current.properties === 'object'
+            ) {
+              const newObj = newSchema as {
+                properties?: Record<string, unknown>;
+              };
+              mergedSchema = {
+                ...current,
+                ...newObj,
+                properties: {
+                  ...current.properties,
+                  ...(newObj.properties || {}),
+                },
+              };
+            }
+          } catch {
+            // Keep newSchema as is if existing schemaText is not valid JSON
+          }
+
+          const formatted = JSON.stringify(mergedSchema, null, 2);
+          setSchemaText(formatted);
+          setValidationResult({
+            status: 'valid',
+            message:
+              'Fields generated with Alice and merged with existing fields. Review and save when ready.',
+          });
+        }}
+        onError={(err) => {
+          setIsAliceDialogOpen(false);
+          showErrorDialog(
+            err,
+            'Alice Schema Generation Failed',
+            'Alice Assistant could not generate a valid schema for this request.'
+          );
+        }}
+      />
+
+      {/* Load Template Selection Dialog */}
+      <LoadTemplateDialog
+        open={isLoadTemplateDialogOpen}
+        onOpenChange={setIsLoadTemplateDialogOpen}
+        existingProperties={existingPropertiesMap}
+        onAddTemplates={handleAddTemplates}
+      />
+
+      {/* Sprint-Capacity-Style Error Popup Dialog */}
+      <ProjectFieldsErrorDialog
+        open={errorDialogState.open}
+        title={errorDialogState.title}
+        description={errorDialogState.description}
+        error={errorDialogState.error}
+        onOpenChange={(open) => {
+          if (!open) {
+            setErrorDialogState((prev) => ({ ...prev, open: false }));
+          }
+        }}
+        onClose={() =>
+          setErrorDialogState((prev) => ({ ...prev, open: false }))
+        }
+      />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import WorkItemSidebar from '@/app/work-items/_components/work-item-details/work-item-details-sidebar';
 import { workItemFactory } from '../factories/workItem.factory';
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
@@ -33,6 +33,12 @@ vi.mock(
 
 vi.mock('@/app/work-items/_services/work-items.reads.client', () => ({
   getLinkedPRs: vi.fn().mockResolvedValue({ prs: [] }),
+}));
+
+vi.mock('@/app/work-items/_services/work-items.mutations.client', () => ({
+  updateWorkItem: vi.fn().mockResolvedValue({
+    data: { id: 'item-1', updated_at: '2026-01-01T00:00:01.000Z' },
+  }),
 }));
 
 const mockProjectWithFields: DbProject = {
@@ -144,5 +150,64 @@ describe('WorkItemSidebar Dynamic Fields', () => {
     );
 
     expect(screen.queryByText('Additional Fields')).not.toBeInTheDocument();
+  });
+
+  it('allows inline editing and saves updated value when clicking Save', async () => {
+    const onWorkItemPatched = vi.fn();
+    const item = workItemFactory.build({
+      description: {
+        type: 'doc',
+        attrs: {
+          dynamicFields: {
+            acceptanceCriteria: 'Initial criteria',
+          },
+        },
+        content: [],
+      } as unknown as DbWorkItem['description'],
+    });
+
+    render(
+      <WorkItemSidebar
+        workItem={item}
+        project={mockProjectWithFields}
+        childStatuses={[]}
+        projectMembers={[]}
+        detailsOpen={true}
+        setDetailsOpen={vi.fn()}
+        moreFieldsOpen={false}
+        setMoreFieldsOpen={vi.fn()}
+        onWorkItemPatched={onWorkItemPatched}
+      />
+    );
+
+    // Click edit button for Acceptance Criteria
+    const editBtn = screen.getByLabelText('Edit Acceptance Criteria');
+    fireEvent.click(editBtn);
+
+    // Textarea should now be visible
+    const textarea = screen.getByPlaceholderText(/Enter details/i);
+    expect(textarea).toBeInTheDocument();
+
+    // Type new criteria
+    fireEvent.change(textarea, { target: { value: 'Updated acceptance criteria' } });
+
+    // Click Save button
+    const saveBtn = screen.getByRole('button', { name: 'Save' });
+    fireEvent.click(saveBtn);
+
+    // Verify optimistic and patched callback was called
+    await waitFor(() => {
+      expect(onWorkItemPatched).toHaveBeenCalledWith(
+        expect.objectContaining({
+          description: expect.objectContaining({
+            attrs: expect.objectContaining({
+              dynamicFields: expect.objectContaining({
+                acceptanceCriteria: 'Updated acceptance criteria',
+              }),
+            }),
+          }),
+        })
+      );
+    });
   });
 });

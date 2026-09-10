@@ -17,7 +17,7 @@ import {
   prismaAuditCreate,
   prismaAuditCreateWithoutStatus,
   prismaAuditUpdate,
-  prismaLockTimestamp,
+  prismaLockTimestampRange,
   prismaOptionalDate,
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
@@ -395,7 +395,7 @@ export class ProjectsRepository {
     expectedUpdatedAt: string
   ): Promise<ProjectRow> {
     const { count } = await prisma.projects.updateMany({
-      where: { id, updated_at: prismaLockTimestamp(expectedUpdatedAt) },
+      where: { id, updated_at: prismaLockTimestampRange(expectedUpdatedAt) },
       data: buildProjectUpdateData(data, actorId),
     });
 

@@ -8,8 +8,22 @@ import {
   paginatedListLimitField,
   paginatedListPageField,
 } from './query-preprocess.js';
+import {
+  DynamicFieldTypeEnum,
+  DynamicFieldPropertySchema,
+  ProjectFieldsConfigSchema,
+  type DynamicFieldProperty,
+  type ProjectFieldsConfig,
+} from './dynamic-fields.js';
 
-export { ProjectStatusEnum };
+export {
+  DynamicFieldTypeEnum,
+  DynamicFieldPropertySchema,
+  ProjectFieldsConfigSchema,
+  type DynamicFieldProperty,
+  type ProjectFieldsConfig,
+  ProjectStatusEnum,
+};
 
 /** Shared Supabase project column list for embeds / selects. */
 export const PROJECT_PROJECTION = 'id, name, key' as const;
@@ -48,7 +62,7 @@ const baseCreateProjectSchema = z.object({
   jira_connection_id: z.uuid().nullable().optional(),
   github_repo: z.string().nullable().optional(),
   github_token: z.string().nullable().optional(),
-  attributes_config: z.unknown().nullable().optional(),
+  attributes_config: ProjectFieldsConfigSchema.nullable().optional(),
 });
 
 export const createProjectSchema = baseCreateProjectSchema

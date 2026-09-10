@@ -70,6 +70,11 @@ export {
   updateProjectSchema,
   withoutIntegrationSecrets,
   withoutGithubToken,
+  DynamicFieldTypeEnum,
+  DynamicFieldPropertySchema,
+  ProjectFieldsConfigSchema,
+  type DynamicFieldProperty,
+  type ProjectFieldsConfig,
 } from './projects.js';
 export {
   teamManagerSelect,
