@@ -53,7 +53,8 @@ const SAMPLE_STARTER_SCHEMA = {
     acceptanceCriteria: {
       type: 'string',
       title: 'Acceptance Criteria',
-      description: 'Conditions that must be met for this work item to be accepted',
+      description:
+        'Conditions that must be met for this work item to be accepted',
       format: 'multiline',
     },
     businessValue: {
@@ -66,7 +67,8 @@ const SAMPLE_STARTER_SCHEMA = {
     releaseNotesIncluded: {
       type: 'boolean',
       title: 'Include in Release Notes',
-      description: 'Whether this item should be highlighted in customer release notes',
+      description:
+        'Whether this item should be highlighted in customer release notes',
       default: false,
     },
   },
@@ -130,7 +132,11 @@ export function ProjectFieldsWorkspace({
       }
 
       const properties = parsed.properties;
-      if (!properties || typeof properties !== 'object' || Array.isArray(properties)) {
+      if (
+        !properties ||
+        typeof properties !== 'object' ||
+        Array.isArray(properties)
+      ) {
         return { parsedProperties: [] as ParsedProperty[], parseError: null };
       }
 
@@ -182,7 +188,9 @@ export function ProjectFieldsWorkspace({
       toast.success('JSON formatted successfully.');
     } catch (err) {
       const detail = err instanceof Error ? `: ${err.message}` : '';
-      toast.error(`Cannot format invalid JSON${detail}. Please fix syntax errors first.`);
+      toast.error(
+        `Cannot format invalid JSON${detail}. Please fix syntax errors first.`
+      );
     }
   };
 
@@ -244,7 +252,9 @@ export function ProjectFieldsWorkspace({
 
   const handleSave = async () => {
     if (!isManagerOrAdmin) {
-      toast.error('Only project managers and administrators can save field schemas.');
+      toast.error(
+        'Only project managers and administrators can save field schemas.'
+      );
       return;
     }
 
@@ -253,7 +263,9 @@ export function ProjectFieldsWorkspace({
       parsedConfig = JSON.parse(schemaText);
     } catch (err) {
       const detail = err instanceof Error ? `: ${err.message}` : '';
-      toast.error(`Cannot save invalid JSON${detail}. Please correct syntax errors.`);
+      toast.error(
+        `Cannot save invalid JSON${detail}. Please correct syntax errors.`
+      );
       return;
     }
 
@@ -288,19 +300,20 @@ export function ProjectFieldsWorkspace({
         <div>
           <div className="flex items-center gap-2">
             <SlidersHorizontal className="text-primary size-5" />
-            <h2 className="text-xl font-semibold tracking-tight text-foreground">
+            <h2 className="text-foreground text-xl font-semibold tracking-tight">
               Dynamic Fields
             </h2>
           </div>
           <p className="text-muted-foreground mt-1 max-w-3xl text-sm leading-relaxed">
-            Configure custom metadata fields for work items in this project using standard
-            JSON Schema. Dynamic fields adapt to agile workflows (Scrum, Kanban, SAFe)
-            and appear on work-item details without blocking core workflows.
+            Configure custom metadata fields for work items in this project
+            using standard JSON Schema. Dynamic fields adapt to agile workflows
+            (Scrum, Kanban, SAFe) and appear on work-item details without
+            blocking core workflows.
           </p>
         </div>
 
         {/* Action Controls */}
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           <Button
             type="button"
             variant="outline"
@@ -364,18 +377,19 @@ export function ProjectFieldsWorkspace({
 
       {/* Access Warning if not Manager/Admin */}
       {!isManagerOrAdmin && (
-        <div className="border-border bg-muted/40 flex items-center gap-3 rounded-lg border p-3 text-sm text-muted-foreground">
+        <div className="border-border bg-muted/40 text-muted-foreground flex items-center gap-3 rounded-lg border p-3 text-sm">
           <Lock className="size-4 shrink-0 text-amber-500" />
           <span>
-            You have view-only access to this project&apos;s dynamic fields configuration.
-            Only project managers and administrators can edit and save schemas.
+            You have view-only access to this project&apos;s dynamic fields
+            configuration. Only project managers and administrators can edit and
+            save schemas.
           </span>
         </div>
       )}
 
       {/* Validation Status Banner */}
       {validationResult.status === 'valid' && (
-        <div className="border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 flex items-center gap-2.5 rounded-lg border px-3.5 py-2.5 text-sm">
+        <div className="flex items-center gap-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2.5 text-sm text-emerald-700 dark:text-emerald-400">
           <CheckCircle2 className="size-4 shrink-0" />
           <span>{validationResult.message}</span>
         </div>
@@ -397,7 +411,7 @@ export function ProjectFieldsWorkspace({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Layers className="text-muted-foreground size-4" />
-            <h3 className="text-sm font-semibold tracking-tight text-foreground">
+            <h3 className="text-foreground text-sm font-semibold tracking-tight">
               Configured Fields ({parsedProperties.length})
             </h3>
           </div>
@@ -407,15 +421,15 @@ export function ProjectFieldsWorkspace({
         </div>
 
         {parsedProperties.length === 0 ? (
-          <Card className="border-dashed border-border/80 bg-card/40">
+          <Card className="border-border/80 bg-card/40 border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-8 text-center">
               <SlidersHorizontal className="text-muted-foreground/60 mb-2 size-8 stroke-1" />
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-foreground text-sm font-medium">
                 No dynamic fields configured yet
               </p>
               <p className="text-muted-foreground mt-1 max-w-sm text-xs">
-                Define field properties in the JSON Schema editor below, or click &quot;Load
-                Template&quot; to populate common fields.
+                Define field properties in the JSON Schema editor below, or
+                click &quot;Load Template&quot; to populate common fields.
               </p>
             </CardContent>
           </Card>
@@ -424,22 +438,25 @@ export function ProjectFieldsWorkspace({
             {parsedProperties.map((prop) => (
               <Card
                 key={prop.key}
-                className="border-border/60 bg-card/60 transition-colors hover:border-border"
+                className="border-border/60 bg-card/60 hover:border-border transition-colors"
               >
                 <CardHeader className="p-4 pb-2">
                   <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-sm font-semibold text-foreground truncate">
+                    <CardTitle className="text-foreground truncate text-sm font-semibold">
                       {prop.title}
                     </CardTitle>
-                    <Badge variant="secondary" className="font-mono text-[10px] shrink-0">
+                    <Badge
+                      variant="secondary"
+                      className="shrink-0 font-mono text-[10px]"
+                    >
                       {prop.format ? `${prop.type}:${prop.format}` : prop.type}
                     </Badge>
                   </div>
-                  <CardDescription className="font-mono text-xs text-muted-foreground truncate">
+                  <CardDescription className="text-muted-foreground truncate font-mono text-xs">
                     key: {prop.key}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="p-4 pt-1 space-y-2 text-xs">
+                <CardContent className="space-y-2 p-4 pt-1 text-xs">
                   {prop.description && (
                     <p className="text-muted-foreground line-clamp-2">
                       {prop.description}
@@ -447,7 +464,7 @@ export function ProjectFieldsWorkspace({
                   )}
                   {prop.enum && prop.enum.length > 0 && (
                     <div className="space-y-1">
-                      <span className="text-muted-foreground font-medium text-[11px]">
+                      <span className="text-muted-foreground text-[11px] font-medium">
                         Allowed options:
                       </span>
                       <div className="flex flex-wrap gap-1">
@@ -465,7 +482,8 @@ export function ProjectFieldsWorkspace({
                   )}
                   {prop.default !== undefined && (
                     <p className="text-muted-foreground text-[11px]">
-                      Default: <code className="font-mono">{String(prop.default)}</code>
+                      Default:{' '}
+                      <code className="font-mono">{String(prop.default)}</code>
                     </p>
                   )}
                 </CardContent>
@@ -480,7 +498,7 @@ export function ProjectFieldsWorkspace({
         <div className="flex items-center justify-between">
           <label
             htmlFor="json-schema-editor"
-            className="text-sm font-semibold tracking-tight text-foreground"
+            className="text-foreground text-sm font-semibold tracking-tight"
           >
             JSON Schema Specification
           </label>
@@ -489,7 +507,7 @@ export function ProjectFieldsWorkspace({
           </span>
         </div>
 
-        <div className="relative rounded-lg border border-border bg-muted/20 focus-within:border-ring focus-within:ring-1 focus-within:ring-ring">
+        <div className="border-border bg-muted/20 focus-within:border-ring focus-within:ring-ring relative rounded-lg border focus-within:ring-1">
           <textarea
             id="json-schema-editor"
             rows={18}
@@ -501,16 +519,16 @@ export function ProjectFieldsWorkspace({
               }
             }}
             disabled={!isManagerOrAdmin || isSaving}
-            className="font-mono text-xs md:text-sm leading-relaxed w-full resize-y bg-transparent p-4 outline-none placeholder:text-muted-foreground disabled:opacity-75 disabled:cursor-not-allowed"
+            className="placeholder:text-muted-foreground w-full resize-y bg-transparent p-4 font-mono text-xs leading-relaxed outline-none disabled:cursor-not-allowed disabled:opacity-75 md:text-sm"
             placeholder="Enter JSON Schema..."
             spellCheck={false}
           />
         </div>
 
-        <p className="text-muted-foreground text-xs flex items-center gap-1.5 pt-1">
+        <p className="text-muted-foreground flex items-center gap-1.5 pt-1 text-xs">
           <Info className="size-3.5 shrink-0" />
-          Dynamic field definitions support standard types: string, number, boolean, array,
-          and select options (enum).
+          Dynamic field definitions support standard types: string, number,
+          boolean, array, and select options (enum).
         </p>
       </div>
     </div>

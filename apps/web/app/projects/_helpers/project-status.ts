@@ -3,23 +3,18 @@
 export { ProjectStatusEnum };
 
 export type ProjectStatusTab =
-  | typeof ProjectStatusEnum.active
-  | typeof ProjectStatusEnum.archived;
+  typeof ProjectStatusEnum.active | typeof ProjectStatusEnum.archived;
 
 export const PROJECT_STATUS_TABS = [
   { id: ProjectStatusEnum.active, label: 'Active' },
   { id: ProjectStatusEnum.archived, label: 'Archived' },
 ] as const;
 
-export function isProjectActive(
-  status: string | null | undefined
-): boolean {
+export function isProjectActive(status: string | null | undefined): boolean {
   return status === ProjectStatusEnum.active;
 }
 
-export function parseProjectStatusTab(
-  tab?: string | null
-): ProjectStatusTab {
+export function parseProjectStatusTab(tab?: string | null): ProjectStatusTab {
   if (tab === ProjectStatusEnum.archived) {
     return ProjectStatusEnum.archived;
   }

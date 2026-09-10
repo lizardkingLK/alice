@@ -495,7 +495,9 @@ function DynamicFieldValueDisplay({
   value: unknown;
 }>) {
   if (value === undefined || value === null || value === '') {
-    return <span className="text-muted-foreground text-xs italic">Not set</span>;
+    return (
+      <span className="text-muted-foreground text-xs italic">Not set</span>
+    );
   }
 
   if (typeof value === 'boolean') {
@@ -536,7 +538,7 @@ function DynamicFieldValueDisplay({
 
   if (property.format === 'multiline') {
     return (
-      <span className="text-foreground text-xs whitespace-pre-wrap line-clamp-3">
+      <span className="text-foreground line-clamp-3 text-xs whitespace-pre-wrap">
         {displayString}
       </span>
     );
@@ -544,7 +546,7 @@ function DynamicFieldValueDisplay({
 
   return (
     <span
-      className="text-foreground text-xs truncate max-w-[200px]"
+      className="text-foreground max-w-[200px] truncate text-xs"
       title={displayString}
     >
       {displayString}
@@ -694,10 +696,7 @@ export default function WorkItemSidebar({
                 typeof propObj.title === 'string' ? propObj.title : key;
               return (
                 <DetailRow key={key} label={title}>
-                  <DynamicFieldValueDisplay
-                    property={propObj}
-                    value={value}
-                  />
+                  <DynamicFieldValueDisplay property={propObj} value={value} />
                 </DetailRow>
               );
             })}
