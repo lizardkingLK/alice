@@ -7,7 +7,7 @@ import {
   startJiraOAuth,
   type JiraCloudProject,
   type JiraConnection,
-} from '../_services/projects.jira.mutations.client';
+} from '@/app/projects/_services/projects.jira.mutations.client';
 
 const OAUTH_WINDOW_NAME = 'alice-jira-oauth';
 

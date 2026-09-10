@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
-import { ProjectDetailsWorkspace } from '@/app/projects/[id]/_components/project-details-workspace';
-import { ProjectWorkspaceAccessDenied } from '@/app/projects/[id]/_components/project-workspace-access-denied';
+import { ProjectDetailsWorkspace } from '@/app/projects/_components/project-details/project-details-workspace';
+import { ProjectWorkspaceAccessDenied } from '@/app/projects/_components/project-details/project-workspace-access-denied';
 import { getProjectWorkspace } from '@/app/projects/_services/projects.reads.workspace.server';
 import { readWorkItemTableColumnVisibilityBootstrap } from '@/app/work-items/_helpers/work-item-table-columns-cookie.server';
 import type { RawSearchParams } from '@/lib/search-params';
@@ -26,7 +26,7 @@ export async function ProjectDetailsData({
 
   if (workspace.access === 'denied') {
     return (
-      <div className="w-full py-8">
+      <div className="w-full p-6 py-8">
         <ProjectWorkspaceAccessDenied
           projectName={workspace.project.name}
           projectKey={workspace.project.key}
@@ -36,7 +36,7 @@ export async function ProjectDetailsData({
   }
 
   return (
-    <div className="w-full">
+    <div className="flex h-full min-h-0 flex-1 flex-col">
       <ProjectDetailsWorkspace
         project={workspace.project}
         members={workspace.members}

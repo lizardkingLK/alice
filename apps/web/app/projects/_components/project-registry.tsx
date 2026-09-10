@@ -32,12 +32,18 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '@repo/ui/components/ui/avatar';
-import { ProjectForm } from './project-form';
-import { hardDeleteProject } from './actions';
+import { ProjectForm } from '@/app/projects/_components/project-form';
 import {
   softDeleteProject as clientSoftDeleteProject,
   restoreProject as clientRestoreProject,
-} from '../_services/projects.mutations.client';
+  hardDeleteProject as clientHardDeleteProject,
+  type Project,
+} from '@/app/projects/_services/projects.mutations.client';
+import {
+  ProjectStatusEnum,
+  PROJECT_STATUS_TABS,
+  type ProjectStatusTab,
+} from '@/app/projects/_helpers/project-status';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runRegistryLockedAction } from '@/lib/optimistic-lock/run-locked-mutation';
 import {
@@ -58,17 +64,10 @@ import {
   registryActionsHeader,
 } from '@/components/registry-row-actions';
 import { RegistryTabSwitcher } from '@/components/registry-tab-switcher';
-import type { Project } from '../_services/projects.mutations.client';
+import { UserRoleEnum } from '@repo/types';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import { cn } from '@repo/ui/lib/utils';
 import { formatMonthYear } from '@/app/_shared/utility';
-
-type ProjectTab = 'active' | 'archived';
-
-const PROJECT_STATUS_TABS = [
-  { id: 'active' as const, label: 'Active' },
-  { id: 'archived' as const, label: 'Archived' },
-] as const;
 
 interface ProjectRegistryProps {
   readonly projects: Project[];
@@ -76,7 +75,7 @@ interface ProjectRegistryProps {
   readonly page: number;
   readonly limit: number;
   readonly totalPages: number;
-  readonly tab: ProjectTab;
+  readonly tab: ProjectStatusTab;
   readonly search: string;
   readonly users: User[];
   readonly currentUserId?: string | null;
@@ -94,7 +93,7 @@ function formatTimeline(startDate?: string | null, endDate?: string | null) {
 interface ProjectTableMeta {
   readonly currentUserId?: string | null;
   readonly isPending: boolean;
-  readonly tab: ProjectTab;
+  readonly tab: ProjectStatusTab;
   readonly isManagerOrAdmin: boolean;
   readonly isAdmin: boolean;
   readonly onEdit: (proj: Project) => void;
@@ -137,7 +136,7 @@ function ProjectNameCell({ proj }: Readonly<{ proj: Project }>) {
         <div className="min-w-0">
           <div className="text-foreground group-hover/row:text-primary flex min-w-0 items-center gap-2 text-sm font-semibold transition-colors">
             <TruncatedText className="min-w-0">{proj.name}</TruncatedText>
-            {proj.status === 'archived' ? (
+            {proj.status === ProjectStatusEnum.archived ? (
               <Badge
                 variant="outline"
                 className="shrink-0 border-amber-500/20 bg-amber-500/10 text-[9px] text-amber-600 uppercase"
@@ -219,7 +218,7 @@ const CELL_RENDERERS: Record<string, ProjectCellRenderer> = {
         isPending={meta.isPending}
         isManagerOrAdmin={meta.isManagerOrAdmin}
         isAdmin={meta.isAdmin}
-        isActiveView={meta.tab === 'active'}
+        isActiveView={meta.tab === ProjectStatusEnum.active}
         onEdit={() => meta.onEdit(proj)}
         onRestore={() => meta.onRestore(proj)}
         onArchive={() => meta.onSoftDelete(proj)}
@@ -271,11 +270,12 @@ export function ProjectRegistry({
   const [isPending, startTransition] = useTransition();
 
   const isManagerOrAdmin =
-    currentUserRole === 'admin' || currentUserRole === 'manager';
-  const isAdmin = currentUserRole === 'admin';
+    currentUserRole === UserRoleEnum.admin ||
+    currentUserRole === UserRoleEnum.manager;
+  const isAdmin = currentUserRole === UserRoleEnum.admin;
   const isSoftDelete = deleteMode === 'soft';
 
-  const handleTabChange = (newTab: ProjectTab) => {
+  const handleTabChange = (newTab: ProjectStatusTab) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('tab', newTab);
     params.set('page', '1');
@@ -304,7 +304,7 @@ export function ProjectRegistry({
           entityType: 'project',
           entityId: proj.id,
           expectedUpdatedAt: proj.updated_at,
-          pendingFields: { status: 'active' },
+          pendingFields: { status: ProjectStatusEnum.active },
           currentUserId,
           failureFallback: 'Failed to restore project.',
           onError: setError,
@@ -336,7 +336,7 @@ export function ProjectRegistry({
           entityType: 'project',
           entityId: projectToDelete.id,
           expectedUpdatedAt: projectToDelete.updated_at,
-          pendingFields: { status: 'archived' },
+          pendingFields: { status: ProjectStatusEnum.archived },
           currentUserId,
           failureFallback: `Failed to ${deleteMode} delete project.`,
           onError: setError,
@@ -345,10 +345,14 @@ export function ProjectRegistry({
           return;
         }
       } else {
-        const result = await hardDeleteProject(projectToDelete.id);
-
-        if (!result.success) {
-          setError(result.error || `Failed to ${deleteMode} delete project.`);
+        try {
+          await clientHardDeleteProject(projectToDelete.id);
+        } catch (err) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : `Failed to ${deleteMode} delete project.`
+          );
           return;
         }
       }
@@ -423,7 +427,7 @@ export function ProjectRegistry({
             Projects Registry
           </CardTitle>
           <CardDescription className="text-muted-foreground text-sm">
-            {tab === 'active'
+            {tab === ProjectStatusEnum.active
               ? 'View and manage active software project workspaces.'
               : 'Restore soft-deleted projects, or permanently delete them from the database.'}
           </CardDescription>

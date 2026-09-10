@@ -26,7 +26,7 @@ import type { WorkItemService } from '../workItems/workItems.service';
 import { supabase } from '../../../lib/supabase';
 import type { JiraService } from '../jira/jira.service';
 import type { ParsedJiraIssue } from '../jira/jira.types';
-import { listProjectsQuerySchema } from '@repo/types';
+import { listProjectsQuerySchema, ProjectStatusEnum } from '@repo/types';
 
 const TYPE_STRING = 'string';
 
@@ -282,11 +282,12 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
           owner_id: parsed.data.owner_id,
           start_date: parsed.data.start_date ?? null,
           end_date: parsed.data.end_date ?? null,
-          status: parsed.data.status ?? 'active',
+          status: parsed.data.status ?? ProjectStatusEnum.active,
           jira_project_key: parsed.data.jira_project_key ?? null,
           jira_connection_id: parsed.data.jira_connection_id ?? null,
           github_repo: parsed.data.github_repo ?? null,
           github_token: parsed.data.github_token ?? null,
+          attributes_config: parsed.data.attributes_config ?? null,
         });
         res.status(201).json({ project: withoutIntegrationSecrets(project) });
       } catch (error) {

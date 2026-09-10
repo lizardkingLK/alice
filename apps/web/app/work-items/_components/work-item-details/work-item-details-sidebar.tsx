@@ -71,10 +71,12 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   type Dispatch,
   type ReactNode,
   type SetStateAction,
 } from 'react';
+import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import {
   linkPR,
   unlinkPR,
@@ -386,10 +388,175 @@ function EditableLabelsField({
   );
 }
 
+function parseTextDynamicFields(text: string): Record<string, unknown> {
+  const marker = '[Dynamic Fields]';
+  const markerIndex = text.indexOf(marker);
+  if (markerIndex === -1) {
+    return {};
+  }
+
+  const remainder = text.slice(markerIndex + marker.length);
+  const content = remainder.startsWith('\n') ? remainder.slice(1) : remainder;
+  const lines = content.split('\n');
+  const result: Record<string, unknown> = {};
+
+  for (const line of lines) {
+    const colonIdx = line.indexOf(':');
+    if (colonIdx > 0) {
+      const key = line.slice(0, colonIdx).trim();
+      const val = line.slice(colonIdx + 1).trim();
+      if (key) {
+        result[key] = val;
+      }
+    }
+  }
+
+  return result;
+}
+
+function findDynamicFieldsInContent(
+  content: unknown[]
+): Record<string, unknown> | null {
+  for (const node of content) {
+    if (!node || typeof node !== 'object') {
+      continue;
+    }
+    const children = (node as { content?: unknown[] }).content;
+    if (!Array.isArray(children)) {
+      continue;
+    }
+    for (const child of children) {
+      if (
+        child &&
+        typeof child === 'object' &&
+        typeof (child as { text?: unknown }).text === 'string'
+      ) {
+        const text = (child as { text: string }).text;
+        if (text.includes('[Dynamic Fields]')) {
+          return parseTextDynamicFields(text);
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function extractDynamicFieldValues(
+  description: unknown
+): Record<string, unknown> {
+  if (!description || typeof description !== 'object') {
+    return {};
+  }
+  try {
+    const doc = description as {
+      attrs?: { dynamicFields?: unknown };
+      content?: unknown[];
+    };
+    const df = doc.attrs?.dynamicFields;
+    if (df && typeof df === 'object' && !Array.isArray(df)) {
+      return df as Record<string, unknown>;
+    }
+    if (Array.isArray(doc.content)) {
+      return findDynamicFieldsInContent(doc.content) ?? {};
+    }
+  } catch {
+    return {};
+  }
+  return {};
+}
+
+function formatDisplayValue(value: unknown): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (typeof value === 'object' && value !== null) {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return '';
+    }
+  }
+  return '';
+}
+
+function DynamicFieldValueDisplay({
+  property,
+  value,
+}: Readonly<{
+  property: {
+    readonly type?: string;
+    readonly format?: string;
+    readonly enum?: readonly unknown[];
+    readonly title?: string;
+  };
+  value: unknown;
+}>) {
+  if (value === undefined || value === null || value === '') {
+    return <span className="text-muted-foreground text-xs italic">Not set</span>;
+  }
+
+  if (typeof value === 'boolean') {
+    return (
+      <Badge variant={value ? 'default' : 'outline'} className="text-xs">
+        {value ? 'Yes' : 'No'}
+      </Badge>
+    );
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return <span className="text-muted-foreground text-xs italic">None</span>;
+    }
+    return (
+      <div className="flex flex-wrap gap-1">
+        {value.map((v) => {
+          const itemText = formatDisplayValue(v);
+          return (
+            <Badge key={itemText} variant="secondary" className="text-xs">
+              {itemText}
+            </Badge>
+          );
+        })}
+      </div>
+    );
+  }
+
+  const displayString = formatDisplayValue(value);
+
+  if (property.enum && Array.isArray(property.enum)) {
+    return (
+      <Badge variant="secondary" className="text-xs font-normal">
+        {displayString}
+      </Badge>
+    );
+  }
+
+  if (property.format === 'multiline') {
+    return (
+      <span className="text-foreground text-xs whitespace-pre-wrap line-clamp-3">
+        {displayString}
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className="text-foreground text-xs truncate max-w-[200px]"
+      title={displayString}
+    >
+      {displayString}
+    </span>
+  );
+}
+
 export default function WorkItemSidebar({
   workItem,
   childStatuses = [],
   projectMembers = [],
+  project,
   workLogs = [],
   detailsOpen,
   setDetailsOpen,
@@ -402,6 +569,7 @@ export default function WorkItemSidebar({
   workItem: DbWorkItem;
   childStatuses?: readonly WorkItemStatus[];
   projectMembers?: readonly WorkItemPatchMemberOption[];
+  project?: DbProject | null;
   workLogs?: WorkItemWorkLog[];
   detailsOpen: boolean;
   setDetailsOpen: Dispatch<SetStateAction<boolean>>;
@@ -417,7 +585,40 @@ export default function WorkItemSidebar({
     'assignee_id' | 'reporter_id' | 'labels' | null
   >(null);
   const [developmentOpen, setDevelopmentOpen] = useState(true);
+  const [additionalFieldsOpen, setAdditionalFieldsOpen] = useState(true);
   const labels = parseWorkItemLabels(workItem.labels);
+
+  const dynamicConfig = useMemo(() => {
+    try {
+      const raw = project?.attributes_config;
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+      const parsed = raw as {
+        type?: unknown;
+        properties?: Record<string, unknown>;
+      };
+      if (
+        (parsed.type === 'object' || !parsed.type) &&
+        parsed.properties &&
+        typeof parsed.properties === 'object' &&
+        !Array.isArray(parsed.properties)
+      ) {
+        const propKeys = Object.keys(parsed.properties);
+        if (propKeys.length > 0) {
+          return parsed as {
+            type?: unknown;
+            properties: Record<string, unknown>;
+          };
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }, [project?.attributes_config]);
+
+  const dynamicFieldValues = useMemo(() => {
+    return extractDynamicFieldValues(workItem.description);
+  }, [workItem.description]);
 
   const activeConfig = activeField
     ? WORK_ITEM_PATCH_FIELD_CONFIG[activeField]
@@ -474,6 +675,35 @@ export default function WorkItemSidebar({
           />
         </DetailRow>
       </SidebarCollapsibleSection>
+
+      {dynamicConfig && (
+        <SidebarCollapsibleSection
+          title="Additional Fields"
+          open={additionalFieldsOpen}
+          onOpenChange={setAdditionalFieldsOpen}
+          collapsedHint={`${Object.keys(dynamicConfig.properties).length} project fields`}
+        >
+          <div className="space-y-3 pt-1">
+            {Object.entries(dynamicConfig.properties).map(([key, prop]) => {
+              const propObj =
+                prop && typeof prop === 'object'
+                  ? (prop as Record<string, unknown>)
+                  : {};
+              const value = dynamicFieldValues[key];
+              const title =
+                typeof propObj.title === 'string' ? propObj.title : key;
+              return (
+                <DetailRow key={key} label={title}>
+                  <DynamicFieldValueDisplay
+                    property={propObj}
+                    value={value}
+                  />
+                </DetailRow>
+              );
+            })}
+          </div>
+        </SidebarCollapsibleSection>
+      )}
 
       <SidebarCollapsibleSection
         title="Development"

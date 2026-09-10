@@ -40,13 +40,13 @@ import {
   updateProject,
   type Project,
   type CreateProjectInput,
-} from '../_services/projects.mutations.client';
+} from '@/app/projects/_services/projects.mutations.client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 import { cn } from '@repo/ui/lib/utils';
 import { FormAlertMessage } from '@/components/form-alert-message';
 import { toLocalYYYYMMDD } from '@/app/_shared/utility';
-import { importJiraIssues } from '../_services/projects.jira.mutations.client';
+import { importJiraIssues } from '@/app/projects/_services/projects.jira.mutations.client';
 import {
   formatGithubRepoPath,
   parseGithubRepoPath,
@@ -56,7 +56,7 @@ import {
   Step3SourceControl,
   type Step2ImportsProps,
   type Step3SourceControlProps,
-} from './project-form-integration-steps';
+} from '@/app/projects/_components/project-form-integration-steps';
 
 interface ProjectFormProps {
   readonly onClose?: () => void;

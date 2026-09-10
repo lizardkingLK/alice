@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { ProjectWorkspaceAccessDenied } from '@/app/projects/[id]/_components/project-workspace-access-denied';
+import { ProjectWorkspaceAccessDenied } from '@/app/projects/_components/project-details/project-workspace-access-denied';
 
 describe('ProjectWorkspaceAccessDenied', () => {
   it('explains membership requirement and links back to projects', () => {

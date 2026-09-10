@@ -18,6 +18,8 @@ export default async function ProjectDetailsPage({
   return (
     <DashboardShell
       description="Workspace configurations for this project"
+      contentScrollable={false}
+      contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
       breadcrumbOverrides={[
         { label: 'Dashboard', url: '/dashboard' },
         { label: 'Projects', url: '/projects' },

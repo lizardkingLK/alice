@@ -11,13 +11,13 @@ import {
 } from '@repo/ui/components/ui/card';
 import { Button } from '@repo/ui/components/ui/button';
 import { Edit, Loader2, Plug, RefreshCw, Unplug } from '@repo/ui/lib/icons';
-import { REPORT_CARD_CLASS } from '@/app/projects/[id]/_components/project-details-shared';
-import { JiraLogo } from '@/app/projects/[id]/_components/integration-brand-logos';
+import { REPORT_CARD_CLASS } from '@/app/projects/_components/project-details/project-details-shared';
+import { JiraLogo } from '@/app/projects/_components/project-details/integration-brand-logos';
 import {
   IntegrationEditForm,
   IntegrationFeedbackBanner,
   IntegrationSummaryFields,
-} from '@/app/projects/[id]/_components/integration-settings-shared';
+} from '@/app/projects/_components/project-details/integration-settings-shared';
 import {
   connectionLabel,
   deleteJiraConnection,
@@ -28,7 +28,7 @@ import { useJiraConnectionPicker } from '@/app/projects/_hooks/use-jira-connecti
 import { useIntegrationSettingsSave } from '@/app/projects/_hooks/use-integration-settings-save';
 import { JiraConnectionFields } from '@/app/projects/_components/jira-connection-fields';
 import { errorMessage } from '@/lib/errors/error-message';
-import type { Project } from '../../_services/projects.mutations.client';
+import type { Project } from '@/app/projects/_services/projects.mutations.client';
 
 function linkedConnectionSite(
   connections: JiraConnection[],

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
-import { JiraLogo } from '@/app/projects/[id]/_components/integration-brand-logos';
+import { JiraLogo } from '@/app/projects/_components/project-details/integration-brand-logos';
 
 type DoneStatus = 'connected' | 'denied' | 'error';
 

@@ -48,6 +48,7 @@ const baseCreateProjectSchema = z.object({
   jira_connection_id: z.uuid().nullable().optional(),
   github_repo: z.string().nullable().optional(),
   github_token: z.string().nullable().optional(),
+  attributes_config: z.unknown().nullable().optional(),
 });
 
 export const createProjectSchema = baseCreateProjectSchema
@@ -151,6 +152,7 @@ export const projectListSelect = {
 
 export const projectDetailSelect = {
   ...projectListSelect,
+  attributes_config: true,
   jira_project_key: true,
   jira_connection_id: true,
   github_repo: true,

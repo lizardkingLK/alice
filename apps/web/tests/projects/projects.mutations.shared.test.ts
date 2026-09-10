@@ -107,4 +107,42 @@ describe('createProjectsService frontend tests', () => {
       method: 'DELETE',
     });
   });
+
+  it('adds project member via POST', async () => {
+    const apiFetch = vi.fn().mockResolvedValue(undefined);
+    const service = createProjectsService(apiFetch);
+
+    await service.addProjectMember('proj-1', 'user-2');
+
+    expect(apiFetch).toHaveBeenCalledWith('/api/projects/proj-1/members', {
+      method: 'POST',
+      body: JSON.stringify({ userId: 'user-2' }),
+    });
+  });
+
+  it('removes project member via DELETE', async () => {
+    const apiFetch = vi.fn().mockResolvedValue(undefined);
+    const service = createProjectsService(apiFetch);
+
+    await service.removeProjectMember('proj-1', 'user-2');
+
+    expect(apiFetch).toHaveBeenCalledWith('/api/projects/proj-1/members/user-2', {
+      method: 'DELETE',
+    });
+  });
+
+  it('updates project dynamic fields config via PUT', async () => {
+    const project = projectFactory.build();
+    const apiFetch = vi.fn().mockResolvedValue({ project });
+    const service = createProjectsService(apiFetch);
+    const config = { type: 'object', properties: {} };
+
+    const result = await service.updateProjectFieldsConfig('proj-1', config);
+
+    expect(apiFetch).toHaveBeenCalledWith('/api/projects/proj-1', {
+      method: 'PUT',
+      body: JSON.stringify({ attributes_config: config }),
+    });
+    expect(result).toEqual(project);
+  });
 });

@@ -4,8 +4,8 @@ import { ProjectRegistry } from '@/app/projects/_components/project-registry';
 import {
   softDeleteProject as clientSoftDeleteProject,
   restoreProject as clientRestoreProject,
+  hardDeleteProject,
 } from '@/app/projects/_services/projects.mutations.client';
-import { hardDeleteProject } from '@/app/projects/_components/actions';
 import type { Project } from '@/app/projects/_services/projects.mutations.client';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import { assertDebouncedSearchRedirect } from '../helpers/assert-debounced-search';
@@ -37,9 +37,6 @@ vi.mock(
 vi.mock('@/app/projects/_services/projects.mutations.client', () => ({
   softDeleteProject: vi.fn(),
   restoreProject: vi.fn(),
-}));
-
-vi.mock('@/app/projects/_components/actions', () => ({
   hardDeleteProject: vi.fn(),
 }));
 
@@ -349,10 +346,7 @@ describe('ProjectRegistry Component', () => {
   });
 
   it('performs hard-delete action on confirmation', async () => {
-    vi.mocked(hardDeleteProject).mockResolvedValue({
-      success: true,
-      error: null,
-    });
+    vi.mocked(hardDeleteProject).mockResolvedValue(undefined);
 
     render(
       <ProjectRegistry

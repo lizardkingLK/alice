@@ -6,10 +6,10 @@ import { Label } from '@repo/ui/components/ui/label';
 import {
   GitHubLogo,
   JiraLogo,
-} from '@/app/projects/[id]/_components/integration-brand-logos';
-import { useJiraConnectionPicker } from '../_hooks/use-jira-connection-picker';
-import { GithubRepoFields } from './github-repo-fields';
-import { JiraConnectionFields } from './jira-connection-fields';
+} from '@/app/projects/_components/project-details/integration-brand-logos';
+import { useJiraConnectionPicker } from '@/app/projects/_hooks/use-jira-connection-picker';
+import { GithubRepoFields } from '@/app/projects/_components/github-repo-fields';
+import { JiraConnectionFields } from '@/app/projects/_components/jira-connection-fields';
 
 function IntegrationProviderOption({
   id,

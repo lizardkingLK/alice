@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { ProjectMembersTab } from '@/app/projects/[id]/_components/project-members-tab';
+import { ProjectMembersTab } from '@/app/projects/_components/project-details/project-members-tab';
 import type {
   Project,
   ProjectMemberWithUser,
@@ -8,9 +8,15 @@ import type {
 import type { User } from '@/app/users/_services/users.mutations.client';
 import { UserRole } from '@repo/types';
 
-vi.mock('@/app/projects/[id]/_components/actions', () => ({
-  addMemberAction: vi.fn(),
-  removeMemberAction: vi.fn(),
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    refresh: vi.fn(),
+  }),
+}));
+
+vi.mock('@/app/projects/_services/projects.mutations.client', () => ({
+  addProjectMember: vi.fn(),
+  removeProjectMember: vi.fn(),
 }));
 
 const baseProject = {
