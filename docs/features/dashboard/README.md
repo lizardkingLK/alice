@@ -11,6 +11,7 @@ Quick links:
 
 - Implementation: `apps/web/app/dashboard/`
 - Charts UI: `apps/web/app/charts/`
+- Notifications inbox: [notifications feature](../notifications/README.md)
 - Favorites / Saved Views: [views feature](../views/FAVORITES_AND_VIEWS.md)
 - Auth / role access: [RBAC plan](../../auth/RBAC_AUTHORIZATION_SKELETON.md)
 - SEO: dashboards are `noindex` — see [SEO guide](../../guides/SEO.md)

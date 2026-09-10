@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { NotificationInbox } from '@/app/dashboard/_components/dashboard-notifications';
-import type { Notification } from '@/app/dashboard/_components/dashboard-notifications';
+import { notificationFactory } from '../factories/notification.factory';
 
 const mockPush = vi.fn();
 
@@ -16,39 +16,44 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-const mockEq = () => Promise.resolve({ error: null });
-const mockUpdate = () => ({ eq: mockEq });
-const mockFrom = () => ({ update: mockUpdate });
+const { inboxResult } = vi.hoisted(() => ({
+  inboxResult: {
+    data: null as unknown[] | null,
+    error: null as { message: string } | null,
+  },
+}));
+
 const mockSubscribe = () => ({});
 const mockOn = () => ({ subscribe: mockSubscribe });
 const mockChannel = () => ({ on: mockOn });
+
+function createQuery() {
+  const query = {
+    select: vi.fn(() => query),
+    eq: vi.fn(() => query),
+    order: vi.fn(() => query),
+    limit: vi.fn(() => Promise.resolve(inboxResult)),
+    update: vi.fn(() => query),
+    then: ((onFulfilled, onRejected) =>
+      Promise.resolve(inboxResult).then(onFulfilled, onRejected)) as Promise<
+      typeof inboxResult
+    >['then'],
+  };
+  return query;
+}
 
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({
     channel: mockChannel,
     removeChannel: vi.fn(),
-    from: mockFrom,
+    from: () => createQuery(),
   }),
 }));
 
-const mockNotification: Notification = {
-  id: 'notif-1',
-  user_id: 'user-1',
-  type: 'comment',
-  message:
-    'Access request\n\nFrom: requestor@example.com (John Doe)\n\nI need access to the system.',
-  read_status: false,
-  status: 'active',
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-  created_by: 'system',
-  updated_by: 'system',
-  related_item_id: null,
-};
-
 describe('NotificationInbox access request handling', () => {
   afterEach(() => {
-    vi.clearAllMocks();
+    inboxResult.data = null;
+    inboxResult.error = null;
   });
 
   it('opens dialog on legacy access request click and redirects to requests tab on Allow', async () => {
@@ -56,7 +61,7 @@ describe('NotificationInbox access request handling', () => {
     render(
       <NotificationInbox
         userId="user-1"
-        initialNotifications={[mockNotification]}
+        initialNotifications={[notificationFactory.buildAccessRequest()]}
       />
     );
 
@@ -82,5 +87,48 @@ describe('NotificationInbox access request handling', () => {
     expect(mockPush).toHaveBeenCalledWith(
       '/users?tab=requests&addEmail=requestor%40example.com'
     );
+  });
+});
+
+describe('NotificationInbox client load', () => {
+  afterEach(() => {
+    inboxResult.data = null;
+    inboxResult.error = null;
+  });
+
+  it('loads notifications after mount without blocking on initial rows', async () => {
+    // Arrange
+    inboxResult.data = [
+      notificationFactory.build({ message: 'Hello from the inbox' }),
+    ];
+
+    // Act
+    render(<NotificationInbox userId="user-1" />);
+
+    // Assert
+    expect(await screen.findByText('Hello from the inbox')).toBeInTheDocument();
+  });
+
+  it('shows a retry action when the inbox query fails', async () => {
+    // Arrange
+    inboxResult.error = { message: 'TimeoutError: aborted' };
+
+    render(<NotificationInbox userId="user-1" />);
+
+    expect(
+      await screen.findByText("Couldn't load notifications")
+    ).toBeInTheDocument();
+
+    // Act
+    inboxResult.error = null;
+    inboxResult.data = [
+      notificationFactory.build({ message: 'Recovered notification' }),
+    ];
+    fireEvent.click(screen.getByRole('button', { name: /try again/i }));
+
+    // Assert
+    expect(
+      await screen.findByText('Recovered notification')
+    ).toBeInTheDocument();
   });
 });
