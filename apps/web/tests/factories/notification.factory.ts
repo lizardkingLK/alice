@@ -18,6 +18,18 @@ export const notificationFactory = {
     };
   },
 
+  buildList(
+    count: number,
+    overrides: Partial<Notification> = {}
+  ): Notification[] {
+    return Array.from({ length: count }, (_, index) =>
+      notificationFactory.build({
+        id: `notif-${index + 1}`,
+        ...overrides,
+      })
+    );
+  },
+
   buildAccessRequest(overrides: Partial<Notification> = {}): Notification {
     return notificationFactory.build({
       type: 'comment',

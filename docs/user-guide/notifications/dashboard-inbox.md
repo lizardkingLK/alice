@@ -48,7 +48,8 @@ Examples you may see:
 | **chat_processed**             | Alice chat conversation   |
 | **access_request**             | Users → Requests (admins) |
 
-Unread count shows on the bell badge (caps at **9+**).
+Unread count shows on the bell badge. Counts of **1–9** show the number; **10
+or more** show a star.
 
 ---
 

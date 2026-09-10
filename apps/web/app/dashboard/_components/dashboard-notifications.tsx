@@ -18,6 +18,7 @@ import {
   X,
   Layers,
   Inbox,
+  Star,
 } from '@repo/ui/lib/icons';
 import {
   DropdownMenu,
@@ -160,6 +161,35 @@ function warnInboxLoadFailed(error: unknown): void {
   console.warn(
     'warn. failed to load dashboard notifications:',
     inboxLoadErrorMessage(error)
+  );
+}
+
+const UNREAD_BADGE_CAP = 9;
+
+function notificationsTriggerLabel(unreadCount: number): string {
+  if (unreadCount <= 0) {
+    return 'View notifications';
+  }
+  if (unreadCount > UNREAD_BADGE_CAP) {
+    return 'View notifications, more than 9 unread';
+  }
+  return `View notifications, ${unreadCount} unread`;
+}
+
+function UnreadCountBadge({ count }: Readonly<{ count: number }>) {
+  if (count <= 0) {
+    return null;
+  }
+
+  const overflow = count > UNREAD_BADGE_CAP;
+
+  return (
+    <span
+      aria-hidden
+      className="ring-background animate-fade-in absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2"
+    >
+      {overflow ? <Star className="size-2.5 fill-current" /> : count}
+    </span>
   );
 }
 
@@ -546,7 +576,7 @@ export function NotificationInbox({
           <Button
             variant="outline"
             size="icon"
-            aria-label="View notifications"
+            aria-label={notificationsTriggerLabel(unreadCount)}
             className="relative cursor-pointer"
           >
             <Bell
@@ -555,11 +585,7 @@ export function NotificationInbox({
                 unreadCount > 0 && 'animate-wiggle'
               )}
             />
-            {unreadCount > 0 && (
-              <span className="ring-background animate-fade-in absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
+            <UnreadCountBadge count={unreadCount} />
           </Button>
         </DropdownMenuTrigger>
 

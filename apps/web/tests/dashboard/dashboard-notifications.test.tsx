@@ -132,3 +132,41 @@ describe('NotificationInbox client load', () => {
     ).toBeInTheDocument();
   });
 });
+
+describe('NotificationInbox unread badge', () => {
+  afterEach(() => {
+    inboxResult.data = null;
+    inboxResult.error = null;
+  });
+
+  it('shows the numeric unread count on the bell through nine items', () => {
+    // Arrange
+    const unread = notificationFactory.buildList(3, { read_status: false });
+
+    // Act
+    render(<NotificationInbox userId="user-1" initialNotifications={unread} />);
+
+    // Assert
+    expect(
+      screen.getByRole('button', { name: 'View notifications, 3 unread' })
+    ).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
+  });
+
+  it('shows a star on the bell when unread count exceeds nine', () => {
+    // Arrange
+    const unread = notificationFactory.buildList(10, { read_status: false });
+
+    // Act
+    render(<NotificationInbox userId="user-1" initialNotifications={unread} />);
+
+    // Assert
+    expect(
+      screen.getByRole('button', {
+        name: 'View notifications, more than 9 unread',
+      })
+    ).toBeInTheDocument();
+    expect(screen.queryByText('9+')).not.toBeInTheDocument();
+    expect(screen.queryByText('10')).not.toBeInTheDocument();
+  });
+});

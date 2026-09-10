@@ -5,7 +5,7 @@ Per-user in-app inbox in the dashboard header bell.
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
 | Status       | **Living**                                                    |
-| Last updated | 2026-09-09                                                    |
+| Last updated | 2026-09-10                                                    |
 | Scope        | Header inbox, `notifications` table, due-date and prune crons |
 
 ## Behavior
@@ -15,6 +15,7 @@ Per-user in-app inbox in the dashboard header bell.
   `NotificationInbox` loads the latest 50 active rows on the client after mount
   and can retry if the request fails (slow networks, timeouts).
 - Realtime inserts/updates/deletes still arrive over Supabase while signed in.
+- Bell badge: numeric unread count through 9; a star when unread is 10 or more.
 
 ## Retention
 
