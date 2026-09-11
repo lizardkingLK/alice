@@ -20,7 +20,7 @@ import { prisma } from '../../../lib/prisma';
 import {
   prismaAuditCreateWithoutStatus,
   prismaAuditUpdate,
-  prismaLockTimestamp,
+  prismaLockTimestampRange,
   prismaOptionalDate,
 } from '../../../lib/prisma-audit';
 import { resolveOptimisticPrismaUpdate } from '../../../lib/optimistic-lock';
@@ -262,7 +262,7 @@ export class WorkItemRepository {
     const { count } = await prisma.work_items.updateMany({
       where: {
         id: input.id,
-        updated_at: prismaLockTimestamp(input.expectedUpdatedAt),
+        updated_at: prismaLockTimestampRange(input.expectedUpdatedAt),
       },
       data: {
         title: input.title,
@@ -437,7 +437,7 @@ export class WorkItemRepository {
       const rootUpdate = await tx.work_items.updateMany({
         where: {
           id: rootId,
-          updated_at: prismaLockTimestamp(expectedUpdatedAt),
+          updated_at: prismaLockTimestampRange(expectedUpdatedAt),
         },
         data: {
           record_status: recordStatus,

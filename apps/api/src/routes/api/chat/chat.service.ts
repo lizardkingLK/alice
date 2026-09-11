@@ -11,6 +11,9 @@ import {
   getAllowedChildType,
   ChatAttachmentFileTypeEnum,
   type ParsedWorkItemNode,
+  ProjectFieldsConfigSchema,
+  type ProjectFieldsConfig,
+  ChatTurnRoleEnum,
 } from '@repo/types';
 import type { WorkItemService } from '../workItems/workItems.service';
 import type { SprintsService } from '../sprints/sprints.service';
@@ -20,7 +23,11 @@ import type { ProjectRowWithOwner } from '../projects/projects.types';
 import type { IntegrationsService } from '../integrations/integrations.service';
 import type { ResolvedChatModelConfig } from '../integrations/chat-providers/chat-provider.types';
 import { resolveChatProvider } from '../integrations/chat-providers/resolve-chat-provider';
-import { systemInstruction, aliceChatTools } from './chat.route.data';
+import {
+  systemInstruction,
+  aliceChatTools,
+  dynamicFieldsSystemPrompt,
+} from './chat.route.data';
 import type { ChatRepository } from './chat.repository';
 import { ChatAttachmentsRepository } from './chat-attachments.repository';
 import { fetchAndParseWorkItemAttachment } from './chat-attachment-parser';
@@ -157,6 +164,112 @@ export function markdownToChatHistory(md: string): StoredChatMessage[] {
   }
 }
 
+function parseFieldProperty(
+  rawField: unknown
+): { key: string; prop: Record<string, unknown> } | null {
+  if (!rawField || typeof rawField !== 'object') return null;
+  const f = rawField as Record<string, unknown>;
+  const key = typeof f.key === 'string' ? f.key.trim() : '';
+  if (!key) return null;
+
+  const prop: Record<string, unknown> = {
+    type: typeof f.type === 'string' ? f.type : 'string',
+    title: typeof f.title === 'string' ? f.title : key,
+    ...(typeof f.description === 'string' && f.description
+      ? { description: f.description }
+      : {}),
+    ...(Array.isArray(f.enum) && f.enum.length > 0 ? { enum: f.enum } : {}),
+    ...(typeof f.format === 'string' && f.format ? { format: f.format } : {}),
+    ...(f.type === 'array' && f.items ? { items: f.items } : {}),
+  };
+  return { key, prop };
+}
+
+function extractJsonFromText(text: string): unknown {
+  const cleaned = text
+    .replace(/```json/gi, '')
+    .replaceAll('```', '')
+    .trim();
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  if (firstBrace === -1 || lastBrace === -1) {
+    throw new Error(
+      'AI could not generate a valid JSON schema for the given request.'
+    );
+  }
+  return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
+}
+
+function buildSchemaFromRawFields(rawFields: unknown[]): {
+  $schema: string;
+  type: 'object';
+  properties: Record<string, unknown>;
+  additionalProperties: true;
+} {
+  const properties: Record<string, unknown> = {};
+  for (const field of rawFields) {
+    const parsed = parseFieldProperty(field);
+    if (parsed) {
+      properties[parsed.key] = parsed.prop;
+    }
+  }
+  return {
+    $schema: 'https://json-schema.org/draft/2020-12/schema',
+    type: 'object',
+    properties,
+    additionalProperties: true,
+  };
+}
+
+function tryExtractToolCallSchema(
+  parts: ChatContentPart[]
+): ProjectFieldsConfig | null {
+  for (const part of parts) {
+    if (
+      part.functionCall?.name === 'generate_project_fields_schema' &&
+      part.functionCall.args
+    ) {
+      const rawFields = Array.isArray(part.functionCall.args.fields)
+        ? part.functionCall.args.fields
+        : [];
+      const schema = buildSchemaFromRawFields(rawFields);
+      const validated = ProjectFieldsConfigSchema.safeParse(schema);
+      if (validated.success) return validated.data;
+    }
+  }
+  return null;
+}
+
+function mergeWithCurrentSchema(
+  generatedSchema: ProjectFieldsConfig,
+  currentSchema?: unknown
+): ProjectFieldsConfig {
+  if (
+    !currentSchema ||
+    typeof currentSchema !== 'object' ||
+    !('properties' in currentSchema) ||
+    !currentSchema.properties ||
+    typeof currentSchema.properties !== 'object'
+  ) {
+    return generatedSchema;
+  }
+
+  const merged = {
+    ...generatedSchema,
+    properties: {
+      ...(currentSchema.properties as Record<string, unknown>),
+      ...generatedSchema.properties,
+    },
+  };
+
+  const validated = ProjectFieldsConfigSchema.safeParse(merged);
+  if (validated.success) {
+    return validated.data;
+  }
+
+  return generatedSchema;
+}
+
 export class ChatService {
   private readonly historyCache = new Map<string, StoredChatMessage[]>();
   private readonly chatAttachmentsRepository: ChatAttachmentsRepository;
@@ -265,6 +378,8 @@ export class ChatService {
           toolActionsPerformed,
           history
         ),
+      generate_project_fields_schema: () =>
+        Promise.resolve(this.handleGenerateProjectFieldsSchema(args)),
     };
 
     const handler = toolHandlers[name];
@@ -963,5 +1078,60 @@ ${attachmentsInstruction}
           console.error('Failed to reset processing status:', err);
         });
     }
+  }
+
+  handleGenerateProjectFieldsSchema(args: Record<string, unknown>): unknown {
+    const rawFields = Array.isArray(args.fields) ? args.fields : [];
+    const schema = buildSchemaFromRawFields(rawFields);
+    return {
+      success: true,
+      schema,
+    };
+  }
+
+  async generateProjectFieldsSchema(
+    prompt: string,
+    currentSchema?: unknown
+  ): Promise<ProjectFieldsConfig> {
+    const chatModel = await this.resolveChatModelForChat({});
+
+    const userMessage = currentSchema
+      ? `Current Schema:\n${JSON.stringify(currentSchema, null, 2)}\n\nUser Request: ${prompt}`
+      : `User Request: ${prompt}`;
+
+    const contents: ChatContentTurn[] = [
+      {
+        role: ChatTurnRoleEnum.USER,
+        parts: [{ text: userMessage }],
+      },
+    ];
+
+    const response = await this.callChatModelAPI(
+      chatModel,
+      contents,
+      dynamicFieldsSystemPrompt
+    );
+
+    const parts = response.candidates?.[0]?.content?.parts ?? [];
+    const toolCallParsed = tryExtractToolCallSchema(parts);
+    if (toolCallParsed) {
+      return mergeWithCurrentSchema(toolCallParsed, currentSchema);
+    }
+
+    let jsonText = '';
+    for (const part of parts) {
+      if (part.text) {
+        jsonText += part.text;
+      }
+    }
+
+    const rawObj = extractJsonFromText(jsonText);
+    const validated = ProjectFieldsConfigSchema.safeParse(rawObj);
+    if (!validated.success) {
+      throw new Error(
+        `Generated schema is invalid: ${validated.error.issues.map((i) => i.message).join(', ')}`
+      );
+    }
+    return mergeWithCurrentSchema(validated.data, currentSchema);
   }
 }

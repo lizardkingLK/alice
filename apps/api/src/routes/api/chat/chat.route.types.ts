@@ -44,6 +44,8 @@ export type AliceChatToolParameterProperty = {
   description?: string;
   enum?: readonly string[];
   items?: AliceChatToolParameterProperty;
+  properties?: Record<string, AliceChatToolParameterProperty>;
+  required?: readonly string[];
 };
 
 /** One Alice chat tool declaration (provider-agnostic). */
