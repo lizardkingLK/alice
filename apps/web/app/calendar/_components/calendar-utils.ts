@@ -15,6 +15,19 @@ export type CalendarDayCell = {
   readonly dateString: string;
 };
 
+export function visibleCalendarDateRange(
+  year: number,
+  month: number
+): { readonly from: string; readonly to: string } {
+  const days = buildCalendarDays(year, month, null);
+  const first = days[0];
+  const last = days[days.length - 1];
+  return {
+    from: first?.dateString ?? toLocalYYYYMMDD(new Date(year, month, 1)),
+    to: last?.dateString ?? toLocalYYYYMMDD(new Date(year, month + 1, 0)),
+  };
+}
+
 export function buildCalendarDays(
   year: number,
   month: number,

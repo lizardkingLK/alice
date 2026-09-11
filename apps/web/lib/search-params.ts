@@ -139,12 +139,7 @@ export function parseViewsListTab(tab?: string | null): ViewsListTab {
 }
 
 export type ProjectDetailsTab =
-  | 'details'
-  | 'members'
-  | 'teams'
-  | 'work-items'
-  | 'integrations'
-  | 'fields';
+  'details' | 'members' | 'teams' | 'work-items' | 'integrations' | 'fields';
 
 export function parseProjectDetailsTab(tab?: string | null): ProjectDetailsTab {
   if (

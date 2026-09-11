@@ -202,17 +202,23 @@ export function SprintReportView({
                   Active
                 </Badge>
               )}
-              {sprint.project && (
-                <span className="text-muted-foreground text-xs font-medium">
+              {sprint.project ? (
+                <span className="text-muted-foreground min-w-0 text-xs font-medium">
                   Project:{' '}
-                  <span className="text-foreground font-semibold">
+                  <TruncatedText
+                    as="span"
+                    className="text-foreground inline-block max-w-48 align-bottom font-semibold sm:max-w-64"
+                  >
                     {sprint.project.name}
-                  </span>
+                  </TruncatedText>
                 </span>
-              )}
+              ) : null}
             </div>
             <h1 className="text-foreground mt-2 text-2xl font-bold tracking-tight md:text-3xl">
-              <TruncatedText as="span" className="block max-w-full md:max-w-3xl">
+              <TruncatedText
+                as="span"
+                className="block max-w-full md:max-w-3xl"
+              >
                 {`${sprint.name} Summary Report`}
               </TruncatedText>
             </h1>

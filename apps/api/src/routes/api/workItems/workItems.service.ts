@@ -458,6 +458,8 @@ export class WorkItemService {
     assigneeId?: string;
     labels?: string[];
     recordStatus?: 'active' | 'archived';
+    dueDate: ListWorkItemsQuery['dueDate'];
+    excludeStatuses: ListWorkItemsQuery['excludeStatuses'];
   } | null {
     const base = {
       sprintId: query.sprintId,
@@ -466,6 +468,8 @@ export class WorkItemService {
       assigneeId: query.assigneeId,
       labels: query.labels,
       recordStatus: query.recordStatus,
+      dueDate: query.dueDate,
+      excludeStatuses: query.excludeStatuses,
     };
 
     if (accessible.length === 0) {

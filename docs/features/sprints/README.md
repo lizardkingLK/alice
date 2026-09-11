@@ -42,12 +42,12 @@ stateDiagram-v2
 
 ## 3. UX Surfaces
 
-| Surface                   | Route                  | Behavior                                                                                                                                              |
-| :------------------------ | :--------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Sprints Registry**      | `/sprints`             | Displays sprints for accessible projects, with Active/Archived tabs, search, and a Filter dialog for project (`?project=`). Create/edit sprints, dates, and status transitions. |
-| **Backlog Planning**      | `/backlog`             | Split-view backlog manager allowing team members to drag or assign backlog work items into planned and active sprints.                                |
+| Surface                   | Route                  | Behavior                                                                                                                                                                              |
+| :------------------------ | :--------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Sprints Registry**      | `/sprints`             | Displays sprints for accessible projects, with Active/Archived tabs, search, and a Filter dialog for project (`?project=`). Create/edit sprints, dates, and status transitions.       |
+| **Backlog Planning**      | `/backlog`             | Split-view backlog manager allowing team members to drag or assign backlog work items into planned and active sprints.                                                                |
 | **Sprint Summary Report** | `/sprints/[id]/report` | Live retrospective (stats, charts, deliverables) for active/closed/archived sprints; **planned** sprints show the same layout as an inaccessible placeholder until the sprint starts. |
-| **Alice Assistant**       | `/chat` & Drawer       | Conversational interface where Alice can invoke `list_sprints` and `create_sprint` via natural language.                                              |
+| **Alice Assistant**       | `/chat` & Drawer       | Conversational interface where Alice can invoke `list_sprints` and `create_sprint` via natural language.                                                                              |
 
 ---
 

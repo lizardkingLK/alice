@@ -154,9 +154,7 @@ export function CalendarFilterDialog({
 
   const selectedValue = draft[activeFieldId];
   const showAllOption =
-    activeFieldId === 'assignee' ||
-    activeFieldId === 'type' ||
-    allowAllFilters;
+    activeFieldId === 'assignee' || activeFieldId === 'type' || allowAllFilters;
 
   const applySelection = (value: string) => {
     if (activeFieldId === 'project') {

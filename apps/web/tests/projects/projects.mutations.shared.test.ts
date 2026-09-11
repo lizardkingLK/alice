@@ -126,9 +126,12 @@ describe('createProjectsService frontend tests', () => {
 
     await service.removeProjectMember('proj-1', 'user-2');
 
-    expect(apiFetch).toHaveBeenCalledWith('/api/projects/proj-1/members/user-2', {
-      method: 'DELETE',
-    });
+    expect(apiFetch).toHaveBeenCalledWith(
+      '/api/projects/proj-1/members/user-2',
+      {
+        method: 'DELETE',
+      }
+    );
   });
 
   it('updates project dynamic fields config via PUT', async () => {

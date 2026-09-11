@@ -51,17 +51,27 @@ function TruncatedText({
   }, [children]);
 
   const sharedProps = {
-    className: cn('truncate', className),
+    // `truncate` needs a non-inline box; spans default to inline and ignore overflow.
+    // `align-middle` keeps flex/inline neighbors (icons, chevrons) vertically centered.
+    className: cn(
+      as === 'span' ? 'inline-block max-w-full align-middle' : null,
+      'truncate',
+      className
+    ),
     title: isTruncated ? children : undefined,
     children,
     ...props,
   };
 
   if (as === 'span') {
-    return <span ref={ref as React.RefObject<HTMLSpanElement>} {...sharedProps} />;
+    return (
+      <span ref={ref as React.RefObject<HTMLSpanElement>} {...sharedProps} />
+    );
   }
 
-  return <p ref={ref as React.RefObject<HTMLParagraphElement>} {...sharedProps} />;
+  return (
+    <p ref={ref as React.RefObject<HTMLParagraphElement>} {...sharedProps} />
+  );
 }
 
 export { TruncatedText };

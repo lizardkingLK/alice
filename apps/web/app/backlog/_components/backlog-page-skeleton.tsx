@@ -33,23 +33,16 @@ export function BacklogPageSkeleton() {
       aria-busy="true"
       aria-label="Loading backlog content"
     >
-      <div className="bg-card/40 border-border/60 flex flex-col gap-4 rounded-xl border p-4 shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <Skeleton className="size-5 shrink-0 rounded-md" />
-            <Skeleton className="h-7 w-36" />
-            <Skeleton className="ml-4 h-9 w-44 rounded-md" />
-          </div>
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-9 w-32" />
-            <Skeleton className="h-9 w-32" />
-          </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
+          <Skeleton className="h-9 w-full max-w-xs sm:w-64" />
+          <Skeleton className="size-8 shrink-0 rounded-md" />
+          <Skeleton className="size-8 shrink-0 rounded-md" />
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Skeleton className="h-9 w-full max-w-xs" />
-          <Skeleton className="h-9 w-36" />
-          <Skeleton className="h-9 w-40" />
-          <Skeleton className="h-9 w-32" />
+        <div className="flex items-center gap-2">
+          <Skeleton className="size-8 shrink-0 rounded-md" />
+          <Skeleton className="h-9 w-44 rounded-lg" />
+          <Skeleton className="size-8 shrink-0 rounded-md" />
         </div>
       </div>
 

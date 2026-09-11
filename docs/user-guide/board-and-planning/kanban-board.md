@@ -34,9 +34,9 @@ registry.
 
 ## Filters
 
-Use search, the people avatars, and the **Filter** icon (**Shift+F**) for
-project, sprint, and priority. **Defaults** (gear icon) sits on the right of the
-toolbar. Save a filtered URL as a [view](../navigation/favorites-and-views.md).
+Use search, the **Filter** icon (**Shift+F**), **Defaults** (sliders), then the
+people avatars — in that order — for project, sprint, priority, and assignee.
+Save a filtered URL as a [view](../navigation/favorites-and-views.md).
 
 ---
 

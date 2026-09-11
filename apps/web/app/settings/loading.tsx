@@ -5,7 +5,6 @@ import { Skeleton } from '@repo/ui/components/ui/skeleton';
 export default function SettingsLoading() {
   return (
     <DashboardShell
-      sidebarDefaultOpen={false}
       contentClassName="p-0"
       breadcrumbOverrides={SETTINGS_BREADCRUMBS}
       breadcrumbAsTrail

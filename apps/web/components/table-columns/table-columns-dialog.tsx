@@ -11,6 +11,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@repo/ui/components/ui/dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@repo/ui/components/ui/tooltip';
 import { Columns3 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { ColumnOptionRow } from '@/components/table-columns/column-option-row';
@@ -54,7 +60,7 @@ export function TableColumnsDialog({
   description = 'Choose which columns appear in the table.',
   contentClassName = 'sm:max-w-sm',
   listClassName = 'mt-2 flex flex-col gap-0.5',
-  triggerClassName = 'h-9 cursor-pointer gap-1.5 px-3 text-xs',
+  triggerClassName = 'size-9 shrink-0 cursor-pointer',
   triggerAriaLabel,
   highlightTriggerWhenOpen = false,
   normalize,
@@ -69,7 +75,7 @@ export function TableColumnsDialog({
   const resolvedTriggerAriaLabel =
     typeof triggerAriaLabel === 'function'
       ? triggerAriaLabel(applied)
-      : triggerAriaLabel;
+      : (triggerAriaLabel ?? 'Columns');
 
   useEffect(() => {
     if (!open) {
@@ -100,23 +106,30 @@ export function TableColumnsDialog({
         setOpen(next);
       }}
     >
-      <DialogTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className={cn(
-            triggerClassName,
-            (applied || (highlightTriggerWhenOpen && open)) &&
-              PREFERENCE_APPLIED_OUTLINE_BUTTON_CLASS
-          )}
-          disabled={disabled}
-          aria-label={resolvedTriggerAriaLabel}
-        >
-          <Columns3 className="size-3.5" />
-          Columns
-        </Button>
-      </DialogTrigger>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DialogTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className={cn(
+                  triggerClassName,
+                  (applied || (highlightTriggerWhenOpen && open)) &&
+                    PREFERENCE_APPLIED_OUTLINE_BUTTON_CLASS
+                )}
+                disabled={disabled}
+                aria-label={resolvedTriggerAriaLabel}
+                aria-expanded={open}
+              >
+                <Columns3 className="size-4" />
+              </Button>
+            </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Columns</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       <DialogContent className={contentClassName}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>

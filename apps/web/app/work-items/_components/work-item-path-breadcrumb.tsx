@@ -94,10 +94,7 @@ export function WorkItemPathBreadcrumb({
             <BreadcrumbSeparator />
             <BreadcrumbItem className="min-w-0">
               <BreadcrumbLink asChild className="hover:text-primary min-w-0">
-                <Link
-                  href={`/work-items/${ancestor.id}`}
-                  className="min-w-0"
-                >
+                <Link href={`/work-items/${ancestor.id}`} className="min-w-0">
                   <PathTypeChip type={ancestor.type} title={ancestor.title} />
                 </Link>
               </BreadcrumbLink>

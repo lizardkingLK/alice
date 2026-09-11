@@ -1,7 +1,14 @@
 'use client';
 
 import { Button } from '@repo/ui/components/ui/button';
-import { List, ListTree, Plus, X } from '@repo/ui/lib/icons';
+import {
+  Archive,
+  CircleDot,
+  List,
+  ListTree,
+  Plus,
+  X,
+} from '@repo/ui/lib/icons';
 import type { VisibilityState } from '@tanstack/react-table';
 import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
 import type { WorkItemsFilterDraft } from '@/app/work-items/_components/work-item-table/work-item-table-helpers';
@@ -14,8 +21,8 @@ import { SearchInput } from '@/components/search-input';
 import type { WorkItemListView } from '@/lib/search-params';
 
 const WORK_ITEM_TABS = [
-  { id: 'active' as const, label: 'Active' },
-  { id: 'archived' as const, label: 'Archived' },
+  { id: 'active' as const, label: 'Active', icon: CircleDot },
+  { id: 'archived' as const, label: 'Archived', icon: Archive },
 ] as const;
 
 const WORK_ITEM_LIST_VIEW_OPTIONS = [
@@ -146,17 +153,19 @@ export function WorkItemsTableToolbar({
           hasActiveFilters={hasActiveFilters}
         />
 
-        <WorkItemListViewToggle
-          listView={isHierarchy ? 'hierarchy' : 'flat'}
-          onListViewChange={onListViewChange}
-        />
-
         <WorkItemsColumnsDialog
           visibility={columnVisibility}
           isProjectLocked={isProjectLocked}
           disabled={!columnsHydrated}
           onApply={onApplyColumnVisibility}
         />
+
+        {showWorkspaceDefaults ? (
+          <WorkspaceDefaultsControls
+            onOpenDefaultsDialog={onOpenDefaultsDialog}
+            savedDefaultsApplied={savedDefaultsApplied}
+          />
+        ) : null}
 
         {hasActiveFilters ? (
           <Button
@@ -173,18 +182,17 @@ export function WorkItemsTableToolbar({
       </div>
 
       <div className="flex flex-wrap items-center gap-3 self-start">
+        <WorkItemListViewToggle
+          listView={isHierarchy ? 'hierarchy' : 'flat'}
+          onListViewChange={onListViewChange}
+        />
+
         <RegistryTabSwitcher
           tabs={WORK_ITEM_TABS}
           value={tab}
           onChange={onTabChange}
+          aria-label="Work item status"
         />
-
-        {showWorkspaceDefaults ? (
-          <WorkspaceDefaultsControls
-            onOpenDefaultsDialog={onOpenDefaultsDialog}
-            savedDefaultsApplied={savedDefaultsApplied}
-          />
-        ) : null}
 
         {hideCreate ? null : (
           <Button onClick={onCreate} className="shrink-0">

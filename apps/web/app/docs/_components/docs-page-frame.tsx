@@ -35,7 +35,6 @@ export async function DocsPageFrame({
       contentClassName="p-4 sm:p-6"
       breadcrumbOverrides={breadcrumbOverrides}
       breadcrumbAsTrail={breadcrumbAsTrail}
-      sidebarDefaultOpen={false}
       stickyHeader
     >
       <DocsShell sections={sections} entries={entries}>

@@ -5,15 +5,12 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   ChartLegend,
   ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
   Line,
   LineChart,
-  Pie,
-  PieChart,
   XAxis,
   YAxis,
 } from '@repo/ui/components/ui/chart';
@@ -30,6 +27,7 @@ import {
 } from './dashboard-mock-data';
 import { DashboardWidgetShell } from './dashboard-widget-shell';
 import { ChartViewport } from '@/components/chart-viewport';
+import { StatusDistributionWheel } from '@/components/status-distribution-wheel';
 import { SIDEBAR_LAYOUT_SETTLE_MS } from '@/hooks/use-sidebar-layout-settling';
 import { createClient } from '@/lib/supabase/client';
 import { readBoardDefaults } from '@/app/board/_helpers/board-defaults-storage';
@@ -84,28 +82,15 @@ function StatusMixWidget() {
 
   return (
     <DashboardWidgetShell title={meta.title} description={meta.description}>
-      <DashboardChartViewport config={STATUS_MIX_CONFIG}>
-        <PieChart>
-          <ChartTooltip
-            cursor={false}
-            content={<ChartTooltipContent hideLabel nameKey="status" />}
-          />
-          <Pie
-            data={[...STATUS_MIX_DATA]}
-            dataKey="count"
-            nameKey="status"
-            innerRadius="48%"
-            outerRadius="78%"
-            paddingAngle={2}
-            strokeWidth={2}
-          >
-            {STATUS_MIX_DATA.map((entry) => (
-              <Cell key={entry.status} fill={entry.fill} />
-            ))}
-          </Pie>
+      <StatusDistributionWheel
+        data={[...STATUS_MIX_DATA]}
+        config={STATUS_MIX_CONFIG}
+        settleMs={SIDEBAR_LAYOUT_SETTLE_MS}
+        className="min-h-0 w-full flex-1"
+        legend={
           <ChartLegend content={<ChartLegendContent nameKey="status" />} />
-        </PieChart>
-      </DashboardChartViewport>
+        }
+      />
     </DashboardWidgetShell>
   );
 }

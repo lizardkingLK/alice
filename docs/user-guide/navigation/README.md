@@ -30,8 +30,10 @@ After sign-in, the left sidebar organizes the app:
 | **Account**   | Profile, Settings                                                   |
 | **Help**      | Help, Docs, Roadmap                                                 |
 
-Select any item to open that area. Collapse the sidebar with the trigger at the
-top or **Ctrl/⌘+B**.
+Select any item to open that area. Collapse or expand the sidebar with the
+trigger at the top or **Ctrl/⌘+B**. Alice remembers your preference (cookie) and
+applies it on load for every dashboard page — Docs, Settings, and Profile no
+longer force the sidebar closed.
 
 ---
 

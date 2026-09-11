@@ -3,7 +3,9 @@ import { render, screen } from '@testing-library/react';
 import ProjectsPage from '@/app/projects/page';
 
 vi.mock('@/app/projects/_components/projects-data', () => ({
-  ProjectsData: () => <div data-testid="projects-data">Projects Data Content</div>,
+  ProjectsData: () => (
+    <div data-testid="projects-data">Projects Data Content</div>
+  ),
 }));
 
 vi.mock('@/components/registry-page-shell', () => ({
