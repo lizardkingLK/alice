@@ -255,22 +255,22 @@ export function ProjectFieldsWorkspace({
             key,
             type:
               typeof propertyRecord.type === TypeofEnum.STRING
-                ? propertyRecord.type
+                ? (propertyRecord.type as string)
                 : 'unknown',
             title:
               typeof propertyRecord.title === TypeofEnum.STRING
-                ? propertyRecord.title
+                ? (propertyRecord.title as string)
                 : key,
             description:
               typeof propertyRecord.description === TypeofEnum.STRING
-                ? propertyRecord.description
+                ? (propertyRecord.description as string)
                 : undefined,
             enum: Array.isArray(propertyRecord.enum)
               ? propertyRecord.enum.map(String)
               : undefined,
             format:
               typeof propertyRecord.format === TypeofEnum.STRING
-                ? propertyRecord.format
+                ? (propertyRecord.format as string)
                 : undefined,
             default: propertyRecord.default,
           };
@@ -764,8 +764,13 @@ export function ProjectFieldsWorkspace({
             value={schemaText}
             onChange={(e) => {
               setSchemaText(e.target.value);
-              if (validationResult.status !== 'unvalidated') {
-                setValidationResult({ status: 'unvalidated' });
+              if (
+                validationResult.status !==
+                SchemaValidationStatusEnum.UNVALIDATED
+              ) {
+                setValidationResult({
+                  status: SchemaValidationStatusEnum.UNVALIDATED,
+                });
               }
             }}
             onScroll={handleEditorScroll}
@@ -825,7 +830,7 @@ export function ProjectFieldsWorkspace({
           const formatted = JSON.stringify(mergedSchema, null, 2);
           setSchemaText(formatted);
           setValidationResult({
-            status: 'valid',
+            status: SchemaValidationStatusEnum.VALID,
             message:
               'Fields generated with Alice and merged with existing fields. Review and save when ready.',
           });

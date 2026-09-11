@@ -476,7 +476,8 @@ export default function WorkItemSidebar({
             key,
             value
           );
-          latestDescriptionRef.current = updatedDescription;
+          latestDescriptionRef.current =
+            updatedDescription as DbWorkItem['description'];
 
           // Optimistically notify parent so UI updates immediately
           onWorkItemPatched({

@@ -225,7 +225,8 @@ function SelectDynamicEditor({
   readonly onFieldChange?: (key: string, value: unknown) => void;
   readonly onDone?: () => void;
 }) {
-  const stringVal = typeof value === TypeofEnum.STRING ? value : '__none__';
+  const stringVal =
+    typeof value === TypeofEnum.STRING ? (value as string) : '__none__';
   return (
     <Select
       defaultValue={stringVal}
@@ -436,8 +437,8 @@ function TextDynamicEditor({
   readonly onFieldChange?: (key: string, value: unknown) => void;
   readonly onDone?: () => void;
 }) {
-  const [draft, setDraft] = useState(
-    typeof value === TypeofEnum.STRING ? value : ''
+  const [draft, setDraft] = useState<string>(
+    typeof value === TypeofEnum.STRING ? (value as string) : ''
   );
 
   const handleSave = () => {
