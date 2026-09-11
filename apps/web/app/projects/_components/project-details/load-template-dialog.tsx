@@ -20,10 +20,7 @@ import {
   type WorkItemFieldValueMatch,
 } from '@/app/work-items/_helpers/work-item-dynamic-fields';
 import { ProjectFieldsErrorDialog } from './project-fields-error-dialog';
-import {
-  TEMPLATE_FIELD_OPTIONS,
-  DEFAULT_STARTER_KEYS,
-} from './load-template-dialog.data';
+import { TEMPLATE_FIELD_OPTIONS } from './load-template-dialog.data';
 
 export {
   TEMPLATE_FIELD_OPTIONS,
@@ -104,16 +101,11 @@ export function LoadTemplateDialog({
   // Reset/sync selection when dialog opens
   useEffect(() => {
     if (open) {
-      if (existingKeySet.size === 0) {
-        // If project has no fields at all, default-select the core starter fields
-        setSelectedKeys(new Set(DEFAULT_STARTER_KEYS));
-      } else {
-        // Pre-select whatever templates are currently in the project
-        const inProject = TEMPLATE_FIELD_OPTIONS.filter((t) =>
-          existingKeySet.has(t.key)
-        ).map((t) => t.key);
-        setSelectedKeys(new Set(inProject));
-      }
+      // Pre-select whatever templates are currently in the project (empty if none)
+      const inProject = TEMPLATE_FIELD_OPTIONS.filter((t) =>
+        existingKeySet.has(t.key)
+      ).map((t) => t.key);
+      setSelectedKeys(new Set(inProject));
     }
   }, [open, existingKeySet]);
 
