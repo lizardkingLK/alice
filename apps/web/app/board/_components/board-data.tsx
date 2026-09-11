@@ -17,6 +17,51 @@ import {
   parseWorkItemFilters,
   type RawSearchParams,
 } from '@/lib/search-params';
+import { createClient } from '@/lib/supabase/server';
+import { boardConfigSchema, type BoardColumn } from '@repo/types/api/v1';
+import { DEFAULT_BOARD_COLUMNS } from '@/app/work-items/_helpers/work-item-status';
+
+async function getProjectWorkflowConfig(
+  projectId: string
+): Promise<BoardColumn[]> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('projects')
+      .select('workflow_config')
+      .eq('id', projectId)
+      .single();
+
+    if (error) {
+      console.error(
+        `error. failed to fetch workflow_config for project ${projectId}:`,
+        error.message
+      );
+      return DEFAULT_BOARD_COLUMNS;
+    }
+
+    if (!data.workflow_config) {
+      return DEFAULT_BOARD_COLUMNS;
+    }
+
+    const parsed = boardConfigSchema.safeParse(data.workflow_config);
+    if (parsed.success) {
+      return parsed.data.columns;
+    }
+
+    console.warn(
+      `[BoardData] Invalid workflow_config for project ${projectId}`,
+      parsed.error
+    );
+    return DEFAULT_BOARD_COLUMNS;
+  } catch (error) {
+    console.error(
+      `error. failed to fetch workflow_config for project ${projectId}:`,
+      error
+    );
+    return DEFAULT_BOARD_COLUMNS;
+  }
+}
 
 type BoardDataProps = {
   readonly searchParams: Promise<RawSearchParams>;
@@ -74,6 +119,10 @@ export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
     ? await getSuggestedBoardDefaults(dbUser, activeProjects, sprints)
     : null;
 
+  const boardColumns = scopedProjectId
+    ? await getProjectWorkflowConfig(scopedProjectId)
+    : DEFAULT_BOARD_COLUMNS;
+
   const needsClientBootstrap = needsWorkspaceProjectBootstrap(
     resolvedSearchParams.project
   );
@@ -81,6 +130,7 @@ export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
 
   return (
     <BoardWorkspace
+      boardColumns={boardColumns}
       initialWorkItems={boardItems}
       projects={activeProjects}
       sprints={sprints}
