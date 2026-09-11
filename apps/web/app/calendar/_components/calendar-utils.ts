@@ -21,7 +21,7 @@ export function visibleCalendarDateRange(
 ): { readonly from: string; readonly to: string } {
   const days = buildCalendarDays(year, month, null);
   const first = days[0];
-  const last = days[days.length - 1];
+  const last = days.at(-1);
   return {
     from: first?.dateString ?? toLocalYYYYMMDD(new Date(year, month, 1)),
     to: last?.dateString ?? toLocalYYYYMMDD(new Date(year, month + 1, 0)),
