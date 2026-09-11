@@ -50,8 +50,7 @@ export function buildWorkItemBreadcrumbOverrides(
   projectId?: string | null,
   labels: WorkItemBreadcrumbLabels = {}
 ): DashboardBreadcrumbOverride[] {
-  const workItemLabel =
-    labels.workItemTitle?.trim() || toShortId(workItemId);
+  const workItemLabel = labels.workItemTitle?.trim() || toShortId(workItemId);
   const projectLabel =
     labels.projectName?.trim() ||
     (projectId && isUuidSegment(projectId) ? toShortId(projectId) : 'Project');

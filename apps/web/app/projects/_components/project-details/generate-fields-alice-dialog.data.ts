@@ -4,4 +4,3 @@ export const STARTER_PROMPTS = [
   'Customer impact score and release notes flag',
   'Defect severity, reproduction steps, and browser',
 ] as const;
-

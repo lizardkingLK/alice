@@ -311,4 +311,3 @@ Constraints:
 - Root "additionalProperties": true
 If a Current Schema is provided with existing fields in "properties", you MUST preserve all existing fields and add or update the newly requested fields to "properties". Do not omit or delete existing fields unless explicitly requested.
 Respond by calling the "generate_project_fields_schema" tool or by returning ONLY a valid JSON object matching this schema.`;
-

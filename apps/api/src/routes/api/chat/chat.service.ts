@@ -1080,9 +1080,7 @@ ${attachmentsInstruction}
     }
   }
 
-  handleGenerateProjectFieldsSchema(
-    args: Record<string, unknown>
-  ): unknown {
+  handleGenerateProjectFieldsSchema(args: Record<string, unknown>): unknown {
     const rawFields = Array.isArray(args.fields) ? args.fields : [];
     const schema = buildSchemaFromRawFields(rawFields);
     return {

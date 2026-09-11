@@ -86,13 +86,13 @@ Use `useToggleKeyboardShortcut` when the handler only toggles dialog open state
 
 ## Shortcut inventory
 
-| Shortcut     | Action                             | Location                       | Gate bypass                      |
-| ------------ | ---------------------------------- | ------------------------------ | -------------------------------- |
+| Shortcut     | Action                             | Location                                     | Gate bypass                      |
+| ------------ | ---------------------------------- | -------------------------------------------- | -------------------------------- |
 | **Shift+F**  | Toggle shared Filter dialog (icon) | `filter-dialog-shell.tsx` (+ domain dialogs) | Yes, while filter dialog is open |
-| **Ctrl/⌘+K** | Focus list search input            | `search-input.tsx`             | No                               |
-| **Ctrl/⌘+K** | Toggle docs search command palette | `docs-search-dialog.tsx`       | Yes, while palette is open       |
-| **Ctrl/⌘+B** | Toggle sidebar                     | `@repo/ui` `sidebar.tsx`       | No                               |
-| **M**        | Focus comment composer             | `comment-composer.tsx`         | No                               |
+| **Ctrl/⌘+K** | Focus list search input            | `search-input.tsx`                           | No                               |
+| **Ctrl/⌘+K** | Toggle docs search command palette | `docs-search-dialog.tsx`                     | Yes, while palette is open       |
+| **Ctrl/⌘+B** | Toggle sidebar                     | `@repo/ui` `sidebar.tsx`                     | No                               |
+| **M**        | Focus comment composer             | `comment-composer.tsx`                       | No                               |
 
 Tooltips on filter and search controls mention the relevant shortcut where
 applicable.

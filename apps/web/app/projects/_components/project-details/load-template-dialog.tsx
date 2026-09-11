@@ -13,11 +13,7 @@ import { Button } from '@repo/ui/components/ui/button';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
-import {
-  RotateCcw,
-  CheckCircle2,
-  SlidersHorizontal,
-} from '@repo/ui/lib/icons';
+import { RotateCcw, CheckCircle2, SlidersHorizontal } from '@repo/ui/lib/icons';
 import { apiFetch } from '@/lib/api/api-fetch.reads.use.client';
 import {
   findWorkItemsWithFieldValues,
@@ -30,11 +26,7 @@ import {
   type TemplateFieldItem,
 } from './load-template-dialog.data';
 
-export {
-  TEMPLATE_FIELD_OPTIONS,
-  DEFAULT_STARTER_KEYS,
-  type TemplateFieldItem,
-};
+export { TEMPLATE_FIELD_OPTIONS, DEFAULT_STARTER_KEYS, type TemplateFieldItem };
 
 export interface WorkItemSummaryItem {
   id: string;
@@ -89,7 +81,9 @@ export function LoadTemplateDialog({
       try {
         const res = await apiFetch<{
           workItems: WorkItemSummaryItem[];
-        }>(`/api/workItems?projectId=${projectId}&includeDescription=true&limit=100`);
+        }>(
+          `/api/workItems?projectId=${projectId}&includeDescription=true&limit=100`
+        );
         if (isMounted && res?.workItems) {
           setLoadedWorkItems(res.workItems);
         }
@@ -274,8 +268,8 @@ export function LoadTemplateDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
-          <DialogHeader className="p-6 pb-4 border-b border-border/60 shrink-0">
+        <DialogContent className="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+          <DialogHeader className="border-border/60 shrink-0 border-b p-6 pb-4">
             <div className="flex items-center gap-2">
               <div className="bg-primary/10 text-primary rounded-md p-1.5">
                 <RotateCcw className="size-4" />
@@ -289,7 +283,7 @@ export function LoadTemplateDialog({
 
             <div className="flex items-center justify-between pt-3 text-xs">
               <div className="flex items-center gap-2">
-                <span className="font-medium text-foreground">
+                <span className="text-foreground font-medium">
                   {selectedKeys.size} selected
                 </span>
                 <span className="text-muted-foreground">•</span>
@@ -322,7 +316,7 @@ export function LoadTemplateDialog({
                     variant="ghost"
                     size="sm"
                     onClick={handleDeselectAll}
-                    className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                    className="text-muted-foreground hover:text-foreground h-7 px-2 text-xs"
                   >
                     Clear Selection
                   </Button>
@@ -331,8 +325,8 @@ export function LoadTemplateDialog({
             </div>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 p-6 overflow-y-auto max-h-[50vh]">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <ScrollArea className="max-h-[50vh] flex-1 overflow-y-auto p-6">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {TEMPLATE_FIELD_OPTIONS.map((item) => {
                 const isAlreadyAdded = existingKeySet.has(item.key);
                 const isSelected = selectedKeys.has(item.key);
@@ -354,18 +348,18 @@ export function LoadTemplateDialog({
                         handleToggle(item.key);
                       }
                     }}
-                    className={`border rounded-lg p-3.5 flex flex-col justify-between transition-all select-none ${cardStyle}`}
+                    className={`flex flex-col justify-between rounded-lg border p-3.5 transition-all select-none ${cardStyle}`}
                   >
                     <div>
-                      <div className="flex items-start justify-between gap-2 mb-1.5">
-                        <div className="flex items-center gap-2 min-w-0">
+                      <div className="mb-1.5 flex items-start justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-2">
                           <Checkbox
                             id={`template-checkbox-${item.key}`}
                             checked={isSelected}
                             tabIndex={-1}
-                            className="shrink-0 pointer-events-none"
+                            className="pointer-events-none shrink-0"
                           />
-                          <span className="font-semibold text-sm text-foreground truncate">
+                          <span className="text-foreground truncate text-sm font-semibold">
                             {item.property.title}
                           </span>
                         </div>
@@ -373,7 +367,7 @@ export function LoadTemplateDialog({
                         {isAlreadyAdded && isSelected ? (
                           <Badge
                             variant="outline"
-                            className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 shrink-0 text-[10px] font-normal"
+                            className="shrink-0 border-emerald-500/30 bg-emerald-500/10 text-[10px] font-normal text-emerald-700 dark:text-emerald-400"
                           >
                             <CheckCircle2 className="mr-1 size-3" />
                             Added
@@ -390,21 +384,21 @@ export function LoadTemplateDialog({
                         )}
                       </div>
 
-                      <div className="text-muted-foreground font-mono text-[11px] mb-1.5 pl-6">
+                      <div className="text-muted-foreground mb-1.5 pl-6 font-mono text-[11px]">
                         key: {item.key}
                       </div>
 
-                      <p className="text-muted-foreground text-xs line-clamp-2 pl-6">
+                      <p className="text-muted-foreground line-clamp-2 pl-6 text-xs">
                         {item.property.description}
                       </p>
                     </div>
 
-                    <div className="pt-2 pl-6 flex items-center justify-between text-[11px] text-muted-foreground">
-                      <span className="text-[10px] text-muted-foreground/80 font-medium">
+                    <div className="text-muted-foreground flex items-center justify-between pt-2 pl-6 text-[11px]">
+                      <span className="text-muted-foreground/80 text-[10px] font-medium">
                         {item.category}
                       </span>
                       {item.property.enum && (
-                        <span className="text-[10px] text-muted-foreground/70">
+                        <span className="text-muted-foreground/70 text-[10px]">
                           {item.property.enum.length} options
                         </span>
                       )}
@@ -415,8 +409,8 @@ export function LoadTemplateDialog({
             </div>
           </ScrollArea>
 
-          <DialogFooter className="m-0 px-6 py-4 border-t border-border/60 bg-muted/20 flex flex-row items-center justify-end gap-3 shrink-0">
-            <div className="mr-auto text-xs text-muted-foreground hidden sm:block">
+          <DialogFooter className="border-border/60 bg-muted/20 m-0 flex shrink-0 flex-row items-center justify-end gap-3 border-t px-6 py-4">
+            <div className="text-muted-foreground mr-auto hidden text-xs sm:block">
               {selectedKeys.size}{' '}
               {selectedKeys.size === 1 ? 'template' : 'templates'} selected
             </div>
@@ -436,10 +430,11 @@ export function LoadTemplateDialog({
               size="sm"
               disabled={!canApply}
               onClick={handleConfirm}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 min-w-32 shadow-sm"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 min-w-32 px-4 shadow-sm"
             >
               <SlidersHorizontal className="mr-1.5 size-3.5" />
-              Add Selected {selectedKeys.size > 0 ? `(${selectedKeys.size})` : ''}
+              Add Selected{' '}
+              {selectedKeys.size > 0 ? `(${selectedKeys.size})` : ''}
             </Button>
           </DialogFooter>
         </DialogContent>

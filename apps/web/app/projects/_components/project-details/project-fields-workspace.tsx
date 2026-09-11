@@ -65,7 +65,11 @@ type ParsedProperty = {
 function parseCurrentSchemaObject(raw: string): Record<string, unknown> {
   try {
     const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === TypeofEnum.OBJECT && !Array.isArray(parsed)) {
+    if (
+      parsed &&
+      typeof parsed === TypeofEnum.OBJECT &&
+      !Array.isArray(parsed)
+    ) {
       return parsed as Record<string, unknown>;
     }
   } catch {
@@ -214,7 +218,11 @@ export function ProjectFieldsWorkspace({
   const { parsedProperties, parseError } = useMemo(() => {
     try {
       const parsed = JSON.parse(schemaText);
-      if (!parsed || typeof parsed !== TypeofEnum.OBJECT || Array.isArray(parsed)) {
+      if (
+        !parsed ||
+        typeof parsed !== TypeofEnum.OBJECT ||
+        Array.isArray(parsed)
+      ) {
         return {
           parsedProperties: [] as ParsedProperty[],
           parseError: 'Root schema must be a JSON object.',
@@ -355,11 +363,9 @@ export function ProjectFieldsWorkspace({
 
     const updatedSchema = {
       $schema:
-        currentSchema.$schema ||
-        'https://json-schema.org/draft/2020-12/schema',
+        currentSchema.$schema || 'https://json-schema.org/draft/2020-12/schema',
       type: DynamicFieldTypeEnum.OBJECT,
-      title:
-        currentSchema.title || 'Project Dynamic Work-Item Fields',
+      title: currentSchema.title || 'Project Dynamic Work-Item Fields',
       description:
         currentSchema.description ||
         'Custom metadata fields configured for project work items',
@@ -513,7 +519,7 @@ export function ProjectFieldsWorkspace({
         </div>
 
         {/* Action Controls */}
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           <Button
             type="button"
             variant="outline"
@@ -589,7 +595,7 @@ export function ProjectFieldsWorkspace({
 
       {/* Validation Status Banner */}
       {validationResult.status === SchemaValidationStatusEnum.VALID && (
-        <div className="border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 flex items-center justify-between gap-2.5 rounded-lg border px-3.5 py-2.5 text-sm transition-all duration-300">
+        <div className="flex items-center justify-between gap-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2.5 text-sm text-emerald-700 transition-all duration-300 dark:text-emerald-400">
           <div className="flex items-center gap-2.5">
             <CheckCircle2 className="size-4 shrink-0" />
             <span>{validationResult.message}</span>
@@ -601,7 +607,7 @@ export function ProjectFieldsWorkspace({
                 status: SchemaValidationStatusEnum.UNVALIDATED,
               })
             }
-            className="text-emerald-700/60 hover:text-emerald-700 dark:text-emerald-400/60 dark:hover:text-emerald-400 p-0.5 rounded transition-colors"
+            className="rounded p-0.5 text-emerald-700/60 transition-colors hover:text-emerald-700 dark:text-emerald-400/60 dark:hover:text-emerald-400"
             aria-label="Dismiss message"
           >
             <X className="size-3.5" />
@@ -718,16 +724,17 @@ export function ProjectFieldsWorkspace({
             JSON Schema Specification
           </label>
           <span className="text-muted-foreground font-mono text-xs">
-            {lineCount} {lineCount === 1 ? 'line' : 'lines'} • Draft 2020-12 / Draft-07 Compatible
+            {lineCount} {lineCount === 1 ? 'line' : 'lines'} • Draft 2020-12 /
+            Draft-07 Compatible
           </span>
         </div>
 
-        <div className="border-border bg-muted/20 focus-within:border-ring focus-within:ring-ring relative flex rounded-lg border focus-within:ring-1 overflow-hidden font-mono text-xs md:text-sm">
+        <div className="border-border bg-muted/20 focus-within:border-ring focus-within:ring-ring relative flex overflow-hidden rounded-lg border font-mono text-xs focus-within:ring-1 md:text-sm">
           {/* Line Numbers Gutter */}
           <div
             ref={lineNumbersRef}
             aria-hidden="true"
-            className="border-border/60 bg-muted/35 text-muted-foreground/45 select-none border-r py-4 pl-3 pr-2 text-right overflow-hidden shrink-0 font-mono text-xs md:text-sm leading-6"
+            className="border-border/60 bg-muted/35 text-muted-foreground/45 shrink-0 overflow-hidden border-r py-4 pr-2 pl-3 text-right font-mono text-xs leading-6 select-none md:text-sm"
             style={{ minWidth: '3.25rem' }}
           >
             {Array.from({ length: lineCount }, (_, i) => {
@@ -738,7 +745,7 @@ export function ProjectFieldsWorkspace({
                   key={lineNum}
                   className={`h-6 leading-6 transition-colors ${
                     isError
-                      ? 'bg-destructive/20 text-destructive font-bold rounded-sm px-0.5'
+                      ? 'bg-destructive/20 text-destructive rounded-sm px-0.5 font-bold'
                       : ''
                   }`}
                   title={isError ? `Error near line ${lineNum}` : undefined}
@@ -765,7 +772,7 @@ export function ProjectFieldsWorkspace({
             onKeyDown={handleKeyDown}
             disabled={!isManagerOrAdmin || isSaving}
             wrap="off"
-            className="placeholder:text-muted-foreground w-full resize-y bg-transparent py-4 px-4 font-mono text-xs md:text-sm leading-6 outline-none disabled:cursor-not-allowed disabled:opacity-75 whitespace-pre overflow-x-auto"
+            className="placeholder:text-muted-foreground w-full resize-y overflow-x-auto bg-transparent px-4 py-4 font-mono text-xs leading-6 whitespace-pre outline-none disabled:cursor-not-allowed disabled:opacity-75 md:text-sm"
             placeholder="Enter JSON Schema..."
             spellCheck={false}
           />

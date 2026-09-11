@@ -179,7 +179,12 @@ describe('Dynamic Fields Schema Generation and Merging', () => {
                     securityClassification: {
                       type: 'string',
                       title: 'Security Classification',
-                      enum: ['Public', 'Internal', 'Confidential', 'Restricted'],
+                      enum: [
+                        'Public',
+                        'Internal',
+                        'Confidential',
+                        'Restricted',
+                      ],
                     },
                     complianceTier: {
                       type: 'string',
@@ -237,4 +242,3 @@ describe('Dynamic Fields Schema Generation and Merging', () => {
     expect(merged.properties).toHaveProperty('complianceTier');
   });
 });
-

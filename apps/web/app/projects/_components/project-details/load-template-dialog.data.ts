@@ -70,8 +70,7 @@ export const TEMPLATE_FIELD_OPTIONS: TemplateFieldItem[] = [
     property: {
       type: DynamicFieldTypeEnum.STRING,
       title: 'Security Classification',
-      description:
-        'Confidentiality and sensitivity level of this work item',
+      description: 'Confidentiality and sensitivity level of this work item',
       enum: ['Public', 'Internal', 'Confidential', 'Restricted'],
     },
   },
@@ -102,8 +101,7 @@ export const TEMPLATE_FIELD_OPTIONS: TemplateFieldItem[] = [
     property: {
       type: DynamicFieldTypeEnum.STRING,
       title: 'Target Environment',
-      description:
-        'Target deployment or testing environment',
+      description: 'Target deployment or testing environment',
       enum: ['Development', 'Staging', 'UAT', 'Production'],
     },
   },

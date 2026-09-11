@@ -25,7 +25,11 @@ type ChartsFilterDialogProps = {
 };
 
 const CHART_FILTER_FIELDS = [
-  { id: 'ownership', label: 'Ownership', searchPlaceholder: 'Search ownership' },
+  {
+    id: 'ownership',
+    label: 'Ownership',
+    searchPlaceholder: 'Search ownership',
+  },
   { id: 'status', label: 'Status', searchPlaceholder: 'Search status' },
 ] as const satisfies ReadonlyArray<
   FilterDialogNavField & { readonly searchPlaceholder: string }
@@ -115,7 +119,9 @@ export function ChartsFilterDialog({
       hasActiveFilters={hasActiveFilters}
       fields={CHART_FILTER_FIELDS}
       activeFieldId={activeFieldId}
-      onActiveFieldIdChange={(id) => setActiveFieldId(id as ChartsFilterFieldId)}
+      onActiveFieldIdChange={(id) =>
+        setActiveFieldId(id as ChartsFilterFieldId)
+      }
       onClearAll={() => setDraft({ ownership: 'all', status: 'all' })}
       onClearActiveField={clearActiveField}
       onOkay={() => {

@@ -69,7 +69,7 @@ export class DynamicFieldsErrorBoundary extends Component<
 
 export function DynamicFieldsErrorNotice() {
   return (
-    <div className="border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400 flex items-center gap-2 rounded-lg border p-3 text-xs">
+    <div className="flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400">
       <AlertTriangle className="size-4 shrink-0" />
       <span>
         Some custom fields could not be displayed due to a configuration
@@ -85,7 +85,8 @@ function formatDisplayValue(value: unknown): string {
     ...(typeof value === TypeofEnum.STRING
       ? { str: () => value as string }
       : {}),
-    ...(typeof value === TypeofEnum.NUMBER || typeof value === TypeofEnum.BOOLEAN
+    ...(typeof value === TypeofEnum.NUMBER ||
+    typeof value === TypeofEnum.BOOLEAN
       ? { primitive: () => String(value) }
       : {}),
     ...(isNonNullObject
@@ -149,7 +150,11 @@ export function DynamicFieldValueDisplay({
                 {(value as unknown[]).map((v) => {
                   const itemText = formatDisplayValue(v);
                   return (
-                    <Badge key={itemText} variant="secondary" className="text-xs">
+                    <Badge
+                      key={itemText}
+                      variant="secondary"
+                      className="text-xs"
+                    >
                       {itemText}
                     </Badge>
                   );
@@ -391,7 +396,7 @@ function ArrayDynamicEditor({
             <Badge
               key={opt}
               variant={isSelected ? 'default' : 'outline'}
-              className="cursor-pointer select-none text-xs transition-colors"
+              className="cursor-pointer text-xs transition-colors select-none"
               onClick={() => {
                 const next = isSelected
                   ? selected.filter((s) => s !== opt)
@@ -505,7 +510,9 @@ function TextDynamicEditor({
           }
         }}
         placeholder={
-          format === DynamicFieldFormatEnum.DATE ? 'YYYY-MM-DD' : 'Enter value...'
+          format === DynamicFieldFormatEnum.DATE
+            ? 'YYYY-MM-DD'
+            : 'Enter value...'
         }
         className="h-8 flex-1 text-xs"
       />
@@ -554,8 +561,8 @@ function DynamicFieldEditor({
     property.type === DynamicFieldTypeEnum.INTEGER;
   const isArrayWithEnum = Boolean(
     property.type === DynamicFieldTypeEnum.ARRAY &&
-      property.items?.enum &&
-      property.items.enum.length > 0
+    property.items?.enum &&
+    property.items.enum.length > 0
   );
 
   const editors: Partial<Record<string, React.ReactNode>> = {
@@ -658,7 +665,7 @@ function DynamicFieldRow({
   return (
     <div className="grid grid-cols-[7rem_1fr] items-start gap-3 py-2">
       <span
-        className="text-muted-foreground pt-1 text-sm font-normal truncate"
+        className="text-muted-foreground truncate pt-1 text-sm font-normal"
         title={title}
       >
         {title}
@@ -681,7 +688,7 @@ function DynamicFieldRow({
               tabIndex={!readOnly && onFieldChange ? 0 : undefined}
               className={
                 !readOnly && onFieldChange
-                  ? 'cursor-pointer hover:opacity-80 transition-opacity'
+                  ? 'cursor-pointer transition-opacity hover:opacity-80'
                   : undefined
               }
               onClick={() => {
@@ -709,7 +716,7 @@ function DynamicFieldRow({
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                className="cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                className="cursor-pointer opacity-0 transition-opacity group-hover:opacity-100"
                 aria-label={`Edit ${title}`}
                 onClick={() => setIsEditing(true)}
               >

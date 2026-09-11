@@ -397,7 +397,6 @@ function EditableLabelsField({
   );
 }
 
-
 export default function WorkItemSidebar({
   workItem,
   childStatuses = [],
@@ -573,7 +572,11 @@ export default function WorkItemSidebar({
           onOpenChange={setAdditionalFieldsOpen}
           collapsedHint={`${
             Object.keys(
-              (project?.attributes_config as { properties?: Record<string, unknown> })?.properties || {}
+              (
+                project?.attributes_config as {
+                  properties?: Record<string, unknown>;
+                }
+              )?.properties || {}
             ).length
           } project fields`}
         >

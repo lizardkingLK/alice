@@ -66,15 +66,12 @@ export async function generateFieldsSchemaWithAlice(
   prompt: string,
   currentSchema?: unknown
 ): Promise<{ schema: unknown }> {
-  return apiFetch<{ schema: unknown }>(
-    `${chatPath}/generate-fields-schema`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ prompt, currentSchema }),
-      timeoutMs: CHAT_FETCH_TIMEOUT_MS,
-    }
-  );
+  return apiFetch<{ schema: unknown }>(`${chatPath}/generate-fields-schema`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ prompt, currentSchema }),
+    timeoutMs: CHAT_FETCH_TIMEOUT_MS,
+  });
 }

@@ -75,8 +75,9 @@ export function GenerateFieldsAliceDialog({
             <DialogTitle>Generate Fields with Alice</DialogTitle>
           </div>
           <DialogDescription>
-            Describe your team&apos;s custom fields in natural language. Alice will
-            generate a validated JSON Schema compliant with project standards.
+            Describe your team&apos;s custom fields in natural language. Alice
+            will generate a validated JSON Schema compliant with project
+            standards.
           </DialogDescription>
         </DialogHeader>
 

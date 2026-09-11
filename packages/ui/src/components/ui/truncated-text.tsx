@@ -58,10 +58,14 @@ function TruncatedText({
   };
 
   if (as === 'span') {
-    return <span ref={ref as React.RefObject<HTMLSpanElement>} {...sharedProps} />;
+    return (
+      <span ref={ref as React.RefObject<HTMLSpanElement>} {...sharedProps} />
+    );
   }
 
-  return <p ref={ref as React.RefObject<HTMLParagraphElement>} {...sharedProps} />;
+  return (
+    <p ref={ref as React.RefObject<HTMLParagraphElement>} {...sharedProps} />
+  );
 }
 
 export { TruncatedText };

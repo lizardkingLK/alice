@@ -48,11 +48,7 @@ export async function getSprintsPaginatedServer(
     return { sprints: [], pagination: EMPTY_PAGINATION(page, limit) };
   }
 
-  if (
-    projectId &&
-    projectIds &&
-    !projectIds.includes(projectId)
-  ) {
+  if (projectId && projectIds && !projectIds.includes(projectId)) {
     return { sprints: [], pagination: EMPTY_PAGINATION(page, limit) };
   }
 

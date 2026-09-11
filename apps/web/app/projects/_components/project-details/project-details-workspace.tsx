@@ -140,11 +140,11 @@ export function ProjectDetailsWorkspace({
       {/* Sidebar Navigation */}
       <aside className="border-border shrink-0 border-b md:flex md:h-full md:w-56 md:flex-col md:border-r md:border-b-0">
         <div className="px-4 py-4 sm:px-5">
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
             Project
           </span>
           <p
-            className="truncate text-sm font-semibold text-foreground mt-0.5"
+            className="text-foreground mt-0.5 truncate text-sm font-semibold"
             title={project.name}
           >
             {project.name}
@@ -152,9 +152,9 @@ export function ProjectDetailsWorkspace({
         </div>
         <nav
           aria-label="Project sections"
-          className="px-2 pb-3 md:pb-6 overflow-x-auto md:overflow-x-visible"
+          className="overflow-x-auto px-2 pb-3 md:overflow-x-visible md:pb-6"
         >
-          <ul className="flex flex-row md:flex-col gap-0.5">
+          <ul className="flex flex-row gap-0.5 md:flex-col">
             {PROJECT_NAV_ITEMS.map(({ id, label, Icon }) => {
               const isActive = activeTab === id;
               return (
@@ -163,7 +163,7 @@ export function ProjectDetailsWorkspace({
                     type="button"
                     onClick={() => handleTabChange(id)}
                     className={cn(
-                      'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors w-full text-left cursor-pointer whitespace-nowrap',
+                      'flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm whitespace-nowrap transition-colors',
                       isActive
                         ? 'bg-muted text-foreground font-medium'
                         : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
@@ -257,7 +257,7 @@ export function ProjectDetailsWorkspace({
         )}
 
         {activeTab === 'integrations' && (
-          <div className="p-6 space-y-6">
+          <div className="space-y-6 p-6">
             <ProjectIntegrationsTab project={project} />
           </div>
         )}

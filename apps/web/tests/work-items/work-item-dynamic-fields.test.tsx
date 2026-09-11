@@ -189,7 +189,9 @@ describe('WorkItemSidebar Dynamic Fields', () => {
     expect(textarea).toBeInTheDocument();
 
     // Type new criteria
-    fireEvent.change(textarea, { target: { value: 'Updated acceptance criteria' } });
+    fireEvent.change(textarea, {
+      target: { value: 'Updated acceptance criteria' },
+    });
 
     // Click Save button
     const saveBtn = screen.getByRole('button', { name: 'Save' });

@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  waitFor,
+} from '@testing-library/react';
 import { parseProjectDetailsTab } from '@/lib/search-params';
 import { ProjectDetailsWorkspace } from '@/app/projects/_components/project-details/project-details-workspace';
 import { ProjectFieldsWorkspace } from '@/app/projects/_components/project-details/project-fields-workspace';
@@ -20,28 +26,55 @@ vi.mock('next/navigation', () => {
   };
 });
 
-vi.mock('@/app/projects/_components/project-details/project-summary-banner', () => ({
-  ProjectSummaryBanner: () => <div data-testid="project-summary-banner">Project Banner</div>,
-}));
+vi.mock(
+  '@/app/projects/_components/project-details/project-summary-banner',
+  () => ({
+    ProjectSummaryBanner: () => (
+      <div data-testid="project-summary-banner">Project Banner</div>
+    ),
+  })
+);
 
-vi.mock('@/app/projects/_components/project-details/project-details-tab', () => ({
-  ProjectDetailsTab: () => <div data-testid="project-details-tab">Details Content</div>,
-}));
+vi.mock(
+  '@/app/projects/_components/project-details/project-details-tab',
+  () => ({
+    ProjectDetailsTab: () => (
+      <div data-testid="project-details-tab">Details Content</div>
+    ),
+  })
+);
 
-vi.mock('@/app/projects/_components/project-details/project-members-tab', () => ({
-  ProjectMembersTab: () => <div data-testid="project-members-tab">Members Content</div>,
-}));
+vi.mock(
+  '@/app/projects/_components/project-details/project-members-tab',
+  () => ({
+    ProjectMembersTab: () => (
+      <div data-testid="project-members-tab">Members Content</div>
+    ),
+  })
+);
 
-vi.mock('@/app/projects/_components/project-details/project-teams-panel', () => ({
-  ProjectTeamsPanel: () => <div data-testid="project-teams-panel">Teams Content</div>,
-}));
+vi.mock(
+  '@/app/projects/_components/project-details/project-teams-panel',
+  () => ({
+    ProjectTeamsPanel: () => (
+      <div data-testid="project-teams-panel">Teams Content</div>
+    ),
+  })
+);
 
-vi.mock('@/app/projects/_components/project-details/project-integrations-tab', () => ({
-  ProjectIntegrationsTab: () => <div data-testid="project-integrations-tab">Integrations Content</div>,
-}));
+vi.mock(
+  '@/app/projects/_components/project-details/project-integrations-tab',
+  () => ({
+    ProjectIntegrationsTab: () => (
+      <div data-testid="project-integrations-tab">Integrations Content</div>
+    ),
+  })
+);
 
 vi.mock('@/app/work-items/_components/work-items-workspace', () => ({
-  default: () => <div data-testid="work-items-workspace">Work Items Content</div>,
+  default: () => (
+    <div data-testid="work-items-workspace">Work Items Content</div>
+  ),
 }));
 
 vi.mock('@/app/projects/_services/projects.mutations.client', () => ({
@@ -137,11 +170,19 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
       />
     );
 
-    expect(screen.getByRole('button', { name: /details/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /members/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /details/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /members/i })
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /teams/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /work items/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /integrations/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /work items/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /integrations/i })
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /fields/i })).toBeInTheDocument();
   });
 
@@ -185,26 +226,32 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
 describe('ProjectFieldsWorkspace component', () => {
   it('renders heading, description, and action buttons', () => {
     render(
-      <ProjectFieldsWorkspace
-        project={mockProject}
-        isManagerOrAdmin={true}
-      />
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
     );
 
-    expect(screen.getByRole('heading', { name: /dynamic fields/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /load template/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /beautify/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /validate/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /generate with alice/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /dynamic fields/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /load template/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /beautify/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /validate/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /save changes/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /generate with alice/i })
+    ).toBeInTheDocument();
   });
 
   it('renders configured field cards from project attributes_config', () => {
     render(
-      <ProjectFieldsWorkspace
-        project={mockProject}
-        isManagerOrAdmin={true}
-      />
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
     );
 
     expect(screen.getByText('MoSCoW Rating')).toBeInTheDocument();
@@ -215,18 +262,21 @@ describe('ProjectFieldsWorkspace component', () => {
 
   it('shows read-only banner and disables editing when user is not a manager or admin', () => {
     render(
-      <ProjectFieldsWorkspace
-        project={mockProject}
-        isManagerOrAdmin={false}
-      />
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={false} />
     );
 
     expect(
-      screen.getByText(/you have view-only access to this project's dynamic fields configuration/i)
+      screen.getByText(
+        /you have view-only access to this project's dynamic fields configuration/i
+      )
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /save changes/i })).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: /save changes/i })
+    ).toBeDisabled();
     expect(screen.getByRole('button', { name: /beautify/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /load template/i })).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: /load template/i })
+    ).toBeDisabled();
   });
 
   it('allows loading template via dialog and validates syntax', () => {
@@ -252,18 +302,16 @@ describe('ProjectFieldsWorkspace component', () => {
     const validateBtn = screen.getByRole('button', { name: /validate/i });
     fireEvent.click(validateBtn);
 
-    expect(screen.getByText(/schema is syntactically valid/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/schema is syntactically valid/i)
+    ).toBeInTheDocument();
   });
 
   it('calls updateProjectFieldsConfig with expectedUpdatedAt on save', async () => {
-    const { updateProjectFieldsConfig } = await import(
-      '@/app/projects/_services/projects.mutations.client'
-    );
+    const { updateProjectFieldsConfig } =
+      await import('@/app/projects/_services/projects.mutations.client');
     render(
-      <ProjectFieldsWorkspace
-        project={mockProject}
-        isManagerOrAdmin={true}
-      />
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
     );
 
     const saveBtn = screen.getByRole('button', { name: /save changes/i });
@@ -280,10 +328,7 @@ describe('ProjectFieldsWorkspace component', () => {
 
   it('renders line numbers in the editor corresponding to schema lines', () => {
     render(
-      <ProjectFieldsWorkspace
-        project={mockProject}
-        isManagerOrAdmin={true}
-      />
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
     );
 
     // Verify line count text
@@ -304,7 +349,9 @@ describe('ProjectFieldsWorkspace component', () => {
 
     // Beautify
     fireEvent.click(screen.getByRole('button', { name: /beautify/i }));
-    expect(screen.getByText(/json formatted successfully/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/json formatted successfully/i)
+    ).toBeInTheDocument();
 
     // Fast-forward 5000ms
     act(() => {
@@ -312,16 +359,15 @@ describe('ProjectFieldsWorkspace component', () => {
     });
 
     // Banner has auto-dismissed
-    expect(screen.queryByText(/json formatted successfully/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/json formatted successfully/i)
+    ).not.toBeInTheDocument();
     vi.useRealTimers();
   });
 
   it('merges selected template fields into existing schema without wiping out existing fields', () => {
     render(
-      <ProjectFieldsWorkspace
-        project={mockProject}
-        isManagerOrAdmin={true}
-      />
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
     );
 
     // Initial schema has MoSCoW Rating
@@ -353,10 +399,7 @@ describe('ProjectFieldsWorkspace component', () => {
 
   it('allows unselecting an existing template field and removes it from schema upon applying', () => {
     render(
-      <ProjectFieldsWorkspace
-        project={mockProject}
-        isManagerOrAdmin={true}
-      />
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
     );
 
     // Initially MoSCoW Rating is present
@@ -367,9 +410,9 @@ describe('ProjectFieldsWorkspace component', () => {
     expect(screen.getByText('Load Field Templates')).toBeInTheDocument();
 
     // Click MoSCoW Rating card to unselect it
-    const moscowCard = document.getElementById(
-      'template-checkbox-moscowRating'
-    )!.closest('[role="checkbox"]')!;
+    const moscowCard = document
+      .getElementById('template-checkbox-moscowRating')!
+      .closest('[role="checkbox"]')!;
     fireEvent.click(moscowCard);
 
     // Apply change
@@ -377,7 +420,9 @@ describe('ProjectFieldsWorkspace component', () => {
     fireEvent.click(addBtn);
 
     // Schema now has 0 dynamic fields
-    expect(screen.getByText(/no dynamic fields configured yet/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/no dynamic fields configured yet/i)
+    ).toBeInTheDocument();
     expect(screen.queryByText('key: moscowRating')).not.toBeInTheDocument();
   });
 
@@ -401,10 +446,7 @@ describe('ProjectFieldsWorkspace component', () => {
     } as never);
 
     render(
-      <ProjectFieldsWorkspace
-        project={mockProject}
-        isManagerOrAdmin={true}
-      />
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
     );
 
     // Open Load Template dialog
@@ -417,9 +459,9 @@ describe('ProjectFieldsWorkspace component', () => {
     });
 
     // Try to unselect MoSCoW Rating
-    const moscowCard = document.getElementById(
-      'template-checkbox-moscowRating'
-    )!.closest('[role="checkbox"]')!;
+    const moscowCard = document
+      .getElementById('template-checkbox-moscowRating')!
+      .closest('[role="checkbox"]')!;
     fireEvent.click(moscowCard);
 
     // Warning confirmation popup should appear
@@ -466,10 +508,7 @@ describe('ProjectFieldsWorkspace component', () => {
 
   it('renders footer buttons clearly with proper spacing on the right side', () => {
     render(
-      <ProjectFieldsWorkspace
-        project={mockProject}
-        isManagerOrAdmin={true}
-      />
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
     );
 
     fireEvent.click(screen.getByRole('button', { name: /load template/i }));

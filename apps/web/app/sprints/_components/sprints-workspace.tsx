@@ -286,9 +286,7 @@ export function SprintsWorkspace({
             <SprintsFilterDialog
               projects={projects}
               projectValue={projectQuery.value}
-              hasActiveFilters={
-                projectQuery.value !== QUERY_FILTER_ALL_VALUE
-              }
+              hasActiveFilters={projectQuery.value !== QUERY_FILTER_ALL_VALUE}
               onApplyProject={projectQuery.setFilter}
             />
 

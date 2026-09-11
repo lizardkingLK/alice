@@ -108,7 +108,9 @@ export function patchWorkItemDynamicFields(
   }
 
   const existingAttrs =
-    doc.attrs && typeof doc.attrs === TypeofEnum.OBJECT && !Array.isArray(doc.attrs)
+    doc.attrs &&
+    typeof doc.attrs === TypeofEnum.OBJECT &&
+    !Array.isArray(doc.attrs)
       ? { ...doc.attrs }
       : {};
 

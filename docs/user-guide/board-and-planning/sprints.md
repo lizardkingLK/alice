@@ -40,10 +40,10 @@ Open `/sprints/[id]/report` for burndown and progress metrics.
 
 Breadcrumbs include a `from` query so navigation context stays clear:
 
-| Opened from      | Trail includes   |
-| ---------------- | ---------------- |
-| Sprints registry | Sprints          |
-| Backlog          | Backlog          |
+| Opened from      | Trail includes |
+| ---------------- | -------------- |
+| Sprints registry | Sprints        |
+| Backlog          | Backlog        |
 
 Assign work to a sprint from the backlog, work-item sidebar, or create forms.
 

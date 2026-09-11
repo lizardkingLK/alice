@@ -11,13 +11,13 @@ Speed up common actions without reaching for the mouse.
 Shortcuts work on most dashboard pages. They **do not** fire while you're typing
 in a field or while a dialog is open (unless noted).
 
-| Shortcut     | Action                                                              |
-| ------------ | ------------------------------------------------------------------- |
-| **Ctrl/⌘+B** | Toggle sidebar open/closed                                          |
-| **Ctrl/⌘+K** | Focus the page search box (lists and registries)                    |
-| **Ctrl/⌘+K** | On **Docs** pages — open docs search (toggle while palette is open) |
+| Shortcut     | Action                                                                 |
+| ------------ | ---------------------------------------------------------------------- |
+| **Ctrl/⌘+B** | Toggle sidebar open/closed                                             |
+| **Ctrl/⌘+K** | Focus the page search box (lists and registries)                       |
+| **Ctrl/⌘+K** | On **Docs** pages — open docs search (toggle while palette is open)    |
 | **Shift+F**  | Toggle the page **Filter** dialog (icon button; toggle again to close) |
-| **M**        | Focus the comment composer on a work-item **Discussion** tab        |
+| **M**        | Focus the comment composer on a work-item **Discussion** tab           |
 
 ---
 
