@@ -220,11 +220,19 @@ describe('ProjectForm Component', () => {
       target: { value: 'Project description details' },
     });
     await pickComboboxOption(/Project Owner/i, 'Manager One (mgr1@alice.dev)');
+    const startDate = new Date();
+    startDate.setFullYear(startDate.getFullYear() + 1);
+    const startDateStr = startDate.toISOString().split('T')[0];
+
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + 1);
+    const endDateStr = endDate.toISOString().split('T')[0];
+
     fireEvent.change(screen.getByLabelText(/Start Date/i), {
-      target: { value: '2026-09-10' },
+      target: { value: startDateStr },
     });
     fireEvent.change(screen.getByLabelText(/End Date/i), {
-      target: { value: '2026-10-10' },
+      target: { value: endDateStr },
     });
 
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
@@ -237,8 +245,8 @@ describe('ProjectForm Component', () => {
         key: 'ALICE',
         description: 'Project description details',
         owner_id: 'user-mgr-1',
-        start_date: '2026-09-10',
-        end_date: '2026-10-10',
+        start_date: startDateStr,
+        end_date: endDateStr,
         status: 'active',
         attributes_config: null,
         workflow_config: null,
