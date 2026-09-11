@@ -7,6 +7,12 @@ export {
   type ApiVersionDetails,
 } from './health.js';
 export {
+  boardColumnSchema,
+  boardConfigSchema,
+  type BoardColumn,
+  type BoardConfig,
+} from './board-config.js';
+export {
   createWorkItemBodySchema,
   isBlockedPastDueDateChange,
   jsonSchema,

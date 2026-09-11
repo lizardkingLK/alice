@@ -9,11 +9,13 @@ type WorkItemStatus = DbWorkItem['status'];
 
 type WorkItemStatusBadgeProps = {
   readonly status: WorkItemStatus | undefined | null;
+  readonly label?: string;
   readonly className?: string;
 };
 
 export function WorkItemStatusBadge({
   status,
+  label,
   className,
 }: WorkItemStatusBadgeProps) {
   const Icon = status ? WORK_ITEM_STATUS_ICONS[status] : null;
@@ -28,7 +30,7 @@ export function WorkItemStatusBadge({
       )}
     >
       {Icon && <Icon className="size-3 shrink-0" aria-hidden />}
-      {status ? formatLabelWithSpace(status) : 'Unknown'}
+      {label ?? (status ? formatLabelWithSpace(status) : 'Unknown')}
     </Badge>
   );
 }

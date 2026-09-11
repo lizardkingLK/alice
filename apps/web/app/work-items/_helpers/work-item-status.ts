@@ -5,6 +5,8 @@ export {
   type WorkItemStatus,
 } from '@repo/types';
 
+import { formatLabelWithSpace } from '@/app/_shared/utility';
+import type { BoardColumn } from '@repo/types/api/v1';
 import {
   BOARD_WORK_ITEM_STATUSES,
   WorkItemStatusEnum,
@@ -81,10 +83,12 @@ export const BOARD_STATUS_COLUMN_ACCENTS: Record<
   Done: 'border-t-emerald-500',
 };
 
-export const BOARD_STATUS_COLUMNS = BOARD_WORK_ITEM_STATUSES.map((id) => ({
-  id,
-  accentClassName: BOARD_STATUS_COLUMN_ACCENTS[id],
-}));
+export const DEFAULT_BOARD_COLUMNS: BoardColumn[] =
+  BOARD_WORK_ITEM_STATUSES.map((id) => ({
+    id,
+    name: formatLabelWithSpace(id),
+    status: id,
+  }));
 
 export type StatusMeta = {
   label: string;
