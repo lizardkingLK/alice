@@ -78,6 +78,7 @@ type CreateSprintDialogProps = {
   readonly open: boolean;
   readonly projects: DbProject[];
   readonly currentUserId?: string | null;
+  readonly defaultProjectId?: string;
   readonly onClose: () => void;
   readonly onCreated: (sprint: Sprint) => void;
 };
@@ -87,6 +88,7 @@ export function BacklogCreateSprintDialog({
   open,
   projects,
   currentUserId,
+  defaultProjectId,
   onClose,
   onCreated,
 }: Readonly<CreateSprintDialogProps>) {
@@ -103,6 +105,7 @@ export function BacklogCreateSprintDialog({
           onClose={onClose}
           onSuccess={onClose}
           currentUserId={currentUserId}
+          defaultProjectId={defaultProjectId}
         />
       </div>
     </div>

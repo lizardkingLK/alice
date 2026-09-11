@@ -28,7 +28,8 @@ import type {
 
 const service = createProjectsService(apiFetch);
 
-const OWNER_SELECT = 'owner:users!projects_owner_id_fkey(id, name, email)';
+const OWNER_SELECT =
+  'owner:users!projects_owner_id_fkey(id, name, email, profile_picture)';
 const PROJECT_MEMBER_USER_SELECT = userRelationSelect(
   'user',
   'project_members_user_id_fkey',

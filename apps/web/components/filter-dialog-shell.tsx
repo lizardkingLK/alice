@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
+import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import { Dialog, DialogContent } from '@repo/ui/components/ui/dialog';
 import { Input } from '@repo/ui/components/ui/input';
 import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
@@ -37,12 +38,11 @@ function FilterOptionRow({
       htmlFor={id}
       className="hover:bg-muted/50 flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm"
     >
-      <input
+      <Checkbox
         id={id}
-        type="checkbox"
         checked={checked}
-        onChange={(event) => onCheckedChange(event.target.checked)}
-        className="border-input size-4 rounded border"
+        onCheckedChange={(value) => onCheckedChange(value === true)}
+        className="cursor-pointer"
       />
       <span className="min-w-0 flex-1 truncate">{label}</span>
     </label>

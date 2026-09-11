@@ -3,7 +3,9 @@
 import type React from 'react';
 import { BacklogDropZone } from '@/app/backlog/_components/backlog-drop-zone';
 import { BacklogItemCount } from '@/app/backlog/_components/backlog-item-count';
+import { BacklogSprintCapacityPopover } from '@/app/backlog/_components/backlog-sprint-capacity-popover';
 import { BacklogSprintDetailsPopover } from '@/app/backlog/_components/backlog-sprint-details-popover';
+import type { ProjectTeamMemberCapacity } from '@/app/backlog/_helpers/backlog-sprint-capacity';
 import type { BacklogAssignee } from '@/app/backlog/_helpers/backlog-item-utils';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
@@ -36,6 +38,7 @@ type BacklogSprintCardProps = {
   readonly isManagerOrAdmin: boolean;
   readonly projects: DbProject[];
   readonly projectMembers: readonly BacklogAssignee[];
+  readonly teamCapacities: readonly ProjectTeamMemberCapacity[];
   readonly onToggle: (sprintId: string) => void;
   readonly onCreateIssue: (sprintId: string) => void;
   readonly onStartSprint: (sprintId: string) => void;
@@ -184,6 +187,7 @@ export function BacklogSprintCard({
   isManagerOrAdmin,
   projects,
   projectMembers,
+  teamCapacities,
   onToggle,
   onCreateIssue,
   onStartSprint,
@@ -212,6 +216,12 @@ export function BacklogSprintCard({
           </Button>
 
           <BacklogSprintDetailsPopover sprint={sprint} />
+          <BacklogSprintCapacityPopover
+            sprintName={sprint.name}
+            projectId={sprint.project?.id}
+            items={items}
+            teamMembers={teamCapacities}
+          />
         </div>
 
         <div className="flex shrink-0 items-center gap-2">

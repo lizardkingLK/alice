@@ -122,7 +122,10 @@ function sendWorkItemMutationError(
   if (error instanceof WorkItemAccessError) {
     return res.status(403).json({ data: null, error: message });
   }
-  if (error instanceof WorkItemValidationError) {
+  if (
+    error instanceof WorkItemValidationError ||
+    /capacity exceeded/i.test(message)
+  ) {
     return res.status(400).json({ data: null, error: message });
   }
   return res.status(500).json({ data: null, error: message });

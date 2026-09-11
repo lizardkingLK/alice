@@ -175,7 +175,7 @@ export function BacklogToolbar({
                 onSelect={onCreateIssue}
               >
                 <Plus className="size-4" />
-                Create Item
+                Create Work-Item
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

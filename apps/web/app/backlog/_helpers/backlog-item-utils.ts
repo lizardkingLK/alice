@@ -123,3 +123,48 @@ export function updateWorkItemField<K extends keyof DbWorkItem>(
   }
   return item;
 }
+
+type FilterBacklogDisplayedSprintsOptions<T extends { readonly id: string }> = {
+  readonly sprints: readonly T[];
+  readonly activeTab: BacklogActiveTab;
+  readonly projectFilter: string;
+  /** Empty string means all sprints for the project (or all projects). */
+  readonly sprintFilter: string;
+  // eslint-disable-next-line no-unused-vars
+  readonly getStatus: (sprint: T) => string;
+  // eslint-disable-next-line no-unused-vars
+  readonly getProjectId: (sprint: T) => string | null | undefined;
+};
+
+/** Active/completed tab + project + optional default sprint narrowing. */
+export function filterBacklogDisplayedSprints<
+  T extends { readonly id: string },
+>(options: FilterBacklogDisplayedSprintsOptions<T>): T[] {
+  const {
+    sprints,
+    activeTab,
+    projectFilter,
+    sprintFilter,
+    getStatus,
+    getProjectId,
+  } = options;
+
+  const byTab =
+    activeTab === 'completed'
+      ? sprints.filter((sprint) => getStatus(sprint) === 'closed')
+      : sprints.filter((sprint) => {
+          const status = getStatus(sprint);
+          return status === 'active' || status === 'planned';
+        });
+
+  const byProject =
+    projectFilter === 'all'
+      ? byTab
+      : byTab.filter((sprint) => getProjectId(sprint) === projectFilter);
+
+  if (!sprintFilter) {
+    return byProject;
+  }
+
+  return byProject.filter((sprint) => sprint.id === sprintFilter);
+}

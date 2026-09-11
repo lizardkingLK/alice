@@ -177,7 +177,7 @@ export function SprintReportCharts({
             Visual breakdown of work items by current status
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pb-6">
           {chartData.length === 0 ? (
             <div className="text-muted-foreground flex h-48 items-center justify-center text-sm">
               No work items to display

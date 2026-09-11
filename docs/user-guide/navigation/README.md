@@ -21,14 +21,14 @@ Find your way around Alice — sidebar, dashboard, shortcuts, and saved views.
 
 After sign-in, the left sidebar organizes the app:
 
-| Group         | Examples                                                            |
-| ------------- | ------------------------------------------------------------------- |
-| **Platform**  | Overview, Charts, Backlog, Board, Work Items, My Work, Alice, Views |
-| **Favorites** | Pages you starred (appears when you have at least one)              |
-| **Projects**  | Projects list; **Sprints** (managers and admins)                    |
-| **System**    | **Users** (admins only)                                             |
-| **Account**   | Profile, Settings                                                   |
-| **Help**      | Help, Docs, Roadmap                                                 |
+| Group         | Examples                                                               |
+| ------------- | ---------------------------------------------------------------------- |
+| **Platform**  | Overview, Charts, Backlog, Board, Work Items, My Work, Alice, Views    |
+| **Favorites** | Pages you starred (appears when you have at least one)                 |
+| **Projects**  | Projects list (open a project for Details, Work Items, **Sprints**, …) |
+| **System**    | **Users** (admins only)                                                |
+| **Account**   | Profile, Settings                                                      |
+| **Help**      | Help, Docs, Roadmap                                                    |
 
 Select any item to open that area. Collapse or expand the sidebar with the
 trigger at the top or **Ctrl/⌘+B**. Alice remembers your preference (cookie) and

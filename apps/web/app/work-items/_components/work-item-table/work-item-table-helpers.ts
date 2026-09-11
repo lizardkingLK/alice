@@ -79,9 +79,6 @@ export function hasActiveWorkItemFilters(options: {
     if (key === 'project' && options.isProjectLocked) {
       return false;
     }
-    if (key === 'sprint' && options.isProjectLocked) {
-      return false;
-    }
     if (key === 'assignee' && options.isAssigneeLocked) {
       return false;
     }
@@ -202,12 +199,10 @@ export function applyWorkItemsFilterDraftToSearchParams(
 ): void {
   const { allValue } = options;
 
-  if (!options.isProjectLocked) {
-    applyWorkItemsProjectSprintDraftToSearchParams(params, draft, {
-      allValue,
-      applyProject: true,
-    });
-  }
+  applyWorkItemsProjectSprintDraftToSearchParams(params, draft, {
+    allValue,
+    applyProject: !options.isProjectLocked,
+  });
 
   applyQueryFilterParam(params, 'type', draft.type, allValue);
 

@@ -179,6 +179,42 @@ export function TeamForm({
     [projectMembers]
   );
 
+  const managerOptions = useMemo(() => {
+    if (!selectedProjectId) {
+      return [];
+    }
+
+    const byUserId = new Map<
+      string,
+      { value: string; label: string; role: string }
+    >();
+
+    for (const member of projectMembers) {
+      const role = member.user?.role ?? '';
+      if (role !== 'manager' && role !== 'admin') {
+        continue;
+      }
+      const id = member.user_id;
+      byUserId.set(id, {
+        value: id,
+        label: `${member.user?.name ?? id} (${member.user?.email ?? ''})`,
+        role,
+      });
+    }
+
+    // Keep the current manager selectable if they are no longer on the roster.
+    if (managerId && !byUserId.has(managerId)) {
+      const user = users.find((entry) => entry.id === managerId);
+      byUserId.set(managerId, {
+        value: managerId,
+        label: `${user?.name ?? 'Unknown user'} (${user?.email ?? ''})`,
+        role: user?.role ?? '',
+      });
+    }
+
+    return [...byUserId.values()].map(({ value, label }) => ({ value, label }));
+  }, [selectedProjectId, projectMembers, managerId, users]);
+
   const showMembersSection =
     Boolean(selectedProjectId) ||
     (editActionActive && selectedMemberIds.length > 0);
@@ -192,6 +228,7 @@ export function TeamForm({
     // keep existing team members checked while loading the project's roster.
     if (!editActionActive) {
       setSelectedMemberIds([]);
+      setManagerId('');
     }
   };
 
@@ -344,7 +381,7 @@ export function TeamForm({
           onSubmit={handleSubmit}
           className="flex min-h-0 flex-1 flex-col justify-between overflow-hidden"
         >
-          <div className="no-scrollbar flex-1 space-y-4 overflow-y-auto pr-1">
+          <div className="no-scrollbar flex-1 space-y-4 overflow-y-auto px-1">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="name" className="text-sm font-medium">
@@ -419,26 +456,6 @@ export function TeamForm({
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="manager_id" className="text-sm font-medium">
-                  Designated Team Manager
-                </Label>
-                <SearchableSelect
-                  id="manager_id"
-                  value={managerId}
-                  onValueChange={setManagerId}
-                  placeholder="Search managers…"
-                  className="bg-background/80 h-10 w-full"
-                  options={users
-                    .filter((u) => u.role === 'manager' || u.role === 'admin')
-                    .map((u) => ({
-                      value: u.id,
-                      label: `${u.name} (${u.email})`,
-                    }))}
-                  emptyText="No matching managers."
-                />
-              </div>
-
               {!lockedProjectId ? (
                 <div className="space-y-2">
                   <Label htmlFor="project_id" className="text-sm font-medium">
@@ -462,6 +479,30 @@ export function TeamForm({
                   </p>
                 </div>
               ) : null}
+
+              <div className="space-y-2">
+                <Label htmlFor="manager_id" className="text-sm font-medium">
+                  Designated Team Manager
+                </Label>
+                <SearchableSelect
+                  id="manager_id"
+                  value={managerId}
+                  onValueChange={setManagerId}
+                  disabled={!selectedProjectId}
+                  placeholder={
+                    selectedProjectId
+                      ? 'Search project managers…'
+                      : 'Select a project first…'
+                  }
+                  className="bg-background/80 h-10 w-full"
+                  options={managerOptions}
+                  emptyText={
+                    selectedProjectId
+                      ? 'No managers or admins on this project.'
+                      : 'Select a project to choose a manager.'
+                  }
+                />
+              </div>
 
               {showMembersSection && (
                 <div className="space-y-2 sm:col-span-2">

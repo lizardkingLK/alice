@@ -69,14 +69,14 @@ Project Details Workspace (/projects/[id])
 
 The active tab is tracked using the `tab` URL query parameter, preserving bookmarkability, deep linking, and browser back/forward history:
 
-| Tab ID         | URL Route                                        | Minimum Viewer Role     | Description                                         |
-| :------------- | :----------------------------------------------- | :---------------------- | :-------------------------------------------------- |
-| `details`      | `/projects/[id]` or `/projects/[id]?tab=details` | Member                  | Overview, metrics, branding banner, start/end dates |
-| `members`      | `/projects/[id]?tab=members`                     | Member                  | Project member roster and assignments               |
-| `teams`        | `/projects/[id]?tab=teams`                       | Member                  | Teams associated with the project                   |
-| `work-items`   | `/projects/[id]?tab=work-items`                  | Member                  | Flat/hierarchical work-item table & backlog         |
-| `integrations` | `/projects/[id]?tab=integrations`                | Member (Edit: Manager+) | Jira Cloud & GitHub repository links                |
-| `fields`       | `/projects/[id]?tab=fields`                      | Member (Edit: Manager+) | Dynamic fields JSON Schema configuration [NEW]      |
+| Tab ID         | URL Route                                        | Minimum Viewer Role     | Description                                                                                                                                                                            |
+| :------------- | :----------------------------------------------- | :---------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `details`      | `/projects/[id]` or `/projects/[id]?tab=details` | Member                  | Banner (key, timeline, owner, branding) + linked summary cards to other tabs                                                                                                           |
+| `members`      | `/projects/[id]?tab=members`                     | Member                  | Project member roster and assignments                                                                                                                                                  |
+| `teams`        | `/projects/[id]?tab=teams`                       | Member                  | Teams associated with the project                                                                                                                                                      |
+| `work-items`   | `/projects/[id]?tab=work-items`                  | Member                  | Flat/hierarchical work-item table & backlog. Loads project sprints (active list, up to 100) so the **Sprint** column and filter dialog can resolve/filter by `sprint_id` (`?sprint=`). |
+| `integrations` | `/projects/[id]?tab=integrations`                | Member (Edit: Manager+) | Jira Cloud & GitHub repository links                                                                                                                                                   |
+| `fields`       | `/projects/[id]?tab=fields`                      | Member (Edit: Manager+) | Dynamic fields JSON Schema configuration [NEW]                                                                                                                                         |
 
 The helper `parseProjectDetailsTab` in `apps/web/lib/search-params.ts` is extended to support `'fields'`:
 

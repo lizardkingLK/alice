@@ -31,23 +31,23 @@ stateDiagram-v2
     Archived --> [*]
 ```
 
-| Status         | Meaning & Business Rules                                                                                                                                                |
-| :------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`planned`**  | Newly created sprint. Work items can be assigned from the backlog. Start and end dates can be scheduled.                                                                |
-| **`active`**   | The sprint is in progress. Only one sprint per project may be active concurrently. The actual-remaining burndown line updates dynamically day by day.                   |
-| **`closed`**   | The sprint is finalized. Velocity and completion rates are computed and locked. Unfinished work items can be rolled over to the next sprint or returned to the backlog. |
-| **`archived`** | Soft-deleted sprint record. Retained for audit purposes but omitted from active boards and dropdown selectors.                                                          |
+| Status         | Meaning & Business Rules                                                                                                                                                                                                 |
+| :------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`planned`**  | Newly created sprint. Work items can be assigned from the backlog. Start and end dates can be scheduled.                                                                                                                 |
+| **`active`**   | The sprint is in progress. Only one sprint per project may be active concurrently. The actual-remaining burndown line updates dynamically day by day.                                                                    |
+| **`closed`**   | The sprint is finalized. Velocity and completion rates are computed and locked. Unfinished work items can be rolled over to the next sprint or returned to the backlog.                                                  |
+| **`archived`** | Soft-deleted sprint record. Retained for audit purposes but omitted from active boards and dropdown selectors. Sprint names remain unique per project even when archived, so you cannot reuse an archived sprint’s name. |
 
 ---
 
 ## 3. UX Surfaces
 
-| Surface                   | Route                  | Behavior                                                                                                                                                                              |
-| :------------------------ | :--------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Sprints Registry**      | `/sprints`             | Displays sprints for accessible projects, with Active/Archived tabs, search, and a Filter dialog for project (`?project=`). Create/edit sprints, dates, and status transitions.       |
-| **Backlog Planning**      | `/backlog`             | Split-view backlog manager allowing team members to drag or assign backlog work items into planned and active sprints.                                                                |
-| **Sprint Summary Report** | `/sprints/[id]/report` | Live retrospective (stats, charts, deliverables) for active/closed/archived sprints; **planned** sprints show the same layout as an inaccessible placeholder until the sprint starts. |
-| **Alice Assistant**       | `/chat` & Drawer       | Conversational interface where Alice can invoke `list_sprints` and `create_sprint` via natural language.                                                                              |
+| Surface                   | Route                                                                   | Behavior                                                                                                                                                                                     |
+| :------------------------ | :---------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sprints Registry**      | Project → **Sprints** (`/projects/[id]?tab=sprints`); legacy `/sprints` | Displays sprints for the project (or accessible projects on `/sprints`), with Active/Archived tabs and search. Create/edit sprints, dates, and status transitions. Managers and admins only. |
+| **Backlog Planning**      | `/backlog`                                                              | Split-view backlog manager allowing team members to drag or assign backlog work items into planned and active sprints.                                                                       |
+| **Sprint Summary Report** | `/sprints/[id]/report`                                                  | Live retrospective (stats, charts, deliverables) for active/closed/archived sprints; **planned** sprints show the same layout as an inaccessible placeholder until the sprint starts.        |
+| **Alice Assistant**       | `/chat` & Drawer                                                        | Conversational interface where Alice can invoke `list_sprints` and `create_sprint` via natural language.                                                                                     |
 
 ---
 

@@ -19,12 +19,12 @@ Kanban board, calendar, backlog, and sprints for delivery planning.
 
 ## Where to start
 
-| Goal                           | Go to                                |
-| ------------------------------ | ------------------------------------ |
-| See work by status             | **Board** → **Board** tab            |
-| Plan by due date               | **Board** → **Calendar** tab         |
-| Groom backlog and fill sprints | **Backlog**                          |
-| Manage sprint records          | **Sprints** (sidebar under Projects) |
+| Goal                           | Go to                                       |
+| ------------------------------ | ------------------------------------------- |
+| See work by status             | **Board** → **Board** tab                   |
+| Plan by due date               | **Board** → **Calendar** tab                |
+| Groom backlog and fill sprints | **Backlog**                                 |
+| Manage sprint records          | Project → **Sprints** tab (managers/admins) |
 
 All platform roles can open Board and Backlog. Sprint administration requires
 **manager** or **admin**.

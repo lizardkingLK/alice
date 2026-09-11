@@ -57,6 +57,7 @@ import {
 import type { FilterQuery } from '@/app/work-items/_components/work-item-table/work-items-table-types';
 import { descriptionToPlainText } from '@/app/work-items/_helpers/work-item-description';
 import { BOARD_STATUS_COLUMNS } from '@/app/work-items/_helpers/work-item-status';
+import { mergeWorkItemServerRow } from '@/app/work-items/_helpers/work-item-merge-server-row';
 import { updateWorkItemStatus } from '@/app/work-items/_services/work-items.mutations.client';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { SearchInput } from '@/components/search-input';
@@ -345,23 +346,11 @@ export function KanbanBoard({
   const syncWorkItem = (id: string, updated: DbWorkItem) => {
     setWorkItems((previous) =>
       previous.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              ...updated,
-              assignee: updated.assignee ?? item.assignee,
-            }
-          : item
+        item.id === id ? mergeWorkItemServerRow(item, updated) : item
       )
     );
     setSelectedTask((previous) =>
-      previous?.id === id
-        ? {
-            ...previous,
-            ...updated,
-            assignee: updated.assignee ?? previous.assignee,
-          }
-        : previous
+      previous?.id === id ? mergeWorkItemServerRow(previous, updated) : previous
     );
   };
 

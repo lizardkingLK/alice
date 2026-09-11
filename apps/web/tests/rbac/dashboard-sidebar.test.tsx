@@ -63,8 +63,8 @@ describe('DashboardSidebar RBAC', () => {
       '/projects'
     );
     expect(
-      screen.getByRole('link', { name: /^Sprints$/i })
-    ).toBeInTheDocument();
+      screen.queryByRole('link', { name: /^Sprints$/i })
+    ).not.toBeInTheDocument();
   });
 
   it('hides System for manager but keeps Projects', () => {
@@ -78,8 +78,8 @@ describe('DashboardSidebar RBAC', () => {
       screen.getByRole('link', { name: /^Projects$/i })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('link', { name: /^Sprints$/i })
-    ).toBeInTheDocument();
+      screen.queryByRole('link', { name: /^Sprints$/i })
+    ).not.toBeInTheDocument();
   });
 
   it('hides System for member but keeps Projects (not Sprints)', () => {
