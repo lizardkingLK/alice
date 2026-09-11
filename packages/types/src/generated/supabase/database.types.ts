@@ -1210,6 +1210,7 @@ export type Database = {
       work_items: {
         Row: {
           assignee_id: string | null
+          board_column_id: string | null
           created_at: string
           created_by: string | null
           description: Json | null
@@ -1233,6 +1234,7 @@ export type Database = {
         }
         Insert: {
           assignee_id?: string | null
+          board_column_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: Json | null
@@ -1256,6 +1258,7 @@ export type Database = {
         }
         Update: {
           assignee_id?: string | null
+          board_column_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: Json | null

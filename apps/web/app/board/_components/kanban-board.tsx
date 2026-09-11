@@ -36,7 +36,11 @@ import {
   TooltipTrigger,
 } from '@repo/ui/components/ui/tooltip';
 import { formatLabelWithSpace } from '@/app/_shared/utility';
-import { assignItemsToColumns } from '@/app/board/_helpers/board-columns';
+import {
+  assignItemsToColumns,
+  resolveBoardMove,
+  resolveItemColumnId,
+} from '@/app/board/_helpers/board-columns';
 import {
   pickWorkspaceDefaultsDialogController,
   WorkspaceDefaultsDialogHost,
@@ -92,6 +96,7 @@ function assigneeName(item: DbWorkItem) {
 
 type KanbanBoardProps = {
   readonly boardColumns: BoardColumn[];
+  readonly usesCustomBoardConfig: boolean;
   readonly initialWorkItems: DbWorkItem[];
   readonly projects: Project[];
   readonly sprints: Sprint[];
@@ -108,6 +113,7 @@ type KanbanBoardProps = {
 
 export function KanbanBoard({
   boardColumns,
+  usesCustomBoardConfig,
   initialWorkItems,
   projects,
   sprints,
@@ -168,7 +174,7 @@ export function KanbanBoard({
     projectQuery.value !== projectAllValue;
 
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
-  const [activeDropCol, setActiveDropCol] = useState<BoardStatus | null>(null);
+  const [activeDropCol, setActiveDropCol] = useState<string | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<DbWorkItem | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
@@ -328,7 +334,7 @@ export function KanbanBoard({
     setDraggedTaskId(id);
   };
 
-  const handleDragOver = (event: DragEvent, colId: BoardStatus) => {
+  const handleDragOver = (event: DragEvent, colId: string) => {
     event.preventDefault();
     if (activeDropCol !== colId) {
       setActiveDropCol(colId);
@@ -339,12 +345,22 @@ export function KanbanBoard({
     setActiveDropCol(null);
   };
 
-  const restoreStatus = (id: string, status: DbWorkItem['status']) => {
+  const restorePlacement = (
+    id: string,
+    status: DbWorkItem['status'],
+    boardColumnId: string | null
+  ) => {
     setWorkItems((previous) =>
-      previous.map((item) => (item.id === id ? { ...item, status } : item))
+      previous.map((item) =>
+        item.id === id
+          ? { ...item, status, board_column_id: boardColumnId }
+          : item
+      )
     );
     setSelectedTask((previous) =>
-      previous?.id === id ? { ...previous, status } : previous
+      previous?.id === id
+        ? { ...previous, status, board_column_id: boardColumnId }
+        : previous
     );
   };
 
@@ -392,9 +408,18 @@ export function KanbanBoard({
     setStatusError(message);
   };
 
-  const applyStatusChange = (id: string, targetStatus: BoardStatus) => {
+  const applyStatusChange = (id: string, targetColumn: BoardColumn) => {
     const currentItem = workItems.find((item) => item.id === id);
-    if (!currentItem || currentItem.status === targetStatus) {
+    if (!currentItem) {
+      return;
+    }
+
+    const move = resolveBoardMove(
+      currentItem,
+      targetColumn,
+      usesCustomBoardConfig
+    );
+    if (!move) {
       return;
     }
 
@@ -403,14 +428,20 @@ export function KanbanBoard({
     }
 
     const previousStatus = currentItem.status;
+    const previousBoardColumnId = currentItem.board_column_id;
     setStatusError(null);
     setPendingStatusIds((previous) => new Set(previous).add(id));
-    restoreStatus(id, targetStatus);
+    restorePlacement(id, move.status, move.board_column_id);
 
-    updateWorkItemStatus(id, targetStatus, currentItem.updated_at)
+    updateWorkItemStatus(
+      id,
+      move.status,
+      currentItem.updated_at,
+      move.board_column_id
+    )
       .then((response) => {
         if (response.error || !response.data) {
-          restoreStatus(id, previousStatus);
+          restorePlacement(id, previousStatus, previousBoardColumnId);
           reportStatusUpdateFailure(
             typeof response.error === 'string'
               ? response.error
@@ -422,7 +453,7 @@ export function KanbanBoard({
         syncWorkItem(id, response.data);
       })
       .catch(async (error) => {
-        restoreStatus(id, previousStatus);
+        restorePlacement(id, previousStatus, previousBoardColumnId);
         if (
           await tryHandleLockedMutationError({
             error,
@@ -430,7 +461,10 @@ export function KanbanBoard({
             entityType: 'work_item',
             entityId: id,
             expectedUpdatedAt: currentItem.updated_at,
-            pendingFields: { status: targetStatus },
+            pendingFields: {
+              status: move.status,
+              board_column_id: move.board_column_id,
+            },
             currentUserId: userId,
           })
         ) {
@@ -443,11 +477,11 @@ export function KanbanBoard({
       });
   };
 
-  const handleDrop = (event: DragEvent, targetStatus: BoardStatus) => {
+  const handleDrop = (event: DragEvent, targetColumn: BoardColumn) => {
     event.preventDefault();
     const id = event.dataTransfer.getData('text/plain') || draggedTaskId;
     if (id) {
-      applyStatusChange(id, targetStatus);
+      applyStatusChange(id, targetColumn);
     }
     setDraggedTaskId(null);
     setActiveDropCol(null);
@@ -545,7 +579,7 @@ export function KanbanBoard({
       <div className="flex min-h-0 flex-1 gap-4 overflow-x-auto pb-1">
         {boardColumns.map((column) => {
           const columnItems = columnItemsMap.get(column.id) ?? [];
-          const isOver = activeDropCol === column.status;
+          const isOver = activeDropCol === column.id;
 
           return (
             <section
@@ -556,9 +590,9 @@ export function KanbanBoard({
                 BOARD_STATUS_COLUMN_ACCENTS[column.status],
                 isOver && 'border-primary bg-primary/5 border-dashed'
               )}
-              onDragOver={(event) => handleDragOver(event, column.status)}
+              onDragOver={(event) => handleDragOver(event, column.id)}
               onDragLeave={handleDragLeave}
-              onDrop={(event) => handleDrop(event, column.status)}
+              onDrop={(event) => handleDrop(event, column)}
             >
               <div className="mb-3 flex items-center justify-between gap-2">
                 <WorkItemStatusBadge
@@ -730,14 +764,15 @@ export function KanbanBoard({
                         key={column.id}
                         type="button"
                         variant={
-                          selectedTask.status === column.status
+                          resolveItemColumnId(selectedTask, boardColumns) ===
+                          column.id
                             ? 'default'
                             : 'outline'
                         }
                         size="sm"
                         disabled={pendingStatusIds.has(selectedTask.id)}
                         onClick={() =>
-                          applyStatusChange(selectedTask.id, column.status)
+                          applyStatusChange(selectedTask.id, column)
                         }
                       >
                         {column.name}

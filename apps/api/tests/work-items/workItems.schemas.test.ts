@@ -84,4 +84,39 @@ describe('patchWorkItemBodySchema', () => {
     });
     expect(parsed.success).toBe(true);
   });
+
+  it.each([{}, { board_column_id: null }, { board_column_id: 'code-review' }])(
+    'accepts optional board column placement %#',
+    (placement) => {
+      const parsed = patchWorkItemBodySchema.safeParse({
+        title: 'Updated title',
+        ...placement,
+        expectedUpdatedAt: '2026-08-06T12:00:00.000Z',
+      });
+      expect(parsed.success).toBe(true);
+    }
+  );
+
+  it.each([{ board_column_id: '' }, { board_column_id: '   ' }])(
+    'rejects an empty provided board column ID %#',
+    (placement) => {
+      const parsed = patchWorkItemBodySchema.safeParse({
+        ...placement,
+        expectedUpdatedAt: '2026-08-06T12:00:00.000Z',
+      });
+      expect(parsed.success).toBe(false);
+    }
+  );
+
+  it('does not add board-column placement to creation', () => {
+    const parsed = createWorkItemBodySchema.safeParse({
+      ...validCore,
+      board_column_id: 'code-review',
+    });
+
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data).not.toHaveProperty('board_column_id');
+    }
+  });
 });

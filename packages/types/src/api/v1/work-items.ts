@@ -43,7 +43,7 @@ export const WORK_ITEM_REPORTER_POSTGREST_SELECT = userRelationSelect(
  * Field list must stay aligned with `workItemListSelect` keys.
  */
 export const WORK_ITEM_LIST_POSTGREST_COLUMNS =
-  'id, project_id, sprint_id, parent_id, title, type, priority, labels, assignee_id, reporter_id, due_date, story_points, status, record_status, done_at, created_by, created_at, updated_by, updated_at, jira_issue_key' as const;
+  'id, project_id, sprint_id, parent_id, title, type, priority, labels, assignee_id, reporter_id, due_date, story_points, status, board_column_id, record_status, done_at, created_by, created_at, updated_by, updated_at, jira_issue_key' as const;
 
 /** PostgREST select for list/board reads (optional TipTap description). */
 export function workItemListPostgrestSelect(
@@ -89,6 +89,7 @@ export const workItemListSelect = {
   due_date: true,
   story_points: true,
   status: true,
+  board_column_id: true,
   record_status: true,
   done_at: true,
   created_by: true,
@@ -422,6 +423,11 @@ export const createWorkItemBodySchema = workItemCoreObject.refine(
 export const patchWorkItemBodySchema = workItemCoreObject
   .extend({
     status: workItemStatusSchema,
+    board_column_id: z
+      .string()
+      .trim()
+      .min(1, 'Board column ID is required')
+      .nullable(),
   })
   .partial()
   .extend({
@@ -436,6 +442,12 @@ export const patchWorkItemBodySchema = workItemCoreObject
 
 export const patchWorkItemStatusBodySchema = z.object({
   status: workItemStatusSchema,
+  board_column_id: z
+    .string()
+    .trim()
+    .min(1, 'Board column ID is required')
+    .nullable()
+    .optional(),
   expectedUpdatedAt: expectedUpdatedAtSchema,
 });
 
@@ -471,6 +483,7 @@ export type LinkWorkItemGithubPrBody = z.infer<
 
 export type WorkItemUpdateBody = CreateWorkItemBody & {
   status: z.infer<typeof workItemStatusSchema>;
+  board_column_id: string | null;
 };
 
 export type WorkItemMutationDescriptionParseMode = 'strict' | 'lenient';

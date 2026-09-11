@@ -182,6 +182,30 @@ export class WorkItemRepository {
     return data as unknown as DbWorkItem;
   }
 
+  async getProjectWorkflowConfig(
+    projectId: string
+  ): Promise<Tables<'projects'>['workflow_config']> {
+    const { data, error } = await this.db
+      .from('projects')
+      .select('workflow_config')
+      .eq('id', projectId)
+      .maybeSingle();
+
+    if (error) {
+      console.error(
+        'error. failed to load project workflow config:',
+        error.message
+      );
+      throw new Error('Failed to validate board column');
+    }
+
+    if (!data) {
+      throw new WorkItemAccessError();
+    }
+
+    return data.workflow_config;
+  }
+
   /** Count direct children that are not yet Done (for Done-gate validation). */
   async countIncompleteChildren(parentId: string): Promise<number> {
     const { count, error } = await this.db
@@ -275,6 +299,7 @@ export class WorkItemRepository {
         description: descriptionUpdate,
         labels: (input.labels ?? []) as Prisma.InputJsonValue,
         status: input.status,
+        board_column_id: input.board_column_id,
         sprint_id: input.sprint_id,
         story_points: input.story_points,
         parent_id: input.parent_id ?? null,

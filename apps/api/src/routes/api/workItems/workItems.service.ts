@@ -1,4 +1,5 @@
 import {
+  boardConfigSchema,
   getAllowedChildType,
   type WorkItemType,
   parseWorkItemLabels,
@@ -192,6 +193,8 @@ export class WorkItemService {
 
     const current = await this.workItems.getById(workItemId);
 
+    await this.assertValidBoardColumn(current, input);
+
     if (!sameNullable(input.parent_id, current?.parent_id)) {
       await this.assertValidParentLink({
         parentId: input.parent_id,
@@ -250,6 +253,46 @@ export class WorkItemService {
     }
 
     return updated;
+  }
+
+  private async assertValidBoardColumn(
+    current: DbWorkItem,
+    input: WorkItemUpdateBody
+  ): Promise<void> {
+    if (input.board_column_id === null) {
+      return;
+    }
+
+    if (input.project_id !== current.project_id) {
+      throw new WorkItemValidationError(
+        'Board column placement cannot be carried to another project'
+      );
+    }
+
+    const workflowConfig = await this.workItems.getProjectWorkflowConfig(
+      current.project_id
+    );
+    const parsed = boardConfigSchema.safeParse(workflowConfig);
+    if (!parsed.success) {
+      throw new WorkItemValidationError(
+        'This project does not have a valid custom board configuration'
+      );
+    }
+
+    const column = parsed.data.columns.find(
+      (candidate) => candidate.id === input.board_column_id
+    );
+    if (!column) {
+      throw new WorkItemValidationError(
+        'Board column does not exist in this project'
+      );
+    }
+
+    if (column.status !== input.status) {
+      throw new WorkItemValidationError(
+        'Board column does not match the work item status'
+      );
+    }
   }
 
   private async createWorkItemUpdateWorklog(params: {
