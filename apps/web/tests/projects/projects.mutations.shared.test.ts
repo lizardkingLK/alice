@@ -126,9 +126,12 @@ describe('createProjectsService frontend tests', () => {
 
     await service.removeProjectMember('proj-1', 'user-2');
 
-    expect(apiFetch).toHaveBeenCalledWith('/api/projects/proj-1/members/user-2', {
-      method: 'DELETE',
-    });
+    expect(apiFetch).toHaveBeenCalledWith(
+      '/api/projects/proj-1/members/user-2',
+      {
+        method: 'DELETE',
+      }
+    );
   });
 
   it('updates project dynamic fields config via PUT', async () => {
@@ -142,6 +145,31 @@ describe('createProjectsService frontend tests', () => {
     expect(apiFetch).toHaveBeenCalledWith('/api/projects/proj-1', {
       method: 'PUT',
       body: JSON.stringify({ attributes_config: config }),
+    });
+    expect(result).toEqual(project);
+  });
+
+  it('updates project dynamic fields config with expectedUpdatedAt via PUT', async () => {
+    const project = projectFactory.build({
+      updated_at: '2026-09-10T08:00:00.000Z',
+    });
+    const apiFetch = vi.fn().mockResolvedValue({ project });
+    const service = createProjectsService(apiFetch);
+    const config = { type: 'object', properties: {} };
+    const expectedUpdatedAt = '2026-09-10T08:00:00.000Z';
+
+    const result = await service.updateProjectFieldsConfig(
+      'proj-1',
+      config,
+      expectedUpdatedAt
+    );
+
+    expect(apiFetch).toHaveBeenCalledWith('/api/projects/proj-1', {
+      method: 'PUT',
+      body: JSON.stringify({
+        attributes_config: config,
+        expectedUpdatedAt,
+      }),
     });
     expect(result).toEqual(project);
   });

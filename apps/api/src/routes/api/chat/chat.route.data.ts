@@ -58,6 +58,22 @@ ATTACHMENTS & WORK ITEM IMPORT PROTOCOL:
      - Deduplication summary: count of new items to be created, exact duplicates to skip, and potential duplicates
   5. Ask the user for explicit confirmation before importing (e.g. "Should I proceed with importing these work items into project [Name]?").
   6. Upon confirmation, call \`batch_import_work_items\` to create the hierarchy of work items in the project and report the created items.
+
+PROJECT DYNAMIC FIELDS & SCHEMA GENERATION PROTOCOL:
+- When the user asks to configure, define, or generate dynamic fields or custom metadata for a project (e.g. "I want every work-item to optionally have a MoSCoW rating and acceptance criteria"):
+  1. Call \`generate_project_fields_schema\` or provide a valid JSON Schema meeting Alice's Project Dynamic Fields specifications:
+     - Root type must be "object".
+     - "$schema": "https://json-schema.org/draft/2020-12/schema".
+     - "title": "Project Dynamic Work-Item Fields".
+     - "description": descriptive text.
+     - "properties": an object map where keys are valid alphanumeric/underscore identifiers.
+     - Each property must specify a recognized type ("string", "number", "integer", "boolean", "array").
+     - Single-select or multi-select dropdowns should define non-empty "enum" string options.
+     - Multiline text fields use format "multiline".
+     - Date fields use format "date".
+     - "additionalProperties": true.
+  2. Output the schema in a formatted JSON block or tool response.
+  3. SECURITY GUARDRAIL: You MUST NOT write directly to the database. Instruct the user to review, validate, and save the schema in the Project Fields workspace editor.
 `;
 
 /** Provider-agnostic Alice chat tools. Strategies map these to wire formats. */
@@ -234,4 +250,64 @@ export const aliceChatTools: AliceChatTools = [
       required: ['projectId'],
     },
   },
+  {
+    name: 'generate_project_fields_schema',
+    description:
+      'Generate a validated Project Dynamic Fields JSON Schema based on requested fields.',
+    parameters: {
+      type: 'object',
+      properties: {
+        fields: {
+          type: 'array',
+          description:
+            'Array of dynamic field definitions to include in the schema.',
+          items: {
+            type: 'object',
+            properties: {
+              key: {
+                type: 'string',
+                description:
+                  'Identifier for the field (alphanumeric/underscore).',
+              },
+              title: { type: 'string', description: 'User-friendly label.' },
+              type: {
+                type: 'string',
+                enum: ['string', 'number', 'integer', 'boolean', 'array'],
+                description: 'JSON Schema type.',
+              },
+              description: {
+                type: 'string',
+                description: 'Field description.',
+              },
+              enum: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Allowed values for select fields.',
+              },
+              format: {
+                type: 'string',
+                description: 'e.g. multiline, date, uri.',
+              },
+            },
+            required: ['key', 'title', 'type'],
+          },
+        },
+      },
+      required: ['fields'],
+    },
+  },
 ];
+
+export const dynamicFieldsSystemPrompt = `You are Alice, an AI assistant configuring custom dynamic fields for project management.
+You must generate a valid JSON Schema object representing the dynamic fields requested by the user.
+Constraints:
+- Root "type": "object"
+- "properties": a key-value object of field definitions where each key matches /^[a-zA-Z0-9_-]+$/
+- Allowed field types: "string", "number", "integer", "boolean", "array"
+- String format options: "multiline", "date", "uri", or omit for standard single-line text
+- Select options: Use "enum": ["Option1", "Option2"]
+- Metadata: "title" (required human-readable label), "description" (optional description)
+- Array types must have "items" (e.g. { "type": "string" })
+- Root "additionalProperties": true
+If a Current Schema is provided with existing fields in "properties", you MUST preserve all existing fields and add or update the newly requested fields to "properties". Do not omit or delete existing fields unless explicitly requested.
+Respond by calling the "generate_project_fields_schema" tool or by returning ONLY a valid JSON object matching this schema.`;

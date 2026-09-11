@@ -14,11 +14,16 @@ import {
 } from '@/app/work-items/_components/work-item-details/work-item-field-patch-dialog';
 import { IncompleteSubtasksDoneBlockedDialog } from '@/app/work-items/_components/work-item-subtasks/incomplete-subtasks-done-blocked-dialog';
 import { hasIncompleteStatuses } from '@/app/work-items/_helpers/work-item-status';
+import {
+  extractDynamicFieldValues,
+  patchWorkItemDynamicFields,
+} from '@/app/work-items/_helpers/work-item-dynamic-fields';
 import { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import {
   parseWorkItemLabels,
   type WorkItemStatus,
   type WorkItemWorkLog,
+  ProjectFieldsConfigSchema,
 } from '@repo/types';
 import {
   Avatar,
@@ -72,6 +77,7 @@ import {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
   type Dispatch,
   type ReactNode,
   type SetStateAction,
@@ -80,7 +86,10 @@ import type { Project as DbProject } from '@/app/projects/_services/projects.mut
 import {
   linkPR,
   unlinkPR,
+  updateWorkItem,
 } from '@/app/work-items/_services/work-items.mutations.client';
+import { SafeDynamicFieldsSection } from './safe-dynamic-fields-section';
+import { ProjectFieldsErrorDialog } from '@/app/projects/_components/project-details/project-fields-error-dialog';
 import {
   getLinkedPRs,
   type GithubCommit,
@@ -388,170 +397,6 @@ function EditableLabelsField({
   );
 }
 
-function parseTextDynamicFields(text: string): Record<string, unknown> {
-  const marker = '[Dynamic Fields]';
-  const markerIndex = text.indexOf(marker);
-  if (markerIndex === -1) {
-    return {};
-  }
-
-  const remainder = text.slice(markerIndex + marker.length);
-  const content = remainder.startsWith('\n') ? remainder.slice(1) : remainder;
-  const lines = content.split('\n');
-  const result: Record<string, unknown> = {};
-
-  for (const line of lines) {
-    const colonIdx = line.indexOf(':');
-    if (colonIdx > 0) {
-      const key = line.slice(0, colonIdx).trim();
-      const val = line.slice(colonIdx + 1).trim();
-      if (key) {
-        result[key] = val;
-      }
-    }
-  }
-
-  return result;
-}
-
-function findDynamicFieldsInContent(
-  content: unknown[]
-): Record<string, unknown> | null {
-  for (const node of content) {
-    if (!node || typeof node !== 'object') {
-      continue;
-    }
-    const children = (node as { content?: unknown[] }).content;
-    if (!Array.isArray(children)) {
-      continue;
-    }
-    for (const child of children) {
-      if (
-        child &&
-        typeof child === 'object' &&
-        typeof (child as { text?: unknown }).text === 'string'
-      ) {
-        const text = (child as { text: string }).text;
-        if (text.includes('[Dynamic Fields]')) {
-          return parseTextDynamicFields(text);
-        }
-      }
-    }
-  }
-  return null;
-}
-
-function extractDynamicFieldValues(
-  description: unknown
-): Record<string, unknown> {
-  if (!description || typeof description !== 'object') {
-    return {};
-  }
-  try {
-    const doc = description as {
-      attrs?: { dynamicFields?: unknown };
-      content?: unknown[];
-    };
-    const df = doc.attrs?.dynamicFields;
-    if (df && typeof df === 'object' && !Array.isArray(df)) {
-      return df as Record<string, unknown>;
-    }
-    if (Array.isArray(doc.content)) {
-      return findDynamicFieldsInContent(doc.content) ?? {};
-    }
-  } catch {
-    return {};
-  }
-  return {};
-}
-
-function formatDisplayValue(value: unknown): string {
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value);
-  }
-  if (typeof value === 'object' && value !== null) {
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return '';
-    }
-  }
-  return '';
-}
-
-function DynamicFieldValueDisplay({
-  property,
-  value,
-}: Readonly<{
-  property: {
-    readonly type?: string;
-    readonly format?: string;
-    readonly enum?: readonly unknown[];
-    readonly title?: string;
-  };
-  value: unknown;
-}>) {
-  if (value === undefined || value === null || value === '') {
-    return <span className="text-muted-foreground text-xs italic">Not set</span>;
-  }
-
-  if (typeof value === 'boolean') {
-    return (
-      <Badge variant={value ? 'default' : 'outline'} className="text-xs">
-        {value ? 'Yes' : 'No'}
-      </Badge>
-    );
-  }
-
-  if (Array.isArray(value)) {
-    if (value.length === 0) {
-      return <span className="text-muted-foreground text-xs italic">None</span>;
-    }
-    return (
-      <div className="flex flex-wrap gap-1">
-        {value.map((v) => {
-          const itemText = formatDisplayValue(v);
-          return (
-            <Badge key={itemText} variant="secondary" className="text-xs">
-              {itemText}
-            </Badge>
-          );
-        })}
-      </div>
-    );
-  }
-
-  const displayString = formatDisplayValue(value);
-
-  if (property.enum && Array.isArray(property.enum)) {
-    return (
-      <Badge variant="secondary" className="text-xs font-normal">
-        {displayString}
-      </Badge>
-    );
-  }
-
-  if (property.format === 'multiline') {
-    return (
-      <span className="text-foreground text-xs whitespace-pre-wrap line-clamp-3">
-        {displayString}
-      </span>
-    );
-  }
-
-  return (
-    <span
-      className="text-foreground text-xs truncate max-w-[200px]"
-      title={displayString}
-    >
-      {displayString}
-    </span>
-  );
-}
-
 export default function WorkItemSidebar({
   workItem,
   childStatuses = [],
@@ -588,37 +433,82 @@ export default function WorkItemSidebar({
   const [additionalFieldsOpen, setAdditionalFieldsOpen] = useState(true);
   const labels = parseWorkItemLabels(workItem.labels);
 
-  const dynamicConfig = useMemo(() => {
-    try {
-      const raw = project?.attributes_config;
-      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
-      const parsed = raw as {
-        type?: unknown;
-        properties?: Record<string, unknown>;
-      };
-      if (
-        (parsed.type === 'object' || !parsed.type) &&
-        parsed.properties &&
-        typeof parsed.properties === 'object' &&
-        !Array.isArray(parsed.properties)
-      ) {
-        const propKeys = Object.keys(parsed.properties);
-        if (propKeys.length > 0) {
-          return parsed as {
-            type?: unknown;
-            properties: Record<string, unknown>;
-          };
-        }
-      }
-      return null;
-    } catch {
-      return null;
-    }
+  const hasValidDynamicFields = useMemo(() => {
+    if (!project?.attributes_config) return false;
+    const validated = ProjectFieldsConfigSchema.safeParse(
+      project.attributes_config
+    );
+    return (
+      validated.success &&
+      Boolean(validated.data.properties) &&
+      Object.keys(validated.data.properties).length > 0
+    );
   }, [project?.attributes_config]);
 
   const dynamicFieldValues = useMemo(() => {
     return extractDynamicFieldValues(workItem.description);
   }, [workItem.description]);
+
+  const [dynamicFieldsError, setDynamicFieldsError] = useState<string | null>(
+    null
+  );
+
+  const latestUpdatedAtRef = useRef(workItem.updated_at);
+  const latestDescriptionRef = useRef(workItem.description);
+  const mutationQueueRef = useRef<Promise<void>>(Promise.resolve());
+
+  useEffect(() => {
+    latestUpdatedAtRef.current = workItem.updated_at;
+  }, [workItem.updated_at]);
+
+  useEffect(() => {
+    latestDescriptionRef.current = workItem.description;
+  }, [workItem.description]);
+
+  const handleDynamicFieldChange = useCallback(
+    (key: string, value: unknown) => {
+      mutationQueueRef.current = mutationQueueRef.current
+        .then(async () => {
+          const currentDesc = latestDescriptionRef.current;
+          const currentUpdated = latestUpdatedAtRef.current;
+          const updatedDescription = patchWorkItemDynamicFields(
+            currentDesc,
+            key,
+            value
+          );
+          latestDescriptionRef.current =
+            updatedDescription as DbWorkItem['description'];
+
+          // Optimistically notify parent so UI updates immediately
+          onWorkItemPatched({
+            description: updatedDescription as DbWorkItem['description'],
+          });
+
+          const formData = new FormData();
+          formData.set('description', JSON.stringify(updatedDescription));
+          const res = await updateWorkItem(
+            workItem.id,
+            formData,
+            currentUpdated
+          );
+          if (res.data) {
+            latestUpdatedAtRef.current = res.data.updated_at;
+            onWorkItemPatched({
+              description: updatedDescription as DbWorkItem['description'],
+              updated_at: res.data.updated_at,
+            });
+          }
+        })
+        .catch((err) => {
+          const msg =
+            err instanceof Error
+              ? err.message
+              : 'Failed to update dynamic field';
+          setDynamicFieldsError(msg);
+        });
+    },
+    [workItem.id, onWorkItemPatched]
+  );
 
   const activeConfig = activeField
     ? WORK_ITEM_PATCH_FIELD_CONFIG[activeField]
@@ -676,32 +566,27 @@ export default function WorkItemSidebar({
         </DetailRow>
       </SidebarCollapsibleSection>
 
-      {dynamicConfig && (
+      {hasValidDynamicFields && (
         <SidebarCollapsibleSection
           title="Additional Fields"
           open={additionalFieldsOpen}
           onOpenChange={setAdditionalFieldsOpen}
-          collapsedHint={`${Object.keys(dynamicConfig.properties).length} project fields`}
+          collapsedHint={`${
+            Object.keys(
+              (
+                project?.attributes_config as {
+                  properties?: Record<string, unknown>;
+                }
+              )?.properties || {}
+            ).length
+          } project fields`}
         >
-          <div className="space-y-3 pt-1">
-            {Object.entries(dynamicConfig.properties).map(([key, prop]) => {
-              const propObj =
-                prop && typeof prop === 'object'
-                  ? (prop as Record<string, unknown>)
-                  : {};
-              const value = dynamicFieldValues[key];
-              const title =
-                typeof propObj.title === 'string' ? propObj.title : key;
-              return (
-                <DetailRow key={key} label={title}>
-                  <DynamicFieldValueDisplay
-                    property={propObj}
-                    value={value}
-                  />
-                </DetailRow>
-              );
-            })}
-          </div>
+          <SafeDynamicFieldsSection
+            schema={project?.attributes_config}
+            values={dynamicFieldValues}
+            onFieldChange={handleDynamicFieldChange}
+            readOnly={readOnly}
+          />
         </SidebarCollapsibleSection>
       )}
 
@@ -798,6 +683,14 @@ export default function WorkItemSidebar({
           onPatched={onWorkItemPatched}
         />
       ) : null}
+
+      <ProjectFieldsErrorDialog
+        open={Boolean(dynamicFieldsError)}
+        title="Dynamic Field Update Error"
+        description="Could not save the updated field value to this work item."
+        error={dynamicFieldsError}
+        onClose={() => setDynamicFieldsError(null)}
+      />
     </aside>
   );
 }

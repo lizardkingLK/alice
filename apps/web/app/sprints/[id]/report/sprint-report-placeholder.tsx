@@ -73,7 +73,10 @@ export function SprintReportPlaceholder({
               ) : null}
             </div>
             <h1 className="text-foreground mt-2 text-2xl font-bold tracking-tight md:text-3xl">
-              <TruncatedText as="span" className="block max-w-full md:max-w-3xl">
+              <TruncatedText
+                as="span"
+                className="block max-w-full md:max-w-3xl"
+              >
                 {`${sprint.name} Summary Report`}
               </TruncatedText>
             </h1>
@@ -97,9 +100,21 @@ export function SprintReportPlaceholder({
       <div className="sprint-report-stats-grid grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {(
           [
-            { label: 'Completed Scope', icon: Trophy, tone: 'bg-emerald-500/10 text-emerald-600' },
-            { label: 'Work Items Done', icon: Layers, tone: 'bg-indigo-500/10 text-indigo-600' },
-            { label: 'Velocity Delivered', icon: Sparkles, tone: 'bg-purple-500/10 text-purple-600' },
+            {
+              label: 'Completed Scope',
+              icon: Trophy,
+              tone: 'bg-emerald-500/10 text-emerald-600',
+            },
+            {
+              label: 'Work Items Done',
+              icon: Layers,
+              tone: 'bg-indigo-500/10 text-indigo-600',
+            },
+            {
+              label: 'Velocity Delivered',
+              icon: Sparkles,
+              tone: 'bg-purple-500/10 text-purple-600',
+            },
           ] as const
         ).map(({ label, icon: Icon, tone }) => (
           <Card

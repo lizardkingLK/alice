@@ -30,7 +30,7 @@ export function RegistryTitleCell({
   return (
     <div
       className={cn(
-        'flex min-w-0 max-w-72 items-center gap-2 sm:max-w-80 md:max-w-96',
+        'flex max-w-72 min-w-0 items-center gap-2 sm:max-w-80 md:max-w-96',
         className
       )}
     >

@@ -9,9 +9,7 @@ import {
   WorkspaceDefaultsDialogHost,
 } from '@/app/board/_components/workspace-defaults-dialog-host';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
-import {
-  applyProjectFilterToSearchParams,
-} from '@/app/board/_services/board.defaults.shared';
+import { applyProjectFilterToSearchParams } from '@/app/board/_services/board.defaults.shared';
 import type { Project } from '@/app/projects/_services/projects.mutations.client';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
@@ -206,10 +204,7 @@ export function CalendarRegistry({
     const currentProject = projectQuery.value || QUERY_FILTER_ALL_VALUE;
     const currentSprint = sprintQuery.value || QUERY_FILTER_ALL_VALUE;
 
-    if (
-      draft.project !== currentProject ||
-      draft.sprint !== currentSprint
-    ) {
+    if (draft.project !== currentProject || draft.sprint !== currentSprint) {
       const params = new URLSearchParams(searchParams.toString());
       applyProjectFilterToSearchParams(params, {
         nextProject: draft.project,
@@ -251,11 +246,11 @@ export function CalendarRegistry({
     (allowAllFilters &&
       projectQuery.value &&
       projectQuery.value !== QUERY_FILTER_ALL_VALUE) ||
-      (allowAllFilters &&
-        sprintQuery.value &&
-        sprintQuery.value !== QUERY_FILTER_ALL_VALUE) ||
-      selectedAssigneeId !== ALL_OPTION ||
-      selectedType !== ALL_OPTION
+    (allowAllFilters &&
+      sprintQuery.value &&
+      sprintQuery.value !== QUERY_FILTER_ALL_VALUE) ||
+    selectedAssigneeId !== ALL_OPTION ||
+    selectedType !== ALL_OPTION
   );
 
   const handleClearCalendarFilters = () => {

@@ -11,11 +11,11 @@ export function ProjectDetailsSkeleton() {
     >
       {/* Sidebar Skeleton */}
       <aside className="border-border shrink-0 border-b md:flex md:h-full md:w-56 md:flex-col md:border-r md:border-b-0">
-        <div className="px-4 py-4 sm:px-5 space-y-2">
+        <div className="space-y-2 px-4 py-4 sm:px-5">
           <Skeleton className="h-3 w-16" />
           <Skeleton className="h-4 w-32" />
         </div>
-        <div className="px-2 pb-4 space-y-1">
+        <div className="space-y-1 px-2 pb-4">
           {skeletonKeys('nav', 6).map((key) => (
             <Skeleton key={key} className="h-8 w-full rounded-lg" />
           ))}
@@ -23,7 +23,7 @@ export function ProjectDetailsSkeleton() {
       </aside>
 
       {/* Content Area Skeleton */}
-      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto p-6 space-y-6">
+      <main className="flex min-h-0 flex-1 flex-col space-y-6 overflow-y-auto p-6">
         <div className="border-primary/15 from-primary/5 space-y-4 rounded-2xl border bg-linear-to-r via-transparent to-transparent px-6 py-4 md:px-8 md:py-5">
           <div className="flex flex-wrap items-center gap-2">
             <Skeleton className="h-6 w-20 rounded-full" />

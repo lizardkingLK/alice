@@ -7,6 +7,12 @@ import { emptyToUndefined } from './query-preprocess.js';
 export const CHAT_CONVERSATION_POSTGREST_SELECT =
   'id, title, created_at, updated_at, is_processing' as const;
 
+export enum ChatTurnRoleEnum {
+  USER = 'user',
+  MODEL = 'model',
+  SYSTEM = 'system',
+}
+
 const chatRoleSchema = z.enum([ChatRoles.User, ChatRoles.Assistant]);
 
 export const chatAttachmentWireSchema = z.object({

@@ -30,13 +30,13 @@ shows the same table filtered to items assigned to you.
 
 ## List toolbar
 
-| Control                           | Purpose                                   |
-| --------------------------------- | ----------------------------------------- |
-| **Add Work-Item**                 | Open the create form                      |
-| **Active** / **Archived**         | Switch archived items                     |
-| **Flat** / **Hierarchy**          | Flat list vs parent/child tree            |
-| **Expand all** / **Collapse all** | Hierarchy mode only                       |
-| Search (**Ctrl/⌘+K**)             | Filter by text                            |
+| Control                           | Purpose                                                 |
+| --------------------------------- | ------------------------------------------------------- |
+| **Add Work-Item**                 | Open the create form                                    |
+| **Active** / **Archived**         | Switch archived items                                   |
+| **Flat** / **Hierarchy**          | Flat list vs parent/child tree                          |
+| **Expand all** / **Collapse all** | Hierarchy mode only                                     |
+| Search (**Ctrl/⌘+K**)             | Filter by text                                          |
 | Filters (**Shift+F**)             | Filter icon → project, sprint, type, assignee, and more |
 | Defaults (gear icon)              | Save or apply workspace project/sprint defaults         |
 
