@@ -21,7 +21,9 @@ The sprints list shows active and archived sprints. Use:
 
 - **Add Sprint** — create a new iteration (name, dates, goal)
 - Search — find sprints by name or goal
-- Tabs — **Active** / **Archived**
+- **Filter** icon (**Shift+F**) — open the filter dialog and choose a
+  project (or **All projects**)
+- Tabs — **Active** / **Archived** (right side of the toolbar)
 
 Select a sprint to open its report or related work.
 
@@ -29,17 +31,19 @@ Select a sprint to open its report or related work.
 
 ## Sprint reports
 
-Open `/sprints/[id]/report` for burndown and progress metrics. Reports are
-available for **active**, **completed**, and **archived** sprints — not
-**planned** ones.
+Open `/sprints/[id]/report` for burndown and progress metrics.
 
-Links include a `from` query so the unavailable-state back button returns you
-to the right place:
+- **Active**, **completed**, and **archived** sprints show the live report
+  (stats, charts, deliverables).
+- **Planned** sprints open the same report layout as a **placeholder** — charts
+  and metrics stay locked until the sprint becomes active or is completed.
 
-| Opened from      | Back button         |
-| ---------------- | ------------------- |
-| Sprints registry | **Back to Sprints** |
-| Backlog          | **Back to Backlog** |
+Breadcrumbs include a `from` query so navigation context stays clear:
+
+| Opened from      | Trail includes   |
+| ---------------- | ---------------- |
+| Sprints registry | Sprints          |
+| Backlog          | Backlog          |
 
 Assign work to a sprint from the backlog, work-item sidebar, or create forms.
 

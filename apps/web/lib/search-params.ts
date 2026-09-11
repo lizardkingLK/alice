@@ -64,7 +64,7 @@ export function parseStandardParams(
 }
 
 /** Query sentinels that mean "no filter" (e.g. All Projects / All Sprints). */
-function parseOptionalFilterId(value?: string): string | undefined {
+export function parseOptionalFilterId(value?: string): string | undefined {
   const trimmed = value?.trim();
   if (!trimmed || trimmed === ALL_PROJECTS_ID) {
     return undefined;

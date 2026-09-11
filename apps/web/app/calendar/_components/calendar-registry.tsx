@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { ChevronLeft, ChevronRight, ListTodo } from '@repo/ui/lib/icons';
+import { ChevronLeft, ChevronRight, ListTodo, X } from '@repo/ui/lib/icons';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   pickWorkspaceDefaultsDialogController,
@@ -11,25 +11,26 @@ import {
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
 import {
   applyProjectFilterToSearchParams,
-  buildSprintFilterOptionsForQuery,
 } from '@/app/board/_services/board.defaults.shared';
 import type { Project } from '@/app/projects/_services/projects.mutations.client';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import type { User } from '@/app/users/_services/users.mutations.client';
-import { toNameCase, WORK_ITEM_TYPES } from '@repo/types';
+import { toNameCase } from '@repo/types';
 import { ALL_OPTION } from '@/app/_shared/values';
 import { type CalendarActionItem } from './calendar-client.types';
+import { applyCalendarFilterChange } from './calendar-filter-controls';
 import {
-  applyCalendarFilterChange,
-  CalendarFilterSelect,
-} from './calendar-filter-controls';
+  CalendarFilterDialog,
+  type CalendarFilterDraft,
+} from './calendar-filter-dialog';
 import { MONTHS } from './calendar-constants';
 import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form/work-item-form-dialog';
 import {
   QUERY_FILTER_ALL_VALUE,
   useQueryFilter,
 } from '@/hooks/use-query-filter';
+import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
 import { CalendarDaySheet } from '@/app/calendar/_components/calendar-day-sheet';
 import { CalendarDueDateWarningDialog } from '@/app/calendar/_components/calendar-due-date-warning-dialog';
 import { CalendarMonthGrid } from '@/app/calendar/_components/calendar-month-grid';
@@ -201,6 +202,75 @@ export function CalendarRegistry({
     });
   };
 
+  const handleApplyCalendarFilters = (draft: CalendarFilterDraft) => {
+    const currentProject = projectQuery.value || QUERY_FILTER_ALL_VALUE;
+    const currentSprint = sprintQuery.value || QUERY_FILTER_ALL_VALUE;
+
+    if (
+      draft.project !== currentProject ||
+      draft.sprint !== currentSprint
+    ) {
+      const params = new URLSearchParams(searchParams.toString());
+      applyProjectFilterToSearchParams(params, {
+        nextProject: draft.project,
+        sprints,
+        pageMode: 'delete',
+      });
+      if (
+        draft.sprint &&
+        draft.sprint !== QUERY_FILTER_ALL_VALUE &&
+        draft.sprint !== ALL_OPTION
+      ) {
+        params.set('sprint', draft.sprint);
+      } else {
+        params.delete('sprint');
+      }
+      const query = params.toString();
+      router.push(query ? `${pathname}?${query}` : pathname);
+      logAction({
+        type: 'filter_project',
+        entity: {
+          id: draft.project,
+          value: draft.project,
+          label:
+            projects.find((p) => p.id === draft.project)?.name ??
+            'All Projects',
+        },
+      });
+    }
+
+    if (draft.assignee !== selectedAssigneeId) {
+      handleAssigneeChange(draft.assignee);
+    }
+    if (draft.type !== selectedType) {
+      handleTypeChange(draft.type);
+    }
+  };
+
+  const hasActiveCalendarFilters = Boolean(
+    (allowAllFilters &&
+      projectQuery.value &&
+      projectQuery.value !== QUERY_FILTER_ALL_VALUE) ||
+      (allowAllFilters &&
+        sprintQuery.value &&
+        sprintQuery.value !== QUERY_FILTER_ALL_VALUE) ||
+      selectedAssigneeId !== ALL_OPTION ||
+      selectedType !== ALL_OPTION
+  );
+
+  const handleClearCalendarFilters = () => {
+    if (allowAllFilters) {
+      handleProjectChange(QUERY_FILTER_ALL_VALUE);
+    } else if (
+      sprintQuery.value &&
+      sprintQuery.value !== QUERY_FILTER_ALL_VALUE
+    ) {
+      handleSprintChange(QUERY_FILTER_ALL_VALUE);
+    }
+    handleAssigneeChange(ALL_OPTION);
+    handleTypeChange(ALL_OPTION);
+  };
+
   const openEditDialog = (item: DbWorkItem) => {
     if (dueDateDrag.shouldSuppressItemClick()) {
       return;
@@ -274,21 +344,6 @@ export function CalendarRegistry({
       entity: { id, value: d.toISOString(), label },
     });
   };
-
-  const sprintOptions = useMemo(
-    () =>
-      buildSprintFilterOptionsForQuery(
-        sprints,
-        projectQuery.value,
-        QUERY_FILTER_ALL_VALUE
-      ),
-    [projectQuery.value, sprints]
-  );
-
-  const projectSelectOptions = useMemo(
-    () => projects.map((p) => ({ id: p.id, label: p.name })),
-    [projects]
-  );
 
   const calendarDays = useMemo(
     () => buildCalendarDays(year, month, todayDateString),
@@ -371,43 +426,39 @@ export function CalendarRegistry({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <CalendarFilterSelect
-            value={projectQuery.value || QUERY_FILTER_ALL_VALUE}
-            onValueChange={handleProjectChange}
-            placeholder="Filter Project"
-            allLabel="All Projects"
-            options={projectSelectOptions}
-            includeAll={allowAllFilters}
+          <CalendarFilterDialog
+            projects={projects}
+            sprints={sprints}
+            users={users}
+            projectValue={projectQuery.value || QUERY_FILTER_ALL_VALUE}
+            sprintValue={sprintQuery.value || QUERY_FILTER_ALL_VALUE}
+            assigneeValue={selectedAssigneeId}
+            typeValue={selectedType}
+            allowAllFilters={allowAllFilters}
+            hasActiveFilters={hasActiveCalendarFilters}
+            onApplyFilters={handleApplyCalendarFilters}
           />
-          <CalendarFilterSelect
-            value={sprintQuery.value || QUERY_FILTER_ALL_VALUE}
-            onValueChange={handleSprintChange}
-            placeholder="Filter Sprint"
-            allLabel="All Sprints"
-            options={sprintOptions.map((option) => ({
-              id: option.value,
-              label: option.label,
-            }))}
-            includeAll={allowAllFilters}
-          />
-          <CalendarFilterSelect
-            value={selectedAssigneeId}
-            onValueChange={handleAssigneeChange}
-            placeholder="Filter Assignee"
-            allLabel="All Assignees"
-            options={users.map((u) => ({ id: u.id, label: u.name }))}
-          />
-          <CalendarFilterSelect
-            value={selectedType}
-            onValueChange={handleTypeChange}
-            placeholder="Filter Type"
-            allLabel="All Types"
-            triggerClassName="h-8 w-28 text-xs sm:w-32"
-            options={WORK_ITEM_TYPES.map((workItemType) => ({
-              id: workItemType,
-              label: workItemType,
-            }))}
-          />
+
+          {hasActiveCalendarFilters ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleClearCalendarFilters}
+              className="text-muted-foreground hover:text-foreground h-8 px-2.5 text-xs"
+            >
+              Clear filters
+              <X className="size-3.5" />
+            </Button>
+          ) : null}
+
+          {userId ? (
+            <WorkspaceDefaultsControls
+              onOpenDefaultsDialog={boardDefaults.openDefaultsDialog}
+              savedDefaultsApplied={boardDefaults.savedDefaultsApplied}
+              buttonClassName="size-8 shrink-0"
+            />
+          ) : null}
         </div>
       </div>
 

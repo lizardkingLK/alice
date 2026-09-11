@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { WorkItemPathBreadcrumb } from '@/app/work-items/_components/work-item-path-breadcrumb';
 import { workItemFactory } from '../factories/workItem.factory';
-import { toShortId } from '@/app/_shared/utility';
 import type { WorkItemAncestor } from '@/app/work-items/_services/work-items.reads.server';
 
 vi.mock('next/link', () => ({
@@ -34,6 +33,7 @@ describe('WorkItemPathBreadcrumb', () => {
     const workItem = workItemFactory.build({
       id: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
       type: 'Epic',
+      title: 'Root epic title',
       sprint_id: null,
       project,
       sprint: null,
@@ -48,7 +48,7 @@ describe('WorkItemPathBreadcrumb', () => {
       '/projects/proj-1'
     );
     expect(screen.getByText('Epic')).toBeInTheDocument();
-    expect(screen.getByText(toShortId(workItem.id))).toBeInTheDocument();
+    expect(screen.getByText('Root epic title')).toBeInTheDocument();
     expect(
       screen.queryByRole('link', { name: /Epic/i })
     ).not.toBeInTheDocument();
@@ -65,6 +65,7 @@ describe('WorkItemPathBreadcrumb', () => {
     const workItem = workItemFactory.build({
       id: '22222222-2222-2222-2222-222222222222',
       type: 'Task',
+      title: 'Child task',
       parent_id: parent.id,
       sprint_id: 'sprint-1',
       project,
@@ -76,12 +77,10 @@ describe('WorkItemPathBreadcrumb', () => {
 
     // Assert
     expect(screen.getByText('Sprint 1')).toBeInTheDocument();
-    const parentLink = screen.getByRole('link', { name: /Story/i });
+    const parentLink = screen.getByRole('link', { name: /Parent story/i });
     expect(parentLink).toHaveAttribute('href', `/work-items/${parent.id}`);
-    expect(parentLink).toHaveAttribute('title', 'Parent story');
-    expect(screen.getByText(toShortId(parent.id))).toBeInTheDocument();
     expect(screen.getByText('Task')).toBeInTheDocument();
-    expect(screen.getByText(toShortId(workItem.id))).toBeInTheDocument();
+    expect(screen.getByText('Child task')).toBeInTheDocument();
   });
 
   it('renders full ancestor chain root-first with links', () => {
@@ -107,6 +106,7 @@ describe('WorkItemPathBreadcrumb', () => {
     const issue = workItemFactory.build({
       id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
       type: 'Issue',
+      title: 'Leaf issue',
       parent_id: task.id,
       project,
       sprint_id: null,
@@ -122,22 +122,22 @@ describe('WorkItemPathBreadcrumb', () => {
     );
 
     // Assert
-    expect(screen.getByRole('link', { name: /Epic/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /Root epic/i })).toHaveAttribute(
       'href',
       `/work-items/${epic.id}`
     );
-    expect(screen.getByRole('link', { name: /Story/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /Mid story/i })).toHaveAttribute(
       'href',
       `/work-items/${story.id}`
     );
-    expect(screen.getByRole('link', { name: /Task/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /Parent task/i })).toHaveAttribute(
       'href',
       `/work-items/${task.id}`
     );
     expect(screen.getByText('Issue')).toBeInTheDocument();
-    expect(screen.getByText(toShortId(issue.id))).toBeInTheDocument();
+    expect(screen.getByText('Leaf issue')).toBeInTheDocument();
     expect(
-      screen.queryByRole('link', { name: /Issue/i })
+      screen.queryByRole('link', { name: /Leaf issue/i })
     ).not.toBeInTheDocument();
   });
 });

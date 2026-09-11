@@ -16,6 +16,7 @@ type RegistryTitleCellProps = {
 
 /**
  * Shared registry table title cell: initial avatar chip + title + meta line.
+ * Caps width so long titles truncate inside `whitespace-nowrap` table cells.
  */
 export function RegistryTitleCell({
   href,
@@ -27,9 +28,17 @@ export function RegistryTitleCell({
   const initial = title.slice(0, 1).toUpperCase() || '?';
 
   return (
-    <div className={cn('flex min-w-48 items-center gap-2', className)}>
+    <div
+      className={cn(
+        'flex min-w-0 max-w-72 items-center gap-2 sm:max-w-80 md:max-w-96',
+        className
+      )}
+    >
       {leading}
-      <Link href={href} className="flex min-w-0 flex-1 items-center gap-3">
+      <Link
+        href={href}
+        className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden"
+      >
         <div
           className={cn(
             'bg-primary/10 text-primary border-primary/20',
@@ -39,8 +48,10 @@ export function RegistryTitleCell({
         >
           {initial}
         </div>
-        <div className="min-w-0 space-y-1 font-medium">
-          <TruncatedText className="block font-medium">{title}</TruncatedText>
+        <div className="min-w-0 flex-1 space-y-1 overflow-hidden font-medium">
+          <TruncatedText as="span" className="block font-medium">
+            {title}
+          </TruncatedText>
           <div className="text-muted-foreground truncate text-xs">
             {subtitle}
           </div>

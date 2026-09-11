@@ -5,6 +5,7 @@ import { Button } from '@repo/ui/components/ui/button';
 import {
   Tooltip,
   TooltipContent,
+  TooltipProvider,
   TooltipTrigger,
 } from '@repo/ui/components/ui/tooltip';
 import { cn } from '@repo/ui/lib/utils';
@@ -20,42 +21,40 @@ type WorkspaceDefaultsControlsProps = {
 export function WorkspaceDefaultsControls({
   onOpenDefaultsDialog,
   savedDefaultsApplied,
-  className = 'flex items-center gap-1.5',
-  buttonClassName = 'h-9',
+  className = 'flex items-center',
+  buttonClassName = 'size-9 shrink-0',
 }: Readonly<WorkspaceDefaultsControlsProps>) {
-  const button = (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      className={cn(
-        buttonClassName,
-        savedDefaultsApplied && PREFERENCE_APPLIED_OUTLINE_BUTTON_CLASS
-      )}
-      onClick={onOpenDefaultsDialog}
-      aria-label={
-        savedDefaultsApplied
-          ? 'Defaults applied — open workspace defaults'
-          : 'Open workspace defaults'
-      }
-    >
-      <Settings2 className="size-4" />
-      Defaults
-    </Button>
-  );
-
-  if (!savedDefaultsApplied) {
-    return <div className={className}>{button}</div>;
-  }
-
   return (
     <div className={className}>
-      <Tooltip>
-        <TooltipTrigger asChild>{button}</TooltipTrigger>
-        <TooltipContent side="bottom">
-          Your saved defaults are applied
-        </TooltipContent>
-      </Tooltip>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className={cn(
+                buttonClassName,
+                'cursor-pointer',
+                savedDefaultsApplied && PREFERENCE_APPLIED_OUTLINE_BUTTON_CLASS
+              )}
+              onClick={onOpenDefaultsDialog}
+              aria-label={
+                savedDefaultsApplied
+                  ? 'Defaults applied — open workspace defaults'
+                  : 'Open workspace defaults'
+              }
+            >
+              <Settings2 className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {savedDefaultsApplied
+              ? 'Your saved defaults are applied'
+              : 'Defaults'}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </div>
   );
 }

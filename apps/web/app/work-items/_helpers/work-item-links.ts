@@ -12,6 +12,11 @@ export type WorkItemDetailLinkContext = {
   readonly fromAssigneeId?: string | null;
 };
 
+export type WorkItemBreadcrumbLabels = {
+  readonly workItemTitle?: string | null;
+  readonly projectName?: string | null;
+};
+
 /**
  * Detail href for a work item. Optional query context is kept for callers that
  * still pass it; the shell breadcrumb always uses the work item's project_id.
@@ -38,19 +43,25 @@ export function workItemDetailHref(
  * Dashboard → Projects → {project} → Work Items → {item}
  *
  * Navigation history (query flags) is ignored; use the browser back button.
+ * Prefer titles/names; fall back to short ids when labels are unavailable.
  */
 export function buildWorkItemBreadcrumbOverrides(
   workItemId: string,
-  projectId?: string | null
+  projectId?: string | null,
+  labels: WorkItemBreadcrumbLabels = {}
 ): DashboardBreadcrumbOverride[] {
-  const shortWorkItemId = toShortId(workItemId);
+  const workItemLabel =
+    labels.workItemTitle?.trim() || toShortId(workItemId);
+  const projectLabel =
+    labels.projectName?.trim() ||
+    (projectId && isUuidSegment(projectId) ? toShortId(projectId) : 'Project');
 
   if (projectId && isUuidSegment(projectId)) {
     return [
       { label: 'Dashboard', url: '/dashboard' },
       { label: 'Projects', url: '/projects' },
       {
-        label: toShortId(projectId),
+        label: projectLabel,
         url: `/projects/${projectId}`,
       },
       {
@@ -58,7 +69,7 @@ export function buildWorkItemBreadcrumbOverrides(
         url: `/projects/${projectId}?tab=work-items`,
       },
       {
-        label: shortWorkItemId,
+        label: workItemLabel,
         url: `/work-items/${workItemId}`,
       },
     ];
@@ -67,6 +78,6 @@ export function buildWorkItemBreadcrumbOverrides(
   return [
     { label: 'Dashboard', url: '/dashboard' },
     { label: 'Work Items', url: '/work-items' },
-    { label: shortWorkItemId, url: `/work-items/${workItemId}` },
+    { label: workItemLabel, url: `/work-items/${workItemId}` },
   ];
 }

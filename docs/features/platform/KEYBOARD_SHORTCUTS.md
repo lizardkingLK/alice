@@ -88,7 +88,7 @@ Use `useToggleKeyboardShortcut` when the handler only toggles dialog open state
 
 | Shortcut     | Action                             | Location                       | Gate bypass                      |
 | ------------ | ---------------------------------- | ------------------------------ | -------------------------------- |
-| **Shift+F**  | Toggle work-items filter dialog    | `work-items-filter-dialog.tsx` | Yes, while filter dialog is open |
+| **Shift+F**  | Toggle shared Filter dialog (icon) | `filter-dialog-shell.tsx` (+ domain dialogs) | Yes, while filter dialog is open |
 | **Ctrl/⌘+K** | Focus list search input            | `search-input.tsx`             | No                               |
 | **Ctrl/⌘+K** | Toggle docs search command palette | `docs-search-dialog.tsx`       | Yes, while palette is open       |
 | **Ctrl/⌘+B** | Toggle sidebar                     | `@repo/ui` `sidebar.tsx`       | No                               |

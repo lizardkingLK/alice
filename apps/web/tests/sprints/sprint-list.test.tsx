@@ -210,6 +210,7 @@ describe('SprintList Component', () => {
         pagination={mockPagination}
         projects={[]}
         filterTab="active"
+        projectFilter="all"
         search=""
         userRole="admin"
       />
@@ -232,6 +233,7 @@ describe('SprintList Component', () => {
         pagination={mockPagination}
         projects={[]}
         filterTab="active"
+        projectFilter="all"
         search=""
         userRole="admin"
       />
@@ -254,6 +256,7 @@ describe('SprintList Component', () => {
         pagination={mockPagination}
         projects={[]}
         filterTab="active"
+        projectFilter="all"
         search=""
         userRole="admin"
       />
@@ -645,6 +648,7 @@ describe('SprintList Component', () => {
         pagination={mockPagination}
         projects={[]}
         filterTab="active"
+        projectFilter="all"
         search=""
         userRole="admin"
       />
@@ -707,6 +711,7 @@ describe('SprintList Component', () => {
         pagination={{ page: 1, limit: 10, totalCount: 1, totalPages: 1 }}
         projects={[]}
         filterTab="archived"
+        projectFilter="all"
         search=""
         userRole="admin"
       />
@@ -768,6 +773,7 @@ describe('SprintList Component', () => {
         pagination={{ page: 1, limit: 10, totalCount: 1, totalPages: 1 }}
         projects={[]}
         filterTab="archived"
+        projectFilter="all"
         search=""
         userRole="admin"
       />
