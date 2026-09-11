@@ -14,6 +14,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { DialogFooter } from '@repo/ui/components/ui/dialog';
 import { Loader2 } from '@repo/ui/lib/icons';
+import { cn } from '@repo/ui/lib/utils';
 import { User as DbUser } from '@/app/users/_services/users.mutations.client';
 import { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import {
@@ -84,6 +85,11 @@ export interface WorkItemFormProps {
    * selected project (charts sample projects are not real API ids).
    */
   preferProvidedMembers?: boolean;
+  /**
+   * Pin form actions to the bottom (calendar day-sheet create). Scrolls fields
+   * above a sticky footer with equal top/bottom/right padding.
+   */
+  stickyActions?: boolean;
 }
 
 const taskTypes = WORK_ITEM_TYPES;
@@ -152,6 +158,7 @@ export function WorkItemForm({
   createFormMode = 'classic',
   localMutate,
   preferProvidedMembers = false,
+  stickyActions = false,
 }: Readonly<WorkItemFormProps>) {
   const { handleMutationError } = useOptimisticLock();
   const availableTypes =
@@ -348,13 +355,21 @@ export function WorkItemForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex min-h-0 flex-1 flex-col justify-between space-y-4 overflow-hidden"
+      className={cn(
+        'flex min-h-0 flex-1 flex-col overflow-hidden',
+        stickyActions ? 'h-full' : 'justify-between space-y-4'
+      )}
     >
       {!isEditMode && defaultSprintId ? (
         <input type="hidden" name="sprint_id" value={defaultSprintId} />
       ) : null}
 
-      <div className="no-scrollbar flex-1 space-y-4 overflow-y-auto pr-1">
+      <div
+        className={cn(
+          'no-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto',
+          stickyActions ? 'p-6' : 'pr-1'
+        )}
+      >
         {useModernLayout ? (
           <WorkItemFormModernFields
             {...fieldProps}
@@ -380,7 +395,13 @@ export function WorkItemForm({
         <FormStatusAlerts error={state?.error} success={state?.success} />
       </div>
 
-      <DialogFooter className="shrink-0">
+      <DialogFooter
+        className={cn(
+          'shrink-0',
+          stickyActions &&
+            'bg-muted/50 -mx-0 mt-auto mb-0 rounded-none border-t px-6 py-4'
+        )}
+      >
         {onClose ? (
           <Button
             type="button"

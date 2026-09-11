@@ -11,7 +11,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@repo/ui/components/ui/breadcrumb';
-import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { isUuidSegment, toShortId } from '@/app/_shared/utility';
 
 export type DashboardBreadcrumbOverride = {
@@ -32,8 +31,8 @@ const DEFAULT_OVERRIDES: DashboardBreadcrumbOverride[] = [
   { label: 'Dashboard', url: '/dashboard' },
 ];
 
-/** Cap long entity names in the header trail; short labels stay unclipped. */
-const BREADCRUMB_LABEL_CLASS = 'max-w-36 text-sm sm:max-w-48';
+/** Cap long entity names in the header trail; short labels stay intact. */
+const BREADCRUMB_LABEL_MAX_CHARS = 20;
 
 function normalizeUrl(url: string): string {
   if (url.length > 1 && url.endsWith('/')) {
@@ -62,12 +61,23 @@ function labelForSegment(segment: string): string {
   return humanizeSegment(segment);
 }
 
+function truncateBreadcrumbLabel(label: string): {
+  display: string;
+  title?: string;
+} {
+  if (label.length <= BREADCRUMB_LABEL_MAX_CHARS) {
+    return { display: label };
+  }
+
+  return {
+    display: `${label.slice(0, BREADCRUMB_LABEL_MAX_CHARS)}...`,
+    title: label,
+  };
+}
+
 function BreadcrumbLabel({ label }: Readonly<{ label: string }>) {
-  return (
-    <TruncatedText as="span" className={BREADCRUMB_LABEL_CLASS}>
-      {label}
-    </TruncatedText>
-  );
+  const { display, title } = truncateBreadcrumbLabel(label);
+  return <span title={title}>{display}</span>;
 }
 
 function buildBreadcrumbItems(
@@ -136,22 +146,24 @@ export function DashboardBreadcrumb({
     : resolveDashboardBreadcrumbItems(pathname, overrides);
 
   return (
-    <Breadcrumb>
-      <BreadcrumbList>
+    <Breadcrumb className="max-w-full min-w-0">
+      <BreadcrumbList className="min-w-0 flex-nowrap items-center overflow-hidden">
         {items.map((item, index) => {
           const isCurrent = index === items.length - 1;
 
           return (
             <Fragment key={`${item.url}-${item.label}`}>
-              {index > 0 ? <BreadcrumbSeparator /> : null}
-              <BreadcrumbItem className="min-w-0">
+              {index > 0 ? (
+                <BreadcrumbSeparator className="shrink-0 self-center" />
+              ) : null}
+              <BreadcrumbItem className="shrink-0">
                 {isCurrent || item.url === '#' ? (
-                  <BreadcrumbPage className="min-w-0">
+                  <BreadcrumbPage>
                     <BreadcrumbLabel label={item.label} />
                   </BreadcrumbPage>
                 ) : (
-                  <BreadcrumbLink asChild className="min-w-0">
-                    <Link href={item.url} className="min-w-0">
+                  <BreadcrumbLink asChild>
+                    <Link href={item.url}>
                       <BreadcrumbLabel label={item.label} />
                     </Link>
                   </BreadcrumbLink>

@@ -34,11 +34,18 @@ open the view.
 
 Open **Views** in the sidebar (`/views`) to manage saved views:
 
+Toolbar: **Search** and the **Columns** icon on the left; icon segment tabs on
+the right (**My views**, **Shared with me**, **Archived**) — same bordered
+switcher style as Flat/Hierarchy and Active/Archived elsewhere (not underline
+page tabs).
+
 | Tab                | Contents                     |
 | ------------------ | ---------------------------- |
 | **My views**       | Views you created            |
 | **Shared with me** | Views others shared with you |
 | **Archived**       | Views you archived           |
+
+Use **Columns** to show or hide table columns (title always stays visible).
 
 Row actions include **Open** (new tab), **Share**, **Archive** / **Restore**, and
 **Delete** (for shared copies).

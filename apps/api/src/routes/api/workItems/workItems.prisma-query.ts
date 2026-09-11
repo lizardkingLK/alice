@@ -82,6 +82,21 @@ export function buildWorkItemPrismaListWhere(
 
   where.record_status = filters?.recordStatus ?? 'active';
 
+  if (filters?.dueDate === 'null') {
+    where.due_date = null;
+  } else if (filters?.dueDate === 'not_null') {
+    where.due_date = { not: null };
+  } else if (filters?.dueDate && typeof filters.dueDate === 'object') {
+    where.due_date = {
+      gte: new Date(`${filters.dueDate.from}T00:00:00.000Z`),
+      lte: new Date(`${filters.dueDate.to}T23:59:59.999Z`),
+    };
+  }
+
+  if (filters?.excludeStatuses?.length) {
+    where.status = { notIn: [...filters.excludeStatuses] };
+  }
+
   const and = buildSearchAndClauses(filters, search);
   if (and.length > 0) {
     where.AND = and;

@@ -114,6 +114,8 @@ type CreateIssueDialogProps = {
   readonly open: boolean;
   readonly projects: DbProject[];
   readonly projectMembers: DbUser[];
+  readonly defaultSprintId?: string | null;
+  readonly lockProject?: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly onClose: () => void;
   readonly onCreated: (workItem: DbWorkItem) => void;
@@ -124,6 +126,8 @@ export function BacklogCreateIssueDialog({
   open,
   projects,
   projectMembers,
+  defaultSprintId = null,
+  lockProject = false,
   onOpenChange,
   onClose,
   onCreated,
@@ -133,12 +137,18 @@ export function BacklogCreateIssueDialog({
       open={open}
       onOpenChange={onOpenChange}
       title="Create Work Item"
-      description="Add a new work item and assign it to a team member."
+      description={
+        defaultSprintId
+          ? 'Add a new work item locked to this sprint.'
+          : 'Add a new work item and assign it to a team member.'
+      }
       contentClassName="bg-card border-border/80 backdrop-blur-md sm:max-w-2xl"
       titleClassName="text-lg font-bold"
       descriptionClassName="text-muted-foreground text-xs"
       projects={projects}
       projectMembers={projectMembers}
+      defaultSprintId={defaultSprintId}
+      lockProject={lockProject}
       onClose={onClose}
       onSuccess={onCreated}
     />

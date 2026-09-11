@@ -23,7 +23,8 @@ The sprints list shows active and archived sprints. Use:
 - Search — find sprints by name or goal
 - **Filter** icon (**Shift+F**) — open the filter dialog and choose a
   project (or **All projects**)
-- Tabs — **Active** / **Archived** (right side of the toolbar)
+- Tabs — **Active** / **Archived** icon segment switcher (right side of the
+  toolbar)
 
 Select a sprint to open its report or related work.
 

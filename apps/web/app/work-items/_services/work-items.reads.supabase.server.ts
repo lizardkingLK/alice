@@ -23,45 +23,102 @@ const MAX_ANCESTOR_DEPTH = 3;
 /* eslint-disable no-unused-vars */
 interface WorkItemFilterable<Q> {
   eq(column: string, value: string): Q;
+  neq(column: string, value: string): Q;
   is(column: string, value: null): Q;
+  not(column: string, operator: 'is', value: null): Q;
   in(column: string, values: readonly string[]): Q;
   or(filters: string): Q;
+  gte(column: string, value: string): Q;
+  lte(column: string, value: string): Q;
 }
 /* eslint-enable no-unused-vars */
+
+function applySprintIdFilter<Q extends WorkItemFilterable<Q>>(
+  query: Q,
+  sprintId: WorkItemListFilters['sprintId']
+): Q {
+  if (sprintId === null) {
+    return query.is('sprint_id', null);
+  }
+  if (sprintId) {
+    return query.eq('sprint_id', sprintId);
+  }
+  return query;
+}
+
+function applyProjectFilters<Q extends WorkItemFilterable<Q>>(
+  query: Q,
+  filters: Pick<WorkItemListFilters, 'projectId' | 'projectIds'>
+): Q {
+  if (filters.projectId) {
+    if (filters.projectIds && !filters.projectIds.includes(filters.projectId)) {
+      return query.in('project_id', []);
+    }
+    return query.eq('project_id', filters.projectId);
+  }
+  if (filters.projectIds) {
+    return query.in('project_id', [...filters.projectIds]);
+  }
+  return query;
+}
+
+function applyParentIdFilter<Q extends WorkItemFilterable<Q>>(
+  query: Q,
+  parentId: WorkItemListFilters['parentId']
+): Q {
+  if (parentId === null) {
+    return query.is('parent_id', null);
+  }
+  if (parentId) {
+    return query.eq('parent_id', parentId);
+  }
+  return query;
+}
+
+function applyDueDateFilter<Q extends WorkItemFilterable<Q>>(
+  query: Q,
+  dueDate: WorkItemListFilters['dueDate']
+): Q {
+  if (dueDate === 'null') {
+    return query.is('due_date', null);
+  }
+  if (dueDate === 'not_null') {
+    return query.not('due_date', 'is', null);
+  }
+  if (dueDate && typeof dueDate === 'object') {
+    return query.gte('due_date', dueDate.from).lte('due_date', dueDate.to);
+  }
+  return query;
+}
+
+function applyExcludeStatusesFilter<Q extends WorkItemFilterable<Q>>(
+  query: Q,
+  excludeStatuses: WorkItemListFilters['excludeStatuses']
+): Q {
+  if (!excludeStatuses?.length) {
+    return query;
+  }
+  let next = query;
+  for (const status of excludeStatuses) {
+    next = next.neq('status', status);
+  }
+  return next;
+}
 
 /** Applies shared list filters used by Supabase list readers. */
 export function applyWorkItemFilters<Q extends WorkItemFilterable<Q>>(
   query: Q,
   filters?: WorkItemListFilters
 ): Q {
-  let next = query;
-  next = next.eq('record_status', filters?.recordStatus ?? 'active');
+  let next = query.eq('record_status', filters?.recordStatus ?? 'active');
 
   if (!filters) {
     return next;
   }
 
-  if (filters.sprintId === null) {
-    next = next.is('sprint_id', null);
-  } else if (filters.sprintId) {
-    next = next.eq('sprint_id', filters.sprintId);
-  }
-
-  if (filters.projectId) {
-    if (filters.projectIds && !filters.projectIds.includes(filters.projectId)) {
-      next = next.in('project_id', []);
-    } else {
-      next = next.eq('project_id', filters.projectId);
-    }
-  } else if (filters.projectIds) {
-    next = next.in('project_id', [...filters.projectIds]);
-  }
-
-  if (filters.parentId === null) {
-    next = next.is('parent_id', null);
-  } else if (filters.parentId) {
-    next = next.eq('parent_id', filters.parentId);
-  }
+  next = applySprintIdFilter(next, filters.sprintId);
+  next = applyProjectFilters(next, filters);
+  next = applyParentIdFilter(next, filters.parentId);
 
   if (filters.type) {
     next = next.eq('type', filters.type);
@@ -77,6 +134,9 @@ export function applyWorkItemFilters<Q extends WorkItemFilterable<Q>>(
   if (labelsOr) {
     next = next.or(labelsOr);
   }
+
+  next = applyDueDateFilter(next, filters.dueDate);
+  next = applyExcludeStatusesFilter(next, filters.excludeStatuses);
 
   return next;
 }

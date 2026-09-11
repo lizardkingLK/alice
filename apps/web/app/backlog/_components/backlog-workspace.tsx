@@ -133,6 +133,9 @@ export function BacklogWorkspace({
   // Dialogs State
   const [isCreateSprintOpen, setIsCreateSprintOpen] = useState(false);
   const [isCreateIssueOpen, setIsCreateIssueOpen] = useState(false);
+  const [createIssueSprintId, setCreateIssueSprintId] = useState<string | null>(
+    null
+  );
   const [sprintToStart, setSprintToStart] = useState<Sprint | null>(null);
   const [sprintToComplete, setSprintToComplete] = useState<Sprint | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -424,11 +427,37 @@ export function BacklogWorkspace({
     setIsCreateSprintOpen(false);
   };
 
+  const openCreateIssue = (sprintId: string | null = null) => {
+    setCreateIssueSprintId(sprintId);
+    setIsCreateIssueOpen(true);
+  };
+
+  const closeCreateIssue = () => {
+    setIsCreateIssueOpen(false);
+    setCreateIssueSprintId(null);
+  };
+
   // Dialog Create Issue Submission
   const handleCreateIssueSuccess = (newWI: DbWorkItem) => {
     setWorkItems((prev) => [newWI, ...prev]);
-    setIsCreateIssueOpen(false);
+    closeCreateIssue();
   };
+
+  const createIssueProjects = useMemo(() => {
+    if (!createIssueSprintId) {
+      return projects;
+    }
+    const sprint = sprintList.find((entry) => entry.id === createIssueSprintId);
+    const projectId = sprint?.project?.id;
+    if (!projectId) {
+      return projects;
+    }
+    const matched = projects.filter((project) => project.id === projectId);
+    return matched.length > 0 ? matched : projects;
+  }, [createIssueSprintId, projects, sprintList]);
+
+  const lockCreateIssueProject =
+    Boolean(createIssueSprintId) && createIssueProjects.length === 1;
 
   const isProjectSprintMismatch = (
     currentItem: DbWorkItem | undefined,
@@ -612,7 +641,7 @@ export function BacklogWorkspace({
 
   return (
     <TooltipProvider>
-      <div className="mx-auto flex w-full max-w-350 flex-col gap-6 pb-10">
+      <div className="flex w-full flex-col gap-6 pb-10">
         {/* Error alert */}
         {error && (
           <div className="bg-destructive/15 border-destructive/20 text-destructive flex items-center gap-2 rounded-lg border px-4 py-3 text-sm">
@@ -631,7 +660,7 @@ export function BacklogWorkspace({
           preferredLayout={preferredLayout}
           onLayoutChange={setPreferredLayout}
           onCreateSprint={() => setIsCreateSprintOpen(true)}
-          onCreateIssue={() => setIsCreateIssueOpen(true)}
+          onCreateIssue={() => openCreateIssue(null)}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           projectFilter={projectFilter}
@@ -673,6 +702,7 @@ export function BacklogWorkspace({
                   projects={projects}
                   projectMembers={projectMembers}
                   onToggle={toggleSprint}
+                  onCreateIssue={openCreateIssue}
                   onStartSprint={handleStartSprint}
                   onCompleteSprint={handleCompleteSprint}
                   onSelectItem={setSelectedItem}
@@ -695,7 +725,7 @@ export function BacklogWorkspace({
                 isCollapsed={isBacklogCollapsed}
                 isDragOver={dragOverTargetId === 'backlog'}
                 onToggle={() => setIsBacklogCollapsed(!isBacklogCollapsed)}
-                onCreateIssue={() => setIsCreateIssueOpen(true)}
+                onCreateIssue={() => openCreateIssue(null)}
                 onSelectItem={setSelectedItem}
                 onItemDragStart={handleDragStart}
                 onDragOver={handleDragOver}
@@ -731,10 +761,18 @@ export function BacklogWorkspace({
         {/* Dialog: Create Issue */}
         <BacklogCreateIssueDialog
           open={isCreateIssueOpen}
-          projects={projects}
+          projects={createIssueProjects}
           projectMembers={projectMembers}
-          onOpenChange={setIsCreateIssueOpen}
-          onClose={() => setIsCreateIssueOpen(false)}
+          defaultSprintId={createIssueSprintId}
+          lockProject={lockCreateIssueProject}
+          onOpenChange={(open) => {
+            if (open) {
+              setIsCreateIssueOpen(true);
+              return;
+            }
+            closeCreateIssue();
+          }}
+          onClose={closeCreateIssue}
           onCreated={handleCreateIssueSuccess}
         />
 

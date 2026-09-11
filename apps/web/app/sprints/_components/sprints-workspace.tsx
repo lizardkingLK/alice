@@ -12,7 +12,7 @@ import {
 import { updateSprintStatusWithOptimisticLock } from '@/app/sprints/_helpers/update-sprint-status-with-lock';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
-import { Search, Plus, X } from '@repo/ui/lib/icons';
+import { Archive, CircleDot, Search, Plus, X } from '@repo/ui/lib/icons';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import {
   SprintTabEnum,
@@ -33,8 +33,8 @@ import { SprintsFilterDialog } from '@/app/sprints/_components/sprints-filter-di
 import { SprintDeleteConfirmDialog } from './sprint-delete-confirm-dialog';
 
 const SPRINT_STATUS_TABS = [
-  { id: SprintTabEnum.Active, label: 'Active' },
-  { id: SprintTabEnum.Archived, label: 'Archived' },
+  { id: SprintTabEnum.Active, label: 'Active', icon: CircleDot },
+  { id: SprintTabEnum.Archived, label: 'Archived', icon: Archive },
 ] as const;
 
 interface SprintsWorkspaceProps {

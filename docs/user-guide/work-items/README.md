@@ -30,15 +30,25 @@ shows the same table filtered to items assigned to you.
 
 ## List toolbar
 
-| Control                           | Purpose                                                 |
-| --------------------------------- | ------------------------------------------------------- |
-| **Add Work-Item**                 | Open the create form                                    |
-| **Active** / **Archived**         | Switch archived items                                   |
-| **Flat** / **Hierarchy**          | Flat list vs parent/child tree                          |
-| **Expand all** / **Collapse all** | Hierarchy mode only                                     |
-| Search (**Ctrl/⌘+K**)             | Filter by text                                          |
-| Filters (**Shift+F**)             | Filter icon → project, sprint, type, assignee, and more |
-| Defaults (gear icon)              | Save or apply workspace project/sprint defaults         |
+Left side (filters and columns):
+
+| Control               | Purpose                                                 |
+| --------------------- | ------------------------------------------------------- |
+| Search (**Ctrl/⌘+K**) | Filter by text                                          |
+| Filters (**Shift+F**) | Filter icon → project, sprint, type, assignee, and more |
+| Columns               | Columns icon → show or hide table columns               |
+| Defaults (sliders)    | Save or apply workspace project/sprint defaults         |
+
+Right side (views and actions):
+
+| Control                   | Purpose                                                |
+| ------------------------- | ------------------------------------------------------ |
+| **Flat** / **Hierarchy**  | Flat list vs parent/child tree (icon segment switcher) |
+| **Active** / **Archived** | Same icon segment style as Flat/Hierarchy              |
+| **Add Work-Item**         | Open the create form                                   |
+
+In hierarchy mode, use **Expand all** / **Collapse all** on the table for the
+current page.
 
 Select a row to open the item detail page.
 

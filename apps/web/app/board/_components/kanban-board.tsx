@@ -478,7 +478,7 @@ export function KanbanBoard({
         </div>
       ) : null}
 
-      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center">
         <div className="flex min-w-0 flex-wrap items-center gap-3">
           <SearchInput
             value={search}
@@ -504,6 +504,13 @@ export function KanbanBoard({
             hasActiveFilters={hasDialogFilters}
           />
 
+          {userId ? (
+            <WorkspaceDefaultsControls
+              onOpenDefaultsDialog={openDefaultsDialog}
+              savedDefaultsApplied={savedDefaultsApplied}
+            />
+          ) : null}
+
           <AssigneeAvatarFilter
             members={uniqueAssignees}
             selectedId={assigneeFilter}
@@ -523,15 +530,6 @@ export function KanbanBoard({
               Clear filters
               <X className="size-3.5" />
             </Button>
-          ) : null}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-          {userId ? (
-            <WorkspaceDefaultsControls
-              onOpenDefaultsDialog={openDefaultsDialog}
-              savedDefaultsApplied={savedDefaultsApplied}
-            />
           ) : null}
         </div>
       </div>

@@ -152,6 +152,10 @@ function listWorkItemsQueryFromRequest(query: Record<string, unknown>) {
     view: firstQueryValue(query.view),
     includeDescription: firstQueryValue(query.includeDescription),
     recordStatus: firstQueryValue(query.recordStatus),
+    dueDate: firstQueryValue(query.dueDate),
+    dueDateFrom: firstQueryValue(query.dueDateFrom),
+    dueDateTo: firstQueryValue(query.dueDateTo),
+    excludeStatuses: firstQueryValue(query.excludeStatuses),
   });
 }
 

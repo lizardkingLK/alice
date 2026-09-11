@@ -25,6 +25,7 @@ import {
   STATUS_INDICATOR_BG,
   STATUS_ORDER,
 } from '@/app/work-items/_helpers/work-item-status';
+import { STATUS_CHART_COLORS } from '@/components/status-distribution-wheel';
 
 type SprintReportChartsProps = {
   completedIssues: number;
@@ -57,7 +58,7 @@ export function SprintReportCharts({
       if (meta) {
         config[status] = {
           label: meta.label,
-          color: meta.color,
+          color: STATUS_CHART_COLORS[status],
         };
       }
     }
@@ -220,10 +221,8 @@ export function SprintReportCharts({
               return (
                 <div key={status} className="flex items-center gap-1.5">
                   <div
-                    className={cn(
-                      'h-2.5 w-2.5 rounded-sm',
-                      STATUS_INDICATOR_BG[status]
-                    )}
+                    className="h-2.5 w-2.5 rounded-sm"
+                    style={{ backgroundColor: STATUS_CHART_COLORS[status] }}
                   />
                   <span className="text-muted-foreground text-xs font-medium">
                     {meta.label}{' '}

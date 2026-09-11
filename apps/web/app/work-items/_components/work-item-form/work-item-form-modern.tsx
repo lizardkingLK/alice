@@ -1,6 +1,12 @@
 'use client';
 
-import { useCallback, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { type WorkItemPriority, type WorkItemType } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
@@ -198,6 +204,7 @@ export function WorkItemFormModernFields({
   descriptionDefault = null,
 }: Readonly<WorkItemFormModernFieldsProps>) {
   const dueDateValue = toDateInputValue(dueDateDefault);
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const [descriptionJson, setDescriptionJson] = useState<string | null>(null);
   const [labels, setLabels] = useState<string[]>(() => [...labelsDefault]);
   const [optionalFields, setOptionalFields] = useState<
@@ -215,6 +222,16 @@ export function WorkItemFormModernFields({
 
   const handleDescriptionChange = useCallback((json: string | null) => {
     setDescriptionJson(json);
+  }, []);
+
+  useEffect(() => {
+    const input = titleInputRef.current;
+    if (!input) {
+      return;
+    }
+    input.focus();
+    const end = input.value.length;
+    input.setSelectionRange(end, end);
   }, []);
 
   const addOptionalField = (field: OptionalField) => {
@@ -272,6 +289,7 @@ export function WorkItemFormModernFields({
         </div>
 
         <Input
+          ref={titleInputRef}
           id="title"
           name="title"
           placeholder="Title"
@@ -380,18 +398,18 @@ export function WorkItemFormModernFields({
               emptyText="No matching assignees."
             />
           </FieldTooltip>
-
-          <ModernOptionalFieldPills
-            optionalFields={optionalFields}
-            remainingOptional={remainingOptional}
-            priority={priority}
-            onPriorityChange={onPriorityChange}
-            onAddOptionalField={addOptionalField}
-            dueDateDefault={dueDateValue}
-            lockDueDate={lockDueDate}
-            storyPointsDefault={storyPointsDefault}
-          />
         </div>
+
+        <ModernOptionalFieldPills
+          optionalFields={optionalFields}
+          remainingOptional={remainingOptional}
+          priority={priority}
+          onPriorityChange={onPriorityChange}
+          onAddOptionalField={addOptionalField}
+          dueDateDefault={dueDateValue}
+          lockDueDate={lockDueDate}
+          storyPointsDefault={storyPointsDefault}
+        />
 
         {optionalFields.has('labels') ? (
           <div className="space-y-1.5">
@@ -466,80 +484,90 @@ function ModernOptionalFieldPills({
   storyPointsDefault,
 }: Readonly<ModernOptionalFieldPillsProps>) {
   return (
-    <>
+    <div className="flex flex-col gap-2">
       {optionalFields.has('priority') ? (
-        <FieldTooltip label="Priority">
-          <div>
-            <WorkItemPrioritySelect
-              priority={priority}
-              onPriorityChange={onPriorityChange}
-              placeholder="Priority"
-              triggerClassName={pillTriggerClassName(Boolean(priority))}
-              triggerStart={
-                <Signal className="text-muted-foreground size-3.5 shrink-0" />
-              }
-            />
-          </div>
-        </FieldTooltip>
+        <div className="flex flex-wrap items-center gap-2">
+          <FieldTooltip label="Priority">
+            <div>
+              <WorkItemPrioritySelect
+                priority={priority}
+                onPriorityChange={onPriorityChange}
+                placeholder="Priority"
+                triggerClassName={pillTriggerClassName(Boolean(priority))}
+                triggerStart={
+                  <Signal className="text-muted-foreground size-3.5 shrink-0" />
+                }
+              />
+            </div>
+          </FieldTooltip>
+        </div>
       ) : (
         <input type="hidden" name="priority" value={priority} />
       )}
 
-      <ModernDueDateField
-        optionalFields={optionalFields}
-        dueDateDefault={dueDateDefault}
-        lockDueDate={lockDueDate}
-      />
+      {optionalFields.has('due_date') || (lockDueDate && dueDateDefault) ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <ModernDueDateField
+            optionalFields={optionalFields}
+            dueDateDefault={dueDateDefault}
+            lockDueDate={lockDueDate}
+          />
+        </div>
+      ) : null}
 
       {optionalFields.has('story_points') ? (
-        <FieldTooltip label="Story points">
-          <div className="relative">
-            <Hash className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
-            <Input
-              id="story_points"
-              name="story_points"
-              type="number"
-              min="0"
-              step="1"
-              placeholder="Points"
-              aria-label="Story points"
-              defaultValue={storyPointsDefault ?? undefined}
-              className={cn(pillTriggerClassName(false), 'w-26 pr-2 pl-8')}
-            />
-          </div>
-        </FieldTooltip>
+        <div className="flex flex-wrap items-center gap-2">
+          <FieldTooltip label="Story points">
+            <div className="relative">
+              <Hash className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
+              <Input
+                id="story_points"
+                name="story_points"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="Points"
+                aria-label="Story points"
+                defaultValue={storyPointsDefault ?? undefined}
+                className={cn(pillTriggerClassName(false), 'w-26 pr-2 pl-8')}
+              />
+            </div>
+          </FieldTooltip>
+        </div>
       ) : null}
 
       {remainingOptional.length > 0 ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              aria-label="More fields"
-              title="Add more fields"
-              className={cn(
-                pillTriggerClassName(false),
-                'hover:bg-muted/50 h-8 gap-1 px-2.5'
-              )}
-            >
-              <Plus className="size-3.5" />
-              More
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            {remainingOptional.map((option) => (
-              <DropdownMenuItem
-                key={option.id}
-                onSelect={() => onAddOptionalField(option.id)}
+        <div className="flex flex-wrap items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                aria-label="More fields"
+                title="Add more fields"
+                className={cn(
+                  pillTriggerClassName(false),
+                  'hover:bg-muted/50 h-8 gap-1 px-2.5'
+                )}
               >
-                {option.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+                <Plus className="size-3.5" />
+                More
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {remainingOptional.map((option) => (
+                <DropdownMenuItem
+                  key={option.id}
+                  onSelect={() => onAddOptionalField(option.id)}
+                >
+                  {option.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       ) : null}
-    </>
+    </div>
   );
 }

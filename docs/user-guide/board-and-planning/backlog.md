@@ -19,9 +19,9 @@ Typical layout:
 - **Backlog pane** — items not in a sprint (or unscheduled work)
 - **Sprint cards** — active sprints with room for planned items
 
-Use **Sprint Planning** header actions to create sprints or items. On the
-toolbar, use **Active** / **Completed** tabs on the right, and the **Filter**
-icon (**Shift+F**) on the left for project, assignee, and priority.
+The toolbar matches other registries: **Search**, **Filter** (**Shift+F**), and
+**Defaults** on the left; **Layout** (icon), **Active** / **Completed** tabs, and
+a **+** menu (**Create Sprint** / **Create Item**) on the right.
 
 ---
 
@@ -31,15 +31,22 @@ icon (**Shift+F**) on the left for project, assignee, and priority.
    needed.
 2. **Drag** items from the backlog into a sprint card.
 
-Managers and admins can **Create Sprint** from this page. All roles can usually
-**Create Item** for new backlog work.
+Managers and admins can **Create Sprint** from the toolbar **+** menu. Use the
+**+** icon on the backlog header to create an unscheduled item, or the **+** on
+a sprint header to create an item already assigned to that sprint (project
+locked when the sprint has one). Hover the numeric count next to **+** to see
+how many work items are in that list.
+
+Sprint cards keep a compact header: click the sprint name or hover the info icon
+for dates, status, and project. Manager/admin actions (**Summary report**,
+**Start sprint**, **Complete sprint**) are icon buttons with tooltips.
 
 ---
 
 ## Complete a sprint
 
-On a sprint card, use **Complete Sprint** when the iteration ends (manager/admin
-workflows). Review open items before completing.
+On a sprint card, use the **Complete sprint** checkmark icon when the iteration
+ends (manager/admin workflows). Review open items before completing.
 
 ---
 
