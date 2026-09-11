@@ -4,8 +4,14 @@
  * and identifying work items that have values configured for specific field keys.
  */
 
+import {
+  DynamicFieldConstantsEnum,
+  DynamicFieldDocTypeEnum,
+  TypeofEnum,
+} from '@repo/types';
+
 export function parseTextDynamicFields(text: string): Record<string, unknown> {
-  const marker = '[Dynamic Fields]';
+  const marker = DynamicFieldConstantsEnum.MARKER;
   const markerIndex = text.indexOf(marker);
   if (markerIndex === -1) {
     return {};
@@ -34,7 +40,7 @@ export function findDynamicFieldsInContent(
   content: unknown[]
 ): Record<string, unknown> | null {
   for (const node of content) {
-    if (!node || typeof node !== 'object') {
+    if (!node || typeof node !== TypeofEnum.OBJECT) {
       continue;
     }
     const children = (node as { content?: unknown[] }).content;
@@ -44,11 +50,11 @@ export function findDynamicFieldsInContent(
     for (const child of children) {
       if (
         child &&
-        typeof child === 'object' &&
-        typeof (child as { text?: unknown }).text === 'string'
+        typeof child === TypeofEnum.OBJECT &&
+        typeof (child as { text?: unknown }).text === TypeofEnum.STRING
       ) {
         const text = (child as { text: string }).text;
-        if (text.includes('[Dynamic Fields]')) {
+        if (text.includes(DynamicFieldConstantsEnum.MARKER)) {
           return parseTextDynamicFields(text);
         }
       }
@@ -60,7 +66,7 @@ export function findDynamicFieldsInContent(
 export function extractDynamicFieldValues(
   description: unknown
 ): Record<string, unknown> {
-  if (!description || typeof description !== 'object') {
+  if (!description || typeof description !== TypeofEnum.OBJECT) {
     return {};
   }
   try {
@@ -69,7 +75,7 @@ export function extractDynamicFieldValues(
       content?: unknown[];
     };
     const df = doc.attrs?.dynamicFields;
-    if (df && typeof df === 'object' && !Array.isArray(df)) {
+    if (df && typeof df === TypeofEnum.OBJECT && !Array.isArray(df)) {
       return df as Record<string, unknown>;
     }
     if (Array.isArray(doc.content)) {
@@ -93,16 +99,16 @@ export function patchWorkItemDynamicFields(
   };
   if (
     currentDescription &&
-    typeof currentDescription === 'object' &&
+    typeof currentDescription === TypeofEnum.OBJECT &&
     !Array.isArray(currentDescription)
   ) {
     doc = { ...(currentDescription as Record<string, unknown>) };
   } else {
-    doc = { type: 'doc', content: [] };
+    doc = { type: DynamicFieldDocTypeEnum.DOC, content: [] };
   }
 
   const existingAttrs =
-    doc.attrs && typeof doc.attrs === 'object' && !Array.isArray(doc.attrs)
+    doc.attrs && typeof doc.attrs === TypeofEnum.OBJECT && !Array.isArray(doc.attrs)
       ? { ...doc.attrs }
       : {};
 
@@ -110,7 +116,7 @@ export function patchWorkItemDynamicFields(
   const existingFields: Record<string, unknown> = {
     ...initialFields,
     ...(existingAttrs.dynamicFields &&
-    typeof existingAttrs.dynamicFields === 'object' &&
+    typeof existingAttrs.dynamicFields === TypeofEnum.OBJECT &&
     !Array.isArray(existingAttrs.dynamicFields)
       ? (existingAttrs.dynamicFields as Record<string, unknown>)
       : {}),
@@ -147,7 +153,7 @@ export function findWorkItemsWithFieldValues(
     const val = values[fieldKey];
     if (val !== undefined && val !== null && val !== '') {
       const displayVal =
-        typeof val === 'object' ? JSON.stringify(val) : String(val);
+        typeof val === TypeofEnum.OBJECT ? JSON.stringify(val) : String(val);
       matches.push({
         id: item.id,
         title: item.title?.trim() || `Work Item #${item.id.slice(0, 8)}`,

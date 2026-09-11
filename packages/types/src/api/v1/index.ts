@@ -74,6 +74,12 @@ export {
   TemplateFieldCategoryEnum,
   TemplateFieldKeyEnum,
   DynamicFieldConfirmationModeEnum,
+  DynamicFieldFormatEnum,
+  DynamicFieldInputTypeEnum,
+  DynamicFieldDocTypeEnum,
+  DynamicFieldConstantsEnum,
+  TypeofEnum,
+  SchemaValidationStatusEnum,
   DYNAMIC_FIELD_TYPES,
   DynamicFieldPropertySchema,
   ProjectFieldsConfigSchema,
@@ -247,6 +253,7 @@ export {
   deleteChatAttachmentResponseSchema,
   finalizeChatAttachmentUploadSchema,
   postChatMessageBodySchema,
+  ChatTurnRoleEnum,
   postChatMessageSchema,
   uploadedChatAttachmentResultSchema,
   CHAT_CONVERSATION_POSTGREST_SELECT,
@@ -265,3 +272,5 @@ export {
   type PostChatMessageBody,
   type UploadedChatAttachmentResult,
 } from './chat.js';
+
+

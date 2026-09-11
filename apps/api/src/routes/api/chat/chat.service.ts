@@ -13,6 +13,7 @@ import {
   type ParsedWorkItemNode,
   ProjectFieldsConfigSchema,
   type ProjectFieldsConfig,
+  ChatTurnRoleEnum,
 } from '@repo/types';
 import type { WorkItemService } from '../workItems/workItems.service';
 import type { SprintsService } from '../sprints/sprints.service';
@@ -22,7 +23,11 @@ import type { ProjectRowWithOwner } from '../projects/projects.types';
 import type { IntegrationsService } from '../integrations/integrations.service';
 import type { ResolvedChatModelConfig } from '../integrations/chat-providers/chat-provider.types';
 import { resolveChatProvider } from '../integrations/chat-providers/resolve-chat-provider';
-import { systemInstruction, aliceChatTools } from './chat.route.data';
+import {
+  systemInstruction,
+  aliceChatTools,
+  dynamicFieldsSystemPrompt,
+} from './chat.route.data';
 import type { ChatRepository } from './chat.repository';
 import { ChatAttachmentsRepository } from './chat-attachments.repository';
 import { fetchAndParseWorkItemAttachment } from './chat-attachment-parser';
@@ -170,19 +175,13 @@ function parseFieldProperty(
   const prop: Record<string, unknown> = {
     type: typeof f.type === 'string' ? f.type : 'string',
     title: typeof f.title === 'string' ? f.title : key,
+    ...(typeof f.description === 'string' && f.description
+      ? { description: f.description }
+      : {}),
+    ...(Array.isArray(f.enum) && f.enum.length > 0 ? { enum: f.enum } : {}),
+    ...(typeof f.format === 'string' && f.format ? { format: f.format } : {}),
+    ...(f.type === 'array' && f.items ? { items: f.items } : {}),
   };
-  if (typeof f.description === 'string' && f.description) {
-    prop.description = f.description;
-  }
-  if (Array.isArray(f.enum) && f.enum.length > 0) {
-    prop.enum = f.enum;
-  }
-  if (typeof f.format === 'string' && f.format) {
-    prop.format = f.format;
-  }
-  if (f.type === 'array' && f.items) {
-    prop.items = f.items;
-  }
   return { key, prop };
 }
 
@@ -1097,19 +1096,6 @@ ${attachmentsInstruction}
     currentSchema?: unknown
   ): Promise<ProjectFieldsConfig> {
     const chatModel = await this.resolveChatModelForChat({});
-    const systemPrompt = `You are Alice, an AI assistant configuring custom dynamic fields for project management.
-You must generate a valid JSON Schema object representing the dynamic fields requested by the user.
-Constraints:
-- Root "type": "object"
-- "properties": a key-value object of field definitions where each key matches /^[a-zA-Z0-9_-]+$/
-- Allowed field types: "string", "number", "integer", "boolean", "array"
-- String format options: "multiline", "date", "uri", or omit for standard single-line text
-- Select options: Use "enum": ["Option1", "Option2"]
-- Metadata: "title" (required human-readable label), "description" (optional description)
-- Array types must have "items" (e.g. { "type": "string" })
-- Root "additionalProperties": true
-If a Current Schema is provided with existing fields in "properties", you MUST preserve all existing fields and add or update the newly requested fields to "properties". Do not omit or delete existing fields unless explicitly requested.
-Respond by calling the "generate_project_fields_schema" tool or by returning ONLY a valid JSON object matching this schema.`;
 
     const userMessage = currentSchema
       ? `Current Schema:\n${JSON.stringify(currentSchema, null, 2)}\n\nUser Request: ${prompt}`
@@ -1117,7 +1103,7 @@ Respond by calling the "generate_project_fields_schema" tool or by returning ONL
 
     const contents: ChatContentTurn[] = [
       {
-        role: 'user',
+        role: ChatTurnRoleEnum.USER,
         parts: [{ text: userMessage }],
       },
     ];
@@ -1125,7 +1111,7 @@ Respond by calling the "generate_project_fields_schema" tool or by returning ONL
     const response = await this.callChatModelAPI(
       chatModel,
       contents,
-      systemPrompt
+      dynamicFieldsSystemPrompt
     );
 
     const parts = response.candidates?.[0]?.content?.parts ?? [];

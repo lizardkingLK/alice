@@ -6,6 +6,42 @@ export enum DynamicFieldTypeEnum {
   INTEGER = 'integer',
   BOOLEAN = 'boolean',
   ARRAY = 'array',
+  OBJECT = 'object',
+}
+
+export enum DynamicFieldFormatEnum {
+  DATE = 'date',
+  URI = 'uri',
+  MULTILINE = 'multiline',
+}
+
+export enum DynamicFieldInputTypeEnum {
+  DATE = 'date',
+  URL = 'url',
+  TEXT = 'text',
+}
+
+export enum DynamicFieldDocTypeEnum {
+  DOC = 'doc',
+}
+
+export enum DynamicFieldConstantsEnum {
+  MARKER = '[Dynamic Fields]',
+}
+
+export enum TypeofEnum {
+  OBJECT = 'object',
+  STRING = 'string',
+  NUMBER = 'number',
+  BOOLEAN = 'boolean',
+  UNDEFINED = 'undefined',
+  FUNCTION = 'function',
+}
+
+export enum SchemaValidationStatusEnum {
+  VALID = 'valid',
+  INVALID = 'invalid',
+  UNVALIDATED = 'unvalidated',
 }
 
 export enum TemplateFieldCategoryEnum {

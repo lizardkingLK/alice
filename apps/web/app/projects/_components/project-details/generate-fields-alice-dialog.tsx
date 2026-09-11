@@ -25,12 +25,7 @@ interface GenerateFieldsAliceDialogProps {
 }
 /* eslint-enable no-unused-vars */
 
-const STARTER_PROMPTS = [
-  'MoSCoW rating and acceptance criteria',
-  'Security classification and compliance tier',
-  'Customer impact score and release notes flag',
-  'Defect severity, reproduction steps, and browser',
-];
+import { STARTER_PROMPTS } from './generate-fields-alice-dialog.data';
 
 export function GenerateFieldsAliceDialog({
   open,

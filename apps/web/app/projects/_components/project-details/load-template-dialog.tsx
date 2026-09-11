@@ -18,127 +18,23 @@ import {
   CheckCircle2,
   SlidersHorizontal,
 } from '@repo/ui/lib/icons';
-import {
-  TemplateFieldCategoryEnum,
-  TemplateFieldKeyEnum,
-} from '@repo/types';
 import { apiFetch } from '@/lib/api/api-fetch.reads.use.client';
 import {
   findWorkItemsWithFieldValues,
   type WorkItemFieldValueMatch,
 } from '@/app/work-items/_helpers/work-item-dynamic-fields';
 import { ProjectFieldsErrorDialog } from './project-fields-error-dialog';
+import {
+  TEMPLATE_FIELD_OPTIONS,
+  DEFAULT_STARTER_KEYS,
+  type TemplateFieldItem,
+} from './load-template-dialog.data';
 
-export interface TemplateFieldItem {
-  key: string;
-  category: string;
-  property: {
-    type: string;
-    title: string;
-    description: string;
-    enum?: string[];
-    format?: string;
-    minimum?: number;
-    maximum?: number;
-    default?: unknown;
-  };
-}
-
-export const TEMPLATE_FIELD_OPTIONS: TemplateFieldItem[] = [
-  {
-    key: TemplateFieldKeyEnum.MOSCOW_RATING,
-    category: TemplateFieldCategoryEnum.AGILE_PRIORITIZATION,
-    property: {
-      type: 'string',
-      title: 'MoSCoW Rating',
-      description: 'Agile MoSCoW prioritization category',
-      enum: ['Must', 'Should', 'Could', "Won't"],
-    },
-  },
-  {
-    key: TemplateFieldKeyEnum.ACCEPTANCE_CRITERIA,
-    category: TemplateFieldCategoryEnum.REQUIREMENTS_QA,
-    property: {
-      type: 'string',
-      title: 'Acceptance Criteria',
-      description:
-        'Conditions that must be met for this work item to be accepted',
-      format: 'multiline',
-    },
-  },
-  {
-    key: TemplateFieldKeyEnum.BUSINESS_VALUE,
-    category: TemplateFieldCategoryEnum.STRATEGY_VALUE,
-    property: {
-      type: 'number',
-      title: 'Business Value',
-      description: 'Relative business value score (1-100)',
-      minimum: 1,
-      maximum: 100,
-    },
-  },
-  {
-    key: TemplateFieldKeyEnum.RELEASE_NOTES_INCLUDED,
-    category: TemplateFieldCategoryEnum.RELEASE_MANAGEMENT,
-    property: {
-      type: 'boolean',
-      title: 'Include in Release Notes',
-      description:
-        'Whether this item should be highlighted in customer release notes',
-      default: false,
-    },
-  },
-  {
-    key: TemplateFieldKeyEnum.SECURITY_CLASSIFICATION,
-    category: TemplateFieldCategoryEnum.SECURITY_GOVERNANCE,
-    property: {
-      type: 'string',
-      title: 'Security Classification',
-      description:
-        'Confidentiality and sensitivity level of this work item',
-      enum: ['Public', 'Internal', 'Confidential', 'Restricted'],
-    },
-  },
-  {
-    key: TemplateFieldKeyEnum.COMPLIANCE_TIER,
-    category: TemplateFieldCategoryEnum.SECURITY_GOVERNANCE,
-    property: {
-      type: 'string',
-      title: 'Compliance Tier',
-      description: 'Applicable regulatory compliance and audit tier',
-      enum: ['Tier 1', 'Tier 2', 'Tier 3', 'Tier 4'],
-    },
-  },
-  {
-    key: TemplateFieldKeyEnum.SEVERITY,
-    category: TemplateFieldCategoryEnum.DEFECTS_QA,
-    property: {
-      type: 'string',
-      title: 'Defect Severity',
-      description:
-        'Severity assessment for bug tracking and resolution priority',
-      enum: ['Blocker', 'Critical', 'Major', 'Minor', 'Trivial'],
-    },
-  },
-  {
-    key: TemplateFieldKeyEnum.ENVIRONMENT,
-    category: TemplateFieldCategoryEnum.DEVOPS_DEPLOYMENT,
-    property: {
-      type: 'string',
-      title: 'Target Environment',
-      description:
-        'Target deployment or testing environment',
-      enum: ['Development', 'Staging', 'UAT', 'Production'],
-    },
-  },
-];
-
-const DEFAULT_STARTER_KEYS: string[] = [
-  TemplateFieldKeyEnum.MOSCOW_RATING,
-  TemplateFieldKeyEnum.ACCEPTANCE_CRITERIA,
-  TemplateFieldKeyEnum.BUSINESS_VALUE,
-  TemplateFieldKeyEnum.RELEASE_NOTES_INCLUDED,
-];
+export {
+  TEMPLATE_FIELD_OPTIONS,
+  DEFAULT_STARTER_KEYS,
+  type TemplateFieldItem,
+};
 
 export interface WorkItemSummaryItem {
   id: string;

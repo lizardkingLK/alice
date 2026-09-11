@@ -24,7 +24,12 @@ import {
   SlidersHorizontal,
   X,
 } from '@repo/ui/lib/icons';
-import { ProjectFieldsConfigSchema } from '@repo/types';
+import {
+  ProjectFieldsConfigSchema,
+  DynamicFieldTypeEnum,
+  SchemaValidationStatusEnum,
+  TypeofEnum,
+} from '@repo/types';
 import {
   updateProjectFieldsConfig,
   type Project,
@@ -35,7 +40,7 @@ import { LoadTemplateDialog } from './load-template-dialog';
 
 const DEFAULT_EMPTY_SCHEMA = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  type: 'object',
+  type: DynamicFieldTypeEnum.OBJECT,
   title: 'Project Dynamic Work-Item Fields',
   description: 'Custom metadata fields configured for project work items',
   properties: {},
@@ -60,7 +65,7 @@ type ParsedProperty = {
 function parseCurrentSchemaObject(raw: string): Record<string, unknown> {
   try {
     const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+    if (parsed && typeof parsed === TypeofEnum.OBJECT && !Array.isArray(parsed)) {
       return parsed as Record<string, unknown>;
     }
   } catch {
@@ -73,22 +78,36 @@ function formatTemplateUpdateMessage(
   addedCount: number,
   removedCount: number
 ): string {
-  if (addedCount > 0 && removedCount > 0) {
-    return `Updated templates: added ${addedCount} and removed ${removedCount} ${
-      removedCount === 1 ? 'field' : 'fields'
-    }. Review and save when ready.`;
-  }
-  if (addedCount > 0) {
-    return `Added ${addedCount} template ${
-      addedCount === 1 ? 'field' : 'fields'
-    }. Review and save when ready.`;
-  }
-  if (removedCount > 0) {
-    return `Removed ${removedCount} template ${
-      removedCount === 1 ? 'field' : 'fields'
-    }. Review and save when ready.`;
-  }
-  return 'Templates updated. Review and save when ready.';
+  const messages: Partial<Record<'both' | 'added' | 'removed', string>> = {
+    ...(addedCount > 0 && removedCount > 0
+      ? {
+          both: `Updated templates: added ${addedCount} and removed ${removedCount} ${
+            removedCount === 1 ? 'field' : 'fields'
+          }. Review and save when ready.`,
+        }
+      : {}),
+    ...(addedCount > 0 && removedCount <= 0
+      ? {
+          added: `Added ${addedCount} template ${
+            addedCount === 1 ? 'field' : 'fields'
+          }. Review and save when ready.`,
+        }
+      : {}),
+    ...(removedCount > 0 && addedCount <= 0
+      ? {
+          removed: `Removed ${removedCount} template ${
+            removedCount === 1 ? 'field' : 'fields'
+          }. Review and save when ready.`,
+        }
+      : {}),
+  };
+
+  return (
+    messages.both ??
+    messages.added ??
+    messages.removed ??
+    'Templates updated. Review and save when ready.'
+  );
 }
 
 export function ProjectFieldsWorkspace({
@@ -99,7 +118,7 @@ export function ProjectFieldsWorkspace({
   const initialConfigText = useMemo(() => {
     if (
       project.attributes_config &&
-      typeof project.attributes_config === 'object' &&
+      typeof project.attributes_config === TypeofEnum.OBJECT &&
       Object.keys(project.attributes_config).length > 0
     ) {
       return JSON.stringify(project.attributes_config, null, 2);
@@ -123,15 +142,15 @@ export function ProjectFieldsWorkspace({
   const [isLoadTemplateDialogOpen, setIsLoadTemplateDialogOpen] =
     useState(false);
   const [validationResult, setValidationResult] = useState<{
-    status: 'valid' | 'invalid' | 'unvalidated';
+    status: SchemaValidationStatusEnum;
     message?: string;
-  }>({ status: 'unvalidated' });
+  }>({ status: SchemaValidationStatusEnum.UNVALIDATED });
 
   // Auto-dismiss green success messages after a few seconds
   useEffect(() => {
-    if (validationResult.status === 'valid') {
+    if (validationResult.status === SchemaValidationStatusEnum.VALID) {
       const timer = setTimeout(() => {
-        setValidationResult({ status: 'unvalidated' });
+        setValidationResult({ status: SchemaValidationStatusEnum.UNVALIDATED });
       }, 4500);
       return () => clearTimeout(timer);
     }
@@ -182,8 +201,8 @@ export function ProjectFieldsWorkspace({
       const value = textarea.value;
       const newValue = value.substring(0, start) + '  ' + value.substring(end);
       setSchemaText(newValue);
-      if (validationResult.status !== 'unvalidated') {
-        setValidationResult({ status: 'unvalidated' });
+      if (validationResult.status !== SchemaValidationStatusEnum.UNVALIDATED) {
+        setValidationResult({ status: SchemaValidationStatusEnum.UNVALIDATED });
       }
       requestAnimationFrame(() => {
         textarea.selectionStart = textarea.selectionEnd = start + 2;
@@ -195,14 +214,14 @@ export function ProjectFieldsWorkspace({
   const { parsedProperties, parseError } = useMemo(() => {
     try {
       const parsed = JSON.parse(schemaText);
-      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      if (!parsed || typeof parsed !== TypeofEnum.OBJECT || Array.isArray(parsed)) {
         return {
           parsedProperties: [] as ParsedProperty[],
           parseError: 'Root schema must be a JSON object.',
         };
       }
 
-      if (parsed.type && parsed.type !== 'object') {
+      if (parsed.type && parsed.type !== DynamicFieldTypeEnum.OBJECT) {
         return {
           parsedProperties: [] as ParsedProperty[],
           parseError: 'Root schema "type" must be "object".',
@@ -212,7 +231,7 @@ export function ProjectFieldsWorkspace({
       const properties = parsed.properties;
       if (
         !properties ||
-        typeof properties !== 'object' ||
+        typeof properties !== TypeofEnum.OBJECT ||
         Array.isArray(properties)
       ) {
         return { parsedProperties: [] as ParsedProperty[], parseError: null };
@@ -221,28 +240,28 @@ export function ProjectFieldsWorkspace({
       const list: ParsedProperty[] = Object.entries(properties).map(
         ([key, prop]) => {
           const propertyRecord =
-            prop && typeof prop === 'object'
+            prop && typeof prop === TypeofEnum.OBJECT
               ? (prop as Record<string, unknown>)
               : {};
           return {
             key,
             type:
-              typeof propertyRecord.type === 'string'
+              typeof propertyRecord.type === TypeofEnum.STRING
                 ? propertyRecord.type
                 : 'unknown',
             title:
-              typeof propertyRecord.title === 'string'
+              typeof propertyRecord.title === TypeofEnum.STRING
                 ? propertyRecord.title
                 : key,
             description:
-              typeof propertyRecord.description === 'string'
+              typeof propertyRecord.description === TypeofEnum.STRING
                 ? propertyRecord.description
                 : undefined,
             enum: Array.isArray(propertyRecord.enum)
               ? propertyRecord.enum.map(String)
               : undefined,
             format:
-              typeof propertyRecord.format === 'string'
+              typeof propertyRecord.format === TypeofEnum.STRING
                 ? propertyRecord.format
                 : undefined,
             default: propertyRecord.default,
@@ -263,7 +282,9 @@ export function ProjectFieldsWorkspace({
   const highlightedErrorLine = useMemo(() => {
     const errorStr =
       parseError ||
-      (validationResult.status === 'invalid' ? validationResult.message : null);
+      (validationResult.status === SchemaValidationStatusEnum.INVALID
+        ? validationResult.message
+        : null);
     if (!errorStr) return null;
     const match = errorStr.match(/line\s+(\d+)/i);
     const line = match?.[1];
@@ -275,7 +296,7 @@ export function ProjectFieldsWorkspace({
       const parsed = JSON.parse(schemaText);
       setSchemaText(JSON.stringify(parsed, null, 2));
       setValidationResult({
-        status: 'valid',
+        status: SchemaValidationStatusEnum.VALID,
         message: 'JSON formatted successfully.',
       });
     } catch (err) {
@@ -292,9 +313,9 @@ export function ProjectFieldsWorkspace({
       const parsed = JSON.parse(schemaText);
       if (
         parsed &&
-        typeof parsed === 'object' &&
+        typeof parsed === TypeofEnum.OBJECT &&
         parsed.properties &&
-        typeof parsed.properties === 'object' &&
+        typeof parsed.properties === TypeofEnum.OBJECT &&
         !Array.isArray(parsed.properties)
       ) {
         return parsed.properties as Record<string, unknown>;
@@ -316,7 +337,7 @@ export function ProjectFieldsWorkspace({
     const currentSchema = parseCurrentSchemaObject(schemaText);
     const existingProps =
       currentSchema.properties &&
-      typeof currentSchema.properties === 'object' &&
+      typeof currentSchema.properties === TypeofEnum.OBJECT &&
       !Array.isArray(currentSchema.properties)
         ? { ...(currentSchema.properties as Record<string, unknown>) }
         : {};
@@ -336,7 +357,7 @@ export function ProjectFieldsWorkspace({
       $schema:
         currentSchema.$schema ||
         'https://json-schema.org/draft/2020-12/schema',
-      type: 'object',
+      type: DynamicFieldTypeEnum.OBJECT,
       title:
         currentSchema.title || 'Project Dynamic Work-Item Fields',
       description:
@@ -357,7 +378,7 @@ export function ProjectFieldsWorkspace({
     const removedCount = keysToRemove.length;
 
     setValidationResult({
-      status: 'valid',
+      status: SchemaValidationStatusEnum.VALID,
       message: formatTemplateUpdateMessage(addedCount, removedCount),
     });
   };
@@ -375,7 +396,7 @@ export function ProjectFieldsWorkspace({
           .map((i) => `• ${i.path.join('.') || 'root'}: ${i.message}`)
           .join('\n');
         setValidationResult({
-          status: 'invalid',
+          status: SchemaValidationStatusEnum.INVALID,
           message: 'Schema failed validation rules.',
         });
         showErrorDialog(
@@ -387,7 +408,7 @@ export function ProjectFieldsWorkspace({
       }
 
       setValidationResult({
-        status: 'valid',
+        status: SchemaValidationStatusEnum.VALID,
         message: `Schema is syntactically valid (${parsedProperties.length} dynamic ${
           parsedProperties.length === 1 ? 'field' : 'fields'
         } defined). Ready to save.`,
@@ -395,7 +416,7 @@ export function ProjectFieldsWorkspace({
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Invalid JSON';
       setValidationResult({
-        status: 'invalid',
+        status: SchemaValidationStatusEnum.INVALID,
         message: `JSON Syntax Error: ${msg}`,
       });
       showErrorDialog(
@@ -453,7 +474,7 @@ export function ProjectFieldsWorkspace({
         setCurrentUpdatedAt(updated.updated_at);
       }
       setValidationResult({
-        status: 'valid',
+        status: SchemaValidationStatusEnum.VALID,
         message: 'Changes saved to project.',
       });
       router.refresh();
@@ -567,7 +588,7 @@ export function ProjectFieldsWorkspace({
       )}
 
       {/* Validation Status Banner */}
-      {validationResult.status === 'valid' && (
+      {validationResult.status === SchemaValidationStatusEnum.VALID && (
         <div className="border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 flex items-center justify-between gap-2.5 rounded-lg border px-3.5 py-2.5 text-sm transition-all duration-300">
           <div className="flex items-center gap-2.5">
             <CheckCircle2 className="size-4 shrink-0" />
@@ -575,7 +596,11 @@ export function ProjectFieldsWorkspace({
           </div>
           <button
             type="button"
-            onClick={() => setValidationResult({ status: 'unvalidated' })}
+            onClick={() =>
+              setValidationResult({
+                status: SchemaValidationStatusEnum.UNVALIDATED,
+              })
+            }
             className="text-emerald-700/60 hover:text-emerald-700 dark:text-emerald-400/60 dark:hover:text-emerald-400 p-0.5 rounded transition-colors"
             aria-label="Dismiss message"
           >
@@ -584,11 +609,12 @@ export function ProjectFieldsWorkspace({
         </div>
       )}
 
-      {(validationResult.status === 'invalid' || parseError) && (
+      {(validationResult.status === SchemaValidationStatusEnum.INVALID ||
+        parseError) && (
         <div className="border-destructive/20 bg-destructive/10 text-destructive flex items-center gap-2.5 rounded-lg border px-3.5 py-2.5 text-sm">
           <AlertTriangle className="size-4 shrink-0" />
           <span className="font-medium">
-            {validationResult.status === 'invalid'
+            {validationResult.status === SchemaValidationStatusEnum.INVALID
               ? validationResult.message
               : `JSON Parse Error: ${parseError}`}
           </span>

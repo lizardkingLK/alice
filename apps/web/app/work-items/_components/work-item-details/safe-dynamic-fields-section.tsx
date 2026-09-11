@@ -24,6 +24,10 @@ import {
   ProjectFieldsConfigSchema,
   type ProjectFieldsConfig,
   type DynamicFieldProperty,
+  DynamicFieldTypeEnum,
+  DynamicFieldFormatEnum,
+  DynamicFieldInputTypeEnum,
+  TypeofEnum,
 } from '@repo/types';
 
 interface DynamicFieldsErrorBoundaryProps {
@@ -76,20 +80,30 @@ export function DynamicFieldsErrorNotice() {
 }
 
 function formatDisplayValue(value: unknown): string {
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value);
-  }
-  if (typeof value === 'object' && value !== null) {
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return '';
-    }
-  }
-  return '';
+  const isNonNullObject = typeof value === TypeofEnum.OBJECT && value !== null;
+  const formatters: Partial<Record<string, () => string>> = {
+    ...(typeof value === TypeofEnum.STRING
+      ? { str: () => value as string }
+      : {}),
+    ...(typeof value === TypeofEnum.NUMBER || typeof value === TypeofEnum.BOOLEAN
+      ? { primitive: () => String(value) }
+      : {}),
+    ...(isNonNullObject
+      ? {
+          obj: () => {
+            try {
+              return JSON.stringify(value);
+            } catch {
+              return '';
+            }
+          },
+        }
+      : {}),
+  };
+
+  const execute =
+    formatters.str ?? formatters.primitive ?? formatters.obj ?? (() => '');
+  return execute();
 }
 
 export function DynamicFieldValueDisplay({
@@ -99,72 +113,97 @@ export function DynamicFieldValueDisplay({
   property: DynamicFieldProperty;
   value: unknown;
 }>) {
-  if (value === undefined || value === null || value === '') {
-    return (
-      <span className="text-muted-foreground text-xs italic">Not set</span>
-    );
-  }
+  const isUnset = value === undefined || value === null || value === '';
+  const isBool = typeof value === TypeofEnum.BOOLEAN;
+  const isArr = Array.isArray(value);
+  const isEnum = Boolean(property.enum && Array.isArray(property.enum));
+  const isMultiline = property.format === DynamicFieldFormatEnum.MULTILINE;
+  const displayString = isUnset ? '' : formatDisplayValue(value);
 
-  if (typeof value === 'boolean') {
-    return (
-      <Badge variant={value ? 'default' : 'outline'} className="text-xs">
-        {value ? 'Yes' : 'No'}
-      </Badge>
-    );
-  }
-
-  if (Array.isArray(value)) {
-    if (value.length === 0) {
-      return (
-        <span className="text-muted-foreground text-xs italic">None</span>
-      );
-    }
-    return (
-      <div className="flex flex-wrap gap-1">
-        {value.map((v) => {
-          const itemText = formatDisplayValue(v);
-          return (
-            <Badge key={itemText} variant="secondary" className="text-xs">
-              {itemText}
+  const views: Partial<Record<string, React.ReactNode>> = {
+    ...(isUnset
+      ? {
+          empty: (
+            <span className="text-muted-foreground text-xs italic">
+              Not set
+            </span>
+          ),
+        }
+      : {}),
+    ...(isBool
+      ? {
+          bool: (
+            <Badge variant={value ? 'default' : 'outline'} className="text-xs">
+              {value ? 'Yes' : 'No'}
             </Badge>
-          );
-        })}
-      </div>
-    );
-  }
-
-  const displayString = formatDisplayValue(value);
-
-  if (property.enum && Array.isArray(property.enum)) {
-    return (
-      <Badge variant="secondary" className="text-xs font-normal">
-        {displayString}
-      </Badge>
-    );
-  }
-
-  if (property.format === 'multiline') {
-    return (
-      <span className="text-foreground line-clamp-3 text-xs whitespace-pre-wrap">
-        {displayString}
-      </span>
-    );
-  }
+          ),
+        }
+      : {}),
+    ...(isArr
+      ? {
+          arr:
+            (value as unknown[]).length === 0 ? (
+              <span className="text-muted-foreground text-xs italic">None</span>
+            ) : (
+              <div className="flex flex-wrap gap-1">
+                {(value as unknown[]).map((v) => {
+                  const itemText = formatDisplayValue(v);
+                  return (
+                    <Badge key={itemText} variant="secondary" className="text-xs">
+                      {itemText}
+                    </Badge>
+                  );
+                })}
+              </div>
+            ),
+        }
+      : {}),
+    ...(isEnum
+      ? {
+          enumView: (
+            <Badge variant="secondary" className="text-xs font-normal">
+              {displayString}
+            </Badge>
+          ),
+        }
+      : {}),
+    ...(isMultiline
+      ? {
+          multiline: (
+            <span className="text-foreground line-clamp-3 text-xs whitespace-pre-wrap">
+              {displayString}
+            </span>
+          ),
+        }
+      : {}),
+  };
 
   return (
-    <span
-      className="text-foreground max-w-[200px] truncate text-xs"
-      title={displayString}
-    >
-      {displayString}
-    </span>
+    views.empty ??
+    views.bool ??
+    views.arr ??
+    views.enumView ??
+    views.multiline ?? (
+      <span
+        className="text-foreground max-w-[200px] truncate text-xs"
+        title={displayString}
+      >
+        {displayString}
+      </span>
+    )
   );
 }
 
+const INPUT_TYPE_MAP: Record<string, DynamicFieldInputTypeEnum> = {
+  [DynamicFieldFormatEnum.DATE]: DynamicFieldInputTypeEnum.DATE,
+  [DynamicFieldFormatEnum.URI]: DynamicFieldInputTypeEnum.URL,
+};
+
 function resolveInputType(format?: string): string {
-  if (format === 'date') return 'date';
-  if (format === 'uri') return 'url';
-  return 'text';
+  return (
+    (format ? INPUT_TYPE_MAP[format] : undefined) ??
+    DynamicFieldInputTypeEnum.TEXT
+  );
 }
 
 function SelectDynamicEditor({
@@ -181,7 +220,7 @@ function SelectDynamicEditor({
   readonly onFieldChange?: (key: string, value: unknown) => void;
   readonly onDone?: () => void;
 }) {
-  const stringVal = typeof value === 'string' ? value : '__none__';
+  const stringVal = typeof value === TypeofEnum.STRING ? value : '__none__';
   return (
     <Select
       defaultValue={stringVal}
@@ -392,7 +431,9 @@ function TextDynamicEditor({
   readonly onFieldChange?: (key: string, value: unknown) => void;
   readonly onDone?: () => void;
 }) {
-  const [draft, setDraft] = useState(typeof value === 'string' ? value : '');
+  const [draft, setDraft] = useState(
+    typeof value === TypeofEnum.STRING ? value : ''
+  );
 
   const handleSave = () => {
     const val = draft.trim();
@@ -402,7 +443,7 @@ function TextDynamicEditor({
     onDone?.();
   };
 
-  if (format === 'multiline') {
+  if (format === DynamicFieldFormatEnum.MULTILINE) {
     return (
       <div className="space-y-1.5">
         <Textarea
@@ -463,7 +504,9 @@ function TextDynamicEditor({
             onDone?.();
           }
         }}
-        placeholder={format === 'date' ? 'YYYY-MM-DD' : 'Enter value...'}
+        placeholder={
+          format === DynamicFieldFormatEnum.DATE ? 'YYYY-MM-DD' : 'Enter value...'
+        }
         className="h-8 flex-1 text-xs"
       />
       <Button
@@ -504,65 +547,84 @@ function DynamicFieldEditor({
   readonly onFieldChange?: (key: string, value: unknown) => void;
   readonly onDone?: () => void;
 }) {
-  if (property.enum && property.enum.length > 0) {
-    return (
-      <SelectDynamicEditor
-        propKey={propKey}
-        options={property.enum}
-        value={value}
-        onFieldChange={onFieldChange}
-        onDone={onDone}
-      />
-    );
-  }
+  const hasEnum = Boolean(property.enum && property.enum.length > 0);
+  const isBoolean = property.type === DynamicFieldTypeEnum.BOOLEAN;
+  const isNumber =
+    property.type === DynamicFieldTypeEnum.NUMBER ||
+    property.type === DynamicFieldTypeEnum.INTEGER;
+  const isArrayWithEnum = Boolean(
+    property.type === DynamicFieldTypeEnum.ARRAY &&
+      property.items?.enum &&
+      property.items.enum.length > 0
+  );
 
-  if (property.type === 'boolean') {
-    return (
-      <BooleanDynamicEditor
-        propKey={propKey}
-        value={value}
-        onFieldChange={onFieldChange}
-        onDone={onDone}
-      />
-    );
-  }
-
-  if (property.type === 'number' || property.type === 'integer') {
-    return (
-      <NumberDynamicEditor
-        propKey={propKey}
-        isInteger={property.type === 'integer'}
-        value={value}
-        onFieldChange={onFieldChange}
-        onDone={onDone}
-      />
-    );
-  }
-
-  if (
-    property.type === 'array' &&
-    property.items?.enum &&
-    property.items.enum.length > 0
-  ) {
-    return (
-      <ArrayDynamicEditor
-        propKey={propKey}
-        options={property.items.enum}
-        value={value}
-        onFieldChange={onFieldChange}
-        onDone={onDone}
-      />
-    );
-  }
+  const editors: Partial<Record<string, React.ReactNode>> = {
+    ...(hasEnum
+      ? {
+          enumEditor: (
+            <SelectDynamicEditor
+              propKey={propKey}
+              options={property.enum!}
+              value={value}
+              onFieldChange={onFieldChange}
+              onDone={onDone}
+            />
+          ),
+        }
+      : {}),
+    ...(isBoolean
+      ? {
+          boolEditor: (
+            <BooleanDynamicEditor
+              propKey={propKey}
+              value={value}
+              onFieldChange={onFieldChange}
+              onDone={onDone}
+            />
+          ),
+        }
+      : {}),
+    ...(isNumber
+      ? {
+          numEditor: (
+            <NumberDynamicEditor
+              propKey={propKey}
+              isInteger={property.type === DynamicFieldTypeEnum.INTEGER}
+              value={value}
+              onFieldChange={onFieldChange}
+              onDone={onDone}
+            />
+          ),
+        }
+      : {}),
+    ...(isArrayWithEnum
+      ? {
+          arrayEditor: (
+            <ArrayDynamicEditor
+              propKey={propKey}
+              options={property.items!.enum!}
+              value={value}
+              onFieldChange={onFieldChange}
+              onDone={onDone}
+            />
+          ),
+        }
+      : {}),
+  };
 
   return (
-    <TextDynamicEditor
-      propKey={propKey}
-      format={property.format}
-      value={value}
-      onFieldChange={onFieldChange}
-      onDone={onDone}
-    />
+    editors.enumEditor ??
+    editors.boolEditor ??
+    editors.numEditor ??
+    editors.arrayEditor ?? (
+      <TextDynamicEditor
+        propKey={propKey}
+        format={property.format}
+        value={value}
+        onFieldChange={onFieldChange}
+        onDone={onDone}
+      />
+    )
   );
 }
 
@@ -709,7 +771,7 @@ export function SafeDynamicFieldsSection({
   readOnly,
 }: Readonly<SafeDynamicFieldsSectionProps>) {
   try {
-    if (!schema || typeof schema !== 'object') {
+    if (!schema || typeof schema !== TypeofEnum.OBJECT) {
       return null;
     }
 
