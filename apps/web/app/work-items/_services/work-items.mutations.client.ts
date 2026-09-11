@@ -43,9 +43,14 @@ export async function updateWorkItem(
 export async function updateWorkItemStatus(
   id: string,
   status: DbWorkItem['status'],
-  expectedUpdatedAt: string
+  expectedUpdatedAt: string,
+  boardColumnId?: string | null
 ): Promise<ResponseDTO<DbWorkItem>> {
-  const body: PatchWorkItemStatusBody = { status, expectedUpdatedAt };
+  const body: PatchWorkItemStatusBody = {
+    status,
+    ...(boardColumnId === undefined ? {} : { board_column_id: boardColumnId }),
+    expectedUpdatedAt,
+  };
   const parsed = patchWorkItemStatusBodySchema.safeParse(body);
   if (!parsed.success) {
     throw new Error('Invalid work item status update');

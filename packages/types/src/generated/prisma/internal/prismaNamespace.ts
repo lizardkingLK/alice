@@ -2082,6 +2082,7 @@ export const Work_itemsScalarFieldEnum = {
   due_date: 'due_date',
   story_points: 'story_points',
   status: 'status',
+  board_column_id: 'board_column_id',
   record_status: 'record_status',
   done_at: 'done_at',
   created_by: 'created_by',

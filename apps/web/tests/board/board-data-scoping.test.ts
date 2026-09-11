@@ -101,6 +101,7 @@ describe('BoardData project scoping', () => {
       projects: typeof MOCK_ACCESSIBLE_PROJECTS;
       sprints: typeof MOCK_SPRINTS;
       allowAllFilters: boolean;
+      usesCustomBoardConfig: boolean;
     };
 
     expect(listAccessibleProjectIdsMock).toHaveBeenCalledWith('admin-1');
@@ -116,6 +117,7 @@ describe('BoardData project scoping', () => {
     expect(props.projects).toEqual(MOCK_ACCESSIBLE_PROJECTS);
     expect(props.sprints).toEqual(MOCK_SPRINTS);
     expect(props.allowAllFilters).toBe(true);
+    expect(props.usesCustomBoardConfig).toBe(false);
   });
 
   it('scopes projects, sprints, and work items to accessible projects for member user', async () => {
@@ -183,6 +185,7 @@ describe('BoardData project scoping', () => {
 
     expect(workflowConfigQueryMocks.from).toHaveBeenCalledWith('projects');
     expect(jsx.props.boardColumns).toEqual(columns);
+    expect(jsx.props.usesCustomBoardConfig).toBe(true);
   });
 
   it('does not load workflow config for an inaccessible selected project', async () => {
@@ -214,6 +217,7 @@ describe('BoardData project scoping', () => {
     expect(
       jsx.props.boardColumns.map((column: { id: string }) => column.id)
     ).toEqual(['New', 'ToDo', 'InProgress', 'Testing', 'Done']);
+    expect(jsx.props.usesCustomBoardConfig).toBe(false);
     consoleError.mockRestore();
   });
 });

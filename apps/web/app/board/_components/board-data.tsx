@@ -23,7 +23,7 @@ import { DEFAULT_BOARD_COLUMNS } from '@/app/work-items/_helpers/work-item-statu
 
 async function getProjectWorkflowConfig(
   projectId: string
-): Promise<BoardColumn[]> {
+): Promise<{ columns: BoardColumn[]; usesCustomBoardConfig: boolean }> {
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -37,29 +37,41 @@ async function getProjectWorkflowConfig(
         `error. failed to fetch workflow_config for project ${projectId}:`,
         error.message
       );
-      return DEFAULT_BOARD_COLUMNS;
+      return {
+        columns: DEFAULT_BOARD_COLUMNS,
+        usesCustomBoardConfig: false,
+      };
     }
 
     if (!data.workflow_config) {
-      return DEFAULT_BOARD_COLUMNS;
+      return {
+        columns: DEFAULT_BOARD_COLUMNS,
+        usesCustomBoardConfig: false,
+      };
     }
 
     const parsed = boardConfigSchema.safeParse(data.workflow_config);
     if (parsed.success) {
-      return parsed.data.columns;
+      return { columns: parsed.data.columns, usesCustomBoardConfig: true };
     }
 
     console.warn(
       `[BoardData] Invalid workflow_config for project ${projectId}`,
       parsed.error
     );
-    return DEFAULT_BOARD_COLUMNS;
+    return {
+      columns: DEFAULT_BOARD_COLUMNS,
+      usesCustomBoardConfig: false,
+    };
   } catch (error) {
     console.error(
       `error. failed to fetch workflow_config for project ${projectId}:`,
       error
     );
-    return DEFAULT_BOARD_COLUMNS;
+    return {
+      columns: DEFAULT_BOARD_COLUMNS,
+      usesCustomBoardConfig: false,
+    };
   }
 }
 
@@ -119,9 +131,9 @@ export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
     ? await getSuggestedBoardDefaults(dbUser, activeProjects, sprints)
     : null;
 
-  const boardColumns = scopedProjectId
+  const boardConfig = scopedProjectId
     ? await getProjectWorkflowConfig(scopedProjectId)
-    : DEFAULT_BOARD_COLUMNS;
+    : { columns: DEFAULT_BOARD_COLUMNS, usesCustomBoardConfig: false };
 
   const needsClientBootstrap = needsWorkspaceProjectBootstrap(
     resolvedSearchParams.project
@@ -130,7 +142,8 @@ export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
 
   return (
     <BoardWorkspace
-      boardColumns={boardColumns}
+      boardColumns={boardConfig.columns}
+      usesCustomBoardConfig={boardConfig.usesCustomBoardConfig}
       initialWorkItems={boardItems}
       projects={activeProjects}
       sprints={sprints}

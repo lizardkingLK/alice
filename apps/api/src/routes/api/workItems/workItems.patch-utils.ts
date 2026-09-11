@@ -20,3 +20,15 @@ export function sameNullable<T>(
 ): boolean {
   return (left ?? null) === (right ?? null);
 }
+
+export function resolveBoardColumnPatchValue(input: {
+  readonly wasProvided: boolean;
+  readonly value: string | null | undefined;
+  readonly currentValue: string | null;
+  readonly workflowContextChanged: boolean;
+}): string | null {
+  if (input.wasProvided) {
+    return input.value ?? null;
+  }
+  return input.workflowContextChanged ? null : input.currentValue;
+}

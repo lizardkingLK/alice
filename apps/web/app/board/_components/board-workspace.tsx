@@ -20,6 +20,7 @@ import type { BoardColumn } from '@repo/types/api/v1';
 
 type BoardWorkspaceProps = {
   readonly boardColumns: BoardColumn[];
+  readonly usesCustomBoardConfig: boolean;
   readonly initialWorkItems: DbWorkItem[];
   readonly projects: Project[];
   readonly sprints: Sprint[];
@@ -37,6 +38,7 @@ type BoardWorkspaceProps = {
 
 export function BoardWorkspace({
   boardColumns,
+  usesCustomBoardConfig,
   initialWorkItems,
   projects,
   sprints,
@@ -88,6 +90,7 @@ export function BoardWorkspace({
       >
         <KanbanBoard
           boardColumns={boardColumns}
+          usesCustomBoardConfig={usesCustomBoardConfig}
           initialWorkItems={initialWorkItems}
           projects={projects}
           sprints={sprints}
