@@ -294,6 +294,10 @@ describe('ProjectFieldsWorkspace component', () => {
     // Dialog title appears
     expect(screen.getByText('Load Field Templates')).toBeInTheDocument();
 
+    // Select templates
+    const selectAllBtn = screen.getByRole('button', { name: /select all/i });
+    fireEvent.click(selectAllBtn);
+
     // Click Add Selected button
     const addBtn = screen.getByRole('button', { name: /add selected/i });
     fireEvent.click(addBtn);
