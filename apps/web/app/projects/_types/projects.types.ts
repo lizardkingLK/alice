@@ -1,4 +1,5 @@
 import type { Tables } from '@repo/types';
+import type { BoardConfig } from '@repo/types/api/v1';
 import type { User } from '@/app/users/_services/users.mutations.client';
 
 export {
@@ -41,6 +42,7 @@ export type CreateProjectInput = Omit<
   | 'github_token'
   | 'logo_url'
   | 'cover_picture'
+  | 'workflow_config'
 > & {
   jira_connection_id?: string | null;
   jira_project_key?: string | null;
@@ -52,7 +54,9 @@ export type CreateProjectInput = Omit<
   attributes_config?: unknown;
 };
 
-export type UpdateProjectInput = Partial<CreateProjectInput>;
+export type UpdateProjectInput = Partial<CreateProjectInput> & {
+  workflow_config?: BoardConfig | null;
+};
 
 export type ProjectMemberWithUser = {
   project_id: string;

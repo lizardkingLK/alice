@@ -7,15 +7,16 @@ vi.hoisted(() => {
 import type { Database } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { projectListSelect, projectDetailSelect } from '@repo/types';
+import { Prisma } from '@repo/types/prisma';
 
-const { findManyMock, findUniqueMock, countMock, groupByMock } = vi.hoisted(
-  () => ({
+const { findManyMock, findUniqueMock, countMock, groupByMock, updateManyMock } =
+  vi.hoisted(() => ({
     findManyMock: vi.fn(),
     findUniqueMock: vi.fn(),
     countMock: vi.fn(),
     groupByMock: vi.fn(),
-  })
-);
+    updateManyMock: vi.fn(),
+  }));
 
 vi.mock('../../src/lib/prisma', () => ({
   prisma: {
@@ -23,6 +24,7 @@ vi.mock('../../src/lib/prisma', () => ({
       findMany: findManyMock,
       findUnique: findUniqueMock,
       count: countMock,
+      updateMany: updateManyMock,
     },
     teams: {
       groupBy: groupByMock,
@@ -117,5 +119,80 @@ describe('ProjectsRepository Prisma reads', () => {
       select: projectDetailSelect,
     });
     expect(result).toEqual(mockProjectRow);
+  });
+
+  it('persists workflow config through the optimistic project update', async () => {
+    updateManyMock.mockResolvedValue({ count: 1 });
+    const workflow_config = {
+      version: '1' as const,
+      columns: [
+        { id: 'new', name: 'New', status: 'New' as const },
+        { id: 'todo', name: 'Ready', status: 'ToDo' as const },
+        { id: 'doing', name: 'Doing', status: 'InProgress' as const },
+        { id: 'testing', name: 'Testing', status: 'Testing' as const },
+        { id: 'done', name: 'Done', status: 'Done' as const },
+      ],
+    };
+
+    await repository.update(
+      'project-1',
+      { workflow_config },
+      'actor-1',
+      '2026-08-25T12:00:00.000Z'
+    );
+
+    expect(updateManyMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'project-1',
+          updated_at: new Date('2026-08-25T12:00:00.000Z'),
+        },
+        data: expect.objectContaining({ workflow_config }),
+      })
+    );
+  });
+
+  it('preserves workflow config when the field is omitted', async () => {
+    updateManyMock.mockResolvedValue({ count: 1 });
+
+    await repository.update(
+      'project-1',
+      { name: 'Renamed project' },
+      'actor-1',
+      '2026-08-25T12:00:00.000Z'
+    );
+
+    const data = updateManyMock.mock.calls[0]?.[0].data;
+    expect(data).not.toHaveProperty('workflow_config');
+  });
+
+  it('keeps optimistic-lock conflict behavior for workflow config saves', async () => {
+    updateManyMock.mockResolvedValue({ count: 0 });
+
+    await expect(
+      repository.update(
+        'project-1',
+        { workflow_config: null },
+        'actor-1',
+        '2026-08-25T12:00:00.000Z'
+      )
+    ).rejects.toMatchObject({ name: 'OptimisticLockError' });
+  });
+
+  it('uses the Prisma database-null sentinel when resetting the board', async () => {
+    updateManyMock.mockResolvedValue({ count: 1 });
+
+    await repository.update(
+      'project-1',
+      { workflow_config: null },
+      'actor-1',
+      '2026-08-25T12:00:00.000Z'
+    );
+
+    expect(updateManyMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ workflow_config: Prisma.DbNull }),
+      })
+    );
   });
 });

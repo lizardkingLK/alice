@@ -139,7 +139,13 @@ export function parseViewsListTab(tab?: string | null): ViewsListTab {
 }
 
 export type ProjectDetailsTab =
-  'details' | 'members' | 'teams' | 'work-items' | 'integrations' | 'fields';
+  | 'details'
+  | 'members'
+  | 'teams'
+  | 'work-items'
+  | 'integrations'
+  | 'fields'
+  | 'board';
 
 export function parseProjectDetailsTab(tab?: string | null): ProjectDetailsTab {
   if (
@@ -147,7 +153,8 @@ export function parseProjectDetailsTab(tab?: string | null): ProjectDetailsTab {
     tab === 'teams' ||
     tab === 'work-items' ||
     tab === 'integrations' ||
-    tab === 'fields'
+    tab === 'fields' ||
+    tab === 'board'
   ) {
     return tab;
   }

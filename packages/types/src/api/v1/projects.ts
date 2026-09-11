@@ -3,6 +3,7 @@ import type { projectsGetPayload } from '../../generated/prisma/models/projects.
 import type { project_membersGetPayload } from '../../generated/prisma/models/project_members.js';
 import { Constants } from '../../generated/supabase/database.types.js';
 import { ProjectStatus as ProjectStatusEnum } from '../../generated/prisma/enums.js';
+import { boardConfigSchema } from './board-config.js';
 import {
   emptyToUndefined,
   paginatedListLimitField,
@@ -95,20 +96,23 @@ export const createProjectSchema = baseCreateProjectSchema
     }
   );
 
-export const updateProjectSchema = baseCreateProjectSchema.partial().refine(
-  (data) => {
-    if (data.start_date && data.end_date) {
-      const start = data.start_date.split('T')[0] ?? '';
-      const end = data.end_date.split('T')[0] ?? '';
-      return end >= start;
+export const updateProjectSchema = baseCreateProjectSchema
+  .partial()
+  .extend({ workflow_config: boardConfigSchema.nullable().optional() })
+  .refine(
+    (data) => {
+      if (data.start_date && data.end_date) {
+        const start = data.start_date.split('T')[0] ?? '';
+        const end = data.end_date.split('T')[0] ?? '';
+        return end >= start;
+      }
+      return true;
+    },
+    {
+      message: 'End date must be on or after the start date.',
+      path: ['end_date'],
     }
-    return true;
-  },
-  {
-    message: 'End date must be on or after the start date.',
-    path: ['end_date'],
-  }
-);
+  );
 
 /**
  * Strip integration secrets before project rows reach clients.
@@ -153,6 +157,7 @@ export const projectListSelect = {
 export const projectDetailSelect = {
   ...projectListSelect,
   attributes_config: true,
+  workflow_config: true,
   jira_project_key: true,
   jira_connection_id: true,
   github_repo: true,

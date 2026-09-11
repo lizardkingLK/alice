@@ -81,6 +81,12 @@ function buildProjectUpdateData(data: ProjectUpdateInput, actorId: string) {
   if (data.attributes_config !== undefined) {
     patch.attributes_config = data.attributes_config;
   }
+  if (data.workflow_config !== undefined) {
+    patch.workflow_config =
+      data.workflow_config === null
+        ? Prisma.DbNull
+        : (data.workflow_config as Prisma.InputJsonValue);
+  }
 
   applyOptionalProjectIntegrations(patch, data);
   return patch;

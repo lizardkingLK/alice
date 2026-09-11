@@ -65,6 +65,15 @@ vi.mock(
   })
 );
 
+vi.mock(
+  '@/app/projects/_components/project-details/board-designer-workspace',
+  () => ({
+    BoardDesignerWorkspace: () => (
+      <div data-testid="board-designer-workspace">Board Designer</div>
+    ),
+  })
+);
+
 vi.mock('@/app/work-items/_components/work-items-workspace', () => ({
   default: () => (
     <div data-testid="work-items-workspace">Work Items Content</div>
@@ -118,6 +127,7 @@ describe('parseProjectDetailsTab', () => {
     expect(parseProjectDetailsTab('teams')).toBe('teams');
     expect(parseProjectDetailsTab('work-items')).toBe('work-items');
     expect(parseProjectDetailsTab('integrations')).toBe('integrations');
+    expect(parseProjectDetailsTab('board')).toBe('board');
   });
 
   it('falls back to "details" for unknown or empty values', () => {
@@ -128,7 +138,50 @@ describe('parseProjectDetailsTab', () => {
 });
 
 describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
-  it('renders all 6 navigation options in the sidebar', () => {
+  it('renders the board designer for ?tab=board', async () => {
+    const navigation =
+      (await import('next/navigation')) as unknown as typeof import('next/navigation') & {
+        // eslint-disable-next-line no-unused-vars -- mock helper signature
+        __setSearchParams: (params: URLSearchParams) => void;
+      };
+    navigation.__setSearchParams(new URLSearchParams('tab=board'));
+
+    render(
+      <ProjectDetailsWorkspace
+        project={mockProject}
+        members={[]}
+        allUsers={[]}
+        currentUserId="user-manager-1"
+        currentUserRole="manager"
+        workItems={{
+          initialWorkItems: [],
+          totalCount: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+          search: '',
+          typeFilter: '',
+          assigneeFilter: '',
+          listView: 'flat',
+          tab: 'active',
+        }}
+        teams={{
+          items: [],
+          totalCount: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+          search: '',
+          status: 'active',
+        }}
+      />
+    );
+
+    expect(screen.getByTestId('board-designer-workspace')).toBeInTheDocument();
+    navigation.__setSearchParams(new URLSearchParams());
+  });
+
+  it('renders all 7 navigation options in the sidebar', () => {
     render(
       <ProjectDetailsWorkspace
         project={mockProject}
@@ -174,6 +227,7 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
       screen.getByRole('button', { name: /integrations/i })
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /fields/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /board/i })).toBeInTheDocument();
   });
 
   it('renders ProjectSummaryBanner when Details tab is active', () => {

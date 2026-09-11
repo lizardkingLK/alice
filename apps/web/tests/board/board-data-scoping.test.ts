@@ -172,7 +172,11 @@ describe('BoardData project scoping', () => {
     getDbUserMock.mockResolvedValue({ id: 'member-1', role: 'member' });
     listAccessibleProjectIdsMock.mockResolvedValue(['proj-1']);
     const columns = [
+      { id: 'new', name: 'New', status: 'New' },
+      { id: 'ready', name: 'Ready', status: 'ToDo' },
       { id: 'development', name: 'Development', status: 'InProgress' },
+      { id: 'testing', name: 'Testing', status: 'Testing' },
+      { id: 'done', name: 'Done', status: 'Done' },
     ];
     workflowConfigQueryMocks.single.mockResolvedValue({
       data: { workflow_config: { version: '1', columns } },

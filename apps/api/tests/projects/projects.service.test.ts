@@ -66,6 +66,17 @@ const mockProject = {
   cover_picture: null,
 };
 
+const boardConfig = {
+  version: '1' as const,
+  columns: [
+    { id: 'new', name: 'New', status: 'New' as const },
+    { id: 'todo', name: 'Ready', status: 'ToDo' as const },
+    { id: 'doing', name: 'Doing', status: 'InProgress' as const },
+    { id: 'testing', name: 'Testing', status: 'Testing' as const },
+    { id: 'done', name: 'Done', status: 'Done' as const },
+  ],
+};
+
 describe('ProjectsService backend tests', () => {
   const projectsRepository = {
     findById: findByIdMock,
@@ -169,6 +180,47 @@ describe('ProjectsService backend tests', () => {
   });
 
   describe('updateProject', () => {
+    it.each(['manager', 'admin'] as const)(
+      'allows a %s to save workflow configuration',
+      async (role) => {
+        mockActorRole(role);
+        updateMock.mockResolvedValue({
+          ...mockProject,
+          workflow_config: boardConfig,
+        });
+
+        await service.updateProject(
+          'actor-id',
+          'project-1',
+          { workflow_config: boardConfig },
+          mockProject.updated_at
+        );
+
+        expect(updateMock).toHaveBeenCalledWith(
+          'project-1',
+          { workflow_config: boardConfig },
+          'actor-id',
+          mockProject.updated_at
+        );
+      }
+    );
+
+    it('does not allow a member to save workflow configuration', async () => {
+      mockActorRole('member');
+
+      await expect(
+        service.updateProject(
+          'user-member',
+          'project-1',
+          { workflow_config: boardConfig },
+          mockProject.updated_at
+        )
+      ).rejects.toThrow(
+        'Unauthorized. Only admins and managers can manage projects.'
+      );
+      expect(updateMock).not.toHaveBeenCalled();
+    });
+
     it('updates project successfully as manager/admin', async () => {
       mockActorRole('manager');
       findByKeyMock.mockResolvedValue(null);

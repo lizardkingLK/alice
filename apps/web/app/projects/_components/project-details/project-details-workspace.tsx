@@ -4,19 +4,20 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   ClipboardPenLine,
   Info,
+  Kanban,
   Network,
   Plug,
   SlidersHorizontal,
   Users,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
-import { UserRoleEnum } from '@repo/types';
 import { ProjectTeamsPanel } from '@/app/projects/_components/project-details/project-teams-panel';
 import { ProjectSummaryBanner } from '@/app/projects/_components/project-details/project-summary-banner';
 import { ProjectDetailsTab } from '@/app/projects/_components/project-details/project-details-tab';
 import { ProjectMembersTab } from '@/app/projects/_components/project-details/project-members-tab';
 import { ProjectIntegrationsTab } from '@/app/projects/_components/project-details/project-integrations-tab';
 import { ProjectFieldsWorkspace } from '@/app/projects/_components/project-details/project-fields-workspace';
+import { BoardDesignerWorkspace } from '@/app/projects/_components/project-details/board-designer-workspace';
 import type {
   Project,
   ProjectMemberWithUser,
@@ -29,6 +30,7 @@ import {
   parseProjectDetailsTab,
   type ProjectDetailsTab as ProjectDetailsTabId,
 } from '@/lib/search-params';
+import { isAppRole, isManagerOrAdmin } from '@/lib/rbac/roles';
 import type { VisibilityState } from '@tanstack/react-table';
 
 interface ProjectWorkItemsProps {
@@ -102,6 +104,11 @@ const PROJECT_NAV_ITEMS: ReadonlyArray<{
     label: 'Fields',
     Icon: SlidersHorizontal,
   },
+  {
+    id: 'board',
+    label: 'Board',
+    Icon: Kanban,
+  },
 ];
 
 export function ProjectDetailsWorkspace({
@@ -120,9 +127,9 @@ export function ProjectDetailsWorkspace({
   const searchParams = useSearchParams();
   const activeTab = parseProjectDetailsTab(searchParams.get('tab'));
 
-  const isManagerOrAdmin =
-    currentUserRole === UserRoleEnum.admin ||
-    currentUserRole === UserRoleEnum.manager;
+  const canEditProject = isManagerOrAdmin(
+    isAppRole(currentUserRole) ? currentUserRole : null
+  );
 
   const handleTabChange = (nextTab: ProjectDetailsTabId) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -186,7 +193,7 @@ export function ProjectDetailsWorkspace({
           <div className="space-y-6 p-6">
             <ProjectSummaryBanner
               project={project}
-              canEditBranding={isManagerOrAdmin}
+              canEditBranding={canEditProject}
             />
             <ProjectDetailsTab
               project={project}
@@ -266,7 +273,17 @@ export function ProjectDetailsWorkspace({
           <div className="p-6">
             <ProjectFieldsWorkspace
               project={project}
-              isManagerOrAdmin={isManagerOrAdmin}
+              isManagerOrAdmin={canEditProject}
+            />
+          </div>
+        )}
+
+        {activeTab === 'board' && (
+          <div className="p-6">
+            <BoardDesignerWorkspace
+              project={project}
+              canEdit={canEditProject}
+              currentUserId={currentUserId}
             />
           </div>
         )}

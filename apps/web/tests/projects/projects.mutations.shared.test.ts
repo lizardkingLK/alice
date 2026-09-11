@@ -17,7 +17,6 @@ describe('createProjectsService frontend tests', () => {
       start_date: null,
       end_date: null,
       attributes_config: null,
-      workflow_config: null,
       github_repo: null,
       github_token: null,
     };
@@ -51,6 +50,29 @@ describe('createProjectsService frontend tests', () => {
       }),
     });
     expect(result).toEqual(project);
+  });
+
+  it('updates a project board configuration via PUT', async () => {
+    const project = projectFactory.build();
+    const apiFetch = vi.fn().mockResolvedValue({ project });
+    const service = createProjectsService(apiFetch);
+    const workflow_config = {
+      version: '1' as const,
+      columns: [
+        { id: 'new', name: 'New', status: 'New' as const },
+        { id: 'todo', name: 'Ready', status: 'ToDo' as const },
+        { id: 'doing', name: 'Doing', status: 'InProgress' as const },
+        { id: 'test', name: 'Testing', status: 'Testing' as const },
+        { id: 'done', name: 'Done', status: 'Done' as const },
+      ],
+    };
+
+    await service.updateProject('proj-1', { workflow_config }, 'timestamp');
+
+    expect(apiFetch).toHaveBeenCalledWith('/api/projects/proj-1', {
+      method: 'PUT',
+      body: JSON.stringify({ workflow_config, expectedUpdatedAt: 'timestamp' }),
+    });
   });
 
   it('soft deletes project via PATCH', async () => {
