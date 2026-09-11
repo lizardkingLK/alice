@@ -487,16 +487,6 @@ export function KanbanBoard({
             className="sm:w-64"
           />
 
-          <AssigneeAvatarFilter
-            members={uniqueAssignees}
-            selectedId={assigneeFilter}
-            onSelectedIdChange={setAssigneeFilter}
-            visibleCount={3}
-            isUserOnline={isUserOnline}
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           <WorkItemsFilterDialog
             projects={projects}
             projectMembers={[]}
@@ -514,6 +504,14 @@ export function KanbanBoard({
             hasActiveFilters={hasDialogFilters}
           />
 
+          <AssigneeAvatarFilter
+            members={uniqueAssignees}
+            selectedId={assigneeFilter}
+            onSelectedIdChange={setAssigneeFilter}
+            visibleCount={3}
+            isUserOnline={isUserOnline}
+          />
+
           {hasActiveFilters ? (
             <Button
               type="button"
@@ -526,7 +524,9 @@ export function KanbanBoard({
               <X className="size-3.5" />
             </Button>
           ) : null}
+        </div>
 
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           {userId ? (
             <WorkspaceDefaultsControls
               onOpenDefaultsDialog={openDefaultsDialog}

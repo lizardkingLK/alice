@@ -29,6 +29,30 @@ describe('buildWorkItemBreadcrumbOverrides', () => {
     ]);
   });
 
+  it('uses project name and work item title when provided', () => {
+    const crumbs = buildWorkItemBreadcrumbOverrides(workItemId, projectId, {
+      projectName: 'Project Long Name',
+      workItemTitle: 'Implement auth flow',
+    });
+
+    expect(crumbs).toEqual([
+      { label: 'Dashboard', url: '/dashboard' },
+      { label: 'Projects', url: '/projects' },
+      {
+        label: 'Project Long Name',
+        url: `/projects/${projectId}`,
+      },
+      {
+        label: 'Work Items',
+        url: `/projects/${projectId}?tab=work-items`,
+      },
+      {
+        label: 'Implement auth flow',
+        url: `/work-items/${workItemId}`,
+      },
+    ]);
+  });
+
   it('falls back to Work Items list when projectId is missing', () => {
     // Arrange / Act
     const crumbs = buildWorkItemBreadcrumbOverrides(workItemId, null);

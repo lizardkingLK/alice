@@ -158,7 +158,8 @@ function renderSprintNameCell({ row }: CellContext<Sprint, unknown>) {
       subtitle={
         projectName ? (
           <>
-            Project: <span className="font-medium">{projectName}</span>
+            Project:{' '}
+            <span className="font-medium">{projectName}</span>
           </>
         ) : (
           '—'

@@ -12,7 +12,7 @@ import {
 import { updateSprintStatusWithOptimisticLock } from '@/app/sprints/_helpers/update-sprint-status-with-lock';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
-import { Search, Plus } from '@repo/ui/lib/icons';
+import { Search, Plus, X } from '@repo/ui/lib/icons';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import {
   SprintTabEnum,
@@ -24,8 +24,13 @@ import {
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { RegistryTabSwitcher } from '@/components/registry-tab-switcher';
 import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
-import { SprintDeleteConfirmDialog } from './sprint-delete-confirm-dialog';
 import { DismissibleError } from '@/components/dismissible-error';
+import {
+  QUERY_FILTER_ALL_VALUE,
+  useQueryFilter,
+} from '@/hooks/use-query-filter';
+import { SprintsFilterDialog } from '@/app/sprints/_components/sprints-filter-dialog';
+import { SprintDeleteConfirmDialog } from './sprint-delete-confirm-dialog';
 
 const SPRINT_STATUS_TABS = [
   { id: SprintTabEnum.Active, label: 'Active' },
@@ -42,6 +47,7 @@ interface SprintsWorkspaceProps {
   };
   readonly projects: Project[];
   readonly filterTab: SprintTab;
+  readonly projectFilter: string;
   readonly search: string;
   readonly error?: string | null;
   readonly userRole: string;
@@ -113,6 +119,7 @@ export function SprintsWorkspace({
   pagination,
   projects,
   filterTab,
+  projectFilter,
   search,
   error = null,
   userRole,
@@ -129,6 +136,7 @@ export function SprintsWorkspace({
   const isAdmin = userRole === UserRoleEnum.admin;
   const isManagerOrAdmin = isAdmin || userRole === UserRoleEnum.manager;
   const { handleMutationError } = useOptimisticLock();
+  const projectQuery = useQueryFilter('project', projectFilter);
 
   const [isPending, startTransition] = useTransition();
   const [actionError, setActionError] = useState<string | null>(null);
@@ -263,15 +271,39 @@ export function SprintsWorkspace({
         />
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative max-w-md flex-1">
-            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-            <Input
-              type="text"
-              placeholder="Search sprints by name or goal..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-background/50 h-10 py-2 pr-4 pl-10"
+          <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative max-w-md flex-1">
+              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+              <Input
+                type="text"
+                placeholder="Search sprints by name or goal..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-background/50 h-10 py-2 pr-4 pl-10"
+              />
+            </div>
+
+            <SprintsFilterDialog
+              projects={projects}
+              projectValue={projectQuery.value}
+              hasActiveFilters={
+                projectQuery.value !== QUERY_FILTER_ALL_VALUE
+              }
+              onApplyProject={projectQuery.setFilter}
             />
+
+            {projectQuery.value !== QUERY_FILTER_ALL_VALUE ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => projectQuery.setFilter(QUERY_FILTER_ALL_VALUE)}
+                className="text-muted-foreground hover:text-foreground h-9 px-3 text-xs"
+              >
+                Clear filters
+                <X className="size-3.5" />
+              </Button>
+            ) : null}
           </div>
 
           <div className="flex flex-wrap items-center gap-3 self-start">

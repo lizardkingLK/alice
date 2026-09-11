@@ -34,8 +34,9 @@ registry.
 
 ## Filters
 
-Use project, sprint, assignee, and search controls at the top of the page to
-narrow which cards appear. Save a filtered URL as a [view](../navigation/favorites-and-views.md).
+Use search, the people avatars, and the **Filter** icon (**Shift+F**) for
+project, sprint, and priority. **Defaults** (gear icon) sits on the right of the
+toolbar. Save a filtered URL as a [view](../navigation/favorites-and-views.md).
 
 ---
 

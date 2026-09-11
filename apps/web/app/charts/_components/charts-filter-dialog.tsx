@@ -1,30 +1,15 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Button } from '@repo/ui/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@repo/ui/components/ui/dialog';
-import { useToggleKeyboardShortcut } from '@repo/ui/hooks/use-keyboard-shortcut';
-import { isShiftLetter } from '@repo/ui/lib/shortcut-gate';
-import { Label } from '@repo/ui/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@repo/ui/components/ui/select';
+import { useEffect, useState } from 'react';
 import type {
   ChartBoardOwnershipFilter,
   ChartBoardStatusFilter,
 } from '@/app/charts/_components/charts.types';
-import { FilterShortcutTrigger } from '@/components/filter-shortcut-trigger';
+import {
+  FilterDialogShell,
+  FilterOptionsChecklistPane,
+  type FilterDialogNavField,
+} from '@/components/filter-dialog-shell';
 
 export type ChartsFilterDraft = {
   readonly ownership: ChartBoardOwnershipFilter;
@@ -39,38 +24,26 @@ type ChartsFilterDialogProps = {
   readonly onApplyFilters: (draft: ChartsFilterDraft) => void;
 };
 
-function ChartsBoardFilterSelectField({
-  id,
-  label,
-  value,
-  onValueChange,
-  options,
-}: Readonly<{
-  id: string;
-  label: string;
-  value: string;
-  // eslint-disable-next-line no-unused-vars -- select change
-  onValueChange: (value: string) => void;
-  options: readonly { value: string; label: string }[];
-}>) {
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
-      <Select value={value} onValueChange={onValueChange}>
-        <SelectTrigger id={id} className="w-full">
-          <SelectValue placeholder={label} />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
+const CHART_FILTER_FIELDS = [
+  { id: 'ownership', label: 'Ownership', searchPlaceholder: 'Search ownership' },
+  { id: 'status', label: 'Status', searchPlaceholder: 'Search status' },
+] as const satisfies ReadonlyArray<
+  FilterDialogNavField & { readonly searchPlaceholder: string }
+>;
+
+type ChartsFilterFieldId = (typeof CHART_FILTER_FIELDS)[number]['id'];
+
+const OWNERSHIP_OPTIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'mine', label: 'Mine' },
+  { value: 'shared', label: 'Shared with me' },
+] as const;
+
+const STATUS_OPTIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'active', label: 'Active' },
+  { value: 'archived', label: 'Archived' },
+] as const;
 
 export function ChartsFilterDialog({
   ownership,
@@ -83,98 +56,87 @@ export function ChartsFilterDialog({
     ownership,
     status,
   });
+  const [activeFieldId, setActiveFieldId] =
+    useState<ChartsFilterFieldId>('ownership');
+  const [optionSearch, setOptionSearch] = useState('');
 
-  useToggleKeyboardShortcut(
-    (event) => isShiftLetter(event, 'f'),
-    open,
-    setOpen
-  );
-
-  const isDirty = useMemo(
-    () => draft.ownership !== ownership || draft.status !== status,
-    [draft.ownership, draft.status, ownership, status]
-  );
-
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (nextOpen) {
-      setDraft({ ownership, status });
+  useEffect(() => {
+    if (!open) {
+      return;
     }
-    setOpen(nextOpen);
+    setDraft({ ownership, status });
+    setOptionSearch('');
+    // Seed once when the dialog opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open transition only
+  }, [open]);
+
+  useEffect(() => {
+    setOptionSearch('');
+  }, [activeFieldId]);
+
+  const activeField =
+    CHART_FILTER_FIELDS.find((field) => field.id === activeFieldId) ??
+    CHART_FILTER_FIELDS[0];
+
+  const options =
+    activeFieldId === 'ownership' ? OWNERSHIP_OPTIONS : STATUS_OPTIONS;
+  const filteredOptions = options.filter((option) =>
+    option.label.toLowerCase().includes(optionSearch.trim().toLowerCase())
+  );
+  const selectedValue =
+    activeFieldId === 'ownership' ? draft.ownership : draft.status;
+
+  const applySelection = (value: string) => {
+    if (activeFieldId === 'ownership') {
+      setDraft((prev) => ({
+        ...prev,
+        ownership: value as ChartBoardOwnershipFilter,
+      }));
+      return;
+    }
+    setDraft((prev) => ({
+      ...prev,
+      status: value as ChartBoardStatusFilter,
+    }));
+  };
+
+  const clearActiveField = () => {
+    if (activeFieldId === 'ownership') {
+      setDraft((prev) => ({ ...prev, ownership: 'all' }));
+      return;
+    }
+    setDraft((prev) => ({ ...prev, status: 'all' }));
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <FilterShortcutTrigger open={open} hasActiveFilters={hasActiveFilters} />
-
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Filter charts</DialogTitle>
-          <DialogDescription>
-            Narrow boards by ownership and status. More filters land with
-            persistence.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="grid gap-4 py-2">
-          <ChartsBoardFilterSelectField
-            id="charts-filter-ownership"
-            label="Ownership"
-            value={draft.ownership}
-            onValueChange={(value) =>
-              setDraft((prev) => ({
-                ...prev,
-                ownership: value as ChartBoardOwnershipFilter,
-              }))
-            }
-            options={[
-              { value: 'all', label: 'All' },
-              { value: 'mine', label: 'Mine' },
-              { value: 'shared', label: 'Shared with me' },
-            ]}
-          />
-
-          <ChartsBoardFilterSelectField
-            id="charts-filter-status"
-            label="Status"
-            value={draft.status}
-            onValueChange={(value) =>
-              setDraft((prev) => ({
-                ...prev,
-                status: value as ChartBoardStatusFilter,
-              }))
-            }
-            options={[
-              { value: 'all', label: 'All' },
-              { value: 'active', label: 'Active' },
-              { value: 'archived', label: 'Archived' },
-            ]}
-          />
-        </div>
-
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button
-            type="button"
-            variant="outline"
-            className="cursor-pointer"
-            onClick={() => {
-              setDraft({ ownership: 'all', status: 'all' });
-            }}
-          >
-            Reset
-          </Button>
-          <Button
-            type="button"
-            className="cursor-pointer"
-            disabled={!isDirty && !hasActiveFilters}
-            onClick={() => {
-              onApplyFilters(draft);
-              setOpen(false);
-            }}
-          >
-            Apply filters
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <FilterDialogShell
+      open={open}
+      onOpenChange={setOpen}
+      hasActiveFilters={hasActiveFilters}
+      fields={CHART_FILTER_FIELDS}
+      activeFieldId={activeFieldId}
+      onActiveFieldIdChange={(id) => setActiveFieldId(id as ChartsFilterFieldId)}
+      onClearAll={() => setDraft({ ownership: 'all', status: 'all' })}
+      onClearActiveField={clearActiveField}
+      onOkay={() => {
+        onApplyFilters(draft);
+        setOpen(false);
+      }}
+      footerCountLabel={`${filteredOptions.length} of ${filteredOptions.length}`}
+    >
+      <FilterOptionsChecklistPane
+        fieldId={activeField.id}
+        searchPlaceholder={activeField.searchPlaceholder}
+        optionSearch={optionSearch}
+        onOptionSearchChange={setOptionSearch}
+        filteredOptions={[...filteredOptions]}
+        showAllOption={false}
+        allOptionLabel="All"
+        selectedValue={selectedValue}
+        allValue="all"
+        onApplySelection={applySelection}
+        onClearActiveField={clearActiveField}
+      />
+    </FilterDialogShell>
   );
 }
