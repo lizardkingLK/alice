@@ -8,6 +8,33 @@ export enum DynamicFieldTypeEnum {
   ARRAY = 'array',
 }
 
+export enum TemplateFieldCategoryEnum {
+  AGILE_PRIORITIZATION = 'Agile Prioritization',
+  REQUIREMENTS_QA = 'Requirements & QA',
+  STRATEGY_VALUE = 'Strategy & Value',
+  RELEASE_MANAGEMENT = 'Release Management',
+  SECURITY_GOVERNANCE = 'Security & Governance',
+  DEFECTS_QA = 'Defects & QA',
+  DEVOPS_DEPLOYMENT = 'DevOps & Deployment',
+}
+
+export enum TemplateFieldKeyEnum {
+  MOSCOW_RATING = 'moscowRating',
+  ACCEPTANCE_CRITERIA = 'acceptanceCriteria',
+  BUSINESS_VALUE = 'businessValue',
+  RELEASE_NOTES_INCLUDED = 'releaseNotesIncluded',
+  SECURITY_CLASSIFICATION = 'securityClassification',
+  COMPLIANCE_TIER = 'complianceTier',
+  SEVERITY = 'severity',
+  ENVIRONMENT = 'environment',
+}
+
+export enum DynamicFieldConfirmationModeEnum {
+  WARNING = 'warning',
+  ERROR = 'error',
+  INFO = 'info',
+}
+
 export const DYNAMIC_FIELD_TYPES = [
   DynamicFieldTypeEnum.STRING,
   DynamicFieldTypeEnum.NUMBER,

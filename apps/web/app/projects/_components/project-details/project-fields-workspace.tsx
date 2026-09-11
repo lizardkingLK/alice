@@ -57,6 +57,40 @@ type ParsedProperty = {
   default?: unknown;
 };
 
+function parseCurrentSchemaObject(raw: string): Record<string, unknown> {
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    // Keep empty base schema
+  }
+  return {};
+}
+
+function formatTemplateUpdateMessage(
+  addedCount: number,
+  removedCount: number
+): string {
+  if (addedCount > 0 && removedCount > 0) {
+    return `Updated templates: added ${addedCount} and removed ${removedCount} ${
+      removedCount === 1 ? 'field' : 'fields'
+    }. Review and save when ready.`;
+  }
+  if (addedCount > 0) {
+    return `Added ${addedCount} template ${
+      addedCount === 1 ? 'field' : 'fields'
+    }. Review and save when ready.`;
+  }
+  if (removedCount > 0) {
+    return `Removed ${removedCount} template ${
+      removedCount === 1 ? 'field' : 'fields'
+    }. Review and save when ready.`;
+  }
+  return 'Templates updated. Review and save when ready.';
+}
+
 export function ProjectFieldsWorkspace({
   project,
   isManagerOrAdmin,
@@ -275,30 +309,27 @@ export function ProjectFieldsWorkspace({
     setIsLoadTemplateDialogOpen(true);
   };
 
-  const handleAddTemplates = (newFields: Record<string, unknown>) => {
-    const count = Object.keys(newFields).length;
-    if (count === 0) return;
-
-    let currentSchema: Record<string, unknown> = {};
-    try {
-      const parsed = JSON.parse(schemaText);
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        currentSchema = parsed as Record<string, unknown>;
-      }
-    } catch {
-      // Keep empty base schema
-    }
-
+  const handleApplyTemplates = (
+    fieldsToAdd: Record<string, unknown>,
+    keysToRemove: string[] = []
+  ) => {
+    const currentSchema = parseCurrentSchemaObject(schemaText);
     const existingProps =
       currentSchema.properties &&
       typeof currentSchema.properties === 'object' &&
       !Array.isArray(currentSchema.properties)
-        ? (currentSchema.properties as Record<string, unknown>)
+        ? { ...(currentSchema.properties as Record<string, unknown>) }
         : {};
 
+    // Remove keys that were unselected
+    for (const key of keysToRemove) {
+      delete existingProps[key];
+    }
+
+    // Merge in selected template fields
     const mergedProps = {
       ...existingProps,
-      ...newFields,
+      ...fieldsToAdd,
     };
 
     const updatedSchema = {
@@ -318,10 +349,21 @@ export function ProjectFieldsWorkspace({
 
     const formatted = JSON.stringify(updatedSchema, null, 2);
     setSchemaText(formatted);
+
+    const newlyAddedKeys = Object.keys(fieldsToAdd).filter(
+      (k) => !existingPropertiesMap[k]
+    );
+    const addedCount = newlyAddedKeys.length;
+    const removedCount = keysToRemove.length;
+
     setValidationResult({
       status: 'valid',
-      message: `Added ${count} template ${count === 1 ? 'field' : 'fields'}. Review and save when ready.`,
+      message: formatTemplateUpdateMessage(addedCount, removedCount),
     });
+  };
+
+  const handleAddTemplates = (newFields: Record<string, unknown>) => {
+    handleApplyTemplates(newFields, []);
   };
 
   const handleValidate = () => {
@@ -769,8 +811,10 @@ export function ProjectFieldsWorkspace({
       <LoadTemplateDialog
         open={isLoadTemplateDialogOpen}
         onOpenChange={setIsLoadTemplateDialogOpen}
+        projectId={project.id}
         existingProperties={existingPropertiesMap}
         onAddTemplates={handleAddTemplates}
+        onApplyTemplates={handleApplyTemplates}
       />
 
       {/* Sprint-Capacity-Style Error Popup Dialog */}

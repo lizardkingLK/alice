@@ -12,6 +12,10 @@ export interface ProjectFieldsErrorDialogProps {
   // eslint-disable-next-line no-unused-vars
   readonly onOpenChange?: (open: boolean) => void;
   readonly onClose: () => void;
+  readonly onConfirm?: () => void;
+  readonly confirmText?: string;
+  readonly cancelText?: string;
+  readonly showCancel?: boolean;
 }
 
 export function ProjectFieldsErrorDialog({
@@ -21,6 +25,10 @@ export function ProjectFieldsErrorDialog({
   error,
   onOpenChange,
   onClose,
+  onConfirm,
+  confirmText = 'OK',
+  cancelText = 'Cancel',
+  showCancel = false,
 }: Readonly<ProjectFieldsErrorDialogProps>) {
   if (!error) return null;
 
@@ -82,15 +90,32 @@ export function ProjectFieldsErrorDialog({
         </div>
 
         <div className="bg-muted/40 border-border flex justify-end gap-3 border-t px-6 py-4">
+          {showCancel && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
+              className="px-4 text-xs font-semibold shadow-sm"
+            >
+              {cancelText}
+            </Button>
+          )}
           <Button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              onClose();
+              if (onConfirm) {
+                onConfirm();
+              } else {
+                onClose();
+              }
             }}
             className="bg-rose-600 px-4 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
           >
-            OK
+            {confirmText}
           </Button>
         </div>
       </DialogContent>

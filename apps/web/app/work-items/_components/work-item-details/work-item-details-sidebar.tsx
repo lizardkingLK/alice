@@ -14,6 +14,10 @@ import {
 } from '@/app/work-items/_components/work-item-details/work-item-field-patch-dialog';
 import { IncompleteSubtasksDoneBlockedDialog } from '@/app/work-items/_components/work-item-subtasks/incomplete-subtasks-done-blocked-dialog';
 import { hasIncompleteStatuses } from '@/app/work-items/_helpers/work-item-status';
+import {
+  extractDynamicFieldValues,
+  patchWorkItemDynamicFields,
+} from '@/app/work-items/_helpers/work-item-dynamic-fields';
 import { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import {
   parseWorkItemLabels,
@@ -393,128 +397,6 @@ function EditableLabelsField({
   );
 }
 
-function parseTextDynamicFields(text: string): Record<string, unknown> {
-  const marker = '[Dynamic Fields]';
-  const markerIndex = text.indexOf(marker);
-  if (markerIndex === -1) {
-    return {};
-  }
-
-  const remainder = text.slice(markerIndex + marker.length);
-  const content = remainder.startsWith('\n') ? remainder.slice(1) : remainder;
-  const lines = content.split('\n');
-  const result: Record<string, unknown> = {};
-
-  for (const line of lines) {
-    const colonIdx = line.indexOf(':');
-    if (colonIdx > 0) {
-      const key = line.slice(0, colonIdx).trim();
-      const val = line.slice(colonIdx + 1).trim();
-      if (key) {
-        result[key] = val;
-      }
-    }
-  }
-
-  return result;
-}
-
-function findDynamicFieldsInContent(
-  content: unknown[]
-): Record<string, unknown> | null {
-  for (const node of content) {
-    if (!node || typeof node !== 'object') {
-      continue;
-    }
-    const children = (node as { content?: unknown[] }).content;
-    if (!Array.isArray(children)) {
-      continue;
-    }
-    for (const child of children) {
-      if (
-        child &&
-        typeof child === 'object' &&
-        typeof (child as { text?: unknown }).text === 'string'
-      ) {
-        const text = (child as { text: string }).text;
-        if (text.includes('[Dynamic Fields]')) {
-          return parseTextDynamicFields(text);
-        }
-      }
-    }
-  }
-  return null;
-}
-
-function extractDynamicFieldValues(
-  description: unknown
-): Record<string, unknown> {
-  if (!description || typeof description !== 'object') {
-    return {};
-  }
-  try {
-    const doc = description as {
-      attrs?: { dynamicFields?: unknown };
-      content?: unknown[];
-    };
-    const df = doc.attrs?.dynamicFields;
-    if (df && typeof df === 'object' && !Array.isArray(df)) {
-      return df as Record<string, unknown>;
-    }
-    if (Array.isArray(doc.content)) {
-      return findDynamicFieldsInContent(doc.content) ?? {};
-    }
-  } catch {
-    return {};
-  }
-  return {};
-}
-
-function patchWorkItemDynamicFields(
-  currentDescription: unknown,
-  key: string,
-  value: unknown
-): DbWorkItem['description'] {
-  let doc: {
-    type?: string;
-    attrs?: Record<string, unknown>;
-    content?: unknown[];
-  };
-  if (
-    currentDescription &&
-    typeof currentDescription === 'object' &&
-    !Array.isArray(currentDescription)
-  ) {
-    doc = { ...(currentDescription as Record<string, unknown>) };
-  } else {
-    doc = { type: 'doc', content: [] };
-  }
-
-  const existingAttrs =
-    doc.attrs && typeof doc.attrs === 'object' && !Array.isArray(doc.attrs)
-      ? { ...doc.attrs }
-      : {};
-
-  const initialFields = extractDynamicFieldValues(currentDescription);
-  const existingFields: Record<string, unknown> = {
-    ...initialFields,
-    ...(existingAttrs.dynamicFields &&
-    typeof existingAttrs.dynamicFields === 'object' &&
-    !Array.isArray(existingAttrs.dynamicFields)
-      ? (existingAttrs.dynamicFields as Record<string, unknown>)
-      : {}),
-  };
-
-  if (value === undefined || value === null || value === '') {
-    delete existingFields[key];
-  } else {
-    existingFields[key] = value;
-  }
-
-  existingAttrs.dynamicFields = existingFields;
-  doc.attrs = existingAttrs;
-  return doc as DbWorkItem['description'];
-}
 
 export default function WorkItemSidebar({
   workItem,

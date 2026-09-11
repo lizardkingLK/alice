@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { parseProjectDetailsTab } from '@/lib/search-params';
 import { ProjectDetailsWorkspace } from '@/app/projects/_components/project-details/project-details-workspace';
 import { ProjectFieldsWorkspace } from '@/app/projects/_components/project-details/project-fields-workspace';
@@ -46,6 +46,10 @@ vi.mock('@/app/work-items/_components/work-items-workspace', () => ({
 
 vi.mock('@/app/projects/_services/projects.mutations.client', () => ({
   updateProjectFieldsConfig: vi.fn().mockResolvedValue({}),
+}));
+
+vi.mock('@/lib/api/api-fetch.reads.use.client', () => ({
+  apiFetch: vi.fn().mockResolvedValue({ workItems: [] }),
 }));
 
 const mockProject: Project = {
@@ -336,7 +340,7 @@ describe('ProjectFieldsWorkspace component', () => {
     fireEvent.click(severityCard);
 
     // Click Add Selected
-    const addBtn = screen.getByRole('button', { name: /add selected \(1\)/i });
+    const addBtn = screen.getByRole('button', { name: /add selected/i });
     fireEvent.click(addBtn);
 
     // Success banner displays
@@ -345,5 +349,144 @@ describe('ProjectFieldsWorkspace component', () => {
     // Both previous fields and newly added field are present in Configured Fields preview
     expect(screen.getByText('MoSCoW Rating')).toBeInTheDocument();
     expect(screen.getByText('Defect Severity')).toBeInTheDocument();
+  });
+
+  it('allows unselecting an existing template field and removes it from schema upon applying', () => {
+    render(
+      <ProjectFieldsWorkspace
+        project={mockProject}
+        isManagerOrAdmin={true}
+      />
+    );
+
+    // Initially MoSCoW Rating is present
+    expect(screen.getByText('MoSCoW Rating')).toBeInTheDocument();
+
+    // Open Load Template dialog
+    fireEvent.click(screen.getByRole('button', { name: /load template/i }));
+    expect(screen.getByText('Load Field Templates')).toBeInTheDocument();
+
+    // Click MoSCoW Rating card to unselect it
+    const moscowCard = document.getElementById(
+      'template-checkbox-moscowRating'
+    )!.closest('[role="checkbox"]')!;
+    fireEvent.click(moscowCard);
+
+    // Apply change
+    const addBtn = screen.getByRole('button', { name: /add selected/i });
+    fireEvent.click(addBtn);
+
+    // Schema now has 0 dynamic fields
+    expect(screen.getByText(/no dynamic fields configured yet/i)).toBeInTheDocument();
+    expect(screen.queryByText('key: moscowRating')).not.toBeInTheDocument();
+  });
+
+  it('displays warning popup with OK and Cancel when unselecting a template with work item values', async () => {
+    const { apiFetch } = await import('@/lib/api/api-fetch.reads.use.client');
+    vi.mocked(apiFetch).mockResolvedValueOnce({
+      workItems: [
+        {
+          id: 'wi-1',
+          title: 'Implement Authentication',
+          description: {
+            type: 'doc',
+            attrs: {
+              dynamicFields: {
+                moscowRating: 'Must',
+              },
+            },
+          },
+        },
+      ],
+    } as never);
+
+    render(
+      <ProjectFieldsWorkspace
+        project={mockProject}
+        isManagerOrAdmin={true}
+      />
+    );
+
+    // Open Load Template dialog
+    fireEvent.click(screen.getByRole('button', { name: /load template/i }));
+    expect(screen.getByText('Load Field Templates')).toBeInTheDocument();
+
+    // Wait for work items to be fetched
+    await waitFor(() => {
+      expect(apiFetch).toHaveBeenCalled();
+    });
+
+    // Try to unselect MoSCoW Rating
+    const moscowCard = document.getElementById(
+      'template-checkbox-moscowRating'
+    )!.closest('[role="checkbox"]')!;
+    fireEvent.click(moscowCard);
+
+    // Warning confirmation popup should appear
+    expect(
+      screen.getByText('Remove Field Template: MoSCoW Rating')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/work item values will be removed under this template/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Implement Authentication: Must/)
+    ).toBeInTheDocument();
+
+    // Cancel button in warning popup
+    const cancelBtn = screen.getByRole('button', { name: /cancel/i });
+    expect(cancelBtn).toBeInTheDocument();
+
+    // Click Cancel - field should remain selected
+    fireEvent.click(cancelBtn);
+    expect(
+      screen.queryByText('Remove Field Template: MoSCoW Rating')
+    ).not.toBeInTheDocument();
+
+    // Try unselecting again and click OK to confirm
+    fireEvent.click(moscowCard);
+    expect(
+      screen.getByText('Remove Field Template: MoSCoW Rating')
+    ).toBeInTheDocument();
+
+    const okBtn = screen.getByRole('button', { name: /ok/i });
+    fireEvent.click(okBtn);
+
+    // Popup closed and field is unselected
+    expect(
+      screen.queryByText('Remove Field Template: MoSCoW Rating')
+    ).not.toBeInTheDocument();
+
+    // Click Add Selected to apply
+    const addBtn = screen.getByRole('button', { name: /add selected/i });
+    fireEvent.click(addBtn);
+
+    expect(screen.getByText(/removed 1 template field/i)).toBeInTheDocument();
+  });
+
+  it('renders footer buttons clearly with proper spacing on the right side', () => {
+    render(
+      <ProjectFieldsWorkspace
+        project={mockProject}
+        isManagerOrAdmin={true}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /load template/i }));
+
+    const cancelBtn = screen.getByRole('button', { name: /cancel/i });
+    const addBtn = screen.getByRole('button', { name: /add selected/i });
+
+    expect(cancelBtn).toBeInTheDocument();
+    expect(addBtn).toBeInTheDocument();
+
+    // Verify footer container layout classes
+    const footer = cancelBtn.closest('[data-slot="dialog-footer"]');
+    expect(footer).toBeInTheDocument();
+    expect(footer?.className).toContain('justify-end');
+    expect(footer?.className).toContain('gap-3');
+    expect(footer?.className).toContain('m-0');
+    expect(footer?.className).toContain('px-6');
+    expect(footer?.className).toContain('py-4');
   });
 });

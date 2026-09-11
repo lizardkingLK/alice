@@ -10,6 +10,10 @@ import {
 } from './query-preprocess.js';
 import {
   DynamicFieldTypeEnum,
+  TemplateFieldCategoryEnum,
+  TemplateFieldKeyEnum,
+  DynamicFieldConfirmationModeEnum,
+  DYNAMIC_FIELD_TYPES,
   DynamicFieldPropertySchema,
   ProjectFieldsConfigSchema,
   type DynamicFieldProperty,
@@ -18,6 +22,10 @@ import {
 
 export {
   DynamicFieldTypeEnum,
+  TemplateFieldCategoryEnum,
+  TemplateFieldKeyEnum,
+  DynamicFieldConfirmationModeEnum,
+  DYNAMIC_FIELD_TYPES,
   DynamicFieldPropertySchema,
   ProjectFieldsConfigSchema,
   type DynamicFieldProperty,
