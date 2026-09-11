@@ -8,23 +8,7 @@ import {
   paginatedListLimitField,
   paginatedListPageField,
 } from './query-preprocess.js';
-import {
-  DynamicFieldTypeEnum,
-  TemplateFieldCategoryEnum,
-  TemplateFieldKeyEnum,
-  DynamicFieldConfirmationModeEnum,
-  DynamicFieldFormatEnum,
-  DynamicFieldInputTypeEnum,
-  DynamicFieldDocTypeEnum,
-  DynamicFieldConstantsEnum,
-  TypeofEnum,
-  SchemaValidationStatusEnum,
-  DYNAMIC_FIELD_TYPES,
-  DynamicFieldPropertySchema,
-  ProjectFieldsConfigSchema,
-  type DynamicFieldProperty,
-  type ProjectFieldsConfig,
-} from './dynamic-fields.js';
+import { ProjectFieldsConfigSchema } from './dynamic-fields.js';
 
 export {
   DynamicFieldTypeEnum,
@@ -42,8 +26,8 @@ export {
   ProjectFieldsConfigSchema,
   type DynamicFieldProperty,
   type ProjectFieldsConfig,
-  ProjectStatusEnum,
-};
+} from './dynamic-fields.js';
+export { ProjectStatusEnum };
 
 /** Shared Supabase project column list for embeds / selects. */
 export const PROJECT_PROJECTION = 'id, name, key' as const;

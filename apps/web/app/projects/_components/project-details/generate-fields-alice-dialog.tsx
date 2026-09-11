@@ -46,7 +46,7 @@ export function GenerateFieldsAliceDialog({
         prompt.trim(),
         currentSchema
       );
-      if (response && response.schema) {
+      if (response?.schema) {
         onGenerated(response.schema);
         onOpenChange(false);
         setPrompt('');

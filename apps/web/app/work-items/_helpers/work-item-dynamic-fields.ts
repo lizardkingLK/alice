@@ -155,7 +155,9 @@ export function findWorkItemsWithFieldValues(
     const val = values[fieldKey];
     if (val !== undefined && val !== null && val !== '') {
       const displayVal =
-        typeof val === TypeofEnum.OBJECT ? JSON.stringify(val) : String(val);
+        typeof val === TypeofEnum.OBJECT
+          ? JSON.stringify(val)
+          : String(val as string | number | boolean);
       matches.push({
         id: item.id,
         title: item.title?.trim() || `Work Item #${item.id.slice(0, 8)}`,

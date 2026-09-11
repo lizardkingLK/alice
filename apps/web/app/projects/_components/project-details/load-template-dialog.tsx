@@ -23,10 +23,13 @@ import { ProjectFieldsErrorDialog } from './project-fields-error-dialog';
 import {
   TEMPLATE_FIELD_OPTIONS,
   DEFAULT_STARTER_KEYS,
-  type TemplateFieldItem,
 } from './load-template-dialog.data';
 
-export { TEMPLATE_FIELD_OPTIONS, DEFAULT_STARTER_KEYS, type TemplateFieldItem };
+export {
+  TEMPLATE_FIELD_OPTIONS,
+  DEFAULT_STARTER_KEYS,
+  type TemplateFieldItem,
+} from './load-template-dialog.data';
 
 export interface WorkItemSummaryItem {
   id: string;
@@ -336,18 +339,9 @@ export function LoadTemplateDialog({
                   : 'border-border/60 bg-card/60 hover:border-border cursor-pointer';
 
                 return (
-                  <div
+                  <label
                     key={item.key}
-                    role="checkbox"
-                    aria-checked={isSelected}
-                    tabIndex={0}
-                    onClick={() => handleToggle(item.key)}
-                    onKeyDown={(e) => {
-                      if (e.key === ' ' || e.key === 'Enter') {
-                        e.preventDefault();
-                        handleToggle(item.key);
-                      }
-                    }}
+                    htmlFor={`template-checkbox-${item.key}`}
                     className={`flex flex-col justify-between rounded-lg border p-3.5 transition-all select-none ${cardStyle}`}
                   >
                     <div>
@@ -356,8 +350,8 @@ export function LoadTemplateDialog({
                           <Checkbox
                             id={`template-checkbox-${item.key}`}
                             checked={isSelected}
-                            tabIndex={-1}
-                            className="pointer-events-none shrink-0"
+                            onCheckedChange={() => handleToggle(item.key)}
+                            className="shrink-0"
                           />
                           <span className="text-foreground truncate text-sm font-semibold">
                             {item.property.title}
@@ -403,7 +397,7 @@ export function LoadTemplateDialog({
                         </span>
                       )}
                     </div>
-                  </div>
+                  </label>
                 );
               })}
             </div>

@@ -311,7 +311,9 @@ function NumberDynamicEditor({
   readonly onDone?: () => void;
 }) {
   const [draft, setDraft] = useState(
-    value !== undefined && value !== null ? String(value) : ''
+    typeof value === TypeofEnum.NUMBER || typeof value === TypeofEnum.STRING
+      ? String(value as number | string)
+      : ''
   );
 
   const handleSave = () => {
@@ -321,7 +323,7 @@ function NumberDynamicEditor({
         onFieldChange?.(propKey, null);
       }
     } else {
-      const num = isInteger ? parseInt(raw, 10) : parseFloat(raw);
+      const num = isInteger ? Number.parseInt(raw, 10) : Number.parseFloat(raw);
       if (!Number.isNaN(num) && num !== value) {
         onFieldChange?.(propKey, num);
       }

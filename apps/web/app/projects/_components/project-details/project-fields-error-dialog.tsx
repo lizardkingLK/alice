@@ -1,6 +1,13 @@
 'use client';
 
-import { Dialog, DialogContent } from '@repo/ui/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@repo/ui/components/ui/dialog';
 import { Button } from '@repo/ui/components/ui/button';
 import { AlertCircle } from '@repo/ui/lib/icons';
 
@@ -63,41 +70,41 @@ export function ProjectFieldsErrorDialog({
   const title = customTitle || defaultTitle;
   const description = customDescription || defaultDescription;
 
+  const handleConfirm = () => {
+    if (onConfirm) {
+      onConfirm();
+    } else {
+      onClose();
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onInteractOutside={(e) => e.preventDefault()}
-        onPointerDown={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
-        onClick={(e) => e.stopPropagation()}
-        className="bg-card border-border/80 overflow-hidden p-0 backdrop-blur-md sm:max-w-md"
-      >
-        <div className="p-6">
-          <div className="mb-3 flex items-center gap-3 text-rose-500">
+      <DialogContent dismissOnOutsideClick={false} className="sm:max-w-md">
+        <DialogHeader className="gap-3">
+          <div className="flex items-center gap-3 text-rose-500">
             <div className="rounded-full border border-rose-500/20 bg-rose-500/10 p-2">
-              <AlertCircle className="h-6 w-6" />
+              <AlertCircle className="size-5" />
             </div>
-            <h3 className="text-foreground text-lg font-bold">{title}</h3>
+            <DialogTitle className="text-foreground text-lg font-bold">
+              {title}
+            </DialogTitle>
           </div>
-
-          <p className="text-muted-foreground text-sm leading-relaxed">
+          <DialogDescription className="text-muted-foreground text-sm leading-relaxed">
             {description}
-          </p>
-          <div className="text-muted-foreground/90 bg-muted/50 border-border/40 mt-3 max-h-48 overflow-y-auto rounded-lg border p-3 font-mono text-xs whitespace-pre-wrap">
-            {error}
-          </div>
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="text-muted-foreground/90 bg-muted/50 border-border/40 max-h-48 overflow-y-auto rounded-lg border p-3 font-mono text-xs whitespace-pre-wrap">
+          {error}
         </div>
 
-        <div className="bg-muted/40 border-border flex justify-end gap-3 border-t px-6 py-4">
+        <DialogFooter className="gap-2 sm:gap-0">
           {showCancel && (
             <Button
               type="button"
               variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                onClose();
-              }}
+              onClick={onClose}
               className="px-4 text-xs font-semibold shadow-sm"
             >
               {cancelText}
@@ -105,19 +112,12 @@ export function ProjectFieldsErrorDialog({
           )}
           <Button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (onConfirm) {
-                onConfirm();
-              } else {
-                onClose();
-              }
-            }}
+            onClick={handleConfirm}
             className="bg-rose-600 px-4 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
           >
             {confirmText}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

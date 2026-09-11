@@ -296,7 +296,7 @@ export function ProjectFieldsWorkspace({
     if (!errorStr) return null;
     const match = errorStr.match(/line\s+(\d+)/i);
     const line = match?.[1];
-    return line ? parseInt(line, 10) : null;
+    return line ? Number.parseInt(line, 10) : null;
   }, [parseError, validationResult]);
 
   const handleBeautify = () => {
@@ -819,7 +819,7 @@ export function ProjectFieldsWorkspace({
                 ...newObj,
                 properties: {
                   ...current.properties,
-                  ...(newObj.properties || {}),
+                  ...newObj.properties,
                 },
               };
             }

@@ -188,7 +188,7 @@ function parseFieldProperty(
 function extractJsonFromText(text: string): unknown {
   const cleaned = text
     .replace(/```json/gi, '')
-    .replace(/```/g, '')
+    .replaceAll('```', '')
     .trim();
   const firstBrace = cleaned.indexOf('{');
   const lastBrace = cleaned.lastIndexOf('}');
@@ -258,7 +258,7 @@ function mergeWithCurrentSchema(
     ...generatedSchema,
     properties: {
       ...(currentSchema.properties as Record<string, unknown>),
-      ...(generatedSchema.properties ?? {}),
+      ...generatedSchema.properties,
     },
   };
 
