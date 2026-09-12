@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
+import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import {
   Calendar,
   CheckCircle,
@@ -15,6 +16,8 @@ import { formatDate } from '@/app/_shared/utility';
 import { ImagePositionUploadDialog } from '@/components/image-position-upload-dialog';
 import { applyLockedImageUploadOutcome } from '@/lib/image-position/apply-locked-image-upload';
 import { uploadLockedImage } from '@/lib/image-position/upload-locked-image';
+import { UserAvatar } from '@/components/user-avatar';
+import { useRealtime } from '@/components/realtime/realtime-provider';
 import type { Project } from '@/app/projects/_services/projects.mutations.client';
 
 type ProjectImageUploadResult = {
@@ -38,6 +41,7 @@ export function ProjectSummaryBanner({
   canEditBranding = false,
 }: Readonly<ProjectSummaryBannerProps>) {
   const router = useRouter();
+  const { isUserOnline } = useRealtime();
   const [project, setProject] = useState(initialProject);
   const [logoDialogOpen, setLogoDialogOpen] = useState(false);
   const [coverDialogOpen, setCoverDialogOpen] = useState(false);
@@ -198,22 +202,44 @@ export function ProjectSummaryBanner({
                 {project.name}
               </h1>
 
-              {hasTimeline ? (
-                <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
+              <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="h-4 w-4 shrink-0" />
+                  {hasTimeline ? (
                     <span>
                       {formatDate(project.start_date)} –{' '}
                       {formatDate(project.end_date)}
                     </span>
-                  </div>
+                  ) : (
+                    <span>No timeline configured</span>
+                  )}
                 </div>
-              ) : null}
+              </div>
 
               <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
                 {project.description ||
                   'No description provided for this project.'}
               </p>
+
+              <div className="flex max-w-xs items-center gap-2.5">
+                <UserAvatar
+                  name={project.owner?.name}
+                  imageUrl={project.owner?.profile_picture}
+                  isOnline={Boolean(
+                    project.owner?.id && isUserOnline(project.owner.id)
+                  )}
+                  className="size-8 shrink-0"
+                  fallbackClassName="bg-primary/10 text-primary text-xs font-semibold"
+                />
+                <div className="min-w-0">
+                  <p className="text-muted-foreground text-[0.65rem] font-semibold tracking-wider uppercase">
+                    Owner
+                  </p>
+                  <TruncatedText className="text-foreground text-sm font-semibold">
+                    {project.owner?.name ?? 'Unknown owner'}
+                  </TruncatedText>
+                </div>
+              </div>
             </div>
           </div>
         </div>

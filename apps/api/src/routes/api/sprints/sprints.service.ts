@@ -18,7 +18,9 @@ import type {
   SprintRow,
 } from './sprints.repository';
 import { requireUserWithRole } from '../../../lib/auth-helpers';
+import { isPrismaUniqueConflict } from '../../../lib/prisma-errors';
 import type { SprintPaginatedList } from './sprints.prisma-query';
+import { sprintNameConflictMessage } from './sprints.errors';
 
 export type {
   BurndownPoint,
@@ -52,16 +54,31 @@ export class SprintsService {
     const goal =
       input.goal === undefined || input.goal === '' ? null : input.goal;
 
-    const row = await this.sprints.create({
-      name: input.name,
-      goal,
-      projectId: input.projectId,
-      startDate: input.startDate,
-      endDate: input.endDate,
-      createdBy: userId,
-    });
+    const duplicate = await this.sprints.findByNameInProject(
+      input.projectId,
+      input.name
+    );
+    if (duplicate) {
+      throw new Error(sprintNameConflictMessage());
+    }
 
-    return mapSprintRowToResponse(row);
+    try {
+      const row = await this.sprints.create({
+        name: input.name,
+        goal,
+        projectId: input.projectId,
+        startDate: input.startDate,
+        endDate: input.endDate,
+        createdBy: userId,
+      });
+
+      return mapSprintRowToResponse(row);
+    } catch (error) {
+      if (isPrismaUniqueConflict(error)) {
+        throw new Error(sprintNameConflictMessage());
+      }
+      throw error;
+    }
   }
 
   async updateSprintStatus(
@@ -147,20 +164,36 @@ export class SprintsService {
       }
     }
 
-    const row = await this.sprints.update(
-      userId,
-      sprintId,
-      {
-        name: input.name,
-        goal,
-        startDate: input.startDate,
-        endDate: input.endDate,
-        projectId: input.projectId,
-      },
-      input.expectedUpdatedAt
+    const duplicate = await this.sprints.findByNameInProject(
+      input.projectId,
+      input.name,
+      sprintId
     );
+    if (duplicate) {
+      throw new Error(sprintNameConflictMessage());
+    }
 
-    return mapSprintRowToResponse(row);
+    try {
+      const row = await this.sprints.update(
+        userId,
+        sprintId,
+        {
+          name: input.name,
+          goal,
+          startDate: input.startDate,
+          endDate: input.endDate,
+          projectId: input.projectId,
+        },
+        input.expectedUpdatedAt
+      );
+
+      return mapSprintRowToResponse(row);
+    } catch (error) {
+      if (isPrismaUniqueConflict(error)) {
+        throw new Error(sprintNameConflictMessage());
+      }
+      throw error;
+    }
   }
 
   async listSprintsPaginated(

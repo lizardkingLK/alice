@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, HelpCircle } from '@repo/ui/lib/icons';
 import { TooltipProvider } from '@repo/ui/components/ui/tooltip';
-import { SprintStatusEnum } from '@repo/types';
 
 import { useBacklogLayout } from '@/app/backlog/_components/backlog-layout-menu';
 import { BacklogToolbar } from '@/app/backlog/_components/backlog-toolbar';
@@ -31,12 +30,15 @@ import {
 } from '@/app/backlog/_helpers/backlog-layout-storage';
 import {
   enrichWorkItemsWithMemberAvatars,
+  filterBacklogDisplayedSprints,
   getFormDataStringValue,
   mapPriority,
   type BacklogActiveTab,
   type BacklogAssignee,
 } from '@/app/backlog/_helpers/backlog-item-utils';
+import type { ProjectTeamMemberCapacity } from '@/app/backlog/_helpers/backlog-sprint-capacity';
 import { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import { mergeWorkItemServerRow } from '@/app/work-items/_helpers/work-item-merge-server-row';
 import { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { updateSprintStatusWithOptimisticLock } from '@/app/sprints/_helpers/update-sprint-status-with-lock';
 import { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
@@ -49,6 +51,7 @@ import { runLockedMutation } from '@/lib/optimistic-lock/run-locked-mutation';
 interface BacklogWorkspaceProps {
   projects: DbProject[];
   projectMembers: DbUser[];
+  teamCapacities: readonly ProjectTeamMemberCapacity[];
   initialWorkItems: DbWorkItem[];
   sprints: Sprint[];
   userRole: string;
@@ -60,6 +63,7 @@ interface BacklogWorkspaceProps {
 export function BacklogWorkspace({
   projects,
   projectMembers,
+  teamCapacities,
   initialWorkItems,
   sprints,
   userRole,
@@ -88,6 +92,10 @@ export function BacklogWorkspace({
   );
 
   useEffect(() => {
+    setSprintList(sprints);
+  }, [sprints]);
+
+  useEffect(() => {
     setWorkItems(
       enrichWorkItemsWithMemberAvatars(initialWorkItems, projectMembers)
     );
@@ -102,14 +110,16 @@ export function BacklogWorkspace({
   const backlogDefaults = useBacklogProjectDefaults({
     userId: currentUserId ?? null,
     projects,
-    sprints,
+    sprints: sprintList,
     suggestedDefaults,
   });
   const {
     projectFilter,
     setProjectFilter,
+    sprintFilter,
     savedDefaultsApplied,
     baselineProjectId,
+    baselineSprintId,
     openDefaultsDialog,
     resetProjectFilterToBaseline,
   } = backlogDefaults;
@@ -174,7 +184,24 @@ export function BacklogWorkspace({
     );
     setActionError(error instanceof Error ? error.message : fallbackMessage);
     setIsErrorOpen(true);
-    console.error('error. failed to update work item', error);
+    // Log message only — logging the Error object triggers Next.js' console
+    // error overlay in development even when the dialog handles it.
+    console.error(
+      'error. failed to update work item:',
+      error instanceof Error ? error.message : fallbackMessage
+    );
+  };
+
+  /** Keep lock token + fields aligned with the server after a successful write. */
+  const syncWorkItemFromServer = (id: string, updated: DbWorkItem) => {
+    setWorkItems((previous) =>
+      previous.map((item) =>
+        item.id === id ? mergeWorkItemServerRow(item, updated) : item
+      )
+    );
+    setSelectedItem((previous) =>
+      previous?.id === id ? mergeWorkItemServerRow(previous, updated) : previous
+    );
   };
 
   // Helper: Drag-and-Drop Handlers
@@ -236,16 +263,32 @@ export function BacklogWorkspace({
           expectedUpdatedAt,
           pendingFields: { sprint_id: targetId },
           currentUserId,
-        }).then((result) => {
-          if (!result.ok && !result.conflict) {
+        })
+          .then((result) => {
+            if (result.ok) {
+              const updated = result.data.data;
+              if (updated) {
+                syncWorkItemFromServer(itemId, updated);
+              }
+              return;
+            }
+            if (!result.conflict) {
+              restoreWorkItemAfterFailedMutation(
+                itemId,
+                { sprint_id: previousSprintId },
+                'Failed to update work item sprint.',
+                result.error
+              );
+            }
+          })
+          .catch((error: unknown) => {
             restoreWorkItemAfterFailedMutation(
               itemId,
               { sprint_id: previousSprintId },
               'Failed to update work item sprint.',
-              result.error
+              error
             );
-          }
-        });
+          });
       }
     }
     setDraggedItemId(null);
@@ -306,23 +349,19 @@ export function BacklogWorkspace({
     return stats;
   }, [sprintList, itemsBySprint, backlogItems.length]);
 
-  // Filter sprints by tab and project
-  const displayedSprints = useMemo(() => {
-    const byTab =
-      activeTab === 'completed'
-        ? sprintList.filter((s) => s.status === SprintStatusEnum.Closed)
-        : sprintList.filter(
-            (s) =>
-              s.status === SprintStatusEnum.Active ||
-              s.status === SprintStatusEnum.Planned
-          );
-
-    if (projectFilter === 'all') {
-      return byTab;
-    }
-
-    return byTab.filter((sprint) => sprint.project?.id === projectFilter);
-  }, [sprintList, activeTab, projectFilter]);
+  // Filter sprints by tab, project, and optional default sprint
+  const displayedSprints = useMemo(
+    () =>
+      filterBacklogDisplayedSprints({
+        sprints: sprintList,
+        activeTab,
+        projectFilter,
+        sprintFilter,
+        getStatus: (sprint) => sprint.status,
+        getProjectId: (sprint) => sprint.project?.id,
+      }),
+    [sprintList, activeTab, projectFilter, sprintFilter]
+  );
 
   // Start Sprint Handler
   const handleStartSprint = (sprintId: string) => {
@@ -458,6 +497,16 @@ export function BacklogWorkspace({
 
   const lockCreateIssueProject =
     Boolean(createIssueSprintId) && createIssueProjects.length === 1;
+
+  const createSprintDefaultProjectId = useMemo(() => {
+    if (baselineProjectId !== 'all') {
+      return baselineProjectId;
+    }
+    if (projectFilter !== 'all') {
+      return projectFilter;
+    }
+    return undefined;
+  }, [baselineProjectId, projectFilter]);
 
   const isProjectSprintMismatch = (
     currentItem: DbWorkItem | undefined,
@@ -595,16 +644,32 @@ export function BacklogWorkspace({
         expectedUpdatedAt,
         pendingFields: updates as Record<string, unknown>,
         currentUserId,
-      }).then((result) => {
-        if (!result.ok && !result.conflict) {
+      })
+        .then((result) => {
+          if (result.ok) {
+            const updated = result.data.data;
+            if (updated) {
+              syncWorkItemFromServer(itemId, updated);
+            }
+            return;
+          }
+          if (!result.conflict) {
+            restoreWorkItemAfterFailedMutation(
+              itemId,
+              previousValues,
+              `Failed to update work item ${itemId}.`,
+              result.error
+            );
+          }
+        })
+        .catch((error: unknown) => {
           restoreWorkItemAfterFailedMutation(
             itemId,
             previousValues,
             `Failed to update work item ${itemId}.`,
-            result.error
+            error
           );
-        }
-      });
+        });
     }
   };
 
@@ -620,7 +685,8 @@ export function BacklogWorkspace({
     searchQuery ||
     assigneeFilter !== 'all' ||
     priorityFilter !== 'all' ||
-    (projectFilter !== 'all' && projectFilter !== baselineProjectId)
+    (projectFilter !== 'all' && projectFilter !== baselineProjectId) ||
+    sprintFilter !== baselineSprintId
   );
 
   // Derived counts for the sprint confirmation dialogs
@@ -701,6 +767,7 @@ export function BacklogWorkspace({
                   isManagerOrAdmin={isManagerOrAdmin}
                   projects={projects}
                   projectMembers={projectMembers}
+                  teamCapacities={teamCapacities}
                   onToggle={toggleSprint}
                   onCreateIssue={openCreateIssue}
                   onStartSprint={handleStartSprint}
@@ -753,6 +820,7 @@ export function BacklogWorkspace({
             open={isCreateSprintOpen}
             projects={projects}
             currentUserId={currentUserId}
+            defaultProjectId={createSprintDefaultProjectId}
             onClose={() => setIsCreateSprintOpen(false)}
             onCreated={handleCreateSprintSuccess}
           />
@@ -817,7 +885,7 @@ export function BacklogWorkspace({
         <WorkspaceDefaultsDialogHost
           enabled={Boolean(currentUserId)}
           projects={projects}
-          sprints={sprints}
+          sprints={sprintList}
           defaults={pickWorkspaceDefaultsDialogController(backlogDefaults)}
         />
       </div>

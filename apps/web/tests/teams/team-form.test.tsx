@@ -13,7 +13,10 @@ import type {
   ProjectMemberWithUser,
   ProjectMembersByProjectId,
 } from '@/app/projects/_services/projects.mutations.shared';
-import { pickComboboxOption } from '../helpers/pick-combobox-option';
+import {
+  pickComboboxOption,
+  openCombobox,
+} from '../helpers/pick-combobox-option';
 
 vi.mock('@/app/manager/_services/teams.mutations.client', () => ({
   createTeam: vi.fn(),
@@ -171,6 +174,18 @@ const mockProjects: Project[] = [
 const mockProjectMembers: ProjectMemberWithUser[] = [
   {
     project_id: 'proj-1',
+    user_id: 'user-mgr-1',
+    status: 'active',
+    created_at: '2026-07-09T10:00:00Z',
+    user: {
+      id: 'user-mgr-1',
+      name: 'Manager One',
+      email: 'mgr1@alice.dev',
+      role: 'manager',
+    },
+  },
+  {
+    project_id: 'proj-1',
     user_id: 'user-dev-1',
     status: 'active',
     created_at: '2026-07-09T10:00:00Z',
@@ -198,6 +213,18 @@ const mockProjectMembers: ProjectMemberWithUser[] = [
 const mockProjectMembersByProjectId: ProjectMembersByProjectId = {
   'proj-1': mockProjectMembers,
   'proj-2': [
+    {
+      project_id: 'proj-2',
+      user_id: 'user-admin-1',
+      status: 'active',
+      created_at: '2026-07-09T10:00:00Z',
+      user: {
+        id: 'user-admin-1',
+        name: 'Admin User',
+        email: 'admin@alice.dev',
+        role: 'admin',
+      },
+    },
     {
       project_id: 'proj-2',
       user_id: 'user-dev-2',
@@ -253,8 +280,8 @@ function renderTeamForm(props: Partial<ComponentProps<typeof TeamForm>> = {}) {
 }
 
 async function selectManagerAndProject() {
-  await pickComboboxOption(/Designated Team Manager/i, /Manager One/i);
   await pickComboboxOption(/Associated Project/i, /Project Alpha/i);
+  await pickComboboxOption(/Designated Team Manager/i, /Manager One/i);
 }
 
 describe('TeamForm Component', () => {
@@ -291,21 +318,42 @@ describe('TeamForm Component', () => {
     expect(createTeam).not.toHaveBeenCalled();
   });
 
-  it('requires associated project before create', async () => {
+  it('requires designated manager after project is selected', async () => {
     renderTeamForm();
 
     fireEvent.change(screen.getByLabelText(/Team Identifier \/ Name/i), {
       target: { value: 'Frontend Squad' },
     });
-
-    await pickComboboxOption(/Designated Team Manager/i, /Manager One/i);
+    await pickComboboxOption(/Associated Project/i, /Project Alpha/i);
 
     fireEvent.click(screen.getByRole('button', { name: /Create Team/i }));
 
     expect(
-      await screen.findByText(/Associated project is required/i)
+      await screen.findByText(/Team name, manager, and status are required/i)
     ).toBeInTheDocument();
     expect(createTeam).not.toHaveBeenCalled();
+  });
+
+  it('limits designated manager options to managers on the selected project', async () => {
+    renderTeamForm();
+
+    const managerSelect = screen.getByLabelText(/Designated Team Manager/i);
+    expect(managerSelect).toBeDisabled();
+
+    await pickComboboxOption(/Associated Project/i, /Project Alpha/i);
+
+    expect(managerSelect).not.toBeDisabled();
+    await openCombobox(/Designated Team Manager/i);
+
+    expect(
+      await screen.findByRole('option', { name: /Manager One/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('option', { name: /Admin User/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('option', { name: /Developer One/i })
+    ).not.toBeInTheDocument();
   });
 
   it('submits correctly in create mode with project_id and triggers onSuccess', async () => {

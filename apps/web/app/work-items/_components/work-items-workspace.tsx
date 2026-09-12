@@ -1,15 +1,18 @@
 import type { VisibilityState } from '@tanstack/react-table';
 import { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
-import { User as DbUser } from '@/app/users/_services/users.mutations.client';
+import type { ProjectMembersByProjectId } from '@/app/projects/_services/projects.mutations.client';
 import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-defaults-storage';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import WorkItemsTable from '@/app/work-items/_components/work-item-table/work-items-table';
+import type { WorkItemMemberLike } from '@/app/work-items/_helpers/work-item-member';
 import { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import type { WorkItemListView } from '@/lib/search-params';
 
 export interface WorkItemWorkspaceProps {
   projects: DbProject[];
-  projectMembers: DbUser[];
+  projectMembers: WorkItemMemberLike[];
+  /** Prefetched membership map so assignee filter can follow draft project. */
+  projectMembersByProjectId?: ProjectMembersByProjectId;
   sprints: Sprint[];
   initialWorkItems: DbWorkItem[];
   totalCount: number;

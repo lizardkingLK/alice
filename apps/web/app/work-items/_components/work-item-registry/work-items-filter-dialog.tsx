@@ -14,6 +14,7 @@ import {
 import type { WorkItemsFilterDraft } from '@/app/work-items/_components/work-item-table/work-item-table-helpers';
 import type { FilterQuery } from '@/app/work-items/_components/work-item-table/work-items-table-types';
 import type { WorkItemWorkspaceProps } from '@/app/work-items/_components/work-items-workspace';
+import { resolveAssigneeFilterMembers } from '@/app/work-items/_helpers/work-item-assignee-filter-members';
 import { WORK_ITEM_STATUSES } from '@/app/work-items/_helpers/work-item-status';
 import { PRIORITY_LABELS } from '@/app/work-items/_helpers/work-item-priority-ui';
 import { formatLabelWithSpace } from '@/app/_shared/utility';
@@ -122,6 +123,9 @@ const FILTER_FIELD_CONFIG: Record<WorkItemsFilterFieldId, FilterFieldConfig> = {
 export type WorkItemsFilterDialogProps = {
   readonly projects: WorkItemWorkspaceProps['projects'];
   readonly projectMembers: WorkItemWorkspaceProps['projectMembers'];
+  readonly projectMembersByProjectId?: NonNullable<
+    WorkItemWorkspaceProps['projectMembersByProjectId']
+  >;
   readonly sprints: WorkItemWorkspaceProps['sprints'];
   readonly projectQuery: FilterQuery;
   readonly sprintQuery: FilterQuery;
@@ -154,8 +158,11 @@ function buildVisibleFields(
   const fields: FilterFieldConfig[] = [];
 
   if (!isProjectLocked) {
-    fields.push(FILTER_FIELD_CONFIG.project, FILTER_FIELD_CONFIG.sprint);
+    fields.push(FILTER_FIELD_CONFIG.project);
   }
+
+  // Sprint stays available when the project is locked (project Work Items tab).
+  fields.push(FILTER_FIELD_CONFIG.sprint);
 
   fields.push(FILTER_FIELD_CONFIG.parent);
 
@@ -189,11 +196,25 @@ function optionsForField(
         draft.project,
         QUERY_FILTER_ALL_VALUE
       );
-    case 'assignee':
+    case 'assignee': {
+      if (props.projectMembersByProjectId) {
+        const projectId = props.isProjectLocked
+          ? props.projectQuery.value
+          : draft.project;
+        return resolveAssigneeFilterMembers({
+          membersByProjectId: props.projectMembersByProjectId,
+          projectId,
+          allValue: QUERY_FILTER_ALL_VALUE,
+        }).map((member) => ({
+          value: member.id,
+          label: member.name,
+        }));
+      }
       return props.projectMembers.map((member) => ({
         value: member.id,
         label: member.name,
       }));
+    }
     case 'type':
       return WORK_ITEM_TYPES.map((workItemType) => ({
         value: workItemType,
@@ -261,7 +282,7 @@ function emptyDraft(props: WorkItemsFilterDialogProps): WorkItemsFilterDraft {
   const all = QUERY_FILTER_ALL_VALUE;
   return {
     project: props.isProjectLocked ? props.projectQuery.value : all,
-    sprint: props.isProjectLocked ? props.sprintQuery.value : all,
+    sprint: all,
     type: all,
     assignee: props.isAssigneeLocked ? props.assigneeQuery.value : all,
     labels: [],
@@ -366,6 +387,7 @@ function draftWithProjectChange(
     ...draft,
     project: nextProject,
     sprint: params.get('sprint') ?? QUERY_FILTER_ALL_VALUE,
+    assignee: QUERY_FILTER_ALL_VALUE,
   };
 }
 

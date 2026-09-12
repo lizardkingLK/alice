@@ -5,11 +5,16 @@ import {
   type WorkItemListFilters,
 } from '@/app/work-items/_services/work-items.reads.server';
 import { needsWorkspaceProjectBootstrap } from '@/app/board/_helpers/workspace-defaults-shared';
+import { ALL_PROJECTS_ID } from '@/app/board/_helpers/board-defaults-storage';
 import {
   EMPTY_ACTIVE_SPRINTS_PAGE,
   getSuggestedBoardDefaults,
 } from '@/app/board/_services/board.reads.defaults.server';
-import { getUserList } from '@/app/users/_services/users.reads.server';
+import { getProjectMembersByProjectIds } from '@/app/projects/_services/projects.reads.server';
+import {
+  resolveAssigneeFilterMembers,
+  unionProjectMembers,
+} from '@/app/work-items/_helpers/work-item-assignee-filter-members';
 import { getAccessibleProjectList } from '@/lib/projects/accessible-project-list';
 import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.reads.server';
 import { getDbUser } from '@/lib/auth';
@@ -107,7 +112,7 @@ export async function WorkItemsData({
   const [
     columnVisibilityBootstrap,
     projects,
-    projectMembers,
+    membersByProjectId,
     sprintsResult,
     workItemsResult,
   ] = await Promise.all([
@@ -119,7 +124,11 @@ export async function WorkItemsData({
           'fetch projects for work items'
         )
       : Promise.resolve([]),
-    safeServerFetch(getUserList(), [], 'fetch users for work items'),
+    safeServerFetch(
+      getProjectMembersByProjectIds(accessibleProjects),
+      {},
+      'fetch project members for work items filters'
+    ),
     safeServerFetch(
       getSprintsPaginatedServer('active', 1, 100),
       EMPTY_ACTIVE_SPRINTS_PAGE,
@@ -160,10 +169,25 @@ export async function WorkItemsData({
       ? await getSuggestedBoardDefaults(dbUser, activeProjects, sprints)
       : null;
 
+  const effectiveProjectId =
+    projectId ??
+    (suggestedDefaults && suggestedDefaults.projectId !== ALL_PROJECTS_ID
+      ? suggestedDefaults.projectId
+      : null);
+
+  const projectMembersForFilter = resolveAssigneeFilterMembers({
+    membersByProjectId,
+    projectId: effectiveProjectId,
+  });
+  const projectMembersUnion = unionProjectMembers(membersByProjectId);
+
   return (
     <WorkItemsWorkspace
       projects={isProjectLocked ? projects : activeProjects}
-      projectMembers={projectMembers}
+      projectMembers={
+        effectiveProjectId ? projectMembersForFilter : projectMembersUnion
+      }
+      projectMembersByProjectId={membersByProjectId}
       sprints={sprints}
       initialWorkItems={workItemsResult.workItems}
       totalCount={workItemsResult.totalCount}

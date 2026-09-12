@@ -222,6 +222,34 @@ describe('sprints versioned POST and PATCH mutation routes', () => {
     });
   });
 
+  it('returns 409 when sprint name already exists in the project', async () => {
+    createSprintMock.mockRejectedValue(
+      new Error('An active or archived sprint already exists by the given name')
+    );
+
+    const body = {
+      name: 'Sprint Alpha',
+      projectId: '33333333-3333-4333-8333-333333333333',
+      startDate: '2026-09-01',
+      endDate: '2026-09-14',
+    };
+
+    await withApp(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/sprints`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const json = await response.json();
+
+      expect(response.status).toBe(409);
+      expect(json).toEqual({
+        data: null,
+        error: 'An active or archived sprint already exists by the given name',
+      });
+    });
+  });
+
   it('updates sprint status successfully and returns envelope', async () => {
     const sprintPayload = createSprintListRow({ status: 'active' });
     updateSprintStatusMock.mockResolvedValue(sprintPayload);

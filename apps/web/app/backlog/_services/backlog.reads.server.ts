@@ -1,3 +1,5 @@
+import { getProjectTeamMemberCapacities } from '@/app/backlog/_services/backlog.team-capacity.server';
+import type { ProjectTeamMemberCapacity } from '@/app/backlog/_helpers/backlog-sprint-capacity';
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import {
   EMPTY_ACTIVE_SPRINTS_PAGE,
@@ -21,6 +23,7 @@ import { safeServerFetch } from '@/lib/safe-server-fetch';
 export type BacklogWorkspaceData = {
   projects: DbProject[];
   projectMembers: DbUser[];
+  teamCapacities: ProjectTeamMemberCapacity[];
   initialWorkItems: DbWorkItem[];
   sprints: Sprint[];
   userRole: string;
@@ -29,7 +32,7 @@ export type BacklogWorkspaceData = {
   error: string | null;
 };
 
-/** M4.1 — single RSC loader for the backlog planning surface (4 parallel reads). */
+/** M4.1 — single RSC loader for the backlog planning surface. */
 export async function getBacklogWorkspace(): Promise<BacklogWorkspaceData> {
   let fetchError: string | null = null;
 
@@ -37,32 +40,42 @@ export async function getBacklogWorkspace(): Promise<BacklogWorkspaceData> {
   const userRole = dbUser?.role ?? 'member';
   const accessibleIds = dbUser ? await listAccessibleProjectIds(dbUser.id) : [];
 
-  const [projects, projectMembers, initialWorkItems, sprintsResult] =
-    await Promise.all([
-      dbUser
-        ? safeServerFetch(
-            getAccessibleProjectList(dbUser.id),
-            [],
-            'fetch projects for backlog'
-          )
-        : Promise.resolve([]),
-      safeServerFetch(getUserList(), [], 'fetch users for backlog'),
-      accessibleIds.length === 0
-        ? Promise.resolve([])
-        : safeServerFetch(
-            getWorkItems({ projectIds: accessibleIds }),
-            [],
-            'fetch work items for backlog'
-          ),
-      getSprintsPaginatedServer('active', 1, 100).catch((error: unknown) => {
-        fetchError =
-          error instanceof Error
-            ? error.message
-            : 'Failed to fetch backlog sprints.';
-        console.error('error. failed to fetch backlog sprints:', fetchError);
-        return EMPTY_ACTIVE_SPRINTS_PAGE;
-      }),
-    ]);
+  const [
+    projects,
+    projectMembers,
+    initialWorkItems,
+    sprintsResult,
+    teamCapacities,
+  ] = await Promise.all([
+    dbUser
+      ? safeServerFetch(
+          getAccessibleProjectList(dbUser.id),
+          [],
+          'fetch projects for backlog'
+        )
+      : Promise.resolve([]),
+    safeServerFetch(getUserList(), [], 'fetch users for backlog'),
+    accessibleIds.length === 0
+      ? Promise.resolve([])
+      : safeServerFetch(
+          getWorkItems({ projectIds: accessibleIds }),
+          [],
+          'fetch work items for backlog'
+        ),
+    getSprintsPaginatedServer('active', 1, 100).catch((error: unknown) => {
+      fetchError =
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch backlog sprints.';
+      console.error('error. failed to fetch backlog sprints:', fetchError);
+      return EMPTY_ACTIVE_SPRINTS_PAGE;
+    }),
+    safeServerFetch(
+      getProjectTeamMemberCapacities(accessibleIds),
+      [],
+      'fetch team capacities for backlog'
+    ),
+  ]);
 
   const activeProjects = filterActiveProjects(projects);
   const sprints = sprintsResult.sprints.filter(
@@ -75,6 +88,7 @@ export async function getBacklogWorkspace(): Promise<BacklogWorkspaceData> {
   return {
     projects: activeProjects,
     projectMembers,
+    teamCapacities,
     initialWorkItems,
     sprints,
     userRole,

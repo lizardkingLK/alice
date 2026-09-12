@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
+import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import { Input } from '@repo/ui/components/ui/input';
 import {
   Popover,
@@ -468,17 +469,16 @@ export function ChartsAdvancedFiltersPopover({
                         htmlFor={optionId}
                         className="hover:bg-muted/50 flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm"
                       >
-                        <input
+                        <Checkbox
                           id={optionId}
-                          type="checkbox"
                           checked={checked}
-                          onChange={() =>
+                          onCheckedChange={() =>
                             setQuickSelections((prev) => ({
                               ...prev,
                               [quickField]: option.value,
                             }))
                           }
-                          className="border-input size-4 rounded border"
+                          className="cursor-pointer"
                         />
                         <span
                           className="min-w-0 flex-1 truncate"

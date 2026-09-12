@@ -9,22 +9,26 @@ Create sprints, track goals, and open burndown reports.
 ## Open sprints
 
 1. Sign in as a **manager** or **admin**.
-2. Under **Projects** in the sidebar, select **Sprints** (`/sprints`).
+2. Open a project from **Projects** in the sidebar.
+3. In the project sidebar, select **Sprints** (`/projects/[id]?tab=sprints`).
 
-Members do not see the Sprints nav item.
+Members do not see the Sprints project tab. The standalone `/sprints` page
+remains available for bookmarks but is no longer linked from the main sidebar.
 
 ---
 
 ## Registry
 
-The sprints list shows active and archived sprints. Use:
+The sprints list shows active and archived sprints for the current project. Use:
 
-- **Add Sprint** — create a new iteration (name, dates, goal)
+- **Add Sprint** — create a new iteration (name, dates, goal) in this project
 - Search — find sprints by name or goal
-- **Filter** icon (**Shift+F**) — open the filter dialog and choose a
-  project (or **All projects**)
 - Tabs — **Active** / **Archived** icon segment switcher (right side of the
   toolbar)
+
+Sprint names must be **unique within the project**, including archived sprints.
+If you reuse a name, the form shows: _An active or archived sprint already
+exists by the given name_.
 
 Select a sprint to open its report or related work.
 

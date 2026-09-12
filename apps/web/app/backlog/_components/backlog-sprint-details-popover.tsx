@@ -2,6 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { formatDate } from '@/app/_shared/utility';
+import {
+  BACKLOG_HOVER_CLOSE_MS,
+  BACKLOG_HOVER_OPEN_MS,
+} from '@/app/backlog/_helpers/backlog-hover-delays';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import { SprintStatusEnum } from '@repo/types';
 import { Badge } from '@repo/ui/components/ui/badge';
@@ -14,9 +18,6 @@ import {
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { Calendar, FolderKanban, Info } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
-
-const HOVER_OPEN_MS = 280;
-const HOVER_CLOSE_MS = 180;
 
 const SPRINT_STATUS_BADGE: Partial<
   Record<Sprint['status'], { label: string; className: string }>
@@ -80,7 +81,7 @@ export function BacklogSprintDetailsPopover({
     clearTimers();
     openTimerRef.current = window.setTimeout(
       () => setOpen(true),
-      HOVER_OPEN_MS
+      BACKLOG_HOVER_OPEN_MS
     );
   };
 
@@ -88,7 +89,7 @@ export function BacklogSprintDetailsPopover({
     clearTimers();
     closeTimerRef.current = window.setTimeout(
       () => setOpen(false),
-      HOVER_CLOSE_MS
+      BACKLOG_HOVER_CLOSE_MS
     );
   };
 

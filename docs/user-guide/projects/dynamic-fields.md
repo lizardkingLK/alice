@@ -18,12 +18,15 @@ The Project Details workspace uses a clean **sidebar navigation** to access work
 
 When you open a project from **Projects** (`/projects/[id]`), the left sidebar provides direct access to all workspace sections:
 
-- **Details**: Overview metrics, project dates, and the editable project banner.
+- **Details**: Project banner (key, timeline, owner, branding) and clickable summary cards that jump to each section.
 - **Members**: Project membership roster and roles.
-- **Teams**: Teams assigned to or working on this project.
-- **Work Items**: The full-width work items table, backlog, and hierarchy view.
+- **Teams**: Teams assigned to or working on this project. When creating or editing a team, **Designated Team Manager** lists only managers and admins who are members of that project.
+- **Work Items**: The full-width work items table (including the **Sprint** column), backlog, and hierarchy view. Use **Filter** to narrow by sprint, assignee (scoped to the selected/default project’s members, or the union of members across your projects when no project is selected), and other fields.
+- **Sprints**: Sprint registry for this project (managers and admins only).
 - **Integrations**: Connections to GitHub and Atlassian Jira Cloud.
 - **Fields**: Configuration interface for project dynamic fields (managers and admins).
+
+On **Details**, summary cards (Members, Teams, Work Items, Sprints, Integrations, Fields) are links into those tabs. The **Sprints** card and sidebar item are hidden for members.
 
 > [!TIP]
 > The project banner appears **only on the Details tab**. Tabs such as Work Items and Fields utilize the full available height of the screen for maximum data visibility.

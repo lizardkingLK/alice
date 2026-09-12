@@ -75,6 +75,7 @@ export function WorkItemsTableToolbar({
   onTabChange,
   projects,
   projectMembers,
+  projectMembersByProjectId,
   sprints,
   projectQuery,
   sprintQuery,
@@ -106,6 +107,9 @@ export function WorkItemsTableToolbar({
   onTabChange: (tab: 'active' | 'archived') => void;
   projects: WorkItemWorkspaceProps['projects'];
   projectMembers: WorkItemWorkspaceProps['projectMembers'];
+  projectMembersByProjectId?: NonNullable<
+    WorkItemWorkspaceProps['projectMembersByProjectId']
+  >;
   sprints: WorkItemWorkspaceProps['sprints'];
   projectQuery: FilterQuery;
   sprintQuery: FilterQuery;
@@ -141,6 +145,7 @@ export function WorkItemsTableToolbar({
         <WorkItemsFilterDialog
           projects={projects}
           projectMembers={projectMembers}
+          projectMembersByProjectId={projectMembersByProjectId}
           sprints={sprints}
           projectQuery={projectQuery}
           sprintQuery={sprintQuery}
