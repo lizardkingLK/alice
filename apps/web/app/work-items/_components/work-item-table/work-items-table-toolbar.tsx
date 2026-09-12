@@ -107,7 +107,9 @@ export function WorkItemsTableToolbar({
   onTabChange: (tab: 'active' | 'archived') => void;
   projects: WorkItemWorkspaceProps['projects'];
   projectMembers: WorkItemWorkspaceProps['projectMembers'];
-  projectMembersByProjectId?: WorkItemWorkspaceProps['projectMembersByProjectId'];
+  projectMembersByProjectId?: NonNullable<
+    WorkItemWorkspaceProps['projectMembersByProjectId']
+  >;
   sprints: WorkItemWorkspaceProps['sprints'];
   projectQuery: FilterQuery;
   sprintQuery: FilterQuery;

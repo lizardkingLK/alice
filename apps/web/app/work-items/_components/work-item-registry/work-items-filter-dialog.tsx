@@ -123,7 +123,9 @@ const FILTER_FIELD_CONFIG: Record<WorkItemsFilterFieldId, FilterFieldConfig> = {
 export type WorkItemsFilterDialogProps = {
   readonly projects: WorkItemWorkspaceProps['projects'];
   readonly projectMembers: WorkItemWorkspaceProps['projectMembers'];
-  readonly projectMembersByProjectId?: WorkItemWorkspaceProps['projectMembersByProjectId'];
+  readonly projectMembersByProjectId?: NonNullable<
+    WorkItemWorkspaceProps['projectMembersByProjectId']
+  >;
   readonly sprints: WorkItemWorkspaceProps['sprints'];
   readonly projectQuery: FilterQuery;
   readonly sprintQuery: FilterQuery;

@@ -26,12 +26,12 @@ export function useBacklogProjectDefaults({
   sprints,
   suggestedDefaults,
 }: UseBacklogProjectDefaultsOptions) {
-  const [projectFilter, setProjectFilterState] = useState('all');
+  const [projectFilter, setProjectFilter] = useState('all');
   const [sprintFilter, setSprintFilter] = useState('');
 
   const applyPreferenceFilters = useCallback(
     (preference: BoardDefaultsPreference) => {
-      setProjectFilterState(preferenceToProjectFilter(preference));
+      setProjectFilter(preferenceToProjectFilter(preference));
       setSprintFilter(preferenceToSprintFilter(preference));
     },
     []
@@ -81,9 +81,9 @@ export function useBacklogProjectDefaults({
     suggestedDefaults,
   ]);
 
-  const setProjectFilter = useCallback(
+  const updateProjectFilter = useCallback(
     (nextProjectFilter: string) => {
-      setProjectFilterState(nextProjectFilter);
+      setProjectFilter(nextProjectFilter);
       if (nextProjectFilter === 'all') {
         setSprintFilter('');
         return;
@@ -120,13 +120,13 @@ export function useBacklogProjectDefaults({
   );
 
   const resetProjectFilterToBaseline = useCallback(() => {
-    setProjectFilterState(baselineProjectId);
+    setProjectFilter(baselineProjectId);
     setSprintFilter(baselineSprintId);
   }, [baselineProjectId, baselineSprintId]);
 
   return {
     projectFilter,
-    setProjectFilter,
+    setProjectFilter: updateProjectFilter,
     sprintFilter,
     setSprintFilter,
     savedDefaultsApplied,
