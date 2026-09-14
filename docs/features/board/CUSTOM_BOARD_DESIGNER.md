@@ -1,10 +1,11 @@
 # Custom Board Designer
 
-Status: **Plan**
+Status: **Implemented through Stage 4** (Alice bot integration remains planned)
 
 Design document for a **Custom Board Designer** that lets managers define named
 kanban columns, map each column to a `WorkItemStatus` value, and attach
-per-column validation rules scoped to a team, a role, or an individual user.
+source-to-destination movement rules scoped to a team, a role, or an individual
+user.
 Multiple adjacent columns may share the same underlying status. The feature
 reuses the JSON-schema conventions and the Alice bot integration already
 established by [PROJECT_DETAILS_AND_DYNAMIC_FIELDS.md](./PROJECT_DETAILS_AND_DYNAMIC_FIELDS.md).
@@ -31,29 +32,24 @@ Related:
 - Allow multiple adjacent columns to share the same status — e.g. three
   separate columns (`Development`, `Code Review`, `Testing`) that all map to
   `InProgress`.
-- Attach optional validation rules per column, scoped to a team, a role, or a
-  specific user.
+- Attach optional movement rules to an exact source/destination column pair,
+  scoped to a team, a role, or a specific user.
 - Fall back silently to the default board (one column per non-Draft status) when
   a custom configuration is absent, malformed, or fails to load.
 - Store configuration as a versioned JSON document in the existing
   `projects.workflow_config` JSONB column — no new database columns or
   migrations required for v1.
-- Reuse the existing Alice bot (`chat.route.data.ts`) to guide users through
-  producing a valid configuration in natural language, following the same pattern
-  used for dynamic fields.
-- Support schema evolution over time through a `schemaVersion` field.
+- Preserve version-1 column-only documents while introducing version-2
+  transition rules.
 
 ## 2. Non-goals (current)
 
-- Moving work items between columns via an API that understands column identity
-  (see §7 for the column-placement problem).
-- Enforcing column order through backend business rules; column sequencing is
-  display-only in v1.
+- Client-side pre-evaluation of movement rules. The API is authoritative and the
+  board rolls an optimistic move back when it returns a policy denial.
 - Real-time board subscription changes when another user edits the
   configuration.
-- Per-sprint board overrides (a single configuration per project in v1).
-- UI drag-and-drop column reordering in the designer (text/JSON editing in v1,
-  visual builder deferred).
+- Per-sprint board overrides (a single configuration per project).
+- Alice bot generation of board configurations (Stage 5).
 
 ---
 
@@ -93,9 +89,10 @@ const COLUMNS = BOARD_STATUS_COLUMNS;
 }
 ```
 
-**Key observation:** today, `column.id === item.status` always. There is a
-strict 1-to-1 relationship between a column and a status value. Custom columns
-that share a status break this model (see §7).
+The default configuration still uses status-shaped column IDs, but custom
+boards do not require `column.id === item.status`. Placement is resolved from
+`work_items.board_column_id`, with the first column for the item's status used
+as a compatibility fallback when that value is null or stale.
 
 ### 3.2 Status enum (database)
 
@@ -118,10 +115,9 @@ Custom column _names_ are display metadata only; they do not expand the enum.
 ### 3.3 Drag-and-drop status update
 
 When a card is dropped on a column or the "Move to" dialog fires,
-`applyStatusChange` calls `updateWorkItemStatus(id, targetStatus, ...)` from
-`apps/web/app/work-items/_services/work-items.mutations.client.ts`. The status
-written to the database is the column's mapped `WorkItemStatus` value, not the
-column name.
+`applyStatusChange` calls `updateWorkItemStatus` with both the destination
+status and destination `board_column_id`. The API persists both fields in the
+same work-item update.
 
 ### 3.4 Board defaults (workspace preferences)
 
@@ -134,10 +130,10 @@ configuration.
 
 The `projects` table already carries two untyped JSONB columns:
 
-| Column              | Current use                                                                                                                                                        |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `attributes_config` | Dynamic work-item field definitions (see [PROJECT_DETAILS_AND_DYNAMIC_FIELDS.md](./PROJECT_DETAILS_AND_DYNAMIC_FIELDS.md))                                         |
-| `workflow_config`   | **Not yet used anywhere in application code** (confirmed by code search — present in schema and generated types but never read or written by any route or service) |
+| Column              | Current use                                                                                                                |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `attributes_config` | Dynamic work-item field definitions (see [PROJECT_DETAILS_AND_DYNAMIC_FIELDS.md](./PROJECT_DETAILS_AND_DYNAMIC_FIELDS.md)) |
+| `workflow_config`   | Stores the validated versioned custom board configuration.                                                                 |
 
 `workflow_config` is the intended home for the board configuration document.
 
@@ -164,30 +160,30 @@ that carry `InProgress`, which is wrong.
 
 ### 4.2 Does the current data model solve this?
 
-The `work_items` table has no field that records which named column a work item
-occupies. The relevant fields are:
+The Stage 2 migration added the field that records which named column a work
+item occupies. The relevant fields are:
 
-| Field           | Type             | Notes                               |
-| --------------- | ---------------- | ----------------------------------- |
-| `status`        | `WorkItemStatus` | Enum — one of six values            |
-| `record_status` | `RecordStatus`   | Lifecycle (`active`, `archived`, …) |
-| `done_at`       | `timestamptz?`   | Set when transitioning to `Done`    |
+| Field             | Type             | Notes                                                       |
+| ----------------- | ---------------- | ----------------------------------------------------------- |
+| `status`          | `WorkItemStatus` | Canonical status mapped by the selected board column        |
+| `board_column_id` | `String?`        | Stable column ID; null and stale values use status fallback |
+| `record_status`   | `RecordStatus`   | Lifecycle (`active`, `archived`, …)                         |
+| `done_at`         | `timestamptz?`   | Set when transitioning to `Done`                            |
 
-There is **no `board_column_id` or `column_name` field**. The data model does
-not currently solve the problem.
+There is intentionally no `column_name` field; names remain configuration
+metadata. `board_column_id` is the persisted placement identity.
 
 ### 4.3 Design options
 
-> [!IMPORTANT]
-> A product/team decision is required before implementation. The options below
-> have meaningfully different trade-offs. Record the chosen option in this
-> document and update the Open Questions section accordingly.
+> [!NOTE]
+> Option A was selected and shipped in Stage 2. Options B and C below are kept
+> only as the original decision record.
 
-#### Option A — Add a `board_column` field to `work_items` (database migration required)
+#### Option A — Add `board_column_id` to `work_items` (selected and implemented)
 
-Add an optional `board_column String?` column to `work_items`. When a user
+Add an optional `board_column_id String?` column to `work_items`. When a user
 moves a card to a column, the API writes both `status` (the mapped status) and
-`board_column` (the column's stable `id` from the configuration).
+`board_column_id` (the column's stable `id` from the configuration).
 
 Pros:
 
@@ -197,9 +193,8 @@ Pros:
 Cons:
 
 - Requires a Prisma migration and a new API field on the PATCH endpoint.
-- `board_column` can become stale if the configuration is later edited
-  (e.g. a column is renamed or removed). A migration or cleanup job would
-  be needed.
+- `board_column_id` can become stale if the configuration is later edited.
+  Runtime resolution safely falls back to the first matching status column.
 - Adds complexity to the work-item write path.
 
 #### Option B — Infer placement from column order (no migration, display heuristic)
@@ -236,22 +231,85 @@ Cons:
   increases complexity.
 - Still requires the dynamic-fields migration before this feature can ship.
 
-> **Recommended default for v1: Option B**, with a clear note in the UI that
-> within a same-status group, card placement is not persisted. Ship Option A
-> or C in a subsequent phase once the team reaches alignment.
+> **Decision:** Option A shipped. Placement within same-status groups persists
+> across reloads through `board_column_id`.
 
 ---
 
-## 5. Proposed Board Configuration JSON Schema
+## 5. Board Configuration JSON Schema
 
 The configuration is stored in `projects.workflow_config` as a versioned JSON
 document.
 
-> [!NOTE]
-> The structure below is a **proposal**. It must be reviewed by the team before
-> implementation. All field names, constraints, and defaults are subject to change.
+### 5.1 As-built schema (authoritative)
 
-### 5.1 Top-level shape (proposed)
+Version identifiers are strings. Version 1 remains valid and unchanged:
+
+```json
+{
+  "version": "1",
+  "columns": [
+    { "id": "new", "name": "New", "status": "New" },
+    { "id": "todo", "name": "To Do", "status": "ToDo" },
+    { "id": "development", "name": "Development", "status": "InProgress" },
+    { "id": "testing", "name": "Testing", "status": "Testing" },
+    { "id": "done", "name": "Done", "status": "Done" }
+  ]
+}
+```
+
+Version 2 adds transition rules while retaining the same column shape:
+
+```json
+{
+  "version": "2",
+  "columns": [
+    { "id": "new", "name": "New", "status": "New" },
+    { "id": "todo", "name": "To Do", "status": "ToDo" },
+    { "id": "development", "name": "Development", "status": "InProgress" },
+    { "id": "code-review", "name": "Code Review", "status": "InProgress" },
+    { "id": "testing", "name": "Testing", "status": "Testing" },
+    { "id": "done", "name": "Done", "status": "Done" }
+  ],
+  "transitions": [
+    {
+      "fromColumnId": "development",
+      "toColumnId": "code-review",
+      "allowAnyOf": [
+        { "scope": "role", "role": "manager" },
+        { "scope": "team", "teamId": "00000000-0000-4000-8000-000000000001" },
+        { "scope": "user", "userId": "00000000-0000-4000-8000-000000000002" }
+      ]
+    }
+  ]
+}
+```
+
+The shared Zod schemas live in
+`packages/types/src/api/v1/board-config.ts`. They enforce:
+
+- at least one column and a column for every non-Draft board status;
+- unique column IDs;
+- column array order is display order; there is no persisted `position` field;
+- version 1 has only `version` and `columns` and normalizes to no rules at
+  runtime;
+- version 2 transition endpoints reference existing, distinct columns;
+- only one transition entry exists per source/destination pair;
+- `allowAnyOf` is non-empty and contains no duplicate matchers;
+- role matchers use the exact `member`, `manager`, and `admin` enum values, and
+  team/user IDs are UUIDs.
+
+An absent source/destination pair means unrestricted. A present transition is
+allowed when any matcher succeeds.
+
+### 5.2 Historical pre-implementation proposal (superseded)
+
+> [!NOTE]
+> The remainder of this section records the original proposal. Its
+> `schemaVersion`, `label`, `position`, and per-column `validationRules` fields
+> were superseded by the authoritative schema above.
+
+#### Historical top-level shape
 
 ```json
 {
@@ -304,7 +362,7 @@ document.
 }
 ```
 
-### 5.2 Column object fields (proposed)
+#### Historical column object fields
 
 | Field             | Type               | Required | Notes                                                                                                               |
 | ----------------- | ------------------ | -------- | ------------------------------------------------------------------------------------------------------------------- |
@@ -319,7 +377,7 @@ document.
 > work items. The schema validator should warn (not block) if a status is
 > uncovered, to avoid data loss scenarios where existing items become invisible.
 
-### 5.3 ValidationRule object fields (proposed)
+#### Historical ValidationRule object fields
 
 A validation rule restricts **who may move a card into this column**. The scope
 field controls which identity dimension is checked.
@@ -337,7 +395,7 @@ Multiple rules on the same column are evaluated with **OR** semantics: a user
 who satisfies **any** rule may move a card there. An empty `validationRules`
 array means the column is unrestricted.
 
-### 5.4 Schema versioning
+#### Historical schema versioning
 
 The `schemaVersion` integer field enables forward-compatible evolution:
 
@@ -350,7 +408,7 @@ When the API loads a configuration, it checks `schemaVersion`. An unknown
 version causes the board to fall back to the default layout (see §8) and
 surfaces an admin-only warning.
 
-### 5.5 Proposed Zod meta-schema
+#### Historical Zod meta-schema
 
 This follows the same Zod pattern used by `ProjectFieldsConfigSchema` in
 [PROJECT_DETAILS_AND_DYNAMIC_FIELDS.md](./PROJECT_DETAILS_AND_DYNAMIC_FIELDS.md) §5.2 and
@@ -484,7 +542,17 @@ BoardData (RSC)
   → pass { workItems, boardColumns } to KanbanBoard (client component)
 ```
 
-### 7.2 Column item assignment (client, proposed)
+### 7.2 Column item assignment
+
+`resolveBoardSourceColumn` in the shared board-config module is the canonical
+resolver used by both the web board and API policy evaluation. It accepts an
+exact `board_column_id` only when that column exists and its mapped status
+matches the work item's status. A null, removed, or mismatched ID falls back to
+the first configured column with the same status. This keeps legacy and stale
+placements visible and gives the API a deterministic source column.
+
+The original first-status-only sketch is retained below for historical context;
+the shipped resolver checks `board_column_id` first.
 
 ```typescript
 function assignItemsToColumns(
@@ -508,11 +576,12 @@ function assignItemsToColumns(
 This replaces the current `filteredItems.filter(item => item.status === column.id)`
 in `kanban-board.tsx` line 541–543.
 
-### 7.3 Status update on drag-and-drop
+### 7.3 Status and placement update on drag-and-drop
 
-When a card is dragged to column `C` whose `status` is `S`, the existing
-`updateWorkItemStatus(id, S, updated_at)` call is reused unchanged. The column
-name is not written to the database in v1 (Option B from §4.3).
+When a card is dragged to column `C` whose status is `S`,
+`updateWorkItemStatus` sends `status = S` and `board_column_id = C.id`. The
+optimistic client state updates both values and restores both if the mutation
+fails.
 
 ### 7.4 Move-to dialog
 
@@ -530,7 +599,7 @@ Fallback triggers:
 
 1. `projects.workflow_config` is `null` — no configuration set yet.
 2. `boardConfigSchema.safeParse(workflow_config)` returns `success: false`.
-3. `schemaVersion` is not a supported value.
+3. `version` is not a supported value.
 4. Network or server error when loading the project record.
 
 Fallback behaviour:
@@ -550,17 +619,14 @@ This mirrors the `SafeDynamicFieldsSection` fallback pattern documented in
 
 ### 9.1 What validation rules are
 
-A validation rule on a column restricts who may **drop a card into that column**
-or select it from the "Move to" dialog. It does not prevent the user from
-viewing the card or moving it to other columns.
+A movement rule restricts one exact **source column → destination column**
+transition. It does not prevent the user from viewing the card or taking an
+unconfigured transition.
 
-Enforcement is applied at two layers:
-
-- **Client-side**: disable the drop target and show a tooltip when the current
-  user does not satisfy any rule on the column.
-- **Server-side**: the `PATCH /api/v1/workItems/:id/status` handler checks the
-  validation rules stored in the project's board configuration before updating
-  the status field.
+The backend `WorkItemService.updateWorkItem` path is authoritative. The client
+continues to allow optimistic drag/drop and Move-to interactions; on a denial
+it restores both status and placement and shows a source/destination-specific
+toast.
 
 ### 9.2 Mapping to existing identity primitives
 
@@ -570,24 +636,35 @@ Enforcement is applied at two layers:
 | `role`     | `users.role` | `UserRole` enum (`admin \| manager \| member`) in `users` table |
 | `user`     | `users.id`   | Direct FK into `users` table                                    |
 
-The API resolves all three dimensions on every authenticated request via
-`requireApiAuth` (attaches `userId`) and the database role in `public.users`.
-Team membership is queryable from `team_members` filtered by `user_id` and
-`status = 'active'`.
+The evaluator loads the actor's exact database role plus active project and
+team memberships. Team matches require an active membership in an active team
+belonging to the work item's project. User matches require the actor ID to
+match and the actor to be an active project member. Stale/deleted/inactive IDs
+therefore do not match.
 
-### 9.3 What does not exist today
+### 9.3 As-built evaluator semantics
 
-There is no concept of "workflow transition rules" or "column move permissions"
-in the current API. The `workItems.service.ts` does not consult `workflow_config`.
-The closest analogue is sprint/member capacity validation in `workItems.service.ts`
-(see [ALLOCATION_VALIDATION.md](../work-items/ALLOCATION_VALIDATION.md)), which
-returns a `WorkItemValidationError` (400) when capacity is exceeded. The same
-error type and pattern would be reused for column validation.
+1. If status and `board_column_id` did not change, no movement policy is
+   evaluated.
+2. Resolve the source from the current stored placement, falling back by status
+   for null or stale IDs.
+3. Resolve the destination from the requested `board_column_id`. A null ID,
+   used by All Projects status-only moves, resolves to the first matching status
+   column; it does not bypass policy.
+4. Look up the exact source/destination pair. No entry means unrestricted.
+5. For a configured entry, allow when any `allowAnyOf` matcher succeeds. Roles
+   are exact—`admin` has no implicit bypass.
+6. If no matcher succeeds, return HTTP 403 with the stable machine code
+   `BOARD_MOVE_FORBIDDEN` and no sensitive matcher details.
 
-### 9.4 Proposed enforcement pattern (server)
+Version-1 documents normalize to an empty transition list, so all existing v1
+boards retain their behavior. Invalid explicit column IDs remain validation
+errors rather than being silently redirected.
+
+### 9.4 Historical enforcement sketch (superseded)
 
 ```typescript
-// apps/api/src/routes/api/workItems/workItems.service.ts  [proposed addition]
+// Historical proposal only; see workItems.service.ts for the shipped evaluator.
 
 async function assertColumnMovePermitted(
   boardConfig: BoardConfig,
@@ -637,13 +714,18 @@ async function assertColumnMovePermitted(
 ```
 
 > [!NOTE]
-> This is a **proposed** pattern. The final implementation must align with the
-> layering conventions in `workItems.service.ts` and error types in
-> `workItems.errors.ts`.
+> This sketch used destination-wide rules and a 400 validation error. It is
+> retained only as design history; Stage 4 shipped transition-pair rules and a
+> stable 403 policy error.
 
-### 9.5 Open items for validation rules (product decision needed)
+### 9.5 Designer behavior
 
-See §14 (Open Questions) items 3–6.
+The project Board tab exposes a Movement rules action for each source column.
+Managers choose a destination and either Everyone (removes the pair rule) or
+Restricted. Restricted rules can combine role, active project-team, and active
+project-member matchers; the helper text states their OR semantics. Saving a
+rule upgrades the draft to version 2. Merely opening the dialog or editing
+columns on a v1 board does not rewrite the persisted version.
 
 ---
 
@@ -799,53 +881,43 @@ a project, they see its custom board. Validation rules apply equally to guests.
 | ------------------------------------------------------ | ---------------------------------------------------------------------------------- |
 | `workflow_config` is `null`                            | Board renders with default columns silently                                        |
 | `boardConfigSchema.safeParse` returns `success: false` | Fall back to defaults; show admin-only warning in the designer tab                 |
-| Unknown `schemaVersion`                                | Fall back to defaults; surface version mismatch warning for managers               |
+| Unknown `version`                                      | Fall back to defaults; surface version mismatch warning for managers               |
 | API save returns 400 (invalid body)                    | Show inline editor error; do not clear the draft                                   |
 | API save returns 403 (insufficient role)               | Show permission error toast                                                        |
-| Validation rule blocks a drag-and-drop                 | Prevent drop; show tooltip with `rule.description` or generic message              |
+| Movement rule blocks a drag/drop or Move-to action     | Return 403 `BOARD_MOVE_FORBIDDEN`; roll back optimistic placement and toast        |
 | Bot generates invalid JSON                             | `boardConfigSchema.safeParse` catches it; error shown in editor; not written to DB |
 
 ---
 
 ## 14. Open Questions
 
-> [!IMPORTANT]
-> The following must be resolved with the team lead and product owner before
-> implementation begins.
+Items 1–7, 9, and 10 were resolved by Stages 1–4. Item 8 remains for Stage 5.
 
-1. **Column placement persistence (§4.3):** Which option — A (new `board_column`
-   DB field and migration), B (first-match heuristic, no migration), or C
-   (dynamic fields piggyback)?
+1. **Column placement persistence (§4.3):** Resolved—Option A using nullable
+   `work_items.board_column_id`.
 
-2. **Designer location (§6):** Project Details sidebar tab, Board view drawer,
-   or both?
+2. **Designer location (§6):** Resolved—Project Details Board tab.
 
-3. **Admin bypass:** Should admins always bypass column validation rules, or
-   are they subject to the same rules as managers?
+3. **Admin bypass:** Resolved—none. Roles match exactly.
 
-4. **Validation rule semantics:** Block the move hard (400 from the API) or
-   warn and require confirmation (soft block) before the status is written?
+4. **Validation rule semantics:** Resolved—hard policy denial with HTTP 403 and
+   `BOARD_MOVE_FORBIDDEN`.
 
-5. **Draft status in columns:** Should the designer allow mapping a column to
-   `Draft`? Currently `Draft` items are excluded from the board at the read
-   layer (`boardItems = workItems.filter(item => item.status !== 'Draft')`).
+5. **Draft status in columns:** Resolved—Draft is excluded from board columns.
 
-6. **Missing status coverage:** If a custom configuration defines no column for
-   `New`, what happens to items whose `status` is `New`? Block save, warn only,
-   or silently ignore them?
+6. **Missing status coverage:** Resolved—schema validation blocks save.
 
-7. **Configuration scope:** One board config per project (proposed) or allow
-   different configs per sprint?
+7. **Configuration scope:** Resolved—one board config per project.
 
 8. **Bot tool approach:** Dedicated `configure_board` function-calling tool
    (proposed) or use the existing `parse_work_item_attachment` flow with a JSON
    template?
 
-9. **Column ID stability:** User-supplied slug (readable, risk of collision) or
-   server-generated UUID (opaque)?
+9. **Column ID stability:** Resolved—designer-generated stable IDs, persisted in
+   `board_column_id`; IDs need only be non-empty and unique within the config.
 
-10. **Validation rule OR vs AND:** Multiple rules on one column — OR (user
-    satisfies any, proposed) or AND (user satisfies all)?
+10. **Movement rule OR vs AND:** Resolved—OR across `allowAnyOf` matchers on an
+    exact source/destination pair.
 
 ---
 
@@ -857,7 +929,7 @@ a project, they see its custom board. Validation rules apply equally to guests.
 | --------------------------------------------------------- | ------------------------------------------------------------------------ |
 | `apps/api/src/routes/api/workItems/workItems.service.ts`  | Add column-move permission check before the status PATCH                 |
 | `apps/api/src/routes/api/workItems/workItems.route.ts`    | Wire any new validation into the route handler                           |
-| `apps/api/src/routes/api/workItems/workItems.errors.ts`   | `WorkItemValidationError` — reuse for permission denial (400)            |
+| `apps/api/src/routes/api/workItems/workItems.errors.ts`   | Defines the stable `BoardMoveForbiddenError` policy denial (403)         |
 | `apps/api/src/routes/api/projects/projects.route.ts`      | Extend or add an endpoint to save `workflow_config`                      |
 | `apps/api/src/routes/api/projects/projects.repository.ts` | `patch.attributes_config` pattern (lines 81–82) shows how to write JSONB |
 | `apps/api/src/routes/api/chat/chat.route.data.ts`         | Add `configure_board` tool declaration                                   |
@@ -885,16 +957,16 @@ a project, they see its custom board. Validation rules apply equally to guests.
 
 ---
 
-## 16. Implementation Stages (Suggested)
+## 16. Implementation Stages
 
-**Stage 1 — Schema and storage (no UI)**
+**Stage 1 — Schema and storage (implemented)**
 
 - Define `boardConfigSchema` Zod type in `packages/types/src/api/v1/board-config.ts`.
 - Extend `projectDetailSelect` to include `workflow_config`.
 - Extend `PUT /api/projects/:id` (or add a new endpoint) to accept and validate `workflow_config`.
 - Write unit tests for `boardConfigSchema` (valid, invalid JSON, wrong version).
 
-**Stage 2 — Default fallback in the board**
+**Stage 2 — Board placement and fallback (implemented)**
 
 - Update `board-data.tsx` to parse `workflow_config` via `boardConfigSchema.safeParse`.
 - Pass resolved columns to `KanbanBoard`.
@@ -902,17 +974,19 @@ a project, they see its custom board. Validation rules apply equally to guests.
 - Verify default fallback works when config is absent or parse fails.
 - Write unit tests for the `assignItemsToColumns` function.
 
-**Stage 3 — Designer UI**
+**Stage 3 — Designer UI (implemented)**
 
 - Create `BoardDesignerWorkspace` component (JSON editor + column preview panel).
 - Add the designer surface to the chosen location (Project Details tab or Board drawer).
 - Wire "Validate & Save" to the API endpoint.
 
-**Stage 4 — Validation rules**
+**Stage 4 — Transition movement rules (implemented)**
 
-- Add `assertColumnMovePermitted` to `workItems.service.ts`.
-- Enforce rules client-side: disable drop targets, show permission tooltips.
-- Write tests for rule-gated drag-and-drop (team, role, user scopes).
+- Add version-2 source/destination transition schema with OR matchers.
+- Enforce rules in `WorkItemService.updateWorkItem` using active actor context.
+- Return stable 403 denials and roll optimistic UI state back with a toast.
+- Test role, team, user, stale-reference, All Projects, route, designer, and
+  rollback behavior.
 
 **Stage 5 — Alice bot integration**
 
@@ -921,23 +995,23 @@ a project, they see its custom board. Validation rules apply equally to guests.
 - Update `systemInstruction` to describe the board configuration workflow.
 - Test end-to-end bot → generated JSON → validate & save flow.
 
-**Stage 6 — Column placement (after §4.3 decision)**
+**Stage 6 — Column placement**
 
-- Implement the chosen option (Option A migration, B heuristic, or C dynamic fields).
+- Completed early in Stage 2 using `work_items.board_column_id`.
 
 ---
 
 ## 17. Testing Strategy
 
-| Scope                 | What to test                                                                                                 | Location                             |
-| --------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------ |
-| **Schema validation** | Valid configs, missing required fields, unknown `schemaVersion`, duplicate column ids, invalid status values | `packages/types` unit tests (Vitest) |
-| **Column assignment** | Items assigned to correct columns, same-status items go to first matching column, Draft items excluded       | `apps/web/tests/board/`              |
-| **Fallback**          | Null config, parse failure, version mismatch all render default columns                                      | `apps/web/tests/board/`              |
-| **Validation rules**  | Team / role / user scope — allowed and denied paths                                                          | `apps/api/tests/workItems/`          |
-| **API save**          | Valid body persists; invalid body returns 400; unauthorized returns 403                                      | `apps/api/tests/projects/`           |
-| **Bot integration**   | `configure_board` tool returns a valid `BoardConfig` shape                                                   | `apps/api/tests/chat/`               |
-| **Designer UI**       | JSON editor accepts/rejects on validate; save disabled when schema is invalid                                | `apps/web/tests/board/`              |
+| Scope                 | What to test                                                                               | Location                     |
+| --------------------- | ------------------------------------------------------------------------------------------ | ---------------------------- |
+| **Schema validation** | Valid v1/v2 configs, transition references/pairs/matchers, status coverage, invalid values | `apps/web/tests/board/`      |
+| **Column assignment** | Exact placement, null/stale status fallback, same-status movement, Draft exclusion         | `apps/web/tests/board/`      |
+| **Fallback**          | Null config, parse failure, version mismatch all render default columns                    | `apps/web/tests/board/`      |
+| **Movement rules**    | Exact role, active team/member, OR, stale refs, All Projects, stable 403                   | `apps/api/tests/work-items/` |
+| **API save**          | Valid body persists; invalid body returns 400; unauthorized returns 403                    | `apps/api/tests/projects/`   |
+| **Bot integration**   | `configure_board` tool returns a valid `BoardConfig` shape                                 | `apps/api/tests/chat/`       |
+| **Designer UI**       | Rule authoring, v1 compatibility, Everyone removal, scoped selectors, rollback/toast       | `apps/web/tests/`            |
 
 Run all tests with:
 

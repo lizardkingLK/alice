@@ -13,6 +13,7 @@ import {
 } from '@/lib/search-params';
 import { getUserList } from '@/app/users/_services/users.reads.server';
 import {
+  getActiveProjectTeams,
   getTeamListPaginated,
   type Team,
 } from '@/app/manager/_services/teams.reads.server';
@@ -136,6 +137,7 @@ export type ProjectWorkspaceAllowed = {
     search: string;
     status: 'active' | 'inactive' | 'archived';
   };
+  readonly boardRuleTeams: Team[];
 };
 
 export type ProjectWorkspaceDenied = {
@@ -188,41 +190,49 @@ export async function getProjectWorkspace(
   const workItemsSearch = isWorkItemsTab ? search : undefined;
   const workItemRecordStatus = parseWorkItemRecordStatus(searchParams);
 
-  const [members, allUsers, workItemsResult, teamsResult] = await Promise.all([
-    safeServerFetch(
-      getProjectMembers(projectId),
-      [] as ProjectMemberWithUser[],
-      'load project members'
-    ),
-    safeServerFetch(getUserList(), [], 'fetch users for project members'),
-    safeServerFetch(
-      getWorkItemsPaginated(workItemsPage, workItemsLimit, workItemsSearch, {
-        projectId,
-        ...(isWorkItemsTab
-          ? {
-              type,
-              assigneeId,
-              labels,
-              recordStatus: workItemRecordStatus,
-              ...workItemHierarchyListFilter(listView),
-            }
-          : {}),
-      }),
-      EMPTY_WORK_ITEMS,
-      'fetch project work items'
-    ),
-    safeServerFetch(
-      getTeamListPaginated(
-        teamsPage,
-        teamsLimit,
-        teamStatus,
-        teamsSearch,
-        projectId
+  const [members, allUsers, workItemsResult, teamsResult, boardRuleTeams] =
+    await Promise.all([
+      safeServerFetch(
+        getProjectMembers(projectId),
+        [] as ProjectMemberWithUser[],
+        'load project members'
       ),
-      EMPTY_TEAMS,
-      'fetch project teams'
-    ),
-  ]);
+      safeServerFetch(getUserList(), [], 'fetch users for project members'),
+      safeServerFetch(
+        getWorkItemsPaginated(workItemsPage, workItemsLimit, workItemsSearch, {
+          projectId,
+          ...(isWorkItemsTab
+            ? {
+                type,
+                assigneeId,
+                labels,
+                recordStatus: workItemRecordStatus,
+                ...workItemHierarchyListFilter(listView),
+              }
+            : {}),
+        }),
+        EMPTY_WORK_ITEMS,
+        'fetch project work items'
+      ),
+      safeServerFetch(
+        getTeamListPaginated(
+          teamsPage,
+          teamsLimit,
+          teamStatus,
+          teamsSearch,
+          projectId
+        ),
+        EMPTY_TEAMS,
+        'fetch project teams'
+      ),
+      activeTab === 'board'
+        ? safeServerFetch(
+            getActiveProjectTeams(projectId),
+            [] as Team[],
+            'fetch board rule teams'
+          )
+        : Promise.resolve([] as Team[]),
+    ]);
 
   return {
     access: 'allowed',
@@ -247,5 +257,6 @@ export async function getProjectWorkspace(
       search,
       status: teamStatus,
     }),
+    boardRuleTeams,
   };
 }

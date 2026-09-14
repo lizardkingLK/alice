@@ -8,6 +8,7 @@ import {
   type BoardColumn,
   type BoardConfig,
 } from '@repo/types/api/v1';
+import type { MemberCheckboxOption } from '@/components/member-checkbox-list';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Card,
@@ -53,17 +54,29 @@ import {
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { FormAlertMessage } from '@/components/form-alert-message';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
+import {
+  BoardMovementRulesDialog,
+  type BoardRuleTeamOption,
+} from '@/app/projects/_components/project-details/board-movement-rules-dialog';
 
 type BoardDesignerWorkspaceProps = {
   readonly project: Project;
   readonly canEdit: boolean;
   readonly currentUserId?: string | null;
+  readonly teams?: readonly BoardRuleTeamOption[];
+  readonly members?: readonly MemberCheckboxOption[];
 };
 
 function cloneConfig(config: BoardConfig): BoardConfig {
+  const columns = config.columns.map((column) => ({ ...column }));
+  if (config.version === '1') return { version: '1', columns };
   return {
-    version: '1',
-    columns: config.columns.map((column) => ({ ...column })),
+    version: '2',
+    columns,
+    transitions: config.transitions.map((transition) => ({
+      ...transition,
+      allowAnyOf: transition.allowAnyOf.map((matcher) => ({ ...matcher })),
+    })),
   };
 }
 
@@ -85,6 +98,8 @@ export function BoardDesignerWorkspace({
   project,
   canEdit,
   currentUserId,
+  teams = [],
+  members = [],
 }: Readonly<BoardDesignerWorkspaceProps>) {
   const router = useRouter();
   const { handleMutationError } = useOptimisticLock();
@@ -125,6 +140,8 @@ export function BoardDesignerWorkspace({
   const [messageIsError, setMessageIsError] = useState(false);
   const [deleteColumn, setDeleteColumn] = useState<BoardColumn | null>(null);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [rulesTargetColumn, setRulesTargetColumn] =
+    useState<BoardColumn | null>(null);
 
   const draftChanged = JSON.stringify(draft) !== JSON.stringify(baseline);
   const dirty = invalidPersistedConfig || draftChanged;
@@ -172,12 +189,21 @@ export function BoardDesignerWorkspace({
   };
 
   const removeColumn = (column: BoardColumn) => {
-    setDraft((current) => ({
-      ...current,
-      columns: current.columns.filter(
+    setDraft((current) => {
+      const columns = current.columns.filter(
         (candidate) => candidate.id !== column.id
-      ),
-    }));
+      );
+      if (current.version === '1') return { ...current, columns };
+      return {
+        ...current,
+        columns,
+        transitions: current.transitions.filter(
+          (transition) =>
+            transition.fromColumnId !== column.id &&
+            transition.toColumnId !== column.id
+        ),
+      };
+    });
     setDeleteColumn(null);
     setMessage(null);
   };
@@ -362,6 +388,20 @@ export function BoardDesignerWorkspace({
                 <Button
                   type="button"
                   variant="outline"
+                  size="sm"
+                  aria-label={`Movement rules for ${column.name}`}
+                  onClick={() => setRulesTargetColumn(column)}
+                  disabled={!canEdit || isSaving || draft.columns.length < 2}
+                >
+                  <Lock className="size-3.5" />
+                  Movement rules
+                  {draft.version === '2'
+                    ? ` (${draft.transitions.filter((rule) => rule.toColumnId === column.id).length})`
+                    : ''}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
                   size="icon-sm"
                   aria-label={'Move ' + column.name + ' up'}
                   onClick={() => moveColumn(index, -1)}
@@ -491,6 +531,19 @@ export function BoardDesignerWorkspace({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <BoardMovementRulesDialog
+        config={draft}
+        targetColumn={rulesTargetColumn}
+        teams={teams}
+        members={members}
+        open={Boolean(rulesTargetColumn)}
+        disabled={!canEdit || isSaving}
+        onOpenChange={(open) => !open && setRulesTargetColumn(null)}
+        onConfigChange={(config) => {
+          setDraft(config);
+          setMessage(null);
+        }}
+      />
     </div>
   );
 }

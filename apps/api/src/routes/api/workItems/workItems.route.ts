@@ -6,6 +6,7 @@ import {
 } from '../../../middlewares/auth';
 import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
 import {
+  BoardMoveForbiddenError,
   WorkItemAccessError,
   WorkItemValidationError,
 } from './workItems.errors';
@@ -136,7 +137,11 @@ function sendWorkItemMutationError(
 
   const message = error instanceof Error ? error.message : fallbackMessage;
   if (error instanceof WorkItemAccessError) {
-    return res.status(403).json({ data: null, error: message });
+    return res.status(403).json({
+      data: null,
+      error: message,
+      ...(error instanceof BoardMoveForbiddenError ? { code: error.code } : {}),
+    });
   }
   if (error instanceof WorkItemValidationError) {
     return res.status(400).json({ data: null, error: message });

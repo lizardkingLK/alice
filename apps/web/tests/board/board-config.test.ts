@@ -13,6 +13,27 @@ const CUSTOM_COLUMNS = [
   { id: 'testing', name: 'Testing', status: 'Testing' },
   { id: 'done', name: 'Done', status: 'Done' },
 ] as const;
+const TEAM_ID = '764e1be5-67b4-43dc-a30c-0f66a07ba780';
+const USER_ID = '1559d73c-a39f-452d-a275-e981dedff035';
+
+function version2Transition(overrides: Record<string, unknown> = {}) {
+  return {
+    version: '2',
+    columns: CUSTOM_COLUMNS,
+    transitions: [
+      {
+        fromColumnId: 'development',
+        toColumnId: 'code-review',
+        allowAnyOf: [
+          { scope: 'role', role: 'manager' },
+          { scope: 'team', teamId: TEAM_ID },
+          { scope: 'user', userId: USER_ID },
+        ],
+        ...overrides,
+      },
+    ],
+  };
+}
 
 describe('boardConfigSchema', () => {
   it('accepts a valid version 1 custom board', () => {
@@ -27,6 +48,41 @@ describe('boardConfigSchema', () => {
       boardConfigSchema.safeParse({ version: '1', columns: CUSTOM_COLUMNS })
         .success
     ).toBe(true);
+  });
+
+  it('accepts a valid version 2 board with transition matchers', () => {
+    expect(boardConfigSchema.safeParse(version2Transition()).success).toBe(
+      true
+    );
+  });
+
+  it.each([
+    ['missing source', { fromColumnId: 'missing' }],
+    ['missing destination', { toColumnId: 'missing' }],
+    ['same source and destination', { toColumnId: 'development' }],
+    ['empty matcher list', { allowAnyOf: [] }],
+    [
+      'duplicate matchers',
+      {
+        allowAnyOf: [
+          { scope: 'role', role: 'manager' },
+          { scope: 'role', role: 'manager' },
+        ],
+      },
+    ],
+    ['invalid role', { allowAnyOf: [{ scope: 'role', role: 'reviewer' }] }],
+    ['invalid team id', { allowAnyOf: [{ scope: 'team', teamId: 'team-1' }] }],
+    ['invalid user id', { allowAnyOf: [{ scope: 'user', userId: 'user-1' }] }],
+  ])('rejects a version 2 transition with %s', (_label, overrides) => {
+    expect(
+      boardConfigSchema.safeParse(version2Transition(overrides)).success
+    ).toBe(false);
+  });
+
+  it('rejects duplicate source/destination transition pairs', () => {
+    const config = version2Transition();
+    config.transitions.push({ ...config.transitions[0]! });
+    expect(boardConfigSchema.safeParse(config).success).toBe(false);
   });
 
   it.each(['New', 'ToDo', 'InProgress', 'Testing', 'Done'] as const)(

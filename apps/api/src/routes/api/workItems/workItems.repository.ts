@@ -12,8 +12,9 @@ import {
   type WorkItemListRowWithDescription,
   type WorkItemPrismaListFilters,
   paginationMeta,
+  type UserRole,
 } from '@repo/types';
-import { Prisma } from '@repo/types/prisma';
+import { Prisma, RecordStatus, UserMembershipStatus } from '@repo/types/prisma';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { listAccessibleProjectIds } from '../../../lib/project-access';
 import { prisma } from '../../../lib/prisma';
@@ -47,6 +48,12 @@ export interface DbGithubPullRequest {
   created_at: string;
   updated_at: string;
 }
+
+export type BoardActorContext = {
+  role: UserRole;
+  isActiveProjectMember: boolean;
+  activeTeamIds: string[];
+};
 
 export type CreateWorkItemRecord = WorkItemBody & {
   createdBy: string;
@@ -204,6 +211,50 @@ export class WorkItemRepository {
     }
 
     return data.workflow_config;
+  }
+
+  /** Resolve all actor facts needed by a board rule in one database query. */
+  async getBoardActorContext(
+    actorId: string,
+    projectId: string
+  ): Promise<BoardActorContext | null> {
+    const actor = await prisma.users.findFirst({
+      where: {
+        id: actorId,
+        active: true,
+        membership_status: UserMembershipStatus.active,
+      },
+      select: {
+        role: true,
+        project_memberships: {
+          where: {
+            project_id: projectId,
+            status: RecordStatus.active,
+          },
+          select: { user_id: true },
+        },
+        team_memberships: {
+          where: {
+            status: RecordStatus.active,
+            team: {
+              project_id: projectId,
+              status: RecordStatus.active,
+            },
+          },
+          select: { team_id: true },
+        },
+      },
+    });
+
+    if (!actor) return null;
+
+    return {
+      role: actor.role,
+      isActiveProjectMember: actor.project_memberships.length > 0,
+      activeTeamIds: actor.team_memberships.map(
+        (membership) => membership.team_id
+      ),
+    };
   }
 
   /** Count direct children that are not yet Done (for Done-gate validation). */

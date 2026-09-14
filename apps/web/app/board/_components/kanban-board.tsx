@@ -75,7 +75,12 @@ import {
   useQueryFilter,
 } from '@/hooks/use-query-filter';
 import { tryHandleLockedMutationError } from '@/lib/optimistic-lock/run-locked-mutation';
-import type { BoardColumn } from '@repo/types/api/v1';
+import { ApiError } from '@/lib/api/api-fetch.helper';
+import { toast } from '@repo/ui/components/ui/sonner';
+import {
+  BOARD_MOVE_FORBIDDEN_CODE,
+  type BoardColumn,
+} from '@repo/types/api/v1';
 
 type BoardStatus = BoardColumn['status'];
 
@@ -429,6 +434,10 @@ export function KanbanBoard({
 
     const previousStatus = currentItem.status;
     const previousBoardColumnId = currentItem.board_column_id;
+    const sourceColumnName =
+      boardColumns.find(
+        (column) => column.id === resolveItemColumnId(currentItem, boardColumns)
+      )?.name ?? 'the current column';
     setStatusError(null);
     setPendingStatusIds((previous) => new Set(previous).add(id));
     restorePlacement(id, move.status, move.board_column_id);
@@ -454,6 +463,15 @@ export function KanbanBoard({
       })
       .catch(async (error) => {
         restorePlacement(id, previousStatus, previousBoardColumnId);
+        if (
+          error instanceof ApiError &&
+          error.code === BOARD_MOVE_FORBIDDEN_CODE
+        ) {
+          toast.error(
+            `Move blocked: you do not have permission to move this item from ${sourceColumnName} to ${targetColumn.name}.`
+          );
+          return;
+        }
         if (
           await tryHandleLockedMutationError({
             error,

@@ -1,6 +1,10 @@
 import {
   boardConfigSchema,
+  findBoardTransition,
   getAllowedChildType,
+  normalizeBoardConfig,
+  resolveBoardDestinationColumn,
+  resolveBoardSourceColumn,
   type WorkItemType,
   parseWorkItemLabels,
   paginationMeta,
@@ -23,7 +27,10 @@ import {
   WorkItemBody,
   WorkItemUpdateBody,
 } from './workItems.schemas';
-import { WorkItemValidationError } from './workItems.errors';
+import {
+  BoardMoveForbiddenError,
+  WorkItemValidationError,
+} from './workItems.errors';
 import { prisma } from '../../../lib/prisma';
 import { decryptSecretIfPresent } from '../../../lib/secrets/token-crypto';
 
@@ -193,7 +200,12 @@ export class WorkItemService {
 
     const current = await this.workItems.getById(workItemId);
 
-    await this.assertValidBoardColumn(current, input);
+    const boardMove = await this.resolveBoardMove(current, input);
+    await this.assertBoardTransitionAllowed(
+      userId,
+      current.project_id,
+      boardMove
+    );
 
     if (!sameNullable(input.parent_id, current?.parent_id)) {
       await this.assertValidParentLink({
@@ -255,18 +267,24 @@ export class WorkItemService {
     return updated;
   }
 
-  private async assertValidBoardColumn(
+  private async resolveBoardMove(
     current: DbWorkItem,
     input: WorkItemUpdateBody
-  ): Promise<void> {
-    if (input.board_column_id === null) {
-      return;
+  ) {
+    if (input.project_id !== current.project_id) {
+      if (input.board_column_id !== null) {
+        throw new WorkItemValidationError(
+          'Board column placement cannot be carried to another project'
+        );
+      }
+      return null;
     }
 
-    if (input.project_id !== current.project_id) {
-      throw new WorkItemValidationError(
-        'Board column placement cannot be carried to another project'
-      );
+    const placementChanged =
+      current.status !== input.status ||
+      current.board_column_id !== input.board_column_id;
+    if (!placementChanged) {
+      return null;
     }
 
     const workflowConfig = await this.workItems.getProjectWorkflowConfig(
@@ -274,25 +292,78 @@ export class WorkItemService {
     );
     const parsed = boardConfigSchema.safeParse(workflowConfig);
     if (!parsed.success) {
-      throw new WorkItemValidationError(
-        'This project does not have a valid custom board configuration'
-      );
+      if (input.board_column_id !== null) {
+        throw new WorkItemValidationError(
+          'This project does not have a valid custom board configuration'
+        );
+      }
+      return null;
     }
 
-    const column = parsed.data.columns.find(
-      (candidate) => candidate.id === input.board_column_id
+    const config = normalizeBoardConfig(parsed.data);
+    if (input.board_column_id !== null) {
+      const configuredColumn = config.columns.find(
+        (candidate) => candidate.id === input.board_column_id
+      );
+      if (!configuredColumn) {
+        throw new WorkItemValidationError(
+          'Board column does not exist in this project'
+        );
+      }
+      if (configuredColumn.status !== input.status) {
+        throw new WorkItemValidationError(
+          'Board column does not match the work item status'
+        );
+      }
+    }
+
+    const destination = resolveBoardDestinationColumn(
+      { status: input.status, board_column_id: input.board_column_id },
+      config.columns
     );
-    if (!column) {
+    if (!destination) {
       throw new WorkItemValidationError(
         'Board column does not exist in this project'
       );
     }
 
-    if (column.status !== input.status) {
-      throw new WorkItemValidationError(
-        'Board column does not match the work item status'
+    const source = resolveBoardSourceColumn(current, config.columns);
+    if (!source || source.id === destination.id) return null;
+
+    return { config, source, destination };
+  }
+
+  private async assertBoardTransitionAllowed(
+    actorId: string,
+    projectId: string,
+    move: Awaited<ReturnType<WorkItemService['resolveBoardMove']>>
+  ): Promise<void> {
+    if (!move) return;
+
+    const transition = findBoardTransition(
+      move.config,
+      move.source.id,
+      move.destination.id
+    );
+    if (!transition) return;
+
+    const actor = await this.workItems.getBoardActorContext(actorId, projectId);
+    const activeTeamIds = new Set(
+      actor?.activeTeamIds.map((teamId) => teamId.toLowerCase()) ?? []
+    );
+    const allowed = transition.allowAnyOf.some((matcher) => {
+      if (!actor) return false;
+      if (matcher.scope === 'role') return matcher.role === actor.role;
+      if (matcher.scope === 'team') {
+        return activeTeamIds.has(matcher.teamId.toLowerCase());
+      }
+      return (
+        actor.isActiveProjectMember &&
+        matcher.userId.toLowerCase() === actorId.toLowerCase()
       );
-    }
+    });
+
+    if (!allowed) throw new BoardMoveForbiddenError();
   }
 
   private async createWorkItemUpdateWorklog(params: {
