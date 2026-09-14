@@ -10,12 +10,15 @@ import {
   toChatTurnRole,
   getAllowedChildType,
   ChatAttachmentFileTypeEnum,
+  UserRoleEnum,
   type ParsedWorkItemNode,
 } from '@repo/types';
+import { boardConfigSchema, type BoardConfig } from '@repo/types/api/v1';
 import type { WorkItemService } from '../workItems/workItems.service';
 import type { SprintsService } from '../sprints/sprints.service';
 import type { ProjectsService } from '../projects/projects.service';
 import type { ProjectsRepository } from '../projects/projects.repository';
+import type { TeamsRepository } from '../teams/teams.repository';
 import type { ProjectRowWithOwner } from '../projects/projects.types';
 import type { IntegrationsService } from '../integrations/integrations.service';
 import type { ResolvedChatModelConfig } from '../integrations/chat-providers/chat-provider.types';
@@ -26,8 +29,10 @@ import { ChatAttachmentsRepository } from './chat-attachments.repository';
 import { fetchAndParseWorkItemAttachment } from './chat-attachment-parser';
 import { WorkItemDeduplicationAgent } from './work-item-deduplication.agent';
 import { sanitizeLog } from './chat.utils';
+import { buildBoardDraft } from './board-draft';
 import { prisma } from '../../../lib/prisma';
 import { supabase } from '../../../lib/supabase';
+import { requireUserWithRole } from '../../../lib/auth-helpers';
 import type {
   ChatContentPart,
   ChatContentTurn,
@@ -44,8 +49,12 @@ export type ChatServiceDeps = {
   deduplicationAgent?: WorkItemDeduplicationAgent;
   workItemService: Pick<WorkItemService, 'createWorkItem'>;
   sprintsService: Pick<SprintsService, 'createSprint'>;
-  projectsService: Pick<ProjectsService, 'createProject'>;
-  projectsRepository: Pick<ProjectsRepository, 'listAll' | 'findById'>;
+  projectsService: Pick<ProjectsService, 'createProject' | 'getProjectDetail'>;
+  projectsRepository: Pick<
+    ProjectsRepository,
+    'listAll' | 'findById' | 'listActiveBoardMembers'
+  >;
+  teamsRepository: Pick<TeamsRepository, 'listActiveByProject'>;
   integrationsService: Pick<IntegrationsService, 'resolveChatModelForChat'>;
 };
 
@@ -252,6 +261,9 @@ export class ChatService {
       create_sprint: () =>
         this.handleCreateSprint(userId, args, toolActionsPerformed),
       list_users: () => this.chat.listUsersSnapshot(),
+      list_board_entities: () => this.handleListBoardEntities(userId, args),
+      configure_board_draft: () =>
+        this.handleConfigureBoardDraft(userId, args, toolActionsPerformed),
       create_work_item: () =>
         this.handleCreateWorkItem(userId, args, toolActionsPerformed),
       parse_work_item_attachment: () =>
@@ -278,6 +290,115 @@ export class ChatService {
   private async handleListProjects(): Promise<unknown> {
     const projects = await this.deps.projectsRepository.listAll();
     return projects.map((p) => ({ id: p.id, name: p.name, key: p.key }));
+  }
+
+  private async loadBoardEntities(userId: string, projectId: string) {
+    if (!projectId) {
+      throw new Error('projectId is required.');
+    }
+
+    const project = await this.deps.projectsService.getProjectDetail(
+      projectId,
+      userId
+    );
+    if (!project) {
+      throw new Error('Project not found.');
+    }
+
+    const [teams, members] = await Promise.all([
+      this.deps.teamsRepository.listActiveByProject(projectId),
+      this.deps.projectsRepository.listActiveBoardMembers(projectId),
+    ]);
+    const currentConfig = boardConfigSchema.safeParse(project.workflow_config);
+
+    return {
+      project: {
+        id: project.id,
+        name: project.name,
+        key: project.key,
+        description: project.description,
+        status: project.status,
+      },
+      boardConfig: currentConfig.success ? currentConfig.data : null,
+      teams,
+      members,
+    };
+  }
+
+  private async handleListBoardEntities(
+    userId: string,
+    args: Record<string, unknown>
+  ): Promise<unknown> {
+    const projectId = typeof args.projectId === 'string' ? args.projectId : '';
+    return this.loadBoardEntities(userId, projectId);
+  }
+
+  private validateDraftEntityReferences(
+    config: BoardConfig,
+    teams: readonly { readonly id: string }[],
+    members: readonly { readonly id: string }[]
+  ): void {
+    if (config.version !== '2') return;
+
+    const activeTeamIds = new Set(teams.map((team) => team.id));
+    const activeMemberIds = new Set(members.map((member) => member.id));
+    for (const transition of config.transitions) {
+      for (const matcher of transition.allowAnyOf) {
+        if (matcher.scope === 'team' && !activeTeamIds.has(matcher.teamId)) {
+          throw new Error(
+            `Team ${matcher.teamId} is not an active team in this project.`
+          );
+        }
+        if (matcher.scope === 'user' && !activeMemberIds.has(matcher.userId)) {
+          throw new Error(
+            `User ${matcher.userId} is not an active member of this project.`
+          );
+        }
+      }
+    }
+  }
+
+  private async handleConfigureBoardDraft(
+    userId: string,
+    args: Record<string, unknown>,
+    toolActionsPerformed: ToolAction[]
+  ): Promise<unknown> {
+    const projectId = typeof args.projectId === 'string' ? args.projectId : '';
+    const entities = await this.loadBoardEntities(userId, projectId);
+
+    await requireUserWithRole(
+      userId,
+      [UserRoleEnum.admin, UserRoleEnum.manager],
+      'Only admins and managers can create a structured board draft. You can still ask Alice for conversational board suggestions.'
+    );
+
+    const { config, input } = buildBoardDraft(entities.boardConfig, args);
+    if (input.transitions !== undefined) {
+      this.validateDraftEntityReferences(
+        config,
+        entities.teams,
+        entities.members
+      );
+    }
+
+    const action: ToolAction = {
+      type: 'configure_board',
+      entity: {
+        projectId: entities.project.id,
+        projectName: entities.project.name,
+        config,
+      },
+    };
+    toolActionsPerformed.push(action);
+
+    return {
+      draftCreated: true,
+      saved: false,
+      projectId: entities.project.id,
+      projectName: entities.project.name,
+      config,
+      nextStep: 'Review and save this draft in Board Designer.',
+    };
   }
 
   private async handleCreateProject(

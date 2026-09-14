@@ -39,7 +39,10 @@ import {
   ChatAttachmentTiles,
   type PendingChatAttachment,
 } from './chat-attachment-tiles';
-import { revalidateAfterChatActions } from '@/lib/cache/revalidate-after-chat';
+import {
+  revalidateAfterChatActions,
+  type ChatMutationActionType,
+} from '@/lib/cache/revalidate-after-chat';
 import {
   bootstrapLatestChat,
   loadConversationHistory,
@@ -604,9 +607,12 @@ export function ChatClient({
       });
 
       if (response.actions && response.actions.length > 0) {
-        await revalidateAfterChatActions(
-          response.actions.map((action: ActionItem) => action.type)
-        );
+        const mutationActionTypes = response.actions
+          .map((action: ActionItem) => action.type)
+          .filter(
+            (type): type is ChatMutationActionType => type !== 'configure_board'
+          );
+        await revalidateAfterChatActions(mutationActionTypes);
         router.refresh();
       }
     } catch (err: unknown) {

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ChatRoles } from '../../chat.js';
 import { ChatAttachmentFileTypeEnum } from '../../chat-attachments.js';
+import { boardConfigSchema } from './board-config.js';
 import { emptyToUndefined } from './query-preprocess.js';
 
 /** PostgREST column list for chat conversation list reads (RSC + API parity). */
@@ -116,21 +117,34 @@ export type ChatAttachmentSignedUrls = z.infer<
   typeof chatAttachmentSignedUrlsSchema
 >;
 
-export const chatToolActionSchema = z.object({
-  type: z.enum([
-    'create_project',
-    'create_sprint',
-    'create_work_item',
-    'batch_import_work_items',
-  ]),
-  entity: z.object({
-    id: z.string(),
-    name: z.string().optional(),
-    key: z.string().optional(),
-    title: z.string().optional(),
-    status: z.string().optional(),
-  }),
+const createdEntitySchema = z.object({
+  id: z.string(),
+  name: z.string().optional(),
+  key: z.string().optional(),
+  title: z.string().optional(),
+  status: z.string().optional(),
 });
+
+export const chatToolActionSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('create_project'), entity: createdEntitySchema }),
+  z.object({ type: z.literal('create_sprint'), entity: createdEntitySchema }),
+  z.object({
+    type: z.literal('create_work_item'),
+    entity: createdEntitySchema,
+  }),
+  z.object({
+    type: z.literal('batch_import_work_items'),
+    entity: createdEntitySchema,
+  }),
+  z.object({
+    type: z.literal('configure_board'),
+    entity: z.object({
+      projectId: z.string(),
+      projectName: z.string(),
+      config: boardConfigSchema,
+    }),
+  }),
+]);
 
 export type ChatToolActionWire = z.infer<typeof chatToolActionSchema>;
 

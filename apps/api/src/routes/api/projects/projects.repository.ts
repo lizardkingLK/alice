@@ -39,6 +39,13 @@ export type {
   UpdateProjectInput,
 } from './projects.types';
 
+export type ActiveProjectMember = {
+  readonly id: string;
+  readonly name: string;
+  readonly email: string;
+  readonly role: string;
+};
+
 export { withoutIntegrationSecrets };
 
 function applyOptionalProjectIntegrations(
@@ -224,6 +231,24 @@ export class ProjectsRepository {
       );
       throw new Error('Failed to list project members');
     }
+  }
+
+  async listActiveBoardMembers(
+    projectId: string
+  ): Promise<ActiveProjectMember[]> {
+    const memberships = await prisma.project_members.findMany({
+      where: {
+        project_id: projectId,
+        status: RecordStatus.active,
+        user: { active: true, membership_status: 'active' },
+      },
+      select: {
+        user: { select: { id: true, name: true, email: true, role: true } },
+      },
+      orderBy: { user: { name: 'asc' } },
+    });
+
+    return memberships.map(({ user }) => user);
   }
 
   async listAll(): Promise<ProjectRowWithOwner[]> {

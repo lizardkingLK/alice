@@ -312,6 +312,7 @@ function createChatConfig(
   sprintsService: SprintsService,
   projectsService: ProjectsService,
   projectsRepository: ProjectsRepository,
+  teamsRepository: TeamsRepository,
   integrationsService: IntegrationsService
 ) {
   const chatRepository = new ChatRepository(supabase);
@@ -325,6 +326,7 @@ function createChatConfig(
     sprintsService,
     projectsService,
     projectsRepository,
+    teamsRepository,
     integrationsService,
   });
   const router = createChatRouter({ chatService });
@@ -416,5 +418,6 @@ export const chat = createChatConfig(
   sprints.sprintsService,
   projects.projectsService,
   projects.projectsRepository,
+  teams.teamsRepository,
   integrations.integrationsService
 );
