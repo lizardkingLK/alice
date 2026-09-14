@@ -8,6 +8,7 @@ Related:
 
 - Feature index: [README.md](./README.md)
 - User guide: [dynamic-fields.md](../../user-guide/projects/dynamic-fields.md)
+- User testing guide: [dynamic-fields-testing.md](../../user-guide/projects/dynamic-fields-testing.md)
 - Projects workspace UI: `apps/web/app/projects/[id]/_components/project-details-workspace.tsx`
 - Fields workspace UI: `apps/web/app/projects/_components/project-details/project-fields-workspace.tsx`
 - Load template dialog: `apps/web/app/projects/_components/project-details/load-template-dialog.tsx`
@@ -597,22 +598,35 @@ The AI bot **does not write directly to the database**. All AI-generated schemas
 
 ## 10. Verification & Test Plan
 
-| Scope                       | Test Location                                                     | Tested Scenarios                                                                                                           |
-| :-------------------------- | :---------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------- |
-| **Tab Navigation**          | `apps/web/tests/projects/project-details-sidebar-fields.test.tsx` | Sidebar renders all 6 tabs; `parseProjectDetailsTab` parses `'fields'`; query param updates without reload                 |
-| **Banner Isolation**        | `apps/web/tests/projects/project-details-sidebar-fields.test.tsx` | `ProjectSummaryBanner` renders exclusively on `?tab=details`; absent on `work-items`, `teams`, `members`, `fields`         |
-| **Template Zero-Selection** | `apps/web/tests/projects/project-details-sidebar-fields.test.tsx` | Unconfigured project initializes with 0 templates selected; existing templates pre-select correctly                        |
-| **Removal Warning Modal**   | `apps/web/tests/projects/project-details-sidebar-fields.test.tsx` | Deselecting template with existing work-item values shows `ProjectFieldsErrorDialog` with item titles and values           |
-| **Schema Validation**       | `apps/web/tests/projects/project-details-sidebar-fields.test.tsx` | Malformed JSON syntax and invalid schema structures block save and highlight offending line numbers                        |
-| **Optimistic Concurrency**  | `apps/web/tests/projects/update-project-fields-action.test.ts`    | `updateProjectFieldsConfig` sends `attributes_config` and `expectedUpdatedAt` to prevent concurrent overwrite collisions   |
-| **Work-Item Integration**   | `apps/web/tests/work-items/work-item-dynamic-fields.test.tsx`     | `Additional Fields` renders in sidebar; fields populate `doc.attrs.dynamicFields`; missing fields do not block save/status |
-| **Graceful Degradation**    | `apps/web/tests/work-items/work-item-dynamic-fields.test.tsx`     | Corrupted or malformed schema returns fallback notice without throwing or crashing the parent work item view               |
+Comprehensive automated testing is implemented with **Vitest** and `@testing-library/react` across 6 test suites comprising **61 unit tests**, verifying all aspects of sidebar navigation, banner isolation, JSON Schema configuration, template workflows, Alice AI generation, and work-item integration:
+
+| Scope | Test File | Test Count | Tested Scenarios |
+| :--- | :--- | :---: | :--- |
+| **Sidebar & Fields Workspace** | [`apps/web/tests/projects/project-details-sidebar-fields.test.tsx`](file:///c:/Users/Aux-219/Documents/ALICE/alice/apps/web/tests/projects/project-details-sidebar-fields.test.tsx) | **24** | • Sidebar renders all 6 navigation items (Details, Members, Teams, Work Items, Sprints, Integrations, Fields)<br>• Role-gating hides Sprints navigation from Members<br>• URL query parameter synchronization via `router.push` when switching tabs without page reload<br>• Strict banner isolation: `ProjectSummaryBanner` renders exclusively on `?tab=details`; absent on `fields`, `work-items`, `teams`, `members`<br>• Initial Zero-Selection Default Rule: unconfigured project opens `LoadTemplateDialog` with `0 selected • 8 available templates` and disabled apply<br>• Merging selected templates into existing schema without overwriting custom properties<br>• Deselecting template removes property upon apply<br>• Safe removal warning popup on single template deselect with active work-item values<br>• Bulk removal warning modal when clicking "Clear Selection" with affected work-item values<br>• Malformed JSON syntax error in editor disables Save, displays `ProjectFieldsErrorDialog` on Validate/Beautify, and highlights offending gutter line in red<br>• Schema validation error dialog when violating `ProjectFieldsConfigSchema` blocks save<br>• Tab key press inserts 2 spaces without losing cursor focus<br>• Auto-dismissing status feedback banner after timer<br>• Read-only view banner and disabled controls for Member role |
+| **Optimistic Concurrency** | [`apps/web/tests/projects/update-project-fields-action.test.ts`](file:///c:/Users/Aux-219/Documents/ALICE/alice/apps/web/tests/projects/update-project-fields-action.test.ts) | **2** | • `updateProjectFieldsConfig` issues PUT request with `attributes_config`<br>• Enforces optimistic concurrency lock by transmitting `expectedUpdatedAt` alongside schema to prevent concurrent overwrite collisions |
+| **Alice AI Assistant Generator** | [`apps/web/tests/projects/generate-fields-alice-dialog.test.tsx`](file:///c:/Users/Aux-219/Documents/ALICE/alice/apps/web/tests/projects/generate-fields-alice-dialog.test.tsx) | **5** | • Dialog open/close lifecycle and header/description rendering<br>• Starter suggestion chips populating prompt textarea on click (`+ MoSCoW rating...`, `+ Security classification...`, etc.)<br>• Disabled "Generate Schema" button when prompt is empty<br>• Invokes `generateFieldsSchemaWithAlice(prompt, currentSchema)` and triggers `onGenerated` with received schema<br>• Graceful error handling invoking `onError` when AI generation service fails |
+| **Error & Removal Dialog** | [`apps/web/tests/projects/project-fields-error-dialog.test.tsx`](file:///c:/Users/Aux-219/Documents/ALICE/alice/apps/web/tests/projects/project-fields-error-dialog.test.tsx) | **8** | • Returns null when error is null<br>• Automatic categorization of "Permission Denied" with contextual guidance<br>• Automatic categorization of "JSON Syntax Error" with syntax fix guidance<br>• Automatic categorization of "Schema Validation Error" with schema compliance guidance<br>• Custom title and description overrides for template removal warnings<br>• `onConfirm` and `onClose` callback triggers on OK button click<br>• Cancel button rendering and callback trigger when `showCancel={true}` |
+| **Work-Item Sidebar Dynamic Fields** | [`apps/web/tests/work-items/work-item-dynamic-fields.test.tsx`](file:///c:/Users/Aux-219/Documents/ALICE/alice/apps/web/tests/work-items/work-item-dynamic-fields.test.tsx) | **8** | • Renders "Additional Fields" collapsible section when project has dynamic fields<br>• Renders "Not set" placeholder badges for empty dynamic fields<br>• Hides "Additional Fields" section when project has no dynamic fields<br>• Inline multiline text editing and optimistic mutation save on Save button click<br>• Boolean Switch toggle editing and immediate patch dispatch<br>• Strict invariant enforcement: work items without dynamic fields render and operate normally without validation errors<br>• Graceful degradation returning null on malformed or non-object schemas<br>• `DynamicFieldsErrorBoundary` catching runtime render exceptions and rendering `DynamicFieldsErrorNotice` |
+| **Dynamic Fields Pure Helpers** | [`apps/web/tests/work-items/work-item-dynamic-fields-helpers.test.ts`](file:///c:/Users/Aux-219/Documents/ALICE/alice/apps/web/tests/work-items/work-item-dynamic-fields-helpers.test.ts) | **14** | • `parseTextDynamicFields` key-value extraction from legacy text markers<br>• Returns empty object when `[Dynamic Fields]` marker is absent<br>• `findDynamicFieldsInContent` scanning TipTap content nodes for markers<br>• `extractDynamicFieldValues` extracting from `doc.attrs.dynamicFields` or falling back to text markers<br>• `patchWorkItemDynamicFields` creating new doc structure from null description<br>• Immutably adding and updating dynamic field values<br>• Pruning fields when value is set to `null`, `undefined`, or `""`<br>• `findWorkItemsWithFieldValues` locating affected work items, formatting primitive and complex object values, and generating fallback work-item titles |
+| **Total** | **6 Test Suites** | **61** | **100% Passing Vitest Unit Tests** |
+
+### Running the Vitest Unit Test Suite
+
+Execute all dynamic fields test suites locally via pnpm:
+
+```powershell
+cmd /c "pnpm --filter web exec vitest run tests/projects/project-details-sidebar-fields.test.tsx tests/projects/update-project-fields-action.test.ts tests/projects/generate-fields-alice-dialog.test.tsx tests/projects/project-fields-error-dialog.test.tsx tests/work-items/work-item-dynamic-fields.test.tsx tests/work-items/work-item-dynamic-fields-helpers.test.ts"
+```
+
+### End-to-End System Testing Guide
+
+For comprehensive manual, visual, and operational testing on a running instance, see the dedicated [User Testing Guide: Project Details & Dynamic Fields](../../user-guide/projects/dynamic-fields-testing.md).
 
 ---
 
 ## 11. Implementation Status & Checklist
 
-All core architecture requirements, user experience enhancements, and testing goals are fully implemented and verified in production:
+All core architecture requirements, user experience enhancements, automated unit test suites, and user guides are fully implemented and verified:
 
 - [x] **Sidebar Navigation**: Refactored `ProjectDetailsWorkspace` to a left-docked sidebar (`md:w-56`) with all 6 tabs (`details`, `members`, `teams`, `work-items`, `integrations`, `fields`).
 - [x] **Banner Isolation**: Isolated `ProjectSummaryBanner` strictly inside `<TabsContent value="details">`.
@@ -626,4 +640,6 @@ All core architecture requirements, user experience enhancements, and testing go
 - [x] **Typed Enums & Schemas**: Standardized `DynamicFieldTypeEnum`, `TemplateFieldCategoryEnum`, `TemplateFieldKeyEnum`, and Zod schemas in `@repo/types`.
 - [x] **Work-Item Storage & Integration**: Implemented TipTap ProseMirror document attribute storage (`doc.attrs.dynamicFields`), fallback text markers, and inline editing in `WorkItemSidebar`.
 - [x] **Non-Validation Invariant**: Enforced that dynamic fields are strictly optional metadata that never block work-item creation, edits, or status transitions.
+- [x] **Vitest Unit Test Suite**: Implemented and verified 6 test suites comprising 61 unit tests covering navigation, banner isolation, schema validation, templates, error dialogs, Alice AI generation, and helper utilities.
+- [x] **System User Testing Guide**: Created step-by-step verification guide [`dynamic-fields-testing.md`](../../user-guide/projects/dynamic-fields-testing.md) covering all operational flows on the running system.
 - [x] **Documentation Sync**: Synchronized technical specification and user guides across `docs/` and `apps/web/content/docs/`.

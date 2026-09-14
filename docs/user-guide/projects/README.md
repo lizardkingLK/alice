@@ -24,6 +24,7 @@ but they don't open the project registry.
 | [Project members](./project-members.md)           | Add or remove people on a project               |
 | [Project integrations](./project-integrations.md) | GitHub and Jira connections                     |
 | [Dynamic fields & sidebar](./dynamic-fields.md)   | Configure custom fields and navigate workspaces |
+| [Dynamic fields testing](./dynamic-fields-testing.md) | End-to-end user testing instructions on the system |
 
 ---
 

@@ -1,6 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import WorkItemSidebar from '@/app/work-items/_components/work-item-details/work-item-details-sidebar';
+import {
+  SafeDynamicFieldsSection,
+  DynamicFieldsErrorBoundary,
+  DynamicFieldsErrorNotice,
+} from '@/app/work-items/_components/work-item-details/safe-dynamic-fields-section';
 import { workItemFactory } from '../factories/workItem.factory';
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
@@ -65,6 +70,11 @@ const mockProjectWithFields: DbProject = {
         type: 'string',
         title: 'Acceptance Criteria',
         format: 'multiline',
+      },
+      releaseNotesIncluded: {
+        type: 'boolean',
+        title: 'Include in Release Notes',
+        default: false,
       },
     },
   },
@@ -211,5 +221,130 @@ describe('WorkItemSidebar Dynamic Fields', () => {
         })
       );
     });
+  });
+
+  it('toggles boolean field switch and calls onWorkItemPatched', async () => {
+    const onWorkItemPatched = vi.fn();
+    const item = workItemFactory.build({
+      description: {
+        type: 'doc',
+        attrs: {
+          dynamicFields: {
+            releaseNotesIncluded: false,
+          },
+        },
+        content: [],
+      } as unknown as DbWorkItem['description'],
+    });
+
+    render(
+      <WorkItemSidebar
+        workItem={item}
+        project={mockProjectWithFields}
+        childStatuses={[]}
+        projectMembers={[]}
+        detailsOpen={true}
+        setDetailsOpen={vi.fn()}
+        moreFieldsOpen={false}
+        setMoreFieldsOpen={vi.fn()}
+        onWorkItemPatched={onWorkItemPatched}
+      />
+    );
+
+    expect(screen.getByText('Include in Release Notes')).toBeInTheDocument();
+    const editBtn = screen.getByLabelText('Edit Include in Release Notes');
+    fireEvent.click(editBtn);
+
+    const switchBtn = screen.getByRole('switch');
+    expect(switchBtn).toBeInTheDocument();
+
+    fireEvent.click(switchBtn);
+
+    await waitFor(() => {
+      expect(onWorkItemPatched).toHaveBeenCalledWith(
+        expect.objectContaining({
+          description: expect.objectContaining({
+            attrs: expect.objectContaining({
+              dynamicFields: expect.objectContaining({
+                releaseNotesIncluded: true,
+              }),
+            }),
+          }),
+        })
+      );
+    });
+  });
+
+  it('enforces non-validation invariant: items without dynamic fields render and operate normally', () => {
+    const emptyItem = workItemFactory.build({
+      description: null,
+    });
+
+    const { container } = render(
+      <WorkItemSidebar
+        workItem={emptyItem}
+        project={mockProjectWithFields}
+        childStatuses={[]}
+        projectMembers={[]}
+        detailsOpen={true}
+        setDetailsOpen={vi.fn()}
+        moreFieldsOpen={false}
+        setMoreFieldsOpen={vi.fn()}
+        onWorkItemPatched={vi.fn()}
+      />
+    );
+
+    expect(container).toBeInTheDocument();
+    expect(screen.queryByText(/validation error/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('SafeDynamicFieldsSection & Graceful Degradation', () => {
+  it('returns null gracefully when schema is malformed or invalid JSON object', () => {
+    const { container: c1 } = render(
+      <SafeDynamicFieldsSection
+        schema="not an object"
+        values={{}}
+      />
+    );
+    expect(c1.firstChild).toBeNull();
+
+    const { container: c2 } = render(
+      <SafeDynamicFieldsSection
+        schema={{ invalid_property: 123 }}
+        values={{}}
+      />
+    );
+    expect(c2.firstChild).toBeNull();
+
+    const { container: c3 } = render(
+      <SafeDynamicFieldsSection
+        schema={{ type: 'array' }}
+        values={{}}
+      />
+    );
+    expect(c3.firstChild).toBeNull();
+  });
+
+  it('renders DynamicFieldsErrorNotice when DynamicFieldsErrorBoundary catches an error', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    function ExplodingComponent(): React.ReactNode {
+      throw new Error('Explosion during field rendering');
+    }
+
+    render(
+      <DynamicFieldsErrorBoundary fallback={<DynamicFieldsErrorNotice />}>
+        <ExplodingComponent />
+      </DynamicFieldsErrorBoundary>
+    );
+
+    expect(
+      screen.getByText(
+        'Some custom fields could not be displayed due to a configuration mismatch.'
+      )
+    ).toBeInTheDocument();
+
+    consoleError.mockRestore();
   });
 });
