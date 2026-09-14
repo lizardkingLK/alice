@@ -2,6 +2,7 @@ import {
   mapToWorkItemType,
   DEFAULT_WORK_ITEM_PRIORITY,
   WORK_ITEM_PRIORITIES,
+  WorkItemTypeEnum,
   type WorkItemType,
   type WorkItemPriority,
   type ParsedWorkItemNode,
@@ -13,10 +14,15 @@ const STANDARD_FIELD_KEYS = new Set([
   'title',
   'name',
   'summary',
+  'workitem',
+  'item',
+  'taskname',
+  'task',
   'type',
   'issuetype',
   'issue_type',
   'kind',
+  'workitemtype',
   'priority',
   'description',
   'desc',
@@ -36,6 +42,7 @@ const STANDARD_FIELD_KEYS = new Set([
   'jira_issue_key',
   'jirakey',
   'key',
+  'issuekey',
   'parent',
   'parentid',
   'parent_id',
@@ -43,13 +50,28 @@ const STANDARD_FIELD_KEYS = new Set([
   'parent_reference',
   'parenttitle',
   'parent_title',
+  'parentname',
+  'parent_name',
+  'parentkey',
+  'parent_key',
+  'parentsummary',
+  'parent_summary',
+  'parentlink',
+  'parent_link',
   'epic',
+  'epiclink',
+  'epic_link',
+  'epickey',
+  'epic_key',
+  'epictitle',
+  'epic_title',
   'children',
   'subtasks',
   'sub_tasks',
   'items',
   'id',
   'tempid',
+  'issueid',
   'temporaryidentifier',
 ]);
 
@@ -250,42 +272,84 @@ export function parseJsonWorkItemDocument(
   throw new Error('Expected a JSON object or array of work items.');
 }
 
-function parseCsvLine(line: string, delimiter: string): string[] {
-  const result: string[] = [];
-  let currentField = '';
-  let insideQuotes = false;
+function detectDelimiter(firstLine: string): string {
+  if (firstLine.includes('\t')) return '\t';
+  if (firstLine.includes(';') && !firstLine.includes(',')) return ';';
+  if (firstLine.includes('|') && !firstLine.includes(',')) return '|';
+  return ',';
+}
 
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    const nextChar = line[i + 1];
+function processDelimitedChar(
+  char: string,
+  nextChar: string | undefined,
+  delimiter: string,
+  state: { inQuotes: boolean; currentField: string; currentRow: string[] },
+  rows: string[][]
+): number {
+  if (char === '"') {
+    if (state.inQuotes && nextChar === '"') {
+      state.currentField += '"';
+      return 1;
+    }
+    state.inQuotes = !state.inQuotes;
+    return 0;
+  }
 
-    if (char === '"') {
-      if (insideQuotes && nextChar === '"') {
-        currentField += '"';
-        i++;
-      } else {
-        insideQuotes = !insideQuotes;
-      }
-    } else if (char === delimiter && !insideQuotes) {
-      result.push(currentField.trim());
-      currentField = '';
-    } else {
-      currentField += char;
+  if (char === delimiter && !state.inQuotes) {
+    state.currentRow.push(state.currentField.trim());
+    state.currentField = '';
+    return 0;
+  }
+
+  if ((char === '\r' || char === '\n') && !state.inQuotes) {
+    const skipNext = char === '\r' && nextChar === '\n' ? 1 : 0;
+    state.currentRow.push(state.currentField.trim());
+    state.currentField = '';
+    if (state.currentRow.some((field) => field.length > 0)) {
+      rows.push(state.currentRow);
+    }
+    state.currentRow = [];
+    return skipNext;
+  }
+
+  state.currentField += char;
+  return 0;
+}
+
+function tokenizeDelimitedContent(
+  content: string,
+  delimiter: string
+): string[][] {
+  const rows: string[][] = [];
+  const state = { inQuotes: false, currentField: '', currentRow: [] as string[] };
+
+  for (let i = 0; i < content.length; i++) {
+    const skip = processDelimitedChar(
+      content[i]!,
+      content[i + 1],
+      delimiter,
+      state,
+      rows
+    );
+    i += skip;
+  }
+
+  if (state.currentField.length > 0 || state.currentRow.length > 0) {
+    state.currentRow.push(state.currentField.trim());
+    if (state.currentRow.some((field) => field.length > 0)) {
+      rows.push(state.currentRow);
     }
   }
 
-  result.push(currentField.trim());
-  return result;
+  return rows;
 }
 
-function parseCsvRowToWorkItem(
-  currentLine: string,
-  delimiter: string,
+function parseDelimitedRowToWorkItem(
+  rowValues: string[],
   rawHeaders: string[],
   normalizedHeaders: string[],
   lineIndex: number
 ): ParsedWorkItemNode {
-  const rowValues = parseCsvLine(currentLine, delimiter);
   const rowObject: Record<string, string> = {};
   const dynamicFields: Record<string, unknown> = {};
 
@@ -301,16 +365,35 @@ function parseCsvRowToWorkItem(
     }
   }
 
+  const idValue =
+    rowObject.temporaryidentifier ||
+    rowObject.tempid ||
+    rowObject.id ||
+    rowObject.issueid ||
+    null;
+
+  const jiraIssueKey =
+    rowObject.jiraissuekey ||
+    rowObject.jirakey ||
+    rowObject.issuekey ||
+    rowObject.key ||
+    null;
+
+  const temporaryIdentifier = idValue || jiraIssueKey || `row-${lineIndex}`;
+
   const title =
     rowObject.title ||
     rowObject.name ||
     rowObject.summary ||
     rowObject.taskname ||
+    rowObject.workitem ||
+    rowObject.task ||
     `Work Item ${lineIndex}`;
 
   const rawType =
     rowObject.type ||
     rowObject.issuetype ||
+    rowObject.issue_type ||
     rowObject.kind ||
     rowObject.workitemtype;
   const itemType: WorkItemType = mapToWorkItemType(rawType);
@@ -323,8 +406,16 @@ function parseCsvRowToWorkItem(
   const parentReference =
     rowObject.parent ||
     rowObject.parentid ||
+    rowObject.parentreference ||
+    rowObject.parentkey ||
     rowObject.parenttitle ||
+    rowObject.parentname ||
+    rowObject.parentsummary ||
+    rowObject.parentlink ||
     rowObject.epic ||
+    rowObject.epiclink ||
+    rowObject.epickey ||
+    rowObject.epictitle ||
     null;
 
   const rawPoints =
@@ -334,15 +425,13 @@ function parseCsvRowToWorkItem(
       ? Math.round(Number(rawPoints))
       : null;
 
-  const dueDate = rowObject.duedate || rowObject.deadline || null;
+  const dueDate =
+    rowObject.duedate || rowObject.due_date || rowObject.deadline || null;
 
   const labels = normalizeLabels(rowObject.labels || rowObject.tags);
 
-  const jiraIssueKey =
-    rowObject.jiraissuekey || rowObject.jirakey || rowObject.key || null;
-
   return {
-    temporaryIdentifier: `csv-row-${lineIndex}`,
+    temporaryIdentifier,
     title,
     type: itemType,
     priority,
@@ -357,44 +446,485 @@ function parseCsvRowToWorkItem(
   };
 }
 
-export function parseCsvWorkItemDocument(
+export function parseDelimitedWorkItemDocument(
   fileContent: string
 ): ParsedWorkItemNode[] {
-  const rawLines = fileContent
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
+  const firstLine = fileContent.split(/\r?\n/)[0] || '';
+  if (!firstLine.trim()) return [];
 
-  if (rawLines.length === 0) {
-    return [];
-  }
+  const delimiter = detectDelimiter(firstLine);
+  const rows = tokenizeDelimitedContent(fileContent, delimiter);
 
-  const headerLine = rawLines[0] || '';
-  const delimiter =
-    headerLine.includes(';') && !headerLine.includes(',') ? ';' : ',';
-  const rawHeaders = parseCsvLine(headerLine, delimiter);
+  if (rows.length === 0) return [];
+
+  const rawHeaders = rows[0] || [];
   const normalizedHeaders = rawHeaders.map((header) =>
     header.toLowerCase().replace(/[^a-z0-9]/g, '')
   );
 
   const parsedItems: ParsedWorkItemNode[] = [];
-
-  for (let lineIndex = 1; lineIndex < rawLines.length; lineIndex++) {
-    const currentLine = rawLines[lineIndex];
-    if (!currentLine) continue;
+  for (let rowIndex = 1; rowIndex < rows.length; rowIndex++) {
+    const rowValues = rows[rowIndex];
+    if (!rowValues || rowValues.every((c) => !c)) continue;
 
     parsedItems.push(
-      parseCsvRowToWorkItem(
-        currentLine,
-        delimiter,
+      parseDelimitedRowToWorkItem(
+        rowValues,
         rawHeaders,
         normalizedHeaders,
-        lineIndex
+        rowIndex
       )
     );
   }
 
   return parsedItems;
+}
+
+export const parseCsvWorkItemDocument = parseDelimitedWorkItemDocument;
+
+function isMarkdownTable(content: string): boolean {
+  const lines = content
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  if (lines.length < 2) return false;
+  const first = lines[0] || '';
+  const second = lines[1] || '';
+  return (
+    first.includes('|') &&
+    second.includes('|') &&
+    second.replace(/[\s|:-]/g, '').length === 0
+  );
+}
+
+export function parseMarkdownTableWorkItemDocument(
+  fileContent: string
+): ParsedWorkItemNode[] {
+  const rawLines = fileContent
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  const tableLines = rawLines.filter((line) => line.includes('|'));
+  if (tableLines.length < 2) return [];
+
+  const cleanHeaderLine = tableLines[0]!.replace(/^\|/, '').replace(/\|$/, '');
+  const rawHeaders = cleanHeaderLine.split('|').map((h) => h.trim());
+  const normalizedHeaders = rawHeaders.map((h) =>
+    h.toLowerCase().replace(/[^a-z0-9]/g, '')
+  );
+
+  const parsedItems: ParsedWorkItemNode[] = [];
+  let itemIndex = 1;
+
+  for (let i = 1; i < tableLines.length; i++) {
+    const line = tableLines[i]!;
+    if (line.replace(/[\s|:-]/g, '').length === 0) continue;
+
+    const cleanLine = line.replace(/^\|/, '').replace(/\|$/, '');
+    const rowValues = cleanLine.split('|').map((c) => c.trim());
+
+    parsedItems.push(
+      parseDelimitedRowToWorkItem(
+        rowValues,
+        rawHeaders,
+        normalizedHeaders,
+        itemIndex++
+      )
+    );
+  }
+
+  return parsedItems;
+}
+
+function isIndentedOutline(content: string): boolean {
+  const lines = content
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  if (lines.length < 2) return false;
+  const bulletCount = lines.filter((l) =>
+    /^[-*+]\s|^[\d.]+\s/.test(l)
+  ).length;
+  return bulletCount >= 2;
+}
+
+interface OutlineStackItem {
+  indent: number;
+  identifier: string;
+  title: string;
+}
+
+function extractTypeFromOutlineLine(text: string): {
+  type: WorkItemType | null;
+  cleanText: string;
+} {
+  const bracketMatch =
+    /^\[(Epic|Feature|Story|Task|Issue|Bug)\]\s*(.*)/i.exec(text);
+  if (bracketMatch?.[1] && bracketMatch[2] !== undefined) {
+    return {
+      type: mapToWorkItemType(bracketMatch[1]),
+      cleanText: bracketMatch[2].trim(),
+    };
+  }
+
+  const colonMatch =
+    /^(Epic|Feature|Story|Task|Issue|Bug):\s*(.*)/i.exec(text);
+  if (colonMatch?.[1] && colonMatch[2] !== undefined) {
+    return {
+      type: mapToWorkItemType(colonMatch[1]),
+      cleanText: colonMatch[2].trim(),
+    };
+  }
+
+  return { type: null, cleanText: text };
+}
+
+function parseInlineMetadata(metaStr: string): {
+  priority?: WorkItemPriority;
+  storyPoints?: number | null;
+  key?: string | null;
+  dynamicFields: Record<string, unknown>;
+} {
+  const dynamicFields: Record<string, unknown> = {};
+  let priority: WorkItemPriority | undefined;
+  let storyPoints: number | null = null;
+  let key: string | null = null;
+
+  const parts = metaStr.split(/[,;]/);
+  for (const part of parts) {
+    const [rawKey, ...valParts] = part.split(':');
+    if (!rawKey || valParts.length === 0) continue;
+    const k = rawKey.trim();
+    const v = valParts.join(':').trim();
+    const normalized = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    if (normalized === 'priority') {
+      priority = normalizePriority(v);
+    } else if (['points', 'storypoints', 'estimate'].includes(normalized)) {
+      const num = Number(v);
+      if (!Number.isNaN(num)) storyPoints = Math.round(num);
+    } else if (['key', 'jirakey', 'issuekey'].includes(normalized)) {
+      key = v;
+    } else {
+      dynamicFields[k] = v;
+    }
+  }
+
+  return { priority, storyPoints, key, dynamicFields };
+}
+
+function extractMetadataFromOutlineLine(text: string): {
+  cleanText: string;
+  priority?: WorkItemPriority;
+  storyPoints?: number | null;
+  key?: string | null;
+  dynamicFields: Record<string, unknown>;
+} {
+  if (!text.endsWith(')')) {
+    return { cleanText: text, dynamicFields: {} };
+  }
+
+  const openParenIdx = text.lastIndexOf('(');
+  if (openParenIdx < 0) {
+    return { cleanText: text, dynamicFields: {} };
+  }
+
+  const metaStr = text.slice(openParenIdx + 1, -1).trim();
+  const cleanText = text.slice(0, openParenIdx).trim();
+  const parsedMeta = parseInlineMetadata(metaStr);
+
+  return {
+    cleanText,
+    priority: parsedMeta.priority,
+    storyPoints: parsedMeta.storyPoints,
+    key: parsedMeta.key,
+    dynamicFields: parsedMeta.dynamicFields,
+  };
+}
+
+export function parseIndentedTextWorkItemDocument(
+  fileContent: string
+): ParsedWorkItemNode[] {
+  const lines = fileContent.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  const items: ParsedWorkItemNode[] = [];
+  const stack: OutlineStackItem[] = [];
+  const defaultTypesByDepth: WorkItemType[] = [
+    WorkItemTypeEnum.Epic,
+    WorkItemTypeEnum.Feature,
+    WorkItemTypeEnum.Story,
+    WorkItemTypeEnum.Task,
+  ];
+
+  let itemCounter = 1;
+
+  for (const line of lines) {
+    const expandedLine = line.replace(/\t/g, '  ');
+    const indent = expandedLine.search(/\S/);
+    let trimmed = expandedLine.trim();
+
+    trimmed = trimmed.replace(/^[-*+]\s+/, '').replace(/^[\d.]+\s+/, '');
+
+    const { type: explicitType, cleanText: textWithoutType } =
+      extractTypeFromOutlineLine(trimmed);
+
+    const {
+      cleanText: textWithoutMeta,
+      priority,
+      storyPoints,
+      key,
+      dynamicFields,
+    } = extractMetadataFromOutlineLine(textWithoutType);
+
+    let title = textWithoutMeta;
+    let description: string | null = null;
+    const colonIndex = textWithoutMeta.indexOf(':');
+    if (colonIndex > 0) {
+      title = textWithoutMeta.slice(0, colonIndex).trim();
+      description = textWithoutMeta.slice(colonIndex + 1).trim() || null;
+    }
+
+    while (stack.length > 0 && stack[stack.length - 1]!.indent >= indent) {
+      stack.pop();
+    }
+
+    const parent = stack.length > 0 ? stack[stack.length - 1] : null;
+    const depth = stack.length;
+    const itemType =
+      explicitType ||
+      defaultTypesByDepth[Math.min(depth, defaultTypesByDepth.length - 1)] ||
+      WorkItemTypeEnum.Task;
+    const temporaryIdentifier = key || `outline-item-${itemCounter++}`;
+
+    const parsedNode: ParsedWorkItemNode = {
+      temporaryIdentifier,
+      title: title || `Work Item ${itemCounter}`,
+      type: itemType,
+      priority: priority || DEFAULT_WORK_ITEM_PRIORITY,
+      description,
+      storyPoints: storyPoints ?? null,
+      jiraIssueKey: key ?? null,
+      parentReference: parent ? parent.identifier : null,
+      dynamicFields:
+        Object.keys(dynamicFields).length > 0 ? dynamicFields : undefined,
+    };
+
+    items.push(parsedNode);
+    stack.push({ indent, identifier: temporaryIdentifier, title });
+  }
+
+  return items;
+}
+
+function parseYamlScalar(val: string): unknown {
+  if (val === 'true') return true;
+  if (val === 'false') return false;
+  if (val === 'null' || val === '~') return null;
+  if (/^-?\d+(\.\d+)?$/.test(val)) return Number(val);
+  if (
+    (val.startsWith('"') && val.endsWith('"')) ||
+    (val.startsWith("'") && val.endsWith("'"))
+  ) {
+    return val.slice(1, -1);
+  }
+  return val;
+}
+
+interface YamlParserState {
+  lineIdx: number;
+}
+
+function parseYamlListEntry(
+  lines: string[],
+  state: YamlParserState,
+  curIndent: number,
+  contentAfterDash: string
+): unknown {
+  if (contentAfterDash.includes(':') && !contentAfterDash.startsWith('{')) {
+    const colonIdx = contentAfterDash.indexOf(':');
+    const firstKey = contentAfterDash.slice(0, colonIdx).trim();
+    const firstVal = parseYamlScalar(
+      contentAfterDash.slice(colonIdx + 1).trim()
+    );
+    const obj: Record<string, unknown> = { [firstKey]: firstVal };
+
+    const childIndent = curIndent + 2;
+    while (state.lineIdx < lines.length) {
+      const nextLine = lines[state.lineIdx]!;
+      const nextIndent = nextLine.search(/\S/);
+      const nextTrimmed = nextLine.trim();
+
+      if (nextIndent < childIndent || nextTrimmed.startsWith('- ')) break;
+
+      const nextColon = nextTrimmed.indexOf(':');
+      if (nextColon > 0) {
+        const k = nextTrimmed.slice(0, nextColon).trim();
+        const vRaw = nextTrimmed.slice(nextColon + 1).trim();
+        state.lineIdx++;
+        obj[k] =
+          vRaw.length === 0
+            ? parseYamlBlock(lines, state, nextIndent + 2)
+            : parseYamlScalar(vRaw);
+      } else {
+        state.lineIdx++;
+      }
+    }
+    return obj;
+  }
+  return parseYamlScalar(contentAfterDash);
+}
+
+function parseYamlList(
+  lines: string[],
+  state: YamlParserState,
+  currentIndent: number
+): unknown[] {
+  const list: unknown[] = [];
+  while (state.lineIdx < lines.length) {
+    const curLine = lines[state.lineIdx]!;
+    const curIndent = curLine.search(/\S/);
+    const curTrimmed = curLine.trim();
+
+    if (curIndent < currentIndent || !curTrimmed.startsWith('- ')) break;
+
+    const contentAfterDash = curTrimmed.slice(2).trim();
+    state.lineIdx++;
+    list.push(parseYamlListEntry(lines, state, curIndent, contentAfterDash));
+  }
+  return list;
+}
+
+function parseYamlObject(
+  lines: string[],
+  state: YamlParserState,
+  currentIndent: number
+): Record<string, unknown> {
+  const obj: Record<string, unknown> = {};
+  while (state.lineIdx < lines.length) {
+    const curLine = lines[state.lineIdx]!;
+    const curIndent = curLine.search(/\S/);
+    const curTrimmed = curLine.trim();
+
+    if (curIndent < currentIndent || curTrimmed.startsWith('- ')) break;
+
+    const colonIdx = curTrimmed.indexOf(':');
+    if (colonIdx > 0) {
+      const k = curTrimmed.slice(0, colonIdx).trim();
+      const vRaw = curTrimmed.slice(colonIdx + 1).trim();
+      state.lineIdx++;
+      obj[k] =
+        vRaw.length === 0
+          ? parseYamlBlock(lines, state, curIndent + 2)
+          : parseYamlScalar(vRaw);
+    } else {
+      state.lineIdx++;
+    }
+  }
+  return obj;
+}
+
+function parseYamlBlock(
+  lines: string[],
+  state: YamlParserState,
+  currentIndent: number
+): unknown {
+  if (state.lineIdx >= lines.length) return null;
+  const line = lines[state.lineIdx]!;
+  const trimmed = line.trim();
+  const indent = line.search(/\S/);
+
+  if (indent < currentIndent) return null;
+
+  if (trimmed.startsWith('- ')) {
+    return parseYamlList(lines, state, currentIndent);
+  }
+
+  if (trimmed.includes(':')) {
+    return parseYamlObject(lines, state, currentIndent);
+  }
+
+  return null;
+}
+
+function parseSimpleYaml(content: string): unknown {
+  const lines = content
+    .split(/\r?\n/)
+    .filter((l) => l.trim().length > 0 && !l.trim().startsWith('#'));
+  if (lines.length === 0) return null;
+
+  const state: YamlParserState = { lineIdx: 0 };
+  return parseYamlBlock(lines, state, 0);
+}
+
+export function parseYamlWorkItemDocument(
+  fileContent: string
+): ParsedWorkItemNode[] {
+  const parsed = parseSimpleYaml(fileContent);
+  if (Array.isArray(parsed)) {
+    return parsed.map((item, index) =>
+      parseRawJsonNode(item as Record<string, unknown>, index)
+    );
+  }
+  if (typeof parsed === 'object' && parsed !== null) {
+    const record = parsed as Record<string, unknown>;
+    const candidateArray = findCandidateArray(record);
+    if (candidateArray) {
+      return candidateArray.map((item, index) =>
+        parseRawJsonNode(item as Record<string, unknown>, index)
+      );
+    }
+    return [parseRawJsonNode(record, 0)];
+  }
+  throw new Error('Expected a YAML list or object of work items.');
+}
+
+function parseAttachmentContent(
+  textContent: string,
+  fileName: string,
+  fileType: ChatAttachmentFileTypeEnum
+): ParsedWorkItemNode[] {
+  const lowerName = fileName.toLowerCase();
+
+  if (
+    fileType === ChatAttachmentFileTypeEnum.Json ||
+    lowerName.endsWith('.json')
+  ) {
+    return parseJsonWorkItemDocument(textContent);
+  }
+  if (lowerName.endsWith('.yaml') || lowerName.endsWith('.yml')) {
+    return parseYamlWorkItemDocument(textContent);
+  }
+  if (
+    fileType === ChatAttachmentFileTypeEnum.Csv ||
+    lowerName.endsWith('.csv') ||
+    lowerName.endsWith('.tsv')
+  ) {
+    return parseDelimitedWorkItemDocument(textContent);
+  }
+  if (isMarkdownTable(textContent)) {
+    return parseMarkdownTableWorkItemDocument(textContent);
+  }
+  if (isIndentedOutline(textContent)) {
+    return parseIndentedTextWorkItemDocument(textContent);
+  }
+
+  try {
+    return parseJsonWorkItemDocument(textContent);
+  } catch {
+    try {
+      if (lowerName.endsWith('.yaml') || lowerName.endsWith('.yml')) {
+        return parseYamlWorkItemDocument(textContent);
+      }
+      if (isMarkdownTable(textContent)) {
+        return parseMarkdownTableWorkItemDocument(textContent);
+      }
+      if (isIndentedOutline(textContent)) {
+        return parseIndentedTextWorkItemDocument(textContent);
+      }
+      return parseDelimitedWorkItemDocument(textContent);
+    } catch {
+      return parseDelimitedWorkItemDocument(textContent);
+    }
+  }
 }
 
 export async function fetchAndParseWorkItemAttachment(
@@ -421,25 +951,7 @@ export async function fetchAndParseWorkItemAttachment(
     throw new Error(`Could not access attachment: ${errorMsg}`);
   }
 
-  let parsedItems: ParsedWorkItemNode[] = [];
-
-  if (
-    fileType === ChatAttachmentFileTypeEnum.Json ||
-    fileName.toLowerCase().endsWith('.json')
-  ) {
-    parsedItems = parseJsonWorkItemDocument(textContent);
-  } else if (
-    fileType === ChatAttachmentFileTypeEnum.Csv ||
-    fileName.toLowerCase().endsWith('.csv')
-  ) {
-    parsedItems = parseCsvWorkItemDocument(textContent);
-  } else {
-    try {
-      parsedItems = parseJsonWorkItemDocument(textContent);
-    } catch {
-      parsedItems = parseCsvWorkItemDocument(textContent);
-    }
-  }
+  const parsedItems = parseAttachmentContent(textContent, fileName, fileType);
 
   let totalChildCount = 0;
   let dynamicFieldsCount = 0;

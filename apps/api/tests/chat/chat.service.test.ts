@@ -49,6 +49,10 @@ import {
   chatHistoryToMarkdown,
   markdownToChatHistory,
 } from '../../src/routes/api/chat/chat.service';
+import {
+  parseDelimitedWorkItemDocument,
+  parseMarkdownTableWorkItemDocument,
+} from '../../src/routes/api/chat/chat-attachment-parser';
 import type {
   StoredChatMessage,
   ToolAction,
@@ -673,6 +677,197 @@ describe('ChatService batch_import_work_items', () => {
         entity: expect.objectContaining({ id: 'item-to-remove' }),
       })
     );
+  });
+
+  it('imports and updates work items with hierarchy and dynamic fields from CSV files', async () => {
+    vi.mocked(prisma.work_items.findMany).mockResolvedValue([
+      {
+        id: 'uuid-epic-1',
+        title: 'Core Infrastructure',
+        jira_issue_key: 'ALICE-1',
+        type: WorkItemTypeEnum.Epic,
+        status: 'In Progress',
+        parent_id: null,
+        priority: 'medium',
+      } as never,
+      {
+        id: 'uuid-feature-2',
+        title: 'Authentication Service',
+        jira_issue_key: 'ALICE-2',
+        type: WorkItemTypeEnum.Feature,
+        status: 'New',
+        parent_id: null,
+        priority: 'medium',
+      } as never,
+    ]);
+    vi.mocked(prisma.work_items.update).mockResolvedValue({} as never);
+
+    let createdCounter = 0;
+    const createWorkItemMock = vi.fn().mockImplementation((_userId, body) => {
+      createdCounter++;
+      return Promise.resolve({
+        id: `uuid-created-${createdCounter}`,
+        title: body.title,
+        key: `ALICE-${createdCounter + 2}`,
+      });
+    });
+
+    const chatService = new ChatService({
+      chat: {} as never,
+      projectsRepository: mockProjectsRepo as never,
+      workItemService: { createWorkItem: createWorkItemMock } as never,
+      sprintsService: {} as never,
+      projectsService: {} as never,
+      integrationsService: {} as never,
+    });
+
+    const csvContent = `Issue key,Type,Title,Parent,Priority,Description,Dept
+ALICE-1,Epic,Core Infrastructure,,highest,Updated infra description,Platform
+ALICE-2,Feature,Authentication Service,ALICE-1,high,Updated auth description,Security
+,Story,Login Endpoint,ALICE-2,medium,Build login handler,Security`;
+
+    const items = parseDelimitedWorkItemDocument(csvContent);
+    expect(items).toHaveLength(3);
+
+    const toolActionsPerformed: ToolAction[] = [];
+    const parts = await chatService.processFunctionCalls(
+      'user-1',
+      [
+        {
+          functionCall: {
+            name: 'batch_import_work_items',
+            args: {
+              projectId: 'proj-1',
+              items,
+              updateExisting: true,
+            },
+          },
+        },
+      ],
+      toolActionsPerformed
+    );
+
+    const result = parts[0]?.functionResponse?.response?.result as {
+      importedCount: number;
+      updatedCount: number;
+    };
+
+    expect(result.updatedCount).toBe(2);
+    expect(result.importedCount).toBe(1);
+
+    // Verify ALICE-2 was updated with parent_id: uuid-epic-1
+    expect(prisma.work_items.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'uuid-feature-2' },
+        data: expect.objectContaining({
+          parent_id: 'uuid-epic-1',
+          priority: 'high',
+        }),
+      })
+    );
+
+    // Verify ALICE-3 (new Story) was created with parent_id: uuid-feature-2
+    expect(createWorkItemMock).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({
+        title: 'Login Endpoint',
+        type: WorkItemTypeEnum.Story,
+        parent_id: 'uuid-feature-2',
+      })
+    );
+
+    expect(toolActionsPerformed).toContainEqual(
+      expect.objectContaining({
+        type: 'update_work_item',
+        entity: expect.objectContaining({ key: 'ALICE-1' }),
+      })
+    );
+    expect(toolActionsPerformed).toContainEqual(
+      expect.objectContaining({
+        type: 'create_work_item',
+        entity: expect.objectContaining({ title: 'Login Endpoint' }),
+      })
+    );
+  });
+
+  it('imports and links work item hierarchy from Markdown tables and text outlines', async () => {
+    vi.mocked(prisma.work_items.findMany).mockResolvedValue([]);
+    let createdCounter = 0;
+    const createWorkItemMock = vi.fn().mockImplementation((_userId, body) => {
+      createdCounter++;
+      return Promise.resolve({
+        id: `created-uuid-${createdCounter}`,
+        title: body.title,
+        key: `ALICE-${createdCounter}`,
+      });
+    });
+
+    const chatService = new ChatService({
+      chat: {} as never,
+      projectsRepository: mockProjectsRepo as never,
+      workItemService: { createWorkItem: createWorkItemMock } as never,
+      sprintsService: {} as never,
+      projectsService: {} as never,
+      integrationsService: {} as never,
+    });
+
+    const mdTable = `| Type | Title | Priority | Parent | CostCenter |
+| --- | --- | --- | --- | --- |
+| Epic | Payment Engine | high | | CC-99 |
+| Feature | Checkout API | high | Payment Engine | CC-99 |
+| Story | Webhook Handler | medium | Checkout API | CC-99 |`;
+
+    const items = parseMarkdownTableWorkItemDocument(mdTable);
+    const toolActionsPerformed: ToolAction[] = [];
+
+    await chatService.processFunctionCalls(
+      'user-1',
+      [
+        {
+          functionCall: {
+            name: 'batch_import_work_items',
+            args: {
+              projectId: 'proj-1',
+              items,
+            },
+          },
+        },
+      ],
+      toolActionsPerformed
+    );
+
+    expect(createWorkItemMock).toHaveBeenCalledTimes(3);
+    // Verify first item created without parent
+    expect(createWorkItemMock).toHaveBeenNthCalledWith(
+      1,
+      'user-1',
+      expect.objectContaining({
+        title: 'Payment Engine',
+        type: WorkItemTypeEnum.Epic,
+        parent_id: null,
+      })
+    );
+    // Verify second item created with first item's id as parent
+    expect(createWorkItemMock).toHaveBeenNthCalledWith(
+      2,
+      'user-1',
+      expect.objectContaining({
+        title: 'Checkout API',
+        type: WorkItemTypeEnum.Feature,
+        parent_id: 'created-uuid-1',
+      })
+    );
+    // Verify third item created with second item's id as parent
+    expect(createWorkItemMock).toHaveBeenNthCalledWith(
+      3,
+      'user-1',
+      expect.objectContaining({
+        title: 'Webhook Handler',
+        type: WorkItemTypeEnum.Story,
+        parent_id: 'created-uuid-2',
+      })
+    );
+    expect(toolActionsPerformed).toHaveLength(3);
   });
 });
 

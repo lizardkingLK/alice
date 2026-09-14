@@ -368,7 +368,8 @@ function isFlatItemHierarchyValid(
 
   const parentNode =
     flatNodeMap.get(item.parentReference) ||
-    flatNodeMap.get(item.parentReference.toLowerCase().trim());
+    flatNodeMap.get(item.parentReference.toLowerCase().trim()) ||
+    flatNodeMap.get(item.parentReference.toUpperCase().trim());
 
   if (!parentNode) return true;
 
@@ -429,7 +430,10 @@ function findExistingWorkItem(
   }
   if (node.temporaryIdentifier) {
     const byId = existingWorkItems.find(
-      (e) => e.id === node.temporaryIdentifier
+      (e) =>
+        e.id === node.temporaryIdentifier ||
+        e.jira_issue_key?.toUpperCase() ===
+          node.temporaryIdentifier.toUpperCase()
     );
     if (byId) return byId;
   }
@@ -630,6 +634,7 @@ function createBatchImportContext(params: {
     idMapping.set(existing.id, existing.id);
     if (existing.jira_issue_key) {
       idMapping.set(existing.jira_issue_key.toUpperCase(), existing.id);
+      idMapping.set(existing.jira_issue_key.toLowerCase(), existing.id);
     }
     idMapping.set(existing.title.toLowerCase().trim(), existing.id);
     idTypeMapping.set(existing.id, existing.type as WorkItemType);
@@ -759,6 +764,13 @@ async function executeSingleNodeImport(
 
   if (node.temporaryIdentifier) {
     ctx.idMapping.set(node.temporaryIdentifier, workItemId);
+    ctx.idMapping.set(node.temporaryIdentifier.toLowerCase().trim(), workItemId);
+    ctx.idMapping.set(node.temporaryIdentifier.toUpperCase().trim(), workItemId);
+  }
+  if (node.jiraIssueKey) {
+    ctx.idMapping.set(node.jiraIssueKey, workItemId);
+    ctx.idMapping.set(node.jiraIssueKey.toUpperCase().trim(), workItemId);
+    ctx.idMapping.set(node.jiraIssueKey.toLowerCase().trim(), workItemId);
   }
   if (node.title) {
     ctx.idMapping.set(node.title.toLowerCase().trim(), workItemId);
@@ -786,6 +798,7 @@ async function processReferencedParentItem(
   const parentId = parentRef
     ? ctx.idMapping.get(parentRef) ||
       ctx.idMapping.get(parentRef.toLowerCase().trim()) ||
+      ctx.idMapping.get(parentRef.toUpperCase().trim()) ||
       null
     : null;
 
@@ -1234,6 +1247,13 @@ export class ChatService {
     for (const item of items) {
       if (item.temporaryIdentifier) {
         flatNodeMap.set(item.temporaryIdentifier, item);
+        flatNodeMap.set(item.temporaryIdentifier.toLowerCase().trim(), item);
+        flatNodeMap.set(item.temporaryIdentifier.toUpperCase().trim(), item);
+      }
+      if (item.jiraIssueKey) {
+        flatNodeMap.set(item.jiraIssueKey, item);
+        flatNodeMap.set(item.jiraIssueKey.toUpperCase().trim(), item);
+        flatNodeMap.set(item.jiraIssueKey.toLowerCase().trim(), item);
       }
       if (item.title) {
         flatNodeMap.set(item.title.toLowerCase().trim(), item);
