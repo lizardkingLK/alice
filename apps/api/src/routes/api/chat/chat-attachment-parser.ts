@@ -658,7 +658,7 @@ export function parseIndentedTextWorkItemDocument(
   let itemCounter = 1;
 
   for (const line of lines) {
-    const expandedLine = line.replace(/\t/g, '  ');
+    const expandedLine = line.replaceAll('\t', '  ');
     const indent = expandedLine.search(/\S/);
     let trimmed = expandedLine.trim();
 
@@ -683,11 +683,11 @@ export function parseIndentedTextWorkItemDocument(
       description = textWithoutMeta.slice(colonIndex + 1).trim() || null;
     }
 
-    while (stack.length > 0 && stack[stack.length - 1]!.indent >= indent) {
+    while (stack.length > 0 && stack.at(-1)!.indent >= indent) {
       stack.pop();
     }
 
-    const parent = stack.length > 0 ? stack[stack.length - 1] : null;
+    const parent = stack.length > 0 ? stack.at(-1) : null;
     const depth = stack.length;
     const itemType =
       explicitType ||

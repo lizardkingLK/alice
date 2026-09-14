@@ -284,7 +284,7 @@ function detectCircularReference(
   const visited = new Set<string>();
   const selfKey = item.temporaryIdentifier || item.title.toLowerCase().trim();
 
-  while (curr && curr.parentReference) {
+  while (curr?.parentReference) {
     const currKey = curr.temporaryIdentifier || curr.title.toLowerCase().trim();
     if (visited.has(currKey) || currKey === selfKey) {
       return true;
@@ -1423,7 +1423,7 @@ export class ChatService {
     now: number
   ): Promise<boolean> {
     const att = attachments[index];
-    if (!att || !att.id) return false;
+    if (!att?.id) return false;
 
     const isExpired =
       !att.expiresAt || new Date(att.expiresAt).getTime() <= now + 60_000;
