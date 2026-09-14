@@ -35,7 +35,7 @@ export function DashboardBreadcrumbRuntimeProvider({
   const [segmentLabelsByUrl, setSegmentLabelsByUrl] = useState<
     Record<string, string>
   >({});
-  const [favoriteLabel, setFavoriteLabelState] = useState<string | null>(null);
+  const [favoriteLabel, setFavoriteLabel] = useState<string | null>(null);
 
   const setSegmentLabel = useCallback((url: string, label: string | null) => {
     const key = normalizeUrl(url);
@@ -55,11 +55,9 @@ export function DashboardBreadcrumbRuntimeProvider({
     });
   }, []);
 
-  const setFavoriteLabel = useCallback((label: string | null) => {
-    setFavoriteLabelState((prev) => {
-      const next = label?.trim() ? label.trim() : null;
-      return prev === next ? prev : next;
-    });
+  const commitFavoriteLabel = useCallback((label: string | null) => {
+    const next = label?.trim() ? label.trim() : null;
+    setFavoriteLabel((prev) => (prev === next ? prev : next));
   }, []);
 
   const value = useMemo(
@@ -67,9 +65,9 @@ export function DashboardBreadcrumbRuntimeProvider({
       segmentLabelsByUrl,
       favoriteLabel,
       setSegmentLabel,
-      setFavoriteLabel,
+      setFavoriteLabel: commitFavoriteLabel,
     }),
-    [favoriteLabel, segmentLabelsByUrl, setFavoriteLabel, setSegmentLabel]
+    [commitFavoriteLabel, favoriteLabel, segmentLabelsByUrl, setSegmentLabel]
   );
 
   return (

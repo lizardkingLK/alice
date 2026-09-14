@@ -230,10 +230,10 @@ function ChartTypeIconRow({
   return (
     <div className="flex flex-wrap gap-1.5">
       {options.map((option) => {
-        const selected =
-          option.enabled &&
-          option.variant != null &&
-          option.variant === pieVariant;
+        const variant = option.variant;
+        const selected = Boolean(
+          option.enabled && variant != null && variant === pieVariant
+        );
         return (
           <ComingSoonIconButton
             key={option.id}
@@ -241,11 +241,7 @@ function ChartTypeIconRow({
             Icon={option.Icon}
             enabled={option.enabled}
             selected={selected}
-            onSelect={
-              option.variant
-                ? () => onPieVariantChange(option.variant as ChartPieVariant)
-                : undefined
-            }
+            onSelect={variant ? () => onPieVariantChange(variant) : undefined}
           />
         );
       })}
@@ -385,7 +381,7 @@ function LabelsSection() {
               style={{ backgroundColor: 'var(--chart-1)' }}
               aria-hidden
             />
-            Status
+            <span>Status</span>
           </span>
         </div>
       </div>
@@ -450,20 +446,30 @@ function CustomizeSection() {
   );
 }
 
-function GroupsSection() {
+function StaticCheckboxList({
+  heading,
+  allLabel,
+  items,
+}: Readonly<{
+  heading?: string;
+  allLabel: string;
+  items: readonly string[];
+}>) {
   return (
     <div className="pointer-events-none flex flex-col gap-2 opacity-90">
-      <p className="text-muted-foreground text-xs font-medium">Statuses</p>
+      {heading ? (
+        <p className="text-muted-foreground text-xs font-medium">{heading}</p>
+      ) : null}
       <label className="flex items-center justify-between gap-2 text-sm">
-        <span>All groups</span>
+        <span>{allLabel}</span>
         <Checkbox checked disabled />
       </label>
-      {BOARD_WORK_ITEM_STATUSES.map((status) => (
+      {items.map((item) => (
         <label
-          key={status}
+          key={item}
           className="flex items-center justify-between gap-2 text-sm"
         >
-          <span>{STATUS_META[status]?.label ?? status}</span>
+          <span>{item}</span>
           <Checkbox checked disabled />
         </label>
       ))}
@@ -471,23 +477,27 @@ function GroupsSection() {
   );
 }
 
+function GroupsSection() {
+  const statusLabels = BOARD_WORK_ITEM_STATUSES.map(
+    (status) => STATUS_META[status]?.label ?? status
+  );
+  return (
+    <StaticCheckboxList
+      heading="Statuses"
+      allLabel="All groups"
+      items={statusLabels}
+    />
+  );
+}
+
 function ColumnsSection() {
   return (
-    <div className="pointer-events-none flex flex-col gap-2 opacity-90">
+    <div className="flex flex-col gap-2">
       <p className="text-sm font-medium">Choose which columns to show</p>
-      <label className="flex items-center justify-between gap-2 text-sm">
-        <span>All columns</span>
-        <Checkbox checked disabled />
-      </label>
-      {TABLE_COLUMN_LABELS.map((column) => (
-        <label
-          key={column}
-          className="flex items-center justify-between gap-2 text-sm"
-        >
-          <span>{column}</span>
-          <Checkbox checked disabled />
-        </label>
-      ))}
+      <StaticCheckboxList
+        allLabel="All columns"
+        items={[...TABLE_COLUMN_LABELS]}
+      />
     </div>
   );
 }
