@@ -9,6 +9,7 @@ import {
 import { BOARD_WORK_ITEM_STATUSES } from '@repo/types';
 import { PRIORITY_LABELS } from '@/app/work-items/_helpers/work-item-priority-ui';
 import { STATUS_META } from '@/app/work-items/_helpers/work-item-status';
+import { STATUS_CHART_COLORS } from '@/components/status-distribution-wheel';
 
 export type ChartsSampleMember = {
   readonly id: string;
@@ -143,7 +144,7 @@ export type ChartsStatusPieSlice = {
   readonly swatch: string;
 };
 
-const FALLBACK_STATUS_COLOR = 'oklch(0.55 0.02 264)';
+const FALLBACK_STATUS_COLOR = 'var(--chart-1)';
 
 export function buildChartsStatusPieFromSample(
   items: readonly ChartsSampleWorkItem[] = CHARTS_SAMPLE_WORK_ITEMS
@@ -165,7 +166,7 @@ export function buildChartsStatusPieFromSample(
   const data: ChartsStatusPieSlice[] = statusesWithCounts.map((status) => {
     const count = counts.get(status) ?? 0;
     const meta = STATUS_META[status];
-    const swatch = meta?.color ?? FALLBACK_STATUS_COLOR;
+    const swatch = STATUS_CHART_COLORS[status] ?? FALLBACK_STATUS_COLOR;
     const percent =
       total === 0 ? '0%' : `${((count / total) * 100).toFixed(1)}%`;
     return {

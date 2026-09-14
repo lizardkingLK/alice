@@ -112,6 +112,22 @@ export function resolveBaselineProjectFilter(
   return 'all';
 }
 
+export function preferenceToSprintFilter(
+  preference: BoardDefaultsPreference | null | undefined
+): string {
+  return preference?.sprintId ?? '';
+}
+
+export function resolveBaselineSprintFilter(
+  savedPreference: BoardDefaultsPreference | null,
+  suggestedDefaults: BoardDefaultsPreference | null
+): string {
+  if (savedPreference) {
+    return preferenceToSprintFilter(savedPreference);
+  }
+  return preferenceToSprintFilter(suggestedDefaults);
+}
+
 export function preferenceMatchesProjectFilter(
   preference: BoardDefaultsPreference,
   projectFilter: string

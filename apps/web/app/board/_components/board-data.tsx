@@ -103,7 +103,7 @@ export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
       EMPTY_ACTIVE_SPRINTS_PAGE,
       'fetch sprints for board'
     ),
-    accessibleIds.length === 0
+    activeTab === 'calendar' || accessibleIds.length === 0
       ? Promise.resolve([])
       : safeServerFetch(
           getWorkItems(

@@ -511,5 +511,30 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
     }
   );
 
+  chatRouter.post(
+    '/generate-fields-schema',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { prompt, currentSchema } = req.body || {};
+        if (!prompt || typeof prompt !== 'string') {
+          return res.status(400).json({ error: 'Prompt is required' });
+        }
+        const schema = await chatService.generateProjectFieldsSchema(
+          prompt,
+          currentSchema
+        );
+        return res.json({ schema });
+      } catch (error: unknown) {
+        sendChatError(
+          res,
+          error,
+          'Failed to generate fields schema',
+          'error. generate-fields-schema failed'
+        );
+      }
+    }
+  );
+
   return chatRouter;
 }

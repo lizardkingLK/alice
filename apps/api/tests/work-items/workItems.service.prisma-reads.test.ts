@@ -51,6 +51,8 @@ const query: ListWorkItemsQuery = {
   labels: ['api'],
   recordStatus: 'active',
   includeDescription: false,
+  dueDate: undefined,
+  excludeStatuses: undefined,
 };
 
 describe('WorkItemService Prisma reads', () => {
@@ -86,6 +88,8 @@ describe('WorkItemService Prisma reads', () => {
         assigneeId: undefined,
         labels: ['api'],
         recordStatus: 'active',
+        dueDate: undefined,
+        excludeStatuses: undefined,
       },
       search: 'Ship',
       page: 1,

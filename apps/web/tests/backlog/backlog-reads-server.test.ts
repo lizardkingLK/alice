@@ -37,6 +37,12 @@ vi.mock('@/app/board/_services/board.reads.defaults.server', () => ({
   getSuggestedBoardDefaults: getSuggestedBoardDefaultsMock,
 }));
 
+const getProjectTeamMemberCapacitiesMock = vi.hoisted(() => vi.fn());
+
+vi.mock('@/app/backlog/_services/backlog.team-capacity.server', () => ({
+  getProjectTeamMemberCapacities: getProjectTeamMemberCapacitiesMock,
+}));
+
 import { getBacklogWorkspace } from '@/app/backlog/_services/backlog.reads.server';
 
 const MOCK_ACCESSIBLE_PROJECTS = [
@@ -62,6 +68,7 @@ describe('getBacklogWorkspace', () => {
     getWorkItemsMock.mockResolvedValue(MOCK_WORK_ITEMS);
     getSprintsPaginatedServerMock.mockResolvedValue({ sprints: MOCK_SPRINTS });
     getSuggestedBoardDefaultsMock.mockResolvedValue(null);
+    getProjectTeamMemberCapacitiesMock.mockResolvedValue([]);
   });
 
   it('scopes admin the same as any role (membership-only project list)', async () => {

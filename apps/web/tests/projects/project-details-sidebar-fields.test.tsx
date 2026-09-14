@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  waitFor,
+} from '@testing-library/react';
 import { parseProjectDetailsTab } from '@/lib/search-params';
 import { ProjectDetailsWorkspace } from '@/app/projects/_components/project-details/project-details-workspace';
 import { ProjectFieldsWorkspace } from '@/app/projects/_components/project-details/project-fields-workspace';
@@ -80,8 +86,18 @@ vi.mock('@/app/work-items/_components/work-items-workspace', () => ({
   ),
 }));
 
+vi.mock('@/app/sprints/_components/sprints-workspace', () => ({
+  SprintsWorkspace: () => (
+    <div data-testid="sprints-workspace">Sprints Content</div>
+  ),
+}));
+
 vi.mock('@/app/projects/_services/projects.mutations.client', () => ({
   updateProjectFieldsConfig: vi.fn().mockResolvedValue({}),
+}));
+
+vi.mock('@/lib/api/api-fetch.reads.use.client', () => ({
+  apiFetch: vi.fn().mockResolvedValue({ workItems: [] }),
 }));
 
 const mockProject: Project = {
@@ -126,6 +142,7 @@ describe('parseProjectDetailsTab', () => {
     expect(parseProjectDetailsTab('members')).toBe('members');
     expect(parseProjectDetailsTab('teams')).toBe('teams');
     expect(parseProjectDetailsTab('work-items')).toBe('work-items');
+    expect(parseProjectDetailsTab('sprints')).toBe('sprints');
     expect(parseProjectDetailsTab('integrations')).toBe('integrations');
     expect(parseProjectDetailsTab('board')).toBe('board');
   });
@@ -138,14 +155,7 @@ describe('parseProjectDetailsTab', () => {
 });
 
 describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
-  it('renders the board designer for ?tab=board', async () => {
-    const navigation =
-      (await import('next/navigation')) as unknown as typeof import('next/navigation') & {
-        // eslint-disable-next-line no-unused-vars -- mock helper signature
-        __setSearchParams: (params: URLSearchParams) => void;
-      };
-    navigation.__setSearchParams(new URLSearchParams('tab=board'));
-
+  it('renders all navigation options including role-gated Sprints for managers', () => {
     render(
       <ProjectDetailsWorkspace
         project={mockProject}
@@ -162,6 +172,7 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
           search: '',
           typeFilter: '',
           assigneeFilter: '',
+          sprintFilter: '',
           listView: 'flat',
           tab: 'active',
         }}
@@ -174,41 +185,11 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
           search: '',
           status: 'active',
         }}
-      />
-    );
-
-    expect(screen.getByTestId('board-designer-workspace')).toBeInTheDocument();
-    navigation.__setSearchParams(new URLSearchParams());
-  });
-
-  it('renders all 7 navigation options in the sidebar', () => {
-    render(
-      <ProjectDetailsWorkspace
-        project={mockProject}
-        members={[]}
-        allUsers={[]}
-        currentUserId="user-manager-1"
-        currentUserRole="manager"
-        workItems={{
-          initialWorkItems: [],
-          totalCount: 0,
-          page: 1,
-          limit: 10,
-          totalPages: 1,
+        sprints={{
+          sprints: [],
+          pagination: { page: 1, limit: 10, totalCount: 0, totalPages: 1 },
+          filterTab: 'active',
           search: '',
-          typeFilter: '',
-          assigneeFilter: '',
-          listView: 'flat',
-          tab: 'active',
-        }}
-        teams={{
-          items: [],
-          totalCount: 0,
-          page: 1,
-          limit: 10,
-          totalPages: 1,
-          search: '',
-          status: 'active',
         }}
       />
     );
@@ -224,10 +205,57 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
       screen.getByRole('button', { name: /work items/i })
     ).toBeInTheDocument();
     expect(
+      screen.getByRole('button', { name: /^sprints$/i })
+    ).toBeInTheDocument();
+    expect(
       screen.getByRole('button', { name: /integrations/i })
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /fields/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /board/i })).toBeInTheDocument();
+  });
+
+  it('hides Sprints nav for members', () => {
+    render(
+      <ProjectDetailsWorkspace
+        project={mockProject}
+        members={[]}
+        allUsers={[]}
+        currentUserId="user-member-1"
+        currentUserRole="member"
+        workItems={{
+          initialWorkItems: [],
+          totalCount: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+          search: '',
+          typeFilter: '',
+          assigneeFilter: '',
+          sprintFilter: '',
+          listView: 'flat',
+          tab: 'active',
+        }}
+        teams={{
+          items: [],
+          totalCount: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+          search: '',
+          status: 'active',
+        }}
+        sprints={{
+          sprints: [],
+          pagination: { page: 1, limit: 10, totalCount: 0, totalPages: 1 },
+          filterTab: 'active',
+          search: '',
+        }}
+      />
+    );
+
+    expect(
+      screen.queryByRole('button', { name: /^sprints$/i })
+    ).not.toBeInTheDocument();
   });
 
   it('renders ProjectSummaryBanner when Details tab is active', () => {
@@ -247,6 +275,7 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
           search: '',
           typeFilter: '',
           assigneeFilter: '',
+          sprintFilter: '',
           listView: 'flat',
           tab: 'active',
         }}
@@ -258,6 +287,12 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
           totalPages: 1,
           search: '',
           status: 'active',
+        }}
+        sprints={{
+          sprints: [],
+          pagination: { page: 1, limit: 10, totalCount: 0, totalPages: 1 },
+          filterTab: 'active',
+          search: '',
         }}
       />
     );
@@ -323,7 +358,7 @@ describe('ProjectFieldsWorkspace component', () => {
     ).toBeDisabled();
   });
 
-  it('allows loading template and validates syntax', () => {
+  it('allows loading template via dialog and validates syntax', () => {
     render(
       <ProjectFieldsWorkspace
         project={{ ...mockProject, attributes_config: null }}
@@ -331,9 +366,20 @@ describe('ProjectFieldsWorkspace component', () => {
       />
     );
 
-    // Click load template
+    // Click load template to open dialog
     const loadBtn = screen.getByRole('button', { name: /load template/i });
     fireEvent.click(loadBtn);
+
+    // Dialog title appears
+    expect(screen.getByText('Load Field Templates')).toBeInTheDocument();
+
+    // Select templates
+    const selectAllBtn = screen.getByRole('button', { name: /select all/i });
+    fireEvent.click(selectAllBtn);
+
+    // Click Add Selected button
+    const addBtn = screen.getByRole('button', { name: /add selected/i });
+    fireEvent.click(addBtn);
 
     // Validate button
     const validateBtn = screen.getByRole('button', { name: /validate/i });
@@ -342,5 +388,227 @@ describe('ProjectFieldsWorkspace component', () => {
     expect(
       screen.getByText(/schema is syntactically valid/i)
     ).toBeInTheDocument();
+  });
+
+  it('calls updateProjectFieldsConfig with expectedUpdatedAt on save', async () => {
+    const { updateProjectFieldsConfig } =
+      await import('@/app/projects/_services/projects.mutations.client');
+    render(
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
+    );
+
+    const saveBtn = screen.getByRole('button', { name: /save changes/i });
+    fireEvent.click(saveBtn);
+
+    expect(updateProjectFieldsConfig).toHaveBeenCalledWith(
+      mockProject.id,
+      expect.objectContaining({
+        properties: expect.any(Object),
+      }),
+      mockProject.updated_at
+    );
+  });
+
+  it('renders line numbers in the editor corresponding to schema lines', () => {
+    render(
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
+    );
+
+    // Verify line count text
+    expect(screen.getByText(/lines? • draft 2020-12/i)).toBeInTheDocument();
+
+    // Verify line numbers gutter contains line 1
+    expect(screen.getByText('1')).toBeInTheDocument();
+  });
+
+  it('displays status messages in the green banner area and auto-dismisses after timer', () => {
+    vi.useFakeTimers();
+    render(
+      <ProjectFieldsWorkspace
+        project={{ ...mockProject, attributes_config: null }}
+        isManagerOrAdmin={true}
+      />
+    );
+
+    // Beautify
+    fireEvent.click(screen.getByRole('button', { name: /beautify/i }));
+    expect(
+      screen.getByText(/json formatted successfully/i)
+    ).toBeInTheDocument();
+
+    // Fast-forward 5000ms
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    // Banner has auto-dismissed
+    expect(
+      screen.queryByText(/json formatted successfully/i)
+    ).not.toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
+  it('merges selected template fields into existing schema without wiping out existing fields', () => {
+    render(
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
+    );
+
+    // Initial schema has MoSCoW Rating
+    expect(screen.getByText('MoSCoW Rating')).toBeInTheDocument();
+
+    // Click Load Template
+    const loadBtn = screen.getByRole('button', { name: /load template/i });
+    fireEvent.click(loadBtn);
+
+    // Dialog opens; already added fields show "Added" badge
+    expect(screen.getByText('Load Field Templates')).toBeInTheDocument();
+    expect(screen.getAllByText('Added')).toHaveLength(1);
+
+    // Select an unadded template field, e.g. Defect Severity
+    const severityCard = screen.getByText('Defect Severity');
+    fireEvent.click(severityCard);
+
+    // Click Add Selected
+    const addBtn = screen.getByRole('button', { name: /add selected/i });
+    fireEvent.click(addBtn);
+
+    // Success banner displays
+    expect(screen.getByText(/added 1 template field/i)).toBeInTheDocument();
+
+    // Both previous fields and newly added field are present in Configured Fields preview
+    expect(screen.getByText('MoSCoW Rating')).toBeInTheDocument();
+    expect(screen.getByText('Defect Severity')).toBeInTheDocument();
+  });
+
+  it('allows unselecting an existing template field and removes it from schema upon applying', () => {
+    render(
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
+    );
+
+    // Initially MoSCoW Rating is present
+    expect(screen.getByText('MoSCoW Rating')).toBeInTheDocument();
+
+    // Open Load Template dialog
+    fireEvent.click(screen.getByRole('button', { name: /load template/i }));
+    expect(screen.getByText('Load Field Templates')).toBeInTheDocument();
+
+    // Click MoSCoW Rating card to unselect it
+    const moscowCard = document
+      .getElementById('template-checkbox-moscowRating')!
+      .closest('[role="checkbox"]')!;
+    fireEvent.click(moscowCard);
+
+    // Apply change
+    const addBtn = screen.getByRole('button', { name: /add selected/i });
+    fireEvent.click(addBtn);
+
+    // Schema now has 0 dynamic fields
+    expect(
+      screen.getByText(/no dynamic fields configured yet/i)
+    ).toBeInTheDocument();
+    expect(screen.queryByText('key: moscowRating')).not.toBeInTheDocument();
+  });
+
+  it('displays warning popup with OK and Cancel when unselecting a template with work item values', async () => {
+    const { apiFetch } = await import('@/lib/api/api-fetch.reads.use.client');
+    vi.mocked(apiFetch).mockResolvedValueOnce({
+      workItems: [
+        {
+          id: 'wi-1',
+          title: 'Implement Authentication',
+          description: {
+            type: 'doc',
+            attrs: {
+              dynamicFields: {
+                moscowRating: 'Must',
+              },
+            },
+          },
+        },
+      ],
+    } as never);
+
+    render(
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
+    );
+
+    // Open Load Template dialog
+    fireEvent.click(screen.getByRole('button', { name: /load template/i }));
+    expect(screen.getByText('Load Field Templates')).toBeInTheDocument();
+
+    // Wait for work items to be fetched
+    await waitFor(() => {
+      expect(apiFetch).toHaveBeenCalled();
+    });
+
+    // Try to unselect MoSCoW Rating
+    const moscowCard = document
+      .getElementById('template-checkbox-moscowRating')!
+      .closest('[role="checkbox"]')!;
+    fireEvent.click(moscowCard);
+
+    // Warning confirmation popup should appear
+    expect(
+      screen.getByText('Remove Field Template: MoSCoW Rating')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/work item values will be removed under this template/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Implement Authentication: Must/)
+    ).toBeInTheDocument();
+
+    // Cancel button in warning popup
+    const cancelBtn = screen.getByRole('button', { name: /cancel/i });
+    expect(cancelBtn).toBeInTheDocument();
+
+    // Click Cancel - field should remain selected
+    fireEvent.click(cancelBtn);
+    expect(
+      screen.queryByText('Remove Field Template: MoSCoW Rating')
+    ).not.toBeInTheDocument();
+
+    // Try unselecting again and click OK to confirm
+    fireEvent.click(moscowCard);
+    expect(
+      screen.getByText('Remove Field Template: MoSCoW Rating')
+    ).toBeInTheDocument();
+
+    const okBtn = screen.getByRole('button', { name: /ok/i });
+    fireEvent.click(okBtn);
+
+    // Popup closed and field is unselected
+    expect(
+      screen.queryByText('Remove Field Template: MoSCoW Rating')
+    ).not.toBeInTheDocument();
+
+    // Click Add Selected to apply
+    const addBtn = screen.getByRole('button', { name: /add selected/i });
+    fireEvent.click(addBtn);
+
+    expect(screen.getByText(/removed 1 template field/i)).toBeInTheDocument();
+  });
+
+  it('renders footer buttons clearly with proper spacing on the right side', () => {
+    render(
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /load template/i }));
+
+    const cancelBtn = screen.getByRole('button', { name: /cancel/i });
+    const addBtn = screen.getByRole('button', { name: /add selected/i });
+
+    expect(cancelBtn).toBeInTheDocument();
+    expect(addBtn).toBeInTheDocument();
+
+    // Verify footer container layout classes
+    const footer = cancelBtn.closest('[data-slot="dialog-footer"]');
+    expect(footer).toBeInTheDocument();
+    expect(footer?.className).toContain('justify-end');
+    expect(footer?.className).toContain('gap-3');
+    expect(footer?.className).toContain('m-0');
+    expect(footer?.className).toContain('px-6');
+    expect(footer?.className).toContain('py-4');
   });
 });

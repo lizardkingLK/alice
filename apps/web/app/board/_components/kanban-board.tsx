@@ -62,6 +62,7 @@ import {
 import type { FilterQuery } from '@/app/work-items/_components/work-item-table/work-items-table-types';
 import { descriptionToPlainText } from '@/app/work-items/_helpers/work-item-description';
 import { BOARD_STATUS_COLUMN_ACCENTS } from '@/app/work-items/_helpers/work-item-status';
+import { mergeWorkItemServerRow } from '@/app/work-items/_helpers/work-item-merge-server-row';
 import { updateWorkItemStatus } from '@/app/work-items/_services/work-items.mutations.client';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { SearchInput } from '@/components/search-input';
@@ -372,23 +373,11 @@ export function KanbanBoard({
   const syncWorkItem = (id: string, updated: DbWorkItem) => {
     setWorkItems((previous) =>
       previous.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              ...updated,
-              assignee: updated.assignee ?? item.assignee,
-            }
-          : item
+        item.id === id ? mergeWorkItemServerRow(item, updated) : item
       )
     );
     setSelectedTask((previous) =>
-      previous?.id === id
-        ? {
-            ...previous,
-            ...updated,
-            assignee: updated.assignee ?? previous.assignee,
-          }
-        : previous
+      previous?.id === id ? mergeWorkItemServerRow(previous, updated) : previous
     );
   };
 
@@ -536,7 +525,7 @@ export function KanbanBoard({
         </div>
       ) : null}
 
-      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center">
         <div className="flex min-w-0 flex-wrap items-center gap-3">
           <SearchInput
             value={search}
@@ -545,16 +534,6 @@ export function KanbanBoard({
             className="sm:w-64"
           />
 
-          <AssigneeAvatarFilter
-            members={uniqueAssignees}
-            selectedId={assigneeFilter}
-            onSelectedIdChange={setAssigneeFilter}
-            visibleCount={3}
-            isUserOnline={isUserOnline}
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           <WorkItemsFilterDialog
             projects={projects}
             projectMembers={[]}
@@ -572,6 +551,21 @@ export function KanbanBoard({
             hasActiveFilters={hasDialogFilters}
           />
 
+          {userId ? (
+            <WorkspaceDefaultsControls
+              onOpenDefaultsDialog={openDefaultsDialog}
+              savedDefaultsApplied={savedDefaultsApplied}
+            />
+          ) : null}
+
+          <AssigneeAvatarFilter
+            members={uniqueAssignees}
+            selectedId={assigneeFilter}
+            onSelectedIdChange={setAssigneeFilter}
+            visibleCount={3}
+            isUserOnline={isUserOnline}
+          />
+
           {hasActiveFilters ? (
             <Button
               type="button"
@@ -583,13 +577,6 @@ export function KanbanBoard({
               Clear filters
               <X className="size-3.5" />
             </Button>
-          ) : null}
-
-          {userId ? (
-            <WorkspaceDefaultsControls
-              onOpenDefaultsDialog={openDefaultsDialog}
-              savedDefaultsApplied={savedDefaultsApplied}
-            />
           ) : null}
         </div>
       </div>

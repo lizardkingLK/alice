@@ -9,19 +9,26 @@ Create sprints, track goals, and open burndown reports.
 ## Open sprints
 
 1. Sign in as a **manager** or **admin**.
-2. Under **Projects** in the sidebar, select **Sprints** (`/sprints`).
+2. Open a project from **Projects** in the sidebar.
+3. In the project sidebar, select **Sprints** (`/projects/[id]?tab=sprints`).
 
-Members do not see the Sprints nav item.
+Members do not see the Sprints project tab. The standalone `/sprints` page
+remains available for bookmarks but is no longer linked from the main sidebar.
 
 ---
 
 ## Registry
 
-The sprints list shows active and archived sprints. Use:
+The sprints list shows active and archived sprints for the current project. Use:
 
-- **Add Sprint** — create a new iteration (name, dates, goal)
+- **Add Sprint** — create a new iteration (name, dates, goal) in this project
 - Search — find sprints by name or goal
-- Tabs — **Active** / **Archived**
+- Tabs — **Active** / **Archived** icon segment switcher (right side of the
+  toolbar)
+
+Sprint names must be **unique within the project**, including archived sprints.
+If you reuse a name, the form shows: _An active or archived sprint already
+exists by the given name_.
 
 Select a sprint to open its report or related work.
 
@@ -29,17 +36,19 @@ Select a sprint to open its report or related work.
 
 ## Sprint reports
 
-Open `/sprints/[id]/report` for burndown and progress metrics. Reports are
-available for **active**, **completed**, and **archived** sprints — not
-**planned** ones.
+Open `/sprints/[id]/report` for burndown and progress metrics.
 
-Links include a `from` query so the unavailable-state back button returns you
-to the right place:
+- **Active**, **completed**, and **archived** sprints show the live report
+  (stats, charts, deliverables).
+- **Planned** sprints open the same report layout as a **placeholder** — charts
+  and metrics stay locked until the sprint becomes active or is completed.
 
-| Opened from      | Back button         |
-| ---------------- | ------------------- |
-| Sprints registry | **Back to Sprints** |
-| Backlog          | **Back to Backlog** |
+Breadcrumbs include a `from` query so navigation context stays clear:
+
+| Opened from      | Trail includes |
+| ---------------- | -------------- |
+| Sprints registry | Sprints        |
+| Backlog          | Backlog        |
 
 Assign work to a sprint from the backlog, work-item sidebar, or create forms.
 

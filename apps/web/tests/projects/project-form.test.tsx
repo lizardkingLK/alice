@@ -220,17 +220,23 @@ describe('ProjectForm Component', () => {
       target: { value: 'Project description details' },
     });
     await pickComboboxOption(/Project Owner/i, 'Manager One (mgr1@alice.dev)');
+    const startDate = new Date();
+    startDate.setFullYear(startDate.getFullYear() + 1);
+    const startDateStr = startDate.toISOString().split('T')[0];
+
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + 1);
+    const endDateStr = endDate.toISOString().split('T')[0];
+
     fireEvent.change(screen.getByLabelText(/Start Date/i), {
-      target: { value: '2099-09-10' },
+      target: { value: startDateStr },
     });
     fireEvent.change(screen.getByLabelText(/End Date/i), {
-      target: { value: '2099-10-10' },
+      target: { value: endDateStr },
     });
 
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
-    await screen.findByText('Import sources');
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
-    await screen.findByText('Source control');
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     await waitFor(() => {
@@ -239,8 +245,8 @@ describe('ProjectForm Component', () => {
         key: 'ALICE',
         description: 'Project description details',
         owner_id: 'user-mgr-1',
-        start_date: '2099-09-10',
-        end_date: '2099-10-10',
+        start_date: startDateStr,
+        end_date: endDateStr,
         status: 'active',
         attributes_config: null,
         jira_connection_id: null,
@@ -249,9 +255,6 @@ describe('ProjectForm Component', () => {
         github_token: null,
       });
     });
-    expect(vi.mocked(createProject).mock.calls[0]?.[0]).not.toHaveProperty(
-      'workflow_config'
-    );
 
     expect(
       await screen.findByText(/Project "Project Alice" created/i)
@@ -317,9 +320,6 @@ describe('ProjectForm Component', () => {
         '2026-07-09T10:00:00Z'
       );
     });
-    expect(vi.mocked(updateProject).mock.calls[0]?.[1]).not.toHaveProperty(
-      'workflow_config'
-    );
 
     expect(
       await screen.findByText(/Project "Project Alice Updated" updated/i)

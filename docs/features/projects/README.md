@@ -13,6 +13,7 @@ Quick links:
 
 - Implementation: `apps/web/app/projects/`
 - Detail overview (`/projects/[id]`): summary-report layout (primary banner + metric cards) with Members / Teams / Work Items tabs
+- Team create/edit: **Designated Team Manager** is scoped to managers/admins on the selected project's membership roster (not the global user list)
 - API: `apps/api/src/routes/api/projects/`
 - Schema: projects-related models in `packages/db/prisma/schema.prisma`
 - Access helper: `apps/web/lib/projects/project-workspace-access.ts`

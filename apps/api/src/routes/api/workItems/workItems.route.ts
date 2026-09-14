@@ -143,7 +143,10 @@ function sendWorkItemMutationError(
       ...(error instanceof BoardMoveForbiddenError ? { code: error.code } : {}),
     });
   }
-  if (error instanceof WorkItemValidationError) {
+  if (
+    error instanceof WorkItemValidationError ||
+    /capacity exceeded/i.test(message)
+  ) {
     return res.status(400).json({ data: null, error: message });
   }
   return res.status(500).json({ data: null, error: message });
@@ -173,6 +176,10 @@ function listWorkItemsQueryFromRequest(query: Record<string, unknown>) {
     view: firstQueryValue(query.view),
     includeDescription: firstQueryValue(query.includeDescription),
     recordStatus: firstQueryValue(query.recordStatus),
+    dueDate: firstQueryValue(query.dueDate),
+    dueDateFrom: firstQueryValue(query.dueDateFrom),
+    dueDateTo: firstQueryValue(query.dueDateTo),
+    excludeStatuses: firstQueryValue(query.excludeStatuses),
   });
 }
 

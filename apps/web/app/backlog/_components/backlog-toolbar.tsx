@@ -1,24 +1,31 @@
 'use client';
 
-import { cn } from '@repo/ui/lib/utils';
-import { Layers, Plus, Search, X } from '@repo/ui/lib/icons';
+import { CheckCircle2, CircleDot, Layers, Plus, X } from '@repo/ui/lib/icons';
 import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
 import { Button } from '@repo/ui/components/ui/button';
-import { Input } from '@repo/ui/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@repo/ui/components/ui/select';
-import { ListFilterSelect } from '@/components/list-filter-select';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@repo/ui/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@repo/ui/components/ui/tooltip';
+import {
+  BacklogFilterDialog,
+  type BacklogFilterDraft,
+} from '@/app/backlog/_components/backlog-filter-dialog';
 import { BacklogLayoutMenu } from '@/app/backlog/_components/backlog-layout-menu';
 import type { BacklogLayoutId } from '@/app/backlog/_helpers/backlog-layout-storage';
 import type { BacklogActiveTab } from '@/app/backlog/_helpers/backlog-item-utils';
-import { BACKLOG_PRIORITY_OPTIONS } from '@/app/work-items/_helpers/work-item-priority-ui';
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import type { User as DbUser } from '@/app/users/_services/users.mutations.client';
+import { RegistryTabSwitcher } from '@/components/registry-tab-switcher';
+import { SearchInput } from '@/components/search-input';
 
 /* eslint-disable no-unused-vars */
 type BacklogToolbarProps = {
@@ -47,8 +54,10 @@ type BacklogToolbarProps = {
 };
 /* eslint-enable no-unused-vars */
 
-const TAB_BUTTON_CLASS =
-  'h-7 cursor-pointer rounded-sm px-3 text-xs font-semibold transition-all';
+const BACKLOG_TABS = [
+  { id: 'active' as const, label: 'Active', icon: CircleDot },
+  { id: 'completed' as const, label: 'Completed', icon: CheckCircle2 },
+];
 
 export function BacklogToolbar({
   projects,
@@ -74,141 +83,103 @@ export function BacklogToolbar({
   savedDefaultsApplied,
   onOpenDefaultsDialog,
 }: Readonly<BacklogToolbarProps>) {
+  const handleApplyFilters = (draft: BacklogFilterDraft) => {
+    onProjectFilterChange(draft.project);
+    onAssigneeFilterChange(draft.assignee);
+    onPriorityFilterChange(draft.priority);
+  };
+
   return (
-    <div className="bg-card/40 border-border/60 flex flex-col gap-4 rounded-xl border p-4 shadow-sm backdrop-blur-md">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <Layers className="text-primary size-5" />
-          <h2 className="text-foreground text-xl font-bold tracking-tight">
-            Sprint Planning
-          </h2>
-
-          <div className="bg-muted/50 border-border text-muted-foreground ml-4 inline-flex h-9 items-center justify-center rounded-md border p-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onTabChange('active')}
-              className={cn(
-                TAB_BUTTON_CLASS,
-                activeTab === 'active'
-                  ? 'bg-background text-foreground hover:bg-background shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
-              )}
-            >
-              Active
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onTabChange('completed')}
-              className={cn(
-                TAB_BUTTON_CLASS,
-                activeTab === 'completed'
-                  ? 'bg-background text-foreground hover:bg-background shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
-              )}
-            >
-              Completed
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <BacklogLayoutMenu
-            preferredLayout={preferredLayout}
-            onLayoutChange={onLayoutChange}
-          />
-          {isManagerOrAdmin && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="cursor-pointer"
-              onClick={onCreateSprint}
-            >
-              <Plus className="mr-1.5 size-4" />
-              Create Sprint
-            </Button>
-          )}
-          <Button size="sm" className="cursor-pointer" onClick={onCreateIssue}>
-            <Plus className="mr-1.5 size-4" />
-            Create Item
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative w-full sm:max-w-xs">
-          <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-          <Input
-            placeholder="Search backlog items..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="bg-background/50 border-border/80 focus-visible:border-ring h-9 pl-9 transition-colors"
-          />
-        </div>
-
-        <ListFilterSelect
-          value={projectFilter}
-          onValueChange={onProjectFilterChange}
-          allValue="all"
-          allLabel="All Projects"
-          ariaLabel="Filter by project"
-          placeholder="All Projects"
-          triggerClassName="w-37.5 text-xs"
-          options={projects.map((proj) => ({
-            value: proj.id,
-            label: proj.name,
-          }))}
+    <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 flex-wrap items-center gap-3">
+        <SearchInput
+          value={searchQuery}
+          onValueChange={onSearchChange}
+          placeholder="Search backlog items..."
+          className="sm:w-64"
         />
 
-        <ListFilterSelect
-          value={assigneeFilter}
-          onValueChange={onAssigneeFilterChange}
-          allValue="all"
-          allLabel="All Assignees"
-          ariaLabel="Filter by assignee"
-          placeholder="All Assignees"
-          triggerClassName="w-40 text-xs"
-          options={projectMembers.map((member) => ({
-            value: member.id,
-            label: member.name,
-          }))}
+        <BacklogFilterDialog
+          projects={projects}
+          projectMembers={projectMembers}
+          projectFilter={projectFilter}
+          assigneeFilter={assigneeFilter}
+          priorityFilter={priorityFilter}
+          hasActiveFilters={isFiltersActive}
+          onApplyFilters={handleApplyFilters}
         />
 
-        <Select value={priorityFilter} onValueChange={onPriorityFilterChange}>
-          <SelectTrigger className="bg-background/50 border-border/80 h-9 w-35 text-xs">
-            <SelectValue placeholder="All Priorities" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Priorities</SelectItem>
-            {BACKLOG_PRIORITY_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {showDefaultsControls ? (
+          <WorkspaceDefaultsControls
+            onOpenDefaultsDialog={onOpenDefaultsDialog}
+            savedDefaultsApplied={savedDefaultsApplied}
+          />
+        ) : null}
 
-        {isFiltersActive && (
+        {isFiltersActive ? (
           <Button
+            type="button"
             variant="ghost"
             size="sm"
             onClick={onClearFilters}
             className="text-muted-foreground hover:text-foreground h-9 cursor-pointer px-3 text-xs"
           >
-            Clear Filters
-            <X className="ml-1 h-3.5 w-3.5" />
+            Clear filters
+            <X className="size-3.5" />
           </Button>
-        )}
-
-        {showDefaultsControls ? (
-          <WorkspaceDefaultsControls
-            className="ml-auto flex items-center gap-1.5 sm:ml-0"
-            buttonClassName="h-9 cursor-pointer"
-            onOpenDefaultsDialog={onOpenDefaultsDialog}
-            savedDefaultsApplied={savedDefaultsApplied}
-          />
         ) : null}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+        <BacklogLayoutMenu
+          preferredLayout={preferredLayout}
+          onLayoutChange={onLayoutChange}
+        />
+
+        <RegistryTabSwitcher
+          tabs={BACKLOG_TABS}
+          value={activeTab}
+          onChange={onTabChange}
+          aria-label="Backlog status"
+        />
+
+        <TooltipProvider delayDuration={200}>
+          <DropdownMenu>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    size="icon"
+                    className="size-8 shrink-0 cursor-pointer"
+                    aria-label="Create"
+                  >
+                    <Plus className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Create</TooltipContent>
+            </Tooltip>
+            <DropdownMenuContent align="end" className="w-48">
+              {isManagerOrAdmin ? (
+                <DropdownMenuItem
+                  className="cursor-pointer gap-2"
+                  onSelect={onCreateSprint}
+                >
+                  <Layers className="size-4" />
+                  Create Sprint
+                </DropdownMenuItem>
+              ) : null}
+              <DropdownMenuItem
+                className="cursor-pointer gap-2"
+                onSelect={onCreateIssue}
+              >
+                <Plus className="size-4" />
+                Create Work-Item
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TooltipProvider>
       </div>
     </div>
   );

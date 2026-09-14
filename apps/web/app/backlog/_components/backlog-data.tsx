@@ -5,6 +5,7 @@ export async function BacklogData() {
   const {
     projects,
     projectMembers,
+    teamCapacities,
     initialWorkItems,
     sprints,
     userRole,
@@ -17,6 +18,7 @@ export async function BacklogData() {
     <BacklogWorkspace
       projects={projects}
       projectMembers={projectMembers}
+      teamCapacities={teamCapacities}
       initialWorkItems={initialWorkItems}
       sprints={sprints}
       userRole={userRole}

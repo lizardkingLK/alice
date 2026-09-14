@@ -261,6 +261,7 @@ export type sprintsOrderByWithRelationInput = {
 
 export type sprintsWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  project_id_name?: Prisma.sprintsProject_idNameCompoundUniqueInput
   AND?: Prisma.sprintsWhereInput | Prisma.sprintsWhereInput[]
   OR?: Prisma.sprintsWhereInput[]
   NOT?: Prisma.sprintsWhereInput | Prisma.sprintsWhereInput[]
@@ -279,7 +280,7 @@ export type sprintsWhereUniqueInput = Prisma.AtLeast<{
   created_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   updated_by_user?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   work_items?: Prisma.Work_itemsListRelationFilter
-}, "id">
+}, "id" | "project_id_name">
 
 export type sprintsOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -431,6 +432,11 @@ export type SprintsListRelationFilter = {
 
 export type sprintsOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
+}
+
+export type sprintsProject_idNameCompoundUniqueInput = {
+  project_id: string
+  name: string
 }
 
 export type sprintsCountOrderByAggregateInput = {

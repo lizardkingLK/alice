@@ -24,6 +24,12 @@ type UseCalendarDueDateDragOptions = {
   readonly setLocalWorkItems: Dispatch<SetStateAction<DbWorkItem[]>>;
   readonly setItemToEdit: Dispatch<SetStateAction<DbWorkItem | null>>;
   readonly userId: string | null;
+  /** Resolve items that may live outside the scheduled month cache (unscheduled). */
+  // eslint-disable-next-line no-unused-vars -- resolve callback
+  readonly resolveWorkItem?: (itemId: string) => DbWorkItem | undefined;
+  /** Fired when an unscheduled item gains a due date and enters the month cache. */
+  // eslint-disable-next-line no-unused-vars -- callback
+  readonly onItemScheduled?: (itemId: string) => void;
 };
 
 export function useCalendarDueDateDrag({
@@ -31,6 +37,8 @@ export function useCalendarDueDateDrag({
   setLocalWorkItems,
   setItemToEdit,
   userId,
+  resolveWorkItem,
+  onItemScheduled,
 }: UseCalendarDueDateDragOptions) {
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [activeDropDate, setActiveDropDate] = useState<string | null>(null);
@@ -73,17 +81,35 @@ export function useCalendarDueDateDrag({
 
   const syncWorkItemDueDate = useCallback(
     (id: string, dueDate: string | null, updatedAt?: string) => {
-      setLocalWorkItems((previous) =>
-        previous.map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                due_date: dueDate,
-                ...(updatedAt ? { updated_at: updatedAt } : {}),
-              }
-            : item
-        )
-      );
+      setLocalWorkItems((previous) => {
+        const index = previous.findIndex((item) => item.id === id);
+        if (index >= 0) {
+          return previous.map((item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  due_date: dueDate,
+                  ...(updatedAt ? { updated_at: updatedAt } : {}),
+                }
+              : item
+          );
+        }
+        const source = resolveWorkItem?.(id);
+        if (!source || !dueDate) {
+          return previous;
+        }
+        return [
+          {
+            ...source,
+            due_date: dueDate,
+            ...(updatedAt ? { updated_at: updatedAt } : {}),
+          },
+          ...previous,
+        ];
+      });
+      if (dueDate) {
+        onItemScheduled?.(id);
+      }
       setItemToEdit((previous) =>
         previous?.id === id
           ? {
@@ -94,12 +120,14 @@ export function useCalendarDueDateDrag({
           : previous
       );
     },
-    [setItemToEdit, setLocalWorkItems]
+    [onItemScheduled, resolveWorkItem, setItemToEdit, setLocalWorkItems]
   );
 
   const applyDueDateChange = useCallback(
     (itemId: string, targetDate: string) => {
-      const currentItem = localWorkItems.find((item) => item.id === itemId);
+      const currentItem =
+        localWorkItems.find((item) => item.id === itemId) ??
+        resolveWorkItem?.(itemId);
       if (!currentItem || pendingDueDateIds.has(itemId)) {
         return;
       }
@@ -171,6 +199,7 @@ export function useCalendarDueDateDrag({
       handleMutationError,
       localWorkItems,
       pendingDueDateIds,
+      resolveWorkItem,
       showDueDateWarning,
       syncWorkItemDueDate,
       userId,

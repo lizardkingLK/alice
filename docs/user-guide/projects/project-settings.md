@@ -9,8 +9,9 @@ Edit project name, dates, and metadata.
 ## Open settings
 
 1. Go to **Projects** and open a project.
-2. On **Project Details** (default tab), use **Edit Project** on the banner or
-   summary area.
+2. On **Details**, use the banner for branding (cover/logo) when you are a
+   manager or admin. Key, timeline, description, and owner appear on the banner;
+   summary cards link to Members, Teams, Work Items, and other sections.
 
 Managers and admins who can access the project workspace can edit metadata.
 **Admins** can also hard-delete projects from admin-only actions where shown.

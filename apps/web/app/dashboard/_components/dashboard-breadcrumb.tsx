@@ -31,6 +31,9 @@ const DEFAULT_OVERRIDES: DashboardBreadcrumbOverride[] = [
   { label: 'Dashboard', url: '/dashboard' },
 ];
 
+/** Cap long entity names in the header trail; short labels stay intact. */
+const BREADCRUMB_LABEL_MAX_CHARS = 20;
+
 function normalizeUrl(url: string): string {
   if (url.length > 1 && url.endsWith('/')) {
     return url.slice(0, -1);
@@ -48,14 +51,33 @@ function humanizeSegment(segment: string): string {
 }
 
 /**
- * Path UUIDs use the short-id label so `loading.tsx` (no overrides) and the
- * loaded page never flash full id → short id.
+ * Path UUIDs fall back to short-id when no name override is provided (e.g.
+ * `loading.tsx` before the page resolves entity titles).
  */
 function labelForSegment(segment: string): string {
   if (isUuidSegment(segment)) {
     return toShortId(segment);
   }
   return humanizeSegment(segment);
+}
+
+function truncateBreadcrumbLabel(label: string): {
+  display: string;
+  title?: string;
+} {
+  if (label.length <= BREADCRUMB_LABEL_MAX_CHARS) {
+    return { display: label };
+  }
+
+  return {
+    display: `${label.slice(0, BREADCRUMB_LABEL_MAX_CHARS)}...`,
+    title: label,
+  };
+}
+
+function BreadcrumbLabel({ label }: Readonly<{ label: string }>) {
+  const { display, title } = truncateBreadcrumbLabel(label);
+  return <span title={title}>{display}</span>;
 }
 
 function buildBreadcrumbItems(
@@ -124,20 +146,26 @@ export function DashboardBreadcrumb({
     : resolveDashboardBreadcrumbItems(pathname, overrides);
 
   return (
-    <Breadcrumb>
-      <BreadcrumbList>
+    <Breadcrumb className="max-w-full min-w-0">
+      <BreadcrumbList className="min-w-0 flex-nowrap items-center overflow-hidden">
         {items.map((item, index) => {
           const isCurrent = index === items.length - 1;
 
           return (
             <Fragment key={`${item.url}-${item.label}`}>
-              {index > 0 ? <BreadcrumbSeparator /> : null}
-              <BreadcrumbItem>
+              {index > 0 ? (
+                <BreadcrumbSeparator className="shrink-0 self-center" />
+              ) : null}
+              <BreadcrumbItem className="shrink-0">
                 {isCurrent || item.url === '#' ? (
-                  <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                  <BreadcrumbPage>
+                    <BreadcrumbLabel label={item.label} />
+                  </BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink asChild>
-                    <Link href={item.url}>{item.label}</Link>
+                    <Link href={item.url}>
+                      <BreadcrumbLabel label={item.label} />
+                    </Link>
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>

@@ -3,6 +3,7 @@ import { canAccessProjectWorkspace } from '@/lib/projects/project-workspace-acce
 import { safeServerFetch } from '@/lib/safe-server-fetch';
 import {
   parseProjectDetailsTab,
+  parseSprintListStatus,
   parseStandardParams,
   parseTeamStatusFilter,
   parseWorkItemFilters,
@@ -27,6 +28,12 @@ import {
   type Project,
   type ProjectMemberWithUser,
 } from '@/app/projects/_services/projects.reads.server';
+import { getSprintsPaginatedServer } from '@/app/sprints/_services/sprints.reads.server';
+import type {
+  PaginatedSprints,
+  Sprint,
+} from '@/app/sprints/_services/sprints.mutations.client';
+import { UserRoleEnum } from '@repo/types';
 
 const EMPTY_WORK_ITEMS = {
   workItems: [] as DbWorkItem[],
@@ -42,6 +49,11 @@ const EMPTY_TEAMS = {
   page: 1,
   limit: 10,
   totalPages: 1,
+};
+
+const EMPTY_SPRINTS: PaginatedSprints = {
+  sprints: [],
+  pagination: { page: 1, limit: 10, totalCount: 0, totalPages: 1 },
 };
 
 type WorkItemsResult = {
@@ -60,6 +72,70 @@ type TeamsResult = {
   totalPages: number;
 };
 
+function resolveSprintsFetchLimit(
+  isSprintsTab: boolean,
+  isWorkItemsTab: boolean,
+  pageLimit: number
+): number {
+  if (isSprintsTab) {
+    return pageLimit;
+  }
+  if (isWorkItemsTab) {
+    return 100;
+  }
+  return 1;
+}
+
+function resolveSprintListStatusForTab(
+  isWorkItemsTab: boolean,
+  searchParams: RawSearchParams
+): 'active' | 'archived' {
+  if (isWorkItemsTab) {
+    return 'active';
+  }
+  return parseSprintListStatus(searchParams);
+}
+
+function shouldFetchProjectSprints(options: {
+  readonly isWorkItemsTab: boolean;
+  readonly isSprintsTab: boolean;
+  readonly isManagerOrAdmin: boolean;
+  readonly activeTab: ReturnType<typeof parseProjectDetailsTab>;
+}): boolean {
+  if (options.isWorkItemsTab) {
+    return true;
+  }
+  if (!options.isManagerOrAdmin) {
+    return false;
+  }
+  return options.isSprintsTab || options.activeTab === 'details';
+}
+
+function buildProjectWorkItemFilters(options: {
+  readonly projectId: string;
+  readonly isWorkItemsTab: boolean;
+  readonly type: ReturnType<typeof parseWorkItemFilters>['type'];
+  readonly assigneeId: string | undefined;
+  readonly labels: string[] | undefined;
+  readonly sprintId: string | undefined;
+  readonly recordStatus: 'active' | 'archived';
+  readonly listView: ReturnType<typeof parseWorkItemListView>;
+}) {
+  if (!options.isWorkItemsTab) {
+    return { projectId: options.projectId };
+  }
+
+  return {
+    projectId: options.projectId,
+    type: options.type,
+    assigneeId: options.assigneeId,
+    labels: options.labels,
+    sprintId: options.sprintId,
+    recordStatus: options.recordStatus,
+    ...workItemHierarchyListFilter(options.listView),
+  };
+}
+
 function toWorkItemsPayload(
   result: WorkItemsResult,
   options: {
@@ -68,6 +144,7 @@ function toWorkItemsPayload(
     readonly search: string;
     readonly typeFilter: string;
     readonly assigneeFilter: string;
+    readonly sprintFilter: string;
     readonly labelsFilter: readonly string[];
     readonly listView: 'flat' | 'hierarchy';
     readonly tab: 'active' | 'archived';
@@ -82,6 +159,7 @@ function toWorkItemsPayload(
     search: options.active ? options.search : '',
     typeFilter: options.active ? options.typeFilter : '',
     assigneeFilter: options.active ? options.assigneeFilter : '',
+    sprintFilter: options.active ? options.sprintFilter : '',
     labelsFilter: options.active ? [...options.labelsFilter] : [],
     listView: options.active ? options.listView : 'flat',
     tab: options.tab,
@@ -108,6 +186,28 @@ function toTeamsPayload(
   };
 }
 
+function toSprintsPayload(
+  result: PaginatedSprints,
+  options: {
+    readonly active: boolean;
+    readonly defaultLimit: number;
+    readonly search: string;
+    readonly filterTab: 'active' | 'archived';
+  }
+) {
+  return {
+    sprints: options.active ? result.sprints : ([] as Sprint[]),
+    pagination: {
+      page: options.active ? result.pagination.page : 1,
+      limit: options.active ? result.pagination.limit : options.defaultLimit,
+      totalCount: result.pagination.totalCount,
+      totalPages: options.active ? result.pagination.totalPages : 1,
+    },
+    filterTab: options.filterTab,
+    search: options.active ? options.search : '',
+  };
+}
+
 export type ProjectWorkspaceAllowed = {
   readonly access: 'allowed';
   readonly project: Project;
@@ -124,6 +224,7 @@ export type ProjectWorkspaceAllowed = {
     search: string;
     typeFilter: string;
     assigneeFilter: string;
+    sprintFilter: string;
     labelsFilter: string[];
     listView: 'flat' | 'hierarchy';
     tab: 'active' | 'archived';
@@ -136,6 +237,12 @@ export type ProjectWorkspaceAllowed = {
     totalPages: number;
     search: string;
     status: 'active' | 'inactive' | 'archived';
+  };
+  readonly sprints: {
+    sprints: Sprint[];
+    pagination: PaginatedSprints['pagination'];
+    filterTab: 'active' | 'archived';
+    search: string;
   };
   readonly boardRuleTeams: Team[];
 };
@@ -178,61 +285,101 @@ export async function getProjectWorkspace(
 
   const activeTab = parseProjectDetailsTab(searchParams.tab);
   const { page, limit, search } = parseStandardParams(searchParams, 10);
-  const { type, assigneeId, labels } = parseWorkItemFilters(searchParams);
+  const { type, assigneeId, labels, sprintId } =
+    parseWorkItemFilters(searchParams);
   const listView = parseWorkItemListView(searchParams.view);
   const teamStatus = parseTeamStatusFilter(searchParams.teamStatus);
+  const isWorkItemsTab = activeTab === 'work-items';
+  const isManagerOrAdmin =
+    dbUser.role === UserRoleEnum.admin || dbUser.role === UserRoleEnum.manager;
+  const isSprintsTab = activeTab === 'sprints' && isManagerOrAdmin;
+  const shouldLoadSprints = shouldFetchProjectSprints({
+    isWorkItemsTab,
+    isSprintsTab,
+    isManagerOrAdmin,
+    activeTab,
+  });
+  const sprintListStatus = resolveSprintListStatusForTab(
+    isWorkItemsTab,
+    searchParams
+  );
+  const sprintsLimit = resolveSprintsFetchLimit(
+    isSprintsTab,
+    isWorkItemsTab,
+    limit
+  );
+  const sprintsPage = isSprintsTab ? page : 1;
+  const sprintsSearch = isSprintsTab ? search : undefined;
   const teamsPage = activeTab === 'teams' ? page : 1;
   const teamsLimit = activeTab === 'teams' ? limit : 1;
   const teamsSearch = activeTab === 'teams' ? search : undefined;
-  const isWorkItemsTab = activeTab === 'work-items';
-  const workItemsPage = isWorkItemsTab ? page : 1;
-  const workItemsLimit = isWorkItemsTab ? limit : 1;
-  const workItemsSearch = isWorkItemsTab ? search : undefined;
   const workItemRecordStatus = parseWorkItemRecordStatus(searchParams);
 
-  const [members, allUsers, workItemsResult, teamsResult, boardRuleTeams] =
-    await Promise.all([
-      safeServerFetch(
-        getProjectMembers(projectId),
-        [] as ProjectMemberWithUser[],
-        'load project members'
-      ),
-      safeServerFetch(getUserList(), [], 'fetch users for project members'),
-      safeServerFetch(
-        getWorkItemsPaginated(workItemsPage, workItemsLimit, workItemsSearch, {
+  const [
+    members,
+    allUsers,
+    workItemsResult,
+    teamsResult,
+    sprintsResult,
+    boardRuleTeams,
+  ] = await Promise.all([
+    safeServerFetch(
+      getProjectMembers(projectId),
+      [] as ProjectMemberWithUser[],
+      'load project members'
+    ),
+    safeServerFetch(getUserList(), [], 'fetch users for project members'),
+    safeServerFetch(
+      getWorkItemsPaginated(
+        isWorkItemsTab ? page : 1,
+        isWorkItemsTab ? limit : 1,
+        isWorkItemsTab ? search : undefined,
+        buildProjectWorkItemFilters({
           projectId,
-          ...(isWorkItemsTab
-            ? {
-                type,
-                assigneeId,
-                labels,
-                recordStatus: workItemRecordStatus,
-                ...workItemHierarchyListFilter(listView),
-              }
-            : {}),
-        }),
-        EMPTY_WORK_ITEMS,
-        'fetch project work items'
+          isWorkItemsTab,
+          type,
+          assigneeId,
+          labels,
+          sprintId,
+          recordStatus: workItemRecordStatus,
+          listView,
+        })
       ),
-      safeServerFetch(
-        getTeamListPaginated(
-          teamsPage,
-          teamsLimit,
-          teamStatus,
-          teamsSearch,
-          projectId
-        ),
-        EMPTY_TEAMS,
-        'fetch project teams'
+      EMPTY_WORK_ITEMS,
+      'fetch project work items'
+    ),
+    safeServerFetch(
+      getTeamListPaginated(
+        teamsPage,
+        teamsLimit,
+        teamStatus,
+        teamsSearch,
+        projectId
       ),
-      activeTab === 'board'
-        ? safeServerFetch(
-            getActiveProjectTeams(projectId),
-            [] as Team[],
-            'fetch board rule teams'
-          )
-        : Promise.resolve([] as Team[]),
-    ]);
+      EMPTY_TEAMS,
+      'fetch project teams'
+    ),
+    shouldLoadSprints
+      ? safeServerFetch(
+          getSprintsPaginatedServer(
+            sprintListStatus,
+            sprintsPage,
+            sprintsLimit,
+            sprintsSearch,
+            { projectId }
+          ),
+          EMPTY_SPRINTS,
+          'fetch project sprints'
+        )
+      : Promise.resolve(EMPTY_SPRINTS),
+    activeTab === 'board'
+      ? safeServerFetch(
+          getActiveProjectTeams(projectId),
+          [] as Team[],
+          'fetch board rule teams'
+        )
+      : Promise.resolve([] as Team[]),
+  ]);
 
   return {
     access: 'allowed',
@@ -247,6 +394,7 @@ export async function getProjectWorkspace(
       search,
       typeFilter: type ?? '',
       assigneeFilter: assigneeId ?? '',
+      sprintFilter: sprintId ?? '',
       labelsFilter: labels ?? [],
       listView,
       tab: workItemRecordStatus,
@@ -256,6 +404,12 @@ export async function getProjectWorkspace(
       defaultLimit: limit,
       search,
       status: teamStatus,
+    }),
+    sprints: toSprintsPayload(sprintsResult, {
+      active: isSprintsTab || isWorkItemsTab,
+      defaultLimit: limit,
+      search,
+      filterTab: sprintListStatus,
     }),
     boardRuleTeams,
   };

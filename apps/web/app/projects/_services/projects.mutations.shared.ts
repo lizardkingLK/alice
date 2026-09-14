@@ -110,13 +110,18 @@ export function createProjectsService(
 
     async updateProjectFieldsConfig(
       projectId: string,
-      attributes_config: unknown
+      attributes_config: unknown,
+      expectedUpdatedAt?: string
     ): Promise<Project> {
+      const payload: Record<string, unknown> = { attributes_config };
+      if (expectedUpdatedAt !== undefined) {
+        payload.expectedUpdatedAt = expectedUpdatedAt;
+      }
       const data = await apiFetch<{ project: Project }>(
         `${apiProjects}/${projectId}`,
         {
           method: 'PUT',
-          body: JSON.stringify({ attributes_config }),
+          body: JSON.stringify(payload),
         }
       );
       return data.project;

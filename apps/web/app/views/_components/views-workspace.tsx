@@ -30,15 +30,17 @@ import {
   RefreshCw,
   Share2,
   Trash2,
+  UserRound,
+  Users,
   X,
 } from '@repo/ui/lib/icons';
 import { DataTable } from '@/components/data-table';
 import { DismissibleError } from '@/components/dismissible-error';
 import { Pagination } from '@/components/pagination';
 import { RegistryConfirmDialog } from '@/components/registry-confirm-dialog';
+import { RegistryTabSwitcher } from '@/components/registry-tab-switcher';
 import { RegistryTitleCell } from '@/components/registry-title-cell';
 import { SearchInput } from '@/components/search-input';
-import { cn } from '@repo/ui/lib/utils';
 import { formatDate, formatDateTime } from '@/app/_shared/utility';
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { usePaginationNavigation } from '@/hooks/use-pagination-navigation';
@@ -62,10 +64,14 @@ import {
   writeViewsTableColumnVisibility,
 } from '@/app/views/_helpers/views-table-columns-storage';
 
-const TABS: ReadonlyArray<{ id: ViewsListTab; label: string }> = [
-  { id: 'mine', label: 'My views' },
-  { id: 'shared', label: 'Shared with me' },
-  { id: 'archived', label: 'Archived' },
+const TABS: ReadonlyArray<{
+  id: ViewsListTab;
+  label: string;
+  icon: typeof UserRound;
+}> = [
+  { id: 'mine', label: 'My views', icon: UserRound },
+  { id: 'shared', label: 'Shared with me', icon: Users },
+  { id: 'archived', label: 'Archived', icon: Archive },
 ];
 
 function emptyViewsMessage(tab: ViewsListTab): string {
@@ -455,48 +461,43 @@ export function ViewsWorkspace({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-            <SearchInput
-              value={searchQuery}
-              onValueChange={setSearchQuery}
-              onClear={handleClearSearch}
-              placeholder="Search views..."
-            />
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <SearchInput
+                value={searchQuery}
+                onValueChange={setSearchQuery}
+                onClear={handleClearSearch}
+                placeholder="Search views..."
+              />
 
-            <div className="flex flex-wrap gap-2">
-              {TABS.map(({ id, label }) => (
+              <ViewsColumnsDialog
+                visibility={columnVisibility}
+                disabled={!columnsHydrated}
+                onApply={handleApplyColumnVisibility}
+              />
+
+              {hasActiveSearch ? (
                 <Button
-                  key={id}
                   type="button"
+                  variant="ghost"
                   size="sm"
-                  variant={tab === id ? 'secondary' : 'ghost'}
-                  className={cn('h-8', tab === id && 'bg-secondary')}
-                  aria-pressed={tab === id}
-                  onClick={() => handleTabChange(id)}
+                  onClick={handleClearSearch}
+                  className="text-muted-foreground hover:text-foreground h-9 cursor-pointer px-3 text-xs"
                 >
-                  {label}
+                  Clear search
+                  <X className="size-3.5" />
                 </Button>
-              ))}
+              ) : null}
             </div>
 
-            <ViewsColumnsDialog
-              visibility={columnVisibility}
-              disabled={!columnsHydrated}
-              onApply={handleApplyColumnVisibility}
-            />
-
-            {hasActiveSearch ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleClearSearch}
-                className="text-muted-foreground hover:text-foreground h-9 cursor-pointer px-3 text-xs"
-              >
-                Clear search
-                <X className="size-3.5" />
-              </Button>
-            ) : null}
+            <div className="flex flex-wrap items-center gap-2 self-start">
+              <RegistryTabSwitcher
+                tabs={TABS}
+                value={tab}
+                onChange={handleTabChange}
+                aria-label="Views list"
+              />
+            </div>
           </div>
 
           <DataTable

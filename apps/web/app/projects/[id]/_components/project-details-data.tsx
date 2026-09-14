@@ -46,6 +46,7 @@ export async function ProjectDetailsData({
         workItems={workspace.workItems}
         teams={workspace.teams}
         boardRuleTeams={workspace.boardRuleTeams}
+        sprints={workspace.sprints}
         initialColumnVisibility={columnVisibilityBootstrap.visibility}
         columnVisibilityHasCookie={columnVisibilityBootstrap.hasCookie}
       />

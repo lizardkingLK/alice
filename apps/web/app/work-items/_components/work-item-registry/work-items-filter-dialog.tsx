@@ -2,14 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Constants } from '@repo/types/database';
-import { Button } from '@repo/ui/components/ui/button';
-import { Dialog, DialogContent } from '@repo/ui/components/ui/dialog';
-import { Input } from '@repo/ui/components/ui/input';
-import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
-import { Plus, Search } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
-import { useToggleKeyboardShortcut } from '@repo/ui/hooks/use-keyboard-shortcut';
-import { isShiftLetter } from '@repo/ui/lib/shortcut-gate';
 import {
   parseWorkItemLabelsFilterParam,
   WORK_ITEM_PRIORITIES,
@@ -21,16 +14,18 @@ import {
 import type { WorkItemsFilterDraft } from '@/app/work-items/_components/work-item-table/work-item-table-helpers';
 import type { FilterQuery } from '@/app/work-items/_components/work-item-table/work-items-table-types';
 import type { WorkItemWorkspaceProps } from '@/app/work-items/_components/work-items-workspace';
+import { resolveAssigneeFilterMembers } from '@/app/work-items/_helpers/work-item-assignee-filter-members';
 import { WORK_ITEM_STATUSES } from '@/app/work-items/_helpers/work-item-status';
 import { PRIORITY_LABELS } from '@/app/work-items/_helpers/work-item-priority-ui';
 import { formatLabelWithSpace } from '@/app/_shared/utility';
 import { QUERY_FILTER_ALL_VALUE } from '@/hooks/use-query-filter';
 import { WorkItemLabelsInput } from '@/app/work-items/_components/work-item-labels/work-item-labels-input';
-import { FilterFieldNavItem } from '@/components/filter-field-nav-item';
-import { FilterShortcutTrigger } from '@/components/filter-shortcut-trigger';
-
-/** Fixed options list height so long filter lists scroll inside the pane. */
-const FILTER_OPTIONS_SCROLL_CLASS = 'h-64';
+import {
+  FILTER_OPTIONS_SCROLL_CLASS,
+  FilterDialogShell,
+  FilterOptionsChecklistPane,
+  type FilterDialogOption,
+} from '@/components/filter-dialog-shell';
 
 const WORK_ITEM_TYPES = Constants.public.Enums.WorkItemType;
 
@@ -65,11 +60,6 @@ export type WorkItemsFilterFieldId =
   | 'labels'
   | 'parent'
   | 'priority';
-
-type FilterOption = {
-  readonly value: string;
-  readonly label: string;
-};
 
 type FilterFieldConfig = {
   readonly id: WorkItemsFilterFieldId;
@@ -133,6 +123,9 @@ const FILTER_FIELD_CONFIG: Record<WorkItemsFilterFieldId, FilterFieldConfig> = {
 export type WorkItemsFilterDialogProps = {
   readonly projects: WorkItemWorkspaceProps['projects'];
   readonly projectMembers: WorkItemWorkspaceProps['projectMembers'];
+  readonly projectMembersByProjectId?: NonNullable<
+    WorkItemWorkspaceProps['projectMembersByProjectId']
+  >;
   readonly sprints: WorkItemWorkspaceProps['sprints'];
   readonly projectQuery: FilterQuery;
   readonly sprintQuery: FilterQuery;
@@ -153,35 +146,6 @@ export type WorkItemsFilterDialogProps = {
 };
 /* eslint-enable no-unused-vars */
 
-function FilterOptionRow({
-  id,
-  label,
-  checked,
-  onCheckedChange,
-}: Readonly<{
-  id: string;
-  label: string;
-  checked: boolean;
-  // eslint-disable-next-line no-unused-vars
-  onCheckedChange: (checked: boolean) => void;
-}>) {
-  return (
-    <label
-      htmlFor={id}
-      className="hover:bg-muted/50 flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm"
-    >
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        onChange={(event) => onCheckedChange(event.target.checked)}
-        className="border-input size-4 rounded border"
-      />
-      <span className="min-w-0 flex-1 truncate">{label}</span>
-    </label>
-  );
-}
-
 function buildVisibleFields(
   isProjectLocked: boolean,
   isAssigneeLocked: boolean,
@@ -194,8 +158,11 @@ function buildVisibleFields(
   const fields: FilterFieldConfig[] = [];
 
   if (!isProjectLocked) {
-    fields.push(FILTER_FIELD_CONFIG.project, FILTER_FIELD_CONFIG.sprint);
+    fields.push(FILTER_FIELD_CONFIG.project);
   }
+
+  // Sprint stays available when the project is locked (project Work Items tab).
+  fields.push(FILTER_FIELD_CONFIG.sprint);
 
   fields.push(FILTER_FIELD_CONFIG.parent);
 
@@ -216,7 +183,7 @@ function optionsForField(
   fieldId: WorkItemsFilterFieldId,
   props: WorkItemsFilterDialogProps,
   draft: WorkItemsFilterDraft
-): FilterOption[] {
+): FilterDialogOption[] {
   switch (fieldId) {
     case 'project':
       return props.projects.map((project) => ({
@@ -229,11 +196,25 @@ function optionsForField(
         draft.project,
         QUERY_FILTER_ALL_VALUE
       );
-    case 'assignee':
+    case 'assignee': {
+      if (props.projectMembersByProjectId) {
+        const projectId = props.isProjectLocked
+          ? props.projectQuery.value
+          : draft.project;
+        return resolveAssigneeFilterMembers({
+          membersByProjectId: props.projectMembersByProjectId,
+          projectId,
+          allValue: QUERY_FILTER_ALL_VALUE,
+        }).map((member) => ({
+          value: member.id,
+          label: member.name,
+        }));
+      }
       return props.projectMembers.map((member) => ({
         value: member.id,
         label: member.name,
       }));
+    }
     case 'type':
       return WORK_ITEM_TYPES.map((workItemType) => ({
         value: workItemType,
@@ -301,7 +282,7 @@ function emptyDraft(props: WorkItemsFilterDialogProps): WorkItemsFilterDraft {
   const all = QUERY_FILTER_ALL_VALUE;
   return {
     project: props.isProjectLocked ? props.projectQuery.value : all,
-    sprint: props.isProjectLocked ? props.sprintQuery.value : all,
+    sprint: all,
     type: all,
     assignee: props.isAssigneeLocked ? props.assigneeQuery.value : all,
     labels: [],
@@ -348,92 +329,6 @@ function FilterLabelsPane({
       >
         {labelsSelectionSummary(selectedLabels.length)}
       </div>
-    </>
-  );
-}
-
-function FilterChecklistPane({
-  fieldId,
-  searchPlaceholder,
-  optionSearch,
-  onOptionSearchChange,
-  filteredOptions,
-  showAllOption,
-  selectedValue,
-  allValue,
-  onApplySelection,
-  onClearActiveField,
-}: Readonly<{
-  fieldId: WorkItemsFilterFieldId;
-  searchPlaceholder: string;
-  optionSearch: string;
-  // eslint-disable-next-line no-unused-vars
-  onOptionSearchChange: (value: string) => void;
-  filteredOptions: readonly FilterOption[];
-  showAllOption: boolean;
-  selectedValue: string;
-  allValue: string;
-  // eslint-disable-next-line no-unused-vars
-  onApplySelection: (value: string) => void;
-  onClearActiveField: () => void;
-}>) {
-  return (
-    <>
-      <div className="border-border border-b py-3 pr-12 pl-3">
-        <div className="relative">
-          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-          <Input
-            value={optionSearch}
-            onChange={(event) => onOptionSearchChange(event.target.value)}
-            placeholder={searchPlaceholder}
-            aria-label={searchPlaceholder}
-            className="pl-9"
-          />
-        </div>
-      </div>
-
-      <ScrollArea className={cn('min-h-0', FILTER_OPTIONS_SCROLL_CLASS)}>
-        <div className="space-y-0.5 p-3">
-          {showAllOption ? (
-            <FilterOptionRow
-              id={`filter-${fieldId}-all`}
-              label={allLabelForField(fieldId)}
-              checked={!selectedValue || selectedValue === allValue}
-              onCheckedChange={(checked) => {
-                if (checked) {
-                  onApplySelection(allValue);
-                }
-              }}
-            />
-          ) : null}
-
-          {filteredOptions.map((option) => (
-            <FilterOptionRow
-              key={option.value}
-              id={`filter-${fieldId}-${option.value}`}
-              label={option.label}
-              checked={selectedValue === option.value}
-              onCheckedChange={(checked) => {
-                if (checked) {
-                  onApplySelection(option.value);
-                  return;
-                }
-                if (showAllOption) {
-                  onApplySelection(allValue);
-                  return;
-                }
-                onClearActiveField();
-              }}
-            />
-          ))}
-
-          {filteredOptions.length === 0 ? (
-            <p className="text-muted-foreground px-2 py-6 text-center text-sm">
-              No matching options.
-            </p>
-          ) : null}
-        </div>
-      </ScrollArea>
     </>
   );
 }
@@ -492,6 +387,7 @@ function draftWithProjectChange(
     ...draft,
     project: nextProject,
     sprint: params.get('sprint') ?? QUERY_FILTER_ALL_VALUE,
+    assignee: QUERY_FILTER_ALL_VALUE,
   };
 }
 
@@ -547,16 +443,6 @@ export function WorkItemsFilterDialog(
     // Seed once when the dialog opens; ignore prop churn while editing.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- open transition only
   }, [open]);
-
-  useToggleKeyboardShortcut(
-    (event) => isShiftLetter(event, 'f'),
-    open,
-    setOpen
-  );
-
-  const handleOpenChange = (nextOpen: boolean) => {
-    setOpen(nextOpen);
-  };
 
   const options = optionsForField(activeField.id, props, draft);
   const filteredOptions = options.filter((option) =>
@@ -627,10 +513,6 @@ export function WorkItemsFilterDialog(
     setPlaceholderSelections({});
   };
 
-  const handleClose = () => {
-    setOpen(false);
-  };
-
   const handleOkay = () => {
     onApplyFilters(draft);
     setOpen(false);
@@ -648,13 +530,14 @@ export function WorkItemsFilterDialog(
     : `${visibleCount} of ${visibleCount}`;
 
   let fieldPane = (
-    <FilterChecklistPane
+    <FilterOptionsChecklistPane
       fieldId={activeField.id}
       searchPlaceholder={activeField.searchPlaceholder}
       optionSearch={optionSearch}
       onOptionSearchChange={setOptionSearch}
       filteredOptions={filteredOptions}
       showAllOption={showAllOption}
+      allOptionLabel={allLabelForField(activeField.id)}
       selectedValue={selectedValue}
       allValue={QUERY_FILTER_ALL_VALUE}
       onApplySelection={applySelection}
@@ -671,96 +554,22 @@ export function WorkItemsFilterDialog(
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <FilterShortcutTrigger
-        open={open}
-        hasActiveFilters={hasActiveFilters}
-        hideTooltipWhileOpen
-        delayDuration={600}
-      />
-
-      <DialogContent
-        showCloseButton
-        className="gap-0 overflow-hidden p-0 sm:max-w-2xl"
-      >
-        {/*
-          Reserve top-right space for DialogContent's absolute close button
-          so it never sits on top of the options search field.
-        */}
-        <div className="flex">
-          <aside className="border-border flex w-44 shrink-0 flex-col border-r p-3 pb-4">
-            <nav className="space-y-0.5" aria-label="Filter fields">
-              {fields.map((field) => (
-                <FilterFieldNavItem
-                  key={field.id}
-                  label={field.label}
-                  active={field.id === activeField.id}
-                  onSelect={() => setActiveFieldId(field.id)}
-                />
-              ))}
-            </nav>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled
-              className="mt-3 h-8 w-full cursor-not-allowed gap-1.5 text-xs opacity-60"
-            >
-              <Plus className="size-3.5" />
-              Add field
-            </Button>
-
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground mt-auto h-8 justify-start px-2 text-xs"
-              onClick={handleClearAllDraft}
-            >
-              Clear all
-            </Button>
-          </aside>
-
-          <section className="flex min-w-0 flex-1 flex-col">
-            {fieldPane}
-
-            <div className="border-border flex items-center justify-between gap-2 border-t px-3 pt-2 pb-4">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground h-8 px-2 text-xs"
-                onClick={clearActiveField}
-              >
-                Clear
-              </Button>
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground hidden text-xs sm:inline">
-                  {footerCountLabel}
-                </span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-8 cursor-pointer px-3 text-xs"
-                  onClick={handleClose}
-                >
-                  Close
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  className="h-8 cursor-pointer px-3 text-xs"
-                  onClick={handleOkay}
-                >
-                  Okay
-                </Button>
-              </div>
-            </div>
-          </section>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <FilterDialogShell
+      open={open}
+      onOpenChange={setOpen}
+      hasActiveFilters={hasActiveFilters}
+      fields={fields.map((field) => ({ id: field.id, label: field.label }))}
+      activeFieldId={activeField.id}
+      onActiveFieldIdChange={(id) =>
+        setActiveFieldId(id as WorkItemsFilterFieldId)
+      }
+      onClearAll={handleClearAllDraft}
+      showAddFieldPlaceholder
+      onClearActiveField={clearActiveField}
+      onOkay={handleOkay}
+      footerCountLabel={footerCountLabel}
+    >
+      {fieldPane}
+    </FilterDialogShell>
   );
 }
