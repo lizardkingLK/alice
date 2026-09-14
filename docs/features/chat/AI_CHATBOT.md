@@ -227,8 +227,9 @@ Index on `user_id`. RLS policies exist for owner access; the API uses the
 | `status`          | `RecordStatus` | `'active'` or `'archived'` (soft-delete)        |
 | `created_at`      | `timestamptz`  | Created timestamp                               |
 | `updated_at`      | `timestamptz`  | Updated timestamp                               |
+| `expires_at`      | `timestamptz?` | Signed URL expiration timestamp                 |
 
-Indexes on `user_id` and `conversation_id`. Managed exclusively via Prisma (`await prisma.chat_attachments......`).
+Indexes on `user_id` and `conversation_id`. Managed exclusively via Prisma (`await prisma.chat_attachments......`). Auto-refreshes signed URLs when expired.
 
 ### Storage Buckets — Supabase Storage
 

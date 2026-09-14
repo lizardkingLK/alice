@@ -23,6 +23,7 @@ export const chatAttachmentWireSchema = z.object({
   storagePath: z.string(),
   url: z.string(),
   fileType: z.nativeEnum(ChatAttachmentFileTypeEnum),
+  expiresAt: z.string().nullable().optional(),
 });
 
 export const createChatAttachmentUploadSessionSchema = z
@@ -128,6 +129,8 @@ export const chatToolActionSchema = z.object({
     'create_sprint',
     'create_work_item',
     'batch_import_work_items',
+    'update_work_item',
+    'delete_work_item',
   ]),
   entity: z.object({
     id: z.string(),

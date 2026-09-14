@@ -45,6 +45,7 @@ export type Chat_attachmentsMinAggregateOutputType = {
   status: $Enums.RecordStatus | null
   created_at: Date | null
   updated_at: Date | null
+  expires_at: Date | null
 }
 
 export type Chat_attachmentsMaxAggregateOutputType = {
@@ -58,6 +59,7 @@ export type Chat_attachmentsMaxAggregateOutputType = {
   status: $Enums.RecordStatus | null
   created_at: Date | null
   updated_at: Date | null
+  expires_at: Date | null
 }
 
 export type Chat_attachmentsCountAggregateOutputType = {
@@ -71,6 +73,7 @@ export type Chat_attachmentsCountAggregateOutputType = {
   status: number
   created_at: number
   updated_at: number
+  expires_at: number
   _all: number
 }
 
@@ -94,6 +97,7 @@ export type Chat_attachmentsMinAggregateInputType = {
   status?: true
   created_at?: true
   updated_at?: true
+  expires_at?: true
 }
 
 export type Chat_attachmentsMaxAggregateInputType = {
@@ -107,6 +111,7 @@ export type Chat_attachmentsMaxAggregateInputType = {
   status?: true
   created_at?: true
   updated_at?: true
+  expires_at?: true
 }
 
 export type Chat_attachmentsCountAggregateInputType = {
@@ -120,6 +125,7 @@ export type Chat_attachmentsCountAggregateInputType = {
   status?: true
   created_at?: true
   updated_at?: true
+  expires_at?: true
   _all?: true
 }
 
@@ -220,6 +226,7 @@ export type Chat_attachmentsGroupByOutputType = {
   status: $Enums.RecordStatus
   created_at: Date
   updated_at: Date
+  expires_at: Date | null
   _count: Chat_attachmentsCountAggregateOutputType | null
   _avg: Chat_attachmentsAvgAggregateOutputType | null
   _sum: Chat_attachmentsSumAggregateOutputType | null
@@ -256,6 +263,7 @@ export type chat_attachmentsWhereInput = {
   status?: Prisma.EnumRecordStatusFilter<"chat_attachments"> | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFilter<"chat_attachments"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"chat_attachments"> | Date | string
+  expires_at?: Prisma.DateTimeNullableFilter<"chat_attachments"> | Date | string | null
   user?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
   conversation?: Prisma.XOR<Prisma.Chat_conversationsNullableScalarRelationFilter, Prisma.chat_conversationsWhereInput> | null
 }
@@ -271,6 +279,7 @@ export type chat_attachmentsOrderByWithRelationInput = {
   status?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
+  expires_at?: Prisma.SortOrderInput | Prisma.SortOrder
   user?: Prisma.usersOrderByWithRelationInput
   conversation?: Prisma.chat_conversationsOrderByWithRelationInput
 }
@@ -289,6 +298,7 @@ export type chat_attachmentsWhereUniqueInput = Prisma.AtLeast<{
   status?: Prisma.EnumRecordStatusFilter<"chat_attachments"> | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFilter<"chat_attachments"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"chat_attachments"> | Date | string
+  expires_at?: Prisma.DateTimeNullableFilter<"chat_attachments"> | Date | string | null
   user?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
   conversation?: Prisma.XOR<Prisma.Chat_conversationsNullableScalarRelationFilter, Prisma.chat_conversationsWhereInput> | null
 }, "id">
@@ -304,6 +314,7 @@ export type chat_attachmentsOrderByWithAggregationInput = {
   status?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
+  expires_at?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.chat_attachmentsCountOrderByAggregateInput
   _avg?: Prisma.chat_attachmentsAvgOrderByAggregateInput
   _max?: Prisma.chat_attachmentsMaxOrderByAggregateInput
@@ -325,6 +336,7 @@ export type chat_attachmentsScalarWhereWithAggregatesInput = {
   status?: Prisma.EnumRecordStatusWithAggregatesFilter<"chat_attachments"> | $Enums.RecordStatus
   created_at?: Prisma.DateTimeWithAggregatesFilter<"chat_attachments"> | Date | string
   updated_at?: Prisma.DateTimeWithAggregatesFilter<"chat_attachments"> | Date | string
+  expires_at?: Prisma.DateTimeNullableWithAggregatesFilter<"chat_attachments"> | Date | string | null
 }
 
 export type chat_attachmentsCreateInput = {
@@ -336,6 +348,7 @@ export type chat_attachmentsCreateInput = {
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_at?: Date | string
+  expires_at?: Date | string | null
   user: Prisma.usersCreateNestedOneWithoutChat_attachmentsInput
   conversation?: Prisma.chat_conversationsCreateNestedOneWithoutAttachmentsInput
 }
@@ -351,6 +364,7 @@ export type chat_attachmentsUncheckedCreateInput = {
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_at?: Date | string
+  expires_at?: Date | string | null
 }
 
 export type chat_attachmentsUpdateInput = {
@@ -362,6 +376,7 @@ export type chat_attachmentsUpdateInput = {
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   user?: Prisma.usersUpdateOneRequiredWithoutChat_attachmentsNestedInput
   conversation?: Prisma.chat_conversationsUpdateOneWithoutAttachmentsNestedInput
 }
@@ -377,6 +392,7 @@ export type chat_attachmentsUncheckedUpdateInput = {
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type chat_attachmentsCreateManyInput = {
@@ -390,6 +406,7 @@ export type chat_attachmentsCreateManyInput = {
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_at?: Date | string
+  expires_at?: Date | string | null
 }
 
 export type chat_attachmentsUpdateManyMutationInput = {
@@ -401,6 +418,7 @@ export type chat_attachmentsUpdateManyMutationInput = {
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type chat_attachmentsUncheckedUpdateManyInput = {
@@ -414,6 +432,7 @@ export type chat_attachmentsUncheckedUpdateManyInput = {
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type Chat_attachmentsListRelationFilter = {
@@ -437,6 +456,7 @@ export type chat_attachmentsCountOrderByAggregateInput = {
   status?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
+  expires_at?: Prisma.SortOrder
 }
 
 export type chat_attachmentsAvgOrderByAggregateInput = {
@@ -454,6 +474,7 @@ export type chat_attachmentsMaxOrderByAggregateInput = {
   status?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
+  expires_at?: Prisma.SortOrder
 }
 
 export type chat_attachmentsMinOrderByAggregateInput = {
@@ -467,6 +488,7 @@ export type chat_attachmentsMinOrderByAggregateInput = {
   status?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
+  expires_at?: Prisma.SortOrder
 }
 
 export type chat_attachmentsSumOrderByAggregateInput = {
@@ -566,6 +588,7 @@ export type chat_attachmentsCreateWithoutUserInput = {
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_at?: Date | string
+  expires_at?: Date | string | null
   conversation?: Prisma.chat_conversationsCreateNestedOneWithoutAttachmentsInput
 }
 
@@ -579,6 +602,7 @@ export type chat_attachmentsUncheckedCreateWithoutUserInput = {
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_at?: Date | string
+  expires_at?: Date | string | null
 }
 
 export type chat_attachmentsCreateOrConnectWithoutUserInput = {
@@ -621,6 +645,7 @@ export type chat_attachmentsScalarWhereInput = {
   status?: Prisma.EnumRecordStatusFilter<"chat_attachments"> | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFilter<"chat_attachments"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"chat_attachments"> | Date | string
+  expires_at?: Prisma.DateTimeNullableFilter<"chat_attachments"> | Date | string | null
 }
 
 export type chat_attachmentsCreateWithoutConversationInput = {
@@ -632,6 +657,7 @@ export type chat_attachmentsCreateWithoutConversationInput = {
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_at?: Date | string
+  expires_at?: Date | string | null
   user: Prisma.usersCreateNestedOneWithoutChat_attachmentsInput
 }
 
@@ -645,6 +671,7 @@ export type chat_attachmentsUncheckedCreateWithoutConversationInput = {
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_at?: Date | string
+  expires_at?: Date | string | null
 }
 
 export type chat_attachmentsCreateOrConnectWithoutConversationInput = {
@@ -683,6 +710,7 @@ export type chat_attachmentsCreateManyUserInput = {
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_at?: Date | string
+  expires_at?: Date | string | null
 }
 
 export type chat_attachmentsUpdateWithoutUserInput = {
@@ -694,6 +722,7 @@ export type chat_attachmentsUpdateWithoutUserInput = {
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   conversation?: Prisma.chat_conversationsUpdateOneWithoutAttachmentsNestedInput
 }
 
@@ -707,6 +736,7 @@ export type chat_attachmentsUncheckedUpdateWithoutUserInput = {
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type chat_attachmentsUncheckedUpdateManyWithoutUserInput = {
@@ -719,6 +749,7 @@ export type chat_attachmentsUncheckedUpdateManyWithoutUserInput = {
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type chat_attachmentsCreateManyConversationInput = {
@@ -731,6 +762,7 @@ export type chat_attachmentsCreateManyConversationInput = {
   status?: $Enums.RecordStatus
   created_at?: Date | string
   updated_at?: Date | string
+  expires_at?: Date | string | null
 }
 
 export type chat_attachmentsUpdateWithoutConversationInput = {
@@ -742,6 +774,7 @@ export type chat_attachmentsUpdateWithoutConversationInput = {
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   user?: Prisma.usersUpdateOneRequiredWithoutChat_attachmentsNestedInput
 }
 
@@ -755,6 +788,7 @@ export type chat_attachmentsUncheckedUpdateWithoutConversationInput = {
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type chat_attachmentsUncheckedUpdateManyWithoutConversationInput = {
@@ -767,6 +801,7 @@ export type chat_attachmentsUncheckedUpdateManyWithoutConversationInput = {
   status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 
@@ -782,6 +817,7 @@ export type chat_attachmentsSelect<ExtArgs extends runtime.Types.Extensions.Inte
   status?: boolean
   created_at?: boolean
   updated_at?: boolean
+  expires_at?: boolean
   user?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   conversation?: boolean | Prisma.chat_attachments$conversationArgs<ExtArgs>
 }, ExtArgs["result"]["chat_attachments"]>
@@ -797,6 +833,7 @@ export type chat_attachmentsSelectCreateManyAndReturn<ExtArgs extends runtime.Ty
   status?: boolean
   created_at?: boolean
   updated_at?: boolean
+  expires_at?: boolean
   user?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   conversation?: boolean | Prisma.chat_attachments$conversationArgs<ExtArgs>
 }, ExtArgs["result"]["chat_attachments"]>
@@ -812,6 +849,7 @@ export type chat_attachmentsSelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   status?: boolean
   created_at?: boolean
   updated_at?: boolean
+  expires_at?: boolean
   user?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   conversation?: boolean | Prisma.chat_attachments$conversationArgs<ExtArgs>
 }, ExtArgs["result"]["chat_attachments"]>
@@ -827,9 +865,10 @@ export type chat_attachmentsSelectScalar = {
   status?: boolean
   created_at?: boolean
   updated_at?: boolean
+  expires_at?: boolean
 }
 
-export type chat_attachmentsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "conversation_id" | "file_name" | "storage_path" | "file_size" | "mime_type" | "status" | "created_at" | "updated_at", ExtArgs["result"]["chat_attachments"]>
+export type chat_attachmentsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "conversation_id" | "file_name" | "storage_path" | "file_size" | "mime_type" | "status" | "created_at" | "updated_at" | "expires_at", ExtArgs["result"]["chat_attachments"]>
 export type chat_attachmentsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   conversation?: boolean | Prisma.chat_attachments$conversationArgs<ExtArgs>
@@ -860,6 +899,7 @@ export type $chat_attachmentsPayload<ExtArgs extends runtime.Types.Extensions.In
     status: $Enums.RecordStatus
     created_at: Date
     updated_at: Date
+    expires_at: Date | null
   }, ExtArgs["result"]["chat_attachments"]>
   composites: {}
 }
@@ -1295,6 +1335,7 @@ export interface chat_attachmentsFieldRefs {
   readonly status: Prisma.FieldRef<"chat_attachments", 'RecordStatus'>
   readonly created_at: Prisma.FieldRef<"chat_attachments", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"chat_attachments", 'DateTime'>
+  readonly expires_at: Prisma.FieldRef<"chat_attachments", 'DateTime'>
 }
     
 

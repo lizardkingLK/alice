@@ -507,6 +507,7 @@ model chat_attachments {
   status          RecordStatus        @default(active)
   created_at      DateTime            @default(now()) @db.Timestamptz(6)
   updated_at      DateTime            @updatedAt @db.Timestamptz(6)
+  expires_at      DateTime?           @db.Timestamptz(6)
 
   user         users               @relation(fields: [user_id], references: [id], onDelete: Cascade)
   conversation chat_conversations? @relation(fields: [conversation_id], references: [id], onDelete: Cascade)

@@ -203,3 +203,39 @@ Refactor Navigation Header,story,low,1,Modernize responsive navigation menu bar
    - Full message history reloads.
    - All past attachment tiles render above messages with valid signed download links.
    - Action cards render with working navigation links.
+
+---
+
+### Test Case 9: Expired Signed URL Auto-Refresh for Chat Attachments
+
+**Goal**: Verify that when an attachment's 1-hour signed URL expires, clicking the attachment automatically refreshes the URL without error or re-upload.
+
+#### Option A: Natural Expiration Test
+1. Upload an attachment in any Alice chat conversation (e.g. `test-work-items.json`) and send the message.
+2. Leave the tab open or return after 1 hour (when the original signed URL token expires).
+3. Open DevTools (`F12` → **Network** tab).
+4. Click on the attachment chip in the conversation thread.
+5. **Expected Behavior**:
+   - A `GET /api/v1/chat/attachments/<attachmentId>` request is fired.
+   - The response status is `200` with fresh `previewUrl`, `downloadUrl`, and updated `expiresAt`.
+   - The file opens/downloads successfully in a new tab without any Supabase `Invalid or expired token` error.
+
+#### Option B: Fast Simulation via Database (No 1-hour wait needed)
+1. Upload an attachment in chat and send the message.
+2. Note the attachment or conversation.
+3. Run a quick SQL query in Supabase / Postgres to simulate expiration:
+   ```sql
+   UPDATE "chat_attachments"
+   SET "expires_at" = NOW() - INTERVAL '2 hours'
+   WHERE "id" = (
+     SELECT "id" FROM "chat_attachments"
+     ORDER BY "created_at" DESC
+     LIMIT 1
+   );
+   ```
+4. In the browser, refresh the conversation or click the attachment chip.
+5. **Expected Behavior**:
+   - The attachment link auto-refreshes.
+   - Check the DB: `expires_at` is updated to 1 hour in the future (`NOW() + INTERVAL '1 hour'`).
+   - The file opens seamlessly without error.
+

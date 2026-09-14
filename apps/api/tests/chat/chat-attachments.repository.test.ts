@@ -178,9 +178,17 @@ describe('ChatAttachmentsRepository', () => {
       expect(result.attachment.fileName).toBe('work-items.json');
       expect(result.attachment.fileType).toBe(ChatAttachmentFileTypeEnum.Json);
       expect(result.attachment.url).toBe('https://supabase.co/signed-url-test');
+      expect(result.attachment.expiresAt).toBeDefined();
+      expect(prisma.chat_attachments.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            expires_at: expect.any(Date),
+          }),
+        })
+      );
     });
 
-    it('uploads file via multipart fallback, creates DB record, and returns ChatAttachmentWire', async () => {
+    it('uploads file via multipart fallback, creates DB record with expires_at, and returns ChatAttachmentWire', async () => {
       const mockRecord = {
         id: 'attachment-uuid-1',
         user_id: 'user-uuid-1',
@@ -207,6 +215,14 @@ describe('ChatAttachmentsRepository', () => {
       expect(result.fileName).toBe('work-items.json');
       expect(result.fileType).toBe(ChatAttachmentFileTypeEnum.Json);
       expect(result.url).toBe('https://supabase.co/signed-url-test');
+      expect(result.expiresAt).toBeDefined();
+      expect(prisma.chat_attachments.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            expires_at: expect.any(Date),
+          }),
+        })
+      );
     });
 
     it('soft deletes (archives) DB record on deleteAttachment and removes storage object', async () => {
@@ -243,7 +259,58 @@ describe('ChatAttachmentsRepository', () => {
       ).rejects.toThrow(/Access denied/);
     });
 
-    it('lists attachments by conversation', async () => {
+    it('gets attachment by ID and generates new signed URL if expires_at is expired or null', async () => {
+      const expiredDate = new Date(Date.now() - 3600 * 1000); // 1 hour ago
+      vi.mocked(prisma.chat_attachments.findUnique).mockResolvedValue({
+        id: 'attachment-uuid-1',
+        user_id: 'user-uuid-1',
+        file_name: 'doc.pdf',
+        file_size: 2048,
+        mime_type: 'application/pdf',
+        storage_path: 'chat-attachments/user-uuid-1/doc.pdf',
+        status: 'active',
+        expires_at: expiredDate,
+      } as never);
+
+      vi.mocked(prisma.chat_attachments.update).mockResolvedValue({} as never);
+
+      const result = await repository.getAttachmentById('attachment-uuid-1');
+
+      expect(result).not.toBeNull();
+      expect(result?.id).toBe('attachment-uuid-1');
+      expect(result?.url).toBe('https://supabase.co/signed-url-test');
+      expect(result?.previewUrl).toBe('https://supabase.co/signed-url-test');
+      expect(result?.downloadUrl).toBe('https://supabase.co/signed-url-test');
+      expect(result?.expiresAt).toBeDefined();
+      expect(prisma.chat_attachments.update).toHaveBeenCalledWith({
+        where: { id: 'attachment-uuid-1' },
+        data: { expires_at: expect.any(Date) },
+      });
+    });
+
+    it('gets attachment signed URLs and updates expires_at in DB', async () => {
+      vi.mocked(prisma.chat_attachments.findUnique).mockResolvedValue({
+        id: 'attachment-uuid-1',
+        file_name: 'doc.pdf',
+        storage_path: 'chat-attachments/user-uuid-1/doc.pdf',
+        status: 'active',
+        expires_at: new Date(Date.now() - 1000),
+      } as never);
+
+      vi.mocked(prisma.chat_attachments.update).mockResolvedValue({} as never);
+
+      const urls = await repository.getAttachmentSignedUrls('attachment-uuid-1');
+
+      expect(urls.previewUrl).toBe('https://supabase.co/signed-url-test');
+      expect(urls.downloadUrl).toBe('https://supabase.co/signed-url-test');
+      expect(urls.expiresAt).toBeDefined();
+      expect(prisma.chat_attachments.update).toHaveBeenCalledWith({
+        where: { id: 'attachment-uuid-1' },
+        data: { expires_at: expect.any(Date) },
+      });
+    });
+
+    it('lists attachments by conversation and includes expiresAt', async () => {
       const mockRecord = {
         id: 'attachment-uuid-1',
         user_id: 'user-uuid-1',
@@ -253,6 +320,7 @@ describe('ChatAttachmentsRepository', () => {
         mime_type: 'application/json',
         storage_path: 'chat-attachments/user-uuid-1/test.json',
         status: 'active',
+        expires_at: new Date(Date.now() + 3600 * 1000),
       };
 
       vi.mocked(prisma.chat_attachments.findMany).mockResolvedValue([
@@ -267,6 +335,7 @@ describe('ChatAttachmentsRepository', () => {
       expect(list).toHaveLength(1);
       expect(list[0]?.id).toBe('attachment-uuid-1');
       expect(list[0]?.url).toBe('https://supabase.co/signed-url-test');
+      expect(list[0]?.expiresAt).toBeDefined();
     });
   });
 });

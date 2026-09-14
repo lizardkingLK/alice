@@ -49,6 +49,7 @@ export interface ChatAttachmentWire {
   storagePath: string;
   url: string;
   fileType: ChatAttachmentFileTypeEnum;
+  expiresAt?: string | null;
 }
 
 export interface ParsedWorkItemNode {
