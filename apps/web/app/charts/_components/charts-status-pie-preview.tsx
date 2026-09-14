@@ -2,20 +2,16 @@
 
 import { useMemo } from 'react';
 import type { WorkItemStatus } from '@repo/types';
-import {
-  Cell,
-  ChartTooltip,
-  ChartTooltipContent,
-  Pie,
-  PieChart,
-} from '@repo/ui/components/ui/chart';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';
 import {
   buildChartsStatusPieFromSample,
   type ChartsSampleWorkItem,
 } from '@/app/charts/_components/charts-sample.data';
-import { ChartViewport } from '@/components/chart-viewport';
+import {
+  StatusDistributionWheel,
+  type StatusDistributionSlice,
+} from '@/components/status-distribution-wheel';
 
 type ChartsStatusPiePreviewProps = {
   readonly className?: string;
@@ -39,6 +35,7 @@ export function ChartsStatusPiePreview({
     [workItems]
   );
 
+  const wheelData = data as StatusDistributionSlice[];
   const interactive = Boolean(onSliceClick);
 
   let pieMaxClass =
@@ -59,45 +56,14 @@ export function ChartsStatusPiePreview({
         className
       )}
     >
-      <ChartViewport
-        square
+      <StatusDistributionWheel
+        data={wheelData}
         config={config}
         className={cn('relative min-h-0 min-w-0 flex-1', pieMaxClass)}
-      >
-        <PieChart>
-          <ChartTooltip
-            cursor={false}
-            content={<ChartTooltipContent hideLabel nameKey="status" />}
-          />
-          <Pie
-            data={[...data]}
-            dataKey="count"
-            nameKey="status"
-            innerRadius={0}
-            outerRadius="90%"
-            strokeWidth={0}
-            paddingAngle={1}
-            onClick={(_data, index) => {
-              const entry = data[index];
-              if (entry && onSliceClick) {
-                onSliceClick(entry.status as WorkItemStatus);
-              }
-            }}
-            className={interactive ? 'cursor-pointer outline-none' : undefined}
-          >
-            {data.map((entry) => (
-              <Cell
-                key={entry.status}
-                fill={entry.fill}
-                className={
-                  interactive ? 'cursor-pointer outline-none' : undefined
-                }
-                style={interactive ? { cursor: 'pointer' } : undefined}
-              />
-            ))}
-          </Pie>
-        </PieChart>
-      </ChartViewport>
+        innerRadius="48%"
+        outerRadius="90%"
+        onSliceClick={onSliceClick}
+      />
 
       <ul
         className={cn(

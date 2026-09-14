@@ -44,6 +44,28 @@ export type CreateSprintRecord = {
 export class SprintsRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
+  async findByNameInProject(
+    projectId: string,
+    name: string,
+    excludeId?: string
+  ): Promise<Pick<SprintRow, 'id' | 'name' | 'project_id' | 'status'> | null> {
+    const sprint = await prisma.sprints.findFirst({
+      where: {
+        project_id: projectId,
+        name,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+      select: {
+        id: true,
+        name: true,
+        project_id: true,
+        status: true,
+      },
+    });
+
+    return sprint;
+  }
+
   async create(input: CreateSprintRecord): Promise<SprintRowWithProject> {
     const created = await prisma.sprints.create({
       data: {

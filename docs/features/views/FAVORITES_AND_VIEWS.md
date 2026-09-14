@@ -117,6 +117,10 @@ Aligned with other registry list pages ([PERFORMANCE.md](../../guides/PERFORMANC
 - **URL state** — `search`, `page`, `limit`, and `tab` (`mine` | `shared` |
   `archived`) via `searchParams` (debounced search, pagination controls).
 - **Skeleton** — `loading.tsx` / Suspense use `REGISTRY_PAGES.views`.
+- **Toolbar** — left: Search → **Columns** (icon); right: My views / Shared /
+  Archived **icon segment** tabs (`RegistryTabSwitcher`, same style as
+  Flat/Hierarchy and Active/Archived — not underline page tabs). Matches other
+  registry toolbars (filters and actions stay right-aligned when present).
 - **Columns** — optional visibility (title required) in localStorage
   `alice:views-table-columns:v1:{userId}`.
 

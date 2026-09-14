@@ -42,23 +42,31 @@ export function DashboardPageMeta({
 
   return (
     <div className="flex min-w-0 flex-1 items-center gap-3">
-      <DashboardBreadcrumb
-        overrides={breadcrumbOverrides}
-        asTrail={breadcrumbAsTrail}
-      />
+      <div className="min-w-0 overflow-hidden">
+        <DashboardBreadcrumb
+          overrides={breadcrumbOverrides}
+          asTrail={breadcrumbAsTrail}
+        />
+      </div>
 
-      <DashboardPageActions
-        userId={userId}
-        favoriteLabel={favoriteLabel}
-        projectId={projectId}
-        breadcrumbLabel={breadcrumbLabel}
-      />
+      <div className="flex shrink-0 items-center gap-2">
+        <DashboardPageActions
+          userId={userId}
+          favoriteLabel={favoriteLabel}
+          projectId={projectId}
+          breadcrumbLabel={breadcrumbLabel}
+        />
 
-      {description ? (
-        <InfoTooltip ariaLabel="Page description" side="bottom" size="icon-sm">
-          {description}
-        </InfoTooltip>
-      ) : null}
+        {description ? (
+          <InfoTooltip
+            ariaLabel="Page description"
+            side="bottom"
+            size="icon-sm"
+          >
+            {description}
+          </InfoTooltip>
+        ) : null}
+      </div>
     </div>
   );
 }

@@ -90,8 +90,7 @@ export function SprintReportPlaceholder({
             </div>
             <p className="text-muted-foreground mt-3 max-w-2xl text-sm leading-relaxed">
               Report charts and delivery metrics unlock when this sprint becomes
-              active or is completed. The layout below shows what will appear
-              once the sprint is underway.
+              active or is completed.
             </p>
           </div>
         </div>
@@ -232,7 +231,7 @@ export function SprintReportPlaceholder({
               Visual breakdown of work items by current status
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pb-6">
             <div className="flex h-48 flex-col items-center justify-center gap-3">
               <Skeleton className="size-36 rounded-full" />
               <p className="text-muted-foreground text-center text-sm">

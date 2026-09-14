@@ -10,7 +10,11 @@ export {
 } from '@repo/types/api/v1';
 
 export type Project = Omit<Tables<'projects'>, 'github_token'> & {
-  owner?: Pick<User, 'id' | 'name' | 'email'> | null;
+  owner?:
+    | (Pick<User, 'id' | 'name' | 'email'> & {
+        profile_picture?: string | null;
+      })
+    | null;
   /** Active engineering teams scoped to this project (list views). */
   team_count?: number;
   /** True when a GitHub PAT is stored server-side (value never returned). */

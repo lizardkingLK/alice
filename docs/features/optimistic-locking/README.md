@@ -23,6 +23,12 @@ Related:
    and still apply `auditUpdate` (new `updated_at`).
 5. Zero matching rows → fetch current row → **409**
    `{ code: 'OPTIMISTIC_LOCK', error, serverEntity }`.
+6. After a **successful** write, the client must merge the returned row
+   (at least `updated_at`) into local state before the next mutation. List/detail
+   reads already include `updated_at`; skipping the post-write sync causes false
+   conflicts on the same user’s next edit (seen historically on backlog drag →
+   sheet save). Board, calendar due-date drag, and work-item details already
+   refresh the token.
 
 Granularity is **one check per row**: any concurrent change to the row
 conflicts, even if different fields were edited.

@@ -103,7 +103,6 @@ export function BoardWorkspace({
         <CalendarRegistry
           projects={projects}
           sprints={sprints}
-          workItems={initialWorkItems}
           users={users}
           projectFilter={projectFilter}
           sprintFilter={sprintFilter}

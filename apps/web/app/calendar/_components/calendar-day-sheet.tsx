@@ -77,12 +77,18 @@ export function CalendarDaySheet({
     <Sheet open={!!selectedDateStr} onOpenChange={onOpenChange}>
       <SheetContent
         className="bg-card border-border/80 flex h-full flex-col p-0 data-[side=right]:sm:max-w-2xl"
+        showCloseButton={!blockOutsideClose}
         onPointerDownOutside={(event) => {
           if (blockOutsideClose) {
             event.preventDefault();
           }
         }}
         onInteractOutside={(event) => {
+          if (blockOutsideClose) {
+            event.preventDefault();
+          }
+        }}
+        onEscapeKeyDown={(event) => {
           if (blockOutsideClose) {
             event.preventDefault();
           }
@@ -118,76 +124,77 @@ export function CalendarDaySheet({
                 </TabsTrigger>
               </TabsList>
             </SheetHeader>
-            <div className="no-scrollbar h-full min-h-0 w-full min-w-0 flex-1 overflow-y-auto p-6">
-              <TabsContent
-                value="due"
-                className="mt-0 h-full w-full space-y-3 outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
-              >
+            <TabsContent
+              value="due"
+              className="mt-0 flex min-h-0 flex-1 flex-col outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+            >
+              <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto p-6">
                 {dayItems.length === 0 ? (
                   <div className="text-muted-foreground py-12 text-center text-sm">
                     No work items due on this date.
                   </div>
                 ) : (
-                  <div className="flex h-full flex-col justify-between gap-4">
-                    <div className="w-full">
-                      <CalendarWorkItemList
-                        items={paginatedItems}
-                        projects={projects}
-                        compact={false}
-                        enableDrag={false}
-                        className="gap-3"
-                        draggedItemId={null}
-                        pendingDueDateIds={EMPTY_PENDING_DUE_DATE_IDS}
-                        onDragStart={() => undefined}
-                        onDragEnd={() => undefined}
-                        onOpenItem={onOpenItem}
-                      />
-                    </div>
-                    {totalCount > 0 ? (
-                      <Pagination
-                        totalCount={totalCount}
-                        page={currentPage}
-                        limit={pageSize}
-                        totalPages={totalPages}
-                        onPageChange={setCurrentPage}
-                        onLimitChange={(limit) => {
-                          setPageSize(limit);
-                          setCurrentPage(1);
-                        }}
-                        label="work items"
-                      />
-                    ) : null}
-                  </div>
+                  <CalendarWorkItemList
+                    items={paginatedItems}
+                    projects={projects}
+                    compact={false}
+                    enableDrag={false}
+                    className="gap-3"
+                    draggedItemId={null}
+                    pendingDueDateIds={EMPTY_PENDING_DUE_DATE_IDS}
+                    onDragStart={() => undefined}
+                    onDragEnd={() => undefined}
+                    onOpenItem={onOpenItem}
+                  />
                 )}
-              </TabsContent>
-              <TabsContent
-                value="create"
-                className="mt-0 w-full outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
-              >
-                <WorkItemForm
-                  projects={scopedProjects}
-                  projectMembers={users}
-                  createFormMode={createFormMode}
-                  defaultDueDate={selectedDateStr}
-                  lockDueDate
-                  defaultSprintId={
-                    sprintValue && sprintValue !== QUERY_FILTER_ALL_VALUE
-                      ? sprintValue
-                      : null
-                  }
-                  lockProject={
-                    Boolean(projectValue) &&
-                    projectValue !== QUERY_FILTER_ALL_VALUE
-                  }
-                  onSuccess={(newWI) => {
-                    onCreated(newWI);
-                    setActiveTab('due');
-                    setCurrentPage(1);
-                    setPageSize(5);
-                  }}
-                />
-              </TabsContent>
-            </div>
+              </div>
+              {totalCount > 0 ? (
+                <div className="border-border shrink-0 border-t px-6 py-4">
+                  <Pagination
+                    totalCount={totalCount}
+                    page={currentPage}
+                    limit={pageSize}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    onLimitChange={(limit) => {
+                      setPageSize(limit);
+                      setCurrentPage(1);
+                    }}
+                    label="work items"
+                    compact
+                    layout="stacked"
+                  />
+                </div>
+              ) : null}
+            </TabsContent>
+            <TabsContent
+              value="create"
+              className="mt-0 flex min-h-0 flex-1 flex-col outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+            >
+              <WorkItemForm
+                projects={scopedProjects}
+                projectMembers={users}
+                createFormMode={createFormMode}
+                defaultDueDate={selectedDateStr}
+                lockDueDate
+                stickyActions
+                defaultSprintId={
+                  sprintValue && sprintValue !== QUERY_FILTER_ALL_VALUE
+                    ? sprintValue
+                    : null
+                }
+                lockProject={
+                  Boolean(projectValue) &&
+                  projectValue !== QUERY_FILTER_ALL_VALUE
+                }
+                onSuccess={(newWI) => {
+                  onCreated(newWI);
+                  setActiveTab('due');
+                  setCurrentPage(1);
+                  setPageSize(5);
+                }}
+              />
+            </TabsContent>
           </Tabs>
         ) : null}
       </SheetContent>

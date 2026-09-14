@@ -108,13 +108,13 @@ P0 skeleton generator: `apps/web/scripts/docs-user-guide-skeleton.mjs`.
 
 ### Runtime
 
-| Piece              | Role                                                                                    |
-| ------------------ | --------------------------------------------------------------------------------------- |
-| `DocsPageFrame`    | Wraps `DashboardShell` (`sidebarDefaultOpen={false}`, `stickyHeader`) + `DocsShell`     |
-| `DocsShell`        | Fixed index rail + independent `ScrollArea`; article scrolls in the main pane           |
-| `DocsArticle`      | `react-markdown` + `remark-gfm`, relative `.md` link rewrite, Mermaid via `DocsMermaid` |
-| `DocsSearchDialog` | Command palette over the index (`@repo/ui` Command)                                     |
-| `DocsPager`        | Previous / next in section reading order                                                |
+| Piece              | Role                                                                                                                                                            |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DocsPageFrame`    | Wraps `DashboardShell` (`stickyHeader`) + `DocsShell`. Sidebar open state comes from the shared `sidebar_state` cookie on load (same as other dashboard pages). |
+| `DocsShell`        | Fixed index rail + independent `ScrollArea`; article scrolls in the main pane                                                                                   |
+| `DocsArticle`      | `react-markdown` + `remark-gfm`, relative `.md` link rewrite, Mermaid via `DocsMermaid`                                                                         |
+| `DocsSearchDialog` | Command palette over the index (`@repo/ui` Command)                                                                                                             |
+| `DocsPager`        | Previous / next in section reading order                                                                                                                        |
 
 `DashboardShell` with `stickyHeader` pins the dashboard header **outside** the
 scroll container (viewport-locked `h-svh`), so `/docs/*` keeps the navbar in

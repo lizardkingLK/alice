@@ -35,11 +35,10 @@ import {
   HELP_NAV,
   PLATFORM_NAV,
   PROJECTS_NAV,
-  SPRINTS_NAV,
   SYSTEM_NAV,
   type DashboardNavItem,
 } from '@/lib/dashboard/nav-registry';
-import { canAccessNavGroup, canAccessPath } from '@/lib/rbac/route-policy';
+import { canAccessNavGroup } from '@/lib/rbac/route-policy';
 import type { AppRole } from '@/lib/rbac/roles';
 import { SidebarNavLink } from '@/app/dashboard/_components/sidebar-nav-link';
 
@@ -171,10 +170,7 @@ export function DashboardSidebar({
   const { favorites } = useFavorites(userId);
   const showSystem = canAccessNavGroup(role, 'system');
   const showProjects = canAccessNavGroup(role, 'projects');
-  const showSprints = canAccessPath(role, '/sprints');
-  const projectsNavItems = showSprints
-    ? [...PROJECTS_NAV, ...SPRINTS_NAV]
-    : [...PROJECTS_NAV];
+  const projectsNavItems = [...PROJECTS_NAV];
 
   return (
     <Sidebar collapsible="icon">

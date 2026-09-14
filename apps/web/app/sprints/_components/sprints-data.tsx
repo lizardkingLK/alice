@@ -8,7 +8,7 @@ import { safeServerFetch } from '@/lib/safe-server-fetch';
 import {
   parseOptionalFilterId,
   parseStandardParams,
-  parseTabStatus,
+  parseSprintListStatus,
   type RawSearchParams,
 } from '@/lib/search-params';
 import type { PaginatedSprints } from '@/app/sprints/_services/sprints.mutations.client';
@@ -27,7 +27,7 @@ export async function SprintsData({
 }: Readonly<SprintsDataProps>) {
   const resolvedSearchParams = await searchParams;
   const { page, limit, search } = parseStandardParams(resolvedSearchParams, 5);
-  const status = parseTabStatus(resolvedSearchParams.tab);
+  const status = parseSprintListStatus(resolvedSearchParams);
   const projectId = parseOptionalFilterId(resolvedSearchParams.project);
 
   let fetchError: string | null = null;

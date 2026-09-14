@@ -45,6 +45,7 @@ export {
   type WorkItemListWireRow,
   type WorkItemListWithDescriptionWireRow,
   type WorkItemPrismaListFilters,
+  type WorkItemDueDateFilter,
   type WorkItemReadRow,
   type WorkItemUserWireRow,
   type WorkItemUpdateBody,

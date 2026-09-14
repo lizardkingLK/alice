@@ -293,6 +293,8 @@ model sprints {
   created_by_user users?       @relation("SprintCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
   updated_by_user users?       @relation("SprintUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
   work_items      work_items[]
+
+  @@unique([project_id, name])
 }
 
 /// Backlog = rows where `sprint_id` IS NULL.

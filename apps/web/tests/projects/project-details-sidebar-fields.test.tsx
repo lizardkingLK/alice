@@ -77,6 +77,12 @@ vi.mock('@/app/work-items/_components/work-items-workspace', () => ({
   ),
 }));
 
+vi.mock('@/app/sprints/_components/sprints-workspace', () => ({
+  SprintsWorkspace: () => (
+    <div data-testid="sprints-workspace">Sprints Content</div>
+  ),
+}));
+
 vi.mock('@/app/projects/_services/projects.mutations.client', () => ({
   updateProjectFieldsConfig: vi.fn().mockResolvedValue({}),
 }));
@@ -127,6 +133,7 @@ describe('parseProjectDetailsTab', () => {
     expect(parseProjectDetailsTab('members')).toBe('members');
     expect(parseProjectDetailsTab('teams')).toBe('teams');
     expect(parseProjectDetailsTab('work-items')).toBe('work-items');
+    expect(parseProjectDetailsTab('sprints')).toBe('sprints');
     expect(parseProjectDetailsTab('integrations')).toBe('integrations');
   });
 
@@ -138,7 +145,7 @@ describe('parseProjectDetailsTab', () => {
 });
 
 describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
-  it('renders all 6 navigation options in the sidebar', () => {
+  it('renders all navigation options including role-gated Sprints for managers', () => {
     render(
       <ProjectDetailsWorkspace
         project={mockProject}
@@ -155,6 +162,7 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
           search: '',
           typeFilter: '',
           assigneeFilter: '',
+          sprintFilter: '',
           listView: 'flat',
           tab: 'active',
         }}
@@ -166,6 +174,12 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
           totalPages: 1,
           search: '',
           status: 'active',
+        }}
+        sprints={{
+          sprints: [],
+          pagination: { page: 1, limit: 10, totalCount: 0, totalPages: 1 },
+          filterTab: 'active',
+          search: '',
         }}
       />
     );
@@ -181,9 +195,56 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
       screen.getByRole('button', { name: /work items/i })
     ).toBeInTheDocument();
     expect(
+      screen.getByRole('button', { name: /^sprints$/i })
+    ).toBeInTheDocument();
+    expect(
       screen.getByRole('button', { name: /integrations/i })
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /fields/i })).toBeInTheDocument();
+  });
+
+  it('hides Sprints nav for members', () => {
+    render(
+      <ProjectDetailsWorkspace
+        project={mockProject}
+        members={[]}
+        allUsers={[]}
+        currentUserId="user-member-1"
+        currentUserRole="member"
+        workItems={{
+          initialWorkItems: [],
+          totalCount: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+          search: '',
+          typeFilter: '',
+          assigneeFilter: '',
+          sprintFilter: '',
+          listView: 'flat',
+          tab: 'active',
+        }}
+        teams={{
+          items: [],
+          totalCount: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+          search: '',
+          status: 'active',
+        }}
+        sprints={{
+          sprints: [],
+          pagination: { page: 1, limit: 10, totalCount: 0, totalPages: 1 },
+          filterTab: 'active',
+          search: '',
+        }}
+      />
+    );
+
+    expect(
+      screen.queryByRole('button', { name: /^sprints$/i })
+    ).not.toBeInTheDocument();
   });
 
   it('renders ProjectSummaryBanner when Details tab is active', () => {
@@ -203,6 +264,7 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
           search: '',
           typeFilter: '',
           assigneeFilter: '',
+          sprintFilter: '',
           listView: 'flat',
           tab: 'active',
         }}
@@ -214,6 +276,12 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
           totalPages: 1,
           search: '',
           status: 'active',
+        }}
+        sprints={{
+          sprints: [],
+          pagination: { page: 1, limit: 10, totalCount: 0, totalPages: 1 },
+          filterTab: 'active',
+          search: '',
         }}
       />
     );

@@ -2,6 +2,7 @@ export class WorkItemValidationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'WorkItemValidationError';
+    Object.setPrototypeOf(this, new.target.prototype);
   }
 }
 
@@ -10,5 +11,6 @@ export class WorkItemAccessError extends Error {
   constructor(message = "You're not a member of this project.") {
     super(message);
     this.name = 'WorkItemAccessError';
+    Object.setPrototypeOf(this, new.target.prototype);
   }
 }

@@ -7,6 +7,7 @@ import {
   Network,
   Plug,
   SlidersHorizontal,
+  Timer,
   Users,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
@@ -25,6 +26,12 @@ import type { Team } from '@/app/manager/_services/teams.mutations.client';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import WorkItemsWorkspace from '@/app/work-items/_components/work-items-workspace';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
+import { SprintsWorkspace } from '@/app/sprints/_components/sprints-workspace';
+import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
+import {
+  countProjectFields,
+  countProjectIntegrations,
+} from '@/app/projects/_helpers/project-summary-counts';
 import {
   parseProjectDetailsTab,
   type ProjectDetailsTab as ProjectDetailsTabId,
@@ -40,6 +47,7 @@ interface ProjectWorkItemsProps {
   readonly search: string;
   readonly typeFilter: string;
   readonly assigneeFilter: string;
+  readonly sprintFilter: string;
   readonly labelsFilter?: readonly string[];
   readonly listView: 'flat' | 'hierarchy';
   readonly tab: 'active' | 'archived';
@@ -55,6 +63,18 @@ interface ProjectTeamsProps {
   readonly status: 'active' | 'inactive' | 'archived';
 }
 
+interface ProjectSprintsProps {
+  readonly sprints: Sprint[];
+  readonly pagination: {
+    page: number;
+    limit: number;
+    totalCount: number;
+    totalPages: number;
+  };
+  readonly filterTab: 'active' | 'archived';
+  readonly search: string;
+}
+
 interface ProjectDetailsWorkspaceProps {
   readonly project: Project;
   readonly members: ProjectMemberWithUser[];
@@ -63,6 +83,7 @@ interface ProjectDetailsWorkspaceProps {
   readonly currentUserRole?: string | null;
   readonly workItems: ProjectWorkItemsProps;
   readonly teams: ProjectTeamsProps;
+  readonly sprints: ProjectSprintsProps;
   readonly initialColumnVisibility?: VisibilityState;
   readonly columnVisibilityHasCookie?: boolean;
 }
@@ -71,6 +92,7 @@ const PROJECT_NAV_ITEMS: ReadonlyArray<{
   readonly id: ProjectDetailsTabId;
   readonly label: string;
   readonly Icon: typeof Info;
+  readonly managerOrAdminOnly?: boolean;
 }> = [
   {
     id: 'details',
@@ -93,6 +115,12 @@ const PROJECT_NAV_ITEMS: ReadonlyArray<{
     Icon: ClipboardPenLine,
   },
   {
+    id: 'sprints',
+    label: 'Sprints',
+    Icon: Timer,
+    managerOrAdminOnly: true,
+  },
+  {
     id: 'integrations',
     label: 'Integrations',
     Icon: Plug,
@@ -112,17 +140,25 @@ export function ProjectDetailsWorkspace({
   currentUserRole,
   workItems,
   teams,
+  sprints,
   initialColumnVisibility,
   columnVisibilityHasCookie,
 }: Readonly<ProjectDetailsWorkspaceProps>) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const activeTab = parseProjectDetailsTab(searchParams.get('tab'));
+  const requestedTab = parseProjectDetailsTab(searchParams.get('tab'));
 
   const isManagerOrAdmin =
     currentUserRole === UserRoleEnum.admin ||
     currentUserRole === UserRoleEnum.manager;
+
+  const activeTab =
+    requestedTab === 'sprints' && !isManagerOrAdmin ? 'details' : requestedTab;
+
+  const visibleNavItems = PROJECT_NAV_ITEMS.filter(
+    (item) => !item.managerOrAdminOnly || isManagerOrAdmin
+  );
 
   const handleTabChange = (nextTab: ProjectDetailsTabId) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -130,6 +166,12 @@ export function ProjectDetailsWorkspace({
       params.delete('tab');
     } else {
       params.set('tab', nextTab);
+    }
+    if (nextTab !== 'sprints') {
+      params.delete('sprintStatus');
+    }
+    if (nextTab !== 'work-items') {
+      params.delete('recordStatus');
     }
     const query = params.toString();
     router.push(query ? `${pathname}?${query}` : pathname);
@@ -155,7 +197,7 @@ export function ProjectDetailsWorkspace({
           className="overflow-x-auto px-2 pb-3 md:overflow-x-visible md:pb-6"
         >
           <ul className="flex flex-row gap-0.5 md:flex-col">
-            {PROJECT_NAV_ITEMS.map(({ id, label, Icon }) => {
+            {visibleNavItems.map(({ id, label, Icon }) => {
               const isActive = activeTab === id;
               return (
                 <li key={id} className="shrink-0">
@@ -193,6 +235,10 @@ export function ProjectDetailsWorkspace({
               memberCount={members.length}
               teamCount={teams.totalCount}
               workItemCount={workItems.totalCount}
+              sprintCount={sprints.pagination.totalCount}
+              integrationCount={countProjectIntegrations(project)}
+              fieldCount={countProjectFields(project.attributes_config)}
+              isManagerOrAdmin={isManagerOrAdmin}
             />
           </div>
         )}
@@ -232,8 +278,19 @@ export function ProjectDetailsWorkspace({
           <div className="p-6">
             <WorkItemsWorkspace
               projects={[project]}
-              projectMembers={allUsers}
-              sprints={[]}
+              projectMembers={members
+                .map((member) => member.user)
+                .filter((user): user is NonNullable<typeof user> =>
+                  Boolean(user)
+                )
+                .map((user) => ({
+                  id: user.id,
+                  name: user.name,
+                  email: user.email,
+                  profile_picture: user.profile_picture ?? null,
+                }))}
+              projectMembersByProjectId={{ [project.id]: members }}
+              sprints={sprints.sprints}
               initialWorkItems={workItems.initialWorkItems}
               totalCount={workItems.totalCount}
               page={workItems.page}
@@ -241,7 +298,7 @@ export function ProjectDetailsWorkspace({
               totalPages={workItems.totalPages}
               search={workItems.search}
               projectFilter={project.id}
-              sprintFilter=""
+              sprintFilter={workItems.sprintFilter}
               typeFilter={workItems.typeFilter}
               assigneeFilter={workItems.assigneeFilter}
               labelsFilter={workItems.labelsFilter ?? []}
@@ -252,6 +309,22 @@ export function ProjectDetailsWorkspace({
               currentUserRole={currentUserRole ?? undefined}
               initialColumnVisibility={initialColumnVisibility}
               columnVisibilityHasCookie={columnVisibilityHasCookie}
+            />
+          </div>
+        )}
+
+        {activeTab === 'sprints' && isManagerOrAdmin && (
+          <div className="p-6">
+            <SprintsWorkspace
+              sprints={sprints.sprints}
+              pagination={sprints.pagination}
+              projects={[project]}
+              filterTab={sprints.filterTab}
+              projectFilter={project.id}
+              search={sprints.search}
+              userRole={currentUserRole ?? UserRoleEnum.member}
+              currentUserId={currentUserId}
+              lockedProjectId={project.id}
             />
           </div>
         )}

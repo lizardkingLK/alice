@@ -44,7 +44,6 @@ export function WorkItemsColumnsDialog({
       description="Choose which columns appear on the work items table."
       contentClassName="sm:max-w-md"
       listClassName="max-h-86 space-y-0.5 overflow-y-auto py-1"
-      triggerClassName="h-9 cursor-pointer gap-1.5 px-3"
       triggerAriaLabel={(applied) =>
         applied ? 'Columns applied — customize columns' : 'Customize columns'
       }

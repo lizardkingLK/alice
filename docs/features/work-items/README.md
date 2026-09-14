@@ -60,11 +60,17 @@ The dashboard shell breadcrumb on work-item detail is always project-scoped when
 | _(absent)_ / `flat` | Default: paginated flat list of all matching work items                                   |
 | `hierarchy`         | Paginated **roots only** (`parent_id IS NULL`); expand a row to lazy-load direct children |
 
-Toolbar:
+Toolbar (same left / right split as other registries):
 
-- **Flat / Hierarchy** segmented control writes `view` and resets `page=1`
-- In hierarchy mode: **Expand all** recursively loads children for expandable types on the current page; **Collapse all** hides nested rows
-- Filters (project, sprint, type, assignee, search) apply to the **root query** only; expanded children are not re-filtered so the tree stays coherent
+- **Left:** Search → Filters → **Columns** (icon) → Defaults → Clear filters
+  when active
+- **Right:** **Flat / Hierarchy** segmented control (writes `view`, resets
+  `page=1`) → Active / Archived **icon segment** tabs (`RegistryTabSwitcher`) →
+  Add Work-Item
+- In hierarchy mode: **Expand all** recursively loads children for expandable
+  types on the current page; **Collapse all** hides nested rows
+- Filters (project, sprint, type, assignee, search) apply to the **root query**
+  only; expanded children are not re-filtered so the tree stays coherent
 
 Chevron affordances follow `getAllowedChildType` (Epic / Story / Task). Issues are leaves.
 

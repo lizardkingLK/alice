@@ -128,6 +128,24 @@ export function parseWorkItemRecordStatus(params: {
   return 'active';
 }
 
+/**
+ * Sprint Active/Archived list filter.
+ * Prefers `sprintStatus` so it does not collide with project details
+ * `?tab=sprints`. Falls back to legacy `/sprints?tab=archived`.
+ */
+export function parseSprintListStatus(params: {
+  readonly sprintStatus?: string | null;
+  readonly tab?: string | null;
+}): 'active' | 'archived' {
+  if (params.sprintStatus === 'archived' || params.sprintStatus === 'active') {
+    return params.sprintStatus;
+  }
+  if (params.tab === 'archived' || params.tab === 'active') {
+    return params.tab;
+  }
+  return 'active';
+}
+
 /** Views workspace tabs (My / Shared with me / Archived). */
 export type ViewsListTab = 'mine' | 'shared' | 'archived';
 
@@ -139,13 +157,20 @@ export function parseViewsListTab(tab?: string | null): ViewsListTab {
 }
 
 export type ProjectDetailsTab =
-  'details' | 'members' | 'teams' | 'work-items' | 'integrations' | 'fields';
+  | 'details'
+  | 'members'
+  | 'teams'
+  | 'work-items'
+  | 'sprints'
+  | 'integrations'
+  | 'fields';
 
 export function parseProjectDetailsTab(tab?: string | null): ProjectDetailsTab {
   if (
     tab === 'members' ||
     tab === 'teams' ||
     tab === 'work-items' ||
+    tab === 'sprints' ||
     tab === 'integrations' ||
     tab === 'fields'
   ) {

@@ -11,7 +11,10 @@ import {
   updateSprintBodySchema,
 } from './sprints.schemas';
 import type { SprintsService, SprintBurndownService } from './sprints.service';
-import { SprintAccessError } from './sprints.errors';
+import {
+  SprintAccessError,
+  isSprintNameConflictMessage,
+} from './sprints.errors';
 import {
   deleteSprintActionSchema,
   listSprintsQuerySchema,
@@ -59,6 +62,9 @@ function sendSprintMutationError(
   const message = error instanceof Error ? error.message : fallbackMessage;
   if (error instanceof SprintAccessError) {
     return res.status(403).json({ data: null, error: message });
+  }
+  if (isSprintNameConflictMessage(message)) {
+    return res.status(409).json({ data: null, error: message });
   }
   return res.status(500).json({ data: null, error: message });
 }

@@ -80,6 +80,21 @@ export function WorkItemFormDialog({
         )}
         onPointerDownOutside={(event) => event.preventDefault()}
         onInteractOutside={(event) => event.preventDefault()}
+        onOpenAutoFocus={(event) => {
+          if (!useModernLayout) {
+            return;
+          }
+          event.preventDefault();
+          const titleInput = document.getElementById(
+            'title'
+          ) as HTMLInputElement | null;
+          if (!titleInput) {
+            return;
+          }
+          titleInput.focus();
+          const end = titleInput.value.length;
+          titleInput.setSelectionRange(end, end);
+        }}
       >
         <DialogHeader className={useModernLayout ? 'sr-only' : undefined}>
           <DialogTitle className={titleClassName}>{title}</DialogTitle>
