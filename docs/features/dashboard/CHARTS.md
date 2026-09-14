@@ -1,112 +1,102 @@
 # Charts (custom dashboards)
 
-UI-first route for per-user, shareable chart boards. Persistence (JSON layout
-per user, slug routes, Views-style sharing) lands in a follow-up. Local layout
-is stored in the browser for the current board canvas.
+Per-user **chart workspaces** (boards of widgets). Routing is id-based; the
+sidebar opens the last-used workspace. Layout persists in localStorage today
+and will move to the `charts` table + Views-style sharing.
 
-## Route
+## Routes
 
-- Path: `/charts`
-- Sidebar: **Charts** under platform nav (`nav-registry.ts`)
-- Shell: `DashboardShell` with `contentScrollable={false}` so the board card
-  fills remaining viewport height (same pattern as Board / Chat)
+| Path                             | Behavior                                                                           |
+| -------------------------------- | ---------------------------------------------------------------------------------- |
+| `/charts`                        | Redirect to last-opened workspace id (localStorage), or create a default workspace |
+| `/charts/[id]`                   | Workspace canvas (widgets + layout)                                                |
+| `/charts/[id]/widget/[widgetId]` | Same workspace; auto-opens that widget’s config dialog                             |
+
+- Sidebar **Charts** stays `path: '/charts'` in `nav-registry.ts` (redirect resolves the id).
+- Use UUID ids (same as sprints/projects).
+- Nested widget route keeps Monday-style modal/sidebar config — it does not invent a second product shell.
+
+Shell: `DashboardShell` with `contentScrollable={false}`.
+
+## Last-opened vs overview
+
+| Concern       | Storage                                                | Used by                      |
+| ------------- | ------------------------------------------------------ | ---------------------------- |
+| Last opened   | `alice.charts.workspaces.v1:{userId}` → `lastOpenedId` | Sidebar / `/charts` redirect |
+| Overview mark | `isOverview` on one workspace per user                 | Overview page (later bind)   |
+
+Do not conflate these flags.
 
 ## Current UI
 
-| Control      | Behavior                                                             |
-| ------------ | -------------------------------------------------------------------- |
-| Search       | Debounced query (`?search=`) — reserved for multi-board list later   |
-| Filter       | Dialog (Shift+F): ownership + status → `?ownership=` / `?status=`    |
-| Add Widget   | Monday-style dropdown: quick picks (icon + title + description)      |
-| More widgets | Opens **Browse Widgets** (categories, search, hero, card grid)       |
-| Board canvas | Monday-style cards: grip drag, filter, ⋯ menu (fullscreen / rename / |
-|              | duplicate / delete). Settings + dock disabled for now                |
+| Control      | Behavior                                                                                 |
+| ------------ | ---------------------------------------------------------------------------------------- |
+| Search       | Debounced `?search=` on the workspace list / title filter                                |
+| Filter       | Workspace picker: ownership + status filters, list/load workspaces, save / mark overview |
+| **+** menu   | **Add workspace** (opens name dialog, then creates) · **Add widget** (catalog)           |
+| Workspace ⋯  | **Share** (project members + `chart_shares`) · **Rename / Save**                         |
+| Board canvas | Grip drag, resize, filter / ⋯ on widgets. Dock disabled                                  |
 
-**Availability:** Only the **Chart** catalog template can be added today. Other
-quick picks and Browse cards are disabled with a **Coming soon** label until
-those widget bodies ship.
+**Availability:** Only the **Chart** catalog template can be added. Other quick
+picks / Browse cards are **Coming soon**.
 
-**Chart widget (`typeId: chart`):** sample pie from `charts-sample.data.ts`
-(~100 dummy work items for pagination demos). The **board canvas always shows
-the pie** regardless of layout mode. Widget **Filter** / **Full screen** opens
-a fullscreen config dialog with **Advanced filters** (Project / Where rows,
-remove-row X, dynamic value options) or **Quick filters** (work-items-style
-field checklist). Toolbar includes assignee `AvatarGroup` (board-style). Config
-⋯ menu: Exit full screen, Settings (disabled), Rename, Duplicate, Export
-submenu, Delete. Canvas chart ⋯ also includes Export.
+### Chart widget (`typeId: chart`)
 
-### Layout modes (fullscreen only)
+Sample pie from `charts-sample.data.ts`. Canvas shows pie/donut. Fullscreen
+config: Advanced/Quick filters, assignee avatars, settings gear → Widget
+settings sidebar, layout Chart/Table/Split, pie vs donut (`pieVariant`).
 
-Per-instance `viewMode` (`chart` | `table` | `split`) is stored on the widget
-in local board JSON. It only affects the fullscreen config preview — not the
-canvas card. Default is **Chart**. The toolbar control always uses the
-**Columns2** (split) icon; the menu lists Chart / Table / Split mode.
+### Widget settings sidebar
 
-| Mode       | Fullscreen body                                          |
-| ---------- | -------------------------------------------------------- |
-| Chart      | Full pie + legend                                        |
-| Table      | Status-grouped collapsible tables with client pagination |
-| Split mode | Pie on top, table below (chart slightly larger)          |
+| Section                      | Behavior                                         |
+| ---------------------------- | ------------------------------------------------ |
+| Chart type                   | Interactive Pie / Donut; other types Coming soon |
+| Labels / Values / Customize  | Static stubs                                     |
+| Groups                       | Static checklist of all work-item statuses       |
+| Choose which columns to show | Static table column checklist                    |
 
-In **Table** / **Split** table panes: **+** on a status group header opens
-create (status locked to that group); row **⋯ → Edit** opens the shared
-`WorkItemFormDialog`. Mutations use form `localMutate` against session mock
-rows and reset on full page reload (not persisted).
+No Boards section (use project filters).
 
-In fullscreen, clicking a pie slice (or legend row) switches to **Split** and
-focuses the table on that status group (`focusedStatus`). Choosing Chart /
-Table / Split from the layout menu clears the status focus.
+## Persistence
 
-### Data strategy (planned)
+### Client (interim)
 
-Today the Chart widget uses **in-memory sample rows** only (no API). The
-intended production path is:
+Multi-workspace JSON in localStorage (migrates legacy single-board keys):
 
-1. **Preload** chart-ready aggregates / row sets once from a **materialized
-   view** (or equivalent denormalized snapshot), not ad-hoc heavy joins on
-   every widget render.
-2. Serve that payload to the board / fullscreen client so filters, layout
-   modes, and table pagination stay cheap (client-side over the prefetched
-   set, or thin reads against the snapshot).
-3. Refresh the snapshot on a controlled cadence / invalidation path — not a
-   live deep query per pie slice or page change.
+- Workspaces: `{ id, title, description?, status, isOverview, updatedAt, instances, layout }`
+- `lastOpenedId`
+- Legacy `alice.charts.board.layout.v1` / `instances.v1` imported once into a default workspace
 
-This keeps chart boards snappy and avoids repeated expensive DB hits while
-users flip Chart / Table / Split and paginate status groups.
+### Server (API + schema)
 
-The charts card uses remaining shell height (padding kept). Empty state fills
-that area; adding widgets grows the grid and the content scrolls inside the
-card when it exceeds the viewport.
+Table **`charts`**:
 
-### Add Widget menu (quick)
+- `id`, `owner_id`, `title`, `description?`
+- `board_json` (widgets + layout)
+- `is_overview` (at most one active overview per owner)
+- `status`, audit columns
 
-Quick options match Monday’s add menu: Chart, Data over time, Numbers, Battery,
-Gantt, Files Gallery, then Apps, then **More widgets**. Non-Chart options stay
-visible but disabled (**Coming soon**).
+Sharing:
 
-### Browse Widgets
+- **`chart_shares`** mirrors `saved_view_shares` (recipient ACL on the chart row).
+- Optional **saved view** bookmark of `/charts/[id]` so the board appears in `/views` and reuses share UX / notifications pattern.
+- Do **not** store board JSON inside `saved_views`.
 
-Full dialog with category sidebar (Staying on Top, Delivery, Media, Personal,
-Apps), header search, promotional banner, and “Add widget” cards. Non-Chart
-cards show **Coming soon** and cannot be added yet. The same available template
-can still be placed multiple times.
+Notification type: `chart_shared` (inbox deep-link to `/charts/[id]`).
 
-## Layout model (planned persistence)
+## Data strategy (widget payloads)
 
-- Widget instances: `{ instanceId, typeId, title?, filters?, viewMode?, focusedStatus? }`
-  (many instances may share a `typeId`; `title` is the per-instance rename)
-- RGL layout items keyed by `instanceId` (w/h/x/y, min sizes)
-- Next: replace localStorage with per-user board JSON + `/charts/[slug]`
-  and per-instance config
+Chart widgets still use in-memory sample rows. Production path: precomputed /
+materialized snapshot, cheap client filters — not heavy joins per slice.
 
-## Next
+## Non-goals (near term)
 
-1. Persist board JSON (widgets + layout) per user on the API
-2. Slug detail route `/charts/[slug]`
-3. Share via saved-views-style ACL
-4. Bind real chart data into widget bodies (Chart type has a sample pie +
-   client-side Advanced/Quick filters + layout modes persisted on the local
-   board JSON; other types are still placeholders / Coming soon)
-5. Browse Widgets / grid from `/dashboard` customizer
-6. Persist per-widget Advanced filters on the API
-7. Enable additional catalog templates as their UIs land
+- Public/anonymous chart links
+- Putting layout into `saved_views.search`
+- Nested widget route as the only configuration UI
+- Sharing Favorites
+
+## Related
+
+- User guide: `docs/user-guide/navigation/charts.md`
+- Views sharing model: `docs/features/views/FAVORITES_AND_VIEWS.md`

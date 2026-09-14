@@ -10,6 +10,10 @@ import {
   resolveDashboardBreadcrumbTrail,
   type DashboardBreadcrumbOverride,
 } from './dashboard-breadcrumb';
+import {
+  applyRuntimeBreadcrumbLabels,
+  useDashboardBreadcrumbRuntime,
+} from './dashboard-breadcrumb-runtime';
 
 type DashboardPageMetaProps = {
   description?: string;
@@ -33,26 +37,33 @@ export function DashboardPageMeta({
   projectId = null,
 }: Readonly<DashboardPageMetaProps>) {
   const pathname = usePathname();
-  const breadcrumbLabel = useMemo(() => {
-    const items = breadcrumbAsTrail
+  const runtime = useDashboardBreadcrumbRuntime();
+
+  const resolvedOverrides = useMemo(() => {
+    const base = breadcrumbAsTrail
       ? resolveDashboardBreadcrumbTrail(breadcrumbOverrides)
       : resolveDashboardBreadcrumbItems(pathname, breadcrumbOverrides);
-    return items.at(-1)?.label ?? pathname;
-  }, [breadcrumbAsTrail, breadcrumbOverrides, pathname]);
+    return applyRuntimeBreadcrumbLabels(base, runtime?.segmentLabelsByUrl);
+  }, [
+    breadcrumbAsTrail,
+    breadcrumbOverrides,
+    pathname,
+    runtime?.segmentLabelsByUrl,
+  ]);
+
+  const breadcrumbLabel = resolvedOverrides.at(-1)?.label ?? pathname;
+  const resolvedFavoriteLabel = runtime?.favoriteLabel?.trim() || favoriteLabel;
 
   return (
     <div className="flex min-w-0 flex-1 items-center gap-3">
       <div className="min-w-0 overflow-hidden">
-        <DashboardBreadcrumb
-          overrides={breadcrumbOverrides}
-          asTrail={breadcrumbAsTrail}
-        />
+        <DashboardBreadcrumb overrides={resolvedOverrides} asTrail />
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
         <DashboardPageActions
           userId={userId}
-          favoriteLabel={favoriteLabel}
+          favoriteLabel={resolvedFavoriteLabel}
           projectId={projectId}
           breadcrumbLabel={breadcrumbLabel}
         />

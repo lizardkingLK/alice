@@ -73,6 +73,7 @@ enum NotificationType {
   sprint
   due_date
   view_shared
+  chart_shared
   chat_processed
   access_request
 }
@@ -174,6 +175,12 @@ model users {
   saved_view_shares       saved_view_shares[] @relation("SavedViewShareRecipient")
   created_saved_view_shares saved_view_shares[] @relation("SavedViewShareCreatedBy")
   updated_saved_view_shares saved_view_shares[] @relation("SavedViewShareUpdatedBy")
+  owned_charts            charts[]            @relation("ChartOwner")
+  created_charts          charts[]            @relation("ChartCreatedBy")
+  updated_charts          charts[]            @relation("ChartUpdatedBy")
+  chart_shares            chart_shares[]      @relation("ChartShareRecipient")
+  created_chart_shares    chart_shares[]      @relation("ChartShareCreatedBy")
+  updated_chart_shares    chart_shares[]      @relation("ChartShareUpdatedBy")
   jira_connections        jira_connections[]
   created_integrations    integrations[]      @relation("IntegrationCreatedBy")
   updated_integrations    integrations[]      @relation("IntegrationUpdatedBy")
@@ -559,6 +566,47 @@ model saved_view_shares {
   updated_by_user users?      @relation("SavedViewShareUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
 
   @@unique([view_id, user_id])
+  @@index([user_id, status])
+}
+
+/// Per-user chart workspace (board JSON: widgets + layout).
+model charts {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  owner_id    String       @db.Uuid
+  title       String
+  description String?
+  board_json  Json         @default("{}")
+  is_overview Boolean      @default(false)
+  status      RecordStatus @default(active)
+  created_by  String?      @db.Uuid
+  created_at  DateTime     @default(now()) @db.Timestamptz(6)
+  updated_by  String?      @db.Uuid
+  updated_at  DateTime     @updatedAt @db.Timestamptz(6)
+
+  owner           users          @relation("ChartOwner", fields: [owner_id], references: [id], onDelete: Cascade)
+  created_by_user users?         @relation("ChartCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users?         @relation("ChartUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+  shares          chart_shares[]
+
+  @@index([owner_id, status])
+}
+
+model chart_shares {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  chart_id   String       @db.Uuid
+  user_id    String       @db.Uuid
+  status     RecordStatus @default(active)
+  created_by String?      @db.Uuid
+  created_at DateTime     @default(now()) @db.Timestamptz(6)
+  updated_by String?      @db.Uuid
+  updated_at DateTime     @updatedAt @db.Timestamptz(6)
+
+  chart           charts @relation(fields: [chart_id], references: [id], onDelete: Cascade)
+  user            users  @relation("ChartShareRecipient", fields: [user_id], references: [id], onDelete: Cascade)
+  created_by_user users? @relation("ChartShareCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
+  updated_by_user users? @relation("ChartShareUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
+
+  @@unique([chart_id, user_id])
   @@index([user_id, status])
 }
 

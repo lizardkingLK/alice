@@ -25,6 +25,7 @@ import {
 import { CircleHelp, X } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { FilterFieldNavItem } from '@/components/filter-field-nav-item';
+import { preventDismissForFloatingPortal } from '@/lib/dialog-outside-events';
 import {
   CHARTS_FILTER_COLUMNS,
   CHARTS_SAMPLE_PROJECTS,
@@ -114,15 +115,9 @@ function hydrateFromApplied(
 }
 
 /**
- * Radix Select sets `disableOutsidePointerEvents`, so a second click on the
- * trigger (or elsewhere in the popover) is hit-tested as outside the popover.
- * Always swallow outside dismiss while this panel is open; close via Apply,
- * Close, Escape, or the Filter trigger instead.
+ * Nested Select portals can look like "outside" the popover. Ignore those;
+ * allow a real outside click (dialog chrome, chart body, etc.) to dismiss.
  */
-function preventOutsideDismiss(event: { preventDefault: () => void }) {
-  event.preventDefault();
-}
-
 function ChartsFilterSelect({
   value,
   onValueChange,
@@ -281,9 +276,8 @@ export function ChartsAdvancedFiltersPopover({
         )}
         onOpenAutoFocus={(event) => event.preventDefault()}
         onCloseAutoFocus={(event) => event.preventDefault()}
-        onPointerDownOutside={preventOutsideDismiss}
-        onInteractOutside={preventOutsideDismiss}
-        onFocusOutside={preventOutsideDismiss}
+        onPointerDownOutside={preventDismissForFloatingPortal}
+        onInteractOutside={preventDismissForFloatingPortal}
       >
         <div className="border-border flex items-start justify-between gap-3 border-b px-4 py-3">
           <div className="min-w-0 space-y-0.5">

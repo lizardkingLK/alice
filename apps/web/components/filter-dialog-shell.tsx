@@ -165,6 +165,8 @@ type FilterDialogShellProps = {
   readonly footerCountLabel?: ReactNode;
   readonly okayLabel?: string;
   readonly clearLabel?: string;
+  /** Optional controls before Close / Okay (e.g. Save workspace). */
+  readonly footerStart?: ReactNode;
   readonly children: ReactNode;
   readonly contentClassName?: string;
 };
@@ -190,6 +192,7 @@ export function FilterDialogShell({
   footerCountLabel,
   okayLabel = 'Okay',
   clearLabel = 'Clear',
+  footerStart,
   children,
   contentClassName,
 }: Readonly<FilterDialogShellProps>) {
@@ -210,19 +213,20 @@ export function FilterDialogShell({
 
   const footer = (
     <div className="border-border flex items-center justify-between gap-2 border-t px-3 pt-2 pb-4">
-      {onClearActiveField ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground h-8 px-2 text-xs"
-          onClick={onClearActiveField}
-        >
-          {clearLabel}
-        </Button>
-      ) : (
-        <span />
-      )}
+      <div className="flex min-w-0 items-center gap-2">
+        {onClearActiveField ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground h-8 px-2 text-xs"
+            onClick={onClearActiveField}
+          >
+            {clearLabel}
+          </Button>
+        ) : null}
+        {footerStart}
+      </div>
       <div className="flex items-center gap-2">
         {footerCountLabel ? (
           <span className="text-muted-foreground hidden text-xs sm:inline">

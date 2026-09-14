@@ -333,21 +333,26 @@ export class SavedViewsRepository {
       return 0;
     }
 
-    const results = await prisma.$transaction(
-      params.userIds.map((userId) =>
-        prisma.saved_view_shares.upsert({
-          where: {
-            view_id_user_id: { view_id: params.viewId, user_id: userId },
-          },
-          create: {
-            view_id: params.viewId,
-            user_id: userId,
-            ...prismaAuditCreate(params.actorId),
-          },
-          update: prismaAuditCreate(params.actorId),
-        })
-      )
-    );
-    return results.length;
+    // Sequential upserts (same pattern as chart_shares). A batched
+    // `$transaction([...])` needs a pool connection for BEGIN…COMMIT; under
+    // adapter-pg that often fails with "Unable to start a transaction in the
+    // given time" when the pool is busy or the DB is slow to hand out a conn.
+    for (const userId of params.userIds) {
+      await prisma.saved_view_shares.upsert({
+        where: {
+          view_id_user_id: { view_id: params.viewId, user_id: userId },
+        },
+        create: {
+          view_id: params.viewId,
+          user_id: userId,
+          ...prismaAuditCreate(params.actorId),
+        },
+        update: {
+          status: RecordStatus.active,
+          ...prismaAuditUpdate(params.actorId),
+        },
+      });
+    }
+    return params.userIds.length;
   }
 }

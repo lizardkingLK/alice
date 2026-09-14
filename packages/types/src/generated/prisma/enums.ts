@@ -96,6 +96,7 @@ export const NotificationType = {
   sprint: 'sprint',
   due_date: 'due_date',
   view_shared: 'view_shared',
+  chart_shared: 'chart_shared',
   chat_processed: 'chat_processed',
   access_request: 'access_request'
 } as const

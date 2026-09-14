@@ -415,6 +415,8 @@ export const ModelName = {
   chat_attachments: 'chat_attachments',
   saved_views: 'saved_views',
   saved_view_shares: 'saved_view_shares',
+  charts: 'charts',
+  chart_shares: 'chart_shares',
   github_pull_requests: 'github_pull_requests',
   integrations: 'integrations'
 } as const
@@ -432,7 +434,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "jira_connections" | "chat_conversations" | "chat_attachments" | "saved_views" | "saved_view_shares" | "github_pull_requests" | "integrations"
+    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "jira_connections" | "chat_conversations" | "chat_attachments" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "github_pull_requests" | "integrations"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1768,6 +1770,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    charts: {
+      payload: Prisma.$chartsPayload<ExtArgs>
+      fields: Prisma.chartsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.chartsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chartsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.chartsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chartsPayload>
+        }
+        findFirst: {
+          args: Prisma.chartsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chartsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.chartsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chartsPayload>
+        }
+        findMany: {
+          args: Prisma.chartsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chartsPayload>[]
+        }
+        create: {
+          args: Prisma.chartsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chartsPayload>
+        }
+        createMany: {
+          args: Prisma.chartsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.chartsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chartsPayload>[]
+        }
+        delete: {
+          args: Prisma.chartsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chartsPayload>
+        }
+        update: {
+          args: Prisma.chartsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chartsPayload>
+        }
+        deleteMany: {
+          args: Prisma.chartsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.chartsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.chartsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chartsPayload>[]
+        }
+        upsert: {
+          args: Prisma.chartsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chartsPayload>
+        }
+        aggregate: {
+          args: Prisma.ChartsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCharts>
+        }
+        groupBy: {
+          args: Prisma.chartsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ChartsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.chartsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ChartsCountAggregateOutputType> | number
+        }
+      }
+    }
+    chart_shares: {
+      payload: Prisma.$chart_sharesPayload<ExtArgs>
+      fields: Prisma.chart_sharesFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.chart_sharesFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chart_sharesPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.chart_sharesFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chart_sharesPayload>
+        }
+        findFirst: {
+          args: Prisma.chart_sharesFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chart_sharesPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.chart_sharesFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chart_sharesPayload>
+        }
+        findMany: {
+          args: Prisma.chart_sharesFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chart_sharesPayload>[]
+        }
+        create: {
+          args: Prisma.chart_sharesCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chart_sharesPayload>
+        }
+        createMany: {
+          args: Prisma.chart_sharesCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.chart_sharesCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chart_sharesPayload>[]
+        }
+        delete: {
+          args: Prisma.chart_sharesDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chart_sharesPayload>
+        }
+        update: {
+          args: Prisma.chart_sharesUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chart_sharesPayload>
+        }
+        deleteMany: {
+          args: Prisma.chart_sharesDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.chart_sharesUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.chart_sharesUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chart_sharesPayload>[]
+        }
+        upsert: {
+          args: Prisma.chart_sharesUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$chart_sharesPayload>
+        }
+        aggregate: {
+          args: Prisma.Chart_sharesAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateChart_shares>
+        }
+        groupBy: {
+          args: Prisma.chart_sharesGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Chart_sharesGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.chart_sharesCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Chart_sharesCountAggregateOutputType> | number
+        }
+      }
+    }
     github_pull_requests: {
       payload: Prisma.$github_pull_requestsPayload<ExtArgs>
       fields: Prisma.github_pull_requestsFieldRefs
@@ -2275,6 +2425,37 @@ export const Saved_view_sharesScalarFieldEnum = {
 } as const
 
 export type Saved_view_sharesScalarFieldEnum = (typeof Saved_view_sharesScalarFieldEnum)[keyof typeof Saved_view_sharesScalarFieldEnum]
+
+
+export const ChartsScalarFieldEnum = {
+  id: 'id',
+  owner_id: 'owner_id',
+  title: 'title',
+  description: 'description',
+  board_json: 'board_json',
+  is_overview: 'is_overview',
+  status: 'status',
+  created_by: 'created_by',
+  created_at: 'created_at',
+  updated_by: 'updated_by',
+  updated_at: 'updated_at'
+} as const
+
+export type ChartsScalarFieldEnum = (typeof ChartsScalarFieldEnum)[keyof typeof ChartsScalarFieldEnum]
+
+
+export const Chart_sharesScalarFieldEnum = {
+  id: 'id',
+  chart_id: 'chart_id',
+  user_id: 'user_id',
+  status: 'status',
+  created_by: 'created_by',
+  created_at: 'created_at',
+  updated_by: 'updated_by',
+  updated_at: 'updated_at'
+} as const
+
+export type Chart_sharesScalarFieldEnum = (typeof Chart_sharesScalarFieldEnum)[keyof typeof Chart_sharesScalarFieldEnum]
 
 
 export const Github_pull_requestsScalarFieldEnum = {
@@ -2822,6 +3003,8 @@ export type GlobalOmitConfig = {
   chat_attachments?: Prisma.chat_attachmentsOmit
   saved_views?: Prisma.saved_viewsOmit
   saved_view_shares?: Prisma.saved_view_sharesOmit
+  charts?: Prisma.chartsOmit
+  chart_shares?: Prisma.chart_sharesOmit
   github_pull_requests?: Prisma.github_pull_requestsOmit
   integrations?: Prisma.integrationsOmit
 }
