@@ -1,10 +1,11 @@
+import type { LayoutItem } from 'react-grid-layout';
 import type { WorkItemStatus } from '@repo/types';
 import type { ChartsWidgetFilterDraft } from '@/app/charts/_components/charts-sample.data';
 
 export type ChartBoardOwnershipFilter = 'all' | 'mine' | 'shared';
 export type ChartBoardStatusFilter = 'all' | 'active' | 'archived';
 
-/** UI stub shape for a persisted chart board (JSON layout later). */
+/** UI stub shape for a persisted chart board list row. */
 export type ChartBoardSummary = {
   readonly id: string;
   readonly slug: string;
@@ -38,6 +39,27 @@ export type ChartWidgetCatalogItem = {
 /** How a Chart widget body is composed (persisted on the instance). */
 export type ChartWidgetViewMode = 'chart' | 'table' | 'split';
 
+/** Pie family subtype for Chart widgets (default donut matches today’s wheel). */
+export type ChartPieVariant = 'pie' | 'donut';
+
+/** Shared persist callbacks used by widget card + config dialog. */
+export type ChartsWidgetFiltersChangeHandler = (
+  // eslint-disable-next-line no-unused-vars -- callback param for consumers
+  filters: ChartsWidgetFilterDraft | null
+) => void;
+
+export type ChartsWidgetViewModeChangeHandler = (
+  // eslint-disable-next-line no-unused-vars -- callback param for consumers
+  viewMode: ChartWidgetViewMode,
+  // eslint-disable-next-line no-unused-vars -- callback param for consumers
+  focusedStatus?: WorkItemStatus | null
+) => void;
+
+export type ChartsWidgetPieVariantChangeHandler = (
+  // eslint-disable-next-line no-unused-vars -- callback param for consumers
+  variant: ChartPieVariant
+) => void;
+
 /** Instance placed on the board canvas (drag / resize). */
 export type ChartBoardWidgetInstance = {
   readonly instanceId: string;
@@ -54,4 +76,23 @@ export type ChartBoardWidgetInstance = {
    * the layout menu without a slice filter.
    */
   readonly focusedStatus?: WorkItemStatus;
+  /** Pie vs donut for Chart widgets; defaults to donut when unset. */
+  readonly pieVariant?: ChartPieVariant;
+};
+
+/** Persisted chart workspace (localStorage / future `charts` row). */
+export type ChartWorkspaceRecord = {
+  readonly id: string;
+  readonly title: string;
+  readonly description: string | null;
+  readonly status: 'active' | 'archived';
+  readonly isOverview: boolean;
+  readonly updatedAt: string;
+  readonly instances: ChartBoardWidgetInstance[];
+  readonly layout: LayoutItem[];
+};
+
+export type ChartWorkspacesStore = {
+  readonly workspaces: ChartWorkspaceRecord[];
+  readonly lastOpenedId: string | null;
 };

@@ -290,6 +290,12 @@ export type usersWhereInput = {
   saved_view_shares?: Prisma.Saved_view_sharesListRelationFilter
   created_saved_view_shares?: Prisma.Saved_view_sharesListRelationFilter
   updated_saved_view_shares?: Prisma.Saved_view_sharesListRelationFilter
+  owned_charts?: Prisma.ChartsListRelationFilter
+  created_charts?: Prisma.ChartsListRelationFilter
+  updated_charts?: Prisma.ChartsListRelationFilter
+  chart_shares?: Prisma.Chart_sharesListRelationFilter
+  created_chart_shares?: Prisma.Chart_sharesListRelationFilter
+  updated_chart_shares?: Prisma.Chart_sharesListRelationFilter
   jira_connections?: Prisma.Jira_connectionsListRelationFilter
   created_integrations?: Prisma.IntegrationsListRelationFilter
   updated_integrations?: Prisma.IntegrationsListRelationFilter
@@ -353,6 +359,12 @@ export type usersOrderByWithRelationInput = {
   saved_view_shares?: Prisma.saved_view_sharesOrderByRelationAggregateInput
   created_saved_view_shares?: Prisma.saved_view_sharesOrderByRelationAggregateInput
   updated_saved_view_shares?: Prisma.saved_view_sharesOrderByRelationAggregateInput
+  owned_charts?: Prisma.chartsOrderByRelationAggregateInput
+  created_charts?: Prisma.chartsOrderByRelationAggregateInput
+  updated_charts?: Prisma.chartsOrderByRelationAggregateInput
+  chart_shares?: Prisma.chart_sharesOrderByRelationAggregateInput
+  created_chart_shares?: Prisma.chart_sharesOrderByRelationAggregateInput
+  updated_chart_shares?: Prisma.chart_sharesOrderByRelationAggregateInput
   jira_connections?: Prisma.jira_connectionsOrderByRelationAggregateInput
   created_integrations?: Prisma.integrationsOrderByRelationAggregateInput
   updated_integrations?: Prisma.integrationsOrderByRelationAggregateInput
@@ -419,6 +431,12 @@ export type usersWhereUniqueInput = Prisma.AtLeast<{
   saved_view_shares?: Prisma.Saved_view_sharesListRelationFilter
   created_saved_view_shares?: Prisma.Saved_view_sharesListRelationFilter
   updated_saved_view_shares?: Prisma.Saved_view_sharesListRelationFilter
+  owned_charts?: Prisma.ChartsListRelationFilter
+  created_charts?: Prisma.ChartsListRelationFilter
+  updated_charts?: Prisma.ChartsListRelationFilter
+  chart_shares?: Prisma.Chart_sharesListRelationFilter
+  created_chart_shares?: Prisma.Chart_sharesListRelationFilter
+  updated_chart_shares?: Prisma.Chart_sharesListRelationFilter
   jira_connections?: Prisma.Jira_connectionsListRelationFilter
   created_integrations?: Prisma.IntegrationsListRelationFilter
   updated_integrations?: Prisma.IntegrationsListRelationFilter
@@ -518,6 +536,12 @@ export type usersCreateInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -579,6 +603,12 @@ export type usersUncheckedCreateInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -640,6 +670,12 @@ export type usersUpdateInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -701,6 +737,12 @@ export type usersUncheckedUpdateInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -1594,6 +1636,98 @@ export type usersUpdateOneWithoutUpdated_saved_view_sharesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutUpdated_saved_view_sharesInput, Prisma.usersUpdateWithoutUpdated_saved_view_sharesInput>, Prisma.usersUncheckedUpdateWithoutUpdated_saved_view_sharesInput>
 }
 
+export type usersCreateNestedOneWithoutOwned_chartsInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutOwned_chartsInput, Prisma.usersUncheckedCreateWithoutOwned_chartsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutOwned_chartsInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersCreateNestedOneWithoutCreated_chartsInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutCreated_chartsInput, Prisma.usersUncheckedCreateWithoutCreated_chartsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutCreated_chartsInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersCreateNestedOneWithoutUpdated_chartsInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutUpdated_chartsInput, Prisma.usersUncheckedCreateWithoutUpdated_chartsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutUpdated_chartsInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersUpdateOneRequiredWithoutOwned_chartsNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutOwned_chartsInput, Prisma.usersUncheckedCreateWithoutOwned_chartsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutOwned_chartsInput
+  upsert?: Prisma.usersUpsertWithoutOwned_chartsInput
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutOwned_chartsInput, Prisma.usersUpdateWithoutOwned_chartsInput>, Prisma.usersUncheckedUpdateWithoutOwned_chartsInput>
+}
+
+export type usersUpdateOneWithoutCreated_chartsNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutCreated_chartsInput, Prisma.usersUncheckedCreateWithoutCreated_chartsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutCreated_chartsInput
+  upsert?: Prisma.usersUpsertWithoutCreated_chartsInput
+  disconnect?: Prisma.usersWhereInput | boolean
+  delete?: Prisma.usersWhereInput | boolean
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutCreated_chartsInput, Prisma.usersUpdateWithoutCreated_chartsInput>, Prisma.usersUncheckedUpdateWithoutCreated_chartsInput>
+}
+
+export type usersUpdateOneWithoutUpdated_chartsNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutUpdated_chartsInput, Prisma.usersUncheckedCreateWithoutUpdated_chartsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutUpdated_chartsInput
+  upsert?: Prisma.usersUpsertWithoutUpdated_chartsInput
+  disconnect?: Prisma.usersWhereInput | boolean
+  delete?: Prisma.usersWhereInput | boolean
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutUpdated_chartsInput, Prisma.usersUpdateWithoutUpdated_chartsInput>, Prisma.usersUncheckedUpdateWithoutUpdated_chartsInput>
+}
+
+export type usersCreateNestedOneWithoutChart_sharesInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutChart_sharesInput, Prisma.usersUncheckedCreateWithoutChart_sharesInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutChart_sharesInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersCreateNestedOneWithoutCreated_chart_sharesInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutCreated_chart_sharesInput, Prisma.usersUncheckedCreateWithoutCreated_chart_sharesInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutCreated_chart_sharesInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersCreateNestedOneWithoutUpdated_chart_sharesInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutUpdated_chart_sharesInput, Prisma.usersUncheckedCreateWithoutUpdated_chart_sharesInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutUpdated_chart_sharesInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersUpdateOneRequiredWithoutChart_sharesNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutChart_sharesInput, Prisma.usersUncheckedCreateWithoutChart_sharesInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutChart_sharesInput
+  upsert?: Prisma.usersUpsertWithoutChart_sharesInput
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutChart_sharesInput, Prisma.usersUpdateWithoutChart_sharesInput>, Prisma.usersUncheckedUpdateWithoutChart_sharesInput>
+}
+
+export type usersUpdateOneWithoutCreated_chart_sharesNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutCreated_chart_sharesInput, Prisma.usersUncheckedCreateWithoutCreated_chart_sharesInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutCreated_chart_sharesInput
+  upsert?: Prisma.usersUpsertWithoutCreated_chart_sharesInput
+  disconnect?: Prisma.usersWhereInput | boolean
+  delete?: Prisma.usersWhereInput | boolean
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutCreated_chart_sharesInput, Prisma.usersUpdateWithoutCreated_chart_sharesInput>, Prisma.usersUncheckedUpdateWithoutCreated_chart_sharesInput>
+}
+
+export type usersUpdateOneWithoutUpdated_chart_sharesNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutUpdated_chart_sharesInput, Prisma.usersUncheckedCreateWithoutUpdated_chart_sharesInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutUpdated_chart_sharesInput
+  upsert?: Prisma.usersUpsertWithoutUpdated_chart_sharesInput
+  disconnect?: Prisma.usersWhereInput | boolean
+  delete?: Prisma.usersWhereInput | boolean
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutUpdated_chart_sharesInput, Prisma.usersUpdateWithoutUpdated_chart_sharesInput>, Prisma.usersUncheckedUpdateWithoutUpdated_chart_sharesInput>
+}
+
 export type usersCreateNestedOneWithoutCreated_integrationsInput = {
   create?: Prisma.XOR<Prisma.usersCreateWithoutCreated_integrationsInput, Prisma.usersUncheckedCreateWithoutCreated_integrationsInput>
   connectOrCreate?: Prisma.usersCreateOrConnectWithoutCreated_integrationsInput
@@ -1681,6 +1815,12 @@ export type usersCreateWithoutCreated_usersInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -1741,6 +1881,12 @@ export type usersUncheckedCreateWithoutCreated_usersInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -1806,6 +1952,12 @@ export type usersCreateWithoutCreatorInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -1866,6 +2018,12 @@ export type usersUncheckedCreateWithoutCreatorInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -1936,6 +2094,12 @@ export type usersCreateWithoutUpdated_usersInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -1996,6 +2160,12 @@ export type usersUncheckedCreateWithoutUpdated_usersInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -2061,6 +2231,12 @@ export type usersCreateWithoutUpdaterInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -2121,6 +2297,12 @@ export type usersUncheckedCreateWithoutUpdaterInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -2202,6 +2384,12 @@ export type usersUpdateWithoutCreated_usersInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -2262,6 +2450,12 @@ export type usersUncheckedUpdateWithoutCreated_usersInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -2368,6 +2562,12 @@ export type usersUpdateWithoutUpdated_usersInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -2428,6 +2628,12 @@ export type usersUncheckedUpdateWithoutUpdated_usersInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -2504,6 +2710,12 @@ export type usersCreateWithoutOwned_projectsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -2564,6 +2776,12 @@ export type usersUncheckedCreateWithoutOwned_projectsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -2629,6 +2847,12 @@ export type usersCreateWithoutCreated_projectsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -2689,6 +2913,12 @@ export type usersUncheckedCreateWithoutCreated_projectsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -2754,6 +2984,12 @@ export type usersCreateWithoutUpdated_projectsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -2814,6 +3050,12 @@ export type usersUncheckedCreateWithoutUpdated_projectsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -2890,6 +3132,12 @@ export type usersUpdateWithoutOwned_projectsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -2950,6 +3198,12 @@ export type usersUncheckedUpdateWithoutOwned_projectsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -3021,6 +3275,12 @@ export type usersUpdateWithoutCreated_projectsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -3081,6 +3341,12 @@ export type usersUncheckedUpdateWithoutCreated_projectsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -3152,6 +3418,12 @@ export type usersUpdateWithoutUpdated_projectsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -3212,6 +3484,12 @@ export type usersUncheckedUpdateWithoutUpdated_projectsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -3272,6 +3550,12 @@ export type usersCreateWithoutProject_membershipsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -3332,6 +3616,12 @@ export type usersUncheckedCreateWithoutProject_membershipsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -3397,6 +3687,12 @@ export type usersCreateWithoutCreated_project_membersInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -3457,6 +3753,12 @@ export type usersUncheckedCreateWithoutCreated_project_membersInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -3522,6 +3824,12 @@ export type usersCreateWithoutUpdated_project_membersInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -3582,6 +3890,12 @@ export type usersUncheckedCreateWithoutUpdated_project_membersInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -3658,6 +3972,12 @@ export type usersUpdateWithoutProject_membershipsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -3718,6 +4038,12 @@ export type usersUncheckedUpdateWithoutProject_membershipsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -3789,6 +4115,12 @@ export type usersUpdateWithoutCreated_project_membersInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -3849,6 +4181,12 @@ export type usersUncheckedUpdateWithoutCreated_project_membersInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -3920,6 +4258,12 @@ export type usersUpdateWithoutUpdated_project_membersInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -3980,6 +4324,12 @@ export type usersUncheckedUpdateWithoutUpdated_project_membersInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -4040,6 +4390,12 @@ export type usersCreateWithoutManaged_teamsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -4100,6 +4456,12 @@ export type usersUncheckedCreateWithoutManaged_teamsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -4165,6 +4527,12 @@ export type usersCreateWithoutCreated_teamsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -4225,6 +4593,12 @@ export type usersUncheckedCreateWithoutCreated_teamsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -4290,6 +4664,12 @@ export type usersCreateWithoutUpdated_teamsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -4350,6 +4730,12 @@ export type usersUncheckedCreateWithoutUpdated_teamsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -4426,6 +4812,12 @@ export type usersUpdateWithoutManaged_teamsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -4486,6 +4878,12 @@ export type usersUncheckedUpdateWithoutManaged_teamsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -4557,6 +4955,12 @@ export type usersUpdateWithoutCreated_teamsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -4617,6 +5021,12 @@ export type usersUncheckedUpdateWithoutCreated_teamsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -4688,6 +5098,12 @@ export type usersUpdateWithoutUpdated_teamsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -4748,6 +5164,12 @@ export type usersUncheckedUpdateWithoutUpdated_teamsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -4808,6 +5230,12 @@ export type usersCreateWithoutTeam_membershipsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -4868,6 +5296,12 @@ export type usersUncheckedCreateWithoutTeam_membershipsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -4933,6 +5367,12 @@ export type usersCreateWithoutReporting_linesInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -4993,6 +5433,12 @@ export type usersUncheckedCreateWithoutReporting_linesInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -5058,6 +5504,12 @@ export type usersCreateWithoutCreated_team_membersInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -5118,6 +5570,12 @@ export type usersUncheckedCreateWithoutCreated_team_membersInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -5183,6 +5641,12 @@ export type usersCreateWithoutUpdated_team_membersInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -5243,6 +5707,12 @@ export type usersUncheckedCreateWithoutUpdated_team_membersInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -5319,6 +5789,12 @@ export type usersUpdateWithoutTeam_membershipsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -5379,6 +5855,12 @@ export type usersUncheckedUpdateWithoutTeam_membershipsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -5450,6 +5932,12 @@ export type usersUpdateWithoutReporting_linesInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -5510,6 +5998,12 @@ export type usersUncheckedUpdateWithoutReporting_linesInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -5581,6 +6075,12 @@ export type usersUpdateWithoutCreated_team_membersInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -5641,6 +6141,12 @@ export type usersUncheckedUpdateWithoutCreated_team_membersInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -5712,6 +6218,12 @@ export type usersUpdateWithoutUpdated_team_membersInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -5772,6 +6284,12 @@ export type usersUncheckedUpdateWithoutUpdated_team_membersInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -5832,6 +6350,12 @@ export type usersCreateWithoutCreated_sprintsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -5892,6 +6416,12 @@ export type usersUncheckedCreateWithoutCreated_sprintsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -5957,6 +6487,12 @@ export type usersCreateWithoutUpdated_sprintsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -6017,6 +6553,12 @@ export type usersUncheckedCreateWithoutUpdated_sprintsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -6093,6 +6635,12 @@ export type usersUpdateWithoutCreated_sprintsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -6153,6 +6701,12 @@ export type usersUncheckedUpdateWithoutCreated_sprintsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -6224,6 +6778,12 @@ export type usersUpdateWithoutUpdated_sprintsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -6284,6 +6844,12 @@ export type usersUncheckedUpdateWithoutUpdated_sprintsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -6344,6 +6910,12 @@ export type usersCreateWithoutAssigned_work_itemsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -6404,6 +6976,12 @@ export type usersUncheckedCreateWithoutAssigned_work_itemsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -6469,6 +7047,12 @@ export type usersCreateWithoutReported_work_itemsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -6529,6 +7113,12 @@ export type usersUncheckedCreateWithoutReported_work_itemsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -6594,6 +7184,12 @@ export type usersCreateWithoutCreated_work_itemsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -6654,6 +7250,12 @@ export type usersUncheckedCreateWithoutCreated_work_itemsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -6719,6 +7321,12 @@ export type usersCreateWithoutUpdated_work_itemsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -6779,6 +7387,12 @@ export type usersUncheckedCreateWithoutUpdated_work_itemsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -6855,6 +7469,12 @@ export type usersUpdateWithoutAssigned_work_itemsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -6915,6 +7535,12 @@ export type usersUncheckedUpdateWithoutAssigned_work_itemsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -6986,6 +7612,12 @@ export type usersUpdateWithoutReported_work_itemsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -7046,6 +7678,12 @@ export type usersUncheckedUpdateWithoutReported_work_itemsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -7117,6 +7755,12 @@ export type usersUpdateWithoutCreated_work_itemsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -7177,6 +7821,12 @@ export type usersUncheckedUpdateWithoutCreated_work_itemsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -7248,6 +7898,12 @@ export type usersUpdateWithoutUpdated_work_itemsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -7308,6 +7964,12 @@ export type usersUncheckedUpdateWithoutUpdated_work_itemsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -7368,6 +8030,12 @@ export type usersCreateWithoutWork_item_worklogsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -7428,6 +8096,12 @@ export type usersUncheckedCreateWithoutWork_item_worklogsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -7504,6 +8178,12 @@ export type usersUpdateWithoutWork_item_worklogsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -7564,6 +8244,12 @@ export type usersUncheckedUpdateWithoutWork_item_worklogsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -7624,6 +8310,12 @@ export type usersCreateWithoutCommentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -7684,6 +8376,12 @@ export type usersUncheckedCreateWithoutCommentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -7749,6 +8447,12 @@ export type usersCreateWithoutCreated_commentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -7809,6 +8513,12 @@ export type usersUncheckedCreateWithoutCreated_commentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -7874,6 +8584,12 @@ export type usersCreateWithoutUpdated_commentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -7934,6 +8650,12 @@ export type usersUncheckedCreateWithoutUpdated_commentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -8010,6 +8732,12 @@ export type usersUpdateWithoutCommentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -8070,6 +8798,12 @@ export type usersUncheckedUpdateWithoutCommentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -8141,6 +8875,12 @@ export type usersUpdateWithoutCreated_commentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -8201,6 +8941,12 @@ export type usersUncheckedUpdateWithoutCreated_commentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -8272,6 +9018,12 @@ export type usersUpdateWithoutUpdated_commentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -8332,6 +9084,12 @@ export type usersUncheckedUpdateWithoutUpdated_commentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -8392,6 +9150,12 @@ export type usersCreateWithoutAttachmentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -8452,6 +9216,12 @@ export type usersUncheckedCreateWithoutAttachmentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -8517,6 +9287,12 @@ export type usersCreateWithoutCreated_attachmentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -8577,6 +9353,12 @@ export type usersUncheckedCreateWithoutCreated_attachmentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -8642,6 +9424,12 @@ export type usersCreateWithoutUpdated_attachmentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -8702,6 +9490,12 @@ export type usersUncheckedCreateWithoutUpdated_attachmentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -8778,6 +9572,12 @@ export type usersUpdateWithoutAttachmentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -8838,6 +9638,12 @@ export type usersUncheckedUpdateWithoutAttachmentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -8909,6 +9715,12 @@ export type usersUpdateWithoutCreated_attachmentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -8969,6 +9781,12 @@ export type usersUncheckedUpdateWithoutCreated_attachmentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -9040,6 +9858,12 @@ export type usersUpdateWithoutUpdated_attachmentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -9100,6 +9924,12 @@ export type usersUncheckedUpdateWithoutUpdated_attachmentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -9160,6 +9990,12 @@ export type usersCreateWithoutNotificationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -9220,6 +10056,12 @@ export type usersUncheckedCreateWithoutNotificationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -9285,6 +10127,12 @@ export type usersCreateWithoutCreated_notificationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -9345,6 +10193,12 @@ export type usersUncheckedCreateWithoutCreated_notificationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -9410,6 +10264,12 @@ export type usersCreateWithoutUpdated_notificationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -9470,6 +10330,12 @@ export type usersUncheckedCreateWithoutUpdated_notificationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -9546,6 +10412,12 @@ export type usersUpdateWithoutNotificationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -9606,6 +10478,12 @@ export type usersUncheckedUpdateWithoutNotificationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -9677,6 +10555,12 @@ export type usersUpdateWithoutCreated_notificationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -9737,6 +10621,12 @@ export type usersUncheckedUpdateWithoutCreated_notificationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -9808,6 +10698,12 @@ export type usersUpdateWithoutUpdated_notificationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -9868,6 +10764,12 @@ export type usersUncheckedUpdateWithoutUpdated_notificationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -9928,6 +10830,12 @@ export type usersCreateWithoutCreated_access_allowlistInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -9988,6 +10896,12 @@ export type usersUncheckedCreateWithoutCreated_access_allowlistInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -10053,6 +10967,12 @@ export type usersCreateWithoutUpdated_access_allowlistInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -10113,6 +11033,12 @@ export type usersUncheckedCreateWithoutUpdated_access_allowlistInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -10189,6 +11115,12 @@ export type usersUpdateWithoutCreated_access_allowlistInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -10249,6 +11181,12 @@ export type usersUncheckedUpdateWithoutCreated_access_allowlistInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -10320,6 +11258,12 @@ export type usersUpdateWithoutUpdated_access_allowlistInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -10380,6 +11324,12 @@ export type usersUncheckedUpdateWithoutUpdated_access_allowlistInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -10440,6 +11390,12 @@ export type usersCreateWithoutResolved_access_requestsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -10500,6 +11456,12 @@ export type usersUncheckedCreateWithoutResolved_access_requestsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -10576,6 +11538,12 @@ export type usersUpdateWithoutResolved_access_requestsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -10636,6 +11604,12 @@ export type usersUncheckedUpdateWithoutResolved_access_requestsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -10697,6 +11671,12 @@ export type usersCreateWithoutJira_connectionsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
 }
@@ -10757,6 +11737,12 @@ export type usersUncheckedCreateWithoutJira_connectionsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
 }
@@ -10833,6 +11819,12 @@ export type usersUpdateWithoutJira_connectionsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
 }
@@ -10893,6 +11885,12 @@ export type usersUncheckedUpdateWithoutJira_connectionsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
 }
@@ -10952,6 +11950,12 @@ export type usersCreateWithoutChat_conversationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -11012,6 +12016,12 @@ export type usersUncheckedCreateWithoutChat_conversationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -11088,6 +12098,12 @@ export type usersUpdateWithoutChat_conversationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -11148,6 +12164,12 @@ export type usersUncheckedUpdateWithoutChat_conversationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -11208,6 +12230,12 @@ export type usersCreateWithoutChat_attachmentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -11268,6 +12296,12 @@ export type usersUncheckedCreateWithoutChat_attachmentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -11344,6 +12378,12 @@ export type usersUpdateWithoutChat_attachmentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -11404,6 +12444,12 @@ export type usersUncheckedUpdateWithoutChat_attachmentsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -11464,6 +12510,12 @@ export type usersCreateWithoutOwned_saved_viewsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -11524,6 +12576,12 @@ export type usersUncheckedCreateWithoutOwned_saved_viewsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -11589,6 +12647,12 @@ export type usersCreateWithoutCreated_saved_viewsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -11649,6 +12713,12 @@ export type usersUncheckedCreateWithoutCreated_saved_viewsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -11714,6 +12784,12 @@ export type usersCreateWithoutUpdated_saved_viewsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -11774,6 +12850,12 @@ export type usersUncheckedCreateWithoutUpdated_saved_viewsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -11850,6 +12932,12 @@ export type usersUpdateWithoutOwned_saved_viewsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -11910,6 +12998,12 @@ export type usersUncheckedUpdateWithoutOwned_saved_viewsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -11981,6 +13075,12 @@ export type usersUpdateWithoutCreated_saved_viewsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -12041,6 +13141,12 @@ export type usersUncheckedUpdateWithoutCreated_saved_viewsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -12112,6 +13218,12 @@ export type usersUpdateWithoutUpdated_saved_viewsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -12172,6 +13284,12 @@ export type usersUncheckedUpdateWithoutUpdated_saved_viewsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -12232,6 +13350,12 @@ export type usersCreateWithoutSaved_view_sharesInput = {
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -12292,6 +13416,12 @@ export type usersUncheckedCreateWithoutSaved_view_sharesInput = {
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -12357,6 +13487,12 @@ export type usersCreateWithoutCreated_saved_view_sharesInput = {
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -12417,6 +13553,12 @@ export type usersUncheckedCreateWithoutCreated_saved_view_sharesInput = {
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -12482,6 +13624,12 @@ export type usersCreateWithoutUpdated_saved_view_sharesInput = {
   updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
@@ -12542,6 +13690,12 @@ export type usersUncheckedCreateWithoutUpdated_saved_view_sharesInput = {
   updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
@@ -12618,6 +13772,12 @@ export type usersUpdateWithoutSaved_view_sharesInput = {
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -12678,6 +13838,12 @@ export type usersUncheckedUpdateWithoutSaved_view_sharesInput = {
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -12749,6 +13915,12 @@ export type usersUpdateWithoutCreated_saved_view_sharesInput = {
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -12809,6 +13981,12 @@ export type usersUncheckedUpdateWithoutCreated_saved_view_sharesInput = {
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -12880,6 +14058,12 @@ export type usersUpdateWithoutUpdated_saved_view_sharesInput = {
   updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -12940,6 +14124,1692 @@ export type usersUncheckedUpdateWithoutUpdated_saved_view_sharesInput = {
   updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+}
+
+export type usersCreateWithoutOwned_chartsInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
+  created_users?: Prisma.usersCreateNestedManyWithoutCreatorInput
+  updater?: Prisma.usersCreateNestedOneWithoutUpdated_usersInput
+  updated_users?: Prisma.usersCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutUserInput
+  created_projects?: Prisma.projectsCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
+  jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
+}
+
+export type usersUncheckedCreateWithoutOwned_chartsInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  created_users?: Prisma.usersUncheckedCreateNestedManyWithoutCreatorInput
+  updated_users?: Prisma.usersUncheckedCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersUncheckedCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersUncheckedCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutUserInput
+  created_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+}
+
+export type usersCreateOrConnectWithoutOwned_chartsInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutOwned_chartsInput, Prisma.usersUncheckedCreateWithoutOwned_chartsInput>
+}
+
+export type usersCreateWithoutCreated_chartsInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
+  created_users?: Prisma.usersCreateNestedManyWithoutCreatorInput
+  updater?: Prisma.usersCreateNestedOneWithoutUpdated_usersInput
+  updated_users?: Prisma.usersCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutUserInput
+  created_projects?: Prisma.projectsCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
+  jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
+}
+
+export type usersUncheckedCreateWithoutCreated_chartsInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  created_users?: Prisma.usersUncheckedCreateNestedManyWithoutCreatorInput
+  updated_users?: Prisma.usersUncheckedCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersUncheckedCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersUncheckedCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutUserInput
+  created_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+}
+
+export type usersCreateOrConnectWithoutCreated_chartsInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutCreated_chartsInput, Prisma.usersUncheckedCreateWithoutCreated_chartsInput>
+}
+
+export type usersCreateWithoutUpdated_chartsInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
+  created_users?: Prisma.usersCreateNestedManyWithoutCreatorInput
+  updater?: Prisma.usersCreateNestedOneWithoutUpdated_usersInput
+  updated_users?: Prisma.usersCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutUserInput
+  created_projects?: Prisma.projectsCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
+  jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
+}
+
+export type usersUncheckedCreateWithoutUpdated_chartsInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  created_users?: Prisma.usersUncheckedCreateNestedManyWithoutCreatorInput
+  updated_users?: Prisma.usersUncheckedCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersUncheckedCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersUncheckedCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutUserInput
+  created_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+}
+
+export type usersCreateOrConnectWithoutUpdated_chartsInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutUpdated_chartsInput, Prisma.usersUncheckedCreateWithoutUpdated_chartsInput>
+}
+
+export type usersUpsertWithoutOwned_chartsInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutOwned_chartsInput, Prisma.usersUncheckedUpdateWithoutOwned_chartsInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutOwned_chartsInput, Prisma.usersUncheckedCreateWithoutOwned_chartsInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutOwned_chartsInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutOwned_chartsInput, Prisma.usersUncheckedUpdateWithoutOwned_chartsInput>
+}
+
+export type usersUpdateWithoutOwned_chartsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
+  created_users?: Prisma.usersUpdateManyWithoutCreatorNestedInput
+  updater?: Prisma.usersUpdateOneWithoutUpdated_usersNestedInput
+  updated_users?: Prisma.usersUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUpdateManyWithoutUserNestedInput
+  created_projects?: Prisma.projectsUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
+}
+
+export type usersUncheckedUpdateWithoutOwned_chartsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  created_users?: Prisma.usersUncheckedUpdateManyWithoutCreatorNestedInput
+  updated_users?: Prisma.usersUncheckedUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUncheckedUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUncheckedUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUncheckedUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUncheckedUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutUserNestedInput
+  created_projects?: Prisma.projectsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+}
+
+export type usersUpsertWithoutCreated_chartsInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutCreated_chartsInput, Prisma.usersUncheckedUpdateWithoutCreated_chartsInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutCreated_chartsInput, Prisma.usersUncheckedCreateWithoutCreated_chartsInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutCreated_chartsInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutCreated_chartsInput, Prisma.usersUncheckedUpdateWithoutCreated_chartsInput>
+}
+
+export type usersUpdateWithoutCreated_chartsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
+  created_users?: Prisma.usersUpdateManyWithoutCreatorNestedInput
+  updater?: Prisma.usersUpdateOneWithoutUpdated_usersNestedInput
+  updated_users?: Prisma.usersUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUpdateManyWithoutUserNestedInput
+  created_projects?: Prisma.projectsUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
+}
+
+export type usersUncheckedUpdateWithoutCreated_chartsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  created_users?: Prisma.usersUncheckedUpdateManyWithoutCreatorNestedInput
+  updated_users?: Prisma.usersUncheckedUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUncheckedUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUncheckedUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUncheckedUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUncheckedUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutUserNestedInput
+  created_projects?: Prisma.projectsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+}
+
+export type usersUpsertWithoutUpdated_chartsInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutUpdated_chartsInput, Prisma.usersUncheckedUpdateWithoutUpdated_chartsInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutUpdated_chartsInput, Prisma.usersUncheckedCreateWithoutUpdated_chartsInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutUpdated_chartsInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutUpdated_chartsInput, Prisma.usersUncheckedUpdateWithoutUpdated_chartsInput>
+}
+
+export type usersUpdateWithoutUpdated_chartsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
+  created_users?: Prisma.usersUpdateManyWithoutCreatorNestedInput
+  updater?: Prisma.usersUpdateOneWithoutUpdated_usersNestedInput
+  updated_users?: Prisma.usersUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUpdateManyWithoutUserNestedInput
+  created_projects?: Prisma.projectsUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
+}
+
+export type usersUncheckedUpdateWithoutUpdated_chartsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  created_users?: Prisma.usersUncheckedUpdateManyWithoutCreatorNestedInput
+  updated_users?: Prisma.usersUncheckedUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUncheckedUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUncheckedUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUncheckedUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUncheckedUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutUserNestedInput
+  created_projects?: Prisma.projectsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+}
+
+export type usersCreateWithoutChart_sharesInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
+  created_users?: Prisma.usersCreateNestedManyWithoutCreatorInput
+  updater?: Prisma.usersCreateNestedOneWithoutUpdated_usersInput
+  updated_users?: Prisma.usersCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutUserInput
+  created_projects?: Prisma.projectsCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
+  jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
+}
+
+export type usersUncheckedCreateWithoutChart_sharesInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  created_users?: Prisma.usersUncheckedCreateNestedManyWithoutCreatorInput
+  updated_users?: Prisma.usersUncheckedCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersUncheckedCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersUncheckedCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutUserInput
+  created_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+}
+
+export type usersCreateOrConnectWithoutChart_sharesInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutChart_sharesInput, Prisma.usersUncheckedCreateWithoutChart_sharesInput>
+}
+
+export type usersCreateWithoutCreated_chart_sharesInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
+  created_users?: Prisma.usersCreateNestedManyWithoutCreatorInput
+  updater?: Prisma.usersCreateNestedOneWithoutUpdated_usersInput
+  updated_users?: Prisma.usersCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutUserInput
+  created_projects?: Prisma.projectsCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
+  jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
+}
+
+export type usersUncheckedCreateWithoutCreated_chart_sharesInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  created_users?: Prisma.usersUncheckedCreateNestedManyWithoutCreatorInput
+  updated_users?: Prisma.usersUncheckedCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersUncheckedCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersUncheckedCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutUserInput
+  created_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+}
+
+export type usersCreateOrConnectWithoutCreated_chart_sharesInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutCreated_chart_sharesInput, Prisma.usersUncheckedCreateWithoutCreated_chart_sharesInput>
+}
+
+export type usersCreateWithoutUpdated_chart_sharesInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  creator?: Prisma.usersCreateNestedOneWithoutCreated_usersInput
+  created_users?: Prisma.usersCreateNestedManyWithoutCreatorInput
+  updater?: Prisma.usersCreateNestedOneWithoutUpdated_usersInput
+  updated_users?: Prisma.usersCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsCreateNestedManyWithoutUserInput
+  created_projects?: Prisma.projectsCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsCreateNestedManyWithoutUpdated_by_userInput
+  created_comments?: Prisma.commentsCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsCreateNestedManyWithoutUserInput
+  owned_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
+}
+
+export type usersUncheckedCreateWithoutUpdated_chart_sharesInput = {
+  id: string
+  email: string
+  name: string
+  role?: $Enums.UserRole
+  active?: boolean
+  membership_status?: $Enums.UserMembershipStatus
+  status?: $Enums.RecordStatus
+  profile_picture?: string | null
+  cover_picture?: string | null
+  created_by?: string | null
+  created_at?: Date | string
+  updated_by?: string | null
+  updated_at?: Date | string
+  created_users?: Prisma.usersUncheckedCreateNestedManyWithoutCreatorInput
+  updated_users?: Prisma.usersUncheckedCreateNestedManyWithoutUpdaterInput
+  owned_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutOwnerInput
+  project_memberships?: Prisma.project_membersUncheckedCreateNestedManyWithoutUserInput
+  managed_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutManagerInput
+  team_memberships?: Prisma.team_membersUncheckedCreateNestedManyWithoutUserInput
+  reporting_lines?: Prisma.team_membersUncheckedCreateNestedManyWithoutReports_to_userInput
+  assigned_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutAssigneeInput
+  reported_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutReporterInput
+  comments?: Prisma.commentsUncheckedCreateNestedManyWithoutAuthorInput
+  attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUploaderInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedCreateNestedManyWithoutUserInput
+  created_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_projects?: Prisma.projectsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_project_members?: Prisma.project_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_teams?: Prisma.teamsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_team_members?: Prisma.team_membersUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_sprints?: Prisma.sprintsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_work_items?: Prisma.work_itemsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_comments?: Prisma.commentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_attachments?: Prisma.attachmentsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUserInput
+  created_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedCreateNestedManyWithoutResolved_by_userInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedCreateNestedManyWithoutUserInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedCreateNestedManyWithoutUserInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutOwnerInput
+  created_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
+  created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+}
+
+export type usersCreateOrConnectWithoutUpdated_chart_sharesInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutUpdated_chart_sharesInput, Prisma.usersUncheckedCreateWithoutUpdated_chart_sharesInput>
+}
+
+export type usersUpsertWithoutChart_sharesInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutChart_sharesInput, Prisma.usersUncheckedUpdateWithoutChart_sharesInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutChart_sharesInput, Prisma.usersUncheckedCreateWithoutChart_sharesInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutChart_sharesInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutChart_sharesInput, Prisma.usersUncheckedUpdateWithoutChart_sharesInput>
+}
+
+export type usersUpdateWithoutChart_sharesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
+  created_users?: Prisma.usersUpdateManyWithoutCreatorNestedInput
+  updater?: Prisma.usersUpdateOneWithoutUpdated_usersNestedInput
+  updated_users?: Prisma.usersUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUpdateManyWithoutUserNestedInput
+  created_projects?: Prisma.projectsUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
+}
+
+export type usersUncheckedUpdateWithoutChart_sharesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  created_users?: Prisma.usersUncheckedUpdateManyWithoutCreatorNestedInput
+  updated_users?: Prisma.usersUncheckedUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUncheckedUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUncheckedUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUncheckedUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUncheckedUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutUserNestedInput
+  created_projects?: Prisma.projectsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+}
+
+export type usersUpsertWithoutCreated_chart_sharesInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutCreated_chart_sharesInput, Prisma.usersUncheckedUpdateWithoutCreated_chart_sharesInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutCreated_chart_sharesInput, Prisma.usersUncheckedCreateWithoutCreated_chart_sharesInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutCreated_chart_sharesInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutCreated_chart_sharesInput, Prisma.usersUncheckedUpdateWithoutCreated_chart_sharesInput>
+}
+
+export type usersUpdateWithoutCreated_chart_sharesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
+  created_users?: Prisma.usersUpdateManyWithoutCreatorNestedInput
+  updater?: Prisma.usersUpdateOneWithoutUpdated_usersNestedInput
+  updated_users?: Prisma.usersUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUpdateManyWithoutUserNestedInput
+  created_projects?: Prisma.projectsUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
+}
+
+export type usersUncheckedUpdateWithoutCreated_chart_sharesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  created_users?: Prisma.usersUncheckedUpdateManyWithoutCreatorNestedInput
+  updated_users?: Prisma.usersUncheckedUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUncheckedUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUncheckedUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUncheckedUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUncheckedUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutUserNestedInput
+  created_projects?: Prisma.projectsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+}
+
+export type usersUpsertWithoutUpdated_chart_sharesInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutUpdated_chart_sharesInput, Prisma.usersUncheckedUpdateWithoutUpdated_chart_sharesInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutUpdated_chart_sharesInput, Prisma.usersUncheckedCreateWithoutUpdated_chart_sharesInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutUpdated_chart_sharesInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutUpdated_chart_sharesInput, Prisma.usersUncheckedUpdateWithoutUpdated_chart_sharesInput>
+}
+
+export type usersUpdateWithoutUpdated_chart_sharesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creator?: Prisma.usersUpdateOneWithoutCreated_usersNestedInput
+  created_users?: Prisma.usersUpdateManyWithoutCreatorNestedInput
+  updater?: Prisma.usersUpdateOneWithoutUpdated_usersNestedInput
+  updated_users?: Prisma.usersUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUpdateManyWithoutUserNestedInput
+  created_projects?: Prisma.projectsUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUpdateManyWithoutUpdated_by_userNestedInput
+  created_comments?: Prisma.commentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUpdateManyWithoutUserNestedInput
+  owned_saved_views?: Prisma.saved_viewsUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
+  created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
+  updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
+}
+
+export type usersUncheckedUpdateWithoutUpdated_chart_sharesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  membership_status?: Prisma.EnumUserMembershipStatusFieldUpdateOperationsInput | $Enums.UserMembershipStatus
+  status?: Prisma.EnumRecordStatusFieldUpdateOperationsInput | $Enums.RecordStatus
+  profile_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cover_picture?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  created_users?: Prisma.usersUncheckedUpdateManyWithoutCreatorNestedInput
+  updated_users?: Prisma.usersUncheckedUpdateManyWithoutUpdaterNestedInput
+  owned_projects?: Prisma.projectsUncheckedUpdateManyWithoutOwnerNestedInput
+  project_memberships?: Prisma.project_membersUncheckedUpdateManyWithoutUserNestedInput
+  managed_teams?: Prisma.teamsUncheckedUpdateManyWithoutManagerNestedInput
+  team_memberships?: Prisma.team_membersUncheckedUpdateManyWithoutUserNestedInput
+  reporting_lines?: Prisma.team_membersUncheckedUpdateManyWithoutReports_to_userNestedInput
+  assigned_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutAssigneeNestedInput
+  reported_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutReporterNestedInput
+  comments?: Prisma.commentsUncheckedUpdateManyWithoutAuthorNestedInput
+  attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUploaderNestedInput
+  work_item_worklogs?: Prisma.work_item_worklogsUncheckedUpdateManyWithoutUserNestedInput
+  created_projects?: Prisma.projectsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_projects?: Prisma.projectsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_project_members?: Prisma.project_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_teams?: Prisma.teamsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_teams?: Prisma.teamsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_team_members?: Prisma.team_membersUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_sprints?: Prisma.sprintsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_work_items?: Prisma.work_itemsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_comments?: Prisma.commentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_comments?: Prisma.commentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_attachments?: Prisma.attachmentsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUserNestedInput
+  created_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  created_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_access_allowlist?: Prisma.access_allowlistUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  resolved_access_requests?: Prisma.access_requestsUncheckedUpdateManyWithoutResolved_by_userNestedInput
+  chat_conversations?: Prisma.chat_conversationsUncheckedUpdateManyWithoutUserNestedInput
+  chat_attachments?: Prisma.chat_attachmentsUncheckedUpdateManyWithoutUserNestedInput
+  owned_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_views?: Prisma.saved_viewsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -13001,6 +15871,12 @@ export type usersCreateWithoutCreated_integrationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   updated_integrations?: Prisma.integrationsCreateNestedManyWithoutUpdated_by_userInput
 }
@@ -13061,6 +15937,12 @@ export type usersUncheckedCreateWithoutCreated_integrationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   updated_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutUpdated_by_userInput
 }
@@ -13126,6 +16008,12 @@ export type usersCreateWithoutUpdated_integrationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsCreateNestedManyWithoutCreated_by_userInput
 }
@@ -13186,6 +16074,12 @@ export type usersUncheckedCreateWithoutUpdated_integrationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUserInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  owned_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutOwnerInput
+  created_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_charts?: Prisma.chartsUncheckedCreateNestedManyWithoutUpdated_by_userInput
+  chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUserInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutCreated_by_userInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedCreateNestedManyWithoutUpdated_by_userInput
   jira_connections?: Prisma.jira_connectionsUncheckedCreateNestedManyWithoutUserInput
   created_integrations?: Prisma.integrationsUncheckedCreateNestedManyWithoutCreated_by_userInput
 }
@@ -13262,6 +16156,12 @@ export type usersUpdateWithoutCreated_integrationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
 }
@@ -13322,6 +16222,12 @@ export type usersUncheckedUpdateWithoutCreated_integrationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
 }
@@ -13393,6 +16299,12 @@ export type usersUpdateWithoutUpdated_integrationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
 }
@@ -13453,6 +16365,12 @@ export type usersUncheckedUpdateWithoutUpdated_integrationsInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
 }
@@ -13542,6 +16460,12 @@ export type usersUpdateWithoutCreatorInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -13602,6 +16526,12 @@ export type usersUncheckedUpdateWithoutCreatorInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -13677,6 +16607,12 @@ export type usersUpdateWithoutUpdaterInput = {
   saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUpdateManyWithoutUpdated_by_userNestedInput
@@ -13737,6 +16673,12 @@ export type usersUncheckedUpdateWithoutUpdaterInput = {
   saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUserNestedInput
   created_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_saved_view_shares?: Prisma.saved_view_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  owned_charts?: Prisma.chartsUncheckedUpdateManyWithoutOwnerNestedInput
+  created_charts?: Prisma.chartsUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_charts?: Prisma.chartsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
+  chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUserNestedInput
+  created_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutCreated_by_userNestedInput
+  updated_chart_shares?: Prisma.chart_sharesUncheckedUpdateManyWithoutUpdated_by_userNestedInput
   jira_connections?: Prisma.jira_connectionsUncheckedUpdateManyWithoutUserNestedInput
   created_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutCreated_by_userNestedInput
   updated_integrations?: Prisma.integrationsUncheckedUpdateManyWithoutUpdated_by_userNestedInput
@@ -13805,6 +16747,12 @@ export type UsersCountOutputType = {
   saved_view_shares: number
   created_saved_view_shares: number
   updated_saved_view_shares: number
+  owned_charts: number
+  created_charts: number
+  updated_charts: number
+  chart_shares: number
+  created_chart_shares: number
+  updated_chart_shares: number
   jira_connections: number
   created_integrations: number
   updated_integrations: number
@@ -13853,6 +16801,12 @@ export type UsersCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.
   saved_view_shares?: boolean | UsersCountOutputTypeCountSaved_view_sharesArgs
   created_saved_view_shares?: boolean | UsersCountOutputTypeCountCreated_saved_view_sharesArgs
   updated_saved_view_shares?: boolean | UsersCountOutputTypeCountUpdated_saved_view_sharesArgs
+  owned_charts?: boolean | UsersCountOutputTypeCountOwned_chartsArgs
+  created_charts?: boolean | UsersCountOutputTypeCountCreated_chartsArgs
+  updated_charts?: boolean | UsersCountOutputTypeCountUpdated_chartsArgs
+  chart_shares?: boolean | UsersCountOutputTypeCountChart_sharesArgs
+  created_chart_shares?: boolean | UsersCountOutputTypeCountCreated_chart_sharesArgs
+  updated_chart_shares?: boolean | UsersCountOutputTypeCountUpdated_chart_sharesArgs
   jira_connections?: boolean | UsersCountOutputTypeCountJira_connectionsArgs
   created_integrations?: boolean | UsersCountOutputTypeCountCreated_integrationsArgs
   updated_integrations?: boolean | UsersCountOutputTypeCountUpdated_integrationsArgs
@@ -14165,6 +17119,48 @@ export type UsersCountOutputTypeCountUpdated_saved_view_sharesArgs<ExtArgs exten
 /**
  * UsersCountOutputType without action
  */
+export type UsersCountOutputTypeCountOwned_chartsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.chartsWhereInput
+}
+
+/**
+ * UsersCountOutputType without action
+ */
+export type UsersCountOutputTypeCountCreated_chartsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.chartsWhereInput
+}
+
+/**
+ * UsersCountOutputType without action
+ */
+export type UsersCountOutputTypeCountUpdated_chartsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.chartsWhereInput
+}
+
+/**
+ * UsersCountOutputType without action
+ */
+export type UsersCountOutputTypeCountChart_sharesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.chart_sharesWhereInput
+}
+
+/**
+ * UsersCountOutputType without action
+ */
+export type UsersCountOutputTypeCountCreated_chart_sharesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.chart_sharesWhereInput
+}
+
+/**
+ * UsersCountOutputType without action
+ */
+export type UsersCountOutputTypeCountUpdated_chart_sharesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.chart_sharesWhereInput
+}
+
+/**
+ * UsersCountOutputType without action
+ */
 export type UsersCountOutputTypeCountJira_connectionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.jira_connectionsWhereInput
 }
@@ -14242,6 +17238,12 @@ export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   saved_view_shares?: boolean | Prisma.users$saved_view_sharesArgs<ExtArgs>
   created_saved_view_shares?: boolean | Prisma.users$created_saved_view_sharesArgs<ExtArgs>
   updated_saved_view_shares?: boolean | Prisma.users$updated_saved_view_sharesArgs<ExtArgs>
+  owned_charts?: boolean | Prisma.users$owned_chartsArgs<ExtArgs>
+  created_charts?: boolean | Prisma.users$created_chartsArgs<ExtArgs>
+  updated_charts?: boolean | Prisma.users$updated_chartsArgs<ExtArgs>
+  chart_shares?: boolean | Prisma.users$chart_sharesArgs<ExtArgs>
+  created_chart_shares?: boolean | Prisma.users$created_chart_sharesArgs<ExtArgs>
+  updated_chart_shares?: boolean | Prisma.users$updated_chart_sharesArgs<ExtArgs>
   jira_connections?: boolean | Prisma.users$jira_connectionsArgs<ExtArgs>
   created_integrations?: boolean | Prisma.users$created_integrationsArgs<ExtArgs>
   updated_integrations?: boolean | Prisma.users$updated_integrationsArgs<ExtArgs>
@@ -14346,6 +17348,12 @@ export type usersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   saved_view_shares?: boolean | Prisma.users$saved_view_sharesArgs<ExtArgs>
   created_saved_view_shares?: boolean | Prisma.users$created_saved_view_sharesArgs<ExtArgs>
   updated_saved_view_shares?: boolean | Prisma.users$updated_saved_view_sharesArgs<ExtArgs>
+  owned_charts?: boolean | Prisma.users$owned_chartsArgs<ExtArgs>
+  created_charts?: boolean | Prisma.users$created_chartsArgs<ExtArgs>
+  updated_charts?: boolean | Prisma.users$updated_chartsArgs<ExtArgs>
+  chart_shares?: boolean | Prisma.users$chart_sharesArgs<ExtArgs>
+  created_chart_shares?: boolean | Prisma.users$created_chart_sharesArgs<ExtArgs>
+  updated_chart_shares?: boolean | Prisma.users$updated_chart_sharesArgs<ExtArgs>
   jira_connections?: boolean | Prisma.users$jira_connectionsArgs<ExtArgs>
   created_integrations?: boolean | Prisma.users$created_integrationsArgs<ExtArgs>
   updated_integrations?: boolean | Prisma.users$updated_integrationsArgs<ExtArgs>
@@ -14407,6 +17415,12 @@ export type $usersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     saved_view_shares: Prisma.$saved_view_sharesPayload<ExtArgs>[]
     created_saved_view_shares: Prisma.$saved_view_sharesPayload<ExtArgs>[]
     updated_saved_view_shares: Prisma.$saved_view_sharesPayload<ExtArgs>[]
+    owned_charts: Prisma.$chartsPayload<ExtArgs>[]
+    created_charts: Prisma.$chartsPayload<ExtArgs>[]
+    updated_charts: Prisma.$chartsPayload<ExtArgs>[]
+    chart_shares: Prisma.$chart_sharesPayload<ExtArgs>[]
+    created_chart_shares: Prisma.$chart_sharesPayload<ExtArgs>[]
+    updated_chart_shares: Prisma.$chart_sharesPayload<ExtArgs>[]
     jira_connections: Prisma.$jira_connectionsPayload<ExtArgs>[]
     created_integrations: Prisma.$integrationsPayload<ExtArgs>[]
     updated_integrations: Prisma.$integrationsPayload<ExtArgs>[]
@@ -14863,6 +17877,12 @@ export interface Prisma__usersClient<T, Null = never, ExtArgs extends runtime.Ty
   saved_view_shares<T extends Prisma.users$saved_view_sharesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$saved_view_sharesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$saved_view_sharesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   created_saved_view_shares<T extends Prisma.users$created_saved_view_sharesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$created_saved_view_sharesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$saved_view_sharesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   updated_saved_view_shares<T extends Prisma.users$updated_saved_view_sharesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$updated_saved_view_sharesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$saved_view_sharesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  owned_charts<T extends Prisma.users$owned_chartsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$owned_chartsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$chartsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  created_charts<T extends Prisma.users$created_chartsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$created_chartsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$chartsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  updated_charts<T extends Prisma.users$updated_chartsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$updated_chartsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$chartsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  chart_shares<T extends Prisma.users$chart_sharesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$chart_sharesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$chart_sharesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  created_chart_shares<T extends Prisma.users$created_chart_sharesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$created_chart_sharesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$chart_sharesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  updated_chart_shares<T extends Prisma.users$updated_chart_sharesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$updated_chart_sharesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$chart_sharesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   jira_connections<T extends Prisma.users$jira_connectionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$jira_connectionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$jira_connectionsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   created_integrations<T extends Prisma.users$created_integrationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$created_integrationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$integrationsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   updated_integrations<T extends Prisma.users$updated_integrationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$updated_integrationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$integrationsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -16352,6 +19372,150 @@ export type users$updated_saved_view_sharesArgs<ExtArgs extends runtime.Types.Ex
   take?: number
   skip?: number
   distinct?: Prisma.Saved_view_sharesScalarFieldEnum | Prisma.Saved_view_sharesScalarFieldEnum[]
+}
+
+/**
+ * users.owned_charts
+ */
+export type users$owned_chartsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the charts
+   */
+  select?: Prisma.chartsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the charts
+   */
+  omit?: Prisma.chartsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.chartsInclude<ExtArgs> | null
+  where?: Prisma.chartsWhereInput
+  orderBy?: Prisma.chartsOrderByWithRelationInput | Prisma.chartsOrderByWithRelationInput[]
+  cursor?: Prisma.chartsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ChartsScalarFieldEnum | Prisma.ChartsScalarFieldEnum[]
+}
+
+/**
+ * users.created_charts
+ */
+export type users$created_chartsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the charts
+   */
+  select?: Prisma.chartsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the charts
+   */
+  omit?: Prisma.chartsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.chartsInclude<ExtArgs> | null
+  where?: Prisma.chartsWhereInput
+  orderBy?: Prisma.chartsOrderByWithRelationInput | Prisma.chartsOrderByWithRelationInput[]
+  cursor?: Prisma.chartsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ChartsScalarFieldEnum | Prisma.ChartsScalarFieldEnum[]
+}
+
+/**
+ * users.updated_charts
+ */
+export type users$updated_chartsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the charts
+   */
+  select?: Prisma.chartsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the charts
+   */
+  omit?: Prisma.chartsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.chartsInclude<ExtArgs> | null
+  where?: Prisma.chartsWhereInput
+  orderBy?: Prisma.chartsOrderByWithRelationInput | Prisma.chartsOrderByWithRelationInput[]
+  cursor?: Prisma.chartsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ChartsScalarFieldEnum | Prisma.ChartsScalarFieldEnum[]
+}
+
+/**
+ * users.chart_shares
+ */
+export type users$chart_sharesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the chart_shares
+   */
+  select?: Prisma.chart_sharesSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the chart_shares
+   */
+  omit?: Prisma.chart_sharesOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.chart_sharesInclude<ExtArgs> | null
+  where?: Prisma.chart_sharesWhereInput
+  orderBy?: Prisma.chart_sharesOrderByWithRelationInput | Prisma.chart_sharesOrderByWithRelationInput[]
+  cursor?: Prisma.chart_sharesWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Chart_sharesScalarFieldEnum | Prisma.Chart_sharesScalarFieldEnum[]
+}
+
+/**
+ * users.created_chart_shares
+ */
+export type users$created_chart_sharesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the chart_shares
+   */
+  select?: Prisma.chart_sharesSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the chart_shares
+   */
+  omit?: Prisma.chart_sharesOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.chart_sharesInclude<ExtArgs> | null
+  where?: Prisma.chart_sharesWhereInput
+  orderBy?: Prisma.chart_sharesOrderByWithRelationInput | Prisma.chart_sharesOrderByWithRelationInput[]
+  cursor?: Prisma.chart_sharesWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Chart_sharesScalarFieldEnum | Prisma.Chart_sharesScalarFieldEnum[]
+}
+
+/**
+ * users.updated_chart_shares
+ */
+export type users$updated_chart_sharesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the chart_shares
+   */
+  select?: Prisma.chart_sharesSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the chart_shares
+   */
+  omit?: Prisma.chart_sharesOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.chart_sharesInclude<ExtArgs> | null
+  where?: Prisma.chart_sharesWhereInput
+  orderBy?: Prisma.chart_sharesOrderByWithRelationInput | Prisma.chart_sharesOrderByWithRelationInput[]
+  cursor?: Prisma.chart_sharesWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Chart_sharesScalarFieldEnum | Prisma.Chart_sharesScalarFieldEnum[]
 }
 
 /**

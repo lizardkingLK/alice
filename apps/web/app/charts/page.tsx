@@ -1,31 +1,18 @@
-import { Suspense } from 'react';
-import { DashboardShell } from '@/app/dashboard/_components/dashboard-shell';
-import { ChartsData } from '@/app/charts/_components/charts-data';
-import { RegistryPageSkeleton } from '@/components/registry-page-skeleton';
-import { REGISTRY_PAGES } from '@/components/registry-page-shell';
-import type { RawSearchParams } from '@/lib/search-params';
+import { ChartsDashboardShell } from '@/app/charts/_components/charts-dashboard-shell';
+import { ChartsRedirectClient } from '@/app/charts/_components/charts-redirect-client';
+import { getDbUser } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
-const CHARTS_BREADCRUMBS = [
-  { label: 'Dashboard', url: '/dashboard' },
-  { label: 'Charts', url: '/charts' },
-] as const;
+/** Bare `/charts` → last-opened workspace (or create default). */
+export default async function ChartsIndexPage() {
+  const dbUser = await getDbUser();
+  if (!dbUser) {
+    redirect('/login');
+  }
 
-export default function ChartsPage({
-  searchParams,
-}: Readonly<{
-  searchParams: Promise<RawSearchParams>;
-}>) {
-  const meta = REGISTRY_PAGES.charts;
   return (
-    <DashboardShell
-      description={meta.description}
-      breadcrumbOverrides={[...CHARTS_BREADCRUMBS]}
-      contentScrollable={false}
-      contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden"
-    >
-      <Suspense fallback={<RegistryPageSkeleton {...meta.skeleton} />}>
-        <ChartsData searchParams={searchParams} />
-      </Suspense>
-    </DashboardShell>
+    <ChartsDashboardShell>
+      <ChartsRedirectClient userId={dbUser.id} />
+    </ChartsDashboardShell>
   );
 }

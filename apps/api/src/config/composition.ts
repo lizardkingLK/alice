@@ -62,6 +62,9 @@ import { createProfileRouter } from '../routes/api/profile/profile.route';
 import { SavedViewsRepository } from '../routes/api/savedViews/savedViews.repository';
 import { SavedViewsService } from '../routes/api/savedViews/savedViews.service';
 import { createSavedViewsRouter } from '../routes/api/savedViews/savedViews.route';
+import { ChartsRepository } from '../routes/api/charts/charts.repository';
+import { ChartsService } from '../routes/api/charts/charts.service';
+import { createChartsRouter } from '../routes/api/charts/charts.route';
 import { IntegrationsRepository } from '../routes/api/integrations/integrations.repository';
 import { IntegrationsService } from '../routes/api/integrations/integrations.service';
 import { createIntegrationsRouter } from '../routes/api/integrations/integrations.route';
@@ -408,6 +411,25 @@ export const teams = createTeamsConfig();
 export const profile = createProfileConfig();
 export const savedViews = createSavedViewsConfig(
   notifications.notificationsRepository
+);
+
+function createChartsConfig(
+  notificationsRepository: NotificationsRepository,
+  savedViewsRepository: SavedViewsRepository
+) {
+  const chartsRepository = new ChartsRepository();
+  const chartsService = new ChartsService(
+    chartsRepository,
+    notificationsRepository,
+    savedViewsRepository
+  );
+  const router = createChartsRouter({ chartsService });
+  return { chartsRepository, chartsService, router };
+}
+
+export const charts = createChartsConfig(
+  notifications.notificationsRepository,
+  savedViews.savedViewsRepository
 );
 export const integrations = createIntegrationsConfig();
 export const pusher = createPusherConfig(users.usersRepository);

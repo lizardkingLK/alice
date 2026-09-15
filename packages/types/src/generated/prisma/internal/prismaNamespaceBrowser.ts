@@ -69,6 +69,8 @@ export const ModelName = {
   chat_attachments: 'chat_attachments',
   saved_views: 'saved_views',
   saved_view_shares: 'saved_view_shares',
+  charts: 'charts',
+  chart_shares: 'chart_shares',
   github_pull_requests: 'github_pull_requests',
   integrations: 'integrations'
 } as const
@@ -410,6 +412,37 @@ export const Saved_view_sharesScalarFieldEnum = {
 } as const
 
 export type Saved_view_sharesScalarFieldEnum = (typeof Saved_view_sharesScalarFieldEnum)[keyof typeof Saved_view_sharesScalarFieldEnum]
+
+
+export const ChartsScalarFieldEnum = {
+  id: 'id',
+  owner_id: 'owner_id',
+  title: 'title',
+  description: 'description',
+  board_json: 'board_json',
+  is_overview: 'is_overview',
+  status: 'status',
+  created_by: 'created_by',
+  created_at: 'created_at',
+  updated_by: 'updated_by',
+  updated_at: 'updated_at'
+} as const
+
+export type ChartsScalarFieldEnum = (typeof ChartsScalarFieldEnum)[keyof typeof ChartsScalarFieldEnum]
+
+
+export const Chart_sharesScalarFieldEnum = {
+  id: 'id',
+  chart_id: 'chart_id',
+  user_id: 'user_id',
+  status: 'status',
+  created_by: 'created_by',
+  created_at: 'created_at',
+  updated_by: 'updated_by',
+  updated_at: 'updated_at'
+} as const
+
+export type Chart_sharesScalarFieldEnum = (typeof Chart_sharesScalarFieldEnum)[keyof typeof Chart_sharesScalarFieldEnum]
 
 
 export const Github_pull_requestsScalarFieldEnum = {

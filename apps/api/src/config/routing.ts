@@ -3,6 +3,7 @@ import {
   accessAllowlist,
   accessRequests,
   attachments,
+  charts,
   chat,
   comments,
   health,
@@ -29,6 +30,8 @@ routesConfig.use('/', root.router);
 routesConfig.use('/api/health', health.v1Router);
 routesConfig.use('/api/v1/health', health.v1Router);
 routesConfig.use('/api/v2/health', health.v2Router);
+routesConfig.use('/api/charts', charts.router);
+routesConfig.use('/api/v1/charts', charts.router);
 routesConfig.use('/api/integrations', integrations.router);
 routesConfig.use('/api/v1/integrations', integrations.router);
 routesConfig.use('/api/accessAllowlist', accessAllowlist.router);

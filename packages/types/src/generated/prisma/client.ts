@@ -130,6 +130,16 @@ export type saved_views = Prisma.saved_viewsModel
  */
 export type saved_view_shares = Prisma.saved_view_sharesModel
 /**
+ * Model charts
+ * Per-user chart workspace (board JSON: widgets + layout).
+ */
+export type charts = Prisma.chartsModel
+/**
+ * Model chart_shares
+ * 
+ */
+export type chart_shares = Prisma.chart_sharesModel
+/**
  * Model github_pull_requests
  * 
  */
