@@ -119,9 +119,5 @@ export function parseJsonWorkItemDocument(
     );
   }
 
-  return transformParsedStructureToNodes(
-    parsedJson,
-    'JSON',
-    parseRawJsonNode
-  );
+  return transformParsedStructureToNodes(parsedJson, 'JSON', parseRawJsonNode);
 }

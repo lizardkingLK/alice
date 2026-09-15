@@ -1,6 +1,6 @@
 # Custom Board Designer
 
-Status: **Implemented through Stage 4** (Alice bot integration remains planned)
+Status: **Implemented through Stage 5**
 
 Design document for a **Custom Board Designer** that lets managers define named
 kanban columns, map each column to a `WorkItemStatus` value, and attach
@@ -49,7 +49,8 @@ Related:
 - Real-time board subscription changes when another user edits the
   configuration.
 - Per-sprint board overrides (a single configuration per project).
-- Alice bot generation of board configurations (Stage 5).
+- Direct or autonomous Alice bot saving of board configurations. Alice creates
+  reviewable drafts only.
 
 ---
 
@@ -773,78 +774,59 @@ the configuration.
 
 ## 11. Alice Bot Integration
 
-### 11.1 Existing bot capability
+### 11.1 Implemented tool flow
 
-The Alice bot (`chat.route.data.ts`) uses Gemini function calling to produce
-structured data. It already generates JSON Schemas for dynamic fields by
-following the `systemInstruction` and has a `parse_work_item_attachment` tool
-that can parse JSON documents. The same infrastructure supports board
-configuration generation.
+Stage 5 reuses the existing provider-agnostic Alice chat loop:
 
-### 11.2 Proposed bot flow for board configuration
-
-1. Manager opens the **Board designer** surface.
-2. Manager clicks **"Set up with Alice"** — opens the Alice drawer
-   (`floating-chat-widget.tsx`).
-3. Manager describes the desired workflow in natural language:
-   > _"I want columns: Backlog, Ready, In Dev, Code Review, QA, and Done.
-   > Only the QA team should be able to move things into QA."_
-4. Alice calls a new `configure_board` tool (or generates the JSON inline).
-5. The generated `BoardConfig` JSON is loaded into the designer editor.
-6. The manager reviews, edits if needed, and clicks **"Validate & Save"**.
-7. The save action runs `boardConfigSchema.safeParse(...)` before calling the
-   API — the bot does not write directly to the database.
-
-### 11.3 Proposed `configure_board` tool declaration
-
-```typescript
-// apps/api/src/routes/api/chat/chat.route.data.ts  [proposed addition]
-{
-  name: 'configure_board',
-  description:
-    'Generate a custom board configuration for a project from a natural language description. Returns a BoardConfig JSON document for the user to review before saving.',
-  parameters: {
-    type: 'object',
-    properties: {
-      projectId: { type: 'string', description: 'UUID of the project.' },
-      columns: {
-        type: 'array',
-        description: 'Ordered list of board columns.',
-        items: {
-          type: 'object',
-          properties: {
-            id:    { type: 'string', description: 'Stable lowercase slug, e.g. "code-review".' },
-            label: { type: 'string', description: 'Display name, e.g. "Code Review".' },
-            status: {
-              type: 'string',
-              enum: ['New', 'ToDo', 'InProgress', 'Testing', 'Done'],
-              description: 'Canonical WorkItemStatus value this column maps to.',
-            },
-            position: { type: 'number', description: 'Zero-based render order.' },
-            validationRules: {
-              type: 'array',
-              items: { type: 'object' },
-              description: 'Optional move restrictions (team/role/user scoped).',
-            },
-          },
-          required: ['id', 'label', 'status', 'position'],
-        },
-      },
-    },
-    required: ['projectId', 'columns'],
-  },
-}
+```text
+ChatClient → POST /api/v1/chat → ChatService → provider tool calling
+  → executeTool() → toolActionsPerformed → ChatExecutedActionCard
 ```
 
-This follows existing tool declaration conventions in `chat.route.data.ts`.
+For board requests Alice resolves the typed project, calls
+`list_board_entities`, clarifies duplicate person or team names, and then calls
+`configure_board_draft`. The entity tool returns only the current valid board,
+active teams belonging to that project, active project members, and basic
+project information after the existing project-access check passes.
 
-### 11.4 Safety constraint
+### 11.2 Stable references and validation
 
-The same constraint as [PROJECT_DETAILS_AND_DYNAMIC_FIELDS.md](./PROJECT_DETAILS_AND_DYNAMIC_FIELDS.md) §8.2 applies:
+Existing columns are referenced only by IDs from the current `BoardConfig`;
+display names are never used as identities. New columns use temporary keys in
+the provider tool call. The server replaces each temporary key with
+`crypto.randomUUID()`, resolves transition references, and ensures no temporary
+key reaches the resulting document.
 
-> The Alice bot does **not** bypass validation or write directly to the database.
-> All AI-generated output flows through the same `boardConfigSchema.safeParse`
-> pipeline as manual edits.
+The server then runs `boardConfigSchema.safeParse`. Invalid configs, unknown
+existing column IDs, and inactive or out-of-project team/user IDs return useful
+tool errors and emit no action. Existing version-2 rules are preserved when a
+request does not modify transitions. Version 1 remains in use for column-only
+boards; rules require version 2, and existing version-2 boards remain version 2.
+
+### 11.3 Draft handoff and save boundary
+
+A valid result emits a `configure_board` action containing only `projectId`,
+`projectName`, and the validated config. The action card writes the config to
+`sessionStorage["board_draft_${projectId}"]` and opens
+`/projects/${projectId}?tab=board`.
+
+Board Designer validates the session value again, consumes it, retains the
+persisted configuration as its baseline, marks the generated config dirty, and
+shows **Draft generated by Alice**. The user must still click Save. If the
+draft omits a persisted column, the designer requires deletion confirmation
+before saving. The bot never mutates work items or column placements.
+
+The only persistence path remains:
+
+```text
+Board Designer → updateProject → PUT /api/projects/:id
+  → requireProjectManager → ProjectsRepository → workflow_config
+```
+
+Managers and administrators may receive a structured draft. Members may
+receive conversational suggestions only and retain a read-only Board Designer.
+The bot role check protects UX; `requireProjectManager` remains the security
+boundary for persistence.
 
 ---
 
@@ -877,21 +859,21 @@ a project, they see its custom board. Validation rules apply equally to guests.
 
 ## 13. Error Handling
 
-| Scenario                                               | Behaviour                                                                          |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------- |
-| `workflow_config` is `null`                            | Board renders with default columns silently                                        |
-| `boardConfigSchema.safeParse` returns `success: false` | Fall back to defaults; show admin-only warning in the designer tab                 |
-| Unknown `version`                                      | Fall back to defaults; surface version mismatch warning for managers               |
-| API save returns 400 (invalid body)                    | Show inline editor error; do not clear the draft                                   |
-| API save returns 403 (insufficient role)               | Show permission error toast                                                        |
-| Movement rule blocks a drag/drop or Move-to action     | Return 403 `BOARD_MOVE_FORBIDDEN`; roll back optimistic placement and toast        |
-| Bot generates invalid JSON                             | `boardConfigSchema.safeParse` catches it; error shown in editor; not written to DB |
+| Scenario                                               | Behaviour                                                                                             |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| `workflow_config` is `null`                            | Board renders with default columns silently                                                           |
+| `boardConfigSchema.safeParse` returns `success: false` | Fall back to defaults; show admin-only warning in the designer tab                                    |
+| Unknown `version`                                      | Fall back to defaults; surface version mismatch warning for managers                                  |
+| API save returns 400 (invalid body)                    | Show inline editor error; do not clear the draft                                                      |
+| API save returns 403 (insufficient role)               | Show permission error toast                                                                           |
+| Movement rule blocks a drag/drop or Move-to action     | Return 403 `BOARD_MOVE_FORBIDDEN`; roll back optimistic placement and toast                           |
+| Bot generates invalid JSON                             | `boardConfigSchema.safeParse` catches it; no action is emitted and nothing is written to the database |
 
 ---
 
 ## 14. Open Questions
 
-Items 1–7, 9, and 10 were resolved by Stages 1–4. Item 8 remains for Stage 5.
+All listed questions were resolved by Stages 1–5.
 
 1. **Column placement persistence (§4.3):** Resolved—Option A using nullable
    `work_items.board_column_id`.
@@ -909,9 +891,9 @@ Items 1–7, 9, and 10 were resolved by Stages 1–4. Item 8 remains for Stage 5
 
 7. **Configuration scope:** Resolved—one board config per project.
 
-8. **Bot tool approach:** Dedicated `configure_board` function-calling tool
-   (proposed) or use the existing `parse_work_item_attachment` flow with a JSON
-   template?
+8. **Bot tool approach:** Resolved—the existing Alice chat tool loop exposes
+   `list_board_entities` and draft-only `configure_board_draft`; a validated
+   `configure_board` action hands the draft to Board Designer.
 
 9. **Column ID stability:** Resolved—designer-generated stable IDs, persisted in
    `board_column_id`; IDs need only be non-empty and unique within the config.
@@ -925,15 +907,16 @@ Items 1–7, 9, and 10 were resolved by Stages 1–4. Item 8 remains for Stage 5
 
 ### Backend / API
 
-| File                                                      | Relevance                                                                |
-| --------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `apps/api/src/routes/api/workItems/workItems.service.ts`  | Add column-move permission check before the status PATCH                 |
-| `apps/api/src/routes/api/workItems/workItems.route.ts`    | Wire any new validation into the route handler                           |
-| `apps/api/src/routes/api/workItems/workItems.errors.ts`   | Defines the stable `BoardMoveForbiddenError` policy denial (403)         |
-| `apps/api/src/routes/api/projects/projects.route.ts`      | Extend or add an endpoint to save `workflow_config`                      |
-| `apps/api/src/routes/api/projects/projects.repository.ts` | `patch.attributes_config` pattern (lines 81–82) shows how to write JSONB |
-| `apps/api/src/routes/api/chat/chat.route.data.ts`         | Add `configure_board` tool declaration                                   |
-| `apps/api/src/routes/api/chat/chat.service.ts`            | Wire the new tool to its handler                                         |
+| File                                                      | Relevance                                                                 |
+| --------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `apps/api/src/routes/api/workItems/workItems.service.ts`  | Add column-move permission check before the status PATCH                  |
+| `apps/api/src/routes/api/workItems/workItems.route.ts`    | Wire any new validation into the route handler                            |
+| `apps/api/src/routes/api/workItems/workItems.errors.ts`   | Defines the stable `BoardMoveForbiddenError` policy denial (403)          |
+| `apps/api/src/routes/api/projects/projects.route.ts`      | Extend or add an endpoint to save `workflow_config`                       |
+| `apps/api/src/routes/api/projects/projects.repository.ts` | `patch.attributes_config` pattern (lines 81–82) shows how to write JSONB  |
+| `apps/api/src/routes/api/chat/chat.route.data.ts`         | Declares board entity and draft tools and the draft-only protocol         |
+| `apps/api/src/routes/api/chat/chat.service.ts`            | Checks access/role, resolves entities, validates, and emits draft actions |
+| `apps/api/src/routes/api/chat/board-draft.ts`             | Resolves stable/temporary column references into a validated BoardConfig  |
 
 ### Shared types / schemas
 
@@ -988,12 +971,27 @@ Items 1–7, 9, and 10 were resolved by Stages 1–4. Item 8 remains for Stage 5
 - Test role, team, user, stale-reference, All Projects, route, designer, and
   rollback behavior.
 
-**Stage 5 — Alice bot integration**
+**Stage 5 — Alice bot integration (implemented)**
 
-- Add `configure_board` tool to `chat.route.data.ts`.
-- Wire the tool handler in `chat.service.ts`.
-- Update `systemInstruction` to describe the board configuration workflow.
-- Test end-to-end bot → generated JSON → validate & save flow.
+- Add `list_board_entities` and `configure_board_draft` to the existing Alice
+  function-calling tool loop.
+- Verify project access before returning the current valid board, active
+  project teams, and active project members.
+- Restrict structured drafts to managers and administrators; members retain
+  conversational suggestions and a read-only designer.
+- Preserve existing column IDs and unaffected transition rules. New columns
+  use model-local temporary keys that the application replaces with
+  `crypto.randomUUID()` values before validation.
+- Validate every result with the shared `boardConfigSchema`; invalid output
+  emits no `configure_board` action.
+- Hand valid drafts to Board Designer through
+  `sessionStorage["board_draft_${projectId}"]`, never through the URL or the
+  database.
+- Revalidate and consume the ephemeral draft in Board Designer while retaining
+  the saved configuration as the baseline, marking the draft dirty, and
+  requiring the user to save through the existing project update path.
+- Preserve Stage 3 deletion confirmation for persisted columns omitted by an
+  Alice draft. No work items or `board_column_id` values are mutated.
 
 **Stage 6 — Column placement**
 

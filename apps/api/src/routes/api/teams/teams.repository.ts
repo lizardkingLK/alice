@@ -30,6 +30,11 @@ export type TeamRow = {
   updated_by: string | null;
 };
 
+export type ActiveProjectTeam = {
+  readonly id: string;
+  readonly name: string;
+};
+
 async function insertTeamMembers(
   teamId: string,
   members: {
@@ -140,6 +145,14 @@ export class TeamsRepository {
       console.error('error. failed to get team detail:', message);
       throw new Error('Failed to get team');
     }
+  }
+
+  async listActiveByProject(projectId: string): Promise<ActiveProjectTeam[]> {
+    return prisma.teams.findMany({
+      where: { project_id: projectId, status: RecordStatus.active },
+      select: { id: true, name: true },
+      orderBy: { name: Prisma.SortOrder.asc },
+    });
   }
 
   async findByName(
