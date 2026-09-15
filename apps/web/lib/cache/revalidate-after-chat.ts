@@ -9,7 +9,9 @@ export type ChatMutationActionType =
   | 'create_project'
   | 'create_sprint'
   | 'create_work_item'
-  | 'batch_import_work_items';
+  | 'batch_import_work_items'
+  | 'update_work_item'
+  | 'delete_work_item';
 
 /**
  * Chat mutations go through Express, not project Server Actions, so they

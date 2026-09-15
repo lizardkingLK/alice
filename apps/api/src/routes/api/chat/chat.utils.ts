@@ -20,3 +20,10 @@ export function sanitizeLog(value: unknown): string {
   }
   return '';
 }
+
+/**
+ * Returns current timestamp as a UTC Date instance.
+ */
+export function utcNow(): Date {
+  return new Date();
+}

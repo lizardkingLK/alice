@@ -561,6 +561,7 @@ export function ChatClient({
         storagePath: a.storagePath,
         url: a.url,
         fileType: a.fileType,
+        expiresAt: a.expiresAt,
       }));
 
     const messageContent =

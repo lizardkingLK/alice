@@ -14,6 +14,8 @@ import {
   ProjectFieldsConfigSchema,
   type ProjectFieldsConfig,
   ChatTurnRoleEnum,
+  type WorkItemPriority,
+  type WorkItemType,
 } from '@repo/types';
 import type { WorkItemService } from '../workItems/workItems.service';
 import type { SprintsService } from '../sprints/sprints.service';
@@ -34,6 +36,8 @@ import { fetchAndParseWorkItemAttachment } from './chat-attachment-parser';
 import { WorkItemDeduplicationAgent } from './work-item-deduplication.agent';
 import { sanitizeLog } from './chat.utils';
 import { prisma } from '../../../lib/prisma';
+import { Prisma } from '@repo/types/prisma';
+import { prismaAuditUpdate } from '../../../lib/prisma-audit';
 import { supabase } from '../../../lib/supabase';
 import type {
   ChatContentPart,
@@ -268,6 +272,570 @@ function mergeWithCurrentSchema(
   }
 
   return generatedSchema;
+}
+
+function detectCircularReference(
+  item: ParsedWorkItemNode,
+  flatNodeMap: Map<string, ParsedWorkItemNode>
+): boolean {
+  let curr: ParsedWorkItemNode | undefined =
+    flatNodeMap.get(item.parentReference || '') ||
+    flatNodeMap.get((item.parentReference || '').toLowerCase().trim());
+  const visited = new Set<string>();
+  const selfKey = item.temporaryIdentifier || item.title.toLowerCase().trim();
+
+  while (curr?.parentReference) {
+    const currKey = curr.temporaryIdentifier || curr.title.toLowerCase().trim();
+    if (visited.has(currKey) || currKey === selfKey) {
+      return true;
+    }
+    visited.add(currKey);
+    curr =
+      flatNodeMap.get(curr.parentReference) ||
+      flatNodeMap.get(curr.parentReference.toLowerCase().trim());
+  }
+
+  return false;
+}
+
+function collectSkippedChildren(
+  children: ParsedWorkItemNode[],
+  parentType: string,
+  skippedItems: Array<{ title: string; reason: string }>
+): void {
+  for (const child of children) {
+    skippedItems.push({
+      title: child.title,
+      reason: `Parent of type ${parentType} cannot have subtasks`,
+    });
+    if (child.children && child.children.length > 0) {
+      collectSkippedChildren(child.children, parentType, skippedItems);
+    }
+  }
+}
+
+function validateAndPruneTreeNode(
+  node: ParsedWorkItemNode,
+  options: { skipInvalidHierarchy?: boolean },
+  skippedItems: Array<{ title: string; reason: string }>
+): ParsedWorkItemNode | null {
+  const typeValue = (node.type || WorkItemTypeEnum.Task) as WorkItemType;
+  const allowedChildType = getAllowedChildType(typeValue);
+
+  if (!node.children || node.children.length === 0) {
+    return { ...node };
+  }
+
+  if (!allowedChildType) {
+    if (!options.skipInvalidHierarchy) {
+      throw new Error(
+        `Parent of type ${typeValue} cannot have subtasks (found on "${node.title}"). Import aborted; no work items were created.`
+      );
+    }
+    collectSkippedChildren(node.children, typeValue, skippedItems);
+    return { ...node, children: undefined };
+  }
+
+  const validChildren: ParsedWorkItemNode[] = [];
+  for (const child of node.children) {
+    const effectiveChild: ParsedWorkItemNode = {
+      ...child,
+      type: allowedChildType || child.type,
+    };
+    const processed = validateAndPruneTreeNode(
+      effectiveChild,
+      options,
+      skippedItems
+    );
+    if (processed) {
+      validChildren.push(processed);
+    }
+  }
+
+  return {
+    ...node,
+    children: validChildren.length > 0 ? validChildren : undefined,
+  };
+}
+
+function isFlatItemHierarchyValid(
+  item: ParsedWorkItemNode,
+  flatNodeMap: Map<string, ParsedWorkItemNode>,
+  options: { skipInvalidHierarchy?: boolean },
+  skippedItems: Array<{ title: string; reason: string }>
+): boolean {
+  if (!item.parentReference) return true;
+
+  const parentNode =
+    flatNodeMap.get(item.parentReference) ||
+    flatNodeMap.get(item.parentReference.toLowerCase().trim()) ||
+    flatNodeMap.get(item.parentReference.toUpperCase().trim());
+
+  if (!parentNode) return true;
+
+  if (detectCircularReference(item, flatNodeMap)) {
+    if (!options.skipInvalidHierarchy) {
+      throw new Error(
+        `Circular parent reference detected in work items (item "${item.title}"). Import aborted; no work items were created.`
+      );
+    }
+    skippedItems.push({
+      title: item.title,
+      reason: 'Circular parent reference detected',
+    });
+    return false;
+  }
+
+  const parentType = (parentNode.type || WorkItemTypeEnum.Task) as WorkItemType;
+  const allowedChildType = getAllowedChildType(parentType);
+  if (!allowedChildType) {
+    if (!options.skipInvalidHierarchy) {
+      throw new Error(
+        `Parent of type ${parentType} cannot have subtasks (item "${item.title}" references parent "${parentNode.title}"). Import aborted; no work items were created.`
+      );
+    }
+    skippedItems.push({
+      title: item.title,
+      reason: `Parent of type ${parentType} cannot have subtasks`,
+    });
+    return false;
+  }
+
+  return true;
+}
+
+interface ExistingWorkItemMatch {
+  id: string;
+  title: string;
+  jira_issue_key: string | null;
+  type: string;
+  status: string;
+  parent_id: string | null;
+  priority: string;
+}
+
+function findExistingWorkItem(
+  node: ParsedWorkItemNode,
+  existingWorkItems: ExistingWorkItemMatch[],
+  updateExisting: boolean
+): ExistingWorkItemMatch | null {
+  if (!updateExisting) return null;
+  if (node.jiraIssueKey) {
+    const byKey = existingWorkItems.find(
+      (e) =>
+        e.jira_issue_key?.toUpperCase() ===
+        node.jiraIssueKey?.toUpperCase()
+    );
+    if (byKey) return byKey;
+  }
+  if (node.temporaryIdentifier) {
+    const byId = existingWorkItems.find(
+      (e) =>
+        e.id === node.temporaryIdentifier ||
+        e.jira_issue_key?.toUpperCase() ===
+          node.temporaryIdentifier.toUpperCase()
+    );
+    if (byId) return byId;
+  }
+  if (node.title) {
+    const normalized = node.title.toLowerCase().trim();
+    return (
+      existingWorkItems.find(
+        (e) => e.title.toLowerCase().trim() === normalized
+      ) ?? null
+    );
+  }
+  return null;
+}
+
+async function updateExistingWorkItemRecord(params: {
+  userId: string;
+  existingId: string;
+  resolvedParentId: string | null;
+  typeValue: WorkItemType;
+  priorityValue: WorkItemPriority;
+  node: ParsedWorkItemNode;
+}): Promise<void> {
+  const {
+    userId,
+    existingId,
+    resolvedParentId,
+    typeValue,
+    priorityValue,
+    node,
+  } = params;
+
+  await prisma.work_items.update({
+    where: { id: existingId },
+    data: {
+      parent_id: resolvedParentId,
+      type: typeValue,
+      priority: priorityValue,
+      ...(node.description != null
+        ? {
+            description: (textToProseMirrorJson(
+              node.description,
+              node.dynamicFields
+            ) ?? Prisma.DbNull) as Prisma.InputJsonValue,
+          }
+        : {}),
+      ...(node.dueDate ? { due_date: new Date(node.dueDate) } : {}),
+      ...(node.storyPoints != null ? { story_points: node.storyPoints } : {}),
+      ...(node.labels ? { labels: node.labels as Prisma.InputJsonValue } : {}),
+      ...prismaAuditUpdate(userId),
+    },
+  });
+}
+
+function identifyOmittedWorkItems(params: {
+  projectKey: string;
+  existingWorkItems: ExistingWorkItemRecord[];
+  matchedExistingIds: Set<string>;
+}): Array<{ id: string; key: string; title: string }> {
+  const { projectKey, existingWorkItems, matchedExistingIds } = params;
+  const omittedExisting = existingWorkItems.filter(
+    (e) => !matchedExistingIds.has(e.id)
+  );
+  return omittedExisting.map((omitted) => ({
+    id: omitted.id,
+    key:
+      omitted.jira_issue_key ||
+      `${projectKey}-${omitted.id.slice(0, 4).toUpperCase()}`,
+    title: omitted.title,
+  }));
+}
+
+async function rollbackBatchImport(params: {
+  createdItemIds: string[];
+  updatedOriginalStates: Array<{ id: string; parent_id: string | null }>;
+  toolActionsPerformed: ToolAction[];
+  initialActionCount: number;
+  err: unknown;
+}): Promise<never> {
+  const {
+    createdItemIds,
+    updatedOriginalStates,
+    toolActionsPerformed,
+    initialActionCount,
+    err,
+  } = params;
+
+  if (createdItemIds.length > 0) {
+    try {
+      await prisma.work_items.deleteMany({
+        where: { id: { in: createdItemIds } },
+      });
+    } catch (cleanupErr) {
+      console.error(
+        'Failed to clean up partially created work items during rollback:',
+        sanitizeLog(cleanupErr)
+      );
+    }
+  }
+
+  for (const orig of updatedOriginalStates) {
+    try {
+      await prisma.work_items.update({
+        where: { id: orig.id },
+        data: { parent_id: orig.parent_id },
+      });
+    } catch (restoreErr) {
+      console.error(
+        'Failed to restore updated work item during rollback:',
+        sanitizeLog(restoreErr)
+      );
+    }
+  }
+
+  toolActionsPerformed.length = initialActionCount;
+
+  const errMsg = err instanceof Error ? err.message : String(err);
+  throw new Error(
+    `Import failed: ${errMsg}. All changes were rolled back; no work items were created or modified.`
+  );
+}
+
+interface ExistingWorkItemRecord {
+  id: string;
+  title: string;
+  jira_issue_key: string | null;
+  type: string;
+  status: string;
+  parent_id: string | null;
+  priority: string;
+}
+
+interface HierarchyUpdateSummary {
+  readonly id: string;
+  readonly key: string;
+  readonly title: string;
+  readonly oldParentTitle: string;
+  readonly newParentTitle: string;
+}
+
+interface BatchImportContext {
+  userId: string;
+  projectId: string;
+  sprintId: string | null;
+  projectKey: string;
+  skipInvalidHierarchy: boolean;
+  updateExisting: boolean;
+  workItemService: Pick<WorkItemService, 'createWorkItem'>;
+  existingWorkItems: ExistingWorkItemRecord[];
+  idMapping: Map<string, string>;
+  idTypeMapping: Map<string, WorkItemType>;
+  createdItems: Array<{ id: string; key: string; title: string }>;
+  updatedItems: Array<{ id: string; key: string; title: string }>;
+  hierarchyUpdates: HierarchyUpdateSummary[];
+  createdItemIds: string[];
+  updatedOriginalStates: Array<{ id: string; parent_id: string | null }>;
+  matchedExistingIds: Set<string>;
+  skippedItems: Array<{ title: string; reason: string }>;
+  toolActionsPerformed: ToolAction[];
+}
+
+function createBatchImportContext(params: {
+  userId: string;
+  projectId: string;
+  sprintId: string | null;
+  projectKey: string;
+  skipInvalidHierarchy: boolean;
+  updateExisting: boolean;
+  workItemService: Pick<WorkItemService, 'createWorkItem'>;
+  existingWorkItems: ExistingWorkItemRecord[];
+  skippedItems: Array<{ title: string; reason: string }>;
+  toolActionsPerformed: ToolAction[];
+}): BatchImportContext {
+  const idMapping = new Map<string, string>();
+  const idTypeMapping = new Map<string, WorkItemType>();
+
+  for (const existing of params.existingWorkItems) {
+    idMapping.set(existing.id, existing.id);
+    if (existing.jira_issue_key) {
+      idMapping.set(existing.jira_issue_key.toUpperCase(), existing.id);
+      idMapping.set(existing.jira_issue_key.toLowerCase(), existing.id);
+    }
+    idMapping.set(existing.title.toLowerCase().trim(), existing.id);
+    idTypeMapping.set(existing.id, existing.type as WorkItemType);
+  }
+
+  return {
+    ...params,
+    idMapping,
+    idTypeMapping,
+    createdItems: [],
+    updatedItems: [],
+    hierarchyUpdates: [],
+    createdItemIds: [],
+    updatedOriginalStates: [],
+    matchedExistingIds: new Set<string>(),
+  };
+}
+
+async function executeChildNodesImport(
+  ctx: BatchImportContext,
+  children: ParsedWorkItemNode[],
+  parentType: WorkItemType,
+  parentTitle: string,
+  parentId: string
+): Promise<void> {
+  const allowedChildType = getAllowedChildType(parentType);
+  for (const child of children) {
+    if (!allowedChildType) {
+      if (ctx.skipInvalidHierarchy) {
+        ctx.skippedItems.push({
+          title: child.title,
+          reason: `Parent of type ${parentType} cannot have subtasks`,
+        });
+        continue;
+      }
+      throw new Error(
+        `Parent of type ${parentType} cannot have subtasks (found on "${parentTitle}"). Import aborted; no work items were created.`
+      );
+    }
+    const effectiveChild: ParsedWorkItemNode = {
+      ...child,
+      type: allowedChildType || child.type,
+    };
+    await executeSingleNodeImport(ctx, effectiveChild, parentId);
+  }
+}
+
+async function executeSingleNodeImport(
+  ctx: BatchImportContext,
+  node: ParsedWorkItemNode,
+  resolvedParentId: string | null
+): Promise<string> {
+  const typeValue = (node.type || WorkItemTypeEnum.Task) as WorkItemType;
+  const priorityValue = (node.priority ||
+    DEFAULT_WORK_ITEM_PRIORITY) as WorkItemPriority;
+  const existing = findExistingWorkItem(
+    node,
+    ctx.existingWorkItems,
+    ctx.updateExisting
+  );
+
+  let workItemId: string;
+
+  if (existing) {
+    workItemId = existing.id;
+    ctx.matchedExistingIds.add(existing.id);
+    ctx.updatedOriginalStates.push({
+      id: existing.id,
+      parent_id: existing.parent_id,
+    });
+
+    await updateExistingWorkItemRecord({
+      userId: ctx.userId,
+      existingId: existing.id,
+      resolvedParentId,
+      typeValue,
+      priorityValue,
+      node,
+    });
+
+    const workItemKey =
+      existing.jira_issue_key ||
+      `${ctx.projectKey}-${existing.id.slice(0, 4).toUpperCase()}`;
+    const summary = {
+      id: existing.id,
+      key: workItemKey,
+      title: node.title || existing.title,
+    };
+    ctx.updatedItems.push(summary);
+    ctx.toolActionsPerformed.push({
+      type: 'update_work_item',
+      entity: summary,
+    });
+
+    if (existing.parent_id !== resolvedParentId) {
+      const oldParent = ctx.existingWorkItems.find(
+        (e) => e.id === existing.parent_id
+      );
+      const newParent = ctx.existingWorkItems.find(
+        (e) => e.id === resolvedParentId
+      );
+      ctx.hierarchyUpdates.push({
+        id: existing.id,
+        key: workItemKey,
+        title: summary.title,
+        oldParentTitle: oldParent ? oldParent.title : 'Root (No parent)',
+        newParentTitle: newParent ? newParent.title : 'Root (No parent)',
+      });
+    }
+  } else {
+    const created = await ctx.workItemService.createWorkItem(ctx.userId, {
+      title: node.title,
+      project_id: ctx.projectId,
+      sprint_id: ctx.sprintId,
+      assignee_id: null,
+      type: typeValue,
+      priority: priorityValue,
+      description: textToProseMirrorJson(
+        node.description,
+        node.dynamicFields
+      ),
+      due_date: node.dueDate || null,
+      parent_id: resolvedParentId,
+      labels: node.labels,
+      story_points: node.storyPoints ?? null,
+      jira_issue_key: node.jiraIssueKey || null,
+    });
+
+    workItemId = created.id;
+    ctx.createdItemIds.push(created.id);
+
+    const workItemKey = `${ctx.projectKey}-${created.id.slice(0, 4).toUpperCase()}`;
+    const summary = {
+      id: created.id,
+      key: workItemKey,
+      title: created.title,
+    };
+    ctx.createdItems.push(summary);
+    ctx.toolActionsPerformed.push({
+      type: 'create_work_item',
+      entity: summary,
+    });
+  }
+
+  if (node.temporaryIdentifier) {
+    ctx.idMapping.set(node.temporaryIdentifier, workItemId);
+    ctx.idMapping.set(node.temporaryIdentifier.toLowerCase().trim(), workItemId);
+    ctx.idMapping.set(node.temporaryIdentifier.toUpperCase().trim(), workItemId);
+  }
+  if (node.jiraIssueKey) {
+    ctx.idMapping.set(node.jiraIssueKey, workItemId);
+    ctx.idMapping.set(node.jiraIssueKey.toUpperCase().trim(), workItemId);
+    ctx.idMapping.set(node.jiraIssueKey.toLowerCase().trim(), workItemId);
+  }
+  if (node.title) {
+    ctx.idMapping.set(node.title.toLowerCase().trim(), workItemId);
+  }
+  ctx.idTypeMapping.set(workItemId, typeValue);
+
+  if (node.children && node.children.length > 0) {
+    await executeChildNodesImport(
+      ctx,
+      node.children,
+      typeValue,
+      node.title,
+      workItemId
+    );
+  }
+
+  return workItemId;
+}
+
+async function processReferencedParentItem(
+  item: ParsedWorkItemNode,
+  ctx: BatchImportContext
+): Promise<void> {
+  const parentRef = item.parentReference;
+  const parentId = parentRef
+    ? ctx.idMapping.get(parentRef) ||
+      ctx.idMapping.get(parentRef.toLowerCase().trim()) ||
+      ctx.idMapping.get(parentRef.toUpperCase().trim()) ||
+      null
+    : null;
+
+  const parentType = parentId ? ctx.idTypeMapping.get(parentId) : undefined;
+  const allowedChildType = parentType ? getAllowedChildType(parentType) : null;
+
+  if (parentId && parentType && !allowedChildType) {
+    if (ctx.skipInvalidHierarchy) {
+      ctx.skippedItems.push({
+        title: item.title,
+        reason: `Parent of type ${parentType} cannot have subtasks`,
+      });
+      return;
+    }
+    throw new Error(
+      `Parent of type ${parentType} cannot have subtasks. Import aborted; no work items were created.`
+    );
+  }
+
+  const effectiveItem = allowedChildType
+    ? { ...item, type: allowedChildType }
+    : item;
+
+  await executeSingleNodeImport(ctx, effectiveItem, parentId);
+}
+
+async function processValidImportItems(
+  validItems: ParsedWorkItemNode[],
+  ctx: BatchImportContext
+): Promise<void> {
+  for (const item of validItems) {
+    if (!item.parentReference) {
+      await executeSingleNodeImport(ctx, item, null);
+    }
+  }
+
+  for (const item of validItems) {
+    if (item.parentReference) {
+      await processReferencedParentItem(item, ctx);
+    }
+  }
 }
 
 export class ChatService {
@@ -662,6 +1230,46 @@ export class ChatService {
     return parsed.items;
   }
 
+  private filterAndValidateWorkItemHierarchy(
+    items: ParsedWorkItemNode[],
+    options: { skipInvalidHierarchy?: boolean }
+  ): {
+    validItems: ParsedWorkItemNode[];
+    skippedItems: Array<{ title: string; reason: string }>;
+  } {
+    const skippedItems: Array<{ title: string; reason: string }> = [];
+    const flatNodeMap = new Map<string, ParsedWorkItemNode>();
+
+    for (const item of items) {
+      if (item.temporaryIdentifier) {
+        flatNodeMap.set(item.temporaryIdentifier, item);
+        flatNodeMap.set(item.temporaryIdentifier.toLowerCase().trim(), item);
+        flatNodeMap.set(item.temporaryIdentifier.toUpperCase().trim(), item);
+      }
+      if (item.jiraIssueKey) {
+        flatNodeMap.set(item.jiraIssueKey, item);
+        flatNodeMap.set(item.jiraIssueKey.toUpperCase().trim(), item);
+        flatNodeMap.set(item.jiraIssueKey.toLowerCase().trim(), item);
+      }
+      if (item.title) {
+        flatNodeMap.set(item.title.toLowerCase().trim(), item);
+      }
+    }
+
+    const validItems: ParsedWorkItemNode[] = [];
+    for (const item of items) {
+      if (!isFlatItemHierarchyValid(item, flatNodeMap, options, skippedItems)) {
+        continue;
+      }
+      const processed = validateAndPruneTreeNode(item, options, skippedItems);
+      if (processed) {
+        validItems.push(processed);
+      }
+    }
+
+    return { validItems, skippedItems };
+  }
+
   private async handleBatchImportWorkItems(
     userId: string,
     args: Record<string, unknown>,
@@ -670,95 +1278,89 @@ export class ChatService {
   ): Promise<unknown> {
     const projectId = typeof args.projectId === 'string' ? args.projectId : '';
     const sprintId = typeof args.sprintId === 'string' ? args.sprintId : null;
+    const skipInvalidHierarchy = args.skipInvalidHierarchy === true;
+    const updateExisting = args.updateExisting !== false;
 
     if (!projectId) {
       throw new Error('projectId is required');
     }
 
-    const items = await this.resolveItemsForImport(args, history);
+    const rawItems = await this.resolveItemsForImport(args, history);
+    const { validItems, skippedItems } =
+      this.filterAndValidateWorkItemHierarchy(rawItems, {
+        skipInvalidHierarchy,
+      });
 
     const project = await this.deps.projectsRepository.findById(projectId);
     const projectKey = project?.key || 'TASK';
 
-    const createdItems: Array<{ id: string; key: string; title: string }> = [];
-    const idMapping = new Map<string, string>();
-
-    const createSingleNode = async (
-      node: ParsedWorkItemNode,
-      resolvedParentId: string | null
-    ) => {
-      const typeValue = node.type || WorkItemTypeEnum.Task;
-      const priorityValue = node.priority || DEFAULT_WORK_ITEM_PRIORITY;
-
-      const created = await this.deps.workItemService.createWorkItem(userId, {
-        title: node.title,
+    const existingWorkItems = await prisma.work_items.findMany({
+      where: {
         project_id: projectId,
-        sprint_id: sprintId,
-        assignee_id: null,
-        type: typeValue,
-        priority: priorityValue,
-        description: textToProseMirrorJson(
-          node.description,
-          node.dynamicFields
-        ),
-        due_date: node.dueDate || null,
-        parent_id: resolvedParentId,
-        labels: node.labels,
-        story_points: node.storyPoints ?? null,
-        jira_issue_key: node.jiraIssueKey || null,
+        record_status: 'active',
+      },
+      select: {
+        id: true,
+        title: true,
+        jira_issue_key: true,
+        type: true,
+        status: true,
+        parent_id: true,
+        priority: true,
+      },
+    });
+
+    const ctx = createBatchImportContext({
+      userId,
+      projectId,
+      sprintId,
+      projectKey,
+      skipInvalidHierarchy,
+      updateExisting,
+      workItemService: this.deps.workItemService,
+      existingWorkItems,
+      skippedItems,
+      toolActionsPerformed,
+    });
+
+    const initialActionCount = toolActionsPerformed.length;
+
+    try {
+      await processValidImportItems(validItems, ctx);
+
+      const omittedItems = identifyOmittedWorkItems({
+        projectKey,
+        existingWorkItems,
+        matchedExistingIds: ctx.matchedExistingIds,
       });
 
-      const workItemKey = `${projectKey}-${created.id.slice(0, 4).toUpperCase()}`;
-      const summary = {
-        id: created.id,
-        key: workItemKey,
-        title: created.title,
+      return {
+        importedCount: ctx.createdItems.length,
+        createdCount: ctx.createdItems.length,
+        items: ctx.createdItems,
+        createdItems: ctx.createdItems,
+        updatedCount: ctx.updatedItems.length,
+        updatedItems: ctx.updatedItems,
+        hierarchyUpdatedCount: ctx.hierarchyUpdates.length,
+        hierarchyUpdates: ctx.hierarchyUpdates,
+        omittedCount: omittedItems.length,
+        omittedItems,
+        omittedNotice:
+          omittedItems.length > 0
+            ? 'Deletion of work items is not allowed via Alice chat. The omitted work items remain in your project backlog.'
+            : undefined,
+        skippedCount: ctx.skippedItems.length,
+        skippedItems: ctx.skippedItems,
       };
-      createdItems.push(summary);
-      toolActionsPerformed.push({ type: 'create_work_item', entity: summary });
-
-      if (node.temporaryIdentifier) {
-        idMapping.set(node.temporaryIdentifier, created.id);
-      }
-      if (node.title) {
-        idMapping.set(node.title.toLowerCase().trim(), created.id);
-      }
-
-      if (node.children && node.children.length > 0) {
-        for (const child of node.children) {
-          const allowedChildType = getAllowedChildType(typeValue);
-          const effectiveChildNode: ParsedWorkItemNode = {
-            ...child,
-            type: allowedChildType || child.type,
-          };
-          await createSingleNode(effectiveChildNode, created.id);
-        }
-      }
-    };
-
-    for (const item of items) {
-      if (!item.parentReference) {
-        await createSingleNode(item, null);
-      }
+    } catch (err: unknown) {
+      return rollbackBatchImport({
+        createdItemIds: ctx.createdItemIds,
+        updatedOriginalStates: ctx.updatedOriginalStates,
+        initialActionCount,
+        toolActionsPerformed,
+        err,
+      });
     }
-
-    for (const item of items) {
-      if (
-        item.parentReference &&
-        (!item.temporaryIdentifier || !idMapping.has(item.temporaryIdentifier))
-      ) {
-        const parentId =
-          idMapping.get(item.parentReference) ||
-          idMapping.get(item.parentReference.toLowerCase().trim()) ||
-          null;
-        await createSingleNode(item, parentId);
-      }
-    }
-
-    return {
-      importedCount: createdItems.length,
-      items: createdItems,
-    };
   }
 
   async saveChatHistory(
@@ -792,20 +1394,15 @@ export class ChatService {
     }
   }
 
-  async loadChatHistory(conversationId: string): Promise<StoredChatMessage[]> {
-    // 1. Check in-memory cache first
+  private async fetchHistoryMessages(
+    conversationId: string
+  ): Promise<StoredChatMessage[]> {
     const cached = this.historyCache.get(conversationId);
-    if (cached) {
-      return cached;
-    }
+    if (cached) return cached;
 
     try {
-      // 2. If not cached, fetch from storage and update cache
       const mdText = await this.chat.downloadHistoryMarkdown(conversationId);
-      if (!mdText) return [];
-      const messages = markdownToChatHistory(mdText);
-      this.historyCache.set(conversationId, messages);
-      return messages;
+      return mdText ? markdownToChatHistory(mdText) : [];
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error(
@@ -814,6 +1411,75 @@ export class ChatService {
       );
       return [];
     }
+  }
+
+  private async refreshAttachmentAtIndex(
+    attachments: NonNullable<StoredChatMessage['attachments']>,
+    index: number,
+    now: number
+  ): Promise<boolean> {
+    const att = attachments[index];
+    if (!att?.id) return false;
+
+    const isExpired =
+      !att.expiresAt || new Date(att.expiresAt).getTime() <= now + 60_000;
+    if (!isExpired) return false;
+
+    try {
+      const refreshed =
+        await this.chatAttachmentsRepository.getAttachmentById(att.id);
+      if (refreshed) {
+        attachments[index] = refreshed;
+        return true;
+      }
+    } catch (err: unknown) {
+      console.error(
+        `Failed to refresh chat attachment ${sanitizeLog(att.id)}:`,
+        sanitizeLog(err instanceof Error ? err.message : String(err))
+      );
+    }
+    return false;
+  }
+
+  private async refreshExpiredAttachments(
+    messages: StoredChatMessage[]
+  ): Promise<boolean> {
+    const now = Date.now();
+    let hasRefreshedAny = false;
+
+    for (const msg of messages) {
+      if (!msg.attachments || msg.attachments.length === 0) continue;
+      for (let i = 0; i < msg.attachments.length; i++) {
+        const refreshed = await this.refreshAttachmentAtIndex(
+          msg.attachments,
+          i,
+          now
+        );
+        if (refreshed) {
+          hasRefreshedAny = true;
+        }
+      }
+    }
+
+    return hasRefreshedAny;
+  }
+
+  async loadChatHistory(conversationId: string): Promise<StoredChatMessage[]> {
+    const messages = await this.fetchHistoryMessages(conversationId);
+    const hasRefreshedAny = await this.refreshExpiredAttachments(messages);
+
+    this.historyCache.set(conversationId, messages);
+
+    if (hasRefreshedAny) {
+      void this.saveChatHistory(conversationId, messages).catch((err) => {
+        console.error(
+          `Failed to persist refreshed attachments for conversation ${sanitizeLog(conversationId)}:`,
+          sanitizeLog(err instanceof Error ? err.message : String(err))
+        );
+      });
+    }
+
+    return messages;
   }
 
   async verifyConversationOwner(

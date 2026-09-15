@@ -6,7 +6,7 @@ import { ChatRoles } from '@repo/types';
 import type { ChatMessage } from './chat-client.types';
 import { ChatExecutedActionCard } from './chat-executed-action-card';
 import { ChatMarkdown } from './chat-markdown';
-import { getAttachmentIcon } from './chat-attachment-tiles';
+import { ChatAttachmentLink } from './chat-attachment-link';
 import ChatBotAvatar from '@/app/chat/_components/chat-client-bot-avatar';
 import ChatUserAvatar from '@/app/chat/_components/chat-client-user-avatar';
 import ChatAliceStatusRow from '@/app/chat/_components/chat-client-alice-status-row';
@@ -87,23 +87,11 @@ export default function ChatClientThread({
                         )}
                       >
                         {message.attachments.map((attachment) => (
-                          <a
+                          <ChatAttachmentLink
                             key={attachment.id}
-                            href={attachment.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={cn(
-                              'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-colors',
-                              isUser
-                                ? 'bg-primary-foreground/15 hover:bg-primary-foreground/25 text-primary-foreground'
-                                : 'bg-background hover:bg-accent border-border/80 text-foreground border shadow-2xs'
-                            )}
-                          >
-                            {getAttachmentIcon(attachment.fileType)}
-                            <span className="max-w-[10rem] truncate font-medium">
-                              {attachment.fileName}
-                            </span>
-                          </a>
+                            attachment={attachment}
+                            isUser={isUser}
+                          />
                         ))}
                       </div>
                     ) : null}

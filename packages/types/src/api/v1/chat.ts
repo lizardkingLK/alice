@@ -3,6 +3,13 @@ import { ChatRoles } from '../../chat.js';
 import { ChatAttachmentFileTypeEnum } from '../../chat-attachments.js';
 import { emptyToUndefined } from './query-preprocess.js';
 
+export {
+  WorkItemDeduplicationActionEnum,
+  WorkItemDeduplicationMatchStatusEnum,
+  type WorkItemDeduplicationItemResult,
+  type WorkItemDeduplicationReport,
+} from '../../chat-attachments.js';
+
 /** PostgREST column list for chat conversation list reads (RSC + API parity). */
 export const CHAT_CONVERSATION_POSTGREST_SELECT =
   'id, title, created_at, updated_at, is_processing' as const;
@@ -23,6 +30,7 @@ export const chatAttachmentWireSchema = z.object({
   storagePath: z.string(),
   url: z.string(),
   fileType: z.nativeEnum(ChatAttachmentFileTypeEnum),
+  expiresAt: z.string().nullable().optional(),
 });
 
 export const createChatAttachmentUploadSessionSchema = z
@@ -128,6 +136,8 @@ export const chatToolActionSchema = z.object({
     'create_sprint',
     'create_work_item',
     'batch_import_work_items',
+    'update_work_item',
+    'delete_work_item',
   ]),
   entity: z.object({
     id: z.string(),

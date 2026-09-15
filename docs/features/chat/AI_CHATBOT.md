@@ -22,11 +22,13 @@ Related:
 
 - Let signed-in users ask in natural language to list/create **projects**,
   **sprints**, and **work items**.
-- Attach and process documents (**JSON**, **CSV**, **Text**, and **Images**) directly in the chat composer.
+- Attach and process documents (**JSON**, **CSV**, **TSV**, **Markdown tables**, **Indented text outlines**, **YAML**, and **Images**) directly in the chat composer.
 - Use a **direct-to-storage upload session** flow to avoid Vercel/serverless request payload size limits.
-- Automatically parse attached documents into hierarchical and flat work item trees (`parse_work_item_attachment`).
+- Automatically refresh signed URLs on expiration across both backend hydration and frontend interactive links (`chat-attachment-link.tsx`).
+- Automatically parse attached documents into hierarchical and flat work item trees with custom dynamic fields (`parse_work_item_attachment`).
 - Run **duplicate checking and similarity analysis** against existing project items (`check_work_item_duplicates`).
-- Execute **batch work item imports** with hierarchy links and sprint assignments (`batch_import_work_items`).
+- Execute **atomic batch work item imports** with pre-validation, automatic DB rollback on failure, and interactive user choice protocol (`batch_import_work_items`).
+- Support **incremental backlog synchronization** on file re-upload: update existing items and parent links in place without creating duplicates (`updateExisting`). Detect and explicitly report hierarchy changes in chat responses across all formats (JSON, CSV, TSV, Markdown, outlines, YAML). Enforce strict **no-deletion policy via chat**: omitted items are preserved in the project backlog with an informative user notice.
 - Enforce strict **project scope guardrails** keeping Alice dedicated solely to ALICE system operations.
 - Persist multi-turn conversations and attachment metadata per user (sidebar history on `/chat`).
 - Surface Alice from the dashboard **navbar** (between notifications and
@@ -131,7 +133,9 @@ Mounted in `apps/api/src/config/routing.ts` as `/api/chat` and `/api/v1/chat`.
 | Page             | `apps/web/app/chat/page.tsx` (RSC bootstrap + Suspense)                                           |
 | Client UI        | `apps/web/app/chat/_components/chat-client.tsx`                                                   |
 | Attachment UI    | `apps/web/app/chat/_components/chat-attachment-tiles.tsx`                                         |
-| Action Cards     | `apps/web/app/chat/_components/chat-executed-action-card.tsx`                                     |
+| Attachment Link  | `apps/web/app/chat/_components/chat-attachment-link.tsx` (auto-refreshing signed URL link)        |
+| Action Cards     | `apps/web/app/chat/_components/chat-executed-action-card.tsx` (create, update, delete item cards) |
+| Cache Revalidate | `apps/web/lib/cache/revalidate-after-chat.ts` (instant cache eviction on mutations)               |
 | Client API       | `apps/web/app/chat/_services/chat-attachments.client.ts` (upload-session, finalize, mint, delete) |
 | Client Mutation  | `apps/web/app/chat/_services/chat.mutations.client.ts`                                            |
 | Server reads     | `apps/web/app/chat/_services/chat.reads.server.ts`                                                |
@@ -173,29 +177,114 @@ needed elsewhere in the API.
 
 Declared in `chat.route.data.ts` and executed server-side:
 
-| Tool                         | Effect                                                                                 |
-| ---------------------------- | -------------------------------------------------------------------------------------- |
-| `list_projects`              | List projects (id, name, key)                                                          |
-| `create_project`             | Create project via projects service                                                    |
-| `list_sprints`               | List sprints for a `projectId`                                                         |
-| `create_sprint`              | Create sprint via sprints service                                                      |
-| `list_users`                 | List users (id, name, email) for assignee matching                                     |
-| `create_work_item`           | Create single work item; maps chat types (bug → Issue, task → Task, story → Story)     |
-| `parse_work_item_attachment` | Fetch and parse attached document (JSON, CSV, Text) into structured work item nodes    |
-| `check_work_item_duplicates` | Compare parsed items against existing project items to identify new vs duplicate items |
-| `batch_import_work_items`    | Bulk create validated work items in a project with parent-child hierarchy links        |
+| Tool                         | Effect                                                                                                      |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `list_projects`              | List projects (id, name, key)                                                                               |
+| `create_project`             | Create project via projects service                                                                         |
+| `list_sprints`               | List sprints for a `projectId`                                                                              |
+| `create_sprint`              | Create sprint via sprints service                                                                           |
+| `list_users`                 | List users (id, name, email) for assignee matching                                                          |
+| `create_work_item`           | Create single work item; maps chat types (bug → Issue, task → Task, story → Story)                          |
+| `parse_work_item_attachment` | Fetch and parse attached document (JSON, CSV, TSV, Markdown, Outline, YAML) into structured work item trees |
+| `check_work_item_duplicates` | Compare parsed items against existing project items to identify new vs duplicate items                      |
+| `batch_import_work_items`    | Bulk create or synchronize work items with hierarchy links, atomic rollback, and update/deletion controls   |
 
-**Protocol (system prompt):** resolve project (list / optionally create) →
-resolve sprint (optional) → resolve assignee → `create_work_item` or `parse_work_item_attachment` →
-`check_work_item_duplicates` → `batch_import_work_items` → summarize.
+### Tool Arguments & Options for `batch_import_work_items`
 
-Agent loop: up to **5** tool rounds per user message, then return text +
-`actions` for the UI.
+| Argument               | Type      | Default | Purpose                                                                                                  |
+| ---------------------- | --------- | ------- | -------------------------------------------------------------------------------------------------------- |
+| `projectId`            | `string`  | Req.    | ID of the project into which items are imported/synced.                                                  |
+| `items`                | `array`   | Req.    | List of parsed work item nodes (supports flat lists with `parentReference` or nested `children` trees).  |
+| `sprintId`             | `string`  | `null`  | Optional sprint to assign the imported work items to.                                                    |
+| `skipInvalidHierarchy` | `boolean` | `false` | When `true`, prunes items with invalid parent-child hierarchy; when `false`, halts import with 0 writes. |
+| `updateExisting`       | `boolean` | `false` | When `true`, updates matching existing work items (hierarchy and fields) in-place without duplicating.   |
+| `removeDeleted`        | `boolean` | `false` | When `true`, soft-deletes/archives items present in the project that were omitted from the update file.  |
 
-### Context injection & Document Context
+---
 
-Each `POST` builds a **workspace snapshot** into the system instruction:
-projects, users, and active sprints. When the user attaches files, Alice injects the file metadata and signed URLs directly into the conversation prompt, guiding Gemini to call `parse_work_item_attachment` when processing documents.
+### Universal Multi-Format Attachment Parser
+
+The parser (`chat-attachment-parser.ts`) supports heterogeneous document formats, converting all structures into a uniform `ParsedWorkItemNode[]` tree:
+
+1. **JSON (`.json`)**:
+   - Supports wrapped `{ items: [...] }` or raw root arrays `[...]`.
+   - Supports nested hierarchical trees (`children` or `subtasks`) or flat lists with `parentReference` / `parent`.
+   - Extracts custom dynamic fields into `dynamicFields`.
+2. **CSV & TSV (`.csv`, `.tsv`)**:
+   - Delimited text parser handling commas or tabs with robust quoted string support.
+   - Header aliases: matches variations such as `Issue key` / `Key` / `ID`, `Parent` / `Parent Key`, `Type` / `Issue Type`, `Story Points` / `Points` / `Estimate`, `Title` / `Summary` / `Name`.
+   - Dynamic columns automatically captured as key-value pairs in `dynamicFields`.
+3. **Markdown Tables (`.md`)**:
+   - Pipe-delimited GitHub-flavored markdown tables (`| Key | Title | Type | Parent | ... |`).
+   - Parses header row, delimiter divider line, and body rows.
+4. **Indented Text Outlines (`.txt`, `.md`)**:
+   - Hierarchical bulleted (`-`, `*`, `+`) or numbered lists.
+   - Derives parent-child hierarchy automatically from indentation depth (spaces or tabs).
+   - Extracts inline explicit types (e.g. `[Epic]`, `[Feature]`, `[Story]`) and inline metadata annotations (e.g. `(Key: PROJ-12, Priority: High, Points: 5)`).
+   - Formats `Title: Description` automatically when colons are present.
+5. **YAML (`.yaml`, `.yml`)**:
+   - Supports YAML lists and objects mapping directly into work item nodes.
+
+---
+
+### Hierarchy Validation Engine & Guardrails
+
+The hierarchy validator (`filterAndValidateWorkItemHierarchy` in `chat.service.ts`) enforces strict structural integrity:
+
+- **Hierarchy Levels**: `Epic` &rarr; `Feature` &rarr; `Story` &rarr; `Task` &rarr; `Issue`.
+- **Leaf Constraints**: An `Issue` (or `Bug`) is strictly a **leaf item** and **cannot** have children or subtasks.
+- **Parent-Child Ordering**: Parents must be higher in the hierarchy than their child items.
+- **Circular Reference Prevention**: Detects self-referential or circular parent chains (`detectCircularReference`) and rejects the hierarchy.
+
+---
+
+### Atomic Import Guarantee & Rollback Protocol
+
+To prevent corrupted partial database states:
+
+1. **Pre-Validation First**: Before running any database inserts, `filterAndValidateWorkItemHierarchy` inspects the entire batch. If any item has an invalid hierarchy and `skipInvalidHierarchy` is `false`, an exception is thrown immediately:
+   - **Zero work items** are inserted into the database.
+   - **Zero executed action cards** are emitted to the UI.
+2. **Transactional Compensation & Rollback**: If an unhandled database error occurs during batch creation:
+   - All newly created items in that batch are deleted (`prisma.work_items.deleteMany`).
+   - Any modified items have their original database states restored.
+   - `toolActionsPerformed` is reset to its initial state.
+
+---
+
+### Interactive User Choice Protocol
+
+When an attached file contains hierarchy errors:
+
+1. Alice explains the specific error (e.g. _"Issue 'Login Bug' cannot have children because Issue/Bug is a leaf item"_).
+2. Alice explicitly confirms that **zero work items were created**.
+3. Alice presents two clear choices:
+   - **Option 1**: Re-parse the file after the user corrects and re-uploads it.
+   - **Option 2**: Proceed with importing only the valid items (skipping the invalid hierarchy).
+4. Alice **strictly pauses and waits** for the user's reply before executing any action.
+
+---
+
+### Incremental Backlog Synchronization Protocol
+
+When a user re-uploads an updated document (JSON, CSV, TSV, Markdown, or Outline) to modify work items:
+
+1. **Identity Resolution**: Alice matches each file item against existing project items by `jira_issue_key`, database `id`, or normalized `title`.
+2. **In-Place Field Updates**: For existing matches, Alice updates fields (`title`, `description`, `priority`, `story_points`, `type`, etc.) and sets the new `parent_id` (applying hierarchy reorganizations) via `prisma.work_items.update`.
+3. **New Item Additions**: Items not present in the project are created and linked to their resolved parents.
+4. **Omission Handling (`removeDeleted`)**: If requested by the user, items omitted from the file can be archived/deleted.
+5. **Interactive UI Feedback**: Each modified item generates an `update_work_item` executed action card with a clickable direct link, and each removed item generates a `delete_work_item` action card.
+6. **Instant Cache Eviction**: `revalidateAfterChatActions` evicts client and server cache tags for work items, sprint boards, and project registries.
+
+---
+
+### Attachment Signed URL Auto-Refresh Lifecycle
+
+Supabase Storage signed URLs expire after 1 hour (3600 seconds). The chat system guarantees uninterrupted access:
+
+- **Database Timestamp**: `chat_attachments` records `expires_at` (a `timestamptz` column).
+- **Backend Hydration Auto-Refresh**: When loading a conversation's history (`loadChatHistory` in `chat.service.ts`), attachments whose `expiresAt` is within 60 seconds of expiration (or already expired) have their signed URLs automatically regenerated via `chatAttachmentsRepository.getAttachmentById(att.id)`. The updated URLs and expiration timestamps are persisted in both the database and the stored markdown history.
+- **Frontend On-Demand Auto-Refresh**: The `ChatAttachmentLink` component (`chat-attachment-link.tsx`) tracks URL expiration in the browser. If an attachment is expired, or if clicking the link returns a 403/400 response from storage, it calls `GET /api/v1/chat/attachments/:id` to obtain fresh signed preview and download URLs on the fly before navigating.
 
 ---
 
@@ -227,8 +316,9 @@ Index on `user_id`. RLS policies exist for owner access; the API uses the
 | `status`          | `RecordStatus` | `'active'` or `'archived'` (soft-delete)        |
 | `created_at`      | `timestamptz`  | Created timestamp                               |
 | `updated_at`      | `timestamptz`  | Updated timestamp                               |
+| `expires_at`      | `timestamptz?` | Signed URL expiration timestamp                 |
 
-Indexes on `user_id` and `conversation_id`. Managed exclusively via Prisma (`await prisma.chat_attachments......`).
+Indexes on `user_id` and `conversation_id`. Managed exclusively via Prisma (`await prisma.chat_attachments......`). Auto-refreshes signed URLs when expired.
 
 ### Storage Buckets — Supabase Storage
 
@@ -313,6 +403,7 @@ No active chat model rows → `POST /api/chat` returns **400** with a configurat
 | Chat API routes & auth                 | `apps/api/tests/chat/chat.route.test.ts`                    | Covered |
 | Web client upload & mutations          | `apps/web/tests/chat/chat-attachments.client.test.ts`       | Covered |
 | Web attachment tiles rendering         | `apps/web/tests/chat/chat-attachment-tiles.test.tsx`        | Covered |
+| Web attachment link auto-refresh       | `apps/web/tests/chat/chat-attachment-link.test.tsx`         | Covered |
 | Web full chat client UI                | `apps/web/tests/chat/chat-client.test.tsx`                  | Covered |
 
 Run tests via:
@@ -350,3 +441,5 @@ For full step-by-step instructions for testing from the browser UI (with sample 
 3. Full-page `/chat` + navbar launcher drawer on dashboard shell
 4. Action cards after successful mutations
 5. Document attachment processing (upload-session, Supabase Storage direct upload, JSON/CSV parsing, deduplication engine, batch work item import, and strict project scope guardrails)
+6. Universal multi-format parser (TSV, Markdown tables, Indented text outlines, YAML), signed URL auto-refresh & expiration handling, atomic hierarchy pre-validation & user choice protocol, incremental backlog synchronization (`updateExisting`), and action card expansion (`update_work_item`).
+7. Comprehensive hierarchy & field change detection across all attachment formats with mandatory conversational reporting, strict work-item deletion disallowance via chat (omitted items retained in backlog with user notice), and resilient chat provider network error handling with retry and exponential backoff.

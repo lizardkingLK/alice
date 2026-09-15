@@ -13,3 +13,8 @@ export function toDateOnly(value: string | null | undefined): string | null {
   }
   return value.split('T')[0] ?? null;
 }
+
+/** Return current Date in UTC */
+export function utcNow(): Date {
+  return new Date();
+}

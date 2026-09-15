@@ -97,6 +97,22 @@ function workItemActionLabel(entity: ActionItem['entity']): ReactNode {
   );
 }
 
+function workItemUpdatedActionLabel(entity: ActionItem['entity']): ReactNode {
+  return (
+    <>
+      Work Item Updated: <strong>{entity.key}</strong> - {entity.title}
+    </>
+  );
+}
+
+function workItemDeletedActionLabel(entity: ActionItem['entity']): ReactNode {
+  return (
+    <>
+      Work Item Removed: <strong>{entity.key}</strong> - {entity.title}
+    </>
+  );
+}
+
 /** Renders a single chat “executed action” card, or null for unknown types. */
 export function ChatExecutedActionCard({
   action,
@@ -133,6 +149,28 @@ export function ChatExecutedActionCard({
           linkLabel="View Details"
         >
           {workItemActionLabel(action.entity)}
+        </ActionCardFrame>
+      );
+    case 'update_work_item':
+      return (
+        <ActionCardFrame
+          tone="blue"
+          icon={ClipboardPenIcon}
+          href={`/work-items/${action.entity.id}`}
+          linkLabel="View Details"
+        >
+          {workItemUpdatedActionLabel(action.entity)}
+        </ActionCardFrame>
+      );
+    case 'delete_work_item':
+      return (
+        <ActionCardFrame
+          tone="emerald"
+          icon={ClipboardPenIcon}
+          href="/work-items"
+          linkLabel="View Work Items"
+        >
+          {workItemDeletedActionLabel(action.entity)}
         </ActionCardFrame>
       );
     case 'batch_import_work_items':

@@ -65,6 +65,86 @@ Fix Auth Token Expiry Bug,bug,high,2,Refresh tokens automatically before session
 Refactor Navigation Header,story,low,1,Modernize responsive navigation menu bar
 ```
 
+### File 3: `test-work-items-hierarchy.csv`
+
+```csv
+Issue key,Type,Title,Parent,Priority,StoryPoints,Description,Department
+CORE-1,Epic,Core Platform Architecture,,highest,,Core infrastructure overhaul,Platform
+CORE-2,Feature,Authentication Service,CORE-1,high,5,NextAuth and JWT refresh pipeline,Security
+CORE-3,Story,Login Endpoint,CORE-2,high,3,User login API route and session minting,Security
+CORE-4,Task,Write Unit Tests for Login,CORE-3,medium,2,Vitest test cases covering all error paths,Security
+```
+
+### File 4: `test-work-items-outline.txt`
+
+```text
+- [Epic] Mobile App Release (Key: MOB-1, Priority: High)
+  - [Feature] Push Notifications (Key: MOB-2)
+    - [Story] FCM Integration (Key: MOB-3, Points: 5): Set up Firebase Cloud Messaging pipeline
+      - [Task] Unit Testing (Points: 2): Write tests for payload deserialization
+```
+
+### File 5: `test-invalid-hierarchy.json` (Tests Atomic Validation)
+
+```json
+{
+  "items": [
+    {
+      "temporaryIdentifier": "item-epic",
+      "title": "Alpha Platform Overhaul",
+      "type": "epic",
+      "priority": "high"
+    },
+    {
+      "temporaryIdentifier": "item-issue",
+      "title": "Critical Security Vulnerability",
+      "type": "issue",
+      "parentReference": "item-epic"
+    },
+    {
+      "temporaryIdentifier": "item-invalid-child",
+      "title": "Subtask Under Issue",
+      "type": "task",
+      "parentReference": "item-issue",
+      "description": "Invalid: Issues and Bugs are leaf items and cannot have child tasks!"
+    }
+  ]
+}
+```
+
+### File 6: `test-work-items-updated.json` (Tests Backlog Sync & Hierarchy Re-linking)
+
+```json
+{
+  "items": [
+    {
+      "temporaryIdentifier": "item-1",
+      "title": "Implement User Notification Center",
+      "type": "story",
+      "priority": "highest",
+      "description": "UPDATED: In-app real-time notifications with push support.",
+      "storyPoints": 8
+    },
+    {
+      "temporaryIdentifier": "item-2",
+      "title": "Fix Profile Picture Upload Bug",
+      "type": "bug",
+      "priority": "highest",
+      "description": "UPDATED: Resolved memory leak during sharp image resizing.",
+      "storyPoints": 3
+    },
+    {
+      "temporaryIdentifier": "item-4-new",
+      "title": "Add Webhook Dispatcher",
+      "type": "story",
+      "priority": "high",
+      "description": "NEW: Dispatch webhooks on work item state transitions.",
+      "storyPoints": 5
+    }
+  ]
+}
+```
+
 ---
 
 ## 3. Test Cases & Step-by-Step Instructions
@@ -203,3 +283,154 @@ Refactor Navigation Header,story,low,1,Modernize responsive navigation menu bar
    - Full message history reloads.
    - All past attachment tiles render above messages with valid signed download links.
    - Action cards render with working navigation links.
+
+---
+
+### Test Case 9: Expired Signed URL Auto-Refresh for Chat Attachments
+
+**Goal**: Verify that when an attachment's 1-hour signed URL expires, clicking the attachment automatically refreshes the URL without error or re-upload.
+
+#### Option A: Natural Expiration Test
+
+1. Upload an attachment in any Alice chat conversation (e.g. `test-work-items.json`) and send the message.
+2. Leave the tab open or return after 1 hour (when the original signed URL token expires).
+3. Open DevTools (`F12` → **Network** tab).
+4. Click on the attachment chip in the conversation thread.
+5. **Expected Behavior**:
+   - A `GET /api/v1/chat/attachments/<attachmentId>` request is fired.
+   - The response status is `200` with fresh `previewUrl`, `downloadUrl`, and updated `expiresAt`.
+   - The file opens/downloads successfully in a new tab without any Supabase `Invalid or expired token` error.
+
+#### Option B: Fast Simulation via Database (No 1-hour wait needed)
+
+1. Upload an attachment in chat and send the message.
+2. Note the attachment or conversation.
+3. Run a quick SQL query in Supabase / Postgres to simulate expiration:
+   ```sql
+   UPDATE "chat_attachments"
+   SET "expires_at" = NOW() - INTERVAL '2 hours'
+   WHERE "id" = (
+     SELECT "id" FROM "chat_attachments"
+     ORDER BY "created_at" DESC
+     LIMIT 1
+   );
+   ```
+4. In the browser, refresh the conversation or click the attachment chip.
+5. **Expected Behavior**:
+   - The attachment link auto-refreshes.
+   - Check the DB: `expires_at` is updated to 1 hour in the future (`NOW() + INTERVAL '1 hour'`).
+   - The file opens seamlessly without error.
+
+---
+
+### Test Case 10: Multi-Format Attachment Ingestion
+
+**Goal**: Verify that Alice parses diverse document formats (CSV with hierarchy, Indented Outlines, Markdown tables, YAML) into structured work item trees.
+
+#### Sub-case 10A: CSV with Hierarchy & Dynamic Columns
+
+1. Attach `test-work-items-hierarchy.csv` via the paperclip icon.
+2. Ask Alice:
+   > _"Import the work items from this CSV into project [Project Key]."_
+3. **Expected Behavior**:
+   - Alice executes `parse_work_item_attachment` and preserves the 4-level parent links (`CORE-1` &rarr; `CORE-2` &rarr; `CORE-3` &rarr; `CORE-4`).
+   - Dynamic columns (e.g. `Department`) are extracted into `dynamicFields`.
+   - Executed action cards reflect the hierarchy with deep links to created items.
+
+#### Sub-case 10B: Indented Text Outline
+
+1. Attach `test-work-items-outline.txt`.
+2. Ask Alice:
+   > _"Inspect and import this outline into project [Project Key]."_
+3. **Expected Behavior**:
+   - Alice parses indentation levels into `Epic` &rarr; `Feature` &rarr; `Story` &rarr; `Task`.
+   - Explicit bracketed tags (`[Epic]`, `[Feature]`) override default types.
+   - Story points and priorities annotated in parentheses are extracted properly.
+
+---
+
+### Test Case 11: Atomic Pre-Validation & Interactive User Choice Protocol
+
+**Goal**: Verify that when a file contains hierarchy violations, ZERO items are written to the database, ZERO action cards appear, and Alice strictly pauses for user confirmation before taking any action.
+
+1. Attach `test-invalid-hierarchy.json` (contains an `Issue` with a child `Task`).
+2. Ask Alice:
+   > _"Import work items from this file into project [Project Key]."_
+3. **Inspect the Behavior**:
+   - Alice invokes `batch_import_work_items` with `skipInvalidHierarchy: false`.
+   - The pre-validator detects that `Critical Security Vulnerability` (type `Issue`) has a child task (`Subtask Under Issue`).
+   - **Database Check**: Run `SELECT count(*) FROM work_items WHERE project_id = '<projectId>';` — verify that **zero items were inserted**.
+   - **UI Check**: Verify that **zero executed action cards** appear under Alice's reply.
+   - **Alice's Prompt Response**:
+     - Explains the exact hierarchy rule violation (_"Issue / Bug is a leaf item and cannot have child items"_).
+     - Confirms that 0 items were created.
+     - Presents the two standard choices:
+       > 1. _Re-parse the file after you update and re-upload it, or_
+       > 2. _Proceed with importing only the valid items (skipping the invalid hierarchy)?_
+       >    _Let me know how you'd like to proceed._
+     - **Critically**: Alice stops and does NOT automatically proceed with Option 2 without user permission.
+4. **Test Choice Confirmation**:
+   - Reply to Alice:
+     > _"Proceed with option 2."_
+   - **Expected Behavior**:
+     - Alice now calls `batch_import_work_items` with `skipInvalidHierarchy: true`.
+     - `Alpha Platform Overhaul` (Epic) and `Critical Security Vulnerability` (Issue) are created.
+     - `Subtask Under Issue` is skipped and reported in the summary as pruned.
+     - Executed action cards appear only for the 2 valid items.
+
+---
+
+### Test Case 12: Incremental Backlog Synchronization & Hierarchy Change Reporting
+
+**Goal**: Verify that re-uploading an updated file (JSON, CSV, TSV, Markdown tables, text outlines, YAML) synchronizes field changes and hierarchy moves in-place without creating duplicate work items, and explicitly reports hierarchy changes in Alice's message.
+
+1. First, import `test-work-items-hierarchy.csv` into your project (creates `CORE-1` Epic, `CORE-2` Feature, `CORE-3` Story, and `CORE-4` Task).
+2. Create an updated file where the hierarchy is modified (e.g., `CORE-4` Task is moved directly under `CORE-2` Feature instead of `CORE-3` Story, and priority of `CORE-3` is changed to `highest`).
+3. Attach the updated file and ask Alice:
+   > _"Update the work items in project [Project Key] based on this updated file."_
+4. **Expected Behavior**:
+   - Alice runs duplicate/hierarchy analysis via `check_work_item_duplicates`.
+   - **MANDATORY Conversational Hierarchy Reporting**:
+     - Alice's message **explicitly states that the hierarchy was changed** based on the updated file changes.
+     - Specifically lists each item whose parent was modified (e.g., `"- Write Unit Tests for Login hierarchy updated: parent changed to Authentication Service"`).
+     - Alice never claims modified hierarchy items are "Exact duplicates (no change)".
+   - **Database Check**:
+     - The existing item record in `work_items` is updated in-place (`await prisma.work_items.update`).
+     - `parent_id` is updated to point to the new parent.
+     - No duplicate rows are created.
+   - **Action Cards**:
+     - Shows `Work Item Updated: ...` for modified items.
+
+---
+
+### Test Case 13: Work Item Deletion Disallowed via Chat
+
+**Goal**: Verify that deleting work items is strictly prohibited via Alice chat, and that omitted items from updated files are preserved in the project backlog with an explicit user notice.
+
+1. In the same project, edit the file to delete or omit one of the parent work items and its children.
+2. Re-upload the file and ask Alice:
+   > _"Update the work items from this file in project [Project Key]."_
+3. **Expected Behavior**:
+   - Alice processes the file and detects omitted existing project items.
+   - **Strict No-Deletion Guardrail**:
+     - Zero work items are deleted or archived in the database.
+     - Alice explicitly includes a notice in her conversational response:
+       > _"Note: Deletion of work items is not allowed via Alice chat. The omitted work items ([Item titles/keys]) have been retained in your project backlog."_
+   - **Database Check**:
+     - Run `SELECT id, title, record_status FROM work_items WHERE project_id = '<projectId>';`
+     - Verify that all previously existing items remain `record_status = 'active'`.
+   - Any valid items present in the file are updated or created as usual.
+
+---
+
+### Test Case 14: Network Resilience & Provider Retry Handling
+
+**Goal**: Verify that transient network connection drops or fetch errors are caught gracefully, logged, retried up to 3 times with exponential backoff, and return clear user-facing messages rather than crashing with unhandled `fetch failed`.
+
+1. If an intermittent network error or socket drop occurs during model communication:
+   - The backend catches the error in `fetchChatProviderWithRetries`.
+   - Logs diagnostics to `alice-chatbot-errors.log`.
+   - Retries the fetch after 2s, 4s, etc.
+   - If network remains down, returns a clean user-facing error message:
+     > _"Alice AI service is temporarily unavailable due to a network connection issue (...). Please try again in a few moments."_
+   - The chat conversation remains intact and healthy.

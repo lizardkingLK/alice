@@ -263,6 +263,8 @@ export {
   ChatTurnRoleEnum,
   postChatMessageSchema,
   uploadedChatAttachmentResultSchema,
+  WorkItemDeduplicationActionEnum,
+  WorkItemDeduplicationMatchStatusEnum,
   CHAT_CONVERSATION_POSTGREST_SELECT,
   type ChatAttachmentSignedUrls,
   type ChatAttachmentUploadSession,
@@ -278,4 +280,6 @@ export {
   type FinalizeChatAttachmentUploadBody,
   type PostChatMessageBody,
   type UploadedChatAttachmentResult,
+  type WorkItemDeduplicationItemResult,
+  type WorkItemDeduplicationReport,
 } from './chat.js';

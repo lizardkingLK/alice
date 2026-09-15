@@ -2,12 +2,13 @@
 
 In-app **Alice** (sidebar label: **Alice**) backed by **Google Gemini**
 function-calling. Helps authenticated users list and create projects, sprints,
-and work items through natural language.
+and work items through natural language, with multi-format attachment parsing,
+atomic imports, backlog synchronization, and signed URL auto-refresh.
 
-| Document                                   | Description                                                                                                 | Status      |
-| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ----------- |
-| [AI_CHATBOT.md](./AI_CHATBOT.md)           | Complete architecture, 9 Gemini tools, document attachments, storage, deduplication, and auth configuration | Implemented |
-| [USER_TEST_GUIDE.md](./USER_TEST_GUIDE.md) | Step-by-step user testing guide with copy-pasteable sample JSON & CSV files                                 | Implemented |
+| Document                                   | Description                                                                                                                                                                          | Status      |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| [AI_CHATBOT.md](./AI_CHATBOT.md)           | Architecture, 9 Gemini tools, multi-format attachments (JSON, CSV, TSV, MD, Outline, YAML), atomic imports, backlog sync, signed URL auto-refresh, storage, and deduplication engine | Implemented |
+| [USER_TEST_GUIDE.md](./USER_TEST_GUIDE.md) | Step-by-step end-to-end testing guide with copy-pasteable sample JSON, CSV, Markdown, and Outline files, atomic failure handling, and backlog updates                                | Implemented |
 
 Quick links:
 

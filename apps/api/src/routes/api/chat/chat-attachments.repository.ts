@@ -15,12 +15,11 @@ import {
   DEFAULT_SIGNED_URL_SECONDS,
   removeStorageObjects,
   sanitizeFileName,
-  signedUrlExpiresAt,
   storageObjectExists,
   storageObjectExistsStrict,
   uploadToStorage,
 } from '../../../lib/file-helpers';
-import { sanitizeLog } from './chat.utils';
+import { sanitizeLog, utcNow } from './chat.utils';
 
 export { detectChatAttachmentFileType } from '@repo/types';
 
@@ -49,8 +48,6 @@ export interface FinalizeChatAttachmentUploadParameters {
   readonly fileSize: number;
   readonly mimeType: string;
 }
-
-const TWENTY_FOUR_HOURS_IN_SECONDS = 24 * 60 * 60;
 
 export class ChatAttachmentsRepository {
   private isBucketVerified = false;
@@ -110,7 +107,7 @@ export class ChatAttachmentsRepository {
     }
 
     const safeFileName = sanitizeFileName(fileName);
-    const storagePath = `chat-attachments/${userId}/${Date.now()}-${safeFileName}`;
+    const storagePath = `chat-attachments/${userId}/${utcNow().getTime()}-${safeFileName}`;
 
     const { signedUrl, token } = await createSignedStorageUploadUrl(
       bucketName,
@@ -160,10 +157,13 @@ export class ChatAttachmentsRepository {
       throw new Error('Uploaded file not found in storage');
     }
 
+    const expiresInSeconds = DEFAULT_SIGNED_URL_SECONDS;
+    const expiresAt = new Date(utcNow().getTime() + expiresInSeconds * 1000);
+
     const url = await createSignedStorageUrl(
       bucketName,
       storagePath,
-      TWENTY_FOUR_HOURS_IN_SECONDS
+      expiresInSeconds
     );
 
     const detectedFileType = detectChatAttachmentFileType(fileName, mimeType);
@@ -177,6 +177,7 @@ export class ChatAttachmentsRepository {
         file_size: fileSize,
         mime_type: mimeType || 'application/octet-stream',
         status: 'active',
+        expires_at: expiresAt,
       },
     });
 
@@ -188,6 +189,7 @@ export class ChatAttachmentsRepository {
       storagePath: attachmentRecord.storage_path,
       url,
       fileType: detectedFileType,
+      expiresAt: expiresAt.toISOString(),
     };
 
     return {
@@ -217,7 +219,7 @@ export class ChatAttachmentsRepository {
     }
 
     const safeFileName = sanitizeFileName(fileName);
-    const storagePath = `chat-attachments/${userId}/${Date.now()}-${safeFileName}`;
+    const storagePath = `chat-attachments/${userId}/${utcNow().getTime()}-${safeFileName}`;
 
     const uploaded = await uploadToStorage({
       bucket: bucketName,
@@ -227,10 +229,13 @@ export class ChatAttachmentsRepository {
     });
 
     try {
+      const expiresInSeconds = DEFAULT_SIGNED_URL_SECONDS;
+      const expiresAt = new Date(utcNow().getTime() + expiresInSeconds * 1000);
+
       const url = await createSignedStorageUrl(
         bucketName,
         uploaded.path,
-        TWENTY_FOUR_HOURS_IN_SECONDS
+        expiresInSeconds
       );
 
       const detectedFileType = detectChatAttachmentFileType(fileName, mimeType);
@@ -244,6 +249,7 @@ export class ChatAttachmentsRepository {
           file_size: fileSize,
           mime_type: mimeType || 'application/octet-stream',
           status: 'active',
+          expires_at: expiresAt,
         },
       });
 
@@ -255,6 +261,7 @@ export class ChatAttachmentsRepository {
         storagePath: attachmentRecord.storage_path,
         url,
         fileType: detectedFileType,
+        expiresAt: expiresAt.toISOString(),
       };
     } catch (error) {
       await removeStorageObjects(bucketName, [uploaded.path]);
@@ -264,7 +271,7 @@ export class ChatAttachmentsRepository {
 
   async getAttachmentById(
     attachmentId: string
-  ): Promise<ChatAttachmentWire | null> {
+  ): Promise<(ChatAttachmentWire & ChatAttachmentSignedUrls) | null> {
     const attachmentRecord = await prisma.chat_attachments.findUnique({
       where: { id: attachmentId },
     });
@@ -282,11 +289,29 @@ export class ChatAttachmentsRepository {
       return null;
     }
 
-    const url = await createSignedStorageUrl(
-      bucketName,
-      attachmentRecord.storage_path,
-      TWENTY_FOUR_HOURS_IN_SECONDS
-    );
+    const expiresInSeconds = DEFAULT_SIGNED_URL_SECONDS;
+    const isExpired =
+      !attachmentRecord.expires_at ||
+      attachmentRecord.expires_at.getTime() <= utcNow().getTime() + 60_000;
+
+    let expiresAt = attachmentRecord.expires_at;
+    if (isExpired || !expiresAt) {
+      expiresAt = new Date(utcNow().getTime() + expiresInSeconds * 1000);
+      await prisma.chat_attachments.update({
+        where: { id: attachmentId },
+        data: { expires_at: expiresAt },
+      });
+    }
+
+    const [previewUrl, downloadUrl] = await Promise.all([
+      createSignedStorageUrl(bucketName, attachmentRecord.storage_path, {
+        expiresInSeconds,
+      }),
+      createSignedStorageUrl(bucketName, attachmentRecord.storage_path, {
+        expiresInSeconds,
+        download: sanitizeFileName(attachmentRecord.file_name),
+      }),
+    ]);
 
     const detectedFileType = detectChatAttachmentFileType(
       attachmentRecord.file_name,
@@ -299,8 +324,11 @@ export class ChatAttachmentsRepository {
       fileSize: attachmentRecord.file_size,
       mimeType: attachmentRecord.mime_type,
       storagePath: attachmentRecord.storage_path,
-      url,
+      url: previewUrl,
+      previewUrl,
+      downloadUrl,
       fileType: detectedFileType,
+      expiresAt: expiresAt.toISOString(),
     };
   }
 
@@ -325,6 +353,7 @@ export class ChatAttachmentsRepository {
     }
 
     const expiresInSeconds = DEFAULT_SIGNED_URL_SECONDS;
+    const expiresAt = new Date(utcNow().getTime() + expiresInSeconds * 1000);
     const [previewUrl, downloadUrl] = await Promise.all([
       createSignedStorageUrl(bucketName, attachmentRecord.storage_path, {
         expiresInSeconds,
@@ -335,10 +364,15 @@ export class ChatAttachmentsRepository {
       }),
     ]);
 
+    await prisma.chat_attachments.update({
+      where: { id: attachmentId },
+      data: { expires_at: expiresAt },
+    });
+
     return {
       previewUrl,
       downloadUrl,
-      expiresAt: signedUrlExpiresAt(expiresInSeconds),
+      expiresAt: expiresAt.toISOString(),
     };
   }
 
@@ -386,14 +420,29 @@ export class ChatAttachmentsRepository {
     });
 
     const bucketName = await this.ensureChatAttachmentsBucketExists();
+    const expiresInSeconds = DEFAULT_SIGNED_URL_SECONDS;
 
     return Promise.all(
       records.map(async (record) => {
+        const isExpired =
+          !record.expires_at ||
+          record.expires_at.getTime() <= utcNow().getTime() + 60_000;
+
+        let expiresAt = record.expires_at;
+        if (isExpired || !expiresAt) {
+          expiresAt = new Date(utcNow().getTime() + expiresInSeconds * 1000);
+          await prisma.chat_attachments.update({
+            where: { id: record.id },
+            data: { expires_at: expiresAt },
+          });
+        }
+
         const url = await createSignedStorageUrl(
           bucketName,
           record.storage_path,
-          TWENTY_FOUR_HOURS_IN_SECONDS
+          expiresInSeconds
         );
+
         return {
           id: record.id,
           fileName: record.file_name,
@@ -405,6 +454,7 @@ export class ChatAttachmentsRepository {
             record.file_name,
             record.mime_type
           ),
+          expiresAt: expiresAt.toISOString(),
         };
       })
     );
