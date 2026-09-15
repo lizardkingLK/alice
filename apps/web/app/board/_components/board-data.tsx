@@ -17,6 +17,63 @@ import {
   parseWorkItemFilters,
   type RawSearchParams,
 } from '@/lib/search-params';
+import { createClient } from '@/lib/supabase/server';
+import { boardConfigSchema, type BoardColumn } from '@repo/types/api/v1';
+import { DEFAULT_BOARD_COLUMNS } from '@/app/work-items/_helpers/work-item-status';
+
+async function getProjectWorkflowConfig(
+  projectId: string
+): Promise<{ columns: BoardColumn[]; usesCustomBoardConfig: boolean }> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('projects')
+      .select('workflow_config')
+      .eq('id', projectId)
+      .single();
+
+    if (error) {
+      console.error(
+        `error. failed to fetch workflow_config for project ${projectId}:`,
+        error.message
+      );
+      return {
+        columns: DEFAULT_BOARD_COLUMNS,
+        usesCustomBoardConfig: false,
+      };
+    }
+
+    if (!data.workflow_config) {
+      return {
+        columns: DEFAULT_BOARD_COLUMNS,
+        usesCustomBoardConfig: false,
+      };
+    }
+
+    const parsed = boardConfigSchema.safeParse(data.workflow_config);
+    if (parsed.success) {
+      return { columns: parsed.data.columns, usesCustomBoardConfig: true };
+    }
+
+    console.warn(
+      `[BoardData] Invalid workflow_config for project ${projectId}`,
+      parsed.error
+    );
+    return {
+      columns: DEFAULT_BOARD_COLUMNS,
+      usesCustomBoardConfig: false,
+    };
+  } catch (error) {
+    console.error(
+      `error. failed to fetch workflow_config for project ${projectId}:`,
+      error
+    );
+    return {
+      columns: DEFAULT_BOARD_COLUMNS,
+      usesCustomBoardConfig: false,
+    };
+  }
+}
 
 type BoardDataProps = {
   readonly searchParams: Promise<RawSearchParams>;
@@ -74,6 +131,10 @@ export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
     ? await getSuggestedBoardDefaults(dbUser, activeProjects, sprints)
     : null;
 
+  const boardConfig = scopedProjectId
+    ? await getProjectWorkflowConfig(scopedProjectId)
+    : { columns: DEFAULT_BOARD_COLUMNS, usesCustomBoardConfig: false };
+
   const needsClientBootstrap = needsWorkspaceProjectBootstrap(
     resolvedSearchParams.project
   );
@@ -81,6 +142,8 @@ export async function BoardData({ searchParams }: Readonly<BoardDataProps>) {
 
   return (
     <BoardWorkspace
+      boardColumns={boardConfig.columns}
+      usesCustomBoardConfig={boardConfig.usesCustomBoardConfig}
       initialWorkItems={boardItems}
       projects={activeProjects}
       sprints={sprints}

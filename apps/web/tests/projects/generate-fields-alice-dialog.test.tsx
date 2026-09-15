@@ -24,10 +24,14 @@ describe('GenerateFieldsAliceDialog component', () => {
 
     expect(screen.getByText('Generate Fields with Alice')).toBeInTheDocument();
     expect(
-      screen.getByText(/Describe your team's custom fields in natural language/i)
+      screen.getByText(
+        /Describe your team's custom fields in natural language/i
+      )
     ).toBeInTheDocument();
     expect(
-      screen.getByPlaceholderText(/e\.g\. I want every work item in this project to have a MoSCoW rating/i)
+      screen.getByPlaceholderText(
+        /e\.g\. I want every work item in this project to have a MoSCoW rating/i
+      )
     ).toBeInTheDocument();
     expect(
       screen.getByText(/\+ MoSCoW rating and acceptance criteria/i)
@@ -63,7 +67,9 @@ describe('GenerateFieldsAliceDialog component', () => {
       />
     );
 
-    const generateBtn = screen.getByRole('button', { name: /generate schema/i });
+    const generateBtn = screen.getByRole('button', {
+      name: /generate schema/i,
+    });
     expect(generateBtn).toBeDisabled();
   });
 
@@ -98,7 +104,9 @@ describe('GenerateFieldsAliceDialog component', () => {
       target: { value: 'Add MoSCoW rating field' },
     });
 
-    const generateBtn = screen.getByRole('button', { name: /generate schema/i });
+    const generateBtn = screen.getByRole('button', {
+      name: /generate schema/i,
+    });
     expect(generateBtn).not.toBeDisabled();
     fireEvent.click(generateBtn);
 
@@ -134,7 +142,9 @@ describe('GenerateFieldsAliceDialog component', () => {
       target: { value: 'Create custom fields' },
     });
 
-    const generateBtn = screen.getByRole('button', { name: /generate schema/i });
+    const generateBtn = screen.getByRole('button', {
+      name: /generate schema/i,
+    });
     fireEvent.click(generateBtn);
 
     await waitFor(() => {

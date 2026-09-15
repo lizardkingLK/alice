@@ -21,7 +21,10 @@ import {
   type WorkItemUpdateBody,
 } from './workItems.schemas';
 import type { DbWorkItem } from './workItems.repository';
-import { coalescePatchField } from './workItems.patch-utils';
+import {
+  coalescePatchField,
+  resolveBoardColumnPatchValue,
+} from './workItems.patch-utils';
 import { listWorkItemsQuerySchema, parseWorkItemLabels } from '@repo/types';
 
 type PatchUpdateWorkItemPayload = z.infer<typeof patchWorkItemBodySchema>;
@@ -35,12 +38,19 @@ function buildWorkItemPayload(
   parsedData: PatchUpdateWorkItemPayload,
   existingWorkItem: DbWorkItem
 ) {
+  const projectId = coalescePatchField(
+    parsedData.project_id,
+    existingWorkItem.project_id
+  );
+  const status = coalescePatchField(parsedData.status, existingWorkItem.status);
+  const boardColumnWasProvided = Object.hasOwn(parsedData, 'board_column_id');
+  const workflowContextChanged =
+    projectId !== existingWorkItem.project_id ||
+    status !== existingWorkItem.status;
+
   return {
     title: coalescePatchField(parsedData.title, existingWorkItem.title),
-    project_id: coalescePatchField(
-      parsedData.project_id,
-      existingWorkItem.project_id
-    ),
+    project_id: projectId,
     type: coalescePatchField(parsedData.type, existingWorkItem.type),
     priority: coalescePatchField(
       parsedData.priority,
@@ -58,7 +68,13 @@ function buildWorkItemPayload(
       parsedData.due_date,
       existingWorkItem.due_date
     ),
-    status: coalescePatchField(parsedData.status, existingWorkItem.status),
+    status,
+    board_column_id: resolveBoardColumnPatchValue({
+      wasProvided: boardColumnWasProvided,
+      value: parsedData.board_column_id,
+      currentValue: existingWorkItem.board_column_id,
+      workflowContextChanged,
+    }),
     sprint_id: coalescePatchField(
       parsedData.sprint_id,
       existingWorkItem.sprint_id

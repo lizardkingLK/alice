@@ -151,7 +151,9 @@ describe('work-item-dynamic-fields helpers', () => {
         content: [{ type: 'paragraph' }],
       });
       // Verify immutability
-      expect(initialDoc.attrs.dynamicFields).not.toHaveProperty('businessValue');
+      expect(initialDoc.attrs.dynamicFields).not.toHaveProperty(
+        'businessValue'
+      );
     });
 
     it('deletes field from dynamicFields when value is null, undefined, or empty string', () => {
@@ -167,25 +169,41 @@ describe('work-item-dynamic-fields helpers', () => {
       };
 
       // Set to null
-      const resNull = patchWorkItemDynamicFields(docWithField, 'moscowRating', null);
+      const resNull = patchWorkItemDynamicFields(
+        docWithField,
+        'moscowRating',
+        null
+      );
       expect((resNull.attrs as Record<string, unknown>).dynamicFields).toEqual({
         acceptanceCriteria: 'Criteria text',
         businessValue: 50,
       });
 
       // Set to undefined
-      const resUndef = patchWorkItemDynamicFields(docWithField, 'acceptanceCriteria', undefined);
-      expect((resUndef.attrs as Record<string, unknown>).dynamicFields).toEqual({
-        moscowRating: 'Must',
-        businessValue: 50,
-      });
+      const resUndef = patchWorkItemDynamicFields(
+        docWithField,
+        'acceptanceCriteria',
+        undefined
+      );
+      expect((resUndef.attrs as Record<string, unknown>).dynamicFields).toEqual(
+        {
+          moscowRating: 'Must',
+          businessValue: 50,
+        }
+      );
 
       // Set to empty string
-      const resEmpty = patchWorkItemDynamicFields(docWithField, 'businessValue', '');
-      expect((resEmpty.attrs as Record<string, unknown>).dynamicFields).toEqual({
-        moscowRating: 'Must',
-        acceptanceCriteria: 'Criteria text',
-      });
+      const resEmpty = patchWorkItemDynamicFields(
+        docWithField,
+        'businessValue',
+        ''
+      );
+      expect((resEmpty.attrs as Record<string, unknown>).dynamicFields).toEqual(
+        {
+          moscowRating: 'Must',
+          acceptanceCriteria: 'Criteria text',
+        }
+      );
     });
   });
 
@@ -236,13 +254,19 @@ describe('work-item-dynamic-fields helpers', () => {
         },
       ];
 
-      const moscowMatches = findWorkItemsWithFieldValues(workItems, 'moscowRating');
+      const moscowMatches = findWorkItemsWithFieldValues(
+        workItems,
+        'moscowRating'
+      );
       expect(moscowMatches).toEqual([
         { id: 'item-1', title: 'Implement OAuth', value: 'Must' },
         { id: 'item-2', title: 'Refactor DB Queries', value: 'Should' },
       ]);
 
-      const bvMatches = findWorkItemsWithFieldValues(workItems, 'businessValue');
+      const bvMatches = findWorkItemsWithFieldValues(
+        workItems,
+        'businessValue'
+      );
       expect(bvMatches).toEqual([
         { id: 'item-2', title: 'Refactor DB Queries', value: '80' },
         { id: 'item-3', title: 'Update Documentation', value: '30' },

@@ -302,10 +302,7 @@ describe('WorkItemSidebar Dynamic Fields', () => {
 describe('SafeDynamicFieldsSection & Graceful Degradation', () => {
   it('returns null gracefully when schema is malformed or invalid JSON object', () => {
     const { container: c1 } = render(
-      <SafeDynamicFieldsSection
-        schema="not an object"
-        values={{}}
-      />
+      <SafeDynamicFieldsSection schema="not an object" values={{}} />
     );
     expect(c1.firstChild).toBeNull();
 
@@ -318,16 +315,15 @@ describe('SafeDynamicFieldsSection & Graceful Degradation', () => {
     expect(c2.firstChild).toBeNull();
 
     const { container: c3 } = render(
-      <SafeDynamicFieldsSection
-        schema={{ type: 'array' }}
-        values={{}}
-      />
+      <SafeDynamicFieldsSection schema={{ type: 'array' }} values={{}} />
     );
     expect(c3.firstChild).toBeNull();
   });
 
   it('renders DynamicFieldsErrorNotice when DynamicFieldsErrorBoundary catches an error', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
 
     function ExplodingComponent(): React.ReactNode {
       throw new Error('Explosion during field rendering');
