@@ -454,8 +454,10 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
 });
 
 describe('ProjectFieldsWorkspace component', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    const { apiFetch } = await import('@/lib/api/api-fetch.reads.use.client');
+    vi.mocked(apiFetch).mockResolvedValue({ workItems: [] });
   });
 
   it('renders heading, description, and action buttons', () => {
@@ -690,7 +692,7 @@ describe('ProjectFieldsWorkspace component', () => {
 
   it('displays warning popup with OK and Cancel when unselecting a template with work item values', async () => {
     const { apiFetch } = await import('@/lib/api/api-fetch.reads.use.client');
-    vi.mocked(apiFetch).mockResolvedValueOnce({
+    const workItemsResponse = {
       workItems: [
         {
           id: 'wi-1',
@@ -705,7 +707,9 @@ describe('ProjectFieldsWorkspace component', () => {
           },
         },
       ],
-    } as never);
+    };
+    const fetchPromise = Promise.resolve(workItemsResponse);
+    vi.mocked(apiFetch).mockReturnValue(fetchPromise as never);
 
     render(
       <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
@@ -715,7 +719,10 @@ describe('ProjectFieldsWorkspace component', () => {
     fireEvent.click(screen.getByRole('button', { name: /load template/i }));
     expect(screen.getByText('Load Field Templates')).toBeInTheDocument();
 
-    // Wait for work items to be fetched
+    // Wait for work-item fetch to settle into dialog state before unselecting
+    await act(async () => {
+      await fetchPromise;
+    });
     await waitFor(() => {
       expect(apiFetch).toHaveBeenCalled();
     });
@@ -727,9 +734,11 @@ describe('ProjectFieldsWorkspace component', () => {
     fireEvent.click(moscowCard);
 
     // Warning confirmation popup should appear
-    expect(
-      screen.getByText('Remove Field Template: MoSCoW Rating')
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText('Remove Field Template: MoSCoW Rating')
+      ).toBeInTheDocument();
+    });
     expect(
       screen.getByText(/work item values will be removed under this template/i)
     ).toBeInTheDocument();
@@ -770,7 +779,7 @@ describe('ProjectFieldsWorkspace component', () => {
 
   it('displays consolidated warning popup when clicking Deselect All on templates with work item values', async () => {
     const { apiFetch } = await import('@/lib/api/api-fetch.reads.use.client');
-    vi.mocked(apiFetch).mockResolvedValueOnce({
+    const workItemsResponse = {
       workItems: [
         {
           id: 'wi-10',
@@ -785,13 +794,20 @@ describe('ProjectFieldsWorkspace component', () => {
           },
         },
       ],
-    } as never);
+    };
+    const fetchPromise = Promise.resolve(workItemsResponse);
+    vi.mocked(apiFetch).mockReturnValue(fetchPromise as never);
 
     render(
       <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
     );
 
     fireEvent.click(screen.getByRole('button', { name: /load template/i }));
+
+    // Ensure fetched work items are applied before Clear Selection
+    await act(async () => {
+      await fetchPromise;
+    });
     await waitFor(() => {
       expect(apiFetch).toHaveBeenCalled();
     });
@@ -802,7 +818,9 @@ describe('ProjectFieldsWorkspace component', () => {
     fireEvent.click(clearSelectionBtn);
 
     // Consolidated warning popup appears
-    expect(screen.getByText('Remove Field Templates')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Remove Field Templates')).toBeInTheDocument();
+    });
     expect(
       screen.getByText(
         /work item values will be removed under these templates/i
