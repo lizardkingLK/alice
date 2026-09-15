@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
   render,
   screen,
@@ -11,12 +11,18 @@ import { ProjectDetailsWorkspace } from '@/app/projects/_components/project-deta
 import { ProjectFieldsWorkspace } from '@/app/projects/_components/project-details/project-fields-workspace';
 import type { Project } from '@/app/projects/_services/projects.mutations.client';
 
+const { mockPush, mockRouterRefresh } = vi.hoisted(() => ({
+  mockPush: vi.fn(),
+  mockRouterRefresh: vi.fn(),
+}));
+
+let searchParamsValue = new URLSearchParams();
+
 vi.mock('next/navigation', () => {
-  let searchParamsValue = new URLSearchParams();
   return {
     useRouter: () => ({
-      push: vi.fn(),
-      refresh: vi.fn(),
+      push: mockPush,
+      refresh: mockRouterRefresh,
     }),
     usePathname: () => '/projects/project-1',
     useSearchParams: () => searchParamsValue,
@@ -145,6 +151,11 @@ describe('parseProjectDetailsTab', () => {
 });
 
 describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
+  beforeEach(() => {
+    searchParamsValue = new URLSearchParams();
+    mockPush.mockClear();
+  });
+
   it('renders all navigation options including role-gated Sprints for managers', () => {
     render(
       <ProjectDetailsWorkspace
@@ -289,9 +300,164 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
     expect(screen.getByTestId('project-summary-banner')).toBeInTheDocument();
     expect(screen.getByTestId('project-details-tab')).toBeInTheDocument();
   });
+
+  it('updates query param via router.push when clicking sidebar tabs', () => {
+    render(
+      <ProjectDetailsWorkspace
+        project={mockProject}
+        members={[]}
+        allUsers={[]}
+        currentUserId="user-manager-1"
+        currentUserRole="manager"
+        workItems={{
+          initialWorkItems: [],
+          totalCount: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+          search: '',
+          typeFilter: '',
+          assigneeFilter: '',
+          sprintFilter: '',
+          listView: 'flat',
+          tab: 'active',
+        }}
+        teams={{
+          items: [],
+          totalCount: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+          search: '',
+          status: 'active',
+        }}
+        sprints={{
+          sprints: [],
+          pagination: { page: 1, limit: 10, totalCount: 0, totalPages: 1 },
+          filterTab: 'active',
+          search: '',
+        }}
+      />
+    );
+
+    // Clicking Fields tab pushes ?tab=fields
+    fireEvent.click(screen.getByRole('button', { name: /fields/i }));
+    expect(mockPush).toHaveBeenCalledWith('/projects/project-1?tab=fields');
+
+    // Clicking Work Items tab pushes ?tab=work-items
+    fireEvent.click(screen.getByRole('button', { name: /work items/i }));
+    expect(mockPush).toHaveBeenCalledWith('/projects/project-1?tab=work-items');
+
+    // Clicking Members tab pushes ?tab=members
+    fireEvent.click(screen.getByRole('button', { name: /members/i }));
+    expect(mockPush).toHaveBeenCalledWith('/projects/project-1?tab=members');
+
+    // Clicking Details tab removes tab query param
+    fireEvent.click(screen.getByRole('button', { name: /details/i }));
+    expect(mockPush).toHaveBeenCalledWith('/projects/project-1');
+  });
+
+  it('isolates ProjectSummaryBanner strictly to details tab (absent on fields and work-items)', () => {
+    // When on fields tab
+    searchParamsValue = new URLSearchParams('tab=fields');
+
+    const { rerender } = render(
+      <ProjectDetailsWorkspace
+        project={mockProject}
+        members={[]}
+        allUsers={[]}
+        currentUserId="user-manager-1"
+        currentUserRole="manager"
+        workItems={{
+          initialWorkItems: [],
+          totalCount: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+          search: '',
+          typeFilter: '',
+          assigneeFilter: '',
+          sprintFilter: '',
+          listView: 'flat',
+          tab: 'active',
+        }}
+        teams={{
+          items: [],
+          totalCount: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+          search: '',
+          status: 'active',
+        }}
+        sprints={{
+          sprints: [],
+          pagination: { page: 1, limit: 10, totalCount: 0, totalPages: 1 },
+          filterTab: 'active',
+          search: '',
+        }}
+      />
+    );
+
+    expect(
+      screen.queryByTestId('project-summary-banner')
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /dynamic fields/i })
+    ).toBeInTheDocument();
+
+    // When on work-items tab
+    searchParamsValue = new URLSearchParams('tab=work-items');
+    rerender(
+      <ProjectDetailsWorkspace
+        project={mockProject}
+        members={[]}
+        allUsers={[]}
+        currentUserId="user-manager-1"
+        currentUserRole="manager"
+        workItems={{
+          initialWorkItems: [],
+          totalCount: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+          search: '',
+          typeFilter: '',
+          assigneeFilter: '',
+          sprintFilter: '',
+          listView: 'flat',
+          tab: 'active',
+        }}
+        teams={{
+          items: [],
+          totalCount: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+          search: '',
+          status: 'active',
+        }}
+        sprints={{
+          sprints: [],
+          pagination: { page: 1, limit: 10, totalCount: 0, totalPages: 1 },
+          filterTab: 'active',
+          search: '',
+        }}
+      />
+    );
+
+    expect(
+      screen.queryByTestId('project-summary-banner')
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId('work-items-workspace')).toBeInTheDocument();
+  });
 });
 
 describe('ProjectFieldsWorkspace component', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('renders heading, description, and action buttons', () => {
     render(
       <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
@@ -345,6 +511,30 @@ describe('ProjectFieldsWorkspace component', () => {
     expect(
       screen.getByRole('button', { name: /load template/i })
     ).toBeDisabled();
+  });
+
+  it('initializes LoadTemplateDialog with 0 templates selected for unconfigured projects', () => {
+    render(
+      <ProjectFieldsWorkspace
+        project={{ ...mockProject, attributes_config: null }}
+        isManagerOrAdmin={true}
+      />
+    );
+
+    // Open Load Template dialog
+    fireEvent.click(screen.getByRole('button', { name: /load template/i }));
+    expect(screen.getByText('Load Field Templates')).toBeInTheDocument();
+
+    // Initial zero-selection default rule: exactly 0 templates selected
+    expect(screen.getByText('0 selected')).toBeInTheDocument();
+    expect(screen.getByText('8 available templates')).toBeInTheDocument();
+
+    // Add Selected button is disabled when nothing selected
+    const addBtn = screen.getByRole('button', { name: /add selected/i });
+    expect(addBtn).toBeDisabled();
+
+    // No templates show the "Added" badge
+    expect(screen.queryByText('Added')).not.toBeInTheDocument();
   });
 
   it('allows loading template via dialog and validates syntax', () => {
@@ -576,6 +766,150 @@ describe('ProjectFieldsWorkspace component', () => {
     fireEvent.click(addBtn);
 
     expect(screen.getByText(/removed 1 template field/i)).toBeInTheDocument();
+  });
+
+  it('displays consolidated warning popup when clicking Deselect All on templates with work item values', async () => {
+    const { apiFetch } = await import('@/lib/api/api-fetch.reads.use.client');
+    vi.mocked(apiFetch).mockResolvedValueOnce({
+      workItems: [
+        {
+          id: 'wi-10',
+          title: 'PROJ-10 (Setup DB)',
+          description: {
+            type: 'doc',
+            attrs: {
+              dynamicFields: {
+                moscowRating: 'Must',
+              },
+            },
+          },
+        },
+      ],
+    } as never);
+
+    render(
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /load template/i }));
+    await waitFor(() => {
+      expect(apiFetch).toHaveBeenCalled();
+    });
+
+    const clearSelectionBtn = screen.getByRole('button', {
+      name: /clear selection/i,
+    });
+    fireEvent.click(clearSelectionBtn);
+
+    // Consolidated warning popup appears
+    expect(screen.getByText('Remove Field Templates')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /work item values will be removed under these templates/i
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByText(/PROJ-10 \(Setup DB\): Must/)).toBeInTheDocument();
+
+    // Cancel keeps selection
+    const cancelBtn = screen.getByRole('button', { name: /cancel/i });
+    fireEvent.click(cancelBtn);
+    expect(
+      screen.queryByText('Remove Field Templates')
+    ).not.toBeInTheDocument();
+  });
+
+  it('blocks save and displays JSON Syntax Error dialog when schema JSON is malformed', async () => {
+    const { updateProjectFieldsConfig } =
+      await import('@/app/projects/_services/projects.mutations.client');
+    vi.mocked(updateProjectFieldsConfig).mockClear();
+
+    render(
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
+    );
+
+    const textarea = screen.getByLabelText(/json schema specification/i);
+
+    // Introduce invalid JSON syntax
+    const malformedJson =
+      '{\n  "title": "Invalid Schema",\n  "properties": {\n';
+    fireEvent.change(textarea, { target: { value: malformedJson } });
+
+    // Save Changes button is disabled due to syntax error
+    const saveBtn = screen.getByRole('button', { name: /save changes/i });
+    expect(saveBtn).toBeDisabled();
+
+    // Clicking Validate catches the syntax error and displays JSON Syntax Error dialog
+    const validateBtn = screen.getByRole('button', { name: /validate/i });
+    fireEvent.click(validateBtn);
+
+    expect(screen.getByText('JSON Syntax Error')).toBeInTheDocument();
+    expect(
+      screen.getByText(/the schema contains invalid json syntax/i)
+    ).toBeInTheDocument();
+
+    expect(updateProjectFieldsConfig).not.toHaveBeenCalled();
+
+    // Close error dialog
+    const okBtn = screen.getByRole('button', { name: /ok/i });
+    fireEvent.click(okBtn);
+
+    // Clicking Beautify also catches syntax error and opens dialog
+    const beautifyBtn = screen.getByRole('button', { name: /beautify/i });
+    fireEvent.click(beautifyBtn);
+    expect(screen.getByText('JSON Syntax Error')).toBeInTheDocument();
+  });
+
+  it('blocks save when schema violates ProjectFieldsConfigSchema specification', async () => {
+    const { updateProjectFieldsConfig } =
+      await import('@/app/projects/_services/projects.mutations.client');
+    vi.mocked(updateProjectFieldsConfig).mockClear();
+
+    render(
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
+    );
+
+    const textarea = screen.getByLabelText(/json schema specification/i);
+
+    // Valid JSON object (parseError is null so Save button is enabled), but invalid schema
+    const invalidSchema = JSON.stringify(
+      {
+        type: 'object',
+        properties: {
+          invalidField$: {
+            type: 'string',
+            title: 'Field with invalid identifier',
+          },
+        },
+      },
+      null,
+      2
+    );
+    fireEvent.change(textarea, { target: { value: invalidSchema } });
+
+    // Save button is enabled because JSON object is syntactically valid
+    const saveBtn = screen.getByRole('button', { name: /save changes/i });
+    expect(saveBtn).not.toBeDisabled();
+    fireEvent.click(saveBtn);
+
+    // Error dialog appears with Schema Validation Error
+    expect(screen.getByText('Schema Validation Error')).toBeInTheDocument();
+    expect(updateProjectFieldsConfig).not.toHaveBeenCalled();
+  });
+
+  it('handles Tab key press in editor textarea by inserting 2 spaces', () => {
+    render(
+      <ProjectFieldsWorkspace project={mockProject} isManagerOrAdmin={true} />
+    );
+
+    const textarea = screen.getByLabelText<HTMLTextAreaElement>(
+      /json schema specification/i
+    );
+    textarea.selectionStart = 1;
+    textarea.selectionEnd = 1;
+
+    fireEvent.keyDown(textarea, { key: 'Tab' });
+
+    expect(textarea.value).toContain('  ');
   });
 
   it('renders footer buttons clearly with proper spacing on the right side', () => {

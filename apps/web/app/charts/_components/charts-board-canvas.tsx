@@ -5,9 +5,7 @@ import ReactGridLayout, {
   type Layout,
   type LayoutItem,
 } from 'react-grid-layout';
-import { Button } from '@repo/ui/components/ui/button';
 import { Skeleton } from '@repo/ui/components/ui/skeleton';
-import { RotateCcw } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { ChartsWidgetCard } from '@/app/charts/_components/charts-widget-card';
 import {
@@ -28,6 +26,7 @@ import {
 } from '@/app/charts/_components/charts-widget-catalog';
 import type {
   ChartBoardWidgetInstance,
+  ChartPieVariant,
   ChartWidgetTypeId,
   ChartWidgetViewMode,
 } from '@/app/charts/_components/charts.types';
@@ -118,9 +117,16 @@ function findOpenLayoutSlot(
 export function nextChartLayoutItem(
   instanceId: string,
   existing: LayoutItem[],
-  typeId: ChartWidgetTypeId = 'chart'
+  typeId: ChartWidgetTypeId = 'chart',
+  sizeOverride?: Partial<Pick<LayoutItem, 'w' | 'h' | 'minW' | 'minH'>>
 ): LayoutItem {
-  const size = layoutSizeForWidgetType(typeId);
+  const defaults = layoutSizeForWidgetType(typeId);
+  const size = {
+    w: sizeOverride?.w ?? defaults.w,
+    h: sizeOverride?.h ?? defaults.h,
+    minW: sizeOverride?.minW ?? defaults.minW,
+    minH: sizeOverride?.minH ?? defaults.minH,
+  };
   const cols = DASHBOARD_GRID_CONFIG.cols;
   const slot = findOpenLayoutSlot(existing, size, cols);
 
@@ -235,7 +241,14 @@ type ChartsBoardCanvasProps = {
     // eslint-disable-next-line no-unused-vars
     focusedStatus?: WorkItemStatus | null
   ) => void;
-  readonly onClearBoard: () => void;
+  readonly onPieVariantChange: (
+    // eslint-disable-next-line no-unused-vars
+    instanceId: string,
+    // eslint-disable-next-line no-unused-vars
+    pieVariant: ChartPieVariant
+  ) => void;
+  readonly focusWidgetId?: string;
+  readonly onFocusWidgetDismiss?: () => void;
   /** False until localStorage board JSON has been read on the client. */
   readonly hydrated?: boolean;
   readonly className?: string;
@@ -250,7 +263,9 @@ export function ChartsBoardCanvas({
   onRenameWidget,
   onFiltersChange,
   onViewModeChange,
-  onClearBoard,
+  onPieVariantChange,
+  focusWidgetId,
+  onFocusWidgetDismiss,
   hydrated = true,
   className,
 }: Readonly<ChartsBoardCanvasProps>) {
@@ -291,25 +306,6 @@ export function ChartsBoardCanvas({
         className
       )}
     >
-      {!isEmpty ? (
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
-          <p className="text-muted-foreground text-xs">
-            Hold the grip to drag widgets. Resize from the bottom-right corner.
-            Press Esc to cancel a drag.
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="cursor-pointer"
-            onClick={onClearBoard}
-          >
-            <RotateCcw className="size-3.5" />
-            Clear board
-          </Button>
-        </div>
-      ) : null}
-
       <div
         ref={containerRef}
         className={cn(
@@ -330,6 +326,9 @@ export function ChartsBoardCanvas({
           onRenameWidget={onRenameWidget}
           onFiltersChange={onFiltersChange}
           onViewModeChange={onViewModeChange}
+          onPieVariantChange={onPieVariantChange}
+          focusWidgetId={focusWidgetId}
+          onFocusWidgetDismiss={onFocusWidgetDismiss}
         />
       </div>
     </div>
@@ -345,10 +344,6 @@ function ChartsBoardCanvasSkeleton({
       aria-busy="true"
       aria-label="Loading chart board"
     >
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
-        <Skeleton className="h-4 w-72 max-w-full" />
-        <Skeleton className="h-8 w-28" />
-      </div>
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <Skeleton className="min-h-56 rounded-xl" />
         <Skeleton className="min-h-56 rounded-xl" />
@@ -370,6 +365,9 @@ function BoardCanvasBody({
   onRenameWidget,
   onFiltersChange,
   onViewModeChange,
+  onPieVariantChange,
+  focusWidgetId,
+  onFocusWidgetDismiss,
 }: Readonly<{
   isEmpty: boolean;
   mounted: boolean;
@@ -404,6 +402,14 @@ function BoardCanvasBody({
     // eslint-disable-next-line no-unused-vars
     focusedStatus?: WorkItemStatus | null
   ) => void;
+  onPieVariantChange: (
+    // eslint-disable-next-line no-unused-vars
+    instanceId: string,
+    // eslint-disable-next-line no-unused-vars
+    pieVariant: ChartPieVariant
+  ) => void;
+  focusWidgetId?: string;
+  onFocusWidgetDismiss?: () => void;
 }>) {
   const { dragSessionKey, onDragStart, onDragStop } =
     useCancelGridDragOnEscape(onLayoutChange);
@@ -411,7 +417,7 @@ function BoardCanvasBody({
   if (isEmpty) {
     return (
       <div className="border-border text-muted-foreground flex min-h-0 flex-1 flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-6 py-12 text-center text-sm">
-        <p>No widgets yet. Use Add Widget to place charts on this board.</p>
+        <p>No widgets yet. Use + to add a widget to this workspace.</p>
       </div>
     );
   }
@@ -453,6 +459,7 @@ function BoardCanvasBody({
               Icon={meta?.icon}
               filters={entry?.instance.filters}
               viewMode={entry?.instance.viewMode}
+              pieVariant={entry?.instance.pieVariant}
               focusedStatus={entry?.instance.focusedStatus}
               onRemove={() => onRemoveWidget(item.i)}
               onDuplicate={() => onDuplicateWidget(item.i)}
@@ -463,6 +470,15 @@ function BoardCanvasBody({
               onViewModeChange={(nextMode, nextFocused) =>
                 onViewModeChange(item.i, nextMode, nextFocused)
               }
+              onPieVariantChange={(nextVariant) =>
+                onPieVariantChange(item.i, nextVariant)
+              }
+              initialConfigOpen={focusWidgetId === item.i}
+              onConfigOpenChange={(open) => {
+                if (!open && focusWidgetId === item.i) {
+                  onFocusWidgetDismiss?.();
+                }
+              }}
             />
           </div>
         );
@@ -476,7 +492,8 @@ export function appendChartWidget(
   typeId: ChartWidgetTypeId,
   instances: ChartBoardWidgetInstance[],
   layout: LayoutItem[],
-  title?: string
+  title?: string,
+  sizeOverride?: Partial<Pick<LayoutItem, 'w' | 'h' | 'minW' | 'minH'>>
 ): {
   instances: ChartBoardWidgetInstance[];
   layout: LayoutItem[];
@@ -492,7 +509,7 @@ export function appendChartWidget(
   ];
   const nextLayout = [
     ...layout,
-    nextChartLayoutItem(instanceId, layout, typeId),
+    nextChartLayoutItem(instanceId, layout, typeId, sizeOverride),
   ];
   return { instances: nextInstances, layout: nextLayout };
 }
@@ -525,12 +542,25 @@ export function duplicateChartWidget(
   }
 
   const catalogTitle = chartWidgetById(source.typeId)?.title;
-  const baseTitle = source.title?.trim() || catalogTitle || 'Widget';
+  const displayFallback =
+    source.typeId === 'chart' ? 'Tasks by status' : catalogTitle;
+  const baseTitle = source.title?.trim() || displayFallback || 'Widget';
+  const sourceLayout = layout.find((item) => item.i === instanceId);
+  const sizeOverride = sourceLayout
+    ? {
+        w: sourceLayout.w,
+        h: sourceLayout.h,
+        minW: sourceLayout.minW,
+        minH: sourceLayout.minH,
+      }
+    : undefined;
+
   const next = appendChartWidget(
     source.typeId,
     instances,
     layout,
-    `${baseTitle} (copy)`
+    `${baseTitle} (copy)`,
+    sizeOverride
   );
   const copiedId = next.instances.at(-1)?.instanceId;
   if (!copiedId) {
@@ -553,6 +583,13 @@ export function duplicateChartWidget(
       nextInstances
     );
   }
+  if (source.pieVariant && source.pieVariant !== 'donut') {
+    nextInstances = updateChartWidgetPieVariant(
+      copiedId,
+      source.pieVariant,
+      nextInstances
+    );
+  }
   return { ...next, instances: nextInstances };
 }
 
@@ -572,11 +609,12 @@ function withInstanceFields(
   patch: Partial<
     Pick<
       ChartBoardWidgetInstance,
-      'title' | 'filters' | 'viewMode' | 'focusedStatus'
+      'title' | 'filters' | 'viewMode' | 'focusedStatus' | 'pieVariant'
     >
   > & {
     readonly clearFilters?: boolean;
     readonly clearFocusedStatus?: boolean;
+    readonly clearPieVariant?: boolean;
   }
 ): ChartBoardWidgetInstance {
   const next: ChartBoardWidgetInstance = {
@@ -605,6 +643,13 @@ function withInstanceFields(
     const focusedStatus = patch.focusedStatus ?? item.focusedStatus;
     if (focusedStatus) {
       Object.assign(next, { focusedStatus });
+    }
+  }
+
+  if (!patch.clearPieVariant) {
+    const pieVariant = patch.pieVariant ?? item.pieVariant;
+    if (pieVariant && pieVariant !== 'donut') {
+      Object.assign(next, { pieVariant });
     }
   }
 
@@ -642,5 +687,21 @@ export function updateChartWidgetViewMode(
       focusedStatus: focusedStatus ?? undefined,
       clearFocusedStatus: focusedStatus == null,
     });
+  });
+}
+
+export function updateChartWidgetPieVariant(
+  instanceId: string,
+  pieVariant: ChartPieVariant,
+  instances: ChartBoardWidgetInstance[]
+): ChartBoardWidgetInstance[] {
+  return instances.map((item) => {
+    if (item.instanceId !== instanceId) {
+      return item;
+    }
+    if (pieVariant === 'donut') {
+      return withInstanceFields(item, { clearPieVariant: true });
+    }
+    return withInstanceFields(item, { pieVariant });
   });
 }

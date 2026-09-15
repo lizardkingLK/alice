@@ -1385,6 +1385,7 @@ export type Database = {
         | "sprint"
         | "due_date"
         | "view_shared"
+        | "chart_shared"
         | "chat_processed"
         | "access_request"
       ProjectStatus: "active" | "archived"
@@ -1547,6 +1548,7 @@ export const Constants = {
         "sprint",
         "due_date",
         "view_shared",
+        "chart_shared",
         "chat_processed",
         "access_request",
       ],

@@ -155,9 +155,15 @@
           "minimumRole": "member"
         },
         {
+          "path": "user-guide/projects/dynamic-fields-testing.md",
+          "title": "Dynamic fields user testing",
+          "order": 8,
+          "minimumRole": "member"
+        },
+        {
           "path": "features/projects/PROJECT_DETAILS_AND_DYNAMIC_FIELDS.md",
           "title": "Technical spec: Dynamic fields & sidebar",
-          "order": 8,
+          "order": 9,
           "minimumRole": "member"
         }
       ]

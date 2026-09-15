@@ -8,6 +8,7 @@ import { DashboardHeader } from './dashboard-header';
 import { DashboardSidebar } from './dashboard-sidebar';
 import type { DashboardBreadcrumbOverride } from './dashboard-breadcrumb';
 import { ChatLauncherProvider } from '@/app/chat/_components/chat-launcher';
+import { DashboardRuntimeProviders } from './dashboard-runtime-providers';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
 
@@ -96,17 +97,19 @@ export async function DashboardShell({
             currentUserImageUrl={dbUser?.profile_picture}
             currentUserRole={dbUser?.role}
           >
-            {stickyHeader ? (
-              <>
-                {header}
-                <div className={scrollRegionClass}>{body}</div>
-              </>
-            ) : (
-              <div className={scrollRegionClass}>
-                {header}
-                {body}
-              </div>
-            )}
+            <DashboardRuntimeProviders>
+              {stickyHeader ? (
+                <>
+                  {header}
+                  <div className={scrollRegionClass}>{body}</div>
+                </>
+              ) : (
+                <div className={scrollRegionClass}>
+                  {header}
+                  {body}
+                </div>
+              )}
+            </DashboardRuntimeProviders>
           </ChatLauncherProvider>
         </SidebarInset>
       </SidebarProvider>
