@@ -19,7 +19,7 @@ import {
   storageObjectExistsStrict,
   uploadToStorage,
 } from '../../../lib/file-helpers';
-import { sanitizeLog } from './chat.utils';
+import { sanitizeLog, utcNow } from './chat.utils';
 
 export { detectChatAttachmentFileType } from '@repo/types';
 
@@ -107,7 +107,7 @@ export class ChatAttachmentsRepository {
     }
 
     const safeFileName = sanitizeFileName(fileName);
-    const storagePath = `chat-attachments/${userId}/${Date.now()}-${safeFileName}`;
+    const storagePath = `chat-attachments/${userId}/${utcNow().getTime()}-${safeFileName}`;
 
     const { signedUrl, token } = await createSignedStorageUploadUrl(
       bucketName,
@@ -158,7 +158,7 @@ export class ChatAttachmentsRepository {
     }
 
     const expiresInSeconds = DEFAULT_SIGNED_URL_SECONDS;
-    const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
+    const expiresAt = new Date(utcNow().getTime() + expiresInSeconds * 1000);
 
     const url = await createSignedStorageUrl(
       bucketName,
@@ -219,7 +219,7 @@ export class ChatAttachmentsRepository {
     }
 
     const safeFileName = sanitizeFileName(fileName);
-    const storagePath = `chat-attachments/${userId}/${Date.now()}-${safeFileName}`;
+    const storagePath = `chat-attachments/${userId}/${utcNow().getTime()}-${safeFileName}`;
 
     const uploaded = await uploadToStorage({
       bucket: bucketName,
@@ -230,7 +230,7 @@ export class ChatAttachmentsRepository {
 
     try {
       const expiresInSeconds = DEFAULT_SIGNED_URL_SECONDS;
-      const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
+      const expiresAt = new Date(utcNow().getTime() + expiresInSeconds * 1000);
 
       const url = await createSignedStorageUrl(
         bucketName,
@@ -292,11 +292,11 @@ export class ChatAttachmentsRepository {
     const expiresInSeconds = DEFAULT_SIGNED_URL_SECONDS;
     const isExpired =
       !attachmentRecord.expires_at ||
-      attachmentRecord.expires_at.getTime() <= Date.now() + 60_000;
+      attachmentRecord.expires_at.getTime() <= utcNow().getTime() + 60_000;
 
     let expiresAt = attachmentRecord.expires_at;
     if (isExpired || !expiresAt) {
-      expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
+      expiresAt = new Date(utcNow().getTime() + expiresInSeconds * 1000);
       await prisma.chat_attachments.update({
         where: { id: attachmentId },
         data: { expires_at: expiresAt },
@@ -353,7 +353,7 @@ export class ChatAttachmentsRepository {
     }
 
     const expiresInSeconds = DEFAULT_SIGNED_URL_SECONDS;
-    const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
+    const expiresAt = new Date(utcNow().getTime() + expiresInSeconds * 1000);
     const [previewUrl, downloadUrl] = await Promise.all([
       createSignedStorageUrl(bucketName, attachmentRecord.storage_path, {
         expiresInSeconds,
@@ -426,11 +426,11 @@ export class ChatAttachmentsRepository {
       records.map(async (record) => {
         const isExpired =
           !record.expires_at ||
-          record.expires_at.getTime() <= Date.now() + 60_000;
+          record.expires_at.getTime() <= utcNow().getTime() + 60_000;
 
         let expiresAt = record.expires_at;
         if (isExpired || !expiresAt) {
-          expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
+          expiresAt = new Date(utcNow().getTime() + expiresInSeconds * 1000);
           await prisma.chat_attachments.update({
             where: { id: record.id },
             data: { expires_at: expiresAt },
