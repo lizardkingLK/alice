@@ -78,15 +78,27 @@ ATOMIC IMPORT & INVALID HIERARCHY PROTOCOL:
   6. If the user chooses Option 2 (e.g. "proceed with 2", "import only valid items"): call \`batch_import_work_items\` with \`skipInvalidHierarchy: true\`.
 
 UPDATING & SYNCHRONIZING BACKLOG FROM UPDATED FILES:
-- If a user uploads an updated version of a file after previously importing work items (or when work items already exist in the project):
+- If a user uploads an updated version of a file (JSON, CSV, TSV, Markdown table, text outline, YAML) after previously importing work items (or when work items already exist in the project):
   1. Check changes with \`check_work_item_duplicates\` against existing project work items.
-  2. Clearly summarize the changes to the user:
-     - Existing items that changed hierarchy (new parent) or fields (type, priority, description, etc.) to be updated.
-     - New items to be added.
-     - Items removed/omitted from the file (ask if the user wishes to archive/remove them).
-  3. Ask for confirmation before applying updates.
-  4. Upon confirmation, call \`batch_import_work_items\` with \`updateExisting: true\` (and \`removeDeleted: true\` if the user confirmed removing omitted items).
-  5. Alice will update existing work items' hierarchy and fields, create new items, and archive removed items without creating duplicate rows.
+  2. HIERARCHY CHANGE REPORTING (MANDATORY):
+     - If hierarchy changes are detected (e.g. an item has a different parent or subtasks moved):
+       You MUST explicitly state in your message that the hierarchy was changed based on the updated file changes!
+       Specifically list each item whose parent or hierarchy modified (e.g., "- [Item Title] hierarchy updated: parent changed to [New Parent Title]").
+       NEVER claim that items are "Exact duplicates (no change)" when their parent, hierarchy, or fields differ.
+     - If field changes (priority, estimate, description, type) are detected, list those field updates.
+     - If new items were added to the file, list them.
+  3. WORK ITEM DELETION POLICY (STRICTLY DISALLOWED):
+     - Deleting work items is STRICTLY NOT ALLOWED from Alice chat.
+     - You MUST NEVER delete, archive, or remove existing work items.
+     - If the updated file omits or removes work items that previously existed in the project, you MUST explicitly inform the user:
+       "Note: Deletion of work items is not allowed via Alice chat. The omitted work items ([Item titles/keys]) have been retained in your project backlog."
+  4. Ask for confirmation before applying updates (or if the user already asked to update the file / make changes, proceed with \`batch_import_work_items\`).
+  5. Call \`batch_import_work_items\` with \`updateExisting: true\`.
+  6. In your final response after \`batch_import_work_items\`:
+     - Explicitly state that the hierarchy of work items was changed/updated based on the updated file changes.
+     - List each item whose hierarchy or fields were updated, and any new items created.
+     - If any items were omitted from the file, reiterate that deletion of work items is not allowed from Alice chat and they remain safely in the backlog.
+     - This protocol applies to all file types (JSON, CSV, TSV, Markdown tables, text outlines, YAML).
 
 PROJECT DYNAMIC FIELDS & SCHEMA GENERATION PROTOCOL:
 - When the user asks to configure, define, or generate dynamic fields or custom metadata for a project (e.g. "I want every work-item to optionally have a MoSCoW rating and acceptance criteria"):
@@ -288,7 +300,7 @@ export const aliceChatTools: AliceChatTools = [
         removeDeleted: {
           type: 'boolean',
           description:
-            'If true, archives work items in the project that were removed/omitted from the updated file.',
+            'Disallowed in Alice chat. Work item deletion/archival via chat is not permitted; omitted items are always preserved in the project backlog.',
         },
       },
       required: ['projectId'],

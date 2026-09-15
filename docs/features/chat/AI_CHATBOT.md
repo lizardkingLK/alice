@@ -28,7 +28,7 @@ Related:
 - Automatically parse attached documents into hierarchical and flat work item trees with custom dynamic fields (`parse_work_item_attachment`).
 - Run **duplicate checking and similarity analysis** against existing project items (`check_work_item_duplicates`).
 - Execute **atomic batch work item imports** with pre-validation, automatic DB rollback on failure, and interactive user choice protocol (`batch_import_work_items`).
-- Support **incremental backlog synchronization** on file re-upload: update existing items and parent links in place without creating duplicates (`updateExisting`, `removeDeleted`).
+- Support **incremental backlog synchronization** on file re-upload: update existing items and parent links in place without creating duplicates (`updateExisting`). Detect and explicitly report hierarchy changes in chat responses across all formats (JSON, CSV, TSV, Markdown, outlines, YAML). Enforce strict **no-deletion policy via chat**: omitted items are preserved in the project backlog with an informative user notice.
 - Enforce strict **project scope guardrails** keeping Alice dedicated solely to ALICE system operations.
 - Persist multi-turn conversations and attachment metadata per user (sidebar history on `/chat`).
 - Surface Alice from the dashboard **navbar** (between notifications and
@@ -441,4 +441,5 @@ For full step-by-step instructions for testing from the browser UI (with sample 
 3. Full-page `/chat` + navbar launcher drawer on dashboard shell
 4. Action cards after successful mutations
 5. Document attachment processing (upload-session, Supabase Storage direct upload, JSON/CSV parsing, deduplication engine, batch work item import, and strict project scope guardrails)
-6. Universal multi-format parser (TSV, Markdown tables, Indented text outlines, YAML), signed URL auto-refresh & expiration handling, atomic hierarchy pre-validation & user choice protocol, incremental backlog synchronization (`updateExisting`, `removeDeleted`), and action card expansion (`update_work_item`, `delete_work_item`).
+6. Universal multi-format parser (TSV, Markdown tables, Indented text outlines, YAML), signed URL auto-refresh & expiration handling, atomic hierarchy pre-validation & user choice protocol, incremental backlog synchronization (`updateExisting`), and action card expansion (`update_work_item`).
+7. Comprehensive hierarchy & field change detection across all attachment formats with mandatory conversational reporting, strict work-item deletion disallowance via chat (omitted items retained in backlog with user notice), and resilient chat provider network error handling with retry and exponential backoff.

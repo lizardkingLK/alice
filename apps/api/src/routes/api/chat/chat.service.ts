@@ -487,52 +487,22 @@ async function updateExistingWorkItemRecord(params: {
   });
 }
 
-async function archiveOmittedWorkItems(params: {
-  userId: string;
+function identifyOmittedWorkItems(params: {
   projectKey: string;
-  existingWorkItems: ExistingWorkItemMatch[];
+  existingWorkItems: ExistingWorkItemRecord[];
   matchedExistingIds: Set<string>;
-  toolActionsPerformed: ToolAction[];
-}): Promise<Array<{ id: string; key: string; title: string }>> {
-  const {
-    userId,
-    projectKey,
-    existingWorkItems,
-    matchedExistingIds,
-    toolActionsPerformed,
-  } = params;
-
+}): Array<{ id: string; key: string; title: string }> {
+  const { projectKey, existingWorkItems, matchedExistingIds } = params;
   const omittedExisting = existingWorkItems.filter(
     (e) => !matchedExistingIds.has(e.id)
   );
-  if (omittedExisting.length === 0) return [];
-
-  const omittedIds = omittedExisting.map((e) => e.id);
-  await prisma.work_items.updateMany({
-    where: { id: { in: omittedIds } },
-    data: {
-      record_status: 'archived',
-      ...prismaAuditUpdate(userId),
-    },
-  });
-
-  const removed: Array<{ id: string; key: string; title: string }> = [];
-  for (const omitted of omittedExisting) {
-    const summary = {
-      id: omitted.id,
-      key:
-        omitted.jira_issue_key ||
-        `${projectKey}-${omitted.id.slice(0, 4).toUpperCase()}`,
-      title: omitted.title,
-    };
-    removed.push(summary);
-    toolActionsPerformed.push({
-      type: 'delete_work_item',
-      entity: summary,
-    });
-  }
-
-  return removed;
+  return omittedExisting.map((omitted) => ({
+    id: omitted.id,
+    key:
+      omitted.jira_issue_key ||
+      `${projectKey}-${omitted.id.slice(0, 4).toUpperCase()}`,
+    title: omitted.title,
+  }));
 }
 
 async function rollbackBatchImport(params: {
@@ -595,6 +565,14 @@ interface ExistingWorkItemRecord {
   priority: string;
 }
 
+interface HierarchyUpdateSummary {
+  readonly id: string;
+  readonly key: string;
+  readonly title: string;
+  readonly oldParentTitle: string;
+  readonly newParentTitle: string;
+}
+
 interface BatchImportContext {
   userId: string;
   projectId: string;
@@ -608,6 +586,7 @@ interface BatchImportContext {
   idTypeMapping: Map<string, WorkItemType>;
   createdItems: Array<{ id: string; key: string; title: string }>;
   updatedItems: Array<{ id: string; key: string; title: string }>;
+  hierarchyUpdates: HierarchyUpdateSummary[];
   createdItemIds: string[];
   updatedOriginalStates: Array<{ id: string; parent_id: string | null }>;
   matchedExistingIds: Set<string>;
@@ -646,6 +625,7 @@ function createBatchImportContext(params: {
     idTypeMapping,
     createdItems: [],
     updatedItems: [],
+    hierarchyUpdates: [],
     createdItemIds: [],
     updatedOriginalStates: [],
     matchedExistingIds: new Set<string>(),
@@ -727,6 +707,22 @@ async function executeSingleNodeImport(
       type: 'update_work_item',
       entity: summary,
     });
+
+    if (existing.parent_id !== resolvedParentId) {
+      const oldParent = ctx.existingWorkItems.find(
+        (e) => e.id === existing.parent_id
+      );
+      const newParent = ctx.existingWorkItems.find(
+        (e) => e.id === resolvedParentId
+      );
+      ctx.hierarchyUpdates.push({
+        id: existing.id,
+        key: workItemKey,
+        title: summary.title,
+        oldParentTitle: oldParent ? oldParent.title : 'Root (No parent)',
+        newParentTitle: newParent ? newParent.title : 'Root (No parent)',
+      });
+    }
   } else {
     const created = await ctx.workItemService.createWorkItem(ctx.userId, {
       title: node.title,
@@ -1284,7 +1280,6 @@ export class ChatService {
     const sprintId = typeof args.sprintId === 'string' ? args.sprintId : null;
     const skipInvalidHierarchy = args.skipInvalidHierarchy === true;
     const updateExisting = args.updateExisting !== false;
-    const removeDeleted = args.removeDeleted === true;
 
     if (!projectId) {
       throw new Error('projectId is required');
@@ -1333,16 +1328,11 @@ export class ChatService {
     try {
       await processValidImportItems(validItems, ctx);
 
-      const removedItems =
-        removeDeleted && ctx.matchedExistingIds.size > 0
-          ? await archiveOmittedWorkItems({
-              userId,
-              projectKey,
-              existingWorkItems,
-              matchedExistingIds: ctx.matchedExistingIds,
-              toolActionsPerformed,
-            })
-          : [];
+      const omittedItems = identifyOmittedWorkItems({
+        projectKey,
+        existingWorkItems,
+        matchedExistingIds: ctx.matchedExistingIds,
+      });
 
       return {
         importedCount: ctx.createdItems.length,
@@ -1351,8 +1341,14 @@ export class ChatService {
         createdItems: ctx.createdItems,
         updatedCount: ctx.updatedItems.length,
         updatedItems: ctx.updatedItems,
-        removedCount: removedItems.length,
-        removedItems,
+        hierarchyUpdatedCount: ctx.hierarchyUpdates.length,
+        hierarchyUpdates: ctx.hierarchyUpdates,
+        omittedCount: omittedItems.length,
+        omittedItems,
+        omittedNotice:
+          omittedItems.length > 0
+            ? 'Deletion of work items is not allowed via Alice chat. The omitted work items remain in your project backlog.'
+            : undefined,
         skippedCount: ctx.skippedItems.length,
         skippedItems: ctx.skippedItems,
       };

@@ -122,4 +122,72 @@ describe('WorkItemDeduplicationAgent', () => {
       WorkItemDeduplicationActionEnum.Create
     );
   });
+
+  it('detects hierarchy updates and omitted items with deletion disallowed notice', async () => {
+    const existingWorkItems = [
+      {
+        id: 'parent-1',
+        title: 'Authentication Epic',
+        jira_issue_key: 'AUTH-1',
+        type: 'Epic',
+        status: 'InProgress',
+        parent_id: null,
+      },
+      {
+        id: 'child-1',
+        title: 'Login Page',
+        jira_issue_key: 'AUTH-2',
+        type: 'Story',
+        status: 'Open',
+        parent_id: 'parent-1',
+      },
+      {
+        id: 'child-2',
+        title: 'Forgot Password',
+        jira_issue_key: 'AUTH-3',
+        type: 'Story',
+        status: 'Open',
+        parent_id: 'parent-1',
+      },
+    ];
+
+    vi.mocked(prisma.work_items.findMany).mockResolvedValue(
+      existingWorkItems as never
+    );
+
+    // Incoming file has Login Page moved to Root (or changed parent) and omits Forgot Password
+    const incomingItems: ParsedWorkItemNode[] = [
+      {
+        temporaryIdentifier: 'epic-1',
+        title: 'Authentication Epic',
+        jiraIssueKey: 'AUTH-1',
+        type: WorkItemTypeEnum.Epic,
+        priority: 'medium',
+        description: null,
+      },
+      {
+        temporaryIdentifier: 'story-1',
+        title: 'Login Page',
+        jiraIssueKey: 'AUTH-2',
+        type: WorkItemTypeEnum.Story,
+        priority: 'medium',
+        description: null,
+        parentReference: undefined, // Moved to root
+      },
+    ];
+
+    const report = await agent.inspectAndDeduplicate(
+      'project-123',
+      incomingItems
+    );
+
+    expect(report.hierarchyChangedCount).toBe(1);
+    expect(report.hierarchyChanges).toHaveLength(1);
+    expect(report.hierarchyChanges?.[0]?.itemTitle).toBe('Login Page');
+    expect(report.omittedExistingCount).toBe(1);
+    expect(report.omittedExistingItems?.[0]?.title).toBe('Forgot Password');
+    expect(report.deletionDisallowedNotice).toContain(
+      'Deletion of work items is not allowed via Alice chat'
+    );
+  });
 });

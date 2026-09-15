@@ -1,7 +1,20 @@
 import { z } from 'zod';
 import { ChatRoles } from '../../chat.js';
-import { ChatAttachmentFileTypeEnum } from '../../chat-attachments.js';
+import {
+  ChatAttachmentFileTypeEnum,
+  WorkItemDeduplicationActionEnum,
+  WorkItemDeduplicationMatchStatusEnum,
+  type WorkItemDeduplicationItemResult,
+  type WorkItemDeduplicationReport,
+} from '../../chat-attachments.js';
 import { emptyToUndefined } from './query-preprocess.js';
+
+export {
+  WorkItemDeduplicationActionEnum,
+  WorkItemDeduplicationMatchStatusEnum,
+  type WorkItemDeduplicationItemResult,
+  type WorkItemDeduplicationReport,
+};
 
 /** PostgREST column list for chat conversation list reads (RSC + API parity). */
 export const CHAT_CONVERSATION_POSTGREST_SELECT =

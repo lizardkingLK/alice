@@ -598,7 +598,7 @@ describe('ChatService batch_import_work_items', () => {
     expect(toolActionsPerformed[1]?.type).toBe('update_work_item');
   });
 
-  it('archives removed items when removeDeleted is true', async () => {
+  it('identifies omitted items and retains them in the backlog without deleting via chat', async () => {
     vi.mocked(prisma.work_items.findMany).mockResolvedValue([
       {
         id: 'item-to-keep',
@@ -611,7 +611,7 @@ describe('ChatService batch_import_work_items', () => {
       } as never,
       {
         id: 'item-to-remove',
-        title: 'Remove Item',
+        title: 'Omitted Item',
         jira_issue_key: 'ALICE-2',
         type: WorkItemTypeEnum.Story,
         status: 'New',
@@ -620,7 +620,6 @@ describe('ChatService batch_import_work_items', () => {
       } as never,
     ]);
     vi.mocked(prisma.work_items.update).mockResolvedValue({} as never);
-    vi.mocked(prisma.work_items.updateMany).mockResolvedValue({ count: 1 });
 
     const chatService = new ChatService({
       chat: {} as never,
@@ -650,7 +649,6 @@ describe('ChatService batch_import_work_items', () => {
               projectId: 'proj-1',
               items,
               updateExisting: true,
-              removeDeleted: true,
             },
           },
         },
@@ -660,21 +658,110 @@ describe('ChatService batch_import_work_items', () => {
 
     const result = parts[0]?.functionResponse?.response?.result as {
       updatedCount: number;
-      removedCount: number;
-      removedItems: Array<{ id: string; key: string; title: string }>;
+      omittedCount: number;
+      omittedItems: Array<{ id: string; key: string; title: string }>;
+      omittedNotice?: string;
     };
 
     expect(result.updatedCount).toBe(1);
-    expect(result.removedCount).toBe(1);
-    expect(result.removedItems[0]?.title).toBe('Remove Item');
-    expect(prisma.work_items.updateMany).toHaveBeenCalledWith({
-      where: { id: { in: ['item-to-remove'] } },
-      data: expect.objectContaining({ record_status: 'archived' }),
-    });
-    expect(toolActionsPerformed).toContainEqual(
+    expect(result.omittedCount).toBe(1);
+    expect(result.omittedItems[0]?.title).toBe('Omitted Item');
+    expect(result.omittedNotice).toContain(
+      'Deletion of work items is not allowed via Alice chat'
+    );
+    expect(prisma.work_items.updateMany).not.toHaveBeenCalled();
+    expect(toolActionsPerformed).not.toContainEqual(
       expect.objectContaining({
         type: 'delete_work_item',
-        entity: expect.objectContaining({ id: 'item-to-remove' }),
+      })
+    );
+  });
+
+  it('updates hierarchy when parent changes in updated items during batch import', async () => {
+    vi.mocked(prisma.work_items.findMany).mockResolvedValue([
+      {
+        id: 'parent-1',
+        title: 'Parent Epic',
+        jira_issue_key: 'ALICE-1',
+        type: WorkItemTypeEnum.Epic,
+        status: 'New',
+        parent_id: null,
+        priority: 'medium',
+      } as never,
+      {
+        id: 'child-1',
+        title: 'Child Task',
+        jira_issue_key: 'ALICE-2',
+        type: WorkItemTypeEnum.Task,
+        status: 'New',
+        parent_id: null,
+        priority: 'medium',
+      } as never,
+    ]);
+    vi.mocked(prisma.work_items.update).mockResolvedValue({} as never);
+
+    const chatService = new ChatService({
+      chat: {} as never,
+      projectsRepository: mockProjectsRepo as never,
+      workItemService: { createWorkItem: vi.fn() } as never,
+      sprintsService: {} as never,
+      projectsService: {} as never,
+      integrationsService: {} as never,
+    });
+
+    const items = [
+      {
+        temporaryIdentifier: 'epic-1',
+        title: 'Parent Epic',
+        jiraIssueKey: 'ALICE-1',
+        type: WorkItemTypeEnum.Epic,
+      },
+      {
+        temporaryIdentifier: 'task-1',
+        title: 'Child Task',
+        jiraIssueKey: 'ALICE-2',
+        type: WorkItemTypeEnum.Task,
+        parentReference: 'Parent Epic',
+      },
+    ];
+
+    const toolActionsPerformed: ToolAction[] = [];
+    const parts = await chatService.processFunctionCalls(
+      'user-1',
+      [
+        {
+          functionCall: {
+            name: 'batch_import_work_items',
+            args: {
+              projectId: 'proj-1',
+              items,
+              updateExisting: true,
+            },
+          },
+        },
+      ],
+      toolActionsPerformed
+    );
+
+    const result = parts[0]?.functionResponse?.response?.result as {
+      updatedCount: number;
+      hierarchyUpdatedCount: number;
+      hierarchyUpdates: Array<{
+        title: string;
+        oldParentTitle: string;
+        newParentTitle: string;
+      }>;
+    };
+
+    expect(result.updatedCount).toBe(2);
+    expect(result.hierarchyUpdatedCount).toBe(1);
+    expect(result.hierarchyUpdates[0]?.title).toBe('Child Task');
+    expect(result.hierarchyUpdates[0]?.oldParentTitle).toBe('Root (No parent)');
+    expect(result.hierarchyUpdates[0]?.newParentTitle).toBe('Parent Epic');
+    expect(prisma.work_items.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'child-1' },
+        data: expect.objectContaining({ parent_id: 'parent-1' }),
       })
     );
   });

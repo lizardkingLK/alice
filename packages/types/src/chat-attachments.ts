@@ -27,6 +27,7 @@ export enum WorkItemDeduplicationMatchStatusEnum {
   New = 'new',
   ExactDuplicate = 'exact_duplicate',
   PotentialDuplicate = 'potential_duplicate',
+  Modified = 'modified',
 }
 
 export enum ChatAgentToolNameEnum {
@@ -76,6 +77,11 @@ export interface WorkItemDeduplicationItemResult {
   existingWorkItemTitle: string | null;
   matchReason: string;
   recommendedAction: WorkItemDeduplicationActionEnum;
+  hasHierarchyChange?: boolean;
+  oldParentTitle?: string | null;
+  newParentTitle?: string | null;
+  hasFieldChanges?: boolean;
+  fieldChanges?: string[];
 }
 
 export interface WorkItemDeduplicationReport {
@@ -83,6 +89,21 @@ export interface WorkItemDeduplicationReport {
   newCount: number;
   exactDuplicateCount: number;
   potentialDuplicateCount: number;
+  hierarchyChangedCount?: number;
+  fieldChangedCount?: number;
+  hierarchyChanges?: Array<{
+    itemTitle: string;
+    itemKey?: string | null;
+    oldParentTitle?: string | null;
+    newParentTitle?: string | null;
+  }>;
+  omittedExistingCount?: number;
+  omittedExistingItems?: Array<{
+    id: string;
+    key: string;
+    title: string;
+  }>;
+  deletionDisallowedNotice?: string;
   items: WorkItemDeduplicationItemResult[];
 }
 

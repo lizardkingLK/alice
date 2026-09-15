@@ -380,25 +380,57 @@ CORE-4,Task,Write Unit Tests for Login,CORE-3,medium,2,Vitest test cases coverin
 
 ---
 
-### Test Case 12: Incremental Backlog Synchronization on File Updates
+### Test Case 12: Incremental Backlog Synchronization & Hierarchy Change Reporting
 
-**Goal**: Verify that re-uploading an updated file synchronizes field changes and hierarchy moves in-place without creating duplicate work items.
+**Goal**: Verify that re-uploading an updated file (JSON, CSV, TSV, Markdown tables, text outlines, YAML) synchronizes field changes and hierarchy moves in-place without creating duplicate work items, and explicitly reports hierarchy changes in Alice's message.
 
-1. First, import `test-work-items.json` into your project (creates items `item-1`, `item-2`, and `item-3`).
-2. Attach `test-work-items-updated.json` (contains updated priority/points for `item-1` and `item-2`, a newly added `item-4-new`, and omits `item-3`).
-3. Ask Alice:
-   > _"Update the work items from this file in project [Project Key]. Also remove any items omitted from the file."_
+1. First, import `test-work-items-hierarchy.csv` into your project (creates `CORE-1` Epic, `CORE-2` Feature, `CORE-3` Story, and `CORE-4` Task).
+2. Create an updated file where the hierarchy is modified (e.g., `CORE-4` Task is moved directly under `CORE-2` Feature instead of `CORE-3` Story, and priority of `CORE-3` is changed to `highest`).
+3. Attach the updated file and ask Alice:
+   > _"Update the work items in project [Project Key] based on this updated file."_
 4. **Expected Behavior**:
-   - Alice executes `batch_import_work_items` with `updateExisting: true` and `removeDeleted: true`.
-   - **Existing items updated in-place**:
-     - `Implement User Notification Center` priority becomes `highest` and story points become `8`. No duplicate item is created.
-     - `Fix Profile Picture Upload Bug` priority becomes `highest` and description updates.
-   - **New item created**:
-     - `Add Webhook Dispatcher` is inserted as a new story.
-   - **Omitted item archived**:
-     - `Database Query Optimization` (`item-3`) is archived.
+   - Alice runs duplicate/hierarchy analysis via `check_work_item_duplicates`.
+   - **MANDATORY Conversational Hierarchy Reporting**:
+     - Alice's message **explicitly states that the hierarchy was changed** based on the updated file changes.
+     - Specifically lists each item whose parent was modified (e.g., `"- Write Unit Tests for Login hierarchy updated: parent changed to Authentication Service"`).
+     - Alice never claims modified hierarchy items are "Exact duplicates (no change)".
+   - **Database Check**:
+     - The existing item record in `work_items` is updated in-place (`await prisma.work_items.update`).
+     - `parent_id` is updated to point to the new parent.
+     - No duplicate rows are created.
    - **Action Cards**:
      - Shows `Work Item Updated: ...` for modified items.
-     - Shows `Work Item Created: ...` for newly added items.
-     - Shows `Work Item Removed: ...` for deleted items.
-   - Verify on the `/work-items` page that only the expected items exist and their updated attributes are displayed immediately.
+
+---
+
+### Test Case 13: Work Item Deletion Disallowed via Chat
+
+**Goal**: Verify that deleting work items is strictly prohibited via Alice chat, and that omitted items from updated files are preserved in the project backlog with an explicit user notice.
+
+1. In the same project, edit the file to delete or omit one of the parent work items and its children.
+2. Re-upload the file and ask Alice:
+   > _"Update the work items from this file in project [Project Key]."_
+3. **Expected Behavior**:
+   - Alice processes the file and detects omitted existing project items.
+   - **Strict No-Deletion Guardrail**:
+     - Zero work items are deleted or archived in the database.
+     - Alice explicitly includes a notice in her conversational response:
+       > _"Note: Deletion of work items is not allowed via Alice chat. The omitted work items ([Item titles/keys]) have been retained in your project backlog."_
+   - **Database Check**:
+     - Run `SELECT id, title, record_status FROM work_items WHERE project_id = '<projectId>';`
+     - Verify that all previously existing items remain `record_status = 'active'`.
+   - Any valid items present in the file are updated or created as usual.
+
+---
+
+### Test Case 14: Network Resilience & Provider Retry Handling
+
+**Goal**: Verify that transient network connection drops or fetch errors are caught gracefully, logged, retried up to 3 times with exponential backoff, and return clear user-facing messages rather than crashing with unhandled `fetch failed`.
+
+1. If an intermittent network error or socket drop occurs during model communication:
+   - The backend catches the error in `fetchChatProviderWithRetries`.
+   - Logs diagnostics to `alice-chatbot-errors.log`.
+   - Retries the fetch after 2s, 4s, etc.
+   - If network remains down, returns a clean user-facing error message:
+     > _"Alice AI service is temporarily unavailable due to a network connection issue (...). Please try again in a few moments."_
+   - The chat conversation remains intact and healthy.
