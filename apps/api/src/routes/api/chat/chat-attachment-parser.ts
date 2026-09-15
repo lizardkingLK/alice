@@ -130,10 +130,14 @@ function extractFirstNumber(
   return null;
 }
 
+const CHILD_COLLECTION_KEYS = ['children', 'subtasks', 'sub_tasks'] as const;
+const CANDIDATE_ARRAY_KEYS = ['workItems', 'items', 'data'] as const;
+
 function extractRawChildren(record: Record<string, unknown>): unknown[] {
-  if (Array.isArray(record.children)) return record.children;
-  if (Array.isArray(record.subtasks)) return record.subtasks;
-  if (Array.isArray(record.sub_tasks)) return record.sub_tasks;
+  for (const key of CHILD_COLLECTION_KEYS) {
+    const candidate = record[key];
+    if (Array.isArray(candidate)) return candidate;
+  }
   return [];
 }
 
@@ -232,10 +236,37 @@ function parseRawJsonNode(
 }
 
 function findCandidateArray(record: Record<string, unknown>): unknown[] | null {
-  if (Array.isArray(record.workItems)) return record.workItems;
-  if (Array.isArray(record.items)) return record.items;
-  if (Array.isArray(record.data)) return record.data;
+  for (const key of CANDIDATE_ARRAY_KEYS) {
+    const candidate = record[key];
+    if (Array.isArray(candidate)) return candidate;
+  }
   return null;
+}
+
+function transformParsedStructureToNodes(
+  parsed: unknown,
+  formatName: string
+): ParsedWorkItemNode[] {
+  if (Array.isArray(parsed)) {
+    return parsed.map((item, index) =>
+      parseRawJsonNode(item as Record<string, unknown>, index)
+    );
+  }
+
+  if (typeof parsed === 'object' && parsed !== null) {
+    const record = parsed as Record<string, unknown>;
+    const candidateArray = findCandidateArray(record);
+
+    if (candidateArray) {
+      return candidateArray.map((item, index) =>
+        parseRawJsonNode(item as Record<string, unknown>, index)
+      );
+    }
+
+    return [parseRawJsonNode(record, 0)];
+  }
+
+  throw new Error(`Expected a ${formatName} object or array of work items.`);
 }
 
 export function parseJsonWorkItemDocument(
@@ -250,33 +281,21 @@ export function parseJsonWorkItemDocument(
     );
   }
 
-  if (Array.isArray(parsedJson)) {
-    return parsedJson.map((item, index) =>
-      parseRawJsonNode(item as Record<string, unknown>, index)
-    );
-  }
-
-  if (typeof parsedJson === 'object' && parsedJson !== null) {
-    const record = parsedJson as Record<string, unknown>;
-    const candidateArray = findCandidateArray(record);
-
-    if (candidateArray) {
-      return candidateArray.map((item, index) =>
-        parseRawJsonNode(item as Record<string, unknown>, index)
-      );
-    }
-
-    return [parseRawJsonNode(record, 0)];
-  }
-
-  throw new Error('Expected a JSON object or array of work items.');
+  return transformParsedStructureToNodes(parsedJson, 'JSON');
 }
 
+const DELIMITER_RULES: readonly {
+  delimiter: string;
+  matches: (firstLine: string) => boolean;
+}[] = [
+  { delimiter: '\t', matches: (line) => line.includes('\t') },
+  { delimiter: ';', matches: (line) => line.includes(';') && !line.includes(',') },
+  { delimiter: '|', matches: (line) => line.includes('|') && !line.includes(',') },
+];
+
 function detectDelimiter(firstLine: string): string {
-  if (firstLine.includes('\t')) return '\t';
-  if (firstLine.includes(';') && !firstLine.includes(',')) return ';';
-  if (firstLine.includes('|') && !firstLine.includes(',')) return '|';
-  return ',';
+  const matched = DELIMITER_RULES.find((rule) => rule.matches(firstLine));
+  return matched?.delimiter ?? ',';
 }
 
 function processDelimitedChar(
@@ -344,6 +363,41 @@ function tokenizeDelimitedContent(
   return rows;
 }
 
+const DELIMITED_FIELD_ALIASES = {
+  id: ['temporaryidentifier', 'tempid', 'id', 'issueid'],
+  jiraIssueKey: ['jiraissuekey', 'jirakey', 'issuekey', 'key'],
+  title: ['title', 'name', 'summary', 'taskname', 'workitem', 'task'],
+  type: ['type', 'issuetype', 'issue_type', 'kind', 'workitemtype'],
+  description: ['description', 'desc', 'details'],
+  parent: [
+    'parent',
+    'parentid',
+    'parentreference',
+    'parentkey',
+    'parenttitle',
+    'parentname',
+    'parentsummary',
+    'parentlink',
+    'epic',
+    'epiclink',
+    'epickey',
+    'epictitle',
+  ],
+  storyPoints: ['storypoints', 'points', 'estimate'],
+  dueDate: ['duedate', 'due_date', 'deadline'],
+} as const;
+
+function extractFirstValueFromRow(
+  rowObject: Record<string, string>,
+  aliases: readonly string[]
+): string | null {
+  for (const alias of aliases) {
+    const val = rowObject[alias];
+    if (val) return val;
+  }
+  return null;
+}
+
 function parseDelimitedRowToWorkItem(
   rowValues: string[],
   rawHeaders: string[],
@@ -365,68 +419,51 @@ function parseDelimitedRowToWorkItem(
     }
   }
 
-  const idValue =
-    rowObject.temporaryidentifier ||
-    rowObject.tempid ||
-    rowObject.id ||
-    rowObject.issueid ||
-    null;
-
-  const jiraIssueKey =
-    rowObject.jiraissuekey ||
-    rowObject.jirakey ||
-    rowObject.issuekey ||
-    rowObject.key ||
-    null;
-
+  const idValue = extractFirstValueFromRow(
+    rowObject,
+    DELIMITED_FIELD_ALIASES.id
+  );
+  const jiraIssueKey = extractFirstValueFromRow(
+    rowObject,
+    DELIMITED_FIELD_ALIASES.jiraIssueKey
+  );
   const temporaryIdentifier = idValue || jiraIssueKey || `row-${lineIndex}`;
 
   const title =
-    rowObject.title ||
-    rowObject.name ||
-    rowObject.summary ||
-    rowObject.taskname ||
-    rowObject.workitem ||
-    rowObject.task ||
+    extractFirstValueFromRow(rowObject, DELIMITED_FIELD_ALIASES.title) ||
     `Work Item ${lineIndex}`;
 
-  const rawType =
-    rowObject.type ||
-    rowObject.issuetype ||
-    rowObject.issue_type ||
-    rowObject.kind ||
-    rowObject.workitemtype;
+  const rawType = extractFirstValueFromRow(
+    rowObject,
+    DELIMITED_FIELD_ALIASES.type
+  );
   const itemType: WorkItemType = mapToWorkItemType(rawType);
 
   const priority = normalizePriority(rowObject.priority);
 
-  const description =
-    rowObject.description || rowObject.desc || rowObject.details || null;
+  const description = extractFirstValueFromRow(
+    rowObject,
+    DELIMITED_FIELD_ALIASES.description
+  );
 
-  const parentReference =
-    rowObject.parent ||
-    rowObject.parentid ||
-    rowObject.parentreference ||
-    rowObject.parentkey ||
-    rowObject.parenttitle ||
-    rowObject.parentname ||
-    rowObject.parentsummary ||
-    rowObject.parentlink ||
-    rowObject.epic ||
-    rowObject.epiclink ||
-    rowObject.epickey ||
-    rowObject.epictitle ||
-    null;
+  const parentReference = extractFirstValueFromRow(
+    rowObject,
+    DELIMITED_FIELD_ALIASES.parent
+  );
 
-  const rawPoints =
-    rowObject.storypoints || rowObject.points || rowObject.estimate;
+  const rawPoints = extractFirstValueFromRow(
+    rowObject,
+    DELIMITED_FIELD_ALIASES.storyPoints
+  );
   const storyPoints =
     rawPoints && !Number.isNaN(Number(rawPoints))
       ? Math.round(Number(rawPoints))
       : null;
 
-  const dueDate =
-    rowObject.duedate || rowObject.due_date || rowObject.deadline || null;
+  const dueDate = extractFirstValueFromRow(
+    rowObject,
+    DELIMITED_FIELD_ALIASES.dueDate
+  );
 
   const labels = normalizeLabels(rowObject.labels || rowObject.tags);
 
@@ -554,30 +591,65 @@ interface OutlineStackItem {
   title: string;
 }
 
+const OUTLINE_TYPE_PATTERNS: readonly RegExp[] = [
+  /^\[(Epic|Feature|Story|Task|Issue|Bug)\]\s*(.*)/i,
+  /^(Epic|Feature|Story|Task|Issue|Bug):\s*(.*)/i,
+];
+
 function extractTypeFromOutlineLine(text: string): {
   type: WorkItemType | null;
   cleanText: string;
 } {
-  const bracketMatch =
-    /^\[(Epic|Feature|Story|Task|Issue|Bug)\]\s*(.*)/i.exec(text);
-  if (bracketMatch?.[1] && bracketMatch[2] !== undefined) {
-    return {
-      type: mapToWorkItemType(bracketMatch[1]),
-      cleanText: bracketMatch[2].trim(),
-    };
-  }
-
-  const colonMatch =
-    /^(Epic|Feature|Story|Task|Issue|Bug):\s*(.*)/i.exec(text);
-  if (colonMatch?.[1] && colonMatch[2] !== undefined) {
-    return {
-      type: mapToWorkItemType(colonMatch[1]),
-      cleanText: colonMatch[2].trim(),
-    };
+  for (const pattern of OUTLINE_TYPE_PATTERNS) {
+    const match = pattern.exec(text);
+    if (match?.[1] && match[2] !== undefined) {
+      return {
+        type: mapToWorkItemType(match[1]),
+        cleanText: match[2].trim(),
+      };
+    }
   }
 
   return { type: null, cleanText: text };
 }
+
+interface InlineMetadataAccumulator {
+  priority?: WorkItemPriority;
+  storyPoints: number | null;
+  key: string | null;
+}
+
+const INLINE_METADATA_HANDLERS: Readonly<
+  Record<
+    string,
+    (value: string, accumulator: InlineMetadataAccumulator) => void
+  >
+> = {
+  priority: (val, acc) => {
+    acc.priority = normalizePriority(val);
+  },
+  points: (val, acc) => {
+    const num = Number(val);
+    if (!Number.isNaN(num)) acc.storyPoints = Math.round(num);
+  },
+  storypoints: (val, acc) => {
+    const num = Number(val);
+    if (!Number.isNaN(num)) acc.storyPoints = Math.round(num);
+  },
+  estimate: (val, acc) => {
+    const num = Number(val);
+    if (!Number.isNaN(num)) acc.storyPoints = Math.round(num);
+  },
+  key: (val, acc) => {
+    acc.key = val;
+  },
+  jirakey: (val, acc) => {
+    acc.key = val;
+  },
+  issuekey: (val, acc) => {
+    acc.key = val;
+  },
+};
 
 function parseInlineMetadata(metaStr: string): {
   priority?: WorkItemPriority;
@@ -586,9 +658,10 @@ function parseInlineMetadata(metaStr: string): {
   dynamicFields: Record<string, unknown>;
 } {
   const dynamicFields: Record<string, unknown> = {};
-  let priority: WorkItemPriority | undefined;
-  let storyPoints: number | null = null;
-  let key: string | null = null;
+  const accumulator: InlineMetadataAccumulator = {
+    storyPoints: null,
+    key: null,
+  };
 
   const parts = metaStr.split(/[,;]/);
   for (const part of parts) {
@@ -598,19 +671,20 @@ function parseInlineMetadata(metaStr: string): {
     const v = valParts.join(':').trim();
     const normalized = k.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-    if (normalized === 'priority') {
-      priority = normalizePriority(v);
-    } else if (['points', 'storypoints', 'estimate'].includes(normalized)) {
-      const num = Number(v);
-      if (!Number.isNaN(num)) storyPoints = Math.round(num);
-    } else if (['key', 'jirakey', 'issuekey'].includes(normalized)) {
-      key = v;
+    const handler = INLINE_METADATA_HANDLERS[normalized];
+    if (handler) {
+      handler(v, accumulator);
     } else {
       dynamicFields[k] = v;
     }
   }
 
-  return { priority, storyPoints, key, dynamicFields };
+  return {
+    priority: accumulator.priority,
+    storyPoints: accumulator.storyPoints,
+    key: accumulator.key,
+    dynamicFields,
+  };
 }
 
 function extractMetadataFromOutlineLine(text: string): {
@@ -715,10 +789,17 @@ export function parseIndentedTextWorkItemDocument(
   return items;
 }
 
+const YAML_LITERAL_MAP: Readonly<Record<string, unknown>> = {
+  true: true,
+  false: false,
+  null: null,
+  '~': null,
+};
+
 function parseYamlScalar(val: string): unknown {
-  if (val === 'true') return true;
-  if (val === 'false') return false;
-  if (val === 'null' || val === '~') return null;
+  if (Object.prototype.hasOwnProperty.call(YAML_LITERAL_MAP, val)) {
+    return YAML_LITERAL_MAP[val];
+  }
   if (/^-?\d+(\.\d+)?$/.test(val)) return Number(val);
   if (
     (val.startsWith('"') && val.endsWith('"')) ||
@@ -859,22 +940,59 @@ export function parseYamlWorkItemDocument(
   fileContent: string
 ): ParsedWorkItemNode[] {
   const parsed = parseSimpleYaml(fileContent);
-  if (Array.isArray(parsed)) {
-    return parsed.map((item, index) =>
-      parseRawJsonNode(item as Record<string, unknown>, index)
-    );
+  return transformParsedStructureToNodes(parsed, 'YAML');
+}
+
+type AttachmentParser = (content: string) => ParsedWorkItemNode[];
+
+interface AttachmentParserEntry {
+  readonly name: string;
+  readonly matches: (
+    fileName: string,
+    fileType: ChatAttachmentFileTypeEnum,
+    content: string
+  ) => boolean;
+  readonly parse: AttachmentParser;
+}
+
+const PARSER_REGISTRY: readonly AttachmentParserEntry[] = [
+  {
+    name: 'json',
+    matches: (name, type) =>
+      type === ChatAttachmentFileTypeEnum.Json || name.endsWith('.json'),
+    parse: parseJsonWorkItemDocument,
+  },
+  {
+    name: 'yaml',
+    matches: (name) => name.endsWith('.yaml') || name.endsWith('.yml'),
+    parse: parseYamlWorkItemDocument,
+  },
+  {
+    name: 'csv',
+    matches: (name, type) =>
+      type === ChatAttachmentFileTypeEnum.Csv ||
+      name.endsWith('.csv') ||
+      name.endsWith('.tsv'),
+    parse: parseDelimitedWorkItemDocument,
+  },
+  {
+    name: 'markdown_table',
+    matches: (_name, _type, content) => isMarkdownTable(content),
+    parse: parseMarkdownTableWorkItemDocument,
+  },
+  {
+    name: 'indented_outline',
+    matches: (_name, _type, content) => isIndentedOutline(content),
+    parse: parseIndentedTextWorkItemDocument,
+  },
+];
+
+function tryFallbackParsers(content: string): ParsedWorkItemNode[] {
+  try {
+    return parseJsonWorkItemDocument(content);
+  } catch {
+    return parseDelimitedWorkItemDocument(content);
   }
-  if (typeof parsed === 'object' && parsed !== null) {
-    const record = parsed as Record<string, unknown>;
-    const candidateArray = findCandidateArray(record);
-    if (candidateArray) {
-      return candidateArray.map((item, index) =>
-        parseRawJsonNode(item as Record<string, unknown>, index)
-      );
-    }
-    return [parseRawJsonNode(record, 0)];
-  }
-  throw new Error('Expected a YAML list or object of work items.');
 }
 
 function parseAttachmentContent(
@@ -884,47 +1002,15 @@ function parseAttachmentContent(
 ): ParsedWorkItemNode[] {
   const lowerName = fileName.toLowerCase();
 
-  if (
-    fileType === ChatAttachmentFileTypeEnum.Json ||
-    lowerName.endsWith('.json')
-  ) {
-    return parseJsonWorkItemDocument(textContent);
-  }
-  if (lowerName.endsWith('.yaml') || lowerName.endsWith('.yml')) {
-    return parseYamlWorkItemDocument(textContent);
-  }
-  if (
-    fileType === ChatAttachmentFileTypeEnum.Csv ||
-    lowerName.endsWith('.csv') ||
-    lowerName.endsWith('.tsv')
-  ) {
-    return parseDelimitedWorkItemDocument(textContent);
-  }
-  if (isMarkdownTable(textContent)) {
-    return parseMarkdownTableWorkItemDocument(textContent);
-  }
-  if (isIndentedOutline(textContent)) {
-    return parseIndentedTextWorkItemDocument(textContent);
+  const matchedEntry = PARSER_REGISTRY.find((entry) =>
+    entry.matches(lowerName, fileType, textContent)
+  );
+
+  if (matchedEntry) {
+    return matchedEntry.parse(textContent);
   }
 
-  try {
-    return parseJsonWorkItemDocument(textContent);
-  } catch {
-    try {
-      if (lowerName.endsWith('.yaml') || lowerName.endsWith('.yml')) {
-        return parseYamlWorkItemDocument(textContent);
-      }
-      if (isMarkdownTable(textContent)) {
-        return parseMarkdownTableWorkItemDocument(textContent);
-      }
-      if (isIndentedOutline(textContent)) {
-        return parseIndentedTextWorkItemDocument(textContent);
-      }
-      return parseDelimitedWorkItemDocument(textContent);
-    } catch {
-      return parseDelimitedWorkItemDocument(textContent);
-    }
-  }
+  return tryFallbackParsers(textContent);
 }
 
 export async function fetchAndParseWorkItemAttachment(

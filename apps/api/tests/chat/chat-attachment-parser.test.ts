@@ -355,5 +355,83 @@ TASK-2\tFeature\tCI/CD Pipeline\tTASK-1\t8\tDevOps`;
         globalThis.fetch = originalFetch;
       }
     });
+
+    it('downloads and parses pipe-delimited text files via parser registry fallback', async () => {
+      const pipeContent = `Title|Type|Priority
+Pipe Task|Task|high`;
+
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve(pipeContent),
+      });
+
+      try {
+        const result = await fetchAndParseWorkItemAttachment(
+          'https://storage.example.com/chat-attachments/items.txt',
+          'items.txt',
+          ChatAttachmentFileTypeEnum.Text
+        );
+
+        expect(result.items).toHaveLength(1);
+        expect(result.items[0]?.title).toBe('Pipe Task');
+        expect(result.items[0]?.type).toBe(WorkItemTypeEnum.Task);
+        expect(result.items[0]?.priority).toBe('high');
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+
+    it('downloads and parses outline colon format with metadata aliases', async () => {
+      const outlineContent = `- Epic: Mobile App (Key: MOB-1, Priority: highest)
+  - Task: Setup React Native (estimate: 8, issuekey: MOB-2, customCol: Mobile)`;
+
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve(outlineContent),
+      });
+
+      try {
+        const result = await fetchAndParseWorkItemAttachment(
+          'https://storage.example.com/chat-attachments/outline.txt',
+          'outline.txt',
+          ChatAttachmentFileTypeEnum.Text
+        );
+
+        expect(result.items).toHaveLength(2);
+        expect(result.items[0]?.title).toBe('Mobile App');
+        expect(result.items[0]?.type).toBe(WorkItemTypeEnum.Epic);
+        expect(result.items[0]?.jiraIssueKey).toBe('MOB-1');
+        expect(result.items[0]?.priority).toBe('highest');
+
+        expect(result.items[1]?.title).toBe('Setup React Native');
+        expect(result.items[1]?.type).toBe(WorkItemTypeEnum.Task);
+        expect(result.items[1]?.storyPoints).toBe(8);
+        expect(result.items[1]?.jiraIssueKey).toBe('MOB-2');
+        expect(result.items[1]?.dynamicFields).toEqual({ customCol: 'Mobile' });
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+
+    it('parses YAML with literal booleans and nulls', () => {
+      const yamlContent = `
+- title: Task With Literals
+  type: Task
+  isArchived: false
+  isReady: true
+  emptyNotes: null
+  tildeNull: ~
+  quotedString: "quoted value"
+`;
+      const items = parseYamlWorkItemDocument(yamlContent);
+      expect(items).toHaveLength(1);
+      expect(items[0]?.dynamicFields?.isArchived).toBe(false);
+      expect(items[0]?.dynamicFields?.isReady).toBe(true);
+      expect(items[0]?.dynamicFields?.emptyNotes).toBeNull();
+      expect(items[0]?.dynamicFields?.tildeNull).toBeNull();
+      expect(items[0]?.dynamicFields?.quotedString).toBe('quoted value');
+    });
   });
 });
