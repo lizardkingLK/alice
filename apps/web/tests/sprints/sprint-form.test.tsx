@@ -22,8 +22,13 @@ vi.mock('@/app/sprints/_services/sprints.mutations.client', () => ({
   updateSprint: vi.fn(),
 }));
 
+/**
+ * SprintForm refreshes projects on mount in create mode. Keep the promise
+ * pending so prop-provided projects are not replaced, and avoid a rejected
+ * mock that logs `console.error` (noisy / flaky under CI reporters).
+ */
 vi.mock('@/lib/cache/load-projects-for-forms', () => ({
-  loadProjectsForSprintForm: vi.fn().mockRejectedValue(new Error('skip')),
+  loadProjectsForSprintForm: vi.fn(() => new Promise(() => {})),
 }));
 
 const mockProjects: Project[] = [

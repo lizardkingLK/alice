@@ -28,6 +28,7 @@ import { ChartsWidgetSettingsSidebar } from '@/app/charts/_components/charts-wid
 import {
   CHARTS_SAMPLE_WORK_ITEMS,
   DEFAULT_CHARTS_LABEL_FIELD,
+  filterChartsSampleByLabelSlice,
   filterChartsSampleWorkItems,
   type ChartsExportFormatId,
   type ChartsSampleWorkItem,
@@ -44,7 +45,7 @@ type ChartsWidgetConfigDialogProps = {
   readonly viewMode?: ChartWidgetViewMode;
   readonly pieVariant?: ChartPieVariant;
   readonly labelField?: ChartsLabelFieldId;
-  readonly focusedStatus?: WorkItemStatus;
+  readonly focusedSliceKey?: string;
   readonly sessionWorkItems?: readonly ChartsSampleWorkItem[];
   readonly onSessionWorkItemsChange?: (
     // eslint-disable-next-line no-unused-vars
@@ -70,7 +71,7 @@ export function ChartsWidgetConfigDialog({
   viewMode = 'chart',
   pieVariant = 'donut',
   labelField = DEFAULT_CHARTS_LABEL_FIELD,
-  focusedStatus,
+  focusedSliceKey,
   sessionWorkItems = CHARTS_SAMPLE_WORK_ITEMS,
   onSessionWorkItemsChange,
   onFiltersChange,
@@ -119,12 +120,28 @@ export function ChartsWidgetConfigDialog({
     [assigneeFilter, filters, searchQuery, sessionWorkItems]
   );
 
+  const tableWorkItems = useMemo(() => {
+    if (!focusedSliceKey || labelField === 'status') {
+      return filteredWorkItems;
+    }
+    return filterChartsSampleByLabelSlice(
+      filteredWorkItems,
+      labelField,
+      focusedSliceKey
+    );
+  }, [filteredWorkItems, focusedSliceKey, labelField]);
+
+  const tableFocusedStatus =
+    labelField === 'status' && focusedSliceKey
+      ? (focusedSliceKey as WorkItemStatus)
+      : null;
+
   const handleLayoutChange = (mode: ChartWidgetViewMode) => {
     onViewModeChange?.(mode, null);
   };
 
-  const handleSliceClick = (status: WorkItemStatus) => {
-    onViewModeChange?.('split', status);
+  const handleSliceClick = (sliceKey: string) => {
+    onViewModeChange?.('split', sliceKey);
   };
 
   const piePreview = (
@@ -133,16 +150,16 @@ export function ChartsWidgetConfigDialog({
       workItems={filteredWorkItems}
       pieVariant={pieVariant}
       labelField={labelField}
-      onSliceClick={labelField === 'status' ? handleSliceClick : undefined}
+      onSliceClick={handleSliceClick}
     />
   );
 
   const tablePreview = (
     <ChartsStatusGroupedTable
-      workItems={filteredWorkItems}
+      workItems={tableWorkItems}
       sourceWorkItems={sessionWorkItems}
       onWorkItemsChange={onSessionWorkItemsChange}
-      focusedStatus={focusedStatus}
+      focusedStatus={tableFocusedStatus}
     />
   );
 
