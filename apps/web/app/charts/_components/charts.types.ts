@@ -1,9 +1,14 @@
 import type { LayoutItem } from 'react-grid-layout';
 import type { WorkItemStatus } from '@repo/types';
-import type { ChartsWidgetFilterDraft } from '@/app/charts/_components/charts-sample.data';
+import type {
+  ChartsLabelFieldId,
+  ChartsWidgetFilterDraft,
+} from '@/app/charts/_components/charts-sample.data';
 
 export type ChartBoardOwnershipFilter = 'all' | 'mine' | 'shared';
 export type ChartBoardStatusFilter = 'all' | 'active' | 'archived';
+
+export type { ChartsLabelFieldId };
 
 /** UI stub shape for a persisted chart board list row. */
 export type ChartBoardSummary = {
@@ -60,6 +65,11 @@ export type ChartsWidgetPieVariantChangeHandler = (
   variant: ChartPieVariant
 ) => void;
 
+export type ChartsWidgetLabelFieldChangeHandler = (
+  // eslint-disable-next-line no-unused-vars -- callback param for consumers
+  labelField: ChartsLabelFieldId
+) => void;
+
 /** Instance placed on the board canvas (drag / resize). */
 export type ChartBoardWidgetInstance = {
   readonly instanceId: string;
@@ -78,6 +88,11 @@ export type ChartBoardWidgetInstance = {
   readonly focusedStatus?: WorkItemStatus;
   /** Pie vs donut for Chart widgets; defaults to donut when unset. */
   readonly pieVariant?: ChartPieVariant;
+  /**
+   * Labels → Columns group-by field for Chart widgets.
+   * Defaults to `status` when unset.
+   */
+  readonly labelField?: ChartsLabelFieldId;
 };
 
 /** Persisted chart workspace (localStorage / future `charts` row). */

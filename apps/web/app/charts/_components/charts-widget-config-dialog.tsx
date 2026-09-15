@@ -10,8 +10,10 @@ import { SearchInput } from '@/components/search-input';
 import { preventDismissForFloatingPortal } from '@/lib/dialog-outside-events';
 import type {
   ChartPieVariant,
+  ChartsLabelFieldId,
   ChartWidgetViewMode,
   ChartsWidgetFiltersChangeHandler,
+  ChartsWidgetLabelFieldChangeHandler,
   ChartsWidgetPieVariantChangeHandler,
   ChartsWidgetViewModeChangeHandler,
 } from '@/app/charts/_components/charts.types';
@@ -25,6 +27,7 @@ import { ChartsWidgetLayoutMenu } from '@/app/charts/_components/charts-widget-l
 import { ChartsWidgetSettingsSidebar } from '@/app/charts/_components/charts-widget-settings-sidebar';
 import {
   CHARTS_SAMPLE_WORK_ITEMS,
+  DEFAULT_CHARTS_LABEL_FIELD,
   filterChartsSampleWorkItems,
   type ChartsExportFormatId,
   type ChartsSampleWorkItem,
@@ -40,6 +43,7 @@ type ChartsWidgetConfigDialogProps = {
   readonly filters?: ChartsWidgetFilterDraft | null;
   readonly viewMode?: ChartWidgetViewMode;
   readonly pieVariant?: ChartPieVariant;
+  readonly labelField?: ChartsLabelFieldId;
   readonly focusedStatus?: WorkItemStatus;
   readonly sessionWorkItems?: readonly ChartsSampleWorkItem[];
   readonly onSessionWorkItemsChange?: (
@@ -49,6 +53,7 @@ type ChartsWidgetConfigDialogProps = {
   readonly onFiltersChange?: ChartsWidgetFiltersChangeHandler;
   readonly onViewModeChange?: ChartsWidgetViewModeChangeHandler;
   readonly onPieVariantChange?: ChartsWidgetPieVariantChangeHandler;
+  readonly onLabelFieldChange?: ChartsWidgetLabelFieldChangeHandler;
   readonly onRename?: () => void;
   readonly onDuplicate?: () => void;
   readonly onDelete?: () => void;
@@ -64,12 +69,14 @@ export function ChartsWidgetConfigDialog({
   filters = null,
   viewMode = 'chart',
   pieVariant = 'donut',
+  labelField = DEFAULT_CHARTS_LABEL_FIELD,
   focusedStatus,
   sessionWorkItems = CHARTS_SAMPLE_WORK_ITEMS,
   onSessionWorkItemsChange,
   onFiltersChange,
   onViewModeChange,
   onPieVariantChange,
+  onLabelFieldChange,
   onRename,
   onDuplicate,
   onDelete,
@@ -125,7 +132,8 @@ export function ChartsWidgetConfigDialog({
       size="dialog"
       workItems={filteredWorkItems}
       pieVariant={pieVariant}
-      onSliceClick={handleSliceClick}
+      labelField={labelField}
+      onSliceClick={labelField === 'status' ? handleSliceClick : undefined}
     />
   );
 
@@ -273,6 +281,8 @@ export function ChartsWidgetConfigDialog({
           <ChartsWidgetSettingsSidebar
             pieVariant={pieVariant}
             onPieVariantChange={(variant) => onPieVariantChange?.(variant)}
+            labelField={labelField}
+            onLabelFieldChange={(field) => onLabelFieldChange?.(field)}
           />
         ) : null}
       </div>

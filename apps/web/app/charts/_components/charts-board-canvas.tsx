@@ -27,6 +27,7 @@ import {
 import type {
   ChartBoardWidgetInstance,
   ChartPieVariant,
+  ChartsLabelFieldId,
   ChartWidgetTypeId,
   ChartWidgetViewMode,
 } from '@/app/charts/_components/charts.types';
@@ -247,6 +248,12 @@ type ChartsBoardCanvasProps = {
     // eslint-disable-next-line no-unused-vars
     pieVariant: ChartPieVariant
   ) => void;
+  readonly onLabelFieldChange: (
+    // eslint-disable-next-line no-unused-vars
+    instanceId: string,
+    // eslint-disable-next-line no-unused-vars
+    labelField: ChartsLabelFieldId
+  ) => void;
   readonly focusWidgetId?: string;
   readonly onFocusWidgetDismiss?: () => void;
   /** False until localStorage board JSON has been read on the client. */
@@ -264,6 +271,7 @@ export function ChartsBoardCanvas({
   onFiltersChange,
   onViewModeChange,
   onPieVariantChange,
+  onLabelFieldChange,
   focusWidgetId,
   onFocusWidgetDismiss,
   hydrated = true,
@@ -327,6 +335,7 @@ export function ChartsBoardCanvas({
           onFiltersChange={onFiltersChange}
           onViewModeChange={onViewModeChange}
           onPieVariantChange={onPieVariantChange}
+          onLabelFieldChange={onLabelFieldChange}
           focusWidgetId={focusWidgetId}
           onFocusWidgetDismiss={onFocusWidgetDismiss}
         />
@@ -366,6 +375,7 @@ function BoardCanvasBody({
   onFiltersChange,
   onViewModeChange,
   onPieVariantChange,
+  onLabelFieldChange,
   focusWidgetId,
   onFocusWidgetDismiss,
 }: Readonly<{
@@ -407,6 +417,12 @@ function BoardCanvasBody({
     instanceId: string,
     // eslint-disable-next-line no-unused-vars
     pieVariant: ChartPieVariant
+  ) => void;
+  onLabelFieldChange: (
+    // eslint-disable-next-line no-unused-vars
+    instanceId: string,
+    // eslint-disable-next-line no-unused-vars
+    labelField: ChartsLabelFieldId
   ) => void;
   focusWidgetId?: string;
   onFocusWidgetDismiss?: () => void;
@@ -460,6 +476,7 @@ function BoardCanvasBody({
               filters={entry?.instance.filters}
               viewMode={entry?.instance.viewMode}
               pieVariant={entry?.instance.pieVariant}
+              labelField={entry?.instance.labelField}
               focusedStatus={entry?.instance.focusedStatus}
               onRemove={() => onRemoveWidget(item.i)}
               onDuplicate={() => onDuplicateWidget(item.i)}
@@ -472,6 +489,9 @@ function BoardCanvasBody({
               }
               onPieVariantChange={(nextVariant) =>
                 onPieVariantChange(item.i, nextVariant)
+              }
+              onLabelFieldChange={(nextField) =>
+                onLabelFieldChange(item.i, nextField)
               }
               initialConfigOpen={focusWidgetId === item.i}
               onConfigOpenChange={(open) => {
@@ -590,6 +610,13 @@ export function duplicateChartWidget(
       nextInstances
     );
   }
+  if (source.labelField && source.labelField !== 'status') {
+    nextInstances = updateChartWidgetLabelField(
+      copiedId,
+      source.labelField,
+      nextInstances
+    );
+  }
   return { ...next, instances: nextInstances };
 }
 
@@ -604,18 +631,52 @@ export function renameChartWidget(
   );
 }
 
+type ChartInstanceFieldPatch = Partial<
+  Pick<
+    ChartBoardWidgetInstance,
+    | 'title'
+    | 'filters'
+    | 'viewMode'
+    | 'focusedStatus'
+    | 'pieVariant'
+    | 'labelField'
+  >
+> & {
+  readonly clearFilters?: boolean;
+  readonly clearFocusedStatus?: boolean;
+  readonly clearPieVariant?: boolean;
+  readonly clearLabelField?: boolean;
+};
+
+/** Persist a field only when set and not the omitted default. */
+function assignNonDefaultField<K extends keyof ChartBoardWidgetInstance>(
+  target: ChartBoardWidgetInstance,
+  key: K,
+  value: ChartBoardWidgetInstance[K] | undefined,
+  isOmittedDefault: boolean
+): void {
+  if (value == null || isOmittedDefault) {
+    return;
+  }
+  Object.assign(target, { [key]: value });
+}
+
+function assignUnlessCleared<K extends keyof ChartBoardWidgetInstance>(
+  target: ChartBoardWidgetInstance,
+  cleared: boolean | undefined,
+  key: K,
+  value: ChartBoardWidgetInstance[K] | undefined,
+  isOmittedDefault = false
+): void {
+  if (cleared) {
+    return;
+  }
+  assignNonDefaultField(target, key, value, isOmittedDefault);
+}
+
 function withInstanceFields(
   item: ChartBoardWidgetInstance,
-  patch: Partial<
-    Pick<
-      ChartBoardWidgetInstance,
-      'title' | 'filters' | 'viewMode' | 'focusedStatus' | 'pieVariant'
-    >
-  > & {
-    readonly clearFilters?: boolean;
-    readonly clearFocusedStatus?: boolean;
-    readonly clearPieVariant?: boolean;
-  }
+  patch: ChartInstanceFieldPatch
 ): ChartBoardWidgetInstance {
   const next: ChartBoardWidgetInstance = {
     instanceId: item.instanceId,
@@ -627,31 +688,40 @@ function withInstanceFields(
     Object.assign(next, { title });
   }
 
-  if (!patch.clearFilters) {
-    const filters = patch.filters ?? item.filters;
-    if (filters) {
-      Object.assign(next, { filters });
-    }
-  }
+  assignUnlessCleared(
+    next,
+    patch.clearFilters,
+    'filters',
+    patch.filters ?? item.filters
+  );
 
   const viewMode = patch.viewMode ?? item.viewMode;
-  if (viewMode && viewMode !== 'chart') {
-    Object.assign(next, { viewMode });
-  }
+  assignNonDefaultField(next, 'viewMode', viewMode, viewMode === 'chart');
 
-  if (!patch.clearFocusedStatus) {
-    const focusedStatus = patch.focusedStatus ?? item.focusedStatus;
-    if (focusedStatus) {
-      Object.assign(next, { focusedStatus });
-    }
-  }
+  assignUnlessCleared(
+    next,
+    patch.clearFocusedStatus,
+    'focusedStatus',
+    patch.focusedStatus ?? item.focusedStatus
+  );
 
-  if (!patch.clearPieVariant) {
-    const pieVariant = patch.pieVariant ?? item.pieVariant;
-    if (pieVariant && pieVariant !== 'donut') {
-      Object.assign(next, { pieVariant });
-    }
-  }
+  const pieVariant = patch.pieVariant ?? item.pieVariant;
+  assignUnlessCleared(
+    next,
+    patch.clearPieVariant,
+    'pieVariant',
+    pieVariant,
+    pieVariant === 'donut'
+  );
+
+  const labelField = patch.labelField ?? item.labelField;
+  assignUnlessCleared(
+    next,
+    patch.clearLabelField,
+    'labelField',
+    labelField,
+    labelField === 'status'
+  );
 
   return next;
 }
@@ -703,5 +773,28 @@ export function updateChartWidgetPieVariant(
       return withInstanceFields(item, { clearPieVariant: true });
     }
     return withInstanceFields(item, { pieVariant });
+  });
+}
+
+export function updateChartWidgetLabelField(
+  instanceId: string,
+  labelField: ChartsLabelFieldId,
+  instances: ChartBoardWidgetInstance[]
+): ChartBoardWidgetInstance[] {
+  return instances.map((item) => {
+    if (item.instanceId !== instanceId) {
+      return item;
+    }
+    const clearFocus = labelField !== 'status';
+    if (labelField === 'status') {
+      return withInstanceFields(item, {
+        clearLabelField: true,
+        clearFocusedStatus: clearFocus,
+      });
+    }
+    return withInstanceFields(item, {
+      labelField,
+      clearFocusedStatus: true,
+    });
   });
 }

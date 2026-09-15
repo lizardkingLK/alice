@@ -29,7 +29,7 @@ export const STATUS_CHART_COLORS: Record<BoardStatus, string> = {
 };
 
 export type StatusDistributionSlice = {
-  readonly status: BoardStatus;
+  readonly status: string;
   readonly label: string;
   readonly count: number;
   readonly fill: string;
@@ -81,7 +81,7 @@ type StatusDistributionWheelProps = {
   /** Rendered inside the chart container (e.g. ChartLegend). */
   readonly legend?: ReactNode;
   // eslint-disable-next-line no-unused-vars -- slice click callback
-  readonly onSliceClick?: (status: BoardStatus) => void;
+  readonly onSliceClick?: (status: string) => void;
 };
 
 /**
