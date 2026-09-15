@@ -42,14 +42,15 @@ Examples:
 
 - List or summarize **projects**, **sprints**, and **work items**
 - **Create** projects, sprints, and work items through guided prompts
-- **Attach and inspect documents**: Click the paperclip icon (📎) to attach JSON, CSV, text, or image files
-- **Parse attached files**: Ask Alice to extract work item definitions, story points, and priorities directly from your files
-- **Check duplicates**: Ask Alice to check if items in your attached document already exist in the project
-- **Batch import**: Have Alice create all new items in bulk and link parent/child tasks automatically
+- **Attach and inspect documents**: Click the paperclip icon (📎) to attach JSON, CSV, TSV, Markdown tables, Indented text outlines, YAML, or image files
+- **Universal file parsing**: Ask Alice to extract work items, estimates, priorities, parent links, and custom dynamic fields from any supported document format
+- **Check duplicates**: Ask Alice to compare parsed items against existing project items to spot duplicates before creating
+- **Atomic batch import**: Bulk create work items with strict hierarchy validation (`Epic` &rarr; `Feature` &rarr; `Story` &rarr; `Task` &rarr; `Issue`). If invalid, zero items are created and Alice asks whether you want to fix the file or skip invalid items
+- **Incremental backlog synchronization**: Re-upload an updated file anytime to update existing items' fields and reorganize their parent-child hierarchy in-place without creating duplicates
+- **Interactive action cards**: View real-time cards for created, updated, or removed items with deep links to their detail pages
 - Answer questions about projects and sprints you can already access
 
-Alice confirms intent in conversation before making changes. Successful actions
-show interactive cards with links to the created records.
+Alice confirms intent in conversation before making changes. Attachment links auto-refresh if their signed URLs expire, so you never encounter expired download errors.
 
 Alice respects your sign-in and role — it cannot bypass project membership or
 admin-only areas. Alice is focused exclusively on ALICE workspace management and will politely decline unrelated general requests.

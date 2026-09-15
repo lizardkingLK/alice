@@ -65,6 +65,86 @@ Fix Auth Token Expiry Bug,bug,high,2,Refresh tokens automatically before session
 Refactor Navigation Header,story,low,1,Modernize responsive navigation menu bar
 ```
 
+### File 3: `test-work-items-hierarchy.csv`
+
+```csv
+Issue key,Type,Title,Parent,Priority,StoryPoints,Description,Department
+CORE-1,Epic,Core Platform Architecture,,highest,,Core infrastructure overhaul,Platform
+CORE-2,Feature,Authentication Service,CORE-1,high,5,NextAuth and JWT refresh pipeline,Security
+CORE-3,Story,Login Endpoint,CORE-2,high,3,User login API route and session minting,Security
+CORE-4,Task,Write Unit Tests for Login,CORE-3,medium,2,Vitest test cases covering all error paths,Security
+```
+
+### File 4: `test-work-items-outline.txt`
+
+```text
+- [Epic] Mobile App Release (Key: MOB-1, Priority: High)
+  - [Feature] Push Notifications (Key: MOB-2)
+    - [Story] FCM Integration (Key: MOB-3, Points: 5): Set up Firebase Cloud Messaging pipeline
+      - [Task] Unit Testing (Points: 2): Write tests for payload deserialization
+```
+
+### File 5: `test-invalid-hierarchy.json` (Tests Atomic Validation)
+
+```json
+{
+  "items": [
+    {
+      "temporaryIdentifier": "item-epic",
+      "title": "Alpha Platform Overhaul",
+      "type": "epic",
+      "priority": "high"
+    },
+    {
+      "temporaryIdentifier": "item-issue",
+      "title": "Critical Security Vulnerability",
+      "type": "issue",
+      "parentReference": "item-epic"
+    },
+    {
+      "temporaryIdentifier": "item-invalid-child",
+      "title": "Subtask Under Issue",
+      "type": "task",
+      "parentReference": "item-issue",
+      "description": "Invalid: Issues and Bugs are leaf items and cannot have child tasks!"
+    }
+  ]
+}
+```
+
+### File 6: `test-work-items-updated.json` (Tests Backlog Sync & Hierarchy Re-linking)
+
+```json
+{
+  "items": [
+    {
+      "temporaryIdentifier": "item-1",
+      "title": "Implement User Notification Center",
+      "type": "story",
+      "priority": "highest",
+      "description": "UPDATED: In-app real-time notifications with push support.",
+      "storyPoints": 8
+    },
+    {
+      "temporaryIdentifier": "item-2",
+      "title": "Fix Profile Picture Upload Bug",
+      "type": "bug",
+      "priority": "highest",
+      "description": "UPDATED: Resolved memory leak during sharp image resizing.",
+      "storyPoints": 3
+    },
+    {
+      "temporaryIdentifier": "item-4-new",
+      "title": "Add Webhook Dispatcher",
+      "type": "story",
+      "priority": "high",
+      "description": "NEW: Dispatch webhooks on work item state transitions.",
+      "storyPoints": 5
+    }
+  ]
+}
+```
+
 ---
 
 ## 3. Test Cases & Step-by-Step Instructions
@@ -211,6 +291,7 @@ Refactor Navigation Header,story,low,1,Modernize responsive navigation menu bar
 **Goal**: Verify that when an attachment's 1-hour signed URL expires, clicking the attachment automatically refreshes the URL without error or re-upload.
 
 #### Option A: Natural Expiration Test
+
 1. Upload an attachment in any Alice chat conversation (e.g. `test-work-items.json`) and send the message.
 2. Leave the tab open or return after 1 hour (when the original signed URL token expires).
 3. Open DevTools (`F12` → **Network** tab).
@@ -221,6 +302,7 @@ Refactor Navigation Header,story,low,1,Modernize responsive navigation menu bar
    - The file opens/downloads successfully in a new tab without any Supabase `Invalid or expired token` error.
 
 #### Option B: Fast Simulation via Database (No 1-hour wait needed)
+
 1. Upload an attachment in chat and send the message.
 2. Note the attachment or conversation.
 3. Run a quick SQL query in Supabase / Postgres to simulate expiration:
@@ -239,3 +321,84 @@ Refactor Navigation Header,story,low,1,Modernize responsive navigation menu bar
    - Check the DB: `expires_at` is updated to 1 hour in the future (`NOW() + INTERVAL '1 hour'`).
    - The file opens seamlessly without error.
 
+---
+
+### Test Case 10: Multi-Format Attachment Ingestion
+
+**Goal**: Verify that Alice parses diverse document formats (CSV with hierarchy, Indented Outlines, Markdown tables, YAML) into structured work item trees.
+
+#### Sub-case 10A: CSV with Hierarchy & Dynamic Columns
+
+1. Attach `test-work-items-hierarchy.csv` via the paperclip icon.
+2. Ask Alice:
+   > _"Import the work items from this CSV into project [Project Key]."_
+3. **Expected Behavior**:
+   - Alice executes `parse_work_item_attachment` and preserves the 4-level parent links (`CORE-1` &rarr; `CORE-2` &rarr; `CORE-3` &rarr; `CORE-4`).
+   - Dynamic columns (e.g. `Department`) are extracted into `dynamicFields`.
+   - Executed action cards reflect the hierarchy with deep links to created items.
+
+#### Sub-case 10B: Indented Text Outline
+
+1. Attach `test-work-items-outline.txt`.
+2. Ask Alice:
+   > _"Inspect and import this outline into project [Project Key]."_
+3. **Expected Behavior**:
+   - Alice parses indentation levels into `Epic` &rarr; `Feature` &rarr; `Story` &rarr; `Task`.
+   - Explicit bracketed tags (`[Epic]`, `[Feature]`) override default types.
+   - Story points and priorities annotated in parentheses are extracted properly.
+
+---
+
+### Test Case 11: Atomic Pre-Validation & Interactive User Choice Protocol
+
+**Goal**: Verify that when a file contains hierarchy violations, ZERO items are written to the database, ZERO action cards appear, and Alice strictly pauses for user confirmation before taking any action.
+
+1. Attach `test-invalid-hierarchy.json` (contains an `Issue` with a child `Task`).
+2. Ask Alice:
+   > _"Import work items from this file into project [Project Key]."_
+3. **Inspect the Behavior**:
+   - Alice invokes `batch_import_work_items` with `skipInvalidHierarchy: false`.
+   - The pre-validator detects that `Critical Security Vulnerability` (type `Issue`) has a child task (`Subtask Under Issue`).
+   - **Database Check**: Run `SELECT count(*) FROM work_items WHERE project_id = '<projectId>';` — verify that **zero items were inserted**.
+   - **UI Check**: Verify that **zero executed action cards** appear under Alice's reply.
+   - **Alice's Prompt Response**:
+     - Explains the exact hierarchy rule violation (_"Issue / Bug is a leaf item and cannot have child items"_).
+     - Confirms that 0 items were created.
+     - Presents the two standard choices:
+       > 1. _Re-parse the file after you update and re-upload it, or_
+       > 2. _Proceed with importing only the valid items (skipping the invalid hierarchy)?_
+       >    _Let me know how you'd like to proceed._
+     - **Critically**: Alice stops and does NOT automatically proceed with Option 2 without user permission.
+4. **Test Choice Confirmation**:
+   - Reply to Alice:
+     > _"Proceed with option 2."_
+   - **Expected Behavior**:
+     - Alice now calls `batch_import_work_items` with `skipInvalidHierarchy: true`.
+     - `Alpha Platform Overhaul` (Epic) and `Critical Security Vulnerability` (Issue) are created.
+     - `Subtask Under Issue` is skipped and reported in the summary as pruned.
+     - Executed action cards appear only for the 2 valid items.
+
+---
+
+### Test Case 12: Incremental Backlog Synchronization on File Updates
+
+**Goal**: Verify that re-uploading an updated file synchronizes field changes and hierarchy moves in-place without creating duplicate work items.
+
+1. First, import `test-work-items.json` into your project (creates items `item-1`, `item-2`, and `item-3`).
+2. Attach `test-work-items-updated.json` (contains updated priority/points for `item-1` and `item-2`, a newly added `item-4-new`, and omits `item-3`).
+3. Ask Alice:
+   > _"Update the work items from this file in project [Project Key]. Also remove any items omitted from the file."_
+4. **Expected Behavior**:
+   - Alice executes `batch_import_work_items` with `updateExisting: true` and `removeDeleted: true`.
+   - **Existing items updated in-place**:
+     - `Implement User Notification Center` priority becomes `highest` and story points become `8`. No duplicate item is created.
+     - `Fix Profile Picture Upload Bug` priority becomes `highest` and description updates.
+   - **New item created**:
+     - `Add Webhook Dispatcher` is inserted as a new story.
+   - **Omitted item archived**:
+     - `Database Query Optimization` (`item-3`) is archived.
+   - **Action Cards**:
+     - Shows `Work Item Updated: ...` for modified items.
+     - Shows `Work Item Created: ...` for newly added items.
+     - Shows `Work Item Removed: ...` for deleted items.
+   - Verify on the `/work-items` page that only the expected items exist and their updated attributes are displayed immediately.
