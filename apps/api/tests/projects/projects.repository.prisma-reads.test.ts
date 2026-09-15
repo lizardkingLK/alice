@@ -123,6 +123,8 @@ describe('ProjectsRepository Prisma reads', () => {
 
   it('persists workflow config through the optimistic project update', async () => {
     updateManyMock.mockResolvedValue({ count: 1 });
+    const expectedUpdatedAt = '2026-08-25T12:00:00.000Z';
+    const lockMs = new Date(expectedUpdatedAt).getTime();
     const workflow_config = {
       version: '1' as const,
       columns: [
@@ -138,14 +140,17 @@ describe('ProjectsRepository Prisma reads', () => {
       'project-1',
       { workflow_config },
       'actor-1',
-      '2026-08-25T12:00:00.000Z'
+      expectedUpdatedAt
     );
 
     expect(updateManyMock).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
           id: 'project-1',
-          updated_at: new Date('2026-08-25T12:00:00.000Z'),
+          updated_at: {
+            gte: new Date(lockMs),
+            lt: new Date(lockMs + 1),
+          },
         },
         data: expect.objectContaining({ workflow_config }),
       })
