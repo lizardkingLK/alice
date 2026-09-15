@@ -55,6 +55,13 @@ export class ViewSharedNotification extends NotificationType {
   }
 }
 
+export class ChartSharedNotification extends NotificationType {
+  constructor() {
+    super();
+    this.type = 'chart_shared';
+  }
+}
+
 export class NotificationBuilder<T extends NotificationType> {
   private readonly instance: T;
 

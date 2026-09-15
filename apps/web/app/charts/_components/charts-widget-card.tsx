@@ -29,8 +29,12 @@ import {
 import { cn } from '@repo/ui/lib/utils';
 import type { ChartWidgetDefinition } from '@/app/charts/_components/charts-widget-catalog';
 import type {
+  ChartPieVariant,
   ChartWidgetTypeId,
   ChartWidgetViewMode,
+  ChartsWidgetFiltersChangeHandler,
+  ChartsWidgetPieVariantChangeHandler,
+  ChartsWidgetViewModeChangeHandler,
 } from '@/app/charts/_components/charts.types';
 import {
   CHARTS_SAMPLE_WORK_ITEMS,
@@ -51,18 +55,20 @@ type ChartsWidgetCardProps = {
   readonly filters?: ChartsWidgetFilterDraft;
   /** Fullscreen-only layout; canvas always shows the chart. */
   readonly viewMode?: ChartWidgetViewMode;
+  readonly pieVariant?: ChartPieVariant;
   readonly focusedStatus?: WorkItemStatus;
   readonly onRemove: () => void;
   readonly onDuplicate: () => void;
   // eslint-disable-next-line no-unused-vars -- rename callback
   readonly onRename: (title: string) => void;
-  // eslint-disable-next-line no-unused-vars -- persist applied filters
-  readonly onFiltersChange?: (filters: ChartsWidgetFilterDraft | null) => void;
-  readonly onViewModeChange?: (
+  readonly onFiltersChange?: ChartsWidgetFiltersChangeHandler;
+  readonly onViewModeChange?: ChartsWidgetViewModeChangeHandler;
+  readonly onPieVariantChange?: ChartsWidgetPieVariantChangeHandler;
+  /** Open config when landing from `/charts/[id]/widget/[widgetId]`. */
+  readonly initialConfigOpen?: boolean;
+  readonly onConfigOpenChange?: (
     // eslint-disable-next-line no-unused-vars
-    viewMode: ChartWidgetViewMode,
-    // eslint-disable-next-line no-unused-vars
-    focusedStatus?: WorkItemStatus | null
+    open: boolean
   ) => void;
   readonly className?: string;
 };
@@ -74,18 +80,22 @@ export function ChartsWidgetCard({
   Icon,
   filters,
   viewMode,
+  pieVariant,
   focusedStatus,
   onRemove,
   onDuplicate,
   onRename,
   onFiltersChange,
   onViewModeChange,
+  onPieVariantChange,
+  initialConfigOpen = false,
+  onConfigOpenChange,
   className,
 }: Readonly<ChartsWidgetCardProps>) {
   const isChart = typeId === 'chart';
   const [menuOpen, setMenuOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
-  const [configOpen, setConfigOpen] = useState(false);
+  const [configOpen, setConfigOpen] = useState(initialConfigOpen);
   const [configFiltersOpen, setConfigFiltersOpen] = useState(false);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const [renameDraft, setRenameDraft] = useState(title);
@@ -115,6 +125,15 @@ export function ChartsWidgetCard({
   const openConfig = (withFilters: boolean) => {
     setConfigFiltersOpen(withFilters);
     setConfigOpen(true);
+    onConfigOpenChange?.(true);
+  };
+
+  const handleConfigOpenChange = (open: boolean) => {
+    setConfigOpen(open);
+    onConfigOpenChange?.(open);
+    if (!open) {
+      setConfigFiltersOpen(false);
+    }
   };
 
   const placeholderBody = (
@@ -128,7 +147,11 @@ export function ChartsWidgetCard({
   );
 
   const body = isChart ? (
-    <ChartsStatusPiePreview size="card" workItems={canvasWorkItems} />
+    <ChartsStatusPiePreview
+      size="card"
+      workItems={canvasWorkItems}
+      pieVariant={pieVariant}
+    />
   ) : (
     placeholderBody
   );
@@ -275,16 +298,18 @@ export function ChartsWidgetCard({
       {isChart ? (
         <ChartsWidgetConfigDialog
           open={configOpen}
-          onOpenChange={setConfigOpen}
+          onOpenChange={handleConfigOpenChange}
           title={title}
           initialFiltersOpen={configFiltersOpen}
           filters={filters ?? null}
           viewMode={viewMode}
+          pieVariant={pieVariant}
           focusedStatus={focusedStatus}
           sessionWorkItems={sessionWorkItems}
           onSessionWorkItemsChange={setSessionWorkItems}
           onFiltersChange={onFiltersChange}
           onViewModeChange={onViewModeChange}
+          onPieVariantChange={onPieVariantChange}
           onRename={() => {
             window.setTimeout(() => openRename(), 0);
           }}
