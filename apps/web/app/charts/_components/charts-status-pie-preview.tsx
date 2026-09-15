@@ -5,7 +5,9 @@ import type { WorkItemStatus } from '@repo/types';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';
 import {
-  buildChartsStatusPieFromSample,
+  buildChartsPieFromSample,
+  DEFAULT_CHARTS_LABEL_FIELD,
+  type ChartsLabelFieldId,
   type ChartsSampleWorkItem,
 } from '@/app/charts/_components/charts-sample.data';
 import type { ChartPieVariant } from '@/app/charts/_components/charts.types';
@@ -20,7 +22,9 @@ type ChartsStatusPiePreviewProps = {
   readonly workItems?: readonly ChartsSampleWorkItem[];
   /** Pie (solid) vs donut; defaults to donut. */
   readonly pieVariant?: ChartPieVariant;
-  /** When set, pie slices and legend rows are clickable. */
+  /** Labels → Columns group-by; defaults to status. */
+  readonly labelField?: ChartsLabelFieldId;
+  /** When set, pie slices and legend rows are clickable (status field only). */
   // eslint-disable-next-line no-unused-vars -- slice click callback
   readonly onSliceClick?: (status: WorkItemStatus) => void;
 };
@@ -30,17 +34,18 @@ export function ChartsStatusPiePreview({
   size = 'card',
   workItems,
   pieVariant = 'donut',
+  labelField = DEFAULT_CHARTS_LABEL_FIELD,
   onSliceClick,
 }: Readonly<ChartsStatusPiePreviewProps>) {
   const isDialog = size === 'dialog';
   const isSplit = size === 'split';
   const { data, config, total } = useMemo(
-    () => buildChartsStatusPieFromSample(workItems),
-    [workItems]
+    () => buildChartsPieFromSample(workItems, labelField),
+    [labelField, workItems]
   );
 
   const wheelData = data as StatusDistributionSlice[];
-  const interactive = Boolean(onSliceClick);
+  const sliceInteractive = Boolean(onSliceClick) && labelField === 'status';
   const innerRadius = pieVariant === 'pie' ? 0 : '48%';
   const isRoomy = isDialog || isSplit;
 
@@ -61,7 +66,11 @@ export function ChartsStatusPiePreview({
         className={cn('relative min-h-0 min-w-0 flex-1', pieSlotClass)}
         innerRadius={innerRadius}
         outerRadius="90%"
-        onSliceClick={onSliceClick}
+        onSliceClick={
+          sliceInteractive
+            ? (status) => onSliceClick?.(status as WorkItemStatus)
+            : undefined
+        }
       />
 
       <ul
@@ -69,7 +78,7 @@ export function ChartsStatusPiePreview({
           'flex shrink-0 flex-col justify-center',
           isRoomy ? 'min-w-36 gap-3' : 'min-w-28 gap-2'
         )}
-        aria-label="Status legend"
+        aria-label="Chart legend"
       >
         {data.length === 0 ? (
           <li className="text-muted-foreground text-sm">No sample tasks</li>
@@ -94,13 +103,11 @@ export function ChartsStatusPiePreview({
             );
             return (
               <li key={entry.status} className="min-w-0">
-                {interactive ? (
+                {sliceInteractive ? (
                   <button
                     type="button"
                     className="hover:bg-muted/60 flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-md px-1 py-0.5 text-left text-sm"
-                    onClick={() =>
-                      onSliceClick?.(entry.status as WorkItemStatus)
-                    }
+                    onClick={() => onSliceClick?.(entry.key as WorkItemStatus)}
                   >
                     {legendRow}
                   </button>

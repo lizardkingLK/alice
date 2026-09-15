@@ -10,34 +10,63 @@ import {
   CollapsibleTrigger,
 } from '@repo/ui/components/ui/collapsible';
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@repo/ui/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@repo/ui/components/ui/popover';
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@repo/ui/components/ui/tooltip';
 import {
+  Calendar,
   ChartArea,
   ChartBar,
   ChartColumn,
   ChartLine,
   ChartPie,
   ChartScatter,
+  Check,
   ChevronDown,
   Donut,
   Info,
+  LayoutGrid,
   List,
   Paintbrush,
   PieChart,
   Settings,
+  TextCursorInput,
+  User,
+  Rows3,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
-import type { ChartPieVariant } from '@/app/charts/_components/charts.types';
+import type {
+  ChartPieVariant,
+  ChartsLabelFieldId,
+} from '@/app/charts/_components/charts.types';
+import {
+  CHARTS_LABEL_COLUMNS,
+  DEFAULT_CHARTS_LABEL_FIELD,
+} from '@/app/charts/_components/charts-sample.data';
 import { STATUS_META } from '@/app/work-items/_helpers/work-item-status';
 
 type ChartsWidgetSettingsSidebarProps = {
   readonly pieVariant: ChartPieVariant;
   // eslint-disable-next-line no-unused-vars -- pie subtype change
   readonly onPieVariantChange: (variant: ChartPieVariant) => void;
+  readonly labelField?: ChartsLabelFieldId;
+  // eslint-disable-next-line no-unused-vars -- labels column change
+  readonly onLabelFieldChange?: (field: ChartsLabelFieldId) => void;
   readonly className?: string;
 };
 
@@ -368,23 +397,123 @@ function StaticSubitemColumnsField() {
   );
 }
 
-function LabelsSection() {
+function LabelsColumnSelect({
+  labelField,
+  onLabelFieldChange,
+}: Readonly<{
+  labelField: ChartsLabelFieldId;
+  // eslint-disable-next-line no-unused-vars
+  onLabelFieldChange: (field: ChartsLabelFieldId) => void;
+}>) {
+  const [open, setOpen] = useState(false);
+  const selected =
+    CHARTS_LABEL_COLUMNS.find((column) => column.id === labelField) ??
+    CHARTS_LABEL_COLUMNS.find(
+      (column) => column.id === DEFAULT_CHARTS_LABEL_FIELD
+    );
+
   return (
-    <div className="pointer-events-none flex flex-col gap-3 opacity-90">
+    <div>
+      <StaticFieldLabel>Columns</StaticFieldLabel>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            aria-label="Select labels column"
+            className="border-input bg-background h-auto min-h-9 w-full justify-between gap-2 px-2 py-1.5 font-normal"
+          >
+            <span className="bg-muted text-foreground inline-flex min-w-0 items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium">
+              <LabelFieldIcon fieldId={selected?.id ?? 'status'} />
+              <span className="truncate">{selected?.label ?? 'Status'}</span>
+            </span>
+            <ChevronDown className="size-3.5 shrink-0 opacity-60" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="w-(--radix-popover-trigger-width) p-0"
+          align="start"
+        >
+          <Command>
+            <CommandInput placeholder="Search columns…" />
+            <CommandList>
+              <CommandEmpty>No column found.</CommandEmpty>
+              <CommandGroup>
+                {CHARTS_LABEL_COLUMNS.map((column) => (
+                  <CommandItem
+                    key={column.id}
+                    value={column.label}
+                    onSelect={() => {
+                      onLabelFieldChange(column.id);
+                      setOpen(false);
+                    }}
+                  >
+                    <LabelFieldIcon fieldId={column.id} />
+                    <span className="min-w-0 flex-1 truncate">
+                      {column.label}
+                    </span>
+                    <Check
+                      className={cn(
+                        'size-3.5 shrink-0',
+                        column.id === labelField ? 'opacity-100' : 'opacity-0'
+                      )}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
+function LabelFieldIcon({
+  fieldId,
+}: Readonly<{ fieldId: ChartsLabelFieldId }>) {
+  const className = 'size-3.5 shrink-0 opacity-70';
+  switch (fieldId) {
+    case 'board':
+      return <LayoutGrid className={className} aria-hidden />;
+    case 'group':
+      return <Rows3 className={className} aria-hidden />;
+    case 'name':
+      return <TextCursorInput className={className} aria-hidden />;
+    case 'owner':
+      return <User className={className} aria-hidden />;
+    case 'status':
+      return (
+        <span
+          className="size-2.5 shrink-0 rounded-sm"
+          style={{ backgroundColor: 'var(--chart-1)' }}
+          aria-hidden
+        />
+      );
+    case 'dueDate':
+      return <Calendar className={className} aria-hidden />;
+    default:
+      return null;
+  }
+}
+
+function LabelsSection({
+  labelField,
+  onLabelFieldChange,
+}: Readonly<{
+  labelField: ChartsLabelFieldId;
+  // eslint-disable-next-line no-unused-vars
+  onLabelFieldChange: (field: ChartsLabelFieldId) => void;
+}>) {
+  return (
+    <div className="flex flex-col gap-3">
       <StaticColumnSelectMode />
-      <div>
-        <StaticFieldLabel>Columns</StaticFieldLabel>
-        <div className="border-input bg-background flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border px-2 py-1.5">
-          <span className="bg-muted text-foreground inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium">
-            <span
-              className="size-2.5 rounded-sm"
-              style={{ backgroundColor: 'var(--chart-1)' }}
-              aria-hidden
-            />
-            <span>Status</span>
-          </span>
-        </div>
-      </div>
+      <LabelsColumnSelect
+        labelField={labelField}
+        onLabelFieldChange={onLabelFieldChange}
+      />
       <StaticSubitemColumnsField />
     </div>
   );
@@ -505,6 +634,8 @@ function ColumnsSection() {
 export function ChartsWidgetSettingsSidebar({
   pieVariant,
   onPieVariantChange,
+  labelField = DEFAULT_CHARTS_LABEL_FIELD,
+  onLabelFieldChange,
   className,
 }: Readonly<ChartsWidgetSettingsSidebarProps>) {
   return (
@@ -530,7 +661,10 @@ export function ChartsWidgetSettingsSidebar({
             />
           </SettingsSection>
           <SettingsSection title="Labels">
-            <LabelsSection />
+            <LabelsSection
+              labelField={labelField}
+              onLabelFieldChange={(field) => onLabelFieldChange?.(field)}
+            />
           </SettingsSection>
           <SettingsSection title="Values">
             <ValuesSection />

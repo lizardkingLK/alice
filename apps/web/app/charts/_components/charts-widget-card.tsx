@@ -30,14 +30,17 @@ import { cn } from '@repo/ui/lib/utils';
 import type { ChartWidgetDefinition } from '@/app/charts/_components/charts-widget-catalog';
 import type {
   ChartPieVariant,
+  ChartsLabelFieldId,
   ChartWidgetTypeId,
   ChartWidgetViewMode,
   ChartsWidgetFiltersChangeHandler,
+  ChartsWidgetLabelFieldChangeHandler,
   ChartsWidgetPieVariantChangeHandler,
   ChartsWidgetViewModeChangeHandler,
 } from '@/app/charts/_components/charts.types';
 import {
   CHARTS_SAMPLE_WORK_ITEMS,
+  DEFAULT_CHARTS_LABEL_FIELD,
   filterChartsSampleWorkItems,
   type ChartsSampleWorkItem,
   type ChartsWidgetFilterDraft,
@@ -56,6 +59,7 @@ type ChartsWidgetCardProps = {
   /** Fullscreen-only layout; canvas always shows the chart. */
   readonly viewMode?: ChartWidgetViewMode;
   readonly pieVariant?: ChartPieVariant;
+  readonly labelField?: ChartsLabelFieldId;
   readonly focusedStatus?: WorkItemStatus;
   readonly onRemove: () => void;
   readonly onDuplicate: () => void;
@@ -64,6 +68,7 @@ type ChartsWidgetCardProps = {
   readonly onFiltersChange?: ChartsWidgetFiltersChangeHandler;
   readonly onViewModeChange?: ChartsWidgetViewModeChangeHandler;
   readonly onPieVariantChange?: ChartsWidgetPieVariantChangeHandler;
+  readonly onLabelFieldChange?: ChartsWidgetLabelFieldChangeHandler;
   /** Open config when landing from `/charts/[id]/widget/[widgetId]`. */
   readonly initialConfigOpen?: boolean;
   readonly onConfigOpenChange?: (
@@ -81,6 +86,7 @@ export function ChartsWidgetCard({
   filters,
   viewMode,
   pieVariant,
+  labelField = DEFAULT_CHARTS_LABEL_FIELD,
   focusedStatus,
   onRemove,
   onDuplicate,
@@ -88,6 +94,7 @@ export function ChartsWidgetCard({
   onFiltersChange,
   onViewModeChange,
   onPieVariantChange,
+  onLabelFieldChange,
   initialConfigOpen = false,
   onConfigOpenChange,
   className,
@@ -151,6 +158,7 @@ export function ChartsWidgetCard({
       size="card"
       workItems={canvasWorkItems}
       pieVariant={pieVariant}
+      labelField={labelField}
     />
   ) : (
     placeholderBody
@@ -304,12 +312,14 @@ export function ChartsWidgetCard({
           filters={filters ?? null}
           viewMode={viewMode}
           pieVariant={pieVariant}
+          labelField={labelField}
           focusedStatus={focusedStatus}
           sessionWorkItems={sessionWorkItems}
           onSessionWorkItemsChange={setSessionWorkItems}
           onFiltersChange={onFiltersChange}
           onViewModeChange={onViewModeChange}
           onPieVariantChange={onPieVariantChange}
+          onLabelFieldChange={onLabelFieldChange}
           onRename={() => {
             window.setTimeout(() => openRename(), 0);
           }}

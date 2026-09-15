@@ -23,6 +23,7 @@ import {
   removeChartWidget,
   renameChartWidget,
   updateChartWidgetFilters,
+  updateChartWidgetLabelField,
   updateChartWidgetPieVariant,
   updateChartWidgetViewMode,
 } from '@/app/charts/_components/charts-board-canvas';
@@ -39,6 +40,7 @@ import type {
   ChartBoardStatusFilter,
   ChartBoardWidgetInstance,
   ChartPieVariant,
+  ChartsLabelFieldId,
   ChartWidgetTypeId,
   ChartWidgetViewMode,
   ChartWorkspaceRecord,
@@ -326,6 +328,15 @@ export function ChartsWorkspace({
     [commitInstances, instances]
   );
 
+  const handleLabelFieldChange = useCallback(
+    (instanceId: string, labelField: ChartsLabelFieldId) => {
+      commitInstances(
+        updateChartWidgetLabelField(instanceId, labelField, instances)
+      );
+    },
+    [commitInstances, instances]
+  );
+
   const handleCloseWidgetDeepLink = useCallback(() => {
     if (!focusWidgetId) {
       return;
@@ -429,6 +440,7 @@ export function ChartsWorkspace({
             onFiltersChange={handleFiltersChange}
             onViewModeChange={handleViewModeChange}
             onPieVariantChange={handlePieVariantChange}
+            onLabelFieldChange={handleLabelFieldChange}
             onFocusWidgetDismiss={handleCloseWidgetDeepLink}
           />
         </CardContent>

@@ -89,16 +89,23 @@ Use the **split view** button in the toolbar to choose:
 | Table      | Collapsible groups of sample tasks by status (paginated) |
 | Split mode | Chart on top and the status table underneath             |
 
-Click a pie slice (or legend row) to jump to **Split** for that status. Pick
-another layout to clear the status focus.
+Click a pie slice (or legend row) to jump to **Split** for that status when
+Labels is set to **Status**. Pick another layout to clear the status focus.
 
 ### Widget settings
 
 1. Select the **settings** (gear) button in the fullscreen toolbar.
 2. Under **Chart type**, choose **Pie** or **Donut**. Other chart types show
    **Coming soon**.
-3. **Labels**, **Values**, **Customize**, **Groups**, and **Choose which
-   columns to show** are preview UI only for now.
+3. Under **Labels** → **Columns**, choose how to group the chart: **Board**,
+   **Group**, **Name**, **Owner**, **Status**, or **Due date**. The pie and
+   legend update from the sample data right away. Selection is saved with the
+   widget on this device (and with the workspace when cloud save is enabled).
+4. **Values**, **Customize**, **Groups**, and **Choose which columns to show**
+   are preview UI only for now.
+
+The table layout still groups tasks by **status**. Clicking a pie slice (or
+legend row) jumps to **Split** for that status only when Labels is **Status**.
 
 Pie vs donut is saved with the widget on this device (and with the workspace
 when cloud save is enabled).
