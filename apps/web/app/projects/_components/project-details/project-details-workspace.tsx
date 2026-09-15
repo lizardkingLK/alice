@@ -86,6 +86,7 @@ interface ProjectDetailsWorkspaceProps {
   readonly workItems: ProjectWorkItemsProps;
   readonly teams: ProjectTeamsProps;
   readonly sprints: ProjectSprintsProps;
+  readonly boardRuleTeams?: Team[];
   readonly initialColumnVisibility?: VisibilityState;
   readonly columnVisibilityHasCookie?: boolean;
 }
@@ -148,6 +149,7 @@ export function ProjectDetailsWorkspace({
   workItems,
   teams,
   sprints,
+  boardRuleTeams = [],
   initialColumnVisibility,
   columnVisibilityHasCookie,
 }: Readonly<ProjectDetailsWorkspaceProps>) {
@@ -356,6 +358,22 @@ export function ProjectDetailsWorkspace({
               project={project}
               canEdit={canEditProject}
               currentUserId={currentUserId}
+              teams={boardRuleTeams.map((team) => ({
+                id: team.id,
+                name: team.name,
+              }))}
+              members={members
+                .filter(
+                  (member) =>
+                    member.user !== null &&
+                    allUsers.some((user) => user.id === member.user_id)
+                )
+                .map((member) => ({
+                  userId: member.user_id,
+                  name: member.user?.name ?? member.user_id,
+                  email: member.user?.email,
+                  role: member.user?.role,
+                }))}
             />
           </div>
         )}

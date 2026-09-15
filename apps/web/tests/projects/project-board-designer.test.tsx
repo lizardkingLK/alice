@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BoardDesignerWorkspace } from '@/app/projects/_components/project-details/board-designer-workspace';
 import { updateProject } from '@/app/projects/_services/projects.mutations.client';
 import { projectFactory } from '../factories/project.factory';
+import { pickComboboxOption } from '../helpers/pick-combobox-option';
 
 const refresh = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -26,6 +27,8 @@ const customConfig = {
     { id: 'done', name: 'Done', status: 'Done' as const },
   ],
 };
+const TEAM_ID = '764e1be5-67b4-43dc-a30c-0f66a07ba780';
+const USER_ID = '1559d73c-a39f-452d-a275-e981dedff035';
 
 function renderDesigner(
   canEdit = true,
@@ -43,6 +46,15 @@ function renderDesigner(
       project={project}
       canEdit={canEdit}
       currentUserId="actor-1"
+      teams={[{ id: TEAM_ID, name: 'QA Team' }]}
+      members={[
+        {
+          userId: USER_ID,
+          name: 'Alice Reviewer',
+          email: 'alice@example.com',
+          role: 'member',
+        },
+      ]}
     />
   );
 }
@@ -157,6 +169,137 @@ describe('BoardDesignerWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Add column' })).toBeDisabled();
     expect(screen.getByLabelText('Column name 1')).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Movement rules for Code Review' })
+    ).toBeDisabled();
+  });
+
+  it('creates an OR rule and upgrades a version 1 board to version 2', async () => {
+    renderDesigner();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Movement rules for Code Review' })
+    );
+
+    expect(
+      screen.getByText('Movement rules for Code Review')
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Any selected role, team, or person/i)
+    ).not.toBeInTheDocument();
+    await pickComboboxOption('Source column', 'Development');
+    fireEvent.click(screen.getByRole('combobox', { name: 'Access mode' }));
+    fireEvent.click(await screen.findByRole('option', { name: 'Restricted' }));
+
+    expect(
+      screen.getByText(/Any selected role, team, or person/i)
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('Manager'));
+    fireEvent.click(screen.getByLabelText('QA Team'));
+    fireEvent.click(screen.getByLabelText(/Alice Reviewer/));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Apply movement rule' })
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(updateProject).mock.calls[0]?.[1].workflow_config).toEqual(
+      {
+        version: '2',
+        columns: customConfig.columns,
+        transitions: [
+          {
+            fromColumnId: 'development',
+            toColumnId: 'code-review',
+            allowAnyOf: [
+              { scope: 'role', role: 'manager' },
+              { scope: 'team', teamId: TEAM_ID },
+              { scope: 'user', userId: USER_ID },
+            ],
+          },
+        ],
+      }
+    );
+  });
+
+  it('uses Everyone mode to remove an existing transition rule', async () => {
+    renderDesigner(true, {
+      version: '2',
+      columns: customConfig.columns,
+      transitions: [
+        {
+          fromColumnId: 'development',
+          toColumnId: 'code-review',
+          allowAnyOf: [{ scope: 'role', role: 'manager' }],
+        },
+      ],
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Movement rules for Code Review' })
+    );
+    await pickComboboxOption('Source column', 'Development');
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', { name: 'Access mode' })
+      ).toHaveTextContent('Restricted')
+    );
+    fireEvent.click(screen.getByRole('combobox', { name: 'Access mode' }));
+    fireEvent.click(await screen.findByRole('option', { name: 'Everyone' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Apply movement rule' })
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
+    expect(
+      vi.mocked(updateProject).mock.calls[0]?.[1].workflow_config
+    ).toMatchObject({ version: '2', transitions: [] });
+  });
+
+  it('warns about a stale reference and removes it when the rule is repaired', async () => {
+    const staleUserId = '5be58df2-22c8-45e5-b618-7b0bdbbf72bc';
+    renderDesigner(true, {
+      version: '2',
+      columns: customConfig.columns,
+      transitions: [
+        {
+          fromColumnId: 'development',
+          toColumnId: 'code-review',
+          allowAnyOf: [
+            { scope: 'role', role: 'manager' },
+            { scope: 'user', userId: staleUserId },
+          ],
+        },
+      ],
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Movement rules for Code Review' })
+    );
+    await pickComboboxOption('Source column', 'Development');
+
+    expect(
+      await screen.findByText(
+        /saved team or user reference is no longer active/i
+      )
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Apply movement rule' })
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(updateProject).mock.calls[0]?.[1].workflow_config).toEqual(
+      {
+        version: '2',
+        columns: customConfig.columns,
+        transitions: [
+          {
+            fromColumnId: 'development',
+            toColumnId: 'code-review',
+            allowAnyOf: [{ scope: 'role', role: 'manager' }],
+          },
+        ],
+      }
+    );
   });
 
   it('resets a custom board by saving workflow_config null', async () => {

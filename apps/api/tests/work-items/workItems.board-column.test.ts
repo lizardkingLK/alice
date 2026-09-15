@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { WorkItemUpdateBody } from '@repo/types/api/v1';
 import type { WorkItemRepository } from '../../src/routes/api/workItems/workItems.repository';
-import { WorkItemValidationError } from '../../src/routes/api/workItems/workItems.errors';
+import {
+  BoardMoveForbiddenError,
+  WorkItemAccessError,
+  WorkItemValidationError,
+} from '../../src/routes/api/workItems/workItems.errors';
 import { WorkItemService } from '../../src/routes/api/workItems/workItems.service';
 
 vi.mock('../../src/lib/auth-helpers', () => ({
@@ -19,12 +23,14 @@ vi.mock('../../src/lib/file-helpers', () => ({
 const {
   assertCanAccessProjectMock,
   getByIdMock,
+  getBoardActorContextMock,
   getProjectWorkflowConfigMock,
   requireProjectMemberMock,
   updateMock,
 } = vi.hoisted(() => ({
   assertCanAccessProjectMock: vi.fn(),
   getByIdMock: vi.fn(),
+  getBoardActorContextMock: vi.fn(),
   getProjectWorkflowConfigMock: vi.fn(),
   requireProjectMemberMock: vi.fn(),
   updateMock: vi.fn(),
@@ -33,6 +39,7 @@ const {
 const repository = {
   assertCanAccessProject: assertCanAccessProjectMock,
   getById: getByIdMock,
+  getBoardActorContext: getBoardActorContextMock,
   getProjectWorkflowConfig: getProjectWorkflowConfigMock,
   requireProjectMember: requireProjectMemberMock,
   update: updateMock,
@@ -43,6 +50,9 @@ const ACTOR_ID = 'user-1';
 const WORK_ITEM_ID = 'work-item-1';
 const PROJECT_ID = 'project-1';
 const LOCK = '2026-09-11T00:00:00.000Z';
+const ACTOR_UUID = '1559d73c-a39f-452d-a275-e981dedff035';
+const OTHER_USER_ID = '2c175370-9c4f-4b0f-a472-1449c74be91e';
+const TEAM_ID = '764e1be5-67b4-43dc-a30c-0f66a07ba780';
 
 const CUSTOM_BOARD = {
   version: '1',
@@ -55,6 +65,18 @@ const CUSTOM_BOARD = {
     { id: 'done', name: 'Done', status: 'Done' },
   ],
 };
+
+function ruleBoard(
+  allowAnyOf: Array<Record<string, string>>,
+  fromColumnId = 'development',
+  toColumnId = 'code-review'
+) {
+  return {
+    ...CUSTOM_BOARD,
+    version: '2',
+    transitions: [{ fromColumnId, toColumnId, allowAnyOf }],
+  };
+}
 
 const currentWorkItem = {
   id: WORK_ITEM_ID,
@@ -105,6 +127,11 @@ describe('WorkItemService board-column validation', () => {
     assertCanAccessProjectMock.mockResolvedValue(undefined);
     getByIdMock.mockResolvedValue(currentWorkItem);
     getProjectWorkflowConfigMock.mockResolvedValue(CUSTOM_BOARD);
+    getBoardActorContextMock.mockResolvedValue({
+      role: 'member',
+      isActiveProjectMember: true,
+      activeTeamIds: [],
+    });
     updateMock.mockImplementation(async (input) => ({
       ...currentWorkItem,
       ...input,
@@ -126,6 +153,17 @@ describe('WorkItemService board-column validation', () => {
         board_column_id: 'code-review',
       })
     );
+  });
+
+  it('preserves the existing project-access gate before board policy', async () => {
+    requireProjectMemberMock.mockRejectedValue(new WorkItemAccessError());
+
+    await expect(
+      service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)
+    ).rejects.toBeInstanceOf(WorkItemAccessError);
+
+    expect(getProjectWorkflowConfigMock).not.toHaveBeenCalled();
+    expect(updateMock).not.toHaveBeenCalled();
   });
 
   it('rejects a column ID missing from the work item project', async () => {
@@ -174,7 +212,7 @@ describe('WorkItemService board-column validation', () => {
     expect(updateMock).not.toHaveBeenCalled();
   });
 
-  it('allows explicit null without requiring a custom configuration', async () => {
+  it('allows explicit null on a version 1 board', async () => {
     await expect(
       service.updateWorkItem(
         ACTOR_ID,
@@ -184,6 +222,167 @@ describe('WorkItemService board-column validation', () => {
       )
     ).resolves.toMatchObject({ board_column_id: null });
 
-    expect(getProjectWorkflowConfigMock).not.toHaveBeenCalled();
+    expect(getProjectWorkflowConfigMock).toHaveBeenCalledWith(PROJECT_ID);
+    expect(getBoardActorContextMock).not.toHaveBeenCalled();
+  });
+
+  it('allows a version 2 transition when no rule matches the pair', async () => {
+    getProjectWorkflowConfigMock.mockResolvedValue({
+      ...CUSTOM_BOARD,
+      version: '2',
+      transitions: [],
+    });
+
+    await expect(
+      service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)
+    ).resolves.toMatchObject({ board_column_id: 'code-review' });
+  });
+
+  it('allows an exact matching role', async () => {
+    getProjectWorkflowConfigMock.mockResolvedValue(
+      ruleBoard([{ scope: 'role', role: 'manager' }])
+    );
+    getBoardActorContextMock.mockResolvedValue({
+      role: 'manager',
+      isActiveProjectMember: true,
+      activeTeamIds: [],
+    });
+
+    await expect(
+      service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)
+    ).resolves.toMatchObject({ board_column_id: 'code-review' });
+  });
+
+  it('denies an incorrect role without an automatic admin bypass', async () => {
+    getProjectWorkflowConfigMock.mockResolvedValue(
+      ruleBoard([{ scope: 'role', role: 'manager' }])
+    );
+    getBoardActorContextMock.mockResolvedValue({
+      role: 'admin',
+      isActiveProjectMember: true,
+      activeTeamIds: [],
+    });
+
+    await expect(
+      service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)
+    ).rejects.toBeInstanceOf(BoardMoveForbiddenError);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it('allows an active same-project team member', async () => {
+    getProjectWorkflowConfigMock.mockResolvedValue(
+      ruleBoard([{ scope: 'team', teamId: TEAM_ID }])
+    );
+    getBoardActorContextMock.mockResolvedValue({
+      role: 'member',
+      isActiveProjectMember: true,
+      activeTeamIds: [TEAM_ID],
+    });
+
+    await expect(
+      service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)
+    ).resolves.toMatchObject({ board_column_id: 'code-review' });
+    expect(getBoardActorContextMock).toHaveBeenCalledWith(ACTOR_ID, PROJECT_ID);
+  });
+
+  it('treats missing or inactive team membership as non-matching', async () => {
+    getProjectWorkflowConfigMock.mockResolvedValue(
+      ruleBoard([{ scope: 'team', teamId: TEAM_ID }])
+    );
+
+    await expect(
+      service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)
+    ).rejects.toBeInstanceOf(BoardMoveForbiddenError);
+  });
+
+  it('allows the configured active project member by public user id', async () => {
+    getProjectWorkflowConfigMock.mockResolvedValue(
+      ruleBoard([{ scope: 'user', userId: ACTOR_UUID }])
+    );
+
+    await expect(
+      service.updateWorkItem(ACTOR_UUID, WORK_ITEM_ID, updateInput(), LOCK)
+    ).resolves.toMatchObject({ board_column_id: 'code-review' });
+  });
+
+  it('denies a different, stale, inactive, or non-project user matcher', async () => {
+    getProjectWorkflowConfigMock.mockResolvedValue(
+      ruleBoard([{ scope: 'user', userId: OTHER_USER_ID }])
+    );
+    getBoardActorContextMock.mockResolvedValue(null);
+
+    await expect(
+      service.updateWorkItem(ACTOR_UUID, WORK_ITEM_ID, updateInput(), LOCK)
+    ).rejects.toBeInstanceOf(BoardMoveForbiddenError);
+  });
+
+  it('uses OR semantics across role, team, and user matchers', async () => {
+    getProjectWorkflowConfigMock.mockResolvedValue(
+      ruleBoard([
+        { scope: 'role', role: 'manager' },
+        { scope: 'team', teamId: TEAM_ID },
+        { scope: 'user', userId: OTHER_USER_ID },
+      ])
+    );
+    getBoardActorContextMock.mockResolvedValue({
+      role: 'member',
+      isActiveProjectMember: true,
+      activeTeamIds: [TEAM_ID],
+    });
+
+    await expect(
+      service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)
+    ).resolves.toMatchObject({ board_column_id: 'code-review' });
+  });
+
+  it('denies the transition when all configured references are stale', async () => {
+    getProjectWorkflowConfigMock.mockResolvedValue(
+      ruleBoard([
+        { scope: 'team', teamId: TEAM_ID },
+        { scope: 'user', userId: OTHER_USER_ID },
+      ])
+    );
+
+    await expect(
+      service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)
+    ).rejects.toBeInstanceOf(BoardMoveForbiddenError);
+  });
+
+  it.each([null, 'removed-column'])(
+    'uses status fallback for a null or stale source column id (%s)',
+    async (boardColumnId) => {
+      getByIdMock.mockResolvedValue({
+        ...currentWorkItem,
+        board_column_id: boardColumnId,
+      });
+      getProjectWorkflowConfigMock.mockResolvedValue(
+        ruleBoard([{ scope: 'role', role: 'manager' }])
+      );
+
+      await expect(
+        service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)
+      ).rejects.toBeInstanceOf(BoardMoveForbiddenError);
+    }
+  );
+
+  it('enforces a status-only/null-destination move using project fallback', async () => {
+    getByIdMock.mockResolvedValue({
+      ...currentWorkItem,
+      status: 'ToDo',
+      board_column_id: 'todo',
+    });
+    getProjectWorkflowConfigMock.mockResolvedValue(
+      ruleBoard([{ scope: 'role', role: 'manager' }], 'todo', 'development')
+    );
+
+    await expect(
+      service.updateWorkItem(
+        ACTOR_ID,
+        WORK_ITEM_ID,
+        updateInput({ status: 'InProgress', board_column_id: null }),
+        LOCK
+      )
+    ).rejects.toBeInstanceOf(BoardMoveForbiddenError);
+    expect(updateMock).not.toHaveBeenCalled();
   });
 });

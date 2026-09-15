@@ -13,11 +13,14 @@ import {
 } from '@repo/types';
 import { createWorkItemListRow } from '../factories/work-item.factory';
 
-const { findManyMock, findUniqueMock, countMock } = vi.hoisted(() => ({
-  findManyMock: vi.fn(),
-  findUniqueMock: vi.fn(),
-  countMock: vi.fn(),
-}));
+const { findManyMock, findUniqueMock, countMock, findActorMock } = vi.hoisted(
+  () => ({
+    findManyMock: vi.fn(),
+    findUniqueMock: vi.fn(),
+    countMock: vi.fn(),
+    findActorMock: vi.fn(),
+  })
+);
 
 vi.mock('../../src/lib/prisma', () => ({
   prisma: {
@@ -25,6 +28,9 @@ vi.mock('../../src/lib/prisma', () => ({
       findMany: findManyMock,
       findUnique: findUniqueMock,
       count: countMock,
+    },
+    users: {
+      findFirst: findActorMock,
     },
   },
 }));
@@ -37,6 +43,44 @@ const repository = new WorkItemRepository(db);
 describe('WorkItemRepository Prisma reads', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('loads only active same-project team memberships for board rules', async () => {
+    findActorMock.mockResolvedValue({
+      role: 'manager',
+      project_memberships: [{ user_id: 'actor-1' }],
+      team_memberships: [{ team_id: 'team-1' }, { team_id: 'team-2' }],
+    });
+
+    await expect(
+      repository.getBoardActorContext('actor-1', 'project-1')
+    ).resolves.toEqual({
+      role: 'manager',
+      isActiveProjectMember: true,
+      activeTeamIds: ['team-1', 'team-2'],
+    });
+
+    expect(findActorMock).toHaveBeenCalledWith({
+      where: {
+        id: 'actor-1',
+        active: true,
+        membership_status: 'active',
+      },
+      select: {
+        role: true,
+        project_memberships: {
+          where: { project_id: 'project-1', status: 'active' },
+          select: { user_id: true },
+        },
+        team_memberships: {
+          where: {
+            status: 'active',
+            team: { project_id: 'project-1', status: 'active' },
+          },
+          select: { team_id: true },
+        },
+      },
+    });
   });
 
   it('lists with shared select, filters, created_at desc, and page slice', async () => {

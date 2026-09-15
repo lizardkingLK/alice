@@ -1,22 +1,11 @@
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
-import type { BoardColumn } from '@repo/types/api/v1';
+import { resolveBoardSourceColumn, type BoardColumn } from '@repo/types/api/v1';
 
 export function resolveItemColumnId(
   item: Pick<DbWorkItem, 'status' | 'board_column_id'>,
   columns: BoardColumn[]
 ): string | null {
-  const exactColumn = item.board_column_id
-    ? columns.find(
-        (column) =>
-          column.id === item.board_column_id && column.status === item.status
-      )
-    : undefined;
-
-  return (
-    exactColumn?.id ??
-    columns.find((column) => column.status === item.status)?.id ??
-    null
-  );
+  return resolveBoardSourceColumn(item, columns)?.id ?? null;
 }
 
 export function resolveBoardMove(

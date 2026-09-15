@@ -102,6 +102,13 @@ function getApiErrorMessage(data: unknown): string {
   return 'Request failed. Please try again.';
 }
 
+function getApiErrorCode(data: unknown): string | undefined {
+  if (typeof data !== 'object' || data === null || !('code' in data)) {
+    return undefined;
+  }
+  return typeof data.code === 'string' ? data.code : undefined;
+}
+
 function isNetworkConnectivityError(error: unknown): boolean {
   if (!(error instanceof Error)) {
     return false;
@@ -207,7 +214,9 @@ export async function getResponse<T>(
         serverEntity: data.serverEntity,
       });
     }
-    throw new ApiError(message, response.status);
+    throw new ApiError(message, response.status, {
+      code: getApiErrorCode(data),
+    });
   }
 
   return data as T;

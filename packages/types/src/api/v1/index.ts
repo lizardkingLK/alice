@@ -7,10 +7,24 @@ export {
   type ApiVersionDetails,
 } from './health.js';
 export {
+  BOARD_MOVE_FORBIDDEN_CODE,
+  boardConfigV1Schema,
+  boardConfigV2Schema,
   boardColumnSchema,
   boardConfigSchema,
+  boardRuleMatcherSchema,
+  boardTransitionSchema,
+  findBoardTransition,
+  normalizeBoardConfig,
+  resolveBoardDestinationColumn,
+  resolveBoardSourceColumn,
   type BoardColumn,
   type BoardConfig,
+  type BoardConfigV1,
+  type BoardConfigV2,
+  type BoardRuleMatcher,
+  type BoardTransition,
+  type RuntimeBoardConfig,
 } from './board-config.js';
 export {
   createWorkItemBodySchema,
