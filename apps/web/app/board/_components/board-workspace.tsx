@@ -16,8 +16,11 @@ import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
 import { parseBoardPageTab, type BoardPageTab } from '@/lib/search-params';
+import type { BoardColumn } from '@repo/types/api/v1';
 
 type BoardWorkspaceProps = {
+  readonly boardColumns: BoardColumn[];
+  readonly usesCustomBoardConfig: boolean;
   readonly initialWorkItems: DbWorkItem[];
   readonly projects: Project[];
   readonly sprints: Sprint[];
@@ -34,6 +37,8 @@ type BoardWorkspaceProps = {
 };
 
 export function BoardWorkspace({
+  boardColumns,
+  usesCustomBoardConfig,
   initialWorkItems,
   projects,
   sprints,
@@ -84,6 +89,8 @@ export function BoardWorkspace({
         className="m-0 flex min-h-0 flex-1 flex-col focus-visible:ring-0 focus-visible:ring-offset-0"
       >
         <KanbanBoard
+          boardColumns={boardColumns}
+          usesCustomBoardConfig={usesCustomBoardConfig}
           initialWorkItems={initialWorkItems}
           projects={projects}
           sprints={sprints}

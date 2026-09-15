@@ -140,6 +140,7 @@ export function chartsSampleToDbWorkItem(
     title: sample.title,
     type: sample.type,
     status: sample.status,
+    board_column_id: null,
     priority: sample.priority,
     project_id: sample.projectId,
     assignee_id: sample.assigneeId,

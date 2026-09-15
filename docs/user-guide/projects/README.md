@@ -16,14 +16,14 @@ but they don't open the project registry.
 
 ## In this topic
 
-| Page                                              | What you'll learn                               |
-| ------------------------------------------------- | ----------------------------------------------- |
-| [Browse projects](./browse-projects.md)           | Find projects you can access                    |
-| [Create a project](./create-project.md)           | Add a new project (admins)                      |
-| [Project settings](./project-settings.md)         | Edit project metadata                           |
-| [Project members](./project-members.md)           | Add or remove people on a project               |
-| [Project integrations](./project-integrations.md) | GitHub and Jira connections                     |
-| [Dynamic fields & sidebar](./dynamic-fields.md)   | Configure custom fields and navigate workspaces |
+| Page                                                  | What you'll learn                                  |
+| ----------------------------------------------------- | -------------------------------------------------- |
+| [Browse projects](./browse-projects.md)               | Find projects you can access                       |
+| [Create a project](./create-project.md)               | Add a new project (admins)                         |
+| [Project settings](./project-settings.md)             | Edit project metadata                              |
+| [Project members](./project-members.md)               | Add or remove people on a project                  |
+| [Project integrations](./project-integrations.md)     | GitHub and Jira connections                        |
+| [Dynamic fields & sidebar](./dynamic-fields.md)       | Configure custom fields and navigate workspaces    |
 | [Dynamic fields testing](./dynamic-fields-testing.md) | End-to-end user testing instructions on the system |
 
 ---

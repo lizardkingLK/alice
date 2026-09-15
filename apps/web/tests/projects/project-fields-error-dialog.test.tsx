@@ -5,11 +5,7 @@ import { ProjectFieldsErrorDialog } from '@/app/projects/_components/project-det
 describe('ProjectFieldsErrorDialog component', () => {
   it('renders nothing when error is null', () => {
     const { container } = render(
-      <ProjectFieldsErrorDialog
-        open={true}
-        error={null}
-        onClose={vi.fn()}
-      />
+      <ProjectFieldsErrorDialog open={true} error={null} onClose={vi.fn()} />
     );
     expect(container.firstChild).toBeNull();
   });
@@ -30,7 +26,9 @@ describe('ProjectFieldsErrorDialog component', () => {
       )
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/Only project managers or administrators can edit fields/)
+      screen.getByText(
+        /Only project managers or administrators can edit fields/
+      )
     ).toBeInTheDocument();
   });
 

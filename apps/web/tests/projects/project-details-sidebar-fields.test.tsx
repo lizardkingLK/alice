@@ -813,13 +813,14 @@ describe('ProjectFieldsWorkspace component', () => {
     // Cancel keeps selection
     const cancelBtn = screen.getByRole('button', { name: /cancel/i });
     fireEvent.click(cancelBtn);
-    expect(screen.queryByText('Remove Field Templates')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Remove Field Templates')
+    ).not.toBeInTheDocument();
   });
 
   it('blocks save and displays JSON Syntax Error dialog when schema JSON is malformed', async () => {
-    const { updateProjectFieldsConfig } = await import(
-      '@/app/projects/_services/projects.mutations.client'
-    );
+    const { updateProjectFieldsConfig } =
+      await import('@/app/projects/_services/projects.mutations.client');
     vi.mocked(updateProjectFieldsConfig).mockClear();
 
     render(
@@ -829,7 +830,8 @@ describe('ProjectFieldsWorkspace component', () => {
     const textarea = screen.getByLabelText(/json schema specification/i);
 
     // Introduce invalid JSON syntax
-    const malformedJson = '{\n  "title": "Invalid Schema",\n  "properties": {\n';
+    const malformedJson =
+      '{\n  "title": "Invalid Schema",\n  "properties": {\n';
     fireEvent.change(textarea, { target: { value: malformedJson } });
 
     // Save Changes button is disabled due to syntax error
@@ -858,9 +860,8 @@ describe('ProjectFieldsWorkspace component', () => {
   });
 
   it('blocks save when schema violates ProjectFieldsConfigSchema specification', async () => {
-    const { updateProjectFieldsConfig } = await import(
-      '@/app/projects/_services/projects.mutations.client'
-    );
+    const { updateProjectFieldsConfig } =
+      await import('@/app/projects/_services/projects.mutations.client');
     vi.mocked(updateProjectFieldsConfig).mockClear();
 
     render(
@@ -874,7 +875,7 @@ describe('ProjectFieldsWorkspace component', () => {
       {
         type: 'object',
         properties: {
-          'invalidField$': {
+          invalidField$: {
             type: 'string',
             title: 'Field with invalid identifier',
           },

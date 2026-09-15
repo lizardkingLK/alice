@@ -74,7 +74,7 @@ Verify that unconfigured projects initialize with zero pre-selected templates, g
 2. Verify the workspace displays:
    - Header title: **Dynamic Fields** with description.
    - Action controls: **Load Template**, **Beautify**, **Validate**, **Generate with Alice**, and **Save Changes**.
-   - Empty state banner: *"No dynamic fields configured yet. Click Load Template to start from a standard template, or write custom JSON schema below."*
+   - Empty state banner: _"No dynamic fields configured yet. Click Load Template to start from a standard template, or write custom JSON schema below."_
    - JSON Schema editor pre-populated with empty Draft 2020-12 schema (`properties: {}`).
 3. Click **Load Template**:
    - The **Load Field Templates** dialog opens.
@@ -95,7 +95,7 @@ Verify that standard agile field templates can be selected and merged into the s
 2. Verify the counter updates to **`3 selected`**, and **Add Selected (3)** is enabled.
 3. Click **Add Selected (3)**:
    - The dialog closes.
-   - A green feedback notification displays: *"Added 3 template fields. Review and save when ready."*
+   - A green feedback notification displays: _"Added 3 template fields. Review and save when ready."_
    - Three **Configured Field Preview Cards** appear above the editor:
      - **MoSCoW Rating** (string, options badges: Must, Should, Could, Won't)
      - **Acceptance Criteria** (string, multiline format badge)
@@ -111,14 +111,14 @@ Verify that syntax and structure errors are caught in real-time and highlighted 
 1. In the JSON editor, introduce a syntax error (e.g. remove a quotation mark or comma on line 5).
 2. Click **Validate**:
    - The **ProjectFieldsErrorDialog** opens with title **"JSON Syntax Error"**.
-   - Description explains: *"The schema contains invalid JSON syntax. Please correct the syntax before proceeding."*
+   - Description explains: _"The schema contains invalid JSON syntax. Please correct the syntax before proceeding."_
    - The error trace details the exact parse issue.
 3. Click **OK** to close the error dialog:
    - Observe the line numbers gutter on the left: the offending line number is highlighted in **red** (`bg-destructive/20 text-destructive`).
 4. Click **Beautify**:
    - An error dialog appears preventing beautification of invalid JSON.
 5. Fix the syntax error in the editor and click **Validate**:
-   - An emerald green banner appears: *"Schema is syntactically valid (3 dynamic fields defined). Ready to save."*
+   - An emerald green banner appears: _"Schema is syntactically valid (3 dynamic fields defined). Ready to save."_
    - The banner auto-dismisses after 4.5 seconds.
 6. Click **Beautify**:
    - The JSON is neatly re-formatted with 2-space indentation.
@@ -149,8 +149,8 @@ Verify that managers can describe custom fields in plain English and let Alice g
 Verify that saving persists the JSON Schema to PostgreSQL via Prisma and enforces optimistic concurrency:
 
 1. Click **Save Changes**.
-2. Observe the button state: changes to *"Saving…"* with a spinner.
-3. Upon success, a confirmation banner confirms: *"Changes saved to project."*
+2. Observe the button state: changes to _"Saving…"_ with a spinner.
+3. Upon success, a confirmation banner confirms: _"Changes saved to project."_
 4. Open your browser DevTools **Network** tab:
    - Verify `PUT /api/projects/[id]` was issued with `attributes_config` and `expectedUpdatedAt`.
 5. Refresh the browser (`F5`):
@@ -170,7 +170,7 @@ Verify that removing a template that already has work-item values assigned requi
 5. Click the **MoSCoW Rating** card to uncheck it:
    - An interactive confirmation popup (**`ProjectFieldsErrorDialog`**) appears immediately:
      - Title: `Remove Field Template: MoSCoW Rating`
-     - Description: *"Work item values will be removed under this template. Existing values assigned in work items for this field will no longer be available once this template is unselected and saved."*
+     - Description: _"Work item values will be removed under this template. Existing values assigned in work items for this field will no longer be available once this template is unselected and saved."_
      - Affected work items list: shows your work item's key, title, and assigned value (`Must`).
      - Buttons: `Cancel` and `OK`.
 6. Click **Cancel**:
@@ -223,13 +223,13 @@ Verify that dynamic fields never become mandatory validation rules or impede cor
 
 Verify role permissions between Managers/Admins and standard Members:
 
-| Verification Step | Logged in as Manager / Admin | Logged in as Member |
-| :--- | :--- | :--- |
-| **Sidebar Sprints Tab** | Visible | **Hidden** |
-| **Fields Tab Access** | Full edit & configuration | **View-only** access |
-| **Banner Notice on Fields** | None (Full editing controls) | Amber warning banner with **Lock** icon: *"You have view-only access..."* |
-| **Action Buttons** | `Load Template`, `Beautify`, `Save Changes`, `Generate with Alice` active | All edit buttons **disabled** |
-| **Work-Item Additional Fields** | Editable | Editable (optional metadata input) |
+| Verification Step               | Logged in as Manager / Admin                                              | Logged in as Member                                                       |
+| :------------------------------ | :------------------------------------------------------------------------ | :------------------------------------------------------------------------ |
+| **Sidebar Sprints Tab**         | Visible                                                                   | **Hidden**                                                                |
+| **Fields Tab Access**           | Full edit & configuration                                                 | **View-only** access                                                      |
+| **Banner Notice on Fields**     | None (Full editing controls)                                              | Amber warning banner with **Lock** icon: _"You have view-only access..."_ |
+| **Action Buttons**              | `Load Template`, `Beautify`, `Save Changes`, `Generate with Alice` active | All edit buttons **disabled**                                             |
+| **Work-Item Additional Fields** | Editable                                                                  | Editable (optional metadata input)                                        |
 
 ---
 
@@ -242,6 +242,7 @@ cmd /c "pnpm --filter web exec vitest run tests/projects/project-details-sidebar
 ```
 
 Expected result:
+
 ```text
 Test Files  6 passed (6)
      Tests  61 passed (61)

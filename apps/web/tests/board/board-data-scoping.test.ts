@@ -7,9 +7,21 @@ const getUserListMock = vi.hoisted(() => vi.fn());
 const getWorkItemsMock = vi.hoisted(() => vi.fn());
 const getSprintsPaginatedServerMock = vi.hoisted(() => vi.fn());
 const getSuggestedBoardDefaultsMock = vi.hoisted(() => vi.fn());
+const createClientMock = vi.hoisted(() => vi.fn());
+const workflowConfigQueryMocks = vi.hoisted(() => {
+  const single = vi.fn();
+  const eq = vi.fn(() => ({ single }));
+  const select = vi.fn(() => ({ eq }));
+  const from = vi.fn(() => ({ select }));
+  return { from, single };
+});
 
 vi.mock('@/lib/auth', () => ({
   getDbUser: getDbUserMock,
+}));
+
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: createClientMock,
 }));
 
 vi.mock('@/lib/projects/project-workspace-access', () => ({
@@ -71,6 +83,13 @@ describe('BoardData project scoping', () => {
     getWorkItemsMock.mockResolvedValue(MOCK_WORK_ITEMS);
     getSprintsPaginatedServerMock.mockResolvedValue({ sprints: MOCK_SPRINTS });
     getSuggestedBoardDefaultsMock.mockResolvedValue(null);
+    createClientMock.mockResolvedValue({
+      from: workflowConfigQueryMocks.from,
+    });
+    workflowConfigQueryMocks.single.mockResolvedValue({
+      data: { workflow_config: null },
+      error: null,
+    });
   });
 
   it('scopes admin the same as any role (membership-only project list)', async () => {
@@ -82,6 +101,7 @@ describe('BoardData project scoping', () => {
       projects: typeof MOCK_ACCESSIBLE_PROJECTS;
       sprints: typeof MOCK_SPRINTS;
       allowAllFilters: boolean;
+      usesCustomBoardConfig: boolean;
     };
 
     expect(listAccessibleProjectIdsMock).toHaveBeenCalledWith('admin-1');
@@ -97,6 +117,7 @@ describe('BoardData project scoping', () => {
     expect(props.projects).toEqual(MOCK_ACCESSIBLE_PROJECTS);
     expect(props.sprints).toEqual(MOCK_SPRINTS);
     expect(props.allowAllFilters).toBe(true);
+    expect(props.usesCustomBoardConfig).toBe(false);
   });
 
   it('scopes projects, sprints, and work items to accessible projects for member user', async () => {
@@ -145,5 +166,58 @@ describe('BoardData project scoping', () => {
     expect(getWorkItemsMock).not.toHaveBeenCalled();
     expect(props.projects).toEqual([]);
     expect(props.sprints).toEqual([]);
+  });
+
+  it('loads workflow config only for an accessible selected project', async () => {
+    getDbUserMock.mockResolvedValue({ id: 'member-1', role: 'member' });
+    listAccessibleProjectIdsMock.mockResolvedValue(['proj-1']);
+    const columns = [
+      { id: 'development', name: 'Development', status: 'InProgress' },
+    ];
+    workflowConfigQueryMocks.single.mockResolvedValue({
+      data: { workflow_config: { version: '1', columns } },
+      error: null,
+    });
+
+    const jsx = await BoardData({
+      searchParams: Promise.resolve({ project: 'proj-1' }),
+    });
+
+    expect(workflowConfigQueryMocks.from).toHaveBeenCalledWith('projects');
+    expect(jsx.props.boardColumns).toEqual(columns);
+    expect(jsx.props.usesCustomBoardConfig).toBe(true);
+  });
+
+  it('does not load workflow config for an inaccessible selected project', async () => {
+    getDbUserMock.mockResolvedValue({ id: 'member-1', role: 'member' });
+    listAccessibleProjectIdsMock.mockResolvedValue(['proj-1']);
+
+    await BoardData({
+      searchParams: Promise.resolve({ project: 'proj-outside' }),
+    });
+
+    expect(createClientMock).not.toHaveBeenCalled();
+  });
+
+  it('falls back to default columns when the config query fails', async () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    getDbUserMock.mockResolvedValue({ id: 'member-1', role: 'member' });
+    listAccessibleProjectIdsMock.mockResolvedValue(['proj-1']);
+    workflowConfigQueryMocks.single.mockResolvedValue({
+      data: null,
+      error: { message: 'temporary database error' },
+    });
+
+    const jsx = await BoardData({
+      searchParams: Promise.resolve({ project: 'proj-1' }),
+    });
+
+    expect(
+      jsx.props.boardColumns.map((column: { id: string }) => column.id)
+    ).toEqual(['New', 'ToDo', 'InProgress', 'Testing', 'Done']);
+    expect(jsx.props.usesCustomBoardConfig).toBe(false);
+    consoleError.mockRestore();
   });
 });
