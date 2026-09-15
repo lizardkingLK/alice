@@ -236,7 +236,9 @@ describe('ProjectForm Component', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await screen.findByText('Import sources');
     fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+    await screen.findByText('Source control');
     fireEvent.click(screen.getByRole('button', { name: /Create Project/i }));
 
     await waitFor(() => {
@@ -249,13 +251,15 @@ describe('ProjectForm Component', () => {
         end_date: endDateStr,
         status: 'active',
         attributes_config: null,
-        workflow_config: null,
         jira_connection_id: null,
         jira_project_key: null,
         github_repo: null,
         github_token: null,
       });
     });
+    expect(vi.mocked(createProject).mock.calls[0]?.[0]).not.toHaveProperty(
+      'workflow_config'
+    );
 
     expect(
       await screen.findByText(/Project "Project Alice" created/i)
@@ -313,7 +317,6 @@ describe('ProjectForm Component', () => {
           end_date: '2026-08-10',
           status: 'active',
           attributes_config: null,
-          workflow_config: null,
           jira_connection_id: null,
           jira_project_key: null,
           github_repo: null,
@@ -322,6 +325,9 @@ describe('ProjectForm Component', () => {
         '2026-07-09T10:00:00Z'
       );
     });
+    expect(vi.mocked(updateProject).mock.calls[0]?.[1]).not.toHaveProperty(
+      'workflow_config'
+    );
 
     expect(
       await screen.findByText(/Project "Project Alice Updated" updated/i)

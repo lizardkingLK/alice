@@ -22,9 +22,34 @@ describe('boardConfigSchema', () => {
     ).toBe(true);
   });
 
+  it('allows multiple columns mapped to the same status', () => {
+    expect(
+      boardConfigSchema.safeParse({ version: '1', columns: CUSTOM_COLUMNS })
+        .success
+    ).toBe(true);
+  });
+
+  it.each(['New', 'ToDo', 'InProgress', 'Testing', 'Done'] as const)(
+    'rejects a board missing %s coverage',
+    (missingStatus) => {
+      const columns = CUSTOM_COLUMNS.filter(
+        (column) => column.status !== missingStatus
+      );
+      expect(
+        boardConfigSchema.safeParse({ version: '1', columns }).success
+      ).toBe(false);
+    }
+  );
+
   it.each([
     { version: '2', columns: CUSTOM_COLUMNS },
     { version: '1', columns: [] },
+    {
+      version: '1',
+      columns: CUSTOM_COLUMNS.map((column, index) =>
+        index === 0 ? { ...column, name: '   ' } : column
+      ),
+    },
     {
       version: '1',
       columns: [{ id: 'draft', name: 'Draft', status: 'Draft' }],
@@ -38,10 +63,9 @@ describe('boardConfigSchema', () => {
   });
 
   it('rejects duplicate column IDs', () => {
-    const columns = [
-      { id: 'dev', name: 'Development', status: 'InProgress' },
-      { id: 'dev', name: 'Code Review', status: 'InProgress' },
-    ];
+    const columns = CUSTOM_COLUMNS.map((column, index) =>
+      index === 1 ? { ...column, id: CUSTOM_COLUMNS[0].id } : column
+    );
 
     expect(boardConfigSchema.safeParse({ version: '1', columns }).success).toBe(
       false

@@ -163,7 +163,8 @@ export type ProjectDetailsTab =
   | 'work-items'
   | 'sprints'
   | 'integrations'
-  | 'fields';
+  | 'fields'
+  | 'board';
 
 export function parseProjectDetailsTab(tab?: string | null): ProjectDetailsTab {
   if (
@@ -172,7 +173,8 @@ export function parseProjectDetailsTab(tab?: string | null): ProjectDetailsTab {
     tab === 'work-items' ||
     tab === 'sprints' ||
     tab === 'integrations' ||
-    tab === 'fields'
+    tab === 'fields' ||
+    tab === 'board'
   ) {
     return tab;
   }

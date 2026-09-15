@@ -1,3 +1,5 @@
+import type { BoardConfig } from '@repo/types/api/v1';
+
 export type ProjectRow = {
   id: string;
   name: string;
@@ -16,6 +18,7 @@ export type ProjectRow = {
   github_repo: string | null;
   github_token: string | null;
   attributes_config?: unknown;
+  workflow_config?: BoardConfig | null;
   logo_url: string | null;
   cover_picture: string | null;
 };
@@ -56,9 +59,12 @@ export type CreateProjectInput = Omit<
   | 'created_by'
   | 'logo_url'
   | 'cover_picture'
+  | 'workflow_config'
 > & {
   logo_url?: string | null;
   cover_picture?: string | null;
 };
 
-export type UpdateProjectInput = Partial<CreateProjectInput>;
+export type UpdateProjectInput = Partial<CreateProjectInput> & {
+  workflow_config?: BoardConfig | null;
+};
