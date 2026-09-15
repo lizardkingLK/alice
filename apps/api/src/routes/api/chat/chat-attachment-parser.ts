@@ -284,18 +284,26 @@ export function parseJsonWorkItemDocument(
   return transformParsedStructureToNodes(parsedJson, 'JSON');
 }
 
+const CARRIAGE_RETURN = '\r';
+const NEW_LINE = '\n';
+const DOUBLE_QUOTE = '"';
+const COMMA = ',';
+const TAB = '\t';
+const SEMICOLON = ';';
+const PIPE = '|';
+
 const DELIMITER_RULES: readonly {
   delimiter: string;
   matches: (firstLine: string) => boolean;
 }[] = [
-  { delimiter: '\t', matches: (line) => line.includes('\t') },
-  { delimiter: ';', matches: (line) => line.includes(';') && !line.includes(',') },
-  { delimiter: '|', matches: (line) => line.includes('|') && !line.includes(',') },
+  { delimiter: TAB, matches: (line) => line.includes(TAB) },
+  { delimiter: SEMICOLON, matches: (line) => line.includes(SEMICOLON) && !line.includes(COMMA) },
+  { delimiter: PIPE, matches: (line) => line.includes(PIPE) && !line.includes(COMMA) },
 ];
 
 function detectDelimiter(firstLine: string): string {
   const matched = DELIMITER_RULES.find((rule) => rule.matches(firstLine));
-  return matched?.delimiter ?? ',';
+  return matched?.delimiter ?? COMMA;
 }
 
 function processDelimitedChar(
@@ -305,9 +313,9 @@ function processDelimitedChar(
   state: { inQuotes: boolean; currentField: string; currentRow: string[] },
   rows: string[][]
 ): number {
-  if (char === '"') {
-    if (state.inQuotes && nextChar === '"') {
-      state.currentField += '"';
+  if (char === DOUBLE_QUOTE) {
+    if (state.inQuotes && nextChar === DOUBLE_QUOTE) {
+      state.currentField += DOUBLE_QUOTE;
       return 1;
     }
     state.inQuotes = !state.inQuotes;
@@ -320,8 +328,8 @@ function processDelimitedChar(
     return 0;
   }
 
-  if ((char === '\r' || char === '\n') && !state.inQuotes) {
-    const skipNext = char === '\r' && nextChar === '\n' ? 1 : 0;
+  if ((char === CARRIAGE_RETURN || char === NEW_LINE) && !state.inQuotes) {
+    const skipNext = char === CARRIAGE_RETURN && nextChar === NEW_LINE ? 1 : 0;
     state.currentRow.push(state.currentField.trim());
     state.currentField = '';
     if (state.currentRow.some((field) => field.length > 0)) {
@@ -528,8 +536,8 @@ function isMarkdownTable(content: string): boolean {
   const first = lines[0] || '';
   const second = lines[1] || '';
   return (
-    first.includes('|') &&
-    second.includes('|') &&
+    first.includes(PIPE) &&
+    second.includes(PIPE) &&
     second.replace(/[\s|:-]/g, '').length === 0
   );
 }
@@ -541,11 +549,11 @@ export function parseMarkdownTableWorkItemDocument(
     .split(/\r?\n/)
     .map((l) => l.trim())
     .filter((l) => l.length > 0);
-  const tableLines = rawLines.filter((line) => line.includes('|'));
+  const tableLines = rawLines.filter((line) => line.includes(PIPE));
   if (tableLines.length < 2) return [];
 
   const cleanHeaderLine = tableLines[0]!.replace(/^\|/, '').replace(/\|$/, '');
-  const rawHeaders = cleanHeaderLine.split('|').map((h) => h.trim());
+  const rawHeaders = cleanHeaderLine.split(PIPE).map((h) => h.trim());
   const normalizedHeaders = rawHeaders.map((h) =>
     h.toLowerCase().replace(/[^a-z0-9]/g, '')
   );
@@ -558,7 +566,7 @@ export function parseMarkdownTableWorkItemDocument(
     if (line.replace(/[\s|:-]/g, '').length === 0) continue;
 
     const cleanLine = line.replace(/^\|/, '').replace(/\|$/, '');
-    const rowValues = cleanLine.split('|').map((c) => c.trim());
+    const rowValues = cleanLine.split(PIPE).map((c) => c.trim());
 
     parsedItems.push(
       parseDelimitedRowToWorkItem(
@@ -732,7 +740,7 @@ export function parseIndentedTextWorkItemDocument(
   let itemCounter = 1;
 
   for (const line of lines) {
-    const expandedLine = line.replaceAll('\t', '  ');
+    const expandedLine = line.replaceAll(TAB, '  ');
     const indent = expandedLine.search(/\S/);
     let trimmed = expandedLine.trim();
 
