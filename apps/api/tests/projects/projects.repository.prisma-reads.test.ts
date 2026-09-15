@@ -9,14 +9,21 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { projectListSelect, projectDetailSelect } from '@repo/types';
 import { Prisma } from '@repo/types/prisma';
 
-const { findManyMock, findUniqueMock, countMock, groupByMock, updateManyMock } =
-  vi.hoisted(() => ({
-    findManyMock: vi.fn(),
-    findUniqueMock: vi.fn(),
-    countMock: vi.fn(),
-    groupByMock: vi.fn(),
-    updateManyMock: vi.fn(),
-  }));
+const {
+  findManyMock,
+  findUniqueMock,
+  countMock,
+  groupByMock,
+  updateManyMock,
+  memberFindManyMock,
+} = vi.hoisted(() => ({
+  findManyMock: vi.fn(),
+  findUniqueMock: vi.fn(),
+  countMock: vi.fn(),
+  groupByMock: vi.fn(),
+  updateManyMock: vi.fn(),
+  memberFindManyMock: vi.fn(),
+}));
 
 vi.mock('../../src/lib/prisma', () => ({
   prisma: {
@@ -28,6 +35,9 @@ vi.mock('../../src/lib/prisma', () => ({
     },
     teams: {
       groupBy: groupByMock,
+    },
+    project_members: {
+      findMany: memberFindManyMock,
     },
   },
 }));
@@ -119,6 +129,31 @@ describe('ProjectsRepository Prisma reads', () => {
       select: projectDetailSelect,
     });
     expect(result).toEqual(mockProjectRow);
+  });
+
+  it('lists only active memberships with active product users for board tools', async () => {
+    const user = {
+      id: 'user-1',
+      name: 'Active Member',
+      email: 'active@example.com',
+      role: 'member',
+    };
+    memberFindManyMock.mockResolvedValue([{ user }]);
+
+    await expect(
+      repository.listActiveBoardMembers('project-1')
+    ).resolves.toEqual([user]);
+    expect(memberFindManyMock).toHaveBeenCalledWith({
+      where: {
+        project_id: 'project-1',
+        status: 'active',
+        user: { active: true, membership_status: 'active' },
+      },
+      select: {
+        user: { select: { id: true, name: true, email: true, role: true } },
+      },
+      orderBy: { user: { name: 'asc' } },
+    });
   });
 
   it('persists workflow config through the optimistic project update', async () => {

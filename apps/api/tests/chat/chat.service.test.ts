@@ -119,6 +119,7 @@ describe('Dynamic Fields Schema Generation and Merging', () => {
       sprintsService: {} as never,
       projectsService: {} as never,
       projectsRepository: {} as never,
+      teamsRepository: {} as never,
       integrationsService: {} as never,
     });
 
@@ -151,6 +152,7 @@ describe('Dynamic Fields Schema Generation and Merging', () => {
       sprintsService: {} as never,
       projectsService: {} as never,
       projectsRepository: {} as never,
+      teamsRepository: {} as never,
       integrationsService: {
         resolveChatModelForChat: vi.fn().mockResolvedValue({}),
       } as never,
