@@ -118,6 +118,7 @@ Once dynamic fields are saved for a project:
 ## Related
 
 - [Project settings](./project-settings.md)
+- [User testing guide](./dynamic-fields-testing.md)
 - [Create work item](../work-items/create-work-item.md)
 - [Alice AI assistant](../chat/use-ai-assistant.md)
 - [Technical Architecture Spec](../../features/projects/PROJECT_DETAILS_AND_DYNAMIC_FIELDS.md)
