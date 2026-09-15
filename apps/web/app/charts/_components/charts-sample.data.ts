@@ -32,6 +32,8 @@ export type ChartsSampleWorkItem = {
   readonly priority: WorkItemPriority;
   readonly assigneeId: string | null;
   readonly projectId: string;
+  /** Synthetic Monday-style board group for Labels → Group. */
+  readonly group: string;
   /**
    * TipTap JSON or plain text — same shapes the work-item form can store.
    * `null` means no description.
@@ -42,6 +44,39 @@ export type ChartsSampleWorkItem = {
   readonly storyPoints: number | null;
   readonly labels: readonly string[];
 };
+
+/** Monday-style Labels → Columns options (pie group-by). */
+export type ChartsLabelFieldId =
+  'board' | 'group' | 'name' | 'owner' | 'status' | 'dueDate';
+
+export const CHARTS_LABEL_COLUMNS: readonly {
+  readonly id: ChartsLabelFieldId;
+  readonly label: string;
+}[] = [
+  { id: 'board', label: 'Project' },
+  { id: 'group', label: 'Group' },
+  { id: 'name', label: 'Name' },
+  { id: 'owner', label: 'Owner' },
+  { id: 'status', label: 'Status' },
+  { id: 'dueDate', label: 'Due date' },
+] as const;
+
+export const DEFAULT_CHARTS_LABEL_FIELD: ChartsLabelFieldId = 'status';
+
+export const CHARTS_SAMPLE_GROUPS = [
+  'To do',
+  'Working on it',
+  'Stuck',
+  'Done this week',
+] as const;
+
+const CHART_TOKEN_COLORS = [
+  'var(--chart-1)',
+  'var(--chart-2)',
+  'var(--chart-3)',
+  'var(--chart-4)',
+  'var(--chart-5)',
+] as const;
 
 /** Sample project the signed-in user would be a member of.
  * IDs are UUIDs so the real work-item form Zod schemas accept them in mock create/edit.
@@ -100,6 +135,16 @@ const CHARTS_SAMPLE_TITLE_SEEDS = [
 
 const SAMPLE_WORK_ITEM_COUNT = 100;
 
+function sampleDueDate(index: number): string | null {
+  // Every 5th item has no due date so the "No due date" bucket is non-empty.
+  if (index % 5 === 0) {
+    return null;
+  }
+  const month = ((index % 12) + 1).toString().padStart(2, '0');
+  const day = ((index % 28) + 1).toString().padStart(2, '0');
+  return `2026-${month}-${day}`;
+}
+
 function buildChartsSampleWorkItems(): readonly ChartsSampleWorkItem[] {
   const statuses = BOARD_WORK_ITEM_STATUSES;
   const types = WORK_ITEM_TYPES;
@@ -124,8 +169,11 @@ function buildChartsSampleWorkItems(): readonly ChartsSampleWorkItem[] {
       priority: priorities[index % priorities.length] as WorkItemPriority,
       assigneeId: memberIds[index % memberIds.length] ?? null,
       projectId: projectIds[index % projectIds.length] as string,
+      group: CHARTS_SAMPLE_GROUPS[
+        index % CHARTS_SAMPLE_GROUPS.length
+      ] as string,
       description: null,
-      dueDate: null,
+      dueDate: sampleDueDate(index),
       storyPoints: null,
       labels: [],
     };
@@ -136,7 +184,10 @@ export const CHARTS_SAMPLE_WORK_ITEMS: readonly ChartsSampleWorkItem[] =
   buildChartsSampleWorkItems();
 
 export type ChartsStatusPieSlice = {
+  /** ChartConfig / Pie nameKey — CSS-safe id. */
   readonly status: string;
+  /** Stable bucket identity (project id, status, title, …). */
+  readonly key: string;
   readonly label: string;
   readonly count: number;
   readonly percent: string;
@@ -145,36 +196,139 @@ export type ChartsStatusPieSlice = {
 };
 
 const FALLBACK_STATUS_COLOR = 'var(--chart-1)';
+const NO_DUE_DATE_KEY = '__no_due_date__';
+const UNASSIGNED_KEY = 'unassigned';
 
-export function buildChartsStatusPieFromSample(
-  items: readonly ChartsSampleWorkItem[] = CHARTS_SAMPLE_WORK_ITEMS
+function chartSafeKey(raw: string, index: number): string {
+  const slug = raw.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 48);
+  return slug.length > 0 ? `${slug}_${index}` : `bucket_${index}`;
+}
+
+function labelBucketForItem(
+  item: ChartsSampleWorkItem,
+  labelField: ChartsLabelFieldId
+): { readonly key: string; readonly label: string } {
+  switch (labelField) {
+    case 'board': {
+      const project = CHARTS_SAMPLE_PROJECTS.find(
+        (entry) => entry.id === item.projectId
+      );
+      return {
+        key: item.projectId,
+        label: project?.name ?? item.projectId,
+      };
+    }
+    case 'group':
+      return { key: item.group, label: item.group };
+    case 'name':
+      return { key: item.title, label: item.title };
+    case 'owner': {
+      if (!item.assigneeId) {
+        return { key: UNASSIGNED_KEY, label: 'Unassigned' };
+      }
+      const member = CHARTS_SAMPLE_MEMBERS.find(
+        (entry) => entry.id === item.assigneeId
+      );
+      return {
+        key: item.assigneeId,
+        label: member?.name ?? item.assigneeId,
+      };
+    }
+    case 'status':
+      return {
+        key: item.status,
+        label: STATUS_META[item.status]?.label ?? item.status,
+      };
+    case 'dueDate': {
+      if (!item.dueDate) {
+        return { key: NO_DUE_DATE_KEY, label: 'No due date' };
+      }
+      const monthKey = item.dueDate.slice(0, 7);
+      return { key: monthKey, label: monthKey };
+    }
+    default:
+      return { key: 'unknown', label: 'Unknown' };
+  }
+}
+
+/** Keep rows that belong to a Labels → Columns slice bucket. */
+export function filterChartsSampleByLabelSlice(
+  items: readonly ChartsSampleWorkItem[],
+  labelField: ChartsLabelFieldId,
+  sliceKey: string
+): ChartsSampleWorkItem[] {
+  return items.filter(
+    (item) => labelBucketForItem(item, labelField).key === sliceKey
+  );
+}
+
+function swatchForBucket(
+  labelField: ChartsLabelFieldId,
+  bucketKey: string,
+  index: number
+): string {
+  if (labelField === 'status') {
+    const statusColors = STATUS_CHART_COLORS as Partial<
+      Record<WorkItemStatus, string>
+    >;
+    return statusColors[bucketKey as WorkItemStatus] ?? FALLBACK_STATUS_COLOR;
+  }
+  return CHART_TOKEN_COLORS[index % CHART_TOKEN_COLORS.length] as string;
+}
+
+/**
+ * Aggregate mock rows by the Labels → Columns field and build pie slices.
+ */
+export function buildChartsPieFromSample(
+  items: readonly ChartsSampleWorkItem[] = CHARTS_SAMPLE_WORK_ITEMS,
+  labelField: ChartsLabelFieldId = DEFAULT_CHARTS_LABEL_FIELD
 ): {
   readonly data: ChartsStatusPieSlice[];
   readonly config: ChartConfig;
   readonly total: number;
 } {
-  const counts = new Map<WorkItemStatus, number>();
+  const counts = new Map<string, { label: string; count: number }>();
   for (const item of items) {
-    counts.set(item.status, (counts.get(item.status) ?? 0) + 1);
+    const bucket = labelBucketForItem(item, labelField);
+    const existing = counts.get(bucket.key);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      counts.set(bucket.key, { label: bucket.label, count: 1 });
+    }
   }
 
-  const statusesWithCounts = BOARD_WORK_ITEM_STATUSES.filter(
-    (status) => (counts.get(status) ?? 0) > 0
-  );
+  let orderedKeys: string[];
+  if (labelField === 'status') {
+    orderedKeys = BOARD_WORK_ITEM_STATUSES.filter((status) =>
+      counts.has(status)
+    );
+  } else {
+    orderedKeys = [...counts.entries()]
+      .sort(
+        (a, b) =>
+          b[1].count - a[1].count || a[1].label.localeCompare(b[1].label)
+      )
+      .map(([key]) => key);
+  }
 
   const total = items.length;
-  const data: ChartsStatusPieSlice[] = statusesWithCounts.map((status) => {
-    const count = counts.get(status) ?? 0;
-    const meta = STATUS_META[status];
-    const swatch = STATUS_CHART_COLORS[status] ?? FALLBACK_STATUS_COLOR;
+  const data: ChartsStatusPieSlice[] = orderedKeys.map((bucketKey, index) => {
+    const entry = counts.get(bucketKey);
+    const count = entry?.count ?? 0;
+    const label = entry?.label ?? bucketKey;
+    const chartKey =
+      labelField === 'status' ? bucketKey : chartSafeKey(bucketKey, index);
+    const swatch = swatchForBucket(labelField, bucketKey, index);
     const percent =
       total === 0 ? '0%' : `${((count / total) * 100).toFixed(1)}%`;
     return {
-      status,
-      label: meta?.label ?? status,
+      status: chartKey,
+      key: bucketKey,
+      label,
       count,
       percent,
-      fill: `var(--color-${status})`,
+      fill: `var(--color-${chartKey})`,
       swatch,
     };
   });
@@ -190,6 +344,17 @@ export function buildChartsStatusPieFromSample(
   }
 
   return { data, config, total };
+}
+
+/** @deprecated Prefer `buildChartsPieFromSample(items, 'status')`. */
+export function buildChartsStatusPieFromSample(
+  items: readonly ChartsSampleWorkItem[] = CHARTS_SAMPLE_WORK_ITEMS
+): {
+  readonly data: ChartsStatusPieSlice[];
+  readonly config: ChartConfig;
+  readonly total: number;
+} {
+  return buildChartsPieFromSample(items, 'status');
 }
 
 export type ChartsFilterColumnId = 'status' | 'type' | 'assignee' | 'priority';

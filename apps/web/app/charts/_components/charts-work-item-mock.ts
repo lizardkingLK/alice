@@ -204,6 +204,7 @@ function sampleFromDbFallback(item: DbWorkItem): ChartsSampleWorkItem {
     priority: item.priority,
     assigneeId: item.assignee_id,
     projectId: item.project_id,
+    group: 'Ungrouped',
     description: normalizeDescription(item.description),
     dueDate: normalizeDueDate(item.due_date),
     storyPoints: item.story_points ?? null,
@@ -232,6 +233,7 @@ function mergePatchedSample(
       typeof patch.project_id === 'string' && patch.project_id
         ? patch.project_id
         : previous.projectId,
+    group: previous.group,
     description:
       patch.description === undefined
         ? previous.description
@@ -276,6 +278,7 @@ export function chartsSampleFromFormData(
       typeof body.project_id === 'string' && body.project_id
         ? body.project_id
         : (CHARTS_SAMPLE_PROJECTS[0]?.id ?? FALLBACK_PROJECT_ID),
+    group: 'Ungrouped',
     description: normalizeDescription(body.description),
     dueDate: normalizeDueDate(body.due_date),
     storyPoints: normalizeStoryPoints(body.story_points),

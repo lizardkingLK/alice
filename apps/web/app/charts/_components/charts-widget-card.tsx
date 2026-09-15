@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { WorkItemStatus } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card, CardContent, CardHeader } from '@repo/ui/components/ui/card';
 import {
@@ -30,14 +29,17 @@ import { cn } from '@repo/ui/lib/utils';
 import type { ChartWidgetDefinition } from '@/app/charts/_components/charts-widget-catalog';
 import type {
   ChartPieVariant,
+  ChartsLabelFieldId,
   ChartWidgetTypeId,
   ChartWidgetViewMode,
   ChartsWidgetFiltersChangeHandler,
+  ChartsWidgetLabelFieldChangeHandler,
   ChartsWidgetPieVariantChangeHandler,
   ChartsWidgetViewModeChangeHandler,
 } from '@/app/charts/_components/charts.types';
 import {
   CHARTS_SAMPLE_WORK_ITEMS,
+  DEFAULT_CHARTS_LABEL_FIELD,
   filterChartsSampleWorkItems,
   type ChartsSampleWorkItem,
   type ChartsWidgetFilterDraft,
@@ -56,7 +58,8 @@ type ChartsWidgetCardProps = {
   /** Fullscreen-only layout; canvas always shows the chart. */
   readonly viewMode?: ChartWidgetViewMode;
   readonly pieVariant?: ChartPieVariant;
-  readonly focusedStatus?: WorkItemStatus;
+  readonly labelField?: ChartsLabelFieldId;
+  readonly focusedSliceKey?: string;
   readonly onRemove: () => void;
   readonly onDuplicate: () => void;
   // eslint-disable-next-line no-unused-vars -- rename callback
@@ -64,6 +67,7 @@ type ChartsWidgetCardProps = {
   readonly onFiltersChange?: ChartsWidgetFiltersChangeHandler;
   readonly onViewModeChange?: ChartsWidgetViewModeChangeHandler;
   readonly onPieVariantChange?: ChartsWidgetPieVariantChangeHandler;
+  readonly onLabelFieldChange?: ChartsWidgetLabelFieldChangeHandler;
   /** Open config when landing from `/charts/[id]/widget/[widgetId]`. */
   readonly initialConfigOpen?: boolean;
   readonly onConfigOpenChange?: (
@@ -81,13 +85,15 @@ export function ChartsWidgetCard({
   filters,
   viewMode,
   pieVariant,
-  focusedStatus,
+  labelField = DEFAULT_CHARTS_LABEL_FIELD,
+  focusedSliceKey,
   onRemove,
   onDuplicate,
   onRename,
   onFiltersChange,
   onViewModeChange,
   onPieVariantChange,
+  onLabelFieldChange,
   initialConfigOpen = false,
   onConfigOpenChange,
   className,
@@ -151,6 +157,7 @@ export function ChartsWidgetCard({
       size="card"
       workItems={canvasWorkItems}
       pieVariant={pieVariant}
+      labelField={labelField}
     />
   ) : (
     placeholderBody
@@ -304,12 +311,14 @@ export function ChartsWidgetCard({
           filters={filters ?? null}
           viewMode={viewMode}
           pieVariant={pieVariant}
-          focusedStatus={focusedStatus}
+          labelField={labelField}
+          focusedSliceKey={focusedSliceKey}
           sessionWorkItems={sessionWorkItems}
           onSessionWorkItemsChange={setSessionWorkItems}
           onFiltersChange={onFiltersChange}
           onViewModeChange={onViewModeChange}
           onPieVariantChange={onPieVariantChange}
+          onLabelFieldChange={onLabelFieldChange}
           onRename={() => {
             window.setTimeout(() => openRename(), 0);
           }}

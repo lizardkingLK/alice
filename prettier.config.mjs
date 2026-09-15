@@ -5,5 +5,5 @@ export default {
   tabWidth: 2,
   trailingComma: 'es5',
   plugins: ['prettier-plugin-tailwindcss'],
+  endOfLine: 'lf',
 };
-

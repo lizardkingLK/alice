@@ -376,7 +376,8 @@ export const Chat_attachmentsScalarFieldEnum = {
   mime_type: 'mime_type',
   status: 'status',
   created_at: 'created_at',
-  updated_at: 'updated_at'
+  updated_at: 'updated_at',
+  expires_at: 'expires_at'
 } as const
 
 export type Chat_attachmentsScalarFieldEnum = (typeof Chat_attachmentsScalarFieldEnum)[keyof typeof Chat_attachmentsScalarFieldEnum]

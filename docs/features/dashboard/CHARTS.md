@@ -44,16 +44,23 @@ picks / Browse cards are **Coming soon**.
 
 Sample pie from `charts-sample.data.ts`. Canvas shows pie/donut. Fullscreen
 config: Advanced/Quick filters, assignee avatars, settings gear → Widget
-settings sidebar, layout Chart/Table/Split, pie vs donut (`pieVariant`).
+settings sidebar, layout Chart/Table/Split, pie vs donut (`pieVariant`), and
+Labels column (`labelField`: Project / Group / Name / Owner / Status / Due date).
 
 ### Widget settings sidebar
 
-| Section                      | Behavior                                         |
-| ---------------------------- | ------------------------------------------------ |
-| Chart type                   | Interactive Pie / Donut; other types Coming soon |
-| Labels / Values / Customize  | Static stubs                                     |
-| Groups                       | Static checklist of all work-item statuses       |
-| Choose which columns to show | Static table column checklist                    |
+| Section                      | Behavior                                                                 |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| Chart type                   | Interactive Pie / Donut; other types Coming soon                         |
+| Labels                       | Columns picker (Project / Group / Name / Owner / Status / Due date) live |
+| Values / Customize           | Static stubs                                                             |
+| Groups                       | Static checklist of all work-item statuses                               |
+| Choose which columns to show | Static table column checklist                                            |
+
+Labels group the mock pie by the selected field (`labelField` on the widget
+instance; default Status). Clicking a slice (any Labels field) opens Split and
+scopes the status-grouped table to that bucket (`focusedSliceKey`). Changing
+Labels clears the slice focus. The legend uses a fixed-height scroll area.
 
 No Boards section (use project filters).
 

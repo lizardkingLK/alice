@@ -1,9 +1,14 @@
 import type { LayoutItem } from 'react-grid-layout';
 import type { WorkItemStatus } from '@repo/types';
-import type { ChartsWidgetFilterDraft } from '@/app/charts/_components/charts-sample.data';
+import type {
+  ChartsLabelFieldId,
+  ChartsWidgetFilterDraft,
+} from '@/app/charts/_components/charts-sample.data';
 
 export type ChartBoardOwnershipFilter = 'all' | 'mine' | 'shared';
 export type ChartBoardStatusFilter = 'all' | 'active' | 'archived';
+
+export type { ChartsLabelFieldId };
 
 /** UI stub shape for a persisted chart board list row. */
 export type ChartBoardSummary = {
@@ -51,13 +56,22 @@ export type ChartsWidgetFiltersChangeHandler = (
 export type ChartsWidgetViewModeChangeHandler = (
   // eslint-disable-next-line no-unused-vars -- callback param for consumers
   viewMode: ChartWidgetViewMode,
+  /**
+   * Bucket key for the clicked Labels slice (status id, assignee id, …).
+   * Null clears the focus.
+   */
   // eslint-disable-next-line no-unused-vars -- callback param for consumers
-  focusedStatus?: WorkItemStatus | null
+  focusedSliceKey?: string | null
 ) => void;
 
 export type ChartsWidgetPieVariantChangeHandler = (
   // eslint-disable-next-line no-unused-vars -- callback param for consumers
   variant: ChartPieVariant
+) => void;
+
+export type ChartsWidgetLabelFieldChangeHandler = (
+  // eslint-disable-next-line no-unused-vars -- callback param for consumers
+  labelField: ChartsLabelFieldId
 ) => void;
 
 /** Instance placed on the board canvas (drag / resize). */
@@ -71,13 +85,23 @@ export type ChartBoardWidgetInstance = {
   /** Chart / Table / Split — fullscreen preview only; canvas always shows the pie. */
   readonly viewMode?: ChartWidgetViewMode;
   /**
-   * When set (e.g. after a pie-slice click), the table shows only this
-   * status group. Cleared when the user picks Chart / Table / Split from
-   * the layout menu without a slice filter.
+   * When set (after a pie-slice / legend click), Split/Table scopes rows to
+   * that Labels bucket. For Status labels the table shows only that status
+   * group; for other labels rows are filtered to the bucket then still grouped
+   * by status. Cleared when the user picks a layout without a slice focus.
+   */
+  readonly focusedSliceKey?: string;
+  /**
+   * @deprecated Prefer `focusedSliceKey`. Kept for reading older board JSON.
    */
   readonly focusedStatus?: WorkItemStatus;
   /** Pie vs donut for Chart widgets; defaults to donut when unset. */
   readonly pieVariant?: ChartPieVariant;
+  /**
+   * Labels → Columns group-by field for Chart widgets.
+   * Defaults to `status` when unset.
+   */
+  readonly labelField?: ChartsLabelFieldId;
 };
 
 /** Persisted chart workspace (localStorage / future `charts` row). */

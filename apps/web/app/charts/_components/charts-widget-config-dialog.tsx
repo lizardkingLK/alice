@@ -10,8 +10,10 @@ import { SearchInput } from '@/components/search-input';
 import { preventDismissForFloatingPortal } from '@/lib/dialog-outside-events';
 import type {
   ChartPieVariant,
+  ChartsLabelFieldId,
   ChartWidgetViewMode,
   ChartsWidgetFiltersChangeHandler,
+  ChartsWidgetLabelFieldChangeHandler,
   ChartsWidgetPieVariantChangeHandler,
   ChartsWidgetViewModeChangeHandler,
 } from '@/app/charts/_components/charts.types';
@@ -25,6 +27,8 @@ import { ChartsWidgetLayoutMenu } from '@/app/charts/_components/charts-widget-l
 import { ChartsWidgetSettingsSidebar } from '@/app/charts/_components/charts-widget-settings-sidebar';
 import {
   CHARTS_SAMPLE_WORK_ITEMS,
+  DEFAULT_CHARTS_LABEL_FIELD,
+  filterChartsSampleByLabelSlice,
   filterChartsSampleWorkItems,
   type ChartsExportFormatId,
   type ChartsSampleWorkItem,
@@ -40,7 +44,8 @@ type ChartsWidgetConfigDialogProps = {
   readonly filters?: ChartsWidgetFilterDraft | null;
   readonly viewMode?: ChartWidgetViewMode;
   readonly pieVariant?: ChartPieVariant;
-  readonly focusedStatus?: WorkItemStatus;
+  readonly labelField?: ChartsLabelFieldId;
+  readonly focusedSliceKey?: string;
   readonly sessionWorkItems?: readonly ChartsSampleWorkItem[];
   readonly onSessionWorkItemsChange?: (
     // eslint-disable-next-line no-unused-vars
@@ -49,6 +54,7 @@ type ChartsWidgetConfigDialogProps = {
   readonly onFiltersChange?: ChartsWidgetFiltersChangeHandler;
   readonly onViewModeChange?: ChartsWidgetViewModeChangeHandler;
   readonly onPieVariantChange?: ChartsWidgetPieVariantChangeHandler;
+  readonly onLabelFieldChange?: ChartsWidgetLabelFieldChangeHandler;
   readonly onRename?: () => void;
   readonly onDuplicate?: () => void;
   readonly onDelete?: () => void;
@@ -64,12 +70,14 @@ export function ChartsWidgetConfigDialog({
   filters = null,
   viewMode = 'chart',
   pieVariant = 'donut',
-  focusedStatus,
+  labelField = DEFAULT_CHARTS_LABEL_FIELD,
+  focusedSliceKey,
   sessionWorkItems = CHARTS_SAMPLE_WORK_ITEMS,
   onSessionWorkItemsChange,
   onFiltersChange,
   onViewModeChange,
   onPieVariantChange,
+  onLabelFieldChange,
   onRename,
   onDuplicate,
   onDelete,
@@ -112,12 +120,28 @@ export function ChartsWidgetConfigDialog({
     [assigneeFilter, filters, searchQuery, sessionWorkItems]
   );
 
+  const tableWorkItems = useMemo(() => {
+    if (!focusedSliceKey || labelField === 'status') {
+      return filteredWorkItems;
+    }
+    return filterChartsSampleByLabelSlice(
+      filteredWorkItems,
+      labelField,
+      focusedSliceKey
+    );
+  }, [filteredWorkItems, focusedSliceKey, labelField]);
+
+  const tableFocusedStatus =
+    labelField === 'status' && focusedSliceKey
+      ? (focusedSliceKey as WorkItemStatus)
+      : null;
+
   const handleLayoutChange = (mode: ChartWidgetViewMode) => {
     onViewModeChange?.(mode, null);
   };
 
-  const handleSliceClick = (status: WorkItemStatus) => {
-    onViewModeChange?.('split', status);
+  const handleSliceClick = (sliceKey: string) => {
+    onViewModeChange?.('split', sliceKey);
   };
 
   const piePreview = (
@@ -125,16 +149,17 @@ export function ChartsWidgetConfigDialog({
       size="dialog"
       workItems={filteredWorkItems}
       pieVariant={pieVariant}
+      labelField={labelField}
       onSliceClick={handleSliceClick}
     />
   );
 
   const tablePreview = (
     <ChartsStatusGroupedTable
-      workItems={filteredWorkItems}
+      workItems={tableWorkItems}
       sourceWorkItems={sessionWorkItems}
       onWorkItemsChange={onSessionWorkItemsChange}
-      focusedStatus={focusedStatus}
+      focusedStatus={tableFocusedStatus}
     />
   );
 
@@ -273,6 +298,8 @@ export function ChartsWidgetConfigDialog({
           <ChartsWidgetSettingsSidebar
             pieVariant={pieVariant}
             onPieVariantChange={(variant) => onPieVariantChange?.(variant)}
+            labelField={labelField}
+            onLabelFieldChange={(field) => onLabelFieldChange?.(field)}
           />
         ) : null}
       </div>
