@@ -77,6 +77,15 @@ vi.mock(
   })
 );
 
+vi.mock(
+  '@/app/projects/_components/project-details/board-designer-workspace',
+  () => ({
+    BoardDesignerWorkspace: () => (
+      <div data-testid="board-designer-workspace">Board Designer</div>
+    ),
+  })
+);
+
 vi.mock('@/app/work-items/_components/work-items-workspace', () => ({
   default: () => (
     <div data-testid="work-items-workspace">Work Items Content</div>
@@ -141,6 +150,7 @@ describe('parseProjectDetailsTab', () => {
     expect(parseProjectDetailsTab('work-items')).toBe('work-items');
     expect(parseProjectDetailsTab('sprints')).toBe('sprints');
     expect(parseProjectDetailsTab('integrations')).toBe('integrations');
+    expect(parseProjectDetailsTab('board')).toBe('board');
   });
 
   it('falls back to "details" for unknown or empty values', () => {
@@ -156,7 +166,51 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
     mockPush.mockClear();
   });
 
-  it('renders all navigation options including role-gated Sprints for managers', () => {
+  it('renders the board designer for ?tab=board', () => {
+    searchParamsValue = new URLSearchParams('tab=board');
+
+    render(
+      <ProjectDetailsWorkspace
+        project={mockProject}
+        members={[]}
+        allUsers={[]}
+        currentUserId="user-manager-1"
+        currentUserRole="manager"
+        workItems={{
+          initialWorkItems: [],
+          totalCount: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+          search: '',
+          typeFilter: '',
+          assigneeFilter: '',
+          sprintFilter: '',
+          listView: 'flat',
+          tab: 'active',
+        }}
+        teams={{
+          items: [],
+          totalCount: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 1,
+          search: '',
+          status: 'active',
+        }}
+        sprints={{
+          sprints: [],
+          pagination: { page: 1, limit: 10, totalCount: 0, totalPages: 1 },
+          filterTab: 'active',
+          search: '',
+        }}
+      />
+    );
+
+    expect(screen.getByTestId('board-designer-workspace')).toBeInTheDocument();
+  });
+
+  it('renders all navigation options including role-gated Sprints and Board', () => {
     render(
       <ProjectDetailsWorkspace
         project={mockProject}
@@ -212,6 +266,7 @@ describe('ProjectDetailsWorkspace sidebar and banner isolation', () => {
       screen.getByRole('button', { name: /integrations/i })
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /fields/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /board/i })).toBeInTheDocument();
   });
 
   it('hides Sprints nav for members', () => {

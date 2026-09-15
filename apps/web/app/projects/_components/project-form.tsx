@@ -796,7 +796,6 @@ export function ProjectForm({
       end_date: projectData.end_date,
       status: projectData.status,
       attributes_config: projectData.attributes_config,
-      workflow_config: projectData.workflow_config,
       jira_connection_id: projectData.jira_connection_id,
       jira_project_key: projectData.jira_project_key,
       github_repo: projectData.github_repo,
@@ -875,7 +874,6 @@ export function ProjectForm({
         end_date: endDate || null,
         status: status,
         attributes_config: null,
-        workflow_config: null,
         jira_connection_id: linkedJira ? jiraConnectionId : null,
         jira_project_key: linkedJira
           ? jiraProjectKey.toUpperCase().trim()

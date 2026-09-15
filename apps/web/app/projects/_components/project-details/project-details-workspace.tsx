@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   ClipboardPenLine,
   Info,
+  Kanban,
   Network,
   Plug,
   SlidersHorizontal,
@@ -11,13 +12,13 @@ import {
   Users,
 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
-import { UserRoleEnum } from '@repo/types';
 import { ProjectTeamsPanel } from '@/app/projects/_components/project-details/project-teams-panel';
 import { ProjectSummaryBanner } from '@/app/projects/_components/project-details/project-summary-banner';
 import { ProjectDetailsTab } from '@/app/projects/_components/project-details/project-details-tab';
 import { ProjectMembersTab } from '@/app/projects/_components/project-details/project-members-tab';
 import { ProjectIntegrationsTab } from '@/app/projects/_components/project-details/project-integrations-tab';
 import { ProjectFieldsWorkspace } from '@/app/projects/_components/project-details/project-fields-workspace';
+import { BoardDesignerWorkspace } from '@/app/projects/_components/project-details/board-designer-workspace';
 import type {
   Project,
   ProjectMemberWithUser,
@@ -36,6 +37,7 @@ import {
   parseProjectDetailsTab,
   type ProjectDetailsTab as ProjectDetailsTabId,
 } from '@/lib/search-params';
+import { isAppRole, isManagerOrAdmin } from '@/lib/rbac/roles';
 import type { VisibilityState } from '@tanstack/react-table';
 
 interface ProjectWorkItemsProps {
@@ -130,6 +132,11 @@ const PROJECT_NAV_ITEMS: ReadonlyArray<{
     label: 'Fields',
     Icon: SlidersHorizontal,
   },
+  {
+    id: 'board',
+    label: 'Board',
+    Icon: Kanban,
+  },
 ];
 
 export function ProjectDetailsWorkspace({
@@ -149,15 +156,14 @@ export function ProjectDetailsWorkspace({
   const searchParams = useSearchParams();
   const requestedTab = parseProjectDetailsTab(searchParams.get('tab'));
 
-  const isManagerOrAdmin =
-    currentUserRole === UserRoleEnum.admin ||
-    currentUserRole === UserRoleEnum.manager;
+  const appRole = isAppRole(currentUserRole) ? currentUserRole : null;
+  const canEditProject = isManagerOrAdmin(appRole);
 
   const activeTab =
-    requestedTab === 'sprints' && !isManagerOrAdmin ? 'details' : requestedTab;
+    requestedTab === 'sprints' && !canEditProject ? 'details' : requestedTab;
 
   const visibleNavItems = PROJECT_NAV_ITEMS.filter(
-    (item) => !item.managerOrAdminOnly || isManagerOrAdmin
+    (item) => !item.managerOrAdminOnly || canEditProject
   );
 
   const handleTabChange = (nextTab: ProjectDetailsTabId) => {
@@ -228,7 +234,7 @@ export function ProjectDetailsWorkspace({
           <div className="space-y-6 p-6">
             <ProjectSummaryBanner
               project={project}
-              canEditBranding={isManagerOrAdmin}
+              canEditBranding={canEditProject}
             />
             <ProjectDetailsTab
               project={project}
@@ -238,7 +244,7 @@ export function ProjectDetailsWorkspace({
               sprintCount={sprints.pagination.totalCount}
               integrationCount={countProjectIntegrations(project)}
               fieldCount={countProjectFields(project.attributes_config)}
-              isManagerOrAdmin={isManagerOrAdmin}
+              isManagerOrAdmin={canEditProject}
             />
           </div>
         )}
@@ -313,7 +319,7 @@ export function ProjectDetailsWorkspace({
           </div>
         )}
 
-        {activeTab === 'sprints' && isManagerOrAdmin && (
+        {activeTab === 'sprints' && canEditProject && (
           <div className="p-6">
             <SprintsWorkspace
               sprints={sprints.sprints}
@@ -322,7 +328,7 @@ export function ProjectDetailsWorkspace({
               filterTab={sprints.filterTab}
               projectFilter={project.id}
               search={sprints.search}
-              userRole={currentUserRole ?? UserRoleEnum.member}
+              userRole={appRole ?? 'member'}
               currentUserId={currentUserId}
               lockedProjectId={project.id}
             />
@@ -339,7 +345,17 @@ export function ProjectDetailsWorkspace({
           <div className="p-6">
             <ProjectFieldsWorkspace
               project={project}
-              isManagerOrAdmin={isManagerOrAdmin}
+              isManagerOrAdmin={canEditProject}
+            />
+          </div>
+        )}
+
+        {activeTab === 'board' && (
+          <div className="p-6">
+            <BoardDesignerWorkspace
+              project={project}
+              canEdit={canEditProject}
+              currentUserId={currentUserId}
             />
           </div>
         )}

@@ -47,8 +47,11 @@ const LOCK = '2026-09-11T00:00:00.000Z';
 const CUSTOM_BOARD = {
   version: '1',
   columns: [
+    { id: 'new', name: 'New', status: 'New' },
+    { id: 'todo', name: 'Ready', status: 'ToDo' },
     { id: 'development', name: 'Development', status: 'InProgress' },
     { id: 'code-review', name: 'Code Review', status: 'InProgress' },
+    { id: 'testing', name: 'Testing', status: 'Testing' },
     { id: 'done', name: 'Done', status: 'Done' },
   ],
 };
@@ -155,7 +158,11 @@ describe('WorkItemService board-column validation', () => {
     getProjectWorkflowConfigMock.mockResolvedValue({
       version: '1',
       columns: [
+        { id: 'new', name: 'New', status: 'New' },
+        { id: 'todo', name: 'Ready', status: 'ToDo' },
         { id: 'development', name: 'Development', status: 'InProgress' },
+        { id: 'testing', name: 'Testing', status: 'Testing' },
+        { id: 'done', name: 'Done', status: 'Done' },
       ],
     });
 
