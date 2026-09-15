@@ -24,12 +24,15 @@ import type { BacklogLayoutId } from '@/app/backlog/_helpers/backlog-layout-stor
 import type { BacklogActiveTab } from '@/app/backlog/_helpers/backlog-item-utils';
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import type { User as DbUser } from '@/app/users/_services/users.mutations.client';
+import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
+import { QUERY_FILTER_ALL_VALUE } from '@/hooks/use-query-filter';
 import { RegistryTabSwitcher } from '@/components/registry-tab-switcher';
 import { SearchInput } from '@/components/search-input';
 
 /* eslint-disable no-unused-vars */
 type BacklogToolbarProps = {
   readonly projects: DbProject[];
+  readonly sprints: readonly Sprint[];
   readonly projectMembers: DbUser[];
   readonly isManagerOrAdmin: boolean;
   readonly activeTab: BacklogActiveTab;
@@ -41,7 +44,9 @@ type BacklogToolbarProps = {
   readonly searchQuery: string;
   readonly onSearchChange: (value: string) => void;
   readonly projectFilter: string;
-  readonly onProjectFilterChange: (value: string) => void;
+  readonly onProjectFilterChange: (value: string, sprintValue?: string) => void;
+  readonly sprintFilter: string;
+  readonly onSprintFilterChange: (value: string) => void;
   readonly assigneeFilter: string;
   readonly onAssigneeFilterChange: (value: string) => void;
   readonly priorityFilter: string;
@@ -61,6 +66,7 @@ const BACKLOG_TABS = [
 
 export function BacklogToolbar({
   projects,
+  sprints,
   projectMembers,
   isManagerOrAdmin,
   activeTab,
@@ -73,6 +79,8 @@ export function BacklogToolbar({
   onSearchChange,
   projectFilter,
   onProjectFilterChange,
+  sprintFilter,
+  onSprintFilterChange,
   assigneeFilter,
   onAssigneeFilterChange,
   priorityFilter,
@@ -84,7 +92,10 @@ export function BacklogToolbar({
   onOpenDefaultsDialog,
 }: Readonly<BacklogToolbarProps>) {
   const handleApplyFilters = (draft: BacklogFilterDraft) => {
-    onProjectFilterChange(draft.project);
+    const nextSprint =
+      draft.sprint === QUERY_FILTER_ALL_VALUE ? '' : draft.sprint;
+    onProjectFilterChange(draft.project, nextSprint);
+    onSprintFilterChange(nextSprint);
     onAssigneeFilterChange(draft.assignee);
     onPriorityFilterChange(draft.priority);
   };
@@ -101,10 +112,13 @@ export function BacklogToolbar({
 
         <BacklogFilterDialog
           projects={projects}
+          sprints={sprints}
           projectMembers={projectMembers}
           projectFilter={projectFilter}
+          sprintFilter={sprintFilter}
           assigneeFilter={assigneeFilter}
           priorityFilter={priorityFilter}
+          activeTab={activeTab}
           hasActiveFilters={isFiltersActive}
           onApplyFilters={handleApplyFilters}
         />

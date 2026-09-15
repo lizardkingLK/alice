@@ -162,7 +162,7 @@ export function filterBacklogDisplayedSprints<
       ? byTab
       : byTab.filter((sprint) => getProjectId(sprint) === projectFilter);
 
-  if (!sprintFilter) {
+  if (!sprintFilter || sprintFilter === 'all') {
     return byProject;
   }
 
