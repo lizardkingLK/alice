@@ -59,7 +59,6 @@ import {
 import { chartsWorkspaceHref } from '@/app/charts/_helpers/charts-links';
 import { syncChartWorkspaceToApi } from '@/app/charts/_services/charts.mutations.client';
 import { useDashboardEntityBreadcrumb } from '@/app/dashboard/_components/dashboard-breadcrumb-runtime';
-import type { WorkItemStatus } from '@repo/types';
 
 type ChartsWorkspaceProps = {
   readonly workspaceId: string;
@@ -305,13 +304,13 @@ export function ChartsWorkspace({
     (
       instanceId: string,
       viewMode: ChartWidgetViewMode,
-      focusedStatus?: WorkItemStatus | null
+      focusedSliceKey?: string | null
     ) => {
       commitInstances(
         updateChartWidgetViewMode(
           instanceId,
           viewMode,
-          focusedStatus ?? null,
+          focusedSliceKey ?? null,
           instances
         )
       );

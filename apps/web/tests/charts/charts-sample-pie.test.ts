@@ -4,6 +4,7 @@ import {
   buildChartsPieFromSample,
   buildChartsStatusPieFromSample,
   CHARTS_SAMPLE_WORK_ITEMS,
+  filterChartsSampleByLabelSlice,
   type ChartsSampleWorkItem,
 } from '@/app/charts/_components/charts-sample.data';
 
@@ -151,5 +152,42 @@ describe('buildChartsPieFromSample', () => {
     );
     expect(data[0]?.key).toBe('InProgress');
     expect(data[0]?.status).toBe('InProgress');
+  });
+});
+
+describe('filterChartsSampleByLabelSlice', () => {
+  it('filters owner slices and leaves status variety for table grouping', () => {
+    const ownerId = '22222222-2222-4222-8222-222222222201';
+    const rows = [
+      item({ id: '1', title: 'A', assigneeId: ownerId, status: 'New' }),
+      item({ id: '2', title: 'B', assigneeId: ownerId, status: 'Done' }),
+      item({
+        id: '3',
+        title: 'C',
+        assigneeId: '22222222-2222-4222-8222-222222222202',
+        status: 'New',
+      }),
+    ];
+
+    const filtered = filterChartsSampleByLabelSlice(rows, 'owner', ownerId);
+    expect(filtered).toHaveLength(2);
+    expect(filtered.map((row) => row.status).sort()).toEqual(['Done', 'New']);
+  });
+
+  it('filters unassigned owner bucket', () => {
+    const filtered = filterChartsSampleByLabelSlice(
+      [
+        item({ id: '1', title: 'A', assigneeId: null }),
+        item({
+          id: '2',
+          title: 'B',
+          assigneeId: '22222222-2222-4222-8222-222222222201',
+        }),
+      ],
+      'owner',
+      'unassigned'
+    );
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0]?.id).toBe('1');
   });
 });

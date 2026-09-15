@@ -53,7 +53,7 @@ export const CHARTS_LABEL_COLUMNS: readonly {
   readonly id: ChartsLabelFieldId;
   readonly label: string;
 }[] = [
-  { id: 'board', label: 'Board' },
+  { id: 'board', label: 'Project' },
   { id: 'group', label: 'Group' },
   { id: 'name', label: 'Name' },
   { id: 'owner', label: 'Owner' },
@@ -249,6 +249,17 @@ function labelBucketForItem(
     default:
       return { key: 'unknown', label: 'Unknown' };
   }
+}
+
+/** Keep rows that belong to a Labels → Columns slice bucket. */
+export function filterChartsSampleByLabelSlice(
+  items: readonly ChartsSampleWorkItem[],
+  labelField: ChartsLabelFieldId,
+  sliceKey: string
+): ChartsSampleWorkItem[] {
+  return items.filter(
+    (item) => labelBucketForItem(item, labelField).key === sliceKey
+  );
 }
 
 function swatchForBucket(

@@ -31,7 +31,6 @@ import type {
   ChartWidgetTypeId,
   ChartWidgetViewMode,
 } from '@/app/charts/_components/charts.types';
-import type { WorkItemStatus } from '@repo/types';
 import 'react-grid-layout/css/styles.css';
 import '@/app/dashboard/_components/dashboard-grid.css';
 
@@ -240,7 +239,7 @@ type ChartsBoardCanvasProps = {
     // eslint-disable-next-line no-unused-vars
     viewMode: ChartWidgetViewMode,
     // eslint-disable-next-line no-unused-vars
-    focusedStatus?: WorkItemStatus | null
+    focusedSliceKey?: string | null
   ) => void;
   readonly onPieVariantChange: (
     // eslint-disable-next-line no-unused-vars
@@ -410,7 +409,7 @@ function BoardCanvasBody({
     // eslint-disable-next-line no-unused-vars
     viewMode: ChartWidgetViewMode,
     // eslint-disable-next-line no-unused-vars
-    focusedStatus?: WorkItemStatus | null
+    focusedSliceKey?: string | null
   ) => void;
   onPieVariantChange: (
     // eslint-disable-next-line no-unused-vars
@@ -477,7 +476,9 @@ function BoardCanvasBody({
               viewMode={entry?.instance.viewMode}
               pieVariant={entry?.instance.pieVariant}
               labelField={entry?.instance.labelField}
-              focusedStatus={entry?.instance.focusedStatus}
+              focusedSliceKey={
+                entry?.instance.focusedSliceKey ?? entry?.instance.focusedStatus
+              }
               onRemove={() => onRemoveWidget(item.i)}
               onDuplicate={() => onDuplicateWidget(item.i)}
               onRename={(nextTitle) => onRenameWidget(item.i, nextTitle)}
@@ -595,11 +596,11 @@ export function duplicateChartWidget(
       nextInstances
     );
   }
-  if (source.viewMode || source.focusedStatus) {
+  if (source.viewMode || source.focusedSliceKey || source.focusedStatus) {
     nextInstances = updateChartWidgetViewMode(
       copiedId,
       source.viewMode ?? 'chart',
-      source.focusedStatus ?? null,
+      source.focusedSliceKey ?? source.focusedStatus ?? null,
       nextInstances
     );
   }
@@ -637,13 +638,13 @@ type ChartInstanceFieldPatch = Partial<
     | 'title'
     | 'filters'
     | 'viewMode'
-    | 'focusedStatus'
+    | 'focusedSliceKey'
     | 'pieVariant'
     | 'labelField'
   >
 > & {
   readonly clearFilters?: boolean;
-  readonly clearFocusedStatus?: boolean;
+  readonly clearFocusedSliceKey?: boolean;
   readonly clearPieVariant?: boolean;
   readonly clearLabelField?: boolean;
 };
@@ -700,9 +701,9 @@ function withInstanceFields(
 
   assignUnlessCleared(
     next,
-    patch.clearFocusedStatus,
-    'focusedStatus',
-    patch.focusedStatus ?? item.focusedStatus
+    patch.clearFocusedSliceKey,
+    'focusedSliceKey',
+    patch.focusedSliceKey ?? item.focusedSliceKey ?? item.focusedStatus
   );
 
   const pieVariant = patch.pieVariant ?? item.pieVariant;
@@ -745,7 +746,7 @@ export function updateChartWidgetFilters(
 export function updateChartWidgetViewMode(
   instanceId: string,
   viewMode: ChartWidgetViewMode,
-  focusedStatus: WorkItemStatus | null | undefined,
+  focusedSliceKey: string | null | undefined,
   instances: ChartBoardWidgetInstance[]
 ): ChartBoardWidgetInstance[] {
   return instances.map((item) => {
@@ -754,8 +755,8 @@ export function updateChartWidgetViewMode(
     }
     return withInstanceFields(item, {
       viewMode,
-      focusedStatus: focusedStatus ?? undefined,
-      clearFocusedStatus: focusedStatus == null,
+      focusedSliceKey: focusedSliceKey ?? undefined,
+      clearFocusedSliceKey: focusedSliceKey == null,
     });
   });
 }
@@ -785,16 +786,15 @@ export function updateChartWidgetLabelField(
     if (item.instanceId !== instanceId) {
       return item;
     }
-    const clearFocus = labelField !== 'status';
     if (labelField === 'status') {
       return withInstanceFields(item, {
         clearLabelField: true,
-        clearFocusedStatus: clearFocus,
+        clearFocusedSliceKey: true,
       });
     }
     return withInstanceFields(item, {
       labelField,
-      clearFocusedStatus: true,
+      clearFocusedSliceKey: true,
     });
   });
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { WorkItemStatus } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card, CardContent, CardHeader } from '@repo/ui/components/ui/card';
 import {
@@ -60,7 +59,7 @@ type ChartsWidgetCardProps = {
   readonly viewMode?: ChartWidgetViewMode;
   readonly pieVariant?: ChartPieVariant;
   readonly labelField?: ChartsLabelFieldId;
-  readonly focusedStatus?: WorkItemStatus;
+  readonly focusedSliceKey?: string;
   readonly onRemove: () => void;
   readonly onDuplicate: () => void;
   // eslint-disable-next-line no-unused-vars -- rename callback
@@ -87,7 +86,7 @@ export function ChartsWidgetCard({
   viewMode,
   pieVariant,
   labelField = DEFAULT_CHARTS_LABEL_FIELD,
-  focusedStatus,
+  focusedSliceKey,
   onRemove,
   onDuplicate,
   onRename,
@@ -313,7 +312,7 @@ export function ChartsWidgetCard({
           viewMode={viewMode}
           pieVariant={pieVariant}
           labelField={labelField}
-          focusedStatus={focusedStatus}
+          focusedSliceKey={focusedSliceKey}
           sessionWorkItems={sessionWorkItems}
           onSessionWorkItemsChange={setSessionWorkItems}
           onFiltersChange={onFiltersChange}
