@@ -797,7 +797,7 @@ const YAML_LITERAL_MAP: Readonly<Record<string, unknown>> = {
 };
 
 function parseYamlScalar(val: string): unknown {
-  if (Object.prototype.hasOwnProperty.call(YAML_LITERAL_MAP, val)) {
+  if (Object.hasOwn(YAML_LITERAL_MAP, val)) {
     return YAML_LITERAL_MAP[val];
   }
   if (/^-?\d+(\.\d+)?$/.test(val)) return Number(val);
