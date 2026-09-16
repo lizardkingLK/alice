@@ -46,6 +46,11 @@ import {
   WorkspaceDefaultsDialogHost,
 } from '@/app/board/_components/workspace-defaults-dialog-host';
 import { WorkspaceDefaultsControls } from '@/app/board/_components/workspace-defaults-controls';
+import {
+  BoardLayoutMenu,
+  useBoardLayout,
+} from '@/app/board/_components/board-layout-menu';
+import { BoardGroupedColumnsView } from '@/app/board/_components/board-grouped-columns-view';
 import { useBoardDefaultsBootstrap } from '@/app/board/_hooks/use-board-defaults-bootstrap';
 import type { Project } from '@/app/projects/_services/projects.mutations.shared';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
@@ -135,6 +140,7 @@ export function KanbanBoard({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { handleMutationError } = useOptimisticLock();
+  const { layout, setLayout } = useBoardLayout(userId);
   const [workItems, setWorkItems] = useState<DbWorkItem[]>(initialWorkItems);
   const [createStatus, setCreateStatus] = useState<BoardStatus | null>(null);
   const [search, setSearch] = useState('');
@@ -359,13 +365,24 @@ export function KanbanBoard({
     setWorkItems((previous) =>
       previous.map((item) =>
         item.id === id
-          ? { ...item, status, board_column_id: boardColumnId }
+          ? {
+              ...item,
+              status,
+              board_column_id: boardColumnId,
+              // Keep lock token until the server row arrives via syncWorkItem.
+              updated_at: item.updated_at,
+            }
           : item
       )
     );
     setSelectedTask((previous) =>
       previous?.id === id
-        ? { ...previous, status, board_column_id: boardColumnId }
+        ? {
+            ...previous,
+            status,
+            board_column_id: boardColumnId,
+            updated_at: previous.updated_at,
+          }
         : previous
     );
   };
@@ -525,7 +542,7 @@ export function KanbanBoard({
         </div>
       ) : null}
 
-      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-wrap items-center gap-3">
           <SearchInput
             value={search}
@@ -579,105 +596,128 @@ export function KanbanBoard({
             </Button>
           ) : null}
         </div>
+
+        <BoardLayoutMenu layout={layout} onLayoutChange={setLayout} />
       </div>
 
-      <div className="flex min-h-0 flex-1 gap-4 overflow-x-auto pb-1">
-        {boardColumns.map((column) => {
-          const columnItems = columnItemsMap.get(column.id) ?? [];
-          const isOver = activeDropCol === column.id;
+      {layout === 'grouped' ? (
+        <BoardGroupedColumnsView
+          boardColumns={boardColumns}
+          columnItemsMap={columnItemsMap}
+          activeDropCol={activeDropCol}
+          draggedTaskId={draggedTaskId}
+          pendingStatusIds={pendingStatusIds}
+          onSelectItem={(item) => {
+            setSelectedTask(item);
+            setIsDetailOpen(true);
+          }}
+          onCreateInColumn={(column) => setCreateStatus(column.status)}
+          onItemDragStart={handleDragStart}
+          onItemDragEnd={handleDragEnd}
+          onColumnDragOver={handleDragOver}
+          onColumnDragLeave={handleDragLeave}
+          onColumnDrop={handleDrop}
+        />
+      ) : (
+        <div className="flex min-h-0 flex-1 gap-4 overflow-x-auto pb-1">
+          {boardColumns.map((column) => {
+            const columnItems = columnItemsMap.get(column.id) ?? [];
+            const isOver = activeDropCol === column.id;
 
-          return (
-            <section
-              key={column.id}
-              aria-label={column.name}
-              className={cn(
-                'bg-muted/25 flex h-full min-h-0 w-72 min-w-72 flex-1 flex-col rounded-xl border border-t-4 p-3 transition-colors',
-                BOARD_STATUS_COLUMN_ACCENTS[column.status],
-                isOver && 'border-primary bg-primary/5 border-dashed'
-              )}
-              onDragOver={(event) => handleDragOver(event, column.id)}
-              onDragLeave={handleDragLeave}
-              onDrop={(event) => handleDrop(event, column)}
-            >
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <WorkItemStatusBadge
-                  status={column.status}
-                  label={column.name}
-                />
-                <div className="flex items-center gap-1.5">
-                  <Badge variant="secondary">{columnItems.length}</Badge>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        size="icon-sm"
-                        variant="ghost"
-                        className="cursor-pointer"
-                        aria-label={`Create work item in ${column.name}`}
-                        onClick={() => setCreateStatus(column.status)}
-                      >
-                        <Plus className="size-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Create in {column.name}</TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
-
-              <ScrollArea className="h-0 min-h-0 flex-1">
-                <div className="flex w-full flex-col gap-3 pb-1">
-                  {columnItems.length === 0 ? (
-                    <div className="text-muted-foreground flex min-h-40 w-full flex-col items-center justify-center rounded-lg border border-dashed px-4 py-10 text-center text-xs">
-                      <FolderDot className="text-muted-foreground/50 mb-2 size-8 stroke-1" />
-                      No work items in this stage
-                    </div>
-                  ) : (
-                    columnItems.map((item) => {
-                      const description = descriptionToPlainText(
-                        item.description ?? null
-                      );
-
-                      return (
-                        <Card
-                          key={item.id}
-                          draggable
-                          onDragStart={(event) =>
-                            handleDragStart(event, item.id)
-                          }
-                          onDragEnd={handleDragEnd}
-                          onClick={() => {
-                            setSelectedTask(item);
-                            setIsDetailOpen(true);
-                          }}
-                          className={cn(
-                            'group w-full max-w-full min-w-0 cursor-grab border border-b-[3px] py-0 shadow-sm active:cursor-grabbing',
-                            (draggedTaskId === item.id ||
-                              pendingStatusIds.has(item.id)) &&
-                              'opacity-40'
-                          )}
+            return (
+              <section
+                key={column.id}
+                aria-label={column.name}
+                className={cn(
+                  'bg-muted/25 flex h-full min-h-0 w-72 min-w-72 flex-1 flex-col rounded-xl border border-t-4 p-3 transition-colors',
+                  BOARD_STATUS_COLUMN_ACCENTS[column.status],
+                  isOver && 'border-primary bg-primary/5 border-dashed'
+                )}
+                onDragOver={(event) => handleDragOver(event, column.id)}
+                onDragLeave={handleDragLeave}
+                onDrop={(event) => handleDrop(event, column)}
+              >
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <WorkItemStatusBadge
+                    status={column.status}
+                    label={column.name}
+                  />
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant="secondary">{columnItems.length}</Badge>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          size="icon-sm"
+                          variant="ghost"
+                          className="cursor-pointer"
+                          aria-label={`Create work item in ${column.name}`}
+                          onClick={() => setCreateStatus(column.status)}
                         >
-                          <WorkItemPreviewCardBody
-                            title={item.title}
-                            type={item.type}
-                            priority={item.priority}
-                            descriptionPlain={description || null}
-                            assigneeName={assigneeName(item)}
-                            assigneeImageUrl={item.assignee?.profile_picture}
-                            isAssigneeOnline={Boolean(
-                              item.assignee_id && isUserOnline(item.assignee_id)
-                            )}
-                            titleClassName="group-hover:text-primary transition-colors"
-                          />
-                        </Card>
-                      );
-                    })
-                  )}
+                          <Plus className="size-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Create in {column.name}</TooltipContent>
+                    </Tooltip>
+                  </div>
                 </div>
-              </ScrollArea>
-            </section>
-          );
-        })}
-      </div>
+
+                <ScrollArea className="h-0 min-h-0 flex-1">
+                  <div className="flex w-full flex-col gap-3 pb-1">
+                    {columnItems.length === 0 ? (
+                      <div className="text-muted-foreground flex min-h-40 w-full flex-col items-center justify-center rounded-lg border border-dashed px-4 py-10 text-center text-xs">
+                        <FolderDot className="text-muted-foreground/50 mb-2 size-8 stroke-1" />
+                        No work items in this stage
+                      </div>
+                    ) : (
+                      columnItems.map((item) => {
+                        const description = descriptionToPlainText(
+                          item.description ?? null
+                        );
+
+                        return (
+                          <Card
+                            key={item.id}
+                            draggable
+                            onDragStart={(event) =>
+                              handleDragStart(event, item.id)
+                            }
+                            onDragEnd={handleDragEnd}
+                            onClick={() => {
+                              setSelectedTask(item);
+                              setIsDetailOpen(true);
+                            }}
+                            className={cn(
+                              'group w-full max-w-full min-w-0 cursor-grab border border-b-[3px] py-0 shadow-sm active:cursor-grabbing',
+                              (draggedTaskId === item.id ||
+                                pendingStatusIds.has(item.id)) &&
+                                'opacity-40'
+                            )}
+                          >
+                            <WorkItemPreviewCardBody
+                              title={item.title}
+                              type={item.type}
+                              priority={item.priority}
+                              descriptionPlain={description || null}
+                              assigneeName={assigneeName(item)}
+                              assigneeImageUrl={item.assignee?.profile_picture}
+                              isAssigneeOnline={Boolean(
+                                item.assignee_id &&
+                                isUserOnline(item.assignee_id)
+                              )}
+                              titleClassName="group-hover:text-primary transition-colors"
+                            />
+                          </Card>
+                        );
+                      })
+                    )}
+                  </div>
+                </ScrollArea>
+              </section>
+            );
+          })}
+        </div>
+      )}
 
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
         <DialogContent className="overflow-x-hidden sm:max-w-xl">
