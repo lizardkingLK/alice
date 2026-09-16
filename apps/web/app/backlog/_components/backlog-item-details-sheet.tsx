@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useProjectMembers } from '@/app/work-items/_hooks/use-project-members';
-import Link from 'next/link';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import {
@@ -309,7 +308,7 @@ export function BacklogItemDetailsSheet({
 
             <div className="flex justify-end gap-2 px-2 pt-2 pb-4">
               <Button asChild variant="outline" className="h-9 cursor-pointer">
-                <Link
+                <a
                   href={workItemDetailHref(item.id, {
                     fromProjectId: item.project_id,
                   })}
@@ -318,7 +317,7 @@ export function BacklogItemDetailsSheet({
                 >
                   Open work item
                   <ExternalLink data-icon="inline-end" className="size-3.5" />
-                </Link>
+                </a>
               </Button>
               <Button onClick={handleSave} className="h-9 cursor-pointer px-6">
                 Save Changes
