@@ -105,6 +105,16 @@ describe('filterBacklogDisplayedSprints', () => {
     ).toEqual(['s1', 's2']);
   });
 
+  it('lists active and planned sprints for a project when sprintFilter is "all"', () => {
+    expect(
+      filter({
+        activeTab: 'active',
+        projectFilter: 'proj-1',
+        sprintFilter: 'all',
+      })
+    ).toEqual(['s1', 's2']);
+  });
+
   it('narrows to the selected default sprint only', () => {
     expect(
       filter({

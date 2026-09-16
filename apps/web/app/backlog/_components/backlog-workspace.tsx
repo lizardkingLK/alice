@@ -117,6 +117,7 @@ export function BacklogWorkspace({
     projectFilter,
     setProjectFilter,
     sprintFilter,
+    setSprintFilter,
     savedDefaultsApplied,
     baselineProjectId,
     baselineSprintId,
@@ -686,7 +687,7 @@ export function BacklogWorkspace({
     assigneeFilter !== 'all' ||
     priorityFilter !== 'all' ||
     (projectFilter !== 'all' && projectFilter !== baselineProjectId) ||
-    sprintFilter !== baselineSprintId
+    (sprintFilter || '') !== (baselineSprintId || '')
   );
 
   // Derived counts for the sprint confirmation dialogs
@@ -719,6 +720,7 @@ export function BacklogWorkspace({
         {/* Toolbar & Filters */}
         <BacklogToolbar
           projects={projects}
+          sprints={sprintList}
           projectMembers={projectMembers}
           isManagerOrAdmin={isManagerOrAdmin}
           activeTab={activeTab}
@@ -731,6 +733,8 @@ export function BacklogWorkspace({
           onSearchChange={setSearchQuery}
           projectFilter={projectFilter}
           onProjectFilterChange={setProjectFilter}
+          sprintFilter={sprintFilter}
+          onSprintFilterChange={setSprintFilter}
           assigneeFilter={assigneeFilter}
           onAssigneeFilterChange={setAssigneeFilter}
           priorityFilter={priorityFilter}

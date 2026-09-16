@@ -82,8 +82,16 @@ export function useBacklogProjectDefaults({
   ]);
 
   const updateProjectFilter = useCallback(
-    (nextProjectFilter: string) => {
+    (nextProjectFilter: string, nextSprintFilter?: string) => {
       setProjectFilter(nextProjectFilter);
+      if (nextSprintFilter !== undefined) {
+        setSprintFilter(
+          nextSprintFilter === 'all' || !nextSprintFilter
+            ? ''
+            : nextSprintFilter
+        );
+        return;
+      }
       if (nextProjectFilter === 'all') {
         setSprintFilter('');
         return;
@@ -98,6 +106,12 @@ export function useBacklogProjectDefaults({
     },
     [sprintFilter, sprints]
   );
+
+  const updateSprintFilter = useCallback((nextSprintFilter: string) => {
+    setSprintFilter(
+      nextSprintFilter === 'all' || !nextSprintFilter ? '' : nextSprintFilter
+    );
+  }, []);
 
   const savedDefaultsApplied =
     savedPreference !== null &&
@@ -128,7 +142,7 @@ export function useBacklogProjectDefaults({
     projectFilter,
     setProjectFilter: updateProjectFilter,
     sprintFilter,
-    setSprintFilter,
+    setSprintFilter: updateSprintFilter,
     savedDefaultsApplied,
     canClearDefaults,
     baselineProjectId,
