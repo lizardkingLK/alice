@@ -4,9 +4,20 @@ import {
   mapPriorityToBacklogPriority,
   type BacklogPriority,
 } from '@/app/work-items/_helpers/work-item-priority-ui';
-import type { WorkItemPriority } from '@repo/types';
+import { SprintStatusEnum, type WorkItemPriority } from '@repo/types';
 
-export type BacklogActiveTab = 'active' | 'completed';
+/* eslint-disable no-unused-vars */
+export enum BacklogActiveTabEnum {
+  Active = 'active',
+  Completed = 'completed',
+}
+/* eslint-enable no-unused-vars */
+
+export { BacklogActiveTabEnum as BacklogTabEnum };
+
+export type BacklogActiveTab =
+  | `${BacklogActiveTabEnum}`
+  | BacklogActiveTabEnum;
 
 export type BacklogAssignee = {
   id: string;
@@ -150,11 +161,16 @@ export function filterBacklogDisplayedSprints<
   } = options;
 
   const byTab =
-    activeTab === 'completed'
-      ? sprints.filter((sprint) => getStatus(sprint) === 'closed')
+    activeTab === BacklogActiveTabEnum.Completed
+      ? sprints.filter(
+          (sprint) => getStatus(sprint) === SprintStatusEnum.Closed
+        )
       : sprints.filter((sprint) => {
           const status = getStatus(sprint);
-          return status === 'active' || status === 'planned';
+          return (
+            status === SprintStatusEnum.Active ||
+            status === SprintStatusEnum.Planned
+          );
         });
 
   const byProject =

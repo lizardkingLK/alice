@@ -5,7 +5,10 @@ import { BACKLOG_PRIORITY_OPTIONS } from '@/app/work-items/_helpers/work-item-pr
 import type { Project as DbProject } from '@/app/projects/_services/projects.mutations.client';
 import type { User as DbUser } from '@/app/users/_services/users.mutations.client';
 import type { Sprint } from '@/app/sprints/_services/sprints.mutations.client';
-import type { BacklogActiveTab } from '@/app/backlog/_helpers/backlog-item-utils';
+import {
+  BacklogActiveTabEnum,
+  type BacklogActiveTab,
+} from '@/app/backlog/_helpers/backlog-item-utils';
 import { buildSprintFilterOptionsForQuery } from '@/app/board/_services/board.defaults.shared';
 import {
   FilterDialogShell,
@@ -13,12 +16,45 @@ import {
   type FilterDialogNavField,
 } from '@/components/filter-dialog-shell';
 import { QUERY_FILTER_ALL_VALUE } from '@/hooks/use-query-filter';
+import { SprintStatusEnum } from '@repo/types';
+
+/* eslint-disable no-unused-vars */
+export enum BacklogFilterFieldId {
+  Project = 'project',
+  Sprint = 'sprint',
+  Assignee = 'assignee',
+  Priority = 'priority',
+}
+
+export enum BacklogFilterFieldLabel {
+  Project = 'Project',
+  Sprint = 'Sprint',
+  Assignee = 'Assignee',
+  Priority = 'Priority',
+}
+
+export enum BacklogFilterSearchPlaceholder {
+  Project = 'Search projects',
+  Sprint = 'Search sprints',
+  Assignee = 'Search assignees',
+  Priority = 'Search priorities',
+}
+
+export enum BacklogFilterAllLabel {
+  Project = 'All projects',
+  Sprint = 'All sprints',
+  Assignee = 'All assignees',
+  Priority = 'All priorities',
+}
+/* eslint-enable no-unused-vars */
+
+export { BacklogFilterFieldId as BacklogFilterField };
 
 export type BacklogFilterDraft = {
-  readonly project: string;
-  readonly sprint: string;
-  readonly assignee: string;
-  readonly priority: string;
+  readonly [BacklogFilterFieldId.Project]: string;
+  readonly [BacklogFilterFieldId.Sprint]: string;
+  readonly [BacklogFilterFieldId.Assignee]: string;
+  readonly [BacklogFilterFieldId.Priority]: string;
 };
 
 type BacklogFilterDialogProps = {
@@ -36,21 +72,35 @@ type BacklogFilterDialogProps = {
 };
 
 const BACKLOG_FILTER_FIELDS = [
-  { id: 'project', label: 'Project', searchPlaceholder: 'Search projects' },
-  { id: 'sprint', label: 'Sprint', searchPlaceholder: 'Search sprints' },
-  { id: 'assignee', label: 'Assignee', searchPlaceholder: 'Search assignees' },
-  { id: 'priority', label: 'Priority', searchPlaceholder: 'Search priorities' },
+  {
+    id: BacklogFilterFieldId.Project,
+    label: BacklogFilterFieldLabel.Project,
+    searchPlaceholder: BacklogFilterSearchPlaceholder.Project,
+  },
+  {
+    id: BacklogFilterFieldId.Sprint,
+    label: BacklogFilterFieldLabel.Sprint,
+    searchPlaceholder: BacklogFilterSearchPlaceholder.Sprint,
+  },
+  {
+    id: BacklogFilterFieldId.Assignee,
+    label: BacklogFilterFieldLabel.Assignee,
+    searchPlaceholder: BacklogFilterSearchPlaceholder.Assignee,
+  },
+  {
+    id: BacklogFilterFieldId.Priority,
+    label: BacklogFilterFieldLabel.Priority,
+    searchPlaceholder: BacklogFilterSearchPlaceholder.Priority,
+  },
 ] as const satisfies ReadonlyArray<
   FilterDialogNavField & { readonly searchPlaceholder: string }
 >;
 
-type BacklogFilterFieldId = (typeof BACKLOG_FILTER_FIELDS)[number]['id'];
-
 const ALL_LABELS: Record<BacklogFilterFieldId, string> = {
-  project: 'All projects',
-  sprint: 'All sprints',
-  assignee: 'All assignees',
-  priority: 'All priorities',
+  [BacklogFilterFieldId.Project]: BacklogFilterAllLabel.Project,
+  [BacklogFilterFieldId.Sprint]: BacklogFilterAllLabel.Sprint,
+  [BacklogFilterFieldId.Assignee]: BacklogFilterAllLabel.Assignee,
+  [BacklogFilterFieldId.Priority]: BacklogFilterAllLabel.Priority,
 };
 
 export function BacklogFilterDialog({
@@ -67,13 +117,14 @@ export function BacklogFilterDialog({
 }: Readonly<BacklogFilterDialogProps>) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<BacklogFilterDraft>({
-    project: projectFilter,
-    sprint: sprintFilter || QUERY_FILTER_ALL_VALUE,
-    assignee: assigneeFilter,
-    priority: priorityFilter,
+    [BacklogFilterFieldId.Project]: projectFilter,
+    [BacklogFilterFieldId.Sprint]: sprintFilter || QUERY_FILTER_ALL_VALUE,
+    [BacklogFilterFieldId.Assignee]: assigneeFilter,
+    [BacklogFilterFieldId.Priority]: priorityFilter,
   });
-  const [activeFieldId, setActiveFieldId] =
-    useState<BacklogFilterFieldId>('project');
+  const [activeFieldId, setActiveFieldId] = useState<BacklogFilterFieldId>(
+    BacklogFilterFieldId.Project
+  );
   const [optionSearch, setOptionSearch] = useState('');
 
   useEffect(() => {
@@ -81,10 +132,10 @@ export function BacklogFilterDialog({
       return;
     }
     setDraft({
-      project: projectFilter,
-      sprint: sprintFilter || QUERY_FILTER_ALL_VALUE,
-      assignee: assigneeFilter,
-      priority: priorityFilter,
+      [BacklogFilterFieldId.Project]: projectFilter,
+      [BacklogFilterFieldId.Sprint]: sprintFilter || QUERY_FILTER_ALL_VALUE,
+      [BacklogFilterFieldId.Assignee]: assigneeFilter,
+      [BacklogFilterFieldId.Priority]: priorityFilter,
     });
     setOptionSearch('');
     // eslint-disable-next-line react-hooks/exhaustive-deps -- open transition only
@@ -102,32 +153,34 @@ export function BacklogFilterDialog({
     if (!activeTab) {
       return sprints;
     }
-    return activeTab === 'completed'
-      ? sprints.filter((sprint) => sprint.status === 'closed')
+    return activeTab === BacklogActiveTabEnum.Completed
+      ? sprints.filter((sprint) => sprint.status === SprintStatusEnum.Closed)
       : sprints.filter(
-          (sprint) => sprint.status === 'active' || sprint.status === 'planned'
+          (sprint) =>
+            sprint.status === SprintStatusEnum.Active ||
+            sprint.status === SprintStatusEnum.Planned
         );
   }, [activeTab, sprints]);
 
   const options = useMemo(() => {
     switch (activeFieldId) {
-      case 'project':
+      case BacklogFilterFieldId.Project:
         return projects.map((project) => ({
           value: project.id,
           label: project.name,
         }));
-      case 'sprint':
+      case BacklogFilterFieldId.Sprint:
         return buildSprintFilterOptionsForQuery(
           candidateSprints,
-          draft.project,
+          draft[BacklogFilterFieldId.Project],
           QUERY_FILTER_ALL_VALUE
         );
-      case 'assignee':
+      case BacklogFilterFieldId.Assignee:
         return projectMembers.map((member) => ({
           value: member.id,
           label: member.name,
         }));
-      case 'priority':
+      case BacklogFilterFieldId.Priority:
         return BACKLOG_PRIORITY_OPTIONS.map((option) => ({
           value: option.value,
           label: option.label,
@@ -135,7 +188,7 @@ export function BacklogFilterDialog({
       default:
         return [];
     }
-  }, [activeFieldId, candidateSprints, draft.project, projectMembers, projects]);
+  }, [activeFieldId, candidateSprints, draft, projectMembers, projects]);
 
   const filteredOptions = options.filter((option) =>
     option.label.toLowerCase().includes(optionSearch.trim().toLowerCase())
@@ -144,9 +197,9 @@ export function BacklogFilterDialog({
   const selectedValue = draft[activeFieldId];
 
   const applySelection = (value: string) => {
-    if (activeFieldId === 'project') {
+    if (activeFieldId === BacklogFilterFieldId.Project) {
       setDraft((current) => {
-        let nextSprint = current.sprint;
+        let nextSprint = current[BacklogFilterFieldId.Sprint];
         if (
           nextSprint &&
           nextSprint !== QUERY_FILTER_ALL_VALUE &&
@@ -159,29 +212,29 @@ export function BacklogFilterDialog({
         }
         return {
           ...current,
-          project: value,
-          sprint: nextSprint,
+          [BacklogFilterFieldId.Project]: value,
+          [BacklogFilterFieldId.Sprint]: nextSprint,
         };
       });
       return;
     }
 
-    if (activeFieldId === 'sprint') {
+    if (activeFieldId === BacklogFilterFieldId.Sprint) {
       setDraft((current) => {
         const selectedSprint = sprints.find((s) => s.id === value);
         const sprintProjectId = selectedSprint?.project?.id;
         if (
           value !== QUERY_FILTER_ALL_VALUE &&
           sprintProjectId &&
-          current.project === QUERY_FILTER_ALL_VALUE
+          current[BacklogFilterFieldId.Project] === QUERY_FILTER_ALL_VALUE
         ) {
           return {
             ...current,
-            project: sprintProjectId,
-            sprint: value,
+            [BacklogFilterFieldId.Project]: sprintProjectId,
+            [BacklogFilterFieldId.Sprint]: value,
           };
         }
-        return { ...current, sprint: value };
+        return { ...current, [BacklogFilterFieldId.Sprint]: value };
       });
       return;
     }
@@ -190,11 +243,11 @@ export function BacklogFilterDialog({
   };
 
   const clearActiveField = () => {
-    if (activeFieldId === 'project') {
+    if (activeFieldId === BacklogFilterFieldId.Project) {
       setDraft((current) => ({
         ...current,
-        project: QUERY_FILTER_ALL_VALUE,
-        sprint: QUERY_FILTER_ALL_VALUE,
+        [BacklogFilterFieldId.Project]: QUERY_FILTER_ALL_VALUE,
+        [BacklogFilterFieldId.Sprint]: QUERY_FILTER_ALL_VALUE,
       }));
       return;
     }
@@ -216,10 +269,10 @@ export function BacklogFilterDialog({
       }
       onClearAll={() =>
         setDraft({
-          project: QUERY_FILTER_ALL_VALUE,
-          sprint: QUERY_FILTER_ALL_VALUE,
-          assignee: QUERY_FILTER_ALL_VALUE,
-          priority: QUERY_FILTER_ALL_VALUE,
+          [BacklogFilterFieldId.Project]: QUERY_FILTER_ALL_VALUE,
+          [BacklogFilterFieldId.Sprint]: QUERY_FILTER_ALL_VALUE,
+          [BacklogFilterFieldId.Assignee]: QUERY_FILTER_ALL_VALUE,
+          [BacklogFilterFieldId.Priority]: QUERY_FILTER_ALL_VALUE,
         })
       }
       onClearActiveField={clearActiveField}
