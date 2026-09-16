@@ -3,7 +3,7 @@
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
-import { Loader2, Trash2 } from '@repo/ui/lib/icons';
+import { Loader2, Pencil, Trash2 } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import type { ChatConversation } from '../_services/chat.mutations.client';
 
@@ -18,6 +18,12 @@ type ChatClientSidebarProps = {
   // eslint-disable-next-line no-unused-vars
   readonly onSelectConversation: (id: string) => void;
   readonly onNewChat: () => void;
+  readonly onRenameConversationClick: (
+    // eslint-disable-next-line no-unused-vars
+    e: React.MouseEvent,
+    // eslint-disable-next-line no-unused-vars
+    conv: ChatConversation
+  ) => void;
   readonly onDeleteConversationClick: (
     // eslint-disable-next-line no-unused-vars
     e: React.MouseEvent,
@@ -44,7 +50,7 @@ function ConversationButton({
       onClick={onClick}
       disabled={isProcessing}
       className={cn(
-        'flex h-auto w-full items-center justify-start gap-2 px-3 py-2.5 pr-10 text-left text-xs font-normal',
+        'flex h-auto w-full items-center justify-start gap-2 px-3 py-2.5 pr-16 text-left text-xs font-normal',
         isActive
           ? 'bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary font-medium'
           : 'text-muted-foreground'
@@ -69,6 +75,7 @@ export default function ChatClientSidebar({
   activeConversationId,
   onSelectConversation,
   onNewChat,
+  onRenameConversationClick,
   onDeleteConversationClick,
 }: Readonly<ChatClientSidebarProps>) {
   const renderSidebarContent = () => {
@@ -120,16 +127,28 @@ export default function ChatClientSidebar({
             onClick={() => onSelectConversation(conv.id)}
           />
           {!conv.is_processing && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              onClick={(e) => onDeleteConversationClick(e, conv)}
-              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 absolute right-1.5 z-10 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-              aria-label={`Delete chat session ${conv.title}`}
-            >
-              <Trash2 />
-            </Button>
+            <div className="absolute right-1.5 z-10 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                onClick={(e) => onRenameConversationClick(e, conv)}
+                className="text-muted-foreground hover:text-foreground hover:bg-muted"
+                aria-label={`Rename chat session ${conv.title}`}
+              >
+                <Pencil />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                onClick={(e) => onDeleteConversationClick(e, conv)}
+                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                aria-label={`Delete chat session ${conv.title}`}
+              >
+                <Trash2 />
+              </Button>
+            </div>
           )}
         </div>
       );

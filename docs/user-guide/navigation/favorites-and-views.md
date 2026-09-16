@@ -15,9 +15,10 @@ The star fills when the page is favorited. Select again to remove it.
 
 Favorites store **pathname + query string** (same as the URL you starred). They
 appear at the **top** of the sidebar under **Favorites** when you have at least
-one. If a favorited page was deleted or you no longer have access, opening it
-shows the usual not-found or access message — favorites are not removed
-automatically (unstar manually if you want).
+one. Chat favorites include `?conversationId=…`; opening one switches to that
+thread. If a favorited page was deleted or you no longer have access, opening it
+shows **Page not found** and that favorite is **removed automatically** from the
+sidebar.
 
 ---
 

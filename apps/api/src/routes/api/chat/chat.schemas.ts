@@ -8,5 +8,6 @@ export {
   finalizeChatAttachmentUploadSchema,
   postChatMessageBodySchema,
   postChatMessageSchema,
+  renameChatConversationBodySchema,
   uploadedChatAttachmentResultSchema,
 } from '@repo/types/api/v1';

@@ -25,8 +25,9 @@ Related:
 - Sidebar **Favorites** group renders at the **top** of the sidebar (above
   Platform) only when count &gt; 0 (collapsible; no group star icon). Favorite
   row icons follow a pathname → nav icon map (same icons as Platform /
-  Projects / Help). Stale or inaccessible favorites are **not** auto-removed —
-  opening them uses the destination page’s normal not-found / RBAC behavior.
+  Projects / Help). Opening a favorited URL that 404s **removes that favorite**
+  automatically (see not-found cleanup). Access/RBAC denials that do not 404
+  leave the favorite in place.
 - **Views** is always a Platform nav item (Layers icon) that navigates to
   `/views` — no collapsible children list.
 - Favorites open in the same tab.
@@ -107,8 +108,11 @@ breadcrumb last segment is not a good label (e.g. work-item title).
   (`apps/web/lib/dashboard/nav-registry.ts`) and opens
   `` `${pathname}${search ? `?${search}` : ''}` `` in the same tab. Active
   highlight matches the exact pathname + search. Truncate long labels with
-  `TruncatedText`. Clicking a favorite that no longer exists uses the
-  destination’s existing not-found / error / RBAC UX (no auto-purge).
+  `TruncatedText`. Opening a favorite whose destination **404s** removes that
+  favorite from localStorage (not-found page cleanup) and tells the user. For
+  `/chat?conversationId=…`, a missing conversation renders **Page not found**
+  (bootstrap does not fall back to another thread). RBAC / access errors that
+  do not 404 leave the favorite in place.
 - **Views** — always shown as a Platform item (`/views`, Layers icon). Click
   navigates to the Views workspace (same tab). No sidebar children.
 

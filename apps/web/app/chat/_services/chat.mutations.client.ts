@@ -1,10 +1,12 @@
 import {
   postChatMessageBodySchema,
+  renameChatConversationBodySchema,
   type ChatDeleteResponse,
   type ChatHistoryResponse,
   type ChatMessageWire,
   type ChatPostResponse,
   type ChatToolActionWire,
+  type RenameChatConversationResponse,
 } from '@repo/types/api/v1';
 import type { ChatAttachmentWire } from '@repo/types';
 import { formatZodError } from '@/lib/zod/format-zod-error';
@@ -60,6 +62,27 @@ export async function deleteConversation(
   return apiFetch<ChatDeleteResponse>(`${chatPath}/${conversationId}`, {
     method: 'DELETE',
   });
+}
+
+export async function renameConversation(
+  conversationId: string,
+  title: string
+): Promise<RenameChatConversationResponse> {
+  const parsed = renameChatConversationBodySchema.safeParse({ title });
+  if (!parsed.success) {
+    throw new Error(formatZodError(parsed.error));
+  }
+
+  return apiFetch<RenameChatConversationResponse>(
+    `${chatPath}/${conversationId}`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(parsed.data),
+    }
+  );
 }
 
 export async function generateFieldsSchemaWithAlice(

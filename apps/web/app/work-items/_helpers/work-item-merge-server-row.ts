@@ -8,9 +8,15 @@ export function mergeWorkItemServerRow(
   current: DbWorkItem,
   updated: DbWorkItem
 ): DbWorkItem {
+  const nextUpdatedAt =
+    typeof updated.updated_at === 'string' && updated.updated_at.trim()
+      ? updated.updated_at
+      : current.updated_at;
+
   return {
     ...current,
     ...updated,
     assignee: updated.assignee ?? current.assignee,
+    updated_at: nextUpdatedAt,
   };
 }

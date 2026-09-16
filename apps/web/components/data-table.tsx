@@ -1,7 +1,11 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { flexRender, type Table as TanstackTable } from '@tanstack/react-table';
+import type { HTMLAttributes, ReactNode } from 'react';
+import {
+  flexRender,
+  type Row,
+  type Table as TanstackTable,
+} from '@tanstack/react-table';
 import {
   Table,
   TableBody,
@@ -17,6 +21,10 @@ interface DataTableProps<TData> {
   readonly columnCount: number;
   readonly emptyState: ReactNode;
   readonly rowClassName?: string;
+  readonly getRowProps?: (
+    // eslint-disable-next-line no-unused-vars -- optional per-row attrs (e.g. drag)
+    row: Row<TData>
+  ) => HTMLAttributes<HTMLTableRowElement>;
 }
 
 /**
@@ -29,6 +37,7 @@ export function DataTable<TData>({
   columnCount,
   emptyState,
   rowClassName,
+  getRowProps,
 }: Readonly<DataTableProps<TData>>) {
   const rows = table.getRowModel().rows;
 
@@ -53,19 +62,28 @@ export function DataTable<TData>({
         </TableHeader>
         <TableBody>
           {rows.length > 0 ? (
-            rows.map((row) => (
-              <TableRow
-                key={row.id}
-                data-state={row.getIsSelected() && 'selected'}
-                className={cn(rowClassName)}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
+            rows.map((row) => {
+              const rowProps = getRowProps?.(row) ?? {};
+              const { className: rowPropsClassName, ...restRowProps } =
+                rowProps;
+              return (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && 'selected'}
+                  className={cn(rowClassName, rowPropsClassName)}
+                  {...restRowProps}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              );
+            })
           ) : (
             <TableRow>
               <TableCell

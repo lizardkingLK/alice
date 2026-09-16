@@ -73,6 +73,19 @@ describe('mergeWorkItemServerRow', () => {
     );
     expect(merged.updated_at).toBe('2026-09-11T12:00:00.000Z');
   });
+
+  it('keeps the current updated_at when the server row omits it', () => {
+    const current = baseItem({ updated_at: '2026-09-10T00:00:00.000Z' });
+    const updated = {
+      ...baseItem({ status: 'ToDo' as const }),
+      updated_at: '',
+    };
+
+    const merged = mergeWorkItemServerRow(current, updated);
+
+    expect(merged.status).toBe('ToDo');
+    expect(merged.updated_at).toBe('2026-09-10T00:00:00.000Z');
+  });
 });
 
 describe('filterBacklogDisplayedSprints', () => {

@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import type { DashboardBreadcrumbOverride } from './dashboard-breadcrumb';
 
 function normalizeUrl(url: string): string {
   if (url.length > 1 && url.endsWith('/')) {
@@ -17,13 +18,33 @@ function normalizeUrl(url: string): string {
   return url || '/';
 }
 
+function trailsEqual(
+  prev: readonly DashboardBreadcrumbOverride[] | null,
+  trail: readonly DashboardBreadcrumbOverride[]
+): boolean {
+  return (
+    prev?.length === trail.length &&
+    (prev?.every(
+      (item, index) =>
+        item.url === trail[index]?.url && item.label === trail[index]?.label
+    ) ??
+      false)
+  );
+}
+
 type DashboardBreadcrumbRuntimeContextValue = {
   readonly segmentLabelsByUrl: Readonly<Record<string, string>>;
   readonly favoriteLabel: string | null;
+  /** When set, replaces path-derived crumbs (e.g. Chat + conversation title). */
+  readonly trailOverride: readonly DashboardBreadcrumbOverride[] | null;
   // eslint-disable-next-line no-unused-vars -- context setter
   readonly setSegmentLabel: (url: string, label: string | null) => void;
   // eslint-disable-next-line no-unused-vars -- context setter
   readonly setFavoriteLabel: (label: string | null) => void;
+  readonly setTrailOverride: (
+    // eslint-disable-next-line no-unused-vars -- context setter
+    trail: readonly DashboardBreadcrumbOverride[] | null
+  ) => void;
 };
 
 const DashboardBreadcrumbRuntimeContext =
@@ -36,6 +57,9 @@ export function DashboardBreadcrumbRuntimeProvider({
     Record<string, string>
   >({});
   const [favoriteLabel, setFavoriteLabel] = useState<string | null>(null);
+  const [trailOverride, setTrailOverride] = useState<
+    readonly DashboardBreadcrumbOverride[] | null
+  >(null);
 
   const setSegmentLabel = useCallback((url: string, label: string | null) => {
     const key = normalizeUrl(url);
@@ -60,14 +84,35 @@ export function DashboardBreadcrumbRuntimeProvider({
     setFavoriteLabel((prev) => (prev === next ? prev : next));
   }, []);
 
+  const commitTrailOverride = useCallback(
+    (trail: readonly DashboardBreadcrumbOverride[] | null) => {
+      setTrailOverride((prev) => {
+        if (trail == null) {
+          return prev == null ? prev : null;
+        }
+        return trailsEqual(prev, trail) ? prev : trail;
+      });
+    },
+    []
+  );
+
   const value = useMemo(
     () => ({
       segmentLabelsByUrl,
       favoriteLabel,
+      trailOverride,
       setSegmentLabel,
       setFavoriteLabel: commitFavoriteLabel,
+      setTrailOverride: commitTrailOverride,
     }),
-    [commitFavoriteLabel, favoriteLabel, segmentLabelsByUrl, setSegmentLabel]
+    [
+      commitFavoriteLabel,
+      commitTrailOverride,
+      favoriteLabel,
+      segmentLabelsByUrl,
+      setSegmentLabel,
+      trailOverride,
+    ]
   );
 
   return (
@@ -114,6 +159,43 @@ export function useDashboardEntityBreadcrumb(params: {
       setFavoriteLabel(null);
     };
   }, [favoriteLabel, label, setFavoriteLabel]);
+}
+
+/**
+ * Client pages whose entity is query-scoped (e.g. `/chat?conversationId=`) can
+ * replace the full header trail once the title is known.
+ */
+export function useDashboardTrailBreadcrumb(
+  trail: readonly DashboardBreadcrumbOverride[] | null
+) {
+  const runtime = useDashboardBreadcrumbRuntime();
+  const setTrailOverride = runtime?.setTrailOverride;
+  const setFavoriteLabel = runtime?.setFavoriteLabel;
+
+  useEffect(() => {
+    if (!setTrailOverride) {
+      return;
+    }
+    setTrailOverride(trail);
+    return () => {
+      setTrailOverride(null);
+    };
+  }, [setTrailOverride, trail]);
+
+  useEffect(() => {
+    if (!setFavoriteLabel) {
+      return;
+    }
+    if (!trail?.length) {
+      setFavoriteLabel(null);
+      return;
+    }
+    const last = trail.at(-1)?.label ?? null;
+    setFavoriteLabel(last);
+    return () => {
+      setFavoriteLabel(null);
+    };
+  }, [setFavoriteLabel, trail]);
 }
 
 export function applyRuntimeBreadcrumbLabels<
