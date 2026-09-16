@@ -69,10 +69,14 @@ describe('ChatAttachmentLink', () => {
       };
 
       render(<ChatAttachmentLink attachment={attachment} />);
-      const link = screen.getByRole('link', { name: /Attachment report\.pdf/i });
+      const link = screen.getByRole('link', {
+        name: /Attachment report\.pdf/i,
+      });
       fireEvent.click(link);
 
-      expect(chatAttachmentsClient.mintChatAttachmentUrls).not.toHaveBeenCalled();
+      expect(
+        chatAttachmentsClient.mintChatAttachmentUrls
+      ).not.toHaveBeenCalled();
       expect(window.open).toHaveBeenCalledWith(
         'https://storage/report.pdf?token=valid',
         '_blank',
@@ -92,17 +96,23 @@ describe('ChatAttachmentLink', () => {
         expiresAt: new Date(Date.now() - 3600000).toISOString(),
       };
 
-      vi.mocked(chatAttachmentsClient.mintChatAttachmentUrls).mockResolvedValueOnce({
+      vi.mocked(
+        chatAttachmentsClient.mintChatAttachmentUrls
+      ).mockResolvedValueOnce({
         previewUrl: 'https://storage/expired.pdf?token=fresh',
         downloadUrl: 'https://storage/expired.pdf?token=fresh-dl',
         expiresAt: new Date(Date.now() + 3600000).toISOString(),
       });
 
       render(<ChatAttachmentLink attachment={attachment} />);
-      const link = screen.getByRole('link', { name: /Attachment expired\.pdf/i });
+      const link = screen.getByRole('link', {
+        name: /Attachment expired\.pdf/i,
+      });
       fireEvent.click(link);
 
-      expect(chatAttachmentsClient.mintChatAttachmentUrls).toHaveBeenCalledWith('att-expired');
+      expect(chatAttachmentsClient.mintChatAttachmentUrls).toHaveBeenCalledWith(
+        'att-expired'
+      );
 
       await waitFor(() => {
         expect(window.open).toHaveBeenCalledWith(

@@ -220,7 +220,8 @@ function checkHierarchyDifference(
   if (
     incomingParentId === null &&
     incoming.parentReference &&
-    existingParentTitle?.toLowerCase() !== incoming.parentReference.toLowerCase()
+    existingParentTitle?.toLowerCase() !==
+      incoming.parentReference.toLowerCase()
   ) {
     return {
       hasHierarchyChange: true,

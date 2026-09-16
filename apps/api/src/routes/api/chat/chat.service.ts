@@ -423,8 +423,7 @@ function findExistingWorkItem(
   if (node.jiraIssueKey) {
     const byKey = existingWorkItems.find(
       (e) =>
-        e.jira_issue_key?.toUpperCase() ===
-        node.jiraIssueKey?.toUpperCase()
+        e.jira_issue_key?.toUpperCase() === node.jiraIssueKey?.toUpperCase()
     );
     if (byKey) return byKey;
   }
@@ -731,10 +730,7 @@ async function executeSingleNodeImport(
       assignee_id: null,
       type: typeValue,
       priority: priorityValue,
-      description: textToProseMirrorJson(
-        node.description,
-        node.dynamicFields
-      ),
+      description: textToProseMirrorJson(node.description, node.dynamicFields),
       due_date: node.dueDate || null,
       parent_id: resolvedParentId,
       labels: node.labels,
@@ -760,8 +756,14 @@ async function executeSingleNodeImport(
 
   if (node.temporaryIdentifier) {
     ctx.idMapping.set(node.temporaryIdentifier, workItemId);
-    ctx.idMapping.set(node.temporaryIdentifier.toLowerCase().trim(), workItemId);
-    ctx.idMapping.set(node.temporaryIdentifier.toUpperCase().trim(), workItemId);
+    ctx.idMapping.set(
+      node.temporaryIdentifier.toLowerCase().trim(),
+      workItemId
+    );
+    ctx.idMapping.set(
+      node.temporaryIdentifier.toUpperCase().trim(),
+      workItemId
+    );
   }
   if (node.jiraIssueKey) {
     ctx.idMapping.set(node.jiraIssueKey, workItemId);
@@ -1426,8 +1428,9 @@ export class ChatService {
     if (!isExpired) return false;
 
     try {
-      const refreshed =
-        await this.chatAttachmentsRepository.getAttachmentById(att.id);
+      const refreshed = await this.chatAttachmentsRepository.getAttachmentById(
+        att.id
+      );
       if (refreshed) {
         attachments[index] = refreshed;
         return true;

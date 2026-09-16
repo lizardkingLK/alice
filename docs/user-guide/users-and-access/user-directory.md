@@ -39,6 +39,16 @@ directory page.
 
 Use search or filters when the list is long.
 
+### Editing roles (admins)
+
+When you **Edit** a user:
+
+- You **cannot change your own role** — the role field is disabled with a
+  tooltip. Ask another admin if you need a different role.
+- You **cannot demote the last active admin** — at least one admin must remain.
+  Promote someone else to admin first.
+- You **can** change other users’ roles when another admin is still active.
+
 ---
 
 ## What you can't do here (members)

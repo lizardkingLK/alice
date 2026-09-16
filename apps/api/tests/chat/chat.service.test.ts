@@ -333,8 +333,14 @@ describe('ChatService loadChatHistory with Expired Attachments', () => {
 
 describe('ChatService batch_import_work_items', () => {
   const mockProjectsRepo = {
-    findById: vi.fn().mockResolvedValue({ id: 'proj-1', key: 'ALICE', name: 'Alice Project' }),
-    listAll: vi.fn().mockResolvedValue([{ id: 'proj-1', key: 'ALICE', name: 'Alice Project' }]),
+    findById: vi
+      .fn()
+      .mockResolvedValue({ id: 'proj-1', key: 'ALICE', name: 'Alice Project' }),
+    listAll: vi
+      .fn()
+      .mockResolvedValue([
+        { id: 'proj-1', key: 'ALICE', name: 'Alice Project' },
+      ]),
   };
 
   it('fails atomically before DB creation when hierarchy has children under Issue and skipInvalidHierarchy is false', async () => {
@@ -383,7 +389,9 @@ describe('ChatService batch_import_work_items', () => {
       toolActionsPerformed
     );
 
-    const result = parts[0]?.functionResponse?.response?.result as { error?: string };
+    const result = parts[0]?.functionResponse?.response?.result as {
+      error?: string;
+    };
     expect(result.error).toBeDefined();
     expect(result.error).toContain('Parent of type Issue cannot have subtasks');
     expect(result.error).toContain('no work items were created');
@@ -458,7 +466,9 @@ describe('ChatService batch_import_work_items', () => {
     expect(result.importedCount).toBe(2);
     expect(result.skippedCount).toBe(1);
     expect(result.skippedItems[0]?.title).toBe('Subtask under bug');
-    expect(result.skippedItems[0]?.reason).toContain('Parent of type Issue cannot have subtasks');
+    expect(result.skippedItems[0]?.reason).toContain(
+      'Parent of type Issue cannot have subtasks'
+    );
     expect(toolActionsPerformed).toHaveLength(2);
     expect(toolActionsPerformed.map((a) => a.entity.title)).toEqual([
       'Notification System',
@@ -485,8 +495,16 @@ describe('ChatService batch_import_work_items', () => {
     });
 
     const items = [
-      { temporaryIdentifier: 't-1', title: 'First Task', type: WorkItemTypeEnum.Task },
-      { temporaryIdentifier: 't-2', title: 'Second Task', type: WorkItemTypeEnum.Task },
+      {
+        temporaryIdentifier: 't-1',
+        title: 'First Task',
+        type: WorkItemTypeEnum.Task,
+      },
+      {
+        temporaryIdentifier: 't-2',
+        title: 'Second Task',
+        type: WorkItemTypeEnum.Task,
+      },
     ];
 
     const toolActionsPerformed: ToolAction[] = [];
@@ -503,7 +521,9 @@ describe('ChatService batch_import_work_items', () => {
       toolActionsPerformed
     );
 
-    const result = parts[0]?.functionResponse?.response?.result as { error?: string };
+    const result = parts[0]?.functionResponse?.response?.result as {
+      error?: string;
+    };
     expect(result.error).toBeDefined();
     expect(result.error).toContain('Unexpected database failure');
     expect(result.error).toContain('All changes were rolled back');
@@ -957,5 +977,3 @@ ALICE-2,Feature,Authentication Service,ALICE-1,high,Updated auth description,Sec
     expect(toolActionsPerformed).toHaveLength(3);
   });
 });
-
-

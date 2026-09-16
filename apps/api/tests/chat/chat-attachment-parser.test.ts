@@ -181,7 +181,9 @@ with retry logic"`;
       expect(feature.temporaryIdentifier).toBe('ALICE-11');
       expect(feature.title).toBe('Push Notifications');
       expect(feature.parentReference).toBe('ALICE-10');
-      expect(feature.description).toContain('Sends APNS and FCM\nwith retry logic');
+      expect(feature.description).toContain(
+        'Sends APNS and FCM\nwith retry logic'
+      );
     });
 
     it('parses TSV (tab-delimited) work item content', () => {
