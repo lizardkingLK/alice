@@ -34,18 +34,18 @@ type UseBoardLayoutResult = {
 export function useBoardLayout(
   userId: string | null | undefined
 ): UseBoardLayoutResult {
-  const [layout, setLayoutState] = useState<BoardLayoutId>('board');
+  const [layout, setLayout] = useState<BoardLayoutId>('board');
 
   useEffect(() => {
-    setLayoutState(readBoardLayout(userId));
+    setLayout(readBoardLayout(userId));
   }, [userId]);
 
-  const setLayout = (next: BoardLayoutId) => {
-    setLayoutState(next);
+  const commitLayout = (next: BoardLayoutId) => {
+    setLayout(next);
     writeBoardLayout(userId, next);
   };
 
-  return { layout, setLayout };
+  return { layout, setLayout: commitLayout };
 }
 
 type BoardLayoutMenuProps = {
