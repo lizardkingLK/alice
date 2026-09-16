@@ -15,9 +15,7 @@ export enum BacklogActiveTabEnum {
 
 export { BacklogActiveTabEnum as BacklogTabEnum };
 
-export type BacklogActiveTab =
-  | `${BacklogActiveTabEnum}`
-  | BacklogActiveTabEnum;
+export type BacklogActiveTab = `${BacklogActiveTabEnum}` | BacklogActiveTabEnum;
 
 export type BacklogAssignee = {
   id: string;

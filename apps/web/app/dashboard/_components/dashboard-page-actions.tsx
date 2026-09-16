@@ -68,9 +68,9 @@ export function DashboardPageActions({
   const { isFavorited, toggle } = useFavorites(userId);
   const [saveOpen, setSaveOpen] = useState(false);
 
-  const favorited = isFavorited(pathname);
-  const label = favoriteLabel?.trim() || breadcrumbLabel.trim() || pathname;
   const search = useMemo(() => searchParams.toString(), [searchParams]);
+  const favorited = isFavorited(pathname, search);
+  const label = favoriteLabel?.trim() || breadcrumbLabel.trim() || pathname;
   const resolvedProjectId = useMemo(() => {
     if (projectId) {
       return projectId;
@@ -79,7 +79,7 @@ export function DashboardPageActions({
     if (fromQuery && fromQuery !== 'all') {
       return fromQuery;
     }
-    const projectMatch = pathname.match(/^\/projects\/([^/]+)/);
+    const projectMatch = /^\/projects\/([^/]+)/.exec(pathname);
     return projectMatch?.[1] ?? null;
   }, [pathname, projectId, searchParams]);
 
@@ -91,7 +91,7 @@ export function DashboardPageActions({
         label={favoriteActionLabel}
         pressed={favorited}
         disabled={!userId}
-        onClick={() => toggle(pathname, label)}
+        onClick={() => toggle(pathname, label, search)}
       >
         <Star
           className={cn(
