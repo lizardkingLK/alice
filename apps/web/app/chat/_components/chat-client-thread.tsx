@@ -22,6 +22,14 @@ type ChatClientThreadProps = {
   readonly messagesEndRef: React.RefObject<HTMLDivElement | null>;
 };
 
+function actionKey(
+  action: NonNullable<ChatMessage['actions']>[number]
+): string {
+  return action.type === 'configure_board'
+    ? `${action.type}-${action.entity.projectId}`
+    : `${action.type}-${action.entity.id}`;
+}
+
 export default function ChatClientThread({
   isPage,
   showEmptyThread,
@@ -104,7 +112,7 @@ export default function ChatClientThread({
                         <div className="grid grid-cols-1 gap-2">
                           {message.actions.map((act) => (
                             <ChatExecutedActionCard
-                              key={`${act.type}-${act.entity.id}`}
+                              key={actionKey(act)}
                               action={act}
                             />
                           ))}

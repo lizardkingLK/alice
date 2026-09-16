@@ -6,11 +6,7 @@ import {
   type WorkItemPriority,
   type ParsedWorkItemNode,
 } from '@repo/types';
-import {
-  TAB,
-  PIPE,
-  normalizePriority,
-} from './chat-attachment-parser.common';
+import { TAB, PIPE, normalizePriority } from './chat-attachment-parser.common';
 import { parseDelimitedRowToWorkItem } from './chat-attachment-parser.delimited';
 
 export function isMarkdownTable(content: string): boolean {
@@ -73,9 +69,7 @@ export function isIndentedOutline(content: string): boolean {
     .map((l) => l.trim())
     .filter((l) => l.length > 0);
   if (lines.length < 2) return false;
-  const bulletCount = lines.filter((l) =>
-    /^[-*+]\s|^[\d.]+\s/.test(l)
-  ).length;
+  const bulletCount = lines.filter((l) => /^[-*+]\s|^[\d.]+\s/.test(l)).length;
   return bulletCount >= 2;
 }
 

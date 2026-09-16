@@ -70,11 +70,11 @@ export function ChatAttachmentLink({
       aria-busy={isRefreshing}
       aria-label={`Attachment ${attachment.fileName}${isRefreshing ? ' (refreshing link)' : ''}`}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-colors cursor-pointer',
+        'inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-colors',
         isUser
           ? 'bg-primary-foreground/15 hover:bg-primary-foreground/25 text-primary-foreground'
           : 'bg-background hover:bg-accent border-border/80 text-foreground border shadow-2xs',
-        isRefreshing && 'opacity-70 pointer-events-none',
+        isRefreshing && 'pointer-events-none opacity-70',
         className
       )}
       title={`${attachment.fileName}${isRefreshing ? ' (Refreshing link…)' : ''}`}
