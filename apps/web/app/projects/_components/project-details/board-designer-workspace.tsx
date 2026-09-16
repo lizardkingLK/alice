@@ -243,7 +243,20 @@ export function BoardDesignerWorkspace({
   };
 
   const saveWorkflowConfig = async (workflowConfig: BoardConfig | null) => {
-    const pendingFields = { workflow_config: workflowConfig };
+    const existingConfig =
+      typeof project.workflow_config === 'object' &&
+      project.workflow_config !== null
+        ? (project.workflow_config as Record<string, unknown>)
+        : {};
+
+    const mergedWorkflowConfig = workflowConfig
+      ? {
+          ...existingConfig,
+          ...workflowConfig,
+        }
+      : null;
+
+    const pendingFields = { workflow_config: mergedWorkflowConfig };
     return runLockedMutationOrThrow({
       mutate: () => updateProject(project.id, pendingFields, updatedAt),
       handleMutationError,

@@ -9,6 +9,9 @@ import {
   type ProjectListRow,
   type ProjectDetailRow,
   type ProjectMemberRow,
+  type WorkItemType,
+  WorkItemTypeEnum,
+  resolveProjectHierarchy,
 } from '@repo/types';
 import { Prisma, ProjectStatus, RecordStatus } from '@repo/types/prisma';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -392,6 +395,8 @@ export class ProjectsRepository {
           cover_picture: data.cover_picture ?? null,
           attributes_config:
             (data.attributes_config as Prisma.InputJsonValue) ?? null,
+          workflow_config:
+            (data.workflow_config as Prisma.InputJsonValue) ?? null,
           deleted_at: null,
           ...prismaAuditCreateWithoutStatus(actorId),
         },
@@ -452,36 +457,129 @@ export class ProjectsRepository {
     await prisma.projects.deleteMany({ where: { id } });
   }
 
+  async migrateWorkItemTypesAndPruneHierarchy(
+    projectId: string,
+    allowedTypes: WorkItemType[],
+    customHierarchy?: Record<string, string | null> | null
+  ): Promise<{ migratedCount: number; unlinkedCount: number }> {
+    const fallbackType: WorkItemType = allowedTypes.includes(
+      WorkItemTypeEnum.Issue
+    )
+      ? WorkItemTypeEnum.Issue
+      : (allowedTypes[allowedTypes.length - 1] ?? WorkItemTypeEnum.Issue);
+
+    const { parentToChild } = resolveProjectHierarchy(
+      allowedTypes,
+      customHierarchy
+    );
+
+    // 1. Find all work items in project whose type is no longer allowed
+    const workItemsToMigrate = await prisma.work_items.findMany({
+      where: {
+        project_id: projectId,
+        type: { notIn: allowedTypes },
+      },
+      select: { id: true, type: true },
+    });
+
+    const migratedIds = workItemsToMigrate.map((item) => item.id);
+    let migratedCount = 0;
+
+    if (migratedIds.length > 0) {
+      const updateResult = await prisma.work_items.updateMany({
+        where: { id: { in: migratedIds } },
+        data: { type: fallbackType },
+      });
+      migratedCount = updateResult.count;
+
+      // Leaf items (Issue) cannot have children; clear parent_id of any children of migrated items
+      await prisma.work_items.updateMany({
+        where: { parent_id: { in: migratedIds } },
+        data: { parent_id: null },
+      });
+    }
+
+    // 2. Fetch all work items in the project that have a parent to verify hierarchy compliance
+    const itemsWithParents = await prisma.work_items.findMany({
+      where: {
+        project_id: projectId,
+        parent_id: { not: null },
+      },
+      select: {
+        id: true,
+        type: true,
+        parent_id: true,
+        parent: {
+          select: { id: true, type: true },
+        },
+      },
+    });
+
+    const invalidChildIds: string[] = [];
+    for (const item of itemsWithParents) {
+      if (!item.parent) {
+        invalidChildIds.push(item.id);
+        continue;
+      }
+      const allowedChildForParent =
+        parentToChild[item.parent.type as WorkItemType];
+      if (allowedChildForParent !== item.type) {
+        invalidChildIds.push(item.id);
+      }
+    }
+
+    let unlinkedCount = 0;
+    if (invalidChildIds.length > 0) {
+      const unlinkResult = await prisma.work_items.updateMany({
+        where: { id: { in: invalidChildIds } },
+        data: { parent_id: null },
+      });
+      unlinkedCount = unlinkResult.count;
+    }
+
+    return { migratedCount, unlinkedCount };
+  }
+
   async linkImportedJiraParents(
     projectId: string,
-    issues: { key: string; parentKey?: string | null }[]
+    issues: { key: string; parentKey?: string | null }[],
+    hierarchy?: Record<string, string | null> | null,
+    allowedTypes?: WorkItemType[] | null
   ): Promise<void> {
     const allWorkItems = await prisma.work_items.findMany({
       where: { project_id: projectId },
-      select: { id: true, jira_issue_key: true, parent_id: true },
+      select: { id: true, jira_issue_key: true, parent_id: true, type: true },
     });
 
-    const keyToIdMap = new Map<string, string>();
+    const keyToItemMap = new Map<string, (typeof allWorkItems)[number]>();
     for (const item of allWorkItems) {
       if (item.jira_issue_key) {
-        keyToIdMap.set(item.jira_issue_key, item.id);
+        keyToItemMap.set(item.jira_issue_key, item);
       }
     }
+
+    const { parentToChild } = resolveProjectHierarchy(allowedTypes, hierarchy);
 
     for (const issue of issues) {
       if (!issue.parentKey) {
         continue;
       }
-      const childId = keyToIdMap.get(issue.key);
-      const parentId = keyToIdMap.get(issue.parentKey);
-      if (childId && parentId) {
-        const currentItem = allWorkItems.find((item) => item.id === childId);
-        if (currentItem && currentItem.parent_id !== parentId) {
-          await prisma.work_items.update({
-            where: { id: childId },
-            data: { parent_id: parentId },
-          });
-        }
+      const childItem = keyToItemMap.get(issue.key);
+      const parentItem = keyToItemMap.get(issue.parentKey);
+      if (!childItem || !parentItem) {
+        continue;
+      }
+
+      const allowedChildForParent =
+        parentToChild[parentItem.type as WorkItemType];
+      const isAllowedHierarchy = allowedChildForParent === childItem.type;
+      const needsUpdate = childItem.parent_id !== parentItem.id;
+
+      if (isAllowedHierarchy && needsUpdate) {
+        await prisma.work_items.update({
+          where: { id: childItem.id },
+          data: { parent_id: parentItem.id },
+        });
       }
     }
   }

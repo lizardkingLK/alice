@@ -349,7 +349,7 @@ function validateAndPruneTreeNode(
   for (const child of node.children) {
     const effectiveChild: ParsedWorkItemNode = {
       ...child,
-      type: allowedChildType || child.type,
+      type: child.type || allowedChildType,
     };
     const processed = validateAndPruneTreeNode(
       effectiveChild,
@@ -663,7 +663,7 @@ async function executeChildNodesImport(
     }
     const effectiveChild: ParsedWorkItemNode = {
       ...child,
-      type: allowedChildType || child.type,
+      type: child.type || allowedChildType,
     };
     await executeSingleNodeImport(ctx, effectiveChild, parentId);
   }
@@ -825,9 +825,10 @@ async function processReferencedParentItem(
     );
   }
 
-  const effectiveItem = allowedChildType
-    ? { ...item, type: allowedChildType }
-    : item;
+  let effectiveItem = item;
+  if (!item.type && allowedChildType) {
+    effectiveItem = { ...item, type: allowedChildType };
+  }
 
   await executeSingleNodeImport(ctx, effectiveItem, parentId);
 }

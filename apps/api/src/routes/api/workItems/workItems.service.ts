@@ -6,6 +6,8 @@ import {
   resolveBoardDestinationColumn,
   resolveBoardSourceColumn,
   type WorkItemType,
+  CANONICAL_HIERARCHY_ORDER,
+  type ProjectWorkflowConfig,
   parseWorkItemLabels,
   paginationMeta,
   type ListWorkItemsQuery,
@@ -138,10 +140,21 @@ export class WorkItemService {
   ): Promise<DbWorkItem> {
     await this.workItems.assertCanAccessProject(userId, input.project_id);
 
+    const { allowedTypes, hierarchy } = await this.getProjectAllowedTypes(
+      input.project_id
+    );
+    if (!allowedTypes.includes(input.type)) {
+      throw new WorkItemValidationError(
+        `Work item type "${input.type}" is not allowed in this project`
+      );
+    }
+
     await this.assertValidParentLink({
       parentId: input.parent_id,
       projectId: input.project_id,
       childType: input.type,
+      allowedTypes,
+      hierarchy,
     });
 
     await this.validateAllocation(
@@ -200,6 +213,15 @@ export class WorkItemService {
 
     const current = await this.workItems.getById(workItemId);
 
+    const { allowedTypes, hierarchy } = await this.getProjectAllowedTypes(
+      input.project_id
+    );
+    if (input.type && !allowedTypes.includes(input.type)) {
+      throw new WorkItemValidationError(
+        `Work item type "${input.type}" is not allowed in this project`
+      );
+    }
+
     const boardMove = await this.resolveBoardMove(current, input);
     await this.assertBoardTransitionAllowed(
       userId,
@@ -207,12 +229,18 @@ export class WorkItemService {
       boardMove
     );
 
-    if (!sameNullable(input.parent_id, current?.parent_id)) {
+    if (
+      !sameNullable(input.parent_id, current?.parent_id) ||
+      (input.type && input.type !== current?.type)
+    ) {
       await this.assertValidParentLink({
-        parentId: input.parent_id,
+        parentId:
+          input.parent_id !== undefined ? input.parent_id : current?.parent_id,
         projectId: input.project_id,
-        childType: input.type,
+        childType: input.type ?? (current.type as WorkItemType),
         childId: workItemId,
+        allowedTypes,
+        hierarchy,
       });
     }
 
@@ -662,11 +690,37 @@ export class WorkItemService {
     }
   }
 
+  private async getProjectAllowedTypes(projectId: string): Promise<{
+    allowedTypes: WorkItemType[];
+    hierarchy?: Record<string, string | null> | null;
+  }> {
+    try {
+      const rawConfig =
+        await this.workItems.getProjectWorkflowConfig(projectId);
+      const config = rawConfig as ProjectWorkflowConfig | null;
+      const allowedTypes =
+        config?.work_item_types && config.work_item_types.length > 0
+          ? config.work_item_types
+          : [...CANONICAL_HIERARCHY_ORDER];
+      return {
+        allowedTypes,
+        hierarchy: config?.hierarchy,
+      };
+    } catch {
+      return {
+        allowedTypes: [...CANONICAL_HIERARCHY_ORDER],
+        hierarchy: null,
+      };
+    }
+  }
+
   private async assertValidParentLink(params: {
     parentId?: string | null;
     projectId: string;
     childType: WorkItemType;
     childId?: string;
+    allowedTypes?: readonly WorkItemType[] | null;
+    hierarchy?: Record<string, string | null> | null;
   }): Promise<void> {
     const { parentId, projectId, childType, childId } = params;
 
@@ -689,10 +743,22 @@ export class WorkItemService {
       );
     }
 
-    const allowedChildType = getAllowedChildType(parent.type as WorkItemType);
+    let allowedTypes = params.allowedTypes;
+    let hierarchy = params.hierarchy;
+    if (!allowedTypes) {
+      const projectTypes = await this.getProjectAllowedTypes(projectId);
+      allowedTypes = projectTypes.allowedTypes;
+      hierarchy = projectTypes.hierarchy;
+    }
+
+    const allowedChildType = getAllowedChildType(
+      parent.type as WorkItemType,
+      allowedTypes,
+      hierarchy
+    );
     if (!allowedChildType) {
       throw new WorkItemValidationError(
-        `Parent of type ${parent.type} cannot have subtasks`
+        `Parent of type ${parent.type} cannot have subtasks in this project`
       );
     }
 

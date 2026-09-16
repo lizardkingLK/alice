@@ -96,7 +96,7 @@ describe('BoardDesignerWorkspace', () => {
         ]),
       })
     );
-    expect(savedConfig?.columns.at(-2)?.id).toBe(
+    expect(savedConfig?.columns?.at(-2)?.id).toBe(
       '11111111-1111-4111-8111-111111111111'
     );
     expect(refresh).toHaveBeenCalled();
@@ -119,7 +119,7 @@ describe('BoardDesignerWorkspace', () => {
       '2026-09-11T01:00:00.000Z'
     );
     expect(
-      vi.mocked(updateProject).mock.calls[1]?.[1].workflow_config?.columns[0]
+      vi.mocked(updateProject).mock.calls[1]?.[1]?.workflow_config?.columns?.[0]
     ).toEqual({ id: 'backlog', name: 'Inbox', status: 'New' });
   });
 

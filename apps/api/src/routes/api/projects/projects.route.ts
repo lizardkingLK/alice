@@ -26,7 +26,14 @@ import type { WorkItemService } from '../workItems/workItems.service';
 import { supabase } from '../../../lib/supabase';
 import type { JiraService } from '../jira/jira.service';
 import type { ParsedJiraIssue } from '../jira/jira.types';
-import { listProjectsQuerySchema, ProjectStatusEnum } from '@repo/types';
+import {
+  listProjectsQuerySchema,
+  ProjectStatusEnum,
+  jiraImportConfigSchema,
+  type JiraImportConfig,
+  type WorkItemType,
+  WorkItemTypeEnum,
+} from '@repo/types';
 
 const TYPE_STRING = 'string';
 
@@ -200,18 +207,35 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
     projectId: string;
     issues: ParsedJiraIssue[];
     existingKeys: Set<string>;
+    config?: JiraImportConfig;
   }): Promise<number> {
     let importedCount = 0;
+    const typeMappings = params.config?.typeMappings || {};
 
     for (const issue of params.issues) {
       if (params.existingKeys.has(issue.key)) {
         continue;
       }
 
+      const rawType = issue.rawType || issue.type;
+      const mapping = typeMappings[rawType];
+
+      // Handle ignore behavior: skip import
+      if (mapping?.action === 'ignore') {
+        continue;
+      }
+
+      let resolvedType: WorkItemType = issue.type;
+      if (mapping?.action === 'drop') {
+        resolvedType = WorkItemTypeEnum.Issue;
+      } else if (mapping?.action === 'map' && mapping.targetType) {
+        resolvedType = mapping.targetType;
+      }
+
       const workItemInput: WorkItemBody = {
         title: issue.title,
         project_id: params.projectId,
-        type: issue.type,
+        type: resolvedType,
         assignee_id: null,
         due_date: null,
         description: issue.description || null,
@@ -288,6 +312,7 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
           github_repo: parsed.data.github_repo ?? null,
           github_token: parsed.data.github_token ?? null,
           attributes_config: parsed.data.attributes_config ?? null,
+          workflow_config: parsed.data.workflow_config ?? null,
         });
         res.status(201).json({ project: withoutIntegrationSecrets(project) });
       } catch (error) {
@@ -320,7 +345,10 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
           link.connectionId,
           link.projectKey
         );
-        res.json({ issues });
+        const issueTypes = [
+          ...new Set(issues.map((i) => i.rawType || i.type)),
+        ];
+        res.json({ issues, issueTypes });
       } catch (error) {
         const { status, error: message } = jsonErrorFromCaught(
           error,
@@ -347,6 +375,11 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
           return res.status(link.status).json({ error: link.error });
         }
 
+        const importConfig = jiraImportConfigSchema
+          .optional()
+          .safeParse(req.body);
+        const config = importConfig.success ? importConfig.data : undefined;
+
         const existingKeys = await loadExistingJiraKeys(id);
         const issues = await jiraService.fetchIssuesForProjectLink(
           req.userId!,
@@ -359,13 +392,41 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
           projectId: id,
           issues,
           existingKeys,
+          config,
         });
+
+        let customHierarchyMap: Record<string, string> | undefined;
+        const activeTypes: WorkItemType[] | undefined = config?.hierarchy;
+
+        if (config?.hierarchy && config.hierarchy.length > 0) {
+          const project = await projectsService.getProjectById(id);
+          const existingConfig =
+            (project.workflow_config as Record<string, unknown> | null) || {};
+          customHierarchyMap = {};
+          for (let i = 0; i < config.hierarchy.length - 1; i++) {
+            customHierarchyMap[config.hierarchy[i]!] = config.hierarchy[i + 1]!;
+          }
+          await projectsService.updateProject(
+            req.userId!,
+            id,
+            {
+              workflow_config: {
+                ...existingConfig,
+                work_item_types: config.hierarchy,
+                hierarchy: customHierarchyMap,
+              },
+            },
+            project.updated_at
+          );
+        }
 
         try {
           await projectsService.linkImportedJiraParents(
             req.userId!,
             id,
-            issues
+            issues,
+            customHierarchyMap,
+            activeTypes
           );
         } catch (linkError) {
           console.error(

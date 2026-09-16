@@ -135,6 +135,7 @@ function parseSearchIssues(data: JiraSearchResponse): ParsedJiraIssue[] {
       title: issue.fields?.summary || 'Untitled',
       description: parseJiraDescription(issue.fields?.description),
       type: mapToWorkItemType(jiraType),
+      rawType: jiraType || 'Task',
       parentKey: issue.fields?.parent?.key || null,
     };
   });

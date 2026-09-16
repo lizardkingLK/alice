@@ -141,12 +141,60 @@ export const boardConfigSchema = z.union([
   boardConfigV2Schema,
 ]);
 
+export const projectWorkflowConfigSchema = z
+  .object({
+    version: z.union([z.literal('1'), z.literal('2')]).optional(),
+    columns: boardColumnsSchema.optional(),
+    transitions: z.array(boardTransitionSchema).optional(),
+    work_item_types: z
+      .array(z.enum(Constants.public.Enums.WorkItemType))
+      .min(1, 'At least one work item type must be configured')
+      .optional(),
+    hierarchy: z.record(z.string(), z.string().nullable()).optional(),
+  })
+  .passthrough()
+  .superRefine((config, context) => {
+    if (config.version && config.columns) {
+      validateStatusCoverage(config.columns, context);
+      if (config.version === '2' && config.transitions) {
+        const columnIds = new Set(config.columns.map((c) => c.id));
+        const transitionPairs = new Set<string>();
+        config.transitions.forEach((transition, index) => {
+          if (!columnIds.has(transition.fromColumnId)) {
+            context.addIssue({
+              code: 'custom',
+              path: ['transitions', index, 'fromColumnId'],
+              message: 'Source column must exist in this board',
+            });
+          }
+          if (!columnIds.has(transition.toColumnId)) {
+            context.addIssue({
+              code: 'custom',
+              path: ['transitions', index, 'toColumnId'],
+              message: 'Destination column must exist in this board',
+            });
+          }
+          const pairKey = `${transition.fromColumnId}->${transition.toColumnId}`;
+          if (transitionPairs.has(pairKey)) {
+            context.addIssue({
+              code: 'custom',
+              path: ['transitions', index],
+              message: 'Duplicate transition between the same columns',
+            });
+          }
+          transitionPairs.add(pairKey);
+        });
+      }
+    }
+  });
+
 export type BoardColumn = z.infer<typeof boardColumnSchema>;
 export type BoardRuleMatcher = z.infer<typeof boardRuleMatcherSchema>;
 export type BoardTransition = z.infer<typeof boardTransitionSchema>;
 export type BoardConfigV1 = z.infer<typeof boardConfigV1Schema>;
 export type BoardConfigV2 = z.infer<typeof boardConfigV2Schema>;
 export type BoardConfig = z.infer<typeof boardConfigSchema>;
+export type ProjectWorkflowConfig = z.infer<typeof projectWorkflowConfigSchema>;
 
 export type RuntimeBoardConfig = {
   readonly version: BoardConfig['version'];

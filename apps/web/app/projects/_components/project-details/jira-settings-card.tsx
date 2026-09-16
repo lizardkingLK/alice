@@ -21,12 +21,12 @@ import {
 import {
   connectionLabel,
   deleteJiraConnection,
-  importJiraIssues,
   type JiraConnection,
 } from '@/app/projects/_services/projects.jira.mutations.client';
 import { useJiraConnectionPicker } from '@/app/projects/_hooks/use-jira-connection-picker';
 import { useIntegrationSettingsSave } from '@/app/projects/_hooks/use-integration-settings-save';
 import { JiraConnectionFields } from '@/app/projects/_components/jira-connection-fields';
+import { JiraImportDialog } from '@/app/projects/_components/project-details/jira-import-dialog';
 import { errorMessage } from '@/lib/errors/error-message';
 import type { Project } from '@/app/projects/_services/projects.mutations.client';
 
@@ -157,7 +157,7 @@ export function JiraSettingsCard({ project }: Readonly<JiraSettingsCardProps>) {
     refreshConnections,
     handleConnectJira,
   } = useJiraConnectionPicker(jiraConnectionId);
-  const [isSyncingJira, setIsSyncingJira] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
 
   const {
@@ -207,25 +207,6 @@ export function JiraSettingsCard({ project }: Readonly<JiraSettingsCardProps>) {
     });
   };
 
-  const handleSyncJira = async () => {
-    setIsSyncingJira(true);
-    clearFeedback();
-
-    try {
-      setJiraMessage('Syncing tasks from Jira Cloud...');
-      const res = await importJiraIssues(project.id);
-      setJiraMessage(
-        `Successfully imported/synced ${res.importedCount} tasks from Jira!`
-      );
-      setIsJiraError(false);
-      router.refresh();
-    } catch (err) {
-      console.error('Jira sync failed:', errorMessage(err, ''));
-      setFailure(errorMessage(err, 'Sync failed'));
-    } finally {
-      setIsSyncingJira(false);
-    }
-  };
 
   const handleDisconnect = async (connectionId: string) => {
     setDisconnectingId(connectionId);
@@ -296,7 +277,6 @@ export function JiraSettingsCard({ project }: Readonly<JiraSettingsCardProps>) {
           variant="outline"
           size="sm"
           onClick={() => setIsEditingJira(true)}
-          disabled={isSyncingJira}
         >
           <Edit className="mr-2 h-4 w-4" />
           Modify Connection
@@ -305,15 +285,11 @@ export function JiraSettingsCard({ project }: Readonly<JiraSettingsCardProps>) {
         <Button
           type="button"
           size="sm"
-          onClick={handleSyncJira}
-          disabled={isSyncingJira || !isLinked}
+          onClick={() => setIsImportDialogOpen(true)}
+          disabled={!isLinked}
           className="animate-fade-in bg-emerald-600 text-white hover:bg-emerald-700"
         >
-          {isSyncingJira ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="mr-2 h-4 w-4" />
-          )}
+          <RefreshCw className="mr-2 h-4 w-4" />
           Sync / Import Tasks
         </Button>
       </div>
@@ -347,6 +323,19 @@ export function JiraSettingsCard({ project }: Readonly<JiraSettingsCardProps>) {
         />
         {linkSection}
       </CardContent>
+
+      <JiraImportDialog
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
+        project={project}
+        onImportSuccess={(importedCount) => {
+          setJiraMessage(
+            `Successfully imported/synced ${importedCount} tasks from Jira!`
+          );
+          setIsJiraError(false);
+          router.refresh();
+        }}
+      />
     </Card>
   );
 }
