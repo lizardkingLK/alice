@@ -10,6 +10,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@repo/ui/components/ui/collapsible';
+import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
 import {
   Sidebar,
   SidebarContent,
@@ -161,7 +162,7 @@ function FavoritesSidebarGroup({
 
 type DashboardSidebarProps = {
   readonly userId?: string | null;
-  /** App role from `public.users.role`; null hides role-gated nav groups. */
+  /** App role from `public.users.role`; null hides role-gated nav items. */
   readonly role?: AppRole | null;
 };
 
@@ -178,7 +179,12 @@ export function DashboardSidebar({
   const { favorites } = useFavorites(userId);
   const showSystem = canAccessNavGroup(role, 'system');
   const showProjects = canAccessNavGroup(role, 'projects');
-  const projectsNavItems = [...PROJECTS_NAV];
+
+  const platformItems: DashboardNavItem[] = [
+    ...PLATFORM_NAV,
+    ...(showSystem ? SYSTEM_NAV : []),
+    ...(showProjects ? PROJECTS_NAV : []),
+  ];
 
   return (
     <Sidebar collapsible="icon">
@@ -195,78 +201,70 @@ export function DashboardSidebar({
         </Link>
       </SidebarHeader>
 
-      <SidebarContent>
-        {favorites.length > 0 ? (
-          <FavoritesSidebarGroup
-            favorites={favorites}
-            pathname={pathname}
-            search={search}
-            userId={userId}
-          />
-        ) : null}
+      <SidebarContent className="p-0">
+        <ScrollArea className="h-full min-h-0 flex-1">
+          <div
+            className={cn(
+              'flex flex-col',
+              isCollapsed ? 'gap-1 px-1 py-2' : 'gap-0'
+            )}
+          >
+            {favorites.length > 0 ? (
+              <FavoritesSidebarGroup
+                favorites={favorites}
+                pathname={pathname}
+                search={search}
+                userId={userId}
+              />
+            ) : null}
 
-        <SidebarNavGroup
-          label="Platform"
-          items={PLATFORM_NAV}
-          pathname={pathname}
-          preference={preference}
-        />
+            <SidebarNavGroup
+              label="Platform"
+              items={platformItems}
+              pathname={pathname}
+              preference={preference}
+            />
 
-        {showSystem ? (
-          <SidebarNavGroup
-            label="System"
-            items={SYSTEM_NAV}
-            pathname={pathname}
-            preference={preference}
-          />
-        ) : null}
-        {showProjects ? (
-          <SidebarNavGroup
-            label="Projects"
-            items={projectsNavItems}
-            pathname={pathname}
-            preference={preference}
-          />
-        ) : null}
+            <SidebarGroup>
+              <SidebarGroupLabel>Account</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isNavActive(pathname, '/profile')}
+                      tooltip="Profile"
+                    >
+                      <Link href="/profile">
+                        <User />
+                        <span>Profile</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isNavActive(pathname, '/settings')}
+                      tooltip="Settings"
+                    >
+                      <Link href="/settings">
+                        <Settings />
+                        <span>Settings</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Account</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isNavActive(pathname, '/profile')}
-                  tooltip="Profile"
-                >
-                  <Link href="/profile">
-                    <User />
-                    <span>Profile</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isNavActive(pathname, '/settings')}
-                  tooltip="Settings"
-                >
-                  <Link href="/settings">
-                    <Settings />
-                    <span>Settings</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarNavGroup
-          label="Help"
-          items={HELP_NAV}
-          pathname={pathname}
-          preference={preference}
-        />
+            <SidebarNavGroup
+              label="Help"
+              items={HELP_NAV}
+              pathname={pathname}
+              preference={preference}
+            />
+          </div>
+        </ScrollArea>
       </SidebarContent>
     </Sidebar>
   );
