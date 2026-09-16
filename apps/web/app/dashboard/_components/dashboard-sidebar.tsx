@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Settings, User, ChevronRight } from '@repo/ui/lib/icons';
 import { cn } from '@repo/ui/lib/utils';
 import {
@@ -26,6 +26,10 @@ import type { BoardDefaultsPreference } from '@/app/board/_helpers/board-default
 import { useWorkspaceDefaultsNavPreference } from '@/app/board/_hooks/use-workspace-defaults-nav-preference';
 import { buildWorkspaceNavHref } from '@/app/board/_services/board.defaults.shared';
 import { useFavorites } from '@/lib/favorites/use-favorites';
+import {
+  favoriteHref,
+  isFavoriteActive,
+} from '@/lib/favorites/favorites-storage';
 import {
   readFavoritesSidebarOpen,
   writeFavoritesSidebarOpen,
@@ -98,10 +102,12 @@ function SidebarNavGroup({
 function FavoritesSidebarGroup({
   favorites,
   pathname,
+  search,
   userId,
 }: Readonly<{
   favorites: ReturnType<typeof useFavorites>['favorites'];
   pathname: string;
+  search: string;
   userId: string | null | undefined;
 }>) {
   const [open, setOpen] = useState(true);
@@ -138,10 +144,10 @@ function FavoritesSidebarGroup({
               {favorites.map((favorite) => (
                 <SidebarNavLink
                   key={favorite.id}
-                  href={favorite.pathname}
+                  href={favoriteHref(favorite)}
                   label={favorite.label}
                   icon={resolveFavoriteNavIcon(favorite.pathname)}
-                  isActive={isNavActive(pathname, favorite.pathname)}
+                  isActive={isFavoriteActive(pathname, search, favorite)}
                   truncateLabel
                 />
               ))}
@@ -164,6 +170,8 @@ export function DashboardSidebar({
   role = null,
 }: Readonly<DashboardSidebarProps>) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const search = searchParams.toString();
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
   const preference = useWorkspaceDefaultsNavPreference(userId);
@@ -188,20 +196,21 @@ export function DashboardSidebar({
       </SidebarHeader>
 
       <SidebarContent>
+        {favorites.length > 0 ? (
+          <FavoritesSidebarGroup
+            favorites={favorites}
+            pathname={pathname}
+            search={search}
+            userId={userId}
+          />
+        ) : null}
+
         <SidebarNavGroup
           label="Platform"
           items={PLATFORM_NAV}
           pathname={pathname}
           preference={preference}
         />
-
-        {favorites.length > 0 ? (
-          <FavoritesSidebarGroup
-            favorites={favorites}
-            pathname={pathname}
-            userId={userId}
-          />
-        ) : null}
 
         {showSystem ? (
           <SidebarNavGroup

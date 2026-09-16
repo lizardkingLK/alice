@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   FAVORITES_CHANGED_EVENT,
-  isPathnameFavorited,
+  isFavoriteUrl,
   normalizeFavoritePathname,
   readFavorites,
   toggleFavorite,
@@ -13,62 +13,54 @@ import {
 export function useFavorites(userId: string | null | undefined) {
   const [favorites, setFavorites] = useState<FavoriteRecord[]>([]);
 
-  const refresh = useCallback(() => {
+  useEffect(() => {
     if (!userId) {
       setFavorites([]);
       return;
     }
+
     setFavorites(readFavorites(userId));
-  }, [userId]);
 
-  useEffect(() => {
-    refresh();
-
-    if (!userId || globalThis.window === undefined) {
-      return;
-    }
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === null || event.key === `alice:favorites:v1:${userId}`) {
+        setFavorites(readFavorites(userId));
+      }
+    };
 
     const onFavoritesChanged = (event: Event) => {
       const detail = (event as CustomEvent<{ userId?: string }>).detail;
-      if (detail?.userId && detail.userId !== userId) {
-        return;
+      if (detail?.userId === userId) {
+        setFavorites(readFavorites(userId));
       }
-      refresh();
     };
 
-    const onStorage = (event: StorageEvent) => {
-      if (!event.key?.startsWith('alice:favorites:v1:')) {
-        return;
-      }
-      refresh();
-    };
-
+    globalThis.window.addEventListener('storage', onStorage);
     globalThis.window.addEventListener(
       FAVORITES_CHANGED_EVENT,
       onFavoritesChanged
     );
-    globalThis.window.addEventListener('storage', onStorage);
     return () => {
+      globalThis.window.removeEventListener('storage', onStorage);
       globalThis.window.removeEventListener(
         FAVORITES_CHANGED_EVENT,
         onFavoritesChanged
       );
-      globalThis.window.removeEventListener('storage', onStorage);
     };
-  }, [refresh, userId]);
+  }, [userId]);
 
   const toggle = useCallback(
-    (pathname: string, label: string) => {
+    (pathname: string, label: string, search = '') => {
       if (!userId) {
         return;
       }
-      setFavorites(toggleFavorite(userId, pathname, label));
+      setFavorites(toggleFavorite(userId, pathname, label, search));
     },
     [userId]
   );
 
   const isFavorited = useCallback(
-    (pathname: string) => isPathnameFavorited(favorites, pathname),
+    (pathname: string, search = '') =>
+      isFavoriteUrl(favorites, pathname, search),
     [favorites]
   );
 

@@ -2,9 +2,9 @@
 
 Status: **Implemented** (IndexedDB upgrade still Plan-only)
 
-Personal **Favorites** bookmark a page pathname (no query). **Saved Views**
-snapshot pathname + query, live in Supabase, and can be shared / archived from
-the `/views` workspace.
+Personal **Favorites** bookmark a page pathname + query (same URL shape as
+opening the page). **Saved Views** snapshot pathname + query, live in Supabase,
+and can be shared / archived from the `/views` workspace.
 
 Related:
 
@@ -22,9 +22,11 @@ Related:
   solid).
 - Layers icon beside the star opens **Save View** (title required, description
   optional).
-- Sidebar **Favorites** group renders only when count &gt; 0 (collapsible; no
-  group star icon). Favorite row icons follow a pathname → nav icon map
-  (same icons as Platform / Projects / Help).
+- Sidebar **Favorites** group renders at the **top** of the sidebar (above
+  Platform) only when count &gt; 0 (collapsible; no group star icon). Favorite
+  row icons follow a pathname → nav icon map (same icons as Platform /
+  Projects / Help). Stale or inaccessible favorites are **not** auto-removed —
+  opening them uses the destination page’s normal not-found / RBAC behavior.
 - **Views** is always a Platform nav item (Layers icon) that navigates to
   `/views` — no collapsible children list.
 - Favorites open in the same tab.
@@ -46,12 +48,13 @@ Related:
 
 ### Favorites (client)
 
-| Key                                        | Value                                              |
-| ------------------------------------------ | -------------------------------------------------- |
-| `alice:favorites:v1:{userId}`              | JSON array of `{ id, pathname, label, createdAt }` |
-| `alice:favorites-sidebar-open:v1:{userId}` | JSON boolean — Favorites group expanded/collapsed  |
+| Key                                        | Value                                                      |
+| ------------------------------------------ | ---------------------------------------------------------- |
+| `alice:favorites:v1:{userId}`              | JSON array of `{ id, pathname, search, label, createdAt }` |
+| `alice:favorites-sidebar-open:v1:{userId}` | JSON boolean — Favorites group expanded/collapsed          |
 
-- Unique per **pathname** (query stripped).
+- Unique per **pathname + search** (`search` without a leading `?`; empty when
+  none). Legacy rows missing `search` migrate to `''` on read.
 - ~200 small entries fit comfortably in localStorage.
 - **IndexedDB upgrade** (later): if quota errors or very large libraries appear,
   migrate the same shape into IndexedDB; keep the v1 key as a one-shot source.
@@ -76,10 +79,10 @@ Related:
 
 | Kind     | Stored            | Sidebar label                                                    |
 | -------- | ----------------- | ---------------------------------------------------------------- |
-| Favorite | pathname only     | Breadcrumb / page label (work-item detail → truncated **title**) |
+| Favorite | pathname + search | Breadcrumb / page label (work-item detail → truncated **title**) |
 | View     | pathname + search | View **title**                                                   |
 
-Href for a view: `` `${pathname}${search ? `?${search}` : ''}` ``.
+Href for a favorite or view: `` `${pathname}${search ? `?${search}` : ''}` ``.
 
 ---
 
@@ -87,7 +90,7 @@ Href for a view: `` `${pathname}${search ? `?${search}` : ''}` ``.
 
 In dashboard page meta, after the last breadcrumb segment:
 
-1. **Star** — toggle Favorite for current pathname.
+1. **Star** — toggle Favorite for current pathname + search.
 2. **Layers** — open Save View dialog for current pathname + search.
 
 Pass `favoriteLabel` (and optional `projectId`) from page shells when the
@@ -97,11 +100,15 @@ breadcrumb last segment is not a good label (e.g. work-item title).
 
 ## Sidebar UX
 
-- **Favorites** — collapsible group (label only, chevron; no star on the group).
-  Shown when count &gt; 0. Expanded/collapsed state persists in localStorage per
-  user. Each item uses `resolveFavoriteNavIcon(pathname)` from the shared
-  dashboard nav registry (`apps/web/lib/dashboard/nav-registry.ts`) and opens in
-  the same tab. Truncate long labels with `TruncatedText`.
+- **Favorites** — collapsible group at the **top** of the sidebar (above
+  Platform; label only, chevron; no star on the group). Shown when count &gt; 0.
+  Expanded/collapsed state persists in localStorage per user. Each item uses
+  `resolveFavoriteNavIcon(pathname)` from the shared dashboard nav registry
+  (`apps/web/lib/dashboard/nav-registry.ts`) and opens
+  `` `${pathname}${search ? `?${search}` : ''}` `` in the same tab. Active
+  highlight matches the exact pathname + search. Truncate long labels with
+  `TruncatedText`. Clicking a favorite that no longer exists uses the
+  destination’s existing not-found / error / RBAC UX (no auto-purge).
 - **Views** — always shown as a Platform item (`/views`, Layers icon). Click
   navigates to the Views workspace (same tab). No sidebar children.
 
@@ -175,11 +182,11 @@ views fall back to `/views?tab=shared`.
 
 ## Tests
 
-- Unit: favorites serialize/strip/dedupe; `resolveFavoriteNavIcon` prefix map;
-  view URL normalize; share recipient expansion; Views column visibility
-  storage; `parseViewsListTab`
-- Component: star, save dialog, share modes; sidebar Favorites collapsible;
-  Platform Views link always present
+- Unit: favorites serialize/search/dedupe/href/migrate; `resolveFavoriteNavIcon`
+  prefix map; view URL normalize; share recipient expansion; Views column
+  visibility storage; `parseViewsListTab`
+- Component: star, save dialog, share modes; sidebar Favorites above Platform
+  with query hrefs; Platform Views link always present
 - API: CRUD auth, archive, share + notification create
 - Sidebar RBAC suite extended for Favorites visibility / Views always-on
 - Views registry: SSR list + URL search/tab/pagination (covered via helpers +
