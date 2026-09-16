@@ -9,6 +9,7 @@ import {
   normalizeFavoriteSearch,
   normalizeFavoritesList,
   readFavorites,
+  removeFavorite,
   toggleFavorite,
 } from '@/lib/favorites/favorites-storage';
 
@@ -84,6 +85,23 @@ describe('favorites-storage', () => {
 
     toggleFavorite(userId, '/board', 'Board', '?project=1');
     expect(readFavorites(userId)).toHaveLength(0);
+  });
+
+  it('removes a matching favorite and no-ops when absent', () => {
+    const userId = 'user-1';
+    toggleFavorite(userId, '/chat', 'Old chat', 'conversationId=abc');
+
+    const removed = removeFavorite(userId, '/chat', 'conversationId=abc');
+    expect(removed).toEqual({
+      removed: true,
+      label: 'Old chat',
+      favorites: [],
+    });
+    expect(readFavorites(userId)).toHaveLength(0);
+
+    expect(removeFavorite(userId, '/chat', 'conversationId=abc')).toEqual({
+      removed: false,
+    });
   });
 
   it('migrates legacy records missing search to empty search', () => {

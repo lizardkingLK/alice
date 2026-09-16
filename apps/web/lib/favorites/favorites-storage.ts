@@ -205,6 +205,33 @@ export function toggleFavorite(
   return next;
 }
 
+/**
+ * Drop a favorite matching pathname+search when present (e.g. destination 404).
+ * No-op when the URL was not favorited.
+ */
+export function removeFavorite(
+  userId: string,
+  pathname: string,
+  search = ''
+):
+  | { removed: false }
+  | { removed: true; label: string; favorites: FavoriteRecord[] } {
+  const key = favoriteKey(pathname, search);
+  const current = readFavorites(userId);
+  const match = current.find(
+    (item) => favoriteKey(item.pathname, item.search) === key
+  );
+  if (!match) {
+    return { removed: false };
+  }
+
+  const favorites = current.filter(
+    (item) => favoriteKey(item.pathname, item.search) !== key
+  );
+  writeFavorites(userId, favorites);
+  return { removed: true, label: match.label, favorites };
+}
+
 export function isFavoriteActive(
   currentPathname: string,
   currentSearch: string,
