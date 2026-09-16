@@ -55,10 +55,11 @@ describe('DashboardSidebar RBAC', () => {
     });
   });
 
-  it('shows System and Projects for admin', () => {
+  it('shows Users and Projects under Platform for admin', () => {
     renderSidebar('admin');
 
-    expect(screen.getByText('System')).toBeInTheDocument();
+    expect(screen.queryByText('System')).not.toBeInTheDocument();
+    expect(screen.getByText('Platform')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^Users$/i })).toHaveAttribute(
       'href',
       '/users'
@@ -72,7 +73,7 @@ describe('DashboardSidebar RBAC', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('hides System for manager but keeps Projects', () => {
+  it('hides Users for manager but keeps Projects under Platform', () => {
     renderSidebar('manager');
 
     expect(screen.queryByText('System')).not.toBeInTheDocument();
@@ -87,7 +88,7 @@ describe('DashboardSidebar RBAC', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('hides System for member but keeps Projects (not Sprints)', () => {
+  it('hides Users for member but keeps Projects under Platform (not Sprints)', () => {
     renderSidebar('member');
 
     expect(screen.queryByText('System')).not.toBeInTheDocument();
