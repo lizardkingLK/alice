@@ -10,18 +10,21 @@ const {
   updateMock,
   updateUserByIdMock,
   selectSingleMock,
+  countOtherActiveAdminsMock,
 } = vi.hoisted(() => ({
   findByIdMock: vi.fn(),
   deactivateGuardedMock: vi.fn(),
   updateMock: vi.fn(),
   updateUserByIdMock: vi.fn(),
   selectSingleMock: vi.fn(),
+  countOtherActiveAdminsMock: vi.fn(),
 }));
 
 const usersRepository = {
   findById: findByIdMock,
   deactivateGuarded: deactivateGuardedMock,
   update: updateMock,
+  countOtherActiveAdmins: countOtherActiveAdminsMock,
 } as unknown as UsersRepository;
 
 const mockDb = {
@@ -198,5 +201,82 @@ describe('UsersService.deactivateUser / toggleUserActive', () => {
     expect(updateUserByIdMock).toHaveBeenCalledWith('user-1', {
       ban_duration: 'none',
     });
+  });
+});
+
+describe('UsersService.updateUser', () => {
+  const service = new UsersService(usersRepository, mockDb);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    updateUserByIdMock.mockResolvedValue({ error: null });
+    selectSingleMock.mockResolvedValue({
+      data: { role: 'admin' },
+      error: null,
+    });
+    countOtherActiveAdminsMock.mockResolvedValue(1);
+  });
+
+  it('rejects changing your own role', async () => {
+    findByIdMock.mockResolvedValue({
+      ...baseUser,
+      id: 'admin-1',
+      role: 'admin',
+    });
+
+    await expect(
+      service.updateUser(
+        'admin-1',
+        'admin-1',
+        { name: 'Pat', role: 'member' },
+        baseUser.updated_at
+      )
+    ).rejects.toThrow(/own workspace role/i);
+
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects demoting the last active admin', async () => {
+    findByIdMock.mockResolvedValue({
+      ...baseUser,
+      id: 'admin-2',
+      role: 'admin',
+    });
+    countOtherActiveAdminsMock.mockResolvedValue(0);
+
+    await expect(
+      service.updateUser(
+        'admin-1',
+        'admin-2',
+        { name: 'Pat', role: 'manager' },
+        baseUser.updated_at
+      )
+    ).rejects.toThrow(/at least one active admin/i);
+
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it('allows another admin to change a non-last admin role', async () => {
+    findByIdMock.mockResolvedValue({
+      ...baseUser,
+      id: 'admin-2',
+      role: 'admin',
+    });
+    countOtherActiveAdminsMock.mockResolvedValue(1);
+    updateMock.mockResolvedValue({
+      ...baseUser,
+      id: 'admin-2',
+      role: 'manager',
+    });
+
+    const result = await service.updateUser(
+      'admin-1',
+      'admin-2',
+      { name: 'Pat', role: 'manager' },
+      baseUser.updated_at
+    );
+
+    expect(result.role).toBe('manager');
+    expect(updateMock).toHaveBeenCalled();
   });
 });

@@ -13,6 +13,12 @@ import {
   SelectValue,
 } from '@repo/ui/components/ui/select';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@repo/ui/components/ui/tooltip';
+import {
   Card,
   CardContent,
   CardDescription,
@@ -24,15 +30,20 @@ import type { User } from '../_services/users.mutations.client';
 import { createUser, updateUser } from '../_services/users.mutations.client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
+import { resolveUserRoleLock } from '@/app/users/_helpers/user-role-lock';
 
 interface UserFormProps {
   readonly user?: User;
+  readonly currentUserId?: string | null;
+  readonly activeAdminCount?: number;
   readonly onClose?: () => void;
   readonly onSuccess?: () => void;
 }
 
 export function UserForm({
   user,
+  currentUserId = null,
+  activeAdminCount = 0,
   onClose,
   onSuccess,
 }: Readonly<UserFormProps>) {
@@ -48,6 +59,14 @@ export function UserForm({
   const [role, setRole] = useState<'admin' | 'manager' | 'member'>(
     user?.role ?? 'member'
   );
+
+  const { locked: roleLocked, reason: roleLockReason } = resolveUserRoleLock({
+    isEdit,
+    targetUserId: user?.id,
+    targetRole: user?.role,
+    currentUserId,
+    activeAdminCount,
+  });
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -66,7 +85,8 @@ export function UserForm({
     try {
       if (isEdit) {
         const expectedUpdatedAt = user.updated_at;
-        const pendingFields = { name: name.trim(), role };
+        const nextRole = roleLocked ? user.role : role;
+        const pendingFields = { name: name.trim(), role: nextRole };
 
         const updated = await runLockedMutationOrThrow({
           mutate: () => updateUser(user.id, pendingFields, expectedUpdatedAt),
@@ -128,6 +148,23 @@ export function UserForm({
   } else {
     submitButtonText = 'Add User';
   }
+
+  const roleSelect = (
+    <Select
+      value={role}
+      onValueChange={(val) => setRole(val as 'admin' | 'manager' | 'member')}
+      disabled={roleLocked}
+    >
+      <SelectTrigger id="role" className="bg-background/80 h-10">
+        <SelectValue placeholder="Select role..." />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="member">Member</SelectItem>
+        <SelectItem value="manager">Manager</SelectItem>
+        <SelectItem value="admin">Admin</SelectItem>
+      </SelectContent>
+    </Select>
+  );
 
   return (
     <Card className="relative border border-gray-200 bg-white text-gray-900 shadow-xl transition-all duration-300 hover:shadow-2xl">
@@ -197,23 +234,18 @@ export function UserForm({
             <Label htmlFor="role" className="text-sm font-medium">
               Workspace Role
             </Label>
-            <div className="relative">
-              <Select
-                value={role}
-                onValueChange={(val) =>
-                  setRole(val as 'admin' | 'manager' | 'member')
-                }
-              >
-                <SelectTrigger id="role" className="bg-background/80 h-10">
-                  <SelectValue placeholder="Select role..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="member">Member</SelectItem>
-                  <SelectItem value="manager">Manager</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {roleLocked && roleLockReason ? (
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="block w-full">{roleSelect}</span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">{roleLockReason}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              roleSelect
+            )}
           </div>
 
           <FormCancelSubmitActions

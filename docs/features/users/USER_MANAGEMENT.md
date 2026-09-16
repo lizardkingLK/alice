@@ -142,6 +142,20 @@ Shared kill switch lives in the API as `deactivateUser` (see [ACCOUNT_DEACTIVATI
 
 ---
 
+## Edit user / change role
+
+Admins edit name and workspace role from the registry **Edit** dialog.
+
+| Rule                  | Behavior                                                                                     |
+| --------------------- | -------------------------------------------------------------------------------------------- |
+| **Own role**          | Admins cannot change their own role (Select disabled + tooltip). Name still editable.        |
+| **Last active admin** | Role cannot be demoted when that user is the only product-usable admin (disabled + tooltip). |
+| **Others**            | Admins may change other users’ roles when another active admin remains.                      |
+
+API `PATCH /api/users/:id` enforces the same rules (403) so the UI cannot be bypassed.
+
+---
+
 ## Authorization status (RBAC)
 
 Phase-1 enforcement uses `apps/web/lib/rbac` (`requireAdmin`, layout `assertAdminOrRedirect`, sidebar `canAccessNavGroup`).

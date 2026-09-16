@@ -121,6 +121,34 @@ export class UsersService {
   ): Promise<UserRow> {
     await this.requireAdmin(actorId);
 
+    const target = await this.usersRepository.findById(targetUserId);
+    if (!target) {
+      throw new UsersServiceError('User not found.', 404);
+    }
+
+    const roleChanging = input.role !== target.role;
+    if (roleChanging && actorId === targetUserId) {
+      throw new UsersServiceError(
+        "You can't change your own workspace role.",
+        403
+      );
+    }
+
+    if (
+      roleChanging &&
+      target.role === UserRoleEnum.admin &&
+      input.role !== UserRoleEnum.admin
+    ) {
+      const otherAdmins =
+        await this.usersRepository.countOtherActiveAdmins(targetUserId);
+      if (otherAdmins === 0) {
+        throw new UsersServiceError(
+          'Cannot change role: at least one active admin must remain.',
+          403
+        );
+      }
+    }
+
     // 1. Update public.users table
     const updated = await this.usersRepository.update(
       targetUserId,
