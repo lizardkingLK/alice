@@ -299,7 +299,8 @@ describe('ChatAttachmentsRepository', () => {
 
       vi.mocked(prisma.chat_attachments.update).mockResolvedValue({} as never);
 
-      const urls = await repository.getAttachmentSignedUrls('attachment-uuid-1');
+      const urls =
+        await repository.getAttachmentSignedUrls('attachment-uuid-1');
 
       expect(urls.previewUrl).toBe('https://supabase.co/signed-url-test');
       expect(urls.downloadUrl).toBe('https://supabase.co/signed-url-test');
