@@ -247,8 +247,8 @@ export function JiraImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] w-full sm:max-w-4xl lg:max-w-5xl flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="p-6 pb-4 shrink-0 border-b">
           <DialogTitle className="flex items-center gap-2 text-xl font-bold">
             <RefreshCw className="text-primary h-5 w-5" />
             Jira Import & Hierarchy Mapping
@@ -258,7 +258,7 @@ export function JiraImportDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-2">
+        <div className="no-scrollbar flex-1 overflow-y-auto p-6 space-y-5 min-h-0">
           {isLoadingPreview && (
             <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
               <Loader2 className="text-primary h-8 w-8 animate-spin" />
@@ -320,22 +320,22 @@ export function JiraImportDialog({
                     return (
                       <div
                         key={jiraType}
-                        className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between"
+                        className="flex items-center justify-between gap-4 px-4 py-2.5"
                       >
-                        <div className="min-w-36">
-                          <span className="bg-muted rounded px-2 py-1 text-xs font-semibold text-foreground">
+                        <div className="min-w-36 shrink-0">
+                          <span className="bg-muted rounded px-2.5 py-1 text-xs font-semibold text-foreground">
                             {jiraType}
                           </span>
                         </div>
 
-                        <div className="flex flex-1 flex-wrap items-center gap-2">
+                        <div className="flex items-center justify-end gap-3 shrink-0">
                           <Select
                             value={current.action}
                             onValueChange={(val) =>
                               handleActionChange(jiraType, val as JiraImportAction)
                             }
                           >
-                            <SelectTrigger className="h-8 w-44 text-xs">
+                            <SelectTrigger className="h-8 w-48 text-xs shrink-0">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -346,15 +346,15 @@ export function JiraImportDialog({
                           </Select>
 
                           {current.action === 'map' && (
-                            <div className="flex items-center gap-1.5">
-                              <ArrowRight className="text-muted-foreground h-3.5 w-3.5" />
+                            <div className="flex items-center gap-2 shrink-0">
+                              <ArrowRight className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
                               <Select
                                 value={current.targetType}
                                 onValueChange={(val) =>
                                   handleTargetTypeChange(jiraType, val as WorkItemType)
                                 }
                               >
-                                <SelectTrigger className="h-8 w-32 text-xs">
+                                <SelectTrigger className="h-8 w-36 text-xs shrink-0">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -369,14 +369,14 @@ export function JiraImportDialog({
                           )}
 
                           {current.action === 'ignore' && (
-                            <span className="text-muted-foreground text-xs italic">
-                              Issues skipped; children have parent cleared.
+                            <span className="text-muted-foreground text-xs italic shrink-0 w-44 text-right">
+                              Skipped (parent cleared)
                             </span>
                           )}
 
                           {current.action === 'drop' && (
-                            <span className="text-muted-foreground text-xs italic">
-                              Imported as Issue with parent cleared.
+                            <span className="text-muted-foreground text-xs italic shrink-0 w-44 text-right">
+                              Issue (parent cleared)
                             </span>
                           )}
                         </div>
@@ -505,7 +505,7 @@ export function JiraImportDialog({
           )}
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="p-4 sm:px-6 shrink-0 border-t bg-background flex items-center justify-end gap-2">
           <Button
             type="button"
             variant="outline"

@@ -25,6 +25,8 @@ but they don't open the project registry.
 | [Project integrations](./project-integrations.md)     | GitHub and Jira connections                        |
 | [Dynamic fields & sidebar](./dynamic-fields.md)       | Configure custom fields and navigate workspaces    |
 | [Dynamic fields testing](./dynamic-fields-testing.md) | End-to-end user testing instructions on the system |
+| [Work-item types & hierarchy](./work-item-types-and-hierarchy.md) | Configure project types and Jira hierarchy mapping |
+| [Work-item types testing](./work-item-types-testing.md) | Step-by-step testing for types and Jira mapping   |
 
 ---
 
