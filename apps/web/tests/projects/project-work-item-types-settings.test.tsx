@@ -269,6 +269,21 @@ describe('JiraImportDialog Component', () => {
       expect(onOpenChange).toHaveBeenCalledWith(false);
     });
   });
+
+  it('calls onOpenChange(false) when Cancel button is clicked', async () => {
+    const onOpenChange = vi.fn();
+    render(
+      <JiraImportDialog
+        open={true}
+        onOpenChange={onOpenChange}
+        project={mockProject}
+      />
+    );
+
+    const cancelButton = screen.getByRole('button', { name: /Cancel/i });
+    fireEvent.click(cancelButton);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
 });
 
 describe('Hierarchy Resolution Rules', () => {

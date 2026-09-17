@@ -2,7 +2,11 @@ import { z } from 'zod';
 import type { projectsGetPayload } from '../../generated/prisma/models/projects.js';
 import type { project_membersGetPayload } from '../../generated/prisma/models/project_members.js';
 import { Constants } from '../../generated/supabase/database.types.js';
-import { ProjectStatus as ProjectStatusEnum } from '../../generated/prisma/enums.js';
+import {
+  ProjectStatus as ProjectStatusEnum,
+  type ProjectStatus,
+} from '../../generated/prisma/enums.js';
+import { UserRoleEnum, type UserRole } from '../../users.js';
 import { projectWorkflowConfigSchema } from './board-config.js';
 import {
   emptyToUndefined,
@@ -238,3 +242,38 @@ export const listProjectsQuerySchema = z.object({
 });
 
 export type ListProjectsQuery = z.infer<typeof listProjectsQuerySchema>;
+
+export type ProjectRegistryPermissions = {
+  role: UserRole;
+  canCreate: boolean;
+  canManage: boolean;
+  canPurge: boolean;
+};
+
+export function getProjectRegistryPermissions(
+  role: UserRole
+): ProjectRegistryPermissions {
+  const isAdmin = role === UserRoleEnum.admin;
+  const isManager = role === UserRoleEnum.manager;
+  return {
+    role,
+    canCreate: isAdmin,
+    canManage: isAdmin || isManager,
+    canPurge: isAdmin,
+  };
+}
+
+export type ActorProjectsSummary = {
+  id: string;
+  name: string;
+  key: string;
+  description: string | null;
+  status: ProjectStatus;
+};
+
+export type ListProjectsForActorResponse = {
+  projects: ActorProjectsSummary[];
+  totalCount: number;
+  userRole: UserRole;
+  permissions: ProjectRegistryPermissions;
+};
