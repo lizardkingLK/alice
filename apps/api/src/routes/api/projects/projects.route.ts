@@ -30,6 +30,7 @@ import {
   listProjectsQuerySchema,
   ProjectStatusEnum,
   jiraImportConfigSchema,
+  JiraImportActionEnum,
   type JiraImportConfig,
   type WorkItemType,
   WorkItemTypeEnum,
@@ -221,14 +222,17 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
       const mapping = typeMappings[rawType];
 
       // Handle ignore behavior: skip import
-      if (mapping?.action === 'ignore') {
+      if (mapping?.action === JiraImportActionEnum.Ignore) {
         continue;
       }
 
       let resolvedType: WorkItemType = issue.type;
-      if (mapping?.action === 'drop') {
+      if (mapping?.action === JiraImportActionEnum.Drop) {
         resolvedType = WorkItemTypeEnum.Issue;
-      } else if (mapping?.action === 'map' && mapping.targetType) {
+      } else if (
+        mapping?.action === JiraImportActionEnum.Map &&
+        mapping.targetType
+      ) {
         resolvedType = mapping.targetType;
       }
 

@@ -29,11 +29,13 @@ import {
 import {
   CANONICAL_HIERARCHY_ORDER,
   type WorkItemType,
+  WorkItemTypeEnum,
 } from '@repo/types';
-import type {
-  JiraImportAction,
-  JiraImportConfig,
-  ProjectWorkflowConfig,
+import {
+  JiraImportActionEnum,
+  type JiraImportAction,
+  type JiraImportConfig,
+  type ProjectWorkflowConfig,
 } from '@repo/types/api/v1';
 import {
   importJiraIssues,
@@ -56,24 +58,42 @@ interface TypeMappingState {
   targetType: WorkItemType;
 }
 
+/* eslint-disable no-unused-vars */
+export enum JiraKnownIssueType {
+  Epic = 'epic',
+  Feature = 'feature',
+  Story = 'story',
+  UserStory = 'user story',
+  Task = 'task',
+  Subtask = 'subtask',
+  SubTaskHyphen = 'sub-task',
+  Bug = 'bug',
+  Defect = 'defect',
+  Issue = 'issue',
+}
+/* eslint-enable no-unused-vars */
+
+const DEFAULT_JIRA_TYPE_MAPPING: Readonly<Record<string, WorkItemType>> = {
+  [JiraKnownIssueType.Epic]: WorkItemTypeEnum.Epic,
+  [JiraKnownIssueType.Feature]: WorkItemTypeEnum.Feature,
+  [JiraKnownIssueType.Story]: WorkItemTypeEnum.Story,
+  [JiraKnownIssueType.UserStory]: WorkItemTypeEnum.Story,
+  [JiraKnownIssueType.Task]: WorkItemTypeEnum.Task,
+  [JiraKnownIssueType.Subtask]: WorkItemTypeEnum.Task,
+  [JiraKnownIssueType.SubTaskHyphen]: WorkItemTypeEnum.Task,
+  [JiraKnownIssueType.Bug]: WorkItemTypeEnum.Issue,
+  [JiraKnownIssueType.Defect]: WorkItemTypeEnum.Issue,
+  [JiraKnownIssueType.Issue]: WorkItemTypeEnum.Issue,
+};
+
 function guessDefaultMapping(jiraType: string): TypeMappingState {
   const normalized = jiraType.trim().toLowerCase();
-  if (normalized === 'epic') {
-    return { action: 'map', targetType: 'Epic' };
-  }
-  if (normalized === 'feature') {
-    return { action: 'map', targetType: 'Feature' };
-  }
-  if (normalized === 'story' || normalized === 'user story') {
-    return { action: 'map', targetType: 'Story' };
-  }
-  if (normalized === 'task' || normalized === 'subtask' || normalized === 'sub-task') {
-    return { action: 'map', targetType: 'Task' };
-  }
-  if (normalized === 'bug' || normalized === 'defect' || normalized === 'issue') {
-    return { action: 'map', targetType: 'Issue' };
-  }
-  return { action: 'map', targetType: 'Task' };
+  const targetType =
+    DEFAULT_JIRA_TYPE_MAPPING[normalized] ?? WorkItemTypeEnum.Task;
+  return {
+    action: JiraImportActionEnum.Map,
+    targetType,
+  };
 }
 
 function hierarchyRecordToArray(
@@ -339,13 +359,19 @@ export function JiraImportDialog({
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="map">Map to ALICE type</SelectItem>
-                              <SelectItem value="ignore">Ignore (Skip)</SelectItem>
-                              <SelectItem value="drop">Drop type (Fallback to Issue)</SelectItem>
+                              <SelectItem value={JiraImportActionEnum.Map}>
+                                Map to ALICE type
+                              </SelectItem>
+                              <SelectItem value={JiraImportActionEnum.Ignore}>
+                                Ignore (Skip)
+                              </SelectItem>
+                              <SelectItem value={JiraImportActionEnum.Drop}>
+                                Drop type (Fallback to Issue)
+                              </SelectItem>
                             </SelectContent>
                           </Select>
 
-                          {current.action === 'map' && (
+                          {current.action === JiraImportActionEnum.Map && (
                             <div className="flex items-center gap-2 shrink-0">
                               <ArrowRight className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
                               <Select
@@ -368,13 +394,13 @@ export function JiraImportDialog({
                             </div>
                           )}
 
-                          {current.action === 'ignore' && (
+                          {current.action === JiraImportActionEnum.Ignore && (
                             <span className="text-muted-foreground text-xs italic shrink-0 w-44 text-right">
                               Skipped (parent cleared)
                             </span>
                           )}
 
-                          {current.action === 'drop' && (
+                          {current.action === JiraImportActionEnum.Drop && (
                             <span className="text-muted-foreground text-xs italic shrink-0 w-44 text-right">
                               Issue (parent cleared)
                             </span>

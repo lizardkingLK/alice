@@ -1,7 +1,17 @@
 import { z } from 'zod';
 import { Constants } from '../../generated/supabase/database.types.js';
 
-export const jiraImportActionSchema = z.enum(['map', 'ignore', 'drop']);
+export enum JiraImportActionEnum {
+  Map = 'map',
+  Ignore = 'ignore',
+  Drop = 'drop',
+}
+
+export const jiraImportActionSchema = z.enum([
+  JiraImportActionEnum.Map,
+  JiraImportActionEnum.Ignore,
+  JiraImportActionEnum.Drop,
+]);
 export type JiraImportAction = z.infer<typeof jiraImportActionSchema>;
 
 export const jiraImportTypeBehaviorSchema = z.object({
