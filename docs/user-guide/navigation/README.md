@@ -21,19 +21,18 @@ Find your way around Alice — sidebar, dashboard, shortcuts, and saved views.
 
 After sign-in, the left sidebar organizes the app:
 
-| Group         | Examples                                                               |
-| ------------- | ---------------------------------------------------------------------- |
-| **Platform**  | Overview, Charts, Backlog, Board, Work Items, My Work, Alice, Views    |
-| **Favorites** | Pages you starred (appears when you have at least one)                 |
-| **Projects**  | Projects list (open a project for Details, Work Items, **Sprints**, …) |
-| **System**    | **Users** (admins only)                                                |
-| **Account**   | Profile, Settings                                                      |
-| **Help**      | Help, Docs, Roadmap                                                    |
+| Group         | Examples                                                                                              |
+| ------------- | ----------------------------------------------------------------------------------------------------- |
+| **Favorites** | Pages you starred (appears at the top when you have at least one)                                     |
+| **Platform**  | Overview, Backlog, Board, Work Items, My Work, Alice, Views, Charts; **Projects**; **Users** (admins) |
+| **Account**   | Profile, Settings                                                                                     |
+| **Help**      | Help, Docs, Roadmap                                                                                   |
 
 Select any item to open that area. Collapse or expand the sidebar with the
-trigger at the top or **Ctrl/⌘+B**. Alice remembers your preference (cookie) and
-applies it on load for every dashboard page — Docs, Settings, and Profile no
-longer force the sidebar closed.
+trigger at the top or **Ctrl/⌘+B**. When the sidebar is collapsed to icons,
+hover an icon to see its name; scroll if the list is long. Alice remembers your
+preference (cookie) and applies it on load for every dashboard page — Docs,
+Settings, and Profile no longer force the sidebar closed.
 
 ---
 

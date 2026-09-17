@@ -242,5 +242,27 @@ export const chatDeleteResponseSchema = z.object({
 
 export type ChatDeleteResponse = z.infer<typeof chatDeleteResponseSchema>;
 
+export const renameChatConversationBodySchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1, 'Title is required')
+    .max(120, 'Title must be 120 characters or fewer'),
+});
+
+export type RenameChatConversationBody = z.infer<
+  typeof renameChatConversationBodySchema
+>;
+
+export const renameChatConversationResponseSchema = z.object({
+  id: z.uuid(),
+  title: z.string(),
+  updated_at: z.string(),
+});
+
+export type RenameChatConversationResponse = z.infer<
+  typeof renameChatConversationResponseSchema
+>;
+
 /** Back-compat aliases for routes importing legacy schema names. */
 export const postChatMessageSchema = postChatMessageBodySchema;

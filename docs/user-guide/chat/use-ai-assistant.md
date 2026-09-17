@@ -20,8 +20,9 @@ Chat with Alice to inspect and create workspace data.
    for a new line).
 5. Read Alice's reply on the left; your messages appear on the right.
 
-Use **New Chat** to start a fresh conversation. Open the history sidebar to switch
-or delete past threads.
+Use **New Chat** to start a fresh conversation. Open the history sidebar to
+switch, **rename**, or delete past threads. When a conversation is open, the
+header breadcrumb shows **Dashboard → Chat →** that chat’s title.
 
 ---
 

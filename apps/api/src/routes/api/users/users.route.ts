@@ -90,6 +90,9 @@ export function createUsersRouter(deps: UsersRouterDeps) {
         res.json({ user });
       } catch (error) {
         if (trySendOptimisticLockError(res, error)) return;
+        if (isUsersServiceError(error)) {
+          return res.status(error.status).json({ error: error.message });
+        }
         const message =
           error instanceof Error ? error.message : 'Failed to update user';
         res.status(500).json({ error: message });

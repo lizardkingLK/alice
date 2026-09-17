@@ -49,11 +49,11 @@ Related:
 
 ## UX surfaces
 
-| Surface         | Location                                  | Behavior                                                                                                                      |
-| --------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Full page       | `/chat`                                   | Edge-to-edge in the dashboard shell (no card chrome); toggleable history sidebar; New Chat, delete, suggestions, action cards |
-| Navbar launcher | All `DashboardShell` pages except `/chat` | Header control between notifications and profile → right drawer; same `ChatClient` (`variant="drawer"`)                       |
-| Nav             | Platform → **Alice** (`Sparkles` icon)    | Links to `/chat`                                                                                                              |
+| Surface         | Location                                  | Behavior                                                                                                                                                                  |
+| --------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Full page       | `/chat`                                   | Edge-to-edge in the dashboard shell (no card chrome); toggleable history sidebar; New Chat, rename, delete; breadcrumb shows active chat title; suggestions, action cards |
+| Navbar launcher | All `DashboardShell` pages except `/chat` | Header control between notifications and profile → right drawer; same `ChatClient` (`variant="drawer"`)                                                                   |
+| Nav             | Platform → **Alice** (`Sparkles` icon)    | Links to `/chat`                                                                                                                                                          |
 
 Empty-state suggestions cover common flows (e.g. create a bug, list projects).
 Successful mutations can render **executed action** cards with deep links to
@@ -85,7 +85,10 @@ Main **Alice** toolbar has a fixed `h-14` height.
 
 `/chat` uses `Suspense` + `safeServerFetch(getChatPageBootstrap())` so the
 shell streams first; the client receives bootstrap props and **does not**
-`useEffect`-fetch the same data again.
+`useEffect`-fetch the same data again. The page keys `ChatClient` by
+`conversationId` so Favorites / query changes remount the correct thread. When
+`?conversationId=` is set but the conversation is missing (deleted or not
+owned), bootstrap returns `not_found` and the route calls `notFound()`.
 
 ---
 
@@ -121,6 +124,7 @@ All routes require `requireApiAuth`. Wired via composition root
 | `POST`   | `/api/v1/chat/attachments`                | Multipart fallback upload                                          |
 | `GET`    | `/api/v1/chat`                            | Latest conversation history from Storage (or empty)                |
 | `GET`    | `/api/v1/chat/:conversationId`            | Load one conversation’s history from Storage                       |
+| `PATCH`  | `/api/v1/chat/:conversationId`            | Rename conversation (`{ title }`)                                  |
 | `DELETE` | `/api/v1/chat/:conversationId`            | Delete conversation row (+ best-effort Storage remove)             |
 | `POST`   | `/api/v1/chat`                            | Send messages; run agent loop; return assistant reply              |
 

@@ -8,6 +8,7 @@ import {
 import { getCachedUserList } from '@/lib/cache/dropdown-cache';
 import { createUsersService } from './users.mutations.shared';
 import type { GetUsersPaginatedResponse, User } from './users.mutations.shared';
+import { filterProductUsableUsers } from '@repo/types';
 
 const service = createUsersService(apiFetch);
 
@@ -54,6 +55,25 @@ export async function getUsersListPaginated(
   );
 
   return { users, ...meta };
+}
+
+/** Product-usable admins (active kill switch + active membership). */
+export async function getActiveAdminCount(): Promise<number> {
+  const supabase = await createClient();
+  const { count, error } = await filterProductUsableUsers(
+    supabase
+      .from('users')
+      .select('id', { count: 'exact', head: true })
+      .eq('role', 'admin')
+  );
+
+  throwIfError(
+    error,
+    'failed to count active admins',
+    'Failed to count active admins'
+  );
+
+  return count ?? 0;
 }
 
 /**

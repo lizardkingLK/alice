@@ -2,6 +2,7 @@ import { getDbUser } from '@/lib/auth';
 import { isAdmin } from '@/lib/rbac/roles';
 import { UsersWorkspace } from '@/app/users/_components/users-workspace';
 import {
+  getActiveAdminCount,
   getUsersListPaginated,
   type User,
 } from '@/app/users/_services/users.reads.server';
@@ -78,6 +79,7 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
 
   const [
     usersData,
+    activeAdminCount,
     allowlistData,
     requestsData,
     projects,
@@ -92,6 +94,9 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
       EMPTY_USERS,
       'fetch users list'
     ),
+    allowlistEnabled
+      ? safeServerFetch(getActiveAdminCount(), 0, 'count active admins')
+      : Promise.resolve(0),
     allowlistEnabled
       ? safeServerFetch(
           listAccessAllowlist({
@@ -142,6 +147,7 @@ export async function UsersData({ searchParams }: Readonly<UsersDataProps>) {
       search={parsed.search}
       currentUserId={dbUser?.id}
       currentUserRole={currentUserRole}
+      activeAdminCount={activeAdminCount}
       allowlistEntries={allowlistData.items}
       allowlistTotalCount={allowlistData.totalCount}
       allowlistPage={allowlistData.page}

@@ -1707,6 +1707,22 @@ export class ChatService {
     }
   }
 
+  async renameConversation(
+    userId: string,
+    conversationId: string,
+    title: string
+  ): Promise<{ id: string; title: string; updated_at: string }> {
+    const updated = await this.chat.renameConversation(
+      userId,
+      conversationId,
+      title
+    );
+    if (!updated) {
+      throw new Error('Conversation not found');
+    }
+    return updated;
+  }
+
   async loadWorkspaceContext() {
     const [users, activeSprints] = await Promise.all([
       this.chat.listUsersSnapshot(),

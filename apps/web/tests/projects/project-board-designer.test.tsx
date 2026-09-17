@@ -110,7 +110,12 @@ describe('BoardDesignerWorkspace', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
     await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
 
-    expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    // Wait for isSaving to clear — label is "Saving…" while the mutation settles.
+    const saveButton = await screen.findByRole('button', {
+      name: 'Save changes',
+    });
+    expect(saveButton).toBeDisabled();
+
     fireEvent.change(name, { target: { value: 'Inbox' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
     await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(2));

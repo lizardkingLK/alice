@@ -40,6 +40,12 @@ export function DashboardPageMeta({
   const runtime = useDashboardBreadcrumbRuntime();
 
   const resolvedOverrides = useMemo(() => {
+    if (runtime?.trailOverride && runtime.trailOverride.length > 0) {
+      return applyRuntimeBreadcrumbLabels(
+        runtime.trailOverride,
+        runtime.segmentLabelsByUrl
+      );
+    }
     const base = breadcrumbAsTrail
       ? resolveDashboardBreadcrumbTrail(breadcrumbOverrides)
       : resolveDashboardBreadcrumbItems(pathname, breadcrumbOverrides);
@@ -49,6 +55,7 @@ export function DashboardPageMeta({
     breadcrumbOverrides,
     pathname,
     runtime?.segmentLabelsByUrl,
+    runtime?.trailOverride,
   ]);
 
   const breadcrumbLabel = resolvedOverrides.at(-1)?.label ?? pathname;

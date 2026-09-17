@@ -69,6 +69,7 @@ interface UserRegistryProps {
   readonly search: string;
   readonly currentUserId?: string | null;
   readonly currentUserRole?: string | null;
+  readonly activeAdminCount?: number;
 }
 
 type UserRow = Row<User>;
@@ -322,6 +323,7 @@ export function UserRegistry({
   search,
   currentUserId,
   currentUserRole,
+  activeAdminCount = 0,
 }: Readonly<UserRegistryProps>) {
   const { handlePageChange, handleLimitChange, router } =
     usePaginationNavigation(totalPages, limit);
@@ -536,6 +538,8 @@ export function UserRegistry({
           {editingUser ? (
             <UserForm
               user={editingUser}
+              currentUserId={currentUserId}
+              activeAdminCount={activeAdminCount}
               onClose={() => setEditingUser(null)}
               onSuccess={() => {
                 setEditingUser(null);

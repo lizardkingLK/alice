@@ -13,6 +13,21 @@ See work by status and drag cards to update progress.
 
 ---
 
+## Layout
+
+Use the **Layout** icon (grid) in the board toolbar:
+
+| Layout      | What you see                                               |
+| ----------- | ---------------------------------------------------------- |
+| **Board**   | Classic Kanban columns (default)                           |
+| **Grouped** | One collapsible table per board column (Charts-style list) |
+
+Your choice is remembered in the browser for your account. In **Grouped**
+layout, drag a row onto another column group to update status — same rules as
+dragging cards on the board.
+
+---
+
 ## Columns
 
 Cards group by status:
