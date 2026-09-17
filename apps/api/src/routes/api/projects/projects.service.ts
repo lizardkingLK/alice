@@ -216,7 +216,7 @@ export class ProjectsService {
     const preparedWithWorkflow: CreateProjectInput = {
       ...prepared,
       workflow_config: {
-        ...(workflowConfig || {}),
+        ...workflowConfig,
         work_item_types: workItemTypes,
       },
     };

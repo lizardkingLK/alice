@@ -466,7 +466,7 @@ export class ProjectsRepository {
       WorkItemTypeEnum.Issue
     )
       ? WorkItemTypeEnum.Issue
-      : (allowedTypes[allowedTypes.length - 1] ?? WorkItemTypeEnum.Issue);
+      : (allowedTypes.at(-1) ?? WorkItemTypeEnum.Issue);
 
     const { parentToChild } = resolveProjectHierarchy(
       allowedTypes,

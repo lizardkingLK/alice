@@ -87,7 +87,7 @@ export function ProjectSettingsTab({
     setFeedback(null);
 
     const mergedWorkflowConfig: ProjectWorkflowConfig = {
-      ...(existingConfig || {}),
+      ...existingConfig,
       work_item_types: selectedTypes,
     };
 

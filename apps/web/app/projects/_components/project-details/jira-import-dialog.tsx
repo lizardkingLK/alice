@@ -517,7 +517,7 @@ export function JiraImportDialog({
                 <Info className="text-primary mt-0.5 h-4 w-4 shrink-0" />
                 <div className="space-y-1 text-muted-foreground">
                   <p>
-                    <strong className="text-foreground">Hierarchy rules: </strong>
+                    <strong className="text-foreground">Hierarchy rules:</strong>{' '}
                     Parent-child links are established strictly according to the configured hierarchy.
                     If a parent issue is ignored or of an invalid type, its children will be imported with their parent link cleared (<code className="text-[11px]">parent_id = null</code>).
                   </p>

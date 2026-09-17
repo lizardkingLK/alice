@@ -405,7 +405,7 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
         if (config?.hierarchy && config.hierarchy.length > 0) {
           const project = await projectsService.getProjectById(id);
           const existingConfig =
-            (project.workflow_config as Record<string, unknown> | null) || {};
+            project.workflow_config as Record<string, unknown> | null;
           customHierarchyMap = {};
           for (let i = 0; i < config.hierarchy.length - 1; i++) {
             customHierarchyMap[config.hierarchy[i]!] = config.hierarchy[i + 1]!;

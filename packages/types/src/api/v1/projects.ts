@@ -3,10 +3,7 @@ import type { projectsGetPayload } from '../../generated/prisma/models/projects.
 import type { project_membersGetPayload } from '../../generated/prisma/models/project_members.js';
 import { Constants } from '../../generated/supabase/database.types.js';
 import { ProjectStatus as ProjectStatusEnum } from '../../generated/prisma/enums.js';
-import {
-  projectWorkflowConfigSchema,
-  type ProjectWorkflowConfig,
-} from './board-config.js';
+import { projectWorkflowConfigSchema } from './board-config.js';
 import {
   emptyToUndefined,
   paginatedListLimitField,
@@ -15,7 +12,8 @@ import {
 import { ProjectFieldsConfigSchema } from './dynamic-fields.js';
 
 export * from './jira-import-types.js';
-export { projectWorkflowConfigSchema, type ProjectWorkflowConfig };
+export { projectWorkflowConfigSchema };
+export type { ProjectWorkflowConfig } from './board-config.js';
 
 export {
   DynamicFieldTypeEnum,

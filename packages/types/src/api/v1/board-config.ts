@@ -86,6 +86,42 @@ function validateStatusCoverage(
   }
 }
 
+function validateBoardTransitions(
+  columns: z.infer<typeof boardColumnsSchema>,
+  transitions: z.infer<typeof boardTransitionSchema>[],
+  context: z.RefinementCtx
+): void {
+  const columnIds = new Set(columns.map((column) => column.id));
+  const transitionPairs = new Set<string>();
+
+  transitions.forEach((transition, index) => {
+    if (!columnIds.has(transition.fromColumnId)) {
+      context.addIssue({
+        code: 'custom',
+        path: ['transitions', index, 'fromColumnId'],
+        message: 'Source column must exist in this board',
+      });
+    }
+    if (!columnIds.has(transition.toColumnId)) {
+      context.addIssue({
+        code: 'custom',
+        path: ['transitions', index, 'toColumnId'],
+        message: 'Destination column must exist in this board',
+      });
+    }
+
+    const pair = `${transition.fromColumnId}\u0000${transition.toColumnId}`;
+    if (transitionPairs.has(pair)) {
+      context.addIssue({
+        code: 'custom',
+        path: ['transitions', index],
+        message: 'Only one rule is allowed for each board transition',
+      });
+    }
+    transitionPairs.add(pair);
+  });
+}
+
 export const boardConfigV1Schema = z
   .object({
     version: z.literal('1'),
@@ -103,36 +139,7 @@ export const boardConfigV2Schema = z
   })
   .superRefine((config, context) => {
     validateStatusCoverage(config.columns, context);
-
-    const columnIds = new Set(config.columns.map((column) => column.id));
-    const transitionPairs = new Set<string>();
-
-    config.transitions.forEach((transition, index) => {
-      if (!columnIds.has(transition.fromColumnId)) {
-        context.addIssue({
-          code: 'custom',
-          path: ['transitions', index, 'fromColumnId'],
-          message: 'Source column must exist in this board',
-        });
-      }
-      if (!columnIds.has(transition.toColumnId)) {
-        context.addIssue({
-          code: 'custom',
-          path: ['transitions', index, 'toColumnId'],
-          message: 'Destination column must exist in this board',
-        });
-      }
-
-      const pair = `${transition.fromColumnId}\u0000${transition.toColumnId}`;
-      if (transitionPairs.has(pair)) {
-        context.addIssue({
-          code: 'custom',
-          path: ['transitions', index],
-          message: 'Only one rule is allowed for each board transition',
-        });
-      }
-      transitionPairs.add(pair);
-    });
+    validateBoardTransitions(config.columns, config.transitions, context);
   });
 
 /** Persisted board configuration. Version 1 intentionally has no rules. */
@@ -157,33 +164,7 @@ export const projectWorkflowConfigSchema = z
     if (config.version && config.columns) {
       validateStatusCoverage(config.columns, context);
       if (config.version === '2' && config.transitions) {
-        const columnIds = new Set(config.columns.map((c) => c.id));
-        const transitionPairs = new Set<string>();
-        config.transitions.forEach((transition, index) => {
-          if (!columnIds.has(transition.fromColumnId)) {
-            context.addIssue({
-              code: 'custom',
-              path: ['transitions', index, 'fromColumnId'],
-              message: 'Source column must exist in this board',
-            });
-          }
-          if (!columnIds.has(transition.toColumnId)) {
-            context.addIssue({
-              code: 'custom',
-              path: ['transitions', index, 'toColumnId'],
-              message: 'Destination column must exist in this board',
-            });
-          }
-          const pairKey = `${transition.fromColumnId}->${transition.toColumnId}`;
-          if (transitionPairs.has(pairKey)) {
-            context.addIssue({
-              code: 'custom',
-              path: ['transitions', index],
-              message: 'Duplicate transition between the same columns',
-            });
-          }
-          transitionPairs.add(pairKey);
-        });
+        validateBoardTransitions(config.columns, config.transitions, context);
       }
     }
   });
