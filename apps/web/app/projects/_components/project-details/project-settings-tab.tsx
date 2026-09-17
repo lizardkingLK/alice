@@ -18,6 +18,7 @@ import {
   Loader2,
   Settings,
 } from '@repo/ui/lib/icons';
+import { cn } from '@repo/ui/lib/utils';
 import {
   CANONICAL_HIERARCHY_ORDER,
   type WorkItemType,
@@ -156,11 +157,12 @@ export function ProjectSettingsTab({
           <form onSubmit={handleSave} className="space-y-6">
             {feedback && (
               <div
-                className={`flex items-center gap-2 rounded-md p-3 text-sm ${
+                className={cn(
+                  'flex items-center gap-2 rounded-md p-3 text-sm',
                   feedback.type === 'success'
                     ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
                     : 'border-destructive/20 bg-destructive/10 text-destructive'
-                }`}
+                )}
               >
                 {feedback.type === 'success' ? (
                   <CheckCircle2 className="h-4 w-4 shrink-0" />
@@ -181,11 +183,12 @@ export function ProjectSettingsTab({
                     <label
                       key={type}
                       htmlFor={`type-checkbox-${type}`}
-                      className={`border-border flex cursor-pointer items-center gap-3 rounded-lg border p-3.5 transition-colors ${
+                      className={cn(
+                        'border-border flex cursor-pointer items-center gap-3 rounded-lg border p-3.5 transition-colors',
                         isChecked
                           ? 'border-primary/50 bg-primary/5'
                           : 'bg-muted/10 opacity-75 hover:opacity-100'
-                      }`}
+                      )}
                     >
                       <Checkbox
                         id={`type-checkbox-${type}`}
