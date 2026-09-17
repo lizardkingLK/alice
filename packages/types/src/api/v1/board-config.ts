@@ -7,6 +7,8 @@ import {
 } from '../../work-item-status.js';
 
 export const BOARD_MOVE_FORBIDDEN_CODE = 'BOARD_MOVE_FORBIDDEN' as const;
+export const STATUS_TRANSITION_FORBIDDEN_CODE =
+  'STATUS_TRANSITION_FORBIDDEN' as const;
 
 const boardWorkItemStatusSchema = z.enum(BOARD_WORK_ITEM_STATUSES, {
   message: 'Please select a valid board status',

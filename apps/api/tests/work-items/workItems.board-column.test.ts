@@ -238,6 +238,26 @@ describe('WorkItemService board-column validation', () => {
     ).resolves.toMatchObject({ board_column_id: 'code-review' });
   });
 
+  it('still enforces a same-status board move when status rules are configured', async () => {
+    getProjectWorkflowConfigMock.mockResolvedValue({
+      ...ruleBoard([{ scope: 'role', role: 'manager' }]),
+      statusTransitions: [
+        {
+          fromStatus: 'ToDo',
+          toStatus: 'InProgress',
+          allowAnyOf: [{ scope: 'role', role: 'member' }],
+        },
+      ],
+    });
+
+    await expect(
+      service.updateWorkItem(ACTOR_ID, WORK_ITEM_ID, updateInput(), LOCK)
+    ).rejects.toBeInstanceOf(BoardMoveForbiddenError);
+
+    expect(getBoardActorContextMock).toHaveBeenCalledOnce();
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
   it('allows an exact matching role', async () => {
     getProjectWorkflowConfigMock.mockResolvedValue(
       ruleBoard([{ scope: 'role', role: 'manager' }])

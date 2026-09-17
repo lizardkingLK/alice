@@ -7,6 +7,7 @@ import {
 import { trySendOptimisticLockError } from '../../../lib/optimistic-lock';
 import {
   BoardMoveForbiddenError,
+  StatusTransitionForbiddenError,
   WorkItemAccessError,
   WorkItemValidationError,
 } from './workItems.errors';
@@ -137,10 +138,15 @@ function sendWorkItemMutationError(
 
   const message = error instanceof Error ? error.message : fallbackMessage;
   if (error instanceof WorkItemAccessError) {
+    const code =
+      error instanceof BoardMoveForbiddenError ||
+      error instanceof StatusTransitionForbiddenError
+        ? error.code
+        : undefined;
     return res.status(403).json({
       data: null,
       error: message,
-      ...(error instanceof BoardMoveForbiddenError ? { code: error.code } : {}),
+      ...(code ? { code } : {}),
     });
   }
   if (

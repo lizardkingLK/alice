@@ -1,10 +1,12 @@
 import {
   boardConfigSchema,
   findBoardTransition,
+  findStatusTransition,
   getAllowedChildType,
   normalizeBoardConfig,
   resolveBoardDestinationColumn,
   resolveBoardSourceColumn,
+  type BoardRuleMatcher,
   type WorkItemType,
   parseWorkItemLabels,
   paginationMeta,
@@ -19,7 +21,11 @@ import { requireUserWithRole } from '../../../lib/auth-helpers';
 import { env } from '../../../config/env';
 import { removeStorageObjects } from '../../../lib/file-helpers';
 import { WorkItemRepository } from './workItems.repository';
-import type { DbWorkItem, DbGithubPullRequest } from './workItems.repository';
+import type {
+  BoardActorContext,
+  DbWorkItem,
+  DbGithubPullRequest,
+} from './workItems.repository';
 import type { WorkItemPaginatedList } from './workItems.prisma-query';
 import { sameNullable } from './workItems.patch-utils';
 import {
@@ -29,6 +35,7 @@ import {
 } from './workItems.schemas';
 import {
   BoardMoveForbiddenError,
+  StatusTransitionForbiddenError,
   WorkItemValidationError,
 } from './workItems.errors';
 import { prisma } from '../../../lib/prisma';
@@ -88,6 +95,28 @@ export const WorkItemDefaults = {
   UNASSIGNED: 'Unassigned',
   USER: 'User',
 } as const;
+
+function doesTransitionRuleAllowActor(
+  allowAnyOf: readonly BoardRuleMatcher[],
+  actor: BoardActorContext | null,
+  actorId: string
+): boolean {
+  if (!actor) return false;
+
+  const activeTeamIds = new Set(
+    actor.activeTeamIds.map((teamId) => teamId.toLowerCase())
+  );
+  return allowAnyOf.some((matcher) => {
+    if (matcher.scope === 'role') return matcher.role === actor.role;
+    if (matcher.scope === 'team') {
+      return activeTeamIds.has(matcher.teamId.toLowerCase());
+    }
+    return (
+      actor.isActiveProjectMember &&
+      matcher.userId.toLowerCase() === actorId.toLowerCase()
+    );
+  });
+}
 
 export class WorkItemService {
   constructor(private readonly workItems: WorkItemRepository) {}
@@ -200,11 +229,25 @@ export class WorkItemService {
 
     const current = await this.workItems.getById(workItemId);
 
-    const boardMove = await this.resolveBoardMove(current, input);
-    await this.assertBoardTransitionAllowed(
+    const statusChanged = current.status !== input.status;
+    const workflow = await this.resolveWorkflowValidation(current, input);
+    const boardTransition =
+      workflow.config && workflow.boardMove
+        ? findBoardTransition(
+            workflow.config,
+            workflow.boardMove.source.id,
+            workflow.boardMove.destination.id
+          )
+        : null;
+    const statusTransition =
+      statusChanged && workflow.config
+        ? findStatusTransition(workflow.config, current.status, input.status)
+        : null;
+    await this.assertWorkflowTransitionsAllowed(
       userId,
       current.project_id,
-      boardMove
+      boardTransition,
+      statusTransition
     );
 
     if (!sameNullable(input.parent_id, current?.parent_id)) {
@@ -267,7 +310,7 @@ export class WorkItemService {
     return updated;
   }
 
-  private async resolveBoardMove(
+  private async resolveWorkflowValidation(
     current: DbWorkItem,
     input: WorkItemUpdateBody
   ) {
@@ -277,14 +320,14 @@ export class WorkItemService {
           'Board column placement cannot be carried to another project'
         );
       }
-      return null;
+      return { config: null, boardMove: null };
     }
 
-    const placementChanged =
-      current.status !== input.status ||
-      current.board_column_id !== input.board_column_id;
-    if (!placementChanged) {
-      return null;
+    const statusChanged = current.status !== input.status;
+    const boardPlacementChanged =
+      statusChanged || current.board_column_id !== input.board_column_id;
+    if (!boardPlacementChanged) {
+      return { config: null, boardMove: null };
     }
 
     const workflowConfig = await this.workItems.getProjectWorkflowConfig(
@@ -297,7 +340,7 @@ export class WorkItemService {
           'This project does not have a valid custom board configuration'
         );
       }
-      return null;
+      return { config: null, boardMove: null };
     }
 
     const config = normalizeBoardConfig(parsed.data);
@@ -328,42 +371,33 @@ export class WorkItemService {
     }
 
     const source = resolveBoardSourceColumn(current, config.columns);
-    if (!source || source.id === destination.id) return null;
+    const boardMove =
+      source && source.id !== destination.id ? { source, destination } : null;
 
-    return { config, source, destination };
+    return { config, boardMove };
   }
 
-  private async assertBoardTransitionAllowed(
+  private async assertWorkflowTransitionsAllowed(
     actorId: string,
     projectId: string,
-    move: Awaited<ReturnType<WorkItemService['resolveBoardMove']>>
+    boardTransition: ReturnType<typeof findBoardTransition>,
+    statusTransition: ReturnType<typeof findStatusTransition>
   ): Promise<void> {
-    if (!move) return;
-
-    const transition = findBoardTransition(
-      move.config,
-      move.source.id,
-      move.destination.id
-    );
-    if (!transition) return;
+    if (!boardTransition && !statusTransition) return;
 
     const actor = await this.workItems.getBoardActorContext(actorId, projectId);
-    const activeTeamIds = new Set(
-      actor?.activeTeamIds.map((teamId) => teamId.toLowerCase()) ?? []
-    );
-    const allowed = transition.allowAnyOf.some((matcher) => {
-      if (!actor) return false;
-      if (matcher.scope === 'role') return matcher.role === actor.role;
-      if (matcher.scope === 'team') {
-        return activeTeamIds.has(matcher.teamId.toLowerCase());
-      }
-      return (
-        actor.isActiveProjectMember &&
-        matcher.userId.toLowerCase() === actorId.toLowerCase()
-      );
-    });
-
-    if (!allowed) throw new BoardMoveForbiddenError();
+    if (
+      boardTransition &&
+      !doesTransitionRuleAllowActor(boardTransition.allowAnyOf, actor, actorId)
+    ) {
+      throw new BoardMoveForbiddenError();
+    }
+    if (
+      statusTransition &&
+      !doesTransitionRuleAllowActor(statusTransition.allowAnyOf, actor, actorId)
+    ) {
+      throw new StatusTransitionForbiddenError();
+    }
   }
 
   private async createWorkItemUpdateWorklog(params: {

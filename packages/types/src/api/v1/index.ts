@@ -8,6 +8,7 @@ export {
 } from './health.js';
 export {
   BOARD_MOVE_FORBIDDEN_CODE,
+  STATUS_TRANSITION_FORBIDDEN_CODE,
   boardConfigV1Schema,
   boardConfigV2Schema,
   boardColumnSchema,
