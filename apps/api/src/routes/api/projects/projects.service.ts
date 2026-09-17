@@ -1,7 +1,9 @@
-import { requireUserWithRole } from '../../../lib/auth-helpers';
+import { getActorUser, requireUserWithRole } from '../../../lib/auth-helpers';
 import {
   ProjectStatusEnum,
   UserRoleEnum,
+  getProjectRegistryPermissions,
+  type ListProjectsForActorResponse,
   type ListProjectsQuery,
   type ProjectListRow,
   type ProjectDetailRow,
@@ -10,6 +12,7 @@ import {
   CANONICAL_HIERARCHY_ORDER,
   type ProjectWorkflowConfig,
 } from '@repo/types';
+import type { ProjectStatus } from '@repo/types/prisma';
 import { uploadPublicImageReplacingPrevious } from '../../../lib/public-image-upload';
 import { encryptSecretIfPresent } from '../../../lib/secrets/token-crypto';
 import type { ProjectsRepository } from './projects.repository';
@@ -111,6 +114,41 @@ export class ProjectsService {
       page: query.page,
       limit: query.limit,
     });
+  }
+
+  async listProjectsForActor(
+    actorId: string,
+    options?: {
+      status?: ProjectStatus;
+      search?: string;
+    }
+  ): Promise<ListProjectsForActorResponse> {
+    const user = await getActorUser(actorId);
+    const permissions = getProjectRegistryPermissions(user.role);
+    const accessible =
+      await this.projectsRepository.listAccessibleProjectIds(actorId);
+
+    if (accessible.length === 0) {
+      return {
+        projects: [],
+        totalCount: 0,
+        userRole: user.role,
+        permissions,
+      };
+    }
+
+    const projects = await this.projectsRepository.listAccessibleSummaries({
+      accessibleIds: accessible,
+      status: options?.status ?? (ProjectStatusEnum.active as ProjectStatus),
+      search: options?.search,
+    });
+
+    return {
+      projects,
+      totalCount: projects.length,
+      userRole: user.role,
+      permissions,
+    };
   }
 
   async getProjectDetail(

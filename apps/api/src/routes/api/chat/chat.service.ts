@@ -24,7 +24,6 @@ import type { SprintsService } from '../sprints/sprints.service';
 import type { ProjectsService } from '../projects/projects.service';
 import type { ProjectsRepository } from '../projects/projects.repository';
 import type { TeamsRepository } from '../teams/teams.repository';
-import type { ProjectRowWithOwner } from '../projects/projects.types';
 import type { IntegrationsService } from '../integrations/integrations.service';
 import type { ResolvedChatModelConfig } from '../integrations/chat-providers/chat-provider.types';
 import { resolveChatProvider } from '../integrations/chat-providers/resolve-chat-provider';
@@ -60,7 +59,10 @@ export type ChatServiceDeps = {
   deduplicationAgent?: WorkItemDeduplicationAgent;
   workItemService: Pick<WorkItemService, 'createWorkItem'>;
   sprintsService: Pick<SprintsService, 'createSprint'>;
-  projectsService: Pick<ProjectsService, 'createProject' | 'getProjectDetail'>;
+  projectsService: Pick<
+    ProjectsService,
+    'createProject' | 'getProjectDetail' | 'listProjectsForActor'
+  >;
   projectsRepository: Pick<
     ProjectsRepository,
     'listAll' | 'findById' | 'listActiveBoardMembers'
@@ -938,7 +940,7 @@ export class ChatService {
     history: StoredChatMessage[]
   ): Promise<unknown> {
     const toolHandlers: Record<string, () => Promise<unknown>> = {
-      list_projects: () => this.handleListProjects(),
+      list_projects: () => this.handleListProjects(userId),
       create_project: () =>
         this.handleCreateProject(userId, args, toolActionsPerformed),
       list_sprints: () => this.handleListSprints(args),
@@ -973,9 +975,20 @@ export class ChatService {
     return handler();
   }
 
-  private async handleListProjects(): Promise<unknown> {
-    const projects = await this.deps.projectsRepository.listAll();
-    return projects.map((p) => ({ id: p.id, name: p.name, key: p.key }));
+  private async handleListProjects(userId: string): Promise<unknown> {
+    const result = await this.deps.projectsService.listProjectsForActor(userId);
+    return {
+      userRole: result.userRole,
+      permissions: result.permissions,
+      totalCount: result.totalCount,
+      projects: result.projects.map((p) => ({
+        id: p.id,
+        name: p.name,
+        key: p.key,
+        description: p.description,
+        status: p.status,
+      })),
+    };
   }
 
   private async loadBoardEntities(userId: string, projectId: string) {
@@ -1749,12 +1762,14 @@ export class ChatService {
       return { role, parts };
     });
 
-    const [projectsRaw, workspace] = await Promise.all([
-      this.deps.projectsRepository.listAll().catch(() => []),
+    const [actorProjectsSummary, workspace] = await Promise.all([
+      this.deps.projectsService
+        .listProjectsForActor(userId)
+        .catch(() => null),
       this.loadWorkspaceContext(),
     ]);
 
-    const projects = (projectsRaw || []) as ProjectRowWithOwner[];
+    const projects = actorProjectsSummary?.projects ?? [];
     const { users, activeSprints: sprints } = workspace;
 
     const allAttachments = history.flatMap((m) => m.attachments || []);

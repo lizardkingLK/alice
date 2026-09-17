@@ -12,6 +12,7 @@ import {
   type WorkItemType,
   WorkItemTypeEnum,
   resolveProjectHierarchy,
+  type ActorProjectsSummary,
 } from '@repo/types';
 import { Prisma, ProjectStatus, RecordStatus } from '@repo/types/prisma';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -117,6 +118,60 @@ export class ProjectsRepository {
 
   async listAccessibleProjectIds(actorId: string): Promise<string[]> {
     return listAccessibleProjectIds(this.db, actorId);
+  }
+
+  async listAccessibleSummaries(input: {
+    accessibleIds: string[];
+    status?: ProjectStatus;
+    search?: string;
+  }): Promise<ActorProjectsSummary[]> {
+    const where: Prisma.projectsWhereInput = {
+      id: { in: input.accessibleIds },
+    };
+
+    if (input.status === ProjectStatus.archived) {
+      where.deleted_at = { not: null };
+    } else {
+      where.deleted_at = null;
+    }
+
+    const term = input.search?.trim();
+    if (term) {
+      where.OR = [
+        { name: { contains: term, mode: 'insensitive' } },
+        { key: { contains: term, mode: 'insensitive' } },
+        { description: { contains: term, mode: 'insensitive' } },
+      ];
+    }
+
+    try {
+      const rows = await prisma.projects.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          key: true,
+          description: true,
+          status: true,
+        },
+        orderBy: { name: 'asc' },
+      });
+
+      return rows.map((r) => ({
+        id: r.id,
+        name: r.name,
+        key: r.key,
+        description: r.description,
+        status: r.status as ProjectStatus,
+      }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(
+        'error. failed to list accessible project summaries:',
+        message
+      );
+      throw new Error('Failed to list projects');
+    }
   }
 
   async listPaginated(input: {

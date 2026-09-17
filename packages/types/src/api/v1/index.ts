@@ -109,6 +109,10 @@ export {
   ProjectFieldsConfigSchema,
   type DynamicFieldProperty,
   type ProjectFieldsConfig,
+  type ProjectRegistryPermissions,
+  getProjectRegistryPermissions,
+  type ActorProjectsSummary,
+  type ListProjectsForActorResponse,
 } from './projects.js';
 export {
   teamManagerSelect,

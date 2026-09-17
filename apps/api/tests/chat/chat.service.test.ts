@@ -988,4 +988,149 @@ ALICE-2,Feature,Authentication Service,ALICE-1,high,Updated auth description,Sec
     );
     expect(toolActionsPerformed).toHaveLength(3);
   });
+
+  describe('list_projects role-based access', () => {
+    it('scopes list_projects to accessible projects for Member and returns permissions', async () => {
+      const listProjectsForActorMock = vi.fn().mockResolvedValue({
+        projects: [
+          {
+            id: 'proj-allowed',
+            name: 'Allowed Project',
+            key: 'ALLOW',
+            description: 'Visible project',
+            status: 'active',
+          },
+        ],
+        totalCount: 1,
+        userRole: 'member',
+        permissions: {
+          role: 'member',
+          canCreate: false,
+          canManage: false,
+          canPurge: false,
+        },
+      });
+
+      const chatService = new ChatService({
+        chat: {} as never,
+        projectsRepository: {} as never,
+        workItemService: {} as never,
+        sprintsService: {} as never,
+        projectsService: {
+          listProjectsForActor: listProjectsForActorMock,
+        } as never,
+        teamsRepository: {} as never,
+        integrationsService: {} as never,
+      });
+
+      const toolActionsPerformed: ToolAction[] = [];
+      const parts = await chatService.processFunctionCalls(
+        'member-user-123',
+        [
+          {
+            functionCall: {
+              name: 'list_projects',
+              args: {},
+            },
+          },
+        ],
+        toolActionsPerformed
+      );
+
+      expect(listProjectsForActorMock).toHaveBeenCalledWith('member-user-123');
+      expect(parts).toHaveLength(1);
+      const result = parts[0]?.functionResponse?.response.result as {
+        userRole: string;
+        permissions: { role: string; canCreate: boolean; canManage: boolean; canPurge: boolean };
+        totalCount: number;
+        projects: Array<{ id: string; name: string; key: string; description: string; status: string }>;
+      };
+      expect(result.userRole).toBe('member');
+      expect(result.permissions).toEqual({
+        role: 'member',
+        canCreate: false,
+        canManage: false,
+        canPurge: false,
+      });
+      expect(result.totalCount).toBe(1);
+      expect(result.projects).toEqual([
+        {
+          id: 'proj-allowed',
+          name: 'Allowed Project',
+          key: 'ALLOW',
+          description: 'Visible project',
+          status: 'active',
+        },
+      ]);
+    });
+
+    it('returns all accessible projects and admin permissions for Admin', async () => {
+      const listProjectsForActorMock = vi.fn().mockResolvedValue({
+        projects: [
+          {
+            id: 'proj-1',
+            name: 'Project One',
+            key: 'P1',
+            description: null,
+            status: 'active',
+          },
+          {
+            id: 'proj-2',
+            name: 'Project Two',
+            key: 'P2',
+            description: 'Two',
+            status: 'active',
+          },
+        ],
+        totalCount: 2,
+        userRole: 'admin',
+        permissions: {
+          role: 'admin',
+          canCreate: true,
+          canManage: true,
+          canPurge: true,
+        },
+      });
+
+      const chatService = new ChatService({
+        chat: {} as never,
+        projectsRepository: {} as never,
+        workItemService: {} as never,
+        sprintsService: {} as never,
+        projectsService: {
+          listProjectsForActor: listProjectsForActorMock,
+        } as never,
+        teamsRepository: {} as never,
+        integrationsService: {} as never,
+      });
+
+      const toolActionsPerformed: ToolAction[] = [];
+      const parts = await chatService.processFunctionCalls(
+        'admin-user-1',
+        [
+          {
+            functionCall: {
+              name: 'list_projects',
+              args: {},
+            },
+          },
+        ],
+        toolActionsPerformed
+      );
+
+      expect(listProjectsForActorMock).toHaveBeenCalledWith('admin-user-1');
+      const result = parts[0]?.functionResponse?.response.result as {
+        userRole: string;
+        permissions: { role: string; canCreate: boolean; canManage: boolean; canPurge: boolean };
+        totalCount: number;
+        projects: Array<unknown>;
+      };
+      expect(result.userRole).toBe('admin');
+      expect(result.permissions.canCreate).toBe(true);
+      expect(result.permissions.canManage).toBe(true);
+      expect(result.permissions.canPurge).toBe(true);
+      expect(result.totalCount).toBe(2);
+    });
+  });
 });
+

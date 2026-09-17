@@ -12,6 +12,8 @@ const {
   updateMock,
   deleteMock,
   migrateWorkItemTypesAndPruneHierarchyMock,
+  listAccessibleProjectIdsMock,
+  listAccessibleSummariesMock,
 } = vi.hoisted(() => {
   process.env.GITHUB_ACTIONS = 'true';
   return {
@@ -26,6 +28,8 @@ const {
     updateMock: vi.fn(),
     deleteMock: vi.fn(),
     migrateWorkItemTypesAndPruneHierarchyMock: vi.fn(),
+    listAccessibleProjectIdsMock: vi.fn(),
+    listAccessibleSummariesMock: vi.fn(),
   };
 });
 
@@ -92,6 +96,8 @@ describe('ProjectsService backend tests', () => {
     delete: deleteMock,
     migrateWorkItemTypesAndPruneHierarchy:
       migrateWorkItemTypesAndPruneHierarchyMock,
+    listAccessibleProjectIds: listAccessibleProjectIdsMock,
+    listAccessibleSummaries: listAccessibleSummariesMock,
   } as unknown as ProjectsRepository;
 
   const service = new ProjectsService(projectsRepository);
@@ -527,4 +533,110 @@ describe('ProjectsService backend tests', () => {
       expect(deleteMock).not.toHaveBeenCalled();
     });
   });
+
+  describe('listProjectsForActor', () => {
+    const accessibleProjects = [
+      {
+        id: 'proj-1',
+        name: 'Alpha Project',
+        key: 'ALPHA',
+        description: 'First project',
+        status: 'active' as const,
+      },
+      {
+        id: 'proj-2',
+        name: 'Beta Project',
+        key: 'BETA',
+        description: 'Second project',
+        status: 'active' as const,
+      },
+    ];
+
+    it('returns accessible projects and permissions for member role', async () => {
+      mockActorRole('member');
+      listAccessibleProjectIdsMock.mockResolvedValue(['proj-1']);
+      listAccessibleSummariesMock.mockResolvedValue([accessibleProjects[0]]);
+
+      const result = await service.listProjectsForActor('user-member');
+
+      expect(listAccessibleProjectIdsMock).toHaveBeenCalledWith('user-member');
+      expect(listAccessibleSummariesMock).toHaveBeenCalledWith({
+        accessibleIds: ['proj-1'],
+        status: 'active',
+        search: undefined,
+      });
+      expect(result).toEqual({
+        projects: [accessibleProjects[0]],
+        totalCount: 1,
+        userRole: 'member',
+        permissions: {
+          role: 'member',
+          canCreate: false,
+          canManage: false,
+          canPurge: false,
+        },
+      });
+    });
+
+    it('returns manager permissions and accessible projects for manager role', async () => {
+      mockActorRole('manager');
+      listAccessibleProjectIdsMock.mockResolvedValue(['proj-1', 'proj-2']);
+      listAccessibleSummariesMock.mockResolvedValue(accessibleProjects);
+
+      const result = await service.listProjectsForActor('user-manager');
+
+      expect(result).toEqual({
+        projects: accessibleProjects,
+        totalCount: 2,
+        userRole: 'manager',
+        permissions: {
+          role: 'manager',
+          canCreate: false,
+          canManage: true,
+          canPurge: false,
+        },
+      });
+    });
+
+    it('returns admin permissions and accessible projects for admin role', async () => {
+      mockActorRole('admin');
+      listAccessibleProjectIdsMock.mockResolvedValue(['proj-1', 'proj-2']);
+      listAccessibleSummariesMock.mockResolvedValue(accessibleProjects);
+
+      const result = await service.listProjectsForActor('user-admin');
+
+      expect(result).toEqual({
+        projects: accessibleProjects,
+        totalCount: 2,
+        userRole: 'admin',
+        permissions: {
+          role: 'admin',
+          canCreate: true,
+          canManage: true,
+          canPurge: true,
+        },
+      });
+    });
+
+    it('returns empty list without calling listAccessibleSummaries when user has no accessible projects', async () => {
+      mockActorRole('member');
+      listAccessibleProjectIdsMock.mockResolvedValue([]);
+
+      const result = await service.listProjectsForActor('user-member');
+
+      expect(listAccessibleSummariesMock).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        projects: [],
+        totalCount: 0,
+        userRole: 'member',
+        permissions: {
+          role: 'member',
+          canCreate: false,
+          canManage: false,
+          canPurge: false,
+        },
+      });
+    });
+  });
 });
+

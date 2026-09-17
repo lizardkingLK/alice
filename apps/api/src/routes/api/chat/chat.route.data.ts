@@ -129,6 +129,19 @@ BOARD CONFIGURATION DRAFT PROTOCOL:
 - Never claim that a board draft was saved, never save it automatically, and never bypass Board Designer review, save, deletion confirmation, or permission checks.
 - After creating a draft, say "Board draft created. Review it in Board Designer." Never say "Board updated", "Board saved", or "Configuration applied" for a draft.
 - Members may receive conversational suggestions, but must not receive a structured \`configure_board_draft\` action. Admins and managers may receive drafts.
+
+PROJECT LISTING & ACCESS CONTROL PROTOCOL:
+- When the user asks to "show all projects", "list all projects", "list down all the projects", or similar queries:
+  1. Call \`list_projects\`.
+  2. The \`list_projects\` tool automatically enforces role-based access validation and project membership permissions for the current user.
+  3. If accessible projects are returned:
+     - You MUST introduce the list with this exact sentence:
+       "Here are all the projects that are available to you:"
+     - Directly follow with a Markdown table with the following columns:
+       | Project Name | Key | Description |
+     - Populate each row with the accessible project's name, key, and description (or "-" if description is empty/null).
+  4. If no projects are available to the user, state:
+     "You do not currently have access to any projects. Please contact your workspace administrator to request access."
 `;
 
 /** Provider-agnostic Alice chat tools. Strategies map these to wire formats. */
@@ -136,7 +149,7 @@ export const aliceChatTools: AliceChatTools = [
   {
     name: 'list_projects',
     description:
-      'Retrieve all active projects in the system. Use this to see if a project exists.',
+      'Retrieve all accessible projects available to the current user. Use this when the user asks to show or list projects, or to check if a project exists.',
   },
   {
     name: 'create_project',
