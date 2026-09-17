@@ -103,8 +103,21 @@ export async function getChatHistoryServer(
 export async function getChatPageBootstrap(
   activeId?: string
 ): Promise<ChatPageBootstrapResult> {
-  const conversations = await listChatConversations();
-  const selection = selectChatBootstrapConversation(conversations, activeId);
+  const cachedConversations = await listChatConversations();
+  let selection = selectChatBootstrapConversation(cachedConversations, activeId);
+  let effectiveConversations = cachedConversations;
+
+  if (selection.kind === 'not_found' && activeId) {
+    const liveConversations = await listChatConversationsLive();
+    const liveSelection = selectChatBootstrapConversation(
+      liveConversations,
+      activeId
+    );
+    if (liveSelection.kind === 'selected') {
+      selection = liveSelection;
+      effectiveConversations = liveConversations;
+    }
+  }
 
   if (selection.kind === 'not_found') {
     return { ok: false, reason: 'not_found' };
@@ -126,7 +139,7 @@ export async function getChatPageBootstrap(
   return {
     ok: true,
     data: {
-      conversations,
+      conversations: effectiveConversations,
       activeConversationId: selected.id,
       messages,
     },

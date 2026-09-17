@@ -270,7 +270,24 @@ Verify that files upload directly to Supabase Storage via signed upload URLs:
    - Alice politely declines, clarifying its scope is project and sprint management in ALICE.
 2. Refresh your browser (`F5`).
 3. Re-select the conversation in the left history sidebar.
-   - Confirm that previous messages, attachment chips with auto-refreshing links, and action cards reload correctly.
+   - Confirm that previous messages, attachment chips with auto-refreshing links, and action cards reload correctly. 
+---
+
+### 11. Role-based project listing & table output
+
+1. Sign in as a **Member** assigned to $n$ projects (e.g., 1 project out of 3 total workspace projects).
+2. In chat, send:
+   > _"Show all projects"_ or _"List down all the projects"_
+3. Verify the response:
+   - Alice introduces the list with the exact sentence:
+     ```text
+     Here are all the projects that are available to you:
+     ```
+   - Directly below, Alice outputs a Markdown table with columns: `Project Name`, `Key`, and `Description`.
+   - Only the $n$ assigned projects are listed; unassigned projects are strictly excluded.
+4. Sign in as an **Administrator** and send:
+   > _"List down all the projects"_
+   - Verify Alice introduces the list with the same intro sentence and displays all workspace projects in the Markdown table.
 
 ---
 
@@ -278,3 +295,5 @@ Verify that files upload directly to Supabase Storage via signed upload URLs:
 
 - [Alice (AI chat)](./README.md)
 - [Use the AI assistant](./use-ai-assistant.md)
+- [Role-based project & chat access](../projects/project-registry-and-chat-access.md)
+- [Role-based project access testing](../projects/project-registry-and-chat-access-testing.md)

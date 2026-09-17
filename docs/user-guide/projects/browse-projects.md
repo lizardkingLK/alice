@@ -2,13 +2,13 @@
 
 Open the project registry and jump into a project workspace.
 
-**Audience:** Managers and admins
+**Audience:** All users (Members, Managers, and Admins)
 
 ---
 
 ## Open the registry
 
-1. Sign in as a **manager** or **admin**.
+1. Sign in to your account.
 2. In the sidebar, select **Projects**.
 
 You'll land on the project list (`/projects`).
@@ -19,10 +19,11 @@ You'll land on the project list (`/projects`).
 
 The list shows projects you can access:
 
-| Your role   | Projects shown                                      |
-| ----------- | --------------------------------------------------- |
-| **Admin**   | All projects in the workspace                       |
-| **Manager** | Projects you **own** or are an active **member** of |
+| Your role   | Projects shown                                             |
+| ----------- | ---------------------------------------------------------- |
+| **Admin**   | All projects in the workspace                              |
+| **Manager** | Projects you **own** or are an active **member** of        |
+| **Member**  | Projects you are an active **member** of (or allowlisted)  |
 
 Projects you can't access are **hidden** from the list (not shown as locked
 rows).
@@ -52,5 +53,6 @@ this project** — ask the owner to add you via
 
 ## Related
 
+- [Role-based project & chat access](./project-registry-and-chat-access.md)
 - [Project members](./project-members.md)
 - [Users & access](../users-and-access/README.md)
