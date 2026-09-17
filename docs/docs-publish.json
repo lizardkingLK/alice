@@ -183,6 +183,24 @@
           "title": "Technical spec: Work-item types & hierarchy",
           "order": 12,
           "minimumRole": "member"
+        },
+        {
+          "path": "user-guide/projects/project-registry-and-chat-access.md",
+          "title": "Role-based project & chat access",
+          "order": 13,
+          "minimumRole": "member"
+        },
+        {
+          "path": "user-guide/projects/project-registry-and-chat-access-testing.md",
+          "title": "Role-based project access testing",
+          "order": 14,
+          "minimumRole": "member"
+        },
+        {
+          "path": "features/projects/UNIFIED_PROJECT_REGISTRY_AND_CHAT_VALIDATION.md",
+          "title": "Technical spec: Unified project validations",
+          "order": 15,
+          "minimumRole": "member"
         }
       ]
     },

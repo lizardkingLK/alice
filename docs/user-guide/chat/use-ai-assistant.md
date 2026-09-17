@@ -41,7 +41,7 @@ On any dashboard page (except `/chat`):
 
 Examples:
 
-- List or summarize **projects**, **sprints**, and **work items**
+- **List accessible projects**: Ask *"show all projects"* or *"list down all the projects"*. Alice enforces your role permissions and project memberships, responding with *"Here are all the projects that are available to you:"* followed by a clean Markdown table (`| Project Name | Key | Description |`). Unassigned projects are strictly hidden
 - **Create** projects, sprints, and work items through guided prompts
 - **Attach and inspect documents**: Click the paperclip icon (📎) to attach JSON, CSV, TSV, Markdown tables, Indented text outlines, YAML, or image files
 - **Universal file parsing**: Ask Alice to extract work items, estimates, priorities, parent links, and custom dynamic fields from any supported document format
@@ -71,5 +71,6 @@ admin-only areas. Alice is focused exclusively on ALICE workspace management and
 ## Related
 
 - [Alice (AI chat)](./README.md)
+- [Role-based project & chat access](../projects/project-registry-and-chat-access.md)
 - [User testing guide](./user-test-guide.md)
 - [Create a work item](../work-items/create-work-item.md)
