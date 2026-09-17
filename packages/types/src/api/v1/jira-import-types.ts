@@ -23,9 +23,7 @@ export type JiraImportTypeBehavior = z.infer<
 >;
 
 export const jiraImportConfigSchema = z.object({
-  typeMappings: z
-    .record(z.string(), jiraImportTypeBehaviorSchema)
-    .default({}),
+  typeMappings: z.record(z.string(), jiraImportTypeBehaviorSchema).default({}),
   hierarchy: z.array(z.enum(Constants.public.Enums.WorkItemType)).optional(),
 });
 export type JiraImportConfig = z.infer<typeof jiraImportConfigSchema>;

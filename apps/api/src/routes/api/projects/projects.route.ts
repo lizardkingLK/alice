@@ -349,9 +349,7 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
           link.connectionId,
           link.projectKey
         );
-        const issueTypes = [
-          ...new Set(issues.map((i) => i.rawType || i.type)),
-        ];
+        const issueTypes = [...new Set(issues.map((i) => i.rawType || i.type))];
         res.json({ issues, issueTypes });
       } catch (error) {
         const { status, error: message } = jsonErrorFromCaught(
@@ -404,8 +402,10 @@ export function createProjectsRouter(deps: ProjectsRouterDeps) {
 
         if (config?.hierarchy && config.hierarchy.length > 0) {
           const project = await projectsService.getProjectById(id);
-          const existingConfig =
-            project.workflow_config as Record<string, unknown> | null;
+          const existingConfig = project.workflow_config as Record<
+            string,
+            unknown
+          > | null;
           customHierarchyMap = {};
           for (let i = 0; i < config.hierarchy.length - 1; i++) {
             customHierarchyMap[config.hierarchy[i]!] = config.hierarchy[i + 1]!;

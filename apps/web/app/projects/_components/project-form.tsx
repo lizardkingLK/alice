@@ -34,10 +34,7 @@ import {
   Maximize2,
   Minimize2,
 } from '@repo/ui/lib/icons';
-import {
-  CANONICAL_HIERARCHY_ORDER,
-  type WorkItemType,
-} from '@repo/types';
+import { CANONICAL_HIERARCHY_ORDER, type WorkItemType } from '@repo/types';
 import type { ProjectWorkflowConfig } from '@repo/types/api/v1';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import type { User } from '@/app/users/_services/users.mutations.client';
@@ -458,7 +455,7 @@ function Step1BasicDetails({
               <label
                 key={t}
                 className={cn(
-                  'flex items-center space-x-2 rounded-md border p-2.5 transition-colors cursor-pointer text-sm',
+                  'flex cursor-pointer items-center space-x-2 rounded-md border p-2.5 text-sm transition-colors',
                   isChecked
                     ? 'border-primary/50 bg-primary/5 font-medium'
                     : 'border-border text-muted-foreground hover:border-primary/20'
@@ -469,7 +466,8 @@ function Step1BasicDetails({
                   onCheckedChange={(checked) => {
                     if (checked) {
                       const next = CANONICAL_HIERARCHY_ORDER.filter(
-                        (item) => item === t || selectedWorkItemTypes.includes(item)
+                        (item) =>
+                          item === t || selectedWorkItemTypes.includes(item)
                       );
                       setSelectedWorkItemTypes(next);
                     } else {
@@ -740,16 +738,10 @@ export function ProjectForm({
     formatDateForInput(projectToEdit?.end_date)
   );
   const initialWorkflowConfig = projectToEdit?.workflow_config as
-    | ProjectWorkflowConfig
-    | null
-    | undefined;
+    ProjectWorkflowConfig | null | undefined;
   const [selectedWorkItemTypes, setSelectedWorkItemTypes] = useState<
     WorkItemType[]
-  >(
-    initialWorkflowConfig?.work_item_types ?? [
-      ...CANONICAL_HIERARCHY_ORDER,
-    ]
-  );
+  >(initialWorkflowConfig?.work_item_types ?? [...CANONICAL_HIERARCHY_ORDER]);
 
   // Stepper state
   const [step, setStep] = useState(1);
@@ -820,13 +812,9 @@ export function ProjectForm({
     setStartDate(formatDateForInput(projectToEdit.start_date));
     setEndDate(formatDateForInput(projectToEdit.end_date));
     const editWorkflowConfig = projectToEdit.workflow_config as
-      | ProjectWorkflowConfig
-      | null
-      | undefined;
+      ProjectWorkflowConfig | null | undefined;
     setSelectedWorkItemTypes(
-      editWorkflowConfig?.work_item_types ?? [
-        ...CANONICAL_HIERARCHY_ORDER,
-      ]
+      editWorkflowConfig?.work_item_types ?? [...CANONICAL_HIERARCHY_ORDER]
     );
 
     const hasJira = Boolean(
@@ -955,7 +943,9 @@ export function ProjectForm({
     }
 
     try {
-      const linkedJira = Boolean(importFromJira && jiraConnectionId && jiraProjectKey);
+      const linkedJira = Boolean(
+        importFromJira && jiraConnectionId && jiraProjectKey
+      );
       const existingConfig =
         typeof projectToEdit?.workflow_config === 'object' &&
         projectToEdit?.workflow_config !== null

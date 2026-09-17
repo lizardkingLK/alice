@@ -146,7 +146,10 @@ function resolveAvailableTypes(
   if (explicitAllowedTypes && explicitAllowedTypes.length > 0) {
     return explicitAllowedTypes;
   }
-  if (projectConfig?.work_item_types && projectConfig.work_item_types.length > 0) {
+  if (
+    projectConfig?.work_item_types &&
+    projectConfig.work_item_types.length > 0
+  ) {
     return projectConfig.work_item_types;
   }
   return taskTypes;
@@ -205,9 +208,7 @@ export function WorkItemForm({
 
   const selectedProject = projects.find((p) => p.id === projectId);
   const projectWorkflowConfig = selectedProject?.workflow_config as
-    | ProjectWorkflowConfig
-    | null
-    | undefined;
+    ProjectWorkflowConfig | null | undefined;
   const availableTypes = resolveAvailableTypes(
     allowedTypes,
     projectWorkflowConfig

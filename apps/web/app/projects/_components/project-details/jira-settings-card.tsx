@@ -207,7 +207,6 @@ export function JiraSettingsCard({ project }: Readonly<JiraSettingsCardProps>) {
     });
   };
 
-
   const handleDisconnect = async (connectionId: string) => {
     setDisconnectingId(connectionId);
     clearFeedback();

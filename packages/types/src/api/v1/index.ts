@@ -8,6 +8,7 @@ export {
 } from './health.js';
 export {
   BOARD_MOVE_FORBIDDEN_CODE,
+  STATUS_TRANSITION_FORBIDDEN_CODE,
   boardConfigV1Schema,
   boardConfigV2Schema,
   boardColumnSchema,
@@ -15,18 +16,21 @@ export {
   boardRuleMatcherSchema,
   boardTransitionSchema,
   findBoardTransition,
+  findStatusTransition,
   normalizeBoardConfig,
+  projectWorkflowConfigSchema,
   resolveBoardDestinationColumn,
   resolveBoardSourceColumn,
-  projectWorkflowConfigSchema,
+  workItemStatusTransitionSchema,
   type BoardColumn,
   type BoardConfig,
   type BoardConfigV1,
   type BoardConfigV2,
   type BoardRuleMatcher,
   type BoardTransition,
-  type RuntimeBoardConfig,
   type ProjectWorkflowConfig,
+  type RuntimeBoardConfig,
+  type WorkItemStatusTransition,
 } from './board-config.js';
 export * from './jira-import-types.js';
 export {
