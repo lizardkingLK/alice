@@ -34,7 +34,7 @@ Verify that allowed work-item types can be selected during project creation:
    - Verify 5 checkboxes are present: `Epic`, `Feature`, `Story`, `Task`, `Issue`.
    - Verify there is **no** active hierarchy preview box in Step 1.
 3. Deselect all 5 types and click **Next**:
-   - Verify validation error: *"At least one work-item type must be selected."*
+   - Verify validation error: _"At least one work-item type must be selected."_
 4. Select `Epic`, `Story`, `Task`, `Issue` (leave `Feature` unchecked).
 5. Complete the wizard and submit **Create Project**.
 
@@ -75,7 +75,7 @@ Verify that deselecting a type migrates existing items to `Issue` and unlinks in
 1. Open `Alpha Project` -> click the **Settings** tab.
 2. In **Allowed Work-Item Types**:
    - Deselect `Story`.
-   - Verify the warning banner appears: *"Removing Story will cause all existing items of those types in this project to fall back to Issue..."*
+   - Verify the warning banner appears: _"Removing Story will cause all existing items of those types in this project to fall back to Issue..."_
 3. Click **Save Settings**:
    - Verify success notification.
 4. Navigate to the project's **Work Items** or **Backlog**:
@@ -118,19 +118,19 @@ Verify Jira import issue type mapping and hierarchy customization:
    - Verify dropped issues are created as `Issue`.
    - Verify parent links conform strictly to the custom hierarchy.
 7. Return to **Settings** tab:
-   - Verify the informational badge indicates: *"Jira Import Custom Hierarchy Active"*.
+   - Verify the informational badge indicates: _"Jira Import Custom Hierarchy Active"_.
 
 ---
 
 ## Summary Checklist
 
-| # | Test Case | Expected Result | Pass/Fail |
-|---|---|---|:---:|
-| 1 | Project creation type selection | Checkboxes for all 5 types; at least one required | [ ] |
-| 2 | Create/Edit form type scoping | Disallowed types hidden from dropdown | [ ] |
-| 3 | Global filters | All 5 types remain available globally | [ ] |
-| 4 | Remove type in Settings | Warning alert shown; affected items fall back to `Issue`; invalid parents unlinked | [ ] |
-| 5 | Restore type in Settings | Type available for new items; previously migrated items stay as `Issue` | [ ] |
-| 6 | Jira import layout & width | Wide dialog (`max-w-4xl`), no scrollbar, fixed bottom buttons | [ ] |
-| 7 | Jira import type mappings | `Map`, `Ignore`, `Drop` actions executed cleanly | [ ] |
-| 8 | Jira import hierarchy | Hierarchy reordered and saved in `workflow_config.hierarchy` | [ ] |
+| #   | Test Case                       | Expected Result                                                                    | Pass/Fail |
+| --- | ------------------------------- | ---------------------------------------------------------------------------------- | :-------: |
+| 1   | Project creation type selection | Checkboxes for all 5 types; at least one required                                  |    [ ]    |
+| 2   | Create/Edit form type scoping   | Disallowed types hidden from dropdown                                              |    [ ]    |
+| 3   | Global filters                  | All 5 types remain available globally                                              |    [ ]    |
+| 4   | Remove type in Settings         | Warning alert shown; affected items fall back to `Issue`; invalid parents unlinked |    [ ]    |
+| 5   | Restore type in Settings        | Type available for new items; previously migrated items stay as `Issue`            |    [ ]    |
+| 6   | Jira import layout & width      | Wide dialog (`max-w-4xl`), no scrollbar, fixed bottom buttons                      |    [ ]    |
+| 7   | Jira import type mappings       | `Map`, `Ignore`, `Drop` actions executed cleanly                                   |    [ ]    |
+| 8   | Jira import hierarchy           | Hierarchy reordered and saved in `workflow_config.hierarchy`                       |    [ ]    |

@@ -121,7 +121,9 @@ export const createProjectSchema = baseCreateProjectSchema
 
 export const updateProjectSchema = baseCreateProjectSchema
   .partial()
-  .extend({ workflow_config: projectWorkflowConfigSchema.nullable().optional() })
+  .extend({
+    workflow_config: projectWorkflowConfigSchema.nullable().optional(),
+  })
   .refine(
     (data) => {
       if (data.start_date && data.end_date) {

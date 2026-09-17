@@ -308,9 +308,7 @@ describe('ProjectsService backend tests', () => {
         mockProject.updated_at
       );
 
-      expect(
-        migrateWorkItemTypesAndPruneHierarchyMock
-      ).toHaveBeenCalledWith(
+      expect(migrateWorkItemTypesAndPruneHierarchyMock).toHaveBeenCalledWith(
         'project-1',
         ['Epic', 'Story', 'Task', 'Issue'],
         undefined

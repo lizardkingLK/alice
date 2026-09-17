@@ -3,8 +3,14 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ProjectSettingsTab } from '@/app/projects/_components/project-details/project-settings-tab';
 import { JiraImportDialog } from '@/app/projects/_components/project-details/jira-import-dialog';
 import { WorkItemForm } from '@/app/work-items/_components/work-item-form/work-item-form';
-import { updateProject, type Project } from '@/app/projects/_services/projects.mutations.client';
-import { previewJiraImport, importJiraIssues } from '@/app/projects/_services/projects.jira.mutations.client';
+import {
+  updateProject,
+  type Project,
+} from '@/app/projects/_services/projects.mutations.client';
+import {
+  previewJiraImport,
+  importJiraIssues,
+} from '@/app/projects/_services/projects.jira.mutations.client';
 import { resolveProjectHierarchy } from '@repo/types';
 
 vi.mock('next/navigation', () => ({
@@ -60,7 +66,9 @@ describe('ProjectSettingsTab Component', () => {
   });
 
   it('renders all 5 work item types in settings controls', () => {
-    render(<ProjectSettingsTab project={mockProject} isManagerOrAdmin={true} />);
+    render(
+      <ProjectSettingsTab project={mockProject} isManagerOrAdmin={true} />
+    );
 
     expect(screen.getByText('Allowed Work-Item Types')).toBeInTheDocument();
     expect(screen.getByText('Epic')).toBeInTheDocument();
@@ -77,13 +85,17 @@ describe('ProjectSettingsTab Component', () => {
   });
 
   it('shows warning alert when an existing type is removed', () => {
-    render(<ProjectSettingsTab project={mockProject} isManagerOrAdmin={true} />);
+    render(
+      <ProjectSettingsTab project={mockProject} isManagerOrAdmin={true} />
+    );
 
     // Uncheck Story
     const storyCheckbox = screen.getByRole('checkbox', { name: /story/i });
     fireEvent.click(storyCheckbox);
 
-    expect(screen.getByText(/Work items will be migrated/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Work items will be migrated/i)
+    ).toBeInTheDocument();
     expect(
       screen.getByText(
         /will cause all existing items of those types in this project to fall back/i
@@ -119,7 +131,9 @@ describe('ProjectSettingsTab Component', () => {
       } as unknown as Project['workflow_config'],
     });
 
-    render(<ProjectSettingsTab project={mockProject} isManagerOrAdmin={true} />);
+    render(
+      <ProjectSettingsTab project={mockProject} isManagerOrAdmin={true} />
+    );
 
     // Add Feature
     const featureCheckbox = screen.getByRole('checkbox', { name: /feature/i });
@@ -142,7 +156,9 @@ describe('ProjectSettingsTab Component', () => {
   });
 
   it('shows read-only view when user is not a manager or admin', () => {
-    render(<ProjectSettingsTab project={mockProject} isManagerOrAdmin={false} />);
+    render(
+      <ProjectSettingsTab project={mockProject} isManagerOrAdmin={false} />
+    );
 
     expect(
       screen.getByText(
@@ -203,7 +219,9 @@ describe('JiraImportDialog Component', () => {
       />
     );
 
-    expect(await screen.findByText('1. Issue Type Mappings')).toBeInTheDocument();
+    expect(
+      await screen.findByText('1. Issue Type Mappings')
+    ).toBeInTheDocument();
     expect(screen.getByText('Bug')).toBeInTheDocument();
     expect(screen.getByText('2. ALICE Target Hierarchy')).toBeInTheDocument();
   });
@@ -227,7 +245,9 @@ describe('JiraImportDialog Component', () => {
       />
     );
 
-    expect(await screen.findByText('1. Issue Type Mappings')).toBeInTheDocument();
+    expect(
+      await screen.findByText('1. Issue Type Mappings')
+    ).toBeInTheDocument();
 
     const startButton = screen.getByRole('button', { name: /Start Import/i });
     fireEvent.click(startButton);
@@ -237,7 +257,10 @@ describe('JiraImportDialog Component', () => {
         'proj-1',
         expect.objectContaining({
           typeMappings: expect.objectContaining({
-            Task: expect.objectContaining({ action: 'map', targetType: 'Task' }),
+            Task: expect.objectContaining({
+              action: 'map',
+              targetType: 'Task',
+            }),
           }),
           hierarchy: expect.any(Array),
         })
@@ -294,4 +317,3 @@ describe('Hierarchy Resolution Rules', () => {
     expect(childToParent.Issue).toBe('Task');
   });
 });
-

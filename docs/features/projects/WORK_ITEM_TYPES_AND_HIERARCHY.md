@@ -9,9 +9,11 @@ Technical architecture and implementation specification for project-level work-i
 ALICE uses a two-tier hierarchy model:
 
 1. **Fixed System Hierarchy**:
+
    ```text
    Epic → Story → Task → Issue
    ```
+
    Applied by default to all projects. Projects configure which types are enabled via `workflow_config.work_item_types`. `Feature` is an optional higher-level capability that can be permitted per project. Selecting allowed types restricts available levels but does not customize the hierarchy chain.
 
 2. **Custom Jira Import Hierarchy**:
@@ -22,6 +24,7 @@ ALICE uses a two-tier hierarchy model:
 ## 2. Core Modules & Files
 
 ### Shared Types (`packages/types`)
+
 - **`src/work-item-types.ts`**:
   - `DEFAULT_SYSTEM_HIERARCHY`: `['Epic', 'Story', 'Task', 'Issue']`
   - `resolveProjectHierarchy(allowedTypes?, customHierarchy?)`: Derives parent-to-child and child-to-parent maps.
@@ -33,6 +36,7 @@ ALICE uses a two-tier hierarchy model:
   - `projectWorkflowConfigSchema`: Includes `work_item_types` array and `hierarchy` map.
 
 ### API Backend (`apps/api`)
+
 - **`src/routes/api/projects/projects.repository.ts`**:
   - `migrateWorkItemTypesAndPruneHierarchy`: Reassigns work items of removed types to `Issue` and unlinks invalid parent-child relations.
   - `linkImportedJiraParents`: Links imported Jira parents complying strictly with the project's active hierarchy.
@@ -45,6 +49,7 @@ ALICE uses a two-tier hierarchy model:
   - `POST /:id/jira/import`: Processes `JiraImportConfig`, executing mapped, ignored, and dropped actions.
 
 ### Web Frontend (`apps/web`)
+
 - **`app/projects/_components/project-form.tsx`**:
   - Basic Details Step 1 checkboxes for allowed types.
 - **`app/projects/_components/project-details/project-settings-tab.tsx`**:
@@ -60,6 +65,7 @@ ALICE uses a two-tier hierarchy model:
 
 In Prisma (`schema.prisma`), `work_items.type` is non-nullable (`WorkItemType`).
 Therefore:
+
 - ALICE work-item type is **mandatory**.
 - When an enabled type is removed from project configuration, affected items fall back to **`Issue`** (the leaf type).
 - Leaf items cannot have children, ensuring hierarchy integrity.

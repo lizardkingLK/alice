@@ -129,7 +129,9 @@ export function JiraImportDialog({
   const [issueTypes, setIssueTypes] = useState<string[]>([]);
   const [issueCount, setIssueCount] = useState<number>(0);
 
-  const [mappings, setMappings] = useState<Record<string, TypeMappingState>>({});
+  const [mappings, setMappings] = useState<Record<string, TypeMappingState>>(
+    {}
+  );
   const [hierarchy, setHierarchy] = useState<WorkItemType[]>([]);
 
   const loadPreview = useCallback(async () => {
@@ -150,9 +152,7 @@ export function JiraImportDialog({
       setMappings(initialMappings);
 
       const existingConfig = project.workflow_config as
-        | ProjectWorkflowConfig
-        | null
-        | undefined;
+        ProjectWorkflowConfig | null | undefined;
       const parsedHierarchy = hierarchyRecordToArray(existingConfig?.hierarchy);
       let initialHierarchy: WorkItemType[];
       if (parsedHierarchy && parsedHierarchy.length > 0) {
@@ -193,7 +193,10 @@ export function JiraImportDialog({
     });
   };
 
-  const handleTargetTypeChange = (jiraType: string, targetType: WorkItemType) => {
+  const handleTargetTypeChange = (
+    jiraType: string,
+    targetType: WorkItemType
+  ) => {
     setMappings((prev) => {
       const current = prev[jiraType] ?? guessDefaultMapping(jiraType);
       return {
@@ -245,7 +248,8 @@ export function JiraImportDialog({
           jiraType,
           {
             action: mapping.action,
-            targetType: mapping.action === 'map' ? mapping.targetType : undefined,
+            targetType:
+              mapping.action === 'map' ? mapping.targetType : undefined,
           },
         ])
       ),
@@ -267,23 +271,28 @@ export function JiraImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] w-full sm:max-w-4xl lg:max-w-5xl flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="p-6 pb-4 shrink-0 border-b">
+      <DialogContent className="flex max-h-[90vh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl lg:max-w-5xl">
+        <DialogHeader className="shrink-0 border-b p-6 pb-4">
           <DialogTitle className="flex items-center gap-2 text-xl font-bold">
             <RefreshCw className="text-primary h-5 w-5" />
             Jira Import & Hierarchy Mapping
           </DialogTitle>
           <DialogDescription>
-            Map Jira issue types to ALICE work-item types and configure the target hierarchy for imported items.
+            Map Jira issue types to ALICE work-item types and configure the
+            target hierarchy for imported items.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="no-scrollbar flex-1 overflow-y-auto p-6 space-y-5 min-h-0">
+        <div className="no-scrollbar min-h-0 flex-1 space-y-5 overflow-y-auto p-6">
           {isLoadingPreview && (
             <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
               <Loader2 className="text-primary h-8 w-8 animate-spin" />
               <p className="text-muted-foreground text-sm">
-                Scanning issues from Jira project <span className="font-semibold">{project.jira_project_key}</span>...
+                Scanning issues from Jira project{' '}
+                <span className="font-semibold">
+                  {project.jira_project_key}
+                </span>
+                ...
               </p>
             </div>
           )}
@@ -315,47 +324,60 @@ export function JiraImportDialog({
               <div className="bg-muted/30 flex items-center justify-between rounded-lg border p-3 text-sm">
                 <div>
                   <span className="font-medium">Jira Project: </span>
-                  <span className="font-mono font-bold text-foreground">
+                  <span className="text-foreground font-mono font-bold">
                     {project.jira_project_key}
                   </span>
                 </div>
                 <div className="text-muted-foreground text-xs">
-                  Found <span className="font-semibold text-foreground">{issueCount}</span> issues across{' '}
-                  <span className="font-semibold text-foreground">{issueTypes.length}</span> types
+                  Found{' '}
+                  <span className="text-foreground font-semibold">
+                    {issueCount}
+                  </span>{' '}
+                  issues across{' '}
+                  <span className="text-foreground font-semibold">
+                    {issueTypes.length}
+                  </span>{' '}
+                  types
                 </div>
               </div>
 
               {/* Type Mapping Section */}
               <div className="space-y-3">
                 <div>
-                  <h4 className="text-sm font-semibold">1. Issue Type Mappings</h4>
+                  <h4 className="text-sm font-semibold">
+                    1. Issue Type Mappings
+                  </h4>
                   <p className="text-muted-foreground text-xs">
                     Choose how each Jira issue type is handled during import.
                   </p>
                 </div>
 
-                <div className="divide-border rounded-md border divide-y">
+                <div className="divide-border divide-y rounded-md border">
                   {issueTypes.map((jiraType) => {
-                    const current = mappings[jiraType] ?? guessDefaultMapping(jiraType);
+                    const current =
+                      mappings[jiraType] ?? guessDefaultMapping(jiraType);
                     return (
                       <div
                         key={jiraType}
                         className="flex items-center justify-between gap-4 px-4 py-2.5"
                       >
                         <div className="min-w-36 shrink-0">
-                          <span className="bg-muted rounded px-2.5 py-1 text-xs font-semibold text-foreground">
+                          <span className="bg-muted text-foreground rounded px-2.5 py-1 text-xs font-semibold">
                             {jiraType}
                           </span>
                         </div>
 
-                        <div className="flex items-center justify-end gap-3 shrink-0">
+                        <div className="flex shrink-0 items-center justify-end gap-3">
                           <Select
                             value={current.action}
                             onValueChange={(val) =>
-                              handleActionChange(jiraType, val as JiraImportAction)
+                              handleActionChange(
+                                jiraType,
+                                val as JiraImportAction
+                              )
                             }
                           >
-                            <SelectTrigger className="h-8 w-48 text-xs shrink-0">
+                            <SelectTrigger className="h-8 w-48 shrink-0 text-xs">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -372,15 +394,18 @@ export function JiraImportDialog({
                           </Select>
 
                           {current.action === JiraImportActionEnum.Map && (
-                            <div className="flex items-center gap-2 shrink-0">
+                            <div className="flex shrink-0 items-center gap-2">
                               <ArrowRight className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
                               <Select
                                 value={current.targetType}
                                 onValueChange={(val) =>
-                                  handleTargetTypeChange(jiraType, val as WorkItemType)
+                                  handleTargetTypeChange(
+                                    jiraType,
+                                    val as WorkItemType
+                                  )
                                 }
                               >
-                                <SelectTrigger className="h-8 w-36 text-xs shrink-0">
+                                <SelectTrigger className="h-8 w-36 shrink-0 text-xs">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -395,13 +420,13 @@ export function JiraImportDialog({
                           )}
 
                           {current.action === JiraImportActionEnum.Ignore && (
-                            <span className="text-muted-foreground text-xs italic shrink-0 w-44 text-right">
+                            <span className="text-muted-foreground w-44 shrink-0 text-right text-xs italic">
                               Skipped (parent cleared)
                             </span>
                           )}
 
                           {current.action === JiraImportActionEnum.Drop && (
-                            <span className="text-muted-foreground text-xs italic shrink-0 w-44 text-right">
+                            <span className="text-muted-foreground w-44 shrink-0 text-right text-xs italic">
                               Issue (parent cleared)
                             </span>
                           )}
@@ -416,7 +441,9 @@ export function JiraImportDialog({
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="text-sm font-semibold">2. ALICE Target Hierarchy</h4>
+                    <h4 className="text-sm font-semibold">
+                      2. ALICE Target Hierarchy
+                    </h4>
                     <p className="text-muted-foreground text-xs">
                       Define the parent-to-child hierarchy for this project.
                     </p>
@@ -443,9 +470,14 @@ export function JiraImportDialog({
 
                 <div className="space-y-2 rounded-md border p-3">
                   <div className="flex flex-wrap items-center gap-1.5 pb-2 text-xs">
-                    <span className="text-muted-foreground font-medium">Hierarchy Preview: </span>
+                    <span className="text-muted-foreground font-medium">
+                      Hierarchy Preview:{' '}
+                    </span>
                     {hierarchy.map((type, idx) => (
-                      <span key={type} className="inline-flex items-center gap-1">
+                      <span
+                        key={type}
+                        className="inline-flex items-center gap-1"
+                      >
                         <span className="bg-primary/10 text-primary rounded px-2 py-0.5 font-semibold">
                           {type}
                         </span>
@@ -466,7 +498,7 @@ export function JiraImportDialog({
                           <span className="text-muted-foreground font-mono">
                             Level {idx + 1}:
                           </span>
-                          <span className="font-semibold text-foreground">
+                          <span className="text-foreground font-semibold">
                             {type}
                           </span>
                         </span>
@@ -515,11 +547,16 @@ export function JiraImportDialog({
               {/* Rules Notice */}
               <div className="bg-muted/40 flex items-start gap-2.5 rounded-lg border p-3 text-xs">
                 <Info className="text-primary mt-0.5 h-4 w-4 shrink-0" />
-                <div className="space-y-1 text-muted-foreground">
+                <div className="text-muted-foreground space-y-1">
                   <p>
-                    <strong className="text-foreground">Hierarchy rules:</strong>{' '}
-                    Parent-child links are established strictly according to the configured hierarchy.
-                    If a parent issue is ignored or of an invalid type, its children will be imported with their parent link cleared (<code className="text-[11px]">parent_id = null</code>).
+                    <strong className="text-foreground">
+                      Hierarchy rules:
+                    </strong>{' '}
+                    Parent-child links are established strictly according to the
+                    configured hierarchy. If a parent issue is ignored or of an
+                    invalid type, its children will be imported with their
+                    parent link cleared (
+                    <code className="text-[11px]">parent_id = null</code>).
                   </p>
                 </div>
               </div>
@@ -531,7 +568,7 @@ export function JiraImportDialog({
           )}
         </div>
 
-        <DialogFooter className="p-4 sm:px-6 shrink-0 border-t bg-background flex items-center justify-end gap-2">
+        <DialogFooter className="bg-background flex shrink-0 items-center justify-end gap-2 border-t p-4 sm:px-6">
           <Button
             type="button"
             variant="outline"

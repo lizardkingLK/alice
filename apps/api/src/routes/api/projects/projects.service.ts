@@ -251,7 +251,11 @@ export class ProjectsService {
 
     const previous = await this.projectsRepository.findById(projectId);
 
-    await this.handleWorkItemTypeMigrationIfNeeded(projectId, prepared, previous);
+    await this.handleWorkItemTypeMigrationIfNeeded(
+      projectId,
+      prepared,
+      previous
+    );
 
     const updated = await this.projectsRepository.update(
       projectId,
@@ -437,9 +441,7 @@ export class ProjectsService {
     }
 
     const previousConfig = previous?.workflow_config as
-      | ProjectWorkflowConfig
-      | null
-      | undefined;
+      ProjectWorkflowConfig | null | undefined;
     const previousTypes: WorkItemType[] =
       previousConfig?.work_item_types &&
       previousConfig.work_item_types.length > 0

@@ -25,7 +25,10 @@ import {
   WorkItemTypeEnum,
 } from '@repo/types';
 import type { ProjectWorkflowConfig } from '@repo/types/api/v1';
-import { updateProject, type Project } from '@/app/projects/_services/projects.mutations.client';
+import {
+  updateProject,
+  type Project,
+} from '@/app/projects/_services/projects.mutations.client';
 import { useOptimisticLock } from '@/components/optimistic-lock/optimistic-lock-provider';
 import { runLockedMutationOrThrow } from '@/lib/optimistic-lock/run-locked-mutation';
 import { errorMessage } from '@/lib/errors/error-message';
@@ -52,7 +55,8 @@ export function ProjectSettingsTab({
       ? existingConfig.work_item_types
       : [...ALL_TYPES];
 
-  const [selectedTypes, setSelectedTypes] = useState<WorkItemType[]>(initialTypes);
+  const [selectedTypes, setSelectedTypes] =
+    useState<WorkItemType[]>(initialTypes);
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<{
     type: 'success' | 'error';
@@ -132,7 +136,8 @@ export function ProjectSettingsTab({
       <Card className="border-border/60">
         <CardContent className="p-6 text-center">
           <p className="text-muted-foreground text-sm">
-            Only Project Managers and Administrators can configure project settings.
+            Only Project Managers and Administrators can configure project
+            settings.
           </p>
         </CardContent>
       </Card>
@@ -148,8 +153,8 @@ export function ProjectSettingsTab({
             Allowed Work-Item Types
           </CardTitle>
           <CardDescription className="text-muted-foreground text-sm">
-            Configure which work-item types are permitted in this project. Subtasks and
-            forms will automatically respect this configuration.
+            Configure which work-item types are permitted in this project.
+            Subtasks and forms will automatically respect this configuration.
           </CardDescription>
         </CardHeader>
 
@@ -201,11 +206,16 @@ export function ProjectSettingsTab({
                       <div className="flex flex-col">
                         <span className="text-sm font-medium">{type}</span>
                         <span className="text-muted-foreground text-xs">
-                          {type === WorkItemTypeEnum.Epic && 'Top-level initiative'}
-                          {type === WorkItemTypeEnum.Feature && 'Product capability'}
-                          {type === WorkItemTypeEnum.Story && 'User story / deliverable'}
-                          {type === WorkItemTypeEnum.Task && 'Standard work unit'}
-                          {type === WorkItemTypeEnum.Issue && 'Bug or leaf work item'}
+                          {type === WorkItemTypeEnum.Epic &&
+                            'Top-level initiative'}
+                          {type === WorkItemTypeEnum.Feature &&
+                            'Product capability'}
+                          {type === WorkItemTypeEnum.Story &&
+                            'User story / deliverable'}
+                          {type === WorkItemTypeEnum.Task &&
+                            'Standard work unit'}
+                          {type === WorkItemTypeEnum.Issue &&
+                            'Bug or leaf work item'}
                         </span>
                       </div>
                     </label>
@@ -216,30 +226,30 @@ export function ProjectSettingsTab({
 
             {existingConfig?.hierarchy &&
               Object.keys(existingConfig.hierarchy).length > 0 && (
-                <div className="border-border/60 bg-muted/20 space-y-1 rounded-lg border p-3 text-xs text-muted-foreground">
-                  <span className="font-semibold text-foreground">
+                <div className="border-border/60 bg-muted/20 text-muted-foreground space-y-1 rounded-lg border p-3 text-xs">
+                  <span className="text-foreground font-semibold">
                     Jira Import Custom Hierarchy Active
                   </span>
                   <p>
-                    This project uses a custom hierarchy defined during Jira import.
+                    This project uses a custom hierarchy defined during Jira
+                    import.
                   </p>
                 </div>
               )}
 
             {/* Warning if types are being removed */}
             {hasRemovedTypes && (
-              <div className="border-amber-500/20 bg-amber-500/10 flex items-start gap-3 rounded-lg border p-3.5 text-amber-800 dark:text-amber-200">
+              <div className="flex items-start gap-3 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3.5 text-amber-800 dark:text-amber-200">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
                 <div className="space-y-1 text-xs">
-                  <p className="font-semibold">
-                    Work items will be migrated
-                  </p>
+                  <p className="font-semibold">Work items will be migrated</p>
                   <p>
                     Removing{' '}
                     <span className="font-bold">{removedTypes.join(', ')}</span>{' '}
-                    will cause all existing items of those types in this project to fall back
-                    to <span className="font-bold">Issue</span>. Any subtask relations that are
-                    invalid under the new hierarchy will be cleared.
+                    will cause all existing items of those types in this project
+                    to fall back to <span className="font-bold">Issue</span>.
+                    Any subtask relations that are invalid under the new
+                    hierarchy will be cleared.
                   </p>
                 </div>
               </div>
