@@ -1,5 +1,5 @@
 import type { Tables } from '@repo/types';
-import type { BoardConfig } from '@repo/types/api/v1';
+import type { ProjectWorkflowConfig } from '@repo/types/api/v1';
 import type { User } from '@/app/users/_services/users.mutations.client';
 
 export {
@@ -56,10 +56,11 @@ export type CreateProjectInput = Omit<
   logo_url?: string | null;
   cover_picture?: string | null;
   attributes_config?: unknown;
+  workflow_config?: ProjectWorkflowConfig | null;
 };
 
 export type UpdateProjectInput = Partial<CreateProjectInput> & {
-  workflow_config?: BoardConfig | null;
+  workflow_config?: ProjectWorkflowConfig | null;
 };
 
 export type ProjectMemberWithUser = {

@@ -151,6 +151,7 @@ describe('parseProjectDetailsTab', () => {
     expect(parseProjectDetailsTab('sprints')).toBe('sprints');
     expect(parseProjectDetailsTab('integrations')).toBe('integrations');
     expect(parseProjectDetailsTab('board')).toBe('board');
+    expect(parseProjectDetailsTab('settings')).toBe('settings');
   });
 
   it('falls back to "details" for unknown or empty values', () => {

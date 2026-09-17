@@ -86,6 +86,42 @@ function validateStatusCoverage(
   }
 }
 
+function validateBoardTransitions(
+  columns: z.infer<typeof boardColumnsSchema>,
+  transitions: z.infer<typeof boardTransitionSchema>[],
+  context: z.RefinementCtx
+): void {
+  const columnIds = new Set(columns.map((column) => column.id));
+  const transitionPairs = new Set<string>();
+
+  transitions.forEach((transition, index) => {
+    if (!columnIds.has(transition.fromColumnId)) {
+      context.addIssue({
+        code: 'custom',
+        path: ['transitions', index, 'fromColumnId'],
+        message: 'Source column must exist in this board',
+      });
+    }
+    if (!columnIds.has(transition.toColumnId)) {
+      context.addIssue({
+        code: 'custom',
+        path: ['transitions', index, 'toColumnId'],
+        message: 'Destination column must exist in this board',
+      });
+    }
+
+    const pair = `${transition.fromColumnId}\u0000${transition.toColumnId}`;
+    if (transitionPairs.has(pair)) {
+      context.addIssue({
+        code: 'custom',
+        path: ['transitions', index],
+        message: 'Only one rule is allowed for each board transition',
+      });
+    }
+    transitionPairs.add(pair);
+  });
+}
+
 export const boardConfigV1Schema = z
   .object({
     version: z.literal('1'),
@@ -103,36 +139,7 @@ export const boardConfigV2Schema = z
   })
   .superRefine((config, context) => {
     validateStatusCoverage(config.columns, context);
-
-    const columnIds = new Set(config.columns.map((column) => column.id));
-    const transitionPairs = new Set<string>();
-
-    config.transitions.forEach((transition, index) => {
-      if (!columnIds.has(transition.fromColumnId)) {
-        context.addIssue({
-          code: 'custom',
-          path: ['transitions', index, 'fromColumnId'],
-          message: 'Source column must exist in this board',
-        });
-      }
-      if (!columnIds.has(transition.toColumnId)) {
-        context.addIssue({
-          code: 'custom',
-          path: ['transitions', index, 'toColumnId'],
-          message: 'Destination column must exist in this board',
-        });
-      }
-
-      const pair = `${transition.fromColumnId}\u0000${transition.toColumnId}`;
-      if (transitionPairs.has(pair)) {
-        context.addIssue({
-          code: 'custom',
-          path: ['transitions', index],
-          message: 'Only one rule is allowed for each board transition',
-        });
-      }
-      transitionPairs.add(pair);
-    });
+    validateBoardTransitions(config.columns, config.transitions, context);
   });
 
 /** Persisted board configuration. Version 1 intentionally has no rules. */
@@ -141,12 +148,34 @@ export const boardConfigSchema = z.union([
   boardConfigV2Schema,
 ]);
 
+export const projectWorkflowConfigSchema = z
+  .object({
+    version: z.union([z.literal('1'), z.literal('2')]).optional(),
+    columns: boardColumnsSchema.optional(),
+    transitions: z.array(boardTransitionSchema).optional(),
+    work_item_types: z
+      .array(z.enum(Constants.public.Enums.WorkItemType))
+      .min(1, 'At least one work item type must be configured')
+      .optional(),
+    hierarchy: z.record(z.string(), z.string().nullable()).optional(),
+  })
+  .passthrough()
+  .superRefine((config, context) => {
+    if (config.version && config.columns) {
+      validateStatusCoverage(config.columns, context);
+      if (config.version === '2' && config.transitions) {
+        validateBoardTransitions(config.columns, config.transitions, context);
+      }
+    }
+  });
+
 export type BoardColumn = z.infer<typeof boardColumnSchema>;
 export type BoardRuleMatcher = z.infer<typeof boardRuleMatcherSchema>;
 export type BoardTransition = z.infer<typeof boardTransitionSchema>;
 export type BoardConfigV1 = z.infer<typeof boardConfigV1Schema>;
 export type BoardConfigV2 = z.infer<typeof boardConfigV2Schema>;
 export type BoardConfig = z.infer<typeof boardConfigSchema>;
+export type ProjectWorkflowConfig = z.infer<typeof projectWorkflowConfigSchema>;
 
 export type RuntimeBoardConfig = {
   readonly version: BoardConfig['version'];

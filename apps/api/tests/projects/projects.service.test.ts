@@ -11,6 +11,7 @@ const {
   createMock,
   updateMock,
   deleteMock,
+  migrateWorkItemTypesAndPruneHierarchyMock,
 } = vi.hoisted(() => {
   process.env.GITHUB_ACTIONS = 'true';
   return {
@@ -24,6 +25,7 @@ const {
     createMock: vi.fn(),
     updateMock: vi.fn(),
     deleteMock: vi.fn(),
+    migrateWorkItemTypesAndPruneHierarchyMock: vi.fn(),
   };
 });
 
@@ -88,6 +90,8 @@ describe('ProjectsService backend tests', () => {
     create: createMock,
     update: updateMock,
     delete: deleteMock,
+    migrateWorkItemTypesAndPruneHierarchy:
+      migrateWorkItemTypesAndPruneHierarchyMock,
   } as unknown as ProjectsRepository;
 
   const service = new ProjectsService(projectsRepository);
@@ -135,7 +139,40 @@ describe('ProjectsService backend tests', () => {
       const result = await service.createProject('user-admin', input);
 
       expect(findByKeyMock).toHaveBeenCalledWith('ALICE');
-      expect(createMock).toHaveBeenCalledWith(input, 'user-admin');
+      expect(createMock).toHaveBeenCalledWith(
+        {
+          ...input,
+          workflow_config: {
+            work_item_types: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
+          },
+        },
+        'user-admin'
+      );
+      expect(result).toEqual(mockProject);
+    });
+
+    it('creates project with configured work_item_types', async () => {
+      mockActorRole('admin');
+      findByKeyMock.mockResolvedValue(null);
+      createMock.mockResolvedValue(mockProject);
+
+      const input = createProjectInput({
+        workflow_config: {
+          work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+        },
+      });
+
+      const result = await service.createProject('user-admin', input);
+
+      expect(createMock).toHaveBeenCalledWith(
+        {
+          ...input,
+          workflow_config: {
+            work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+          },
+        },
+        'user-admin'
+      );
       expect(result).toEqual(mockProject);
     });
 
@@ -243,6 +280,41 @@ describe('ProjectsService backend tests', () => {
         mockProject.updated_at
       );
       expect(result.name).toBe('Updated name');
+    });
+
+    it('migrates work items to Issue and prunes hierarchy when types are removed on update', async () => {
+      mockActorRole('manager');
+      findByKeyMock.mockResolvedValue(null);
+      findByIdMock.mockResolvedValue({
+        ...mockProject,
+        workflow_config: {
+          work_item_types: ['Epic', 'Feature', 'Story', 'Task', 'Issue'],
+        },
+      });
+      updateMock.mockResolvedValue(mockProject);
+      migrateWorkItemTypesAndPruneHierarchyMock.mockResolvedValue({
+        migratedCount: 2,
+        unlinkedCount: 1,
+      });
+
+      await service.updateProject(
+        'user-manager',
+        'project-1',
+        {
+          workflow_config: {
+            work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+          },
+        },
+        mockProject.updated_at
+      );
+
+      expect(
+        migrateWorkItemTypesAndPruneHierarchyMock
+      ).toHaveBeenCalledWith(
+        'project-1',
+        ['Epic', 'Story', 'Task', 'Issue'],
+        undefined
+      );
     });
 
     it('validates key uniqueness on update', async () => {

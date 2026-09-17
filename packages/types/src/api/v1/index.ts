@@ -18,6 +18,7 @@ export {
   normalizeBoardConfig,
   resolveBoardDestinationColumn,
   resolveBoardSourceColumn,
+  projectWorkflowConfigSchema,
   type BoardColumn,
   type BoardConfig,
   type BoardConfigV1,
@@ -25,7 +26,9 @@ export {
   type BoardRuleMatcher,
   type BoardTransition,
   type RuntimeBoardConfig,
+  type ProjectWorkflowConfig,
 } from './board-config.js';
+export * from './jira-import-types.js';
 export {
   createWorkItemBodySchema,
   isBlockedPastDueDateChange,

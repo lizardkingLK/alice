@@ -3,13 +3,17 @@ import type { projectsGetPayload } from '../../generated/prisma/models/projects.
 import type { project_membersGetPayload } from '../../generated/prisma/models/project_members.js';
 import { Constants } from '../../generated/supabase/database.types.js';
 import { ProjectStatus as ProjectStatusEnum } from '../../generated/prisma/enums.js';
-import { boardConfigSchema } from './board-config.js';
+import { projectWorkflowConfigSchema } from './board-config.js';
 import {
   emptyToUndefined,
   paginatedListLimitField,
   paginatedListPageField,
 } from './query-preprocess.js';
 import { ProjectFieldsConfigSchema } from './dynamic-fields.js';
+
+export * from './jira-import-types.js';
+export { projectWorkflowConfigSchema };
+export type { ProjectWorkflowConfig } from './board-config.js';
 
 export {
   DynamicFieldTypeEnum,
@@ -68,6 +72,7 @@ const baseCreateProjectSchema = z.object({
   github_repo: z.string().nullable().optional(),
   github_token: z.string().nullable().optional(),
   attributes_config: ProjectFieldsConfigSchema.nullable().optional(),
+  workflow_config: projectWorkflowConfigSchema.nullable().optional(),
 });
 
 export const createProjectSchema = baseCreateProjectSchema
@@ -116,7 +121,7 @@ export const createProjectSchema = baseCreateProjectSchema
 
 export const updateProjectSchema = baseCreateProjectSchema
   .partial()
-  .extend({ workflow_config: boardConfigSchema.nullable().optional() })
+  .extend({ workflow_config: projectWorkflowConfigSchema.nullable().optional() })
   .refine(
     (data) => {
       if (data.start_date && data.end_date) {
