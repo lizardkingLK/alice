@@ -15,9 +15,11 @@ export {
   boardRuleMatcherSchema,
   boardTransitionSchema,
   findBoardTransition,
+  findStatusTransition,
   normalizeBoardConfig,
   resolveBoardDestinationColumn,
   resolveBoardSourceColumn,
+  workItemStatusTransitionSchema,
   type BoardColumn,
   type BoardConfig,
   type BoardConfigV1,
@@ -25,6 +27,7 @@ export {
   type BoardRuleMatcher,
   type BoardTransition,
   type RuntimeBoardConfig,
+  type WorkItemStatusTransition,
 } from './board-config.js';
 export {
   createWorkItemBodySchema,

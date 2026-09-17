@@ -2,7 +2,12 @@ import {
   assignItemsToColumns,
   resolveBoardMove,
 } from '@/app/board/_helpers/board-columns';
-import { boardConfigSchema } from '@repo/types/api/v1';
+import {
+  boardConfigSchema,
+  findBoardTransition,
+  findStatusTransition,
+  normalizeBoardConfig,
+} from '@repo/types/api/v1';
 import { describe, expect, it } from 'vitest';
 
 const CUSTOM_COLUMNS = [
@@ -35,6 +40,20 @@ function version2Transition(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function version2StatusTransition(overrides: Record<string, unknown> = {}) {
+  return {
+    ...version2Transition(),
+    statusTransitions: [
+      {
+        fromStatus: 'ToDo',
+        toStatus: 'InProgress',
+        allowAnyOf: [{ scope: 'role', role: 'manager' }],
+        ...overrides,
+      },
+    ],
+  };
+}
+
 describe('boardConfigSchema', () => {
   it('accepts a valid version 1 custom board', () => {
     expect(
@@ -51,9 +70,51 @@ describe('boardConfigSchema', () => {
   });
 
   it('accepts a valid version 2 board with transition matchers', () => {
-    expect(boardConfigSchema.safeParse(version2Transition()).success).toBe(
-      true
+    const parsed = boardConfigSchema.safeParse(version2Transition());
+
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+
+    const normalized = normalizeBoardConfig(parsed.data);
+    expect(normalized.statusTransitions).toEqual([]);
+    expect(
+      findBoardTransition(normalized, 'development', 'code-review')
+    ).toMatchObject({
+      fromColumnId: 'development',
+      toColumnId: 'code-review',
+    });
+  });
+
+  it('normalizes version 1 and version 2 configs without status rules to an empty list', () => {
+    const version1 = boardConfigSchema.safeParse({
+      version: '1',
+      columns: CUSTOM_COLUMNS,
+    });
+    const version2 = boardConfigSchema.safeParse(version2Transition());
+
+    expect(version1.success).toBe(true);
+    expect(version2.success).toBe(true);
+    if (!version1.success || !version2.success) return;
+
+    expect(normalizeBoardConfig(version1.data).statusTransitions).toEqual([]);
+    expect(normalizeBoardConfig(version2.data).statusTransitions).toEqual([]);
+  });
+
+  it('accepts and finds a valid status transition including Draft', () => {
+    const config = version2StatusTransition({
+      fromStatus: 'Draft',
+      toStatus: 'New',
+    });
+    const parsed = boardConfigSchema.safeParse(config);
+
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+
+    const normalized = normalizeBoardConfig(parsed.data);
+    expect(findStatusTransition(normalized, 'Draft', 'New')).toEqual(
+      config.statusTransitions[0]
     );
+    expect(findStatusTransition(normalized, 'New', 'ToDo')).toBeNull();
   });
 
   it.each([
@@ -83,6 +144,41 @@ describe('boardConfigSchema', () => {
     const config = version2Transition();
     config.transitions.push({ ...config.transitions[0]! });
     expect(boardConfigSchema.safeParse(config).success).toBe(false);
+  });
+
+  it('rejects duplicate source/destination status pairs', () => {
+    const config = version2StatusTransition();
+    config.statusTransitions.push({ ...config.statusTransitions[0]! });
+
+    expect(boardConfigSchema.safeParse(config).success).toBe(false);
+  });
+
+  it('rejects a same-status transition rule', () => {
+    expect(
+      boardConfigSchema.safeParse(
+        version2StatusTransition({ toStatus: 'ToDo' })
+      ).success
+    ).toBe(false);
+  });
+
+  it('rejects a status transition with an empty matcher list', () => {
+    expect(
+      boardConfigSchema.safeParse(version2StatusTransition({ allowAnyOf: [] }))
+        .success
+    ).toBe(false);
+  });
+
+  it('rejects a status transition with duplicate matchers', () => {
+    expect(
+      boardConfigSchema.safeParse(
+        version2StatusTransition({
+          allowAnyOf: [
+            { scope: 'role', role: 'manager' },
+            { scope: 'role', role: 'manager' },
+          ],
+        })
+      ).success
+    ).toBe(false);
   });
 
   it.each(['New', 'ToDo', 'InProgress', 'Testing', 'Done'] as const)(

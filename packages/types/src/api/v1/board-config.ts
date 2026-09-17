@@ -1,11 +1,19 @@
 import { z } from 'zod';
 import { Constants } from '../../generated/supabase/database.types.js';
-import { BOARD_WORK_ITEM_STATUSES } from '../../work-item-status.js';
+import {
+  BOARD_WORK_ITEM_STATUSES,
+  WORK_ITEM_STATUSES,
+  type WorkItemStatus,
+} from '../../work-item-status.js';
 
 export const BOARD_MOVE_FORBIDDEN_CODE = 'BOARD_MOVE_FORBIDDEN' as const;
 
 const boardWorkItemStatusSchema = z.enum(BOARD_WORK_ITEM_STATUSES, {
   message: 'Please select a valid board status',
+});
+
+const workflowWorkItemStatusSchema = z.enum(WORK_ITEM_STATUSES, {
+  message: 'Please select a valid work item status',
 });
 
 export const boardColumnSchema = z.object({
@@ -35,6 +43,20 @@ function matcherKey(matcher: z.infer<typeof boardRuleMatcherSchema>): string {
   return `user:${matcher.userId.toLowerCase()}`;
 }
 
+function validateUniqueMatchers(
+  allowAnyOf: z.infer<typeof boardRuleMatcherSchema>[],
+  context: z.RefinementCtx
+): void {
+  const keys = allowAnyOf.map(matcherKey);
+  if (new Set(keys).size !== keys.length) {
+    context.addIssue({
+      code: 'custom',
+      path: ['allowAnyOf'],
+      message: 'Transition matchers must be unique',
+    });
+  }
+}
+
 export const boardTransitionSchema = z
   .object({
     fromColumnId: z.string().trim().min(1, 'Source column ID is required'),
@@ -52,14 +74,27 @@ export const boardTransitionSchema = z
       });
     }
 
-    const keys = transition.allowAnyOf.map(matcherKey);
-    if (new Set(keys).size !== keys.length) {
+    validateUniqueMatchers(transition.allowAnyOf, context);
+  });
+
+export const workItemStatusTransitionSchema = z
+  .object({
+    fromStatus: workflowWorkItemStatusSchema,
+    toStatus: workflowWorkItemStatusSchema,
+    allowAnyOf: z
+      .array(boardRuleMatcherSchema)
+      .min(1, 'Restricted transitions must allow at least one matcher'),
+  })
+  .superRefine((transition, context) => {
+    if (transition.fromStatus === transition.toStatus) {
       context.addIssue({
         code: 'custom',
-        path: ['allowAnyOf'],
-        message: 'Transition matchers must be unique',
+        path: ['toStatus'],
+        message: 'Source and destination statuses must be different',
       });
     }
+
+    validateUniqueMatchers(transition.allowAnyOf, context);
   });
 
 const boardColumnsSchema = z
@@ -100,12 +135,14 @@ export const boardConfigV2Schema = z
     version: z.literal('2'),
     columns: boardColumnsSchema,
     transitions: z.array(boardTransitionSchema),
+    statusTransitions: z.array(workItemStatusTransitionSchema).optional(),
   })
   .superRefine((config, context) => {
     validateStatusCoverage(config.columns, context);
 
     const columnIds = new Set(config.columns.map((column) => column.id));
     const transitionPairs = new Set<string>();
+    const statusTransitionPairs = new Set<string>();
 
     config.transitions.forEach((transition, index) => {
       if (!columnIds.has(transition.fromColumnId)) {
@@ -133,6 +170,18 @@ export const boardConfigV2Schema = z
       }
       transitionPairs.add(pair);
     });
+
+    config.statusTransitions?.forEach((transition, index) => {
+      const pair = `${transition.fromStatus}\u0000${transition.toStatus}`;
+      if (statusTransitionPairs.has(pair)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['statusTransitions', index],
+          message: 'Only one rule is allowed for each status transition',
+        });
+      }
+      statusTransitionPairs.add(pair);
+    });
   });
 
 /** Persisted board configuration. Version 1 intentionally has no rules. */
@@ -144,6 +193,9 @@ export const boardConfigSchema = z.union([
 export type BoardColumn = z.infer<typeof boardColumnSchema>;
 export type BoardRuleMatcher = z.infer<typeof boardRuleMatcherSchema>;
 export type BoardTransition = z.infer<typeof boardTransitionSchema>;
+export type WorkItemStatusTransition = z.infer<
+  typeof workItemStatusTransitionSchema
+>;
 export type BoardConfigV1 = z.infer<typeof boardConfigV1Schema>;
 export type BoardConfigV2 = z.infer<typeof boardConfigV2Schema>;
 export type BoardConfig = z.infer<typeof boardConfigSchema>;
@@ -152,6 +204,7 @@ export type RuntimeBoardConfig = {
   readonly version: BoardConfig['version'];
   readonly columns: BoardColumn[];
   readonly transitions: BoardTransition[];
+  readonly statusTransitions: WorkItemStatusTransition[];
 };
 
 /** Add runtime defaults without changing persisted version-1 JSON. */
@@ -160,6 +213,8 @@ export function normalizeBoardConfig(config: BoardConfig): RuntimeBoardConfig {
     version: config.version,
     columns: config.columns,
     transitions: config.version === '2' ? config.transitions : [],
+    statusTransitions:
+      config.version === '2' ? (config.statusTransitions ?? []) : [],
   };
 }
 
@@ -216,6 +271,19 @@ export function findBoardTransition(
       (transition) =>
         transition.fromColumnId === fromColumnId &&
         transition.toColumnId === toColumnId
+    ) ?? null
+  );
+}
+
+export function findStatusTransition(
+  config: RuntimeBoardConfig,
+  fromStatus: WorkItemStatus,
+  toStatus: WorkItemStatus
+): WorkItemStatusTransition | null {
+  return (
+    config.statusTransitions.find(
+      (transition) =>
+        transition.fromStatus === fromStatus && transition.toStatus === toStatus
     ) ?? null
   );
 }
