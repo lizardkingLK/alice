@@ -120,9 +120,14 @@ Settings sidebar adds **Integrations** (admin only). Content sections:
 
 Card pattern reuses project integration visuals (`Card`, status `Badge`, disabled primary actions with “Coming soon” copy).
 
+Turning a connected card **switch off** opens the shared hard-delete-style
+`RegistryConfirmDialog` (rose warning). Confirming deletes active
+`integrations` rows for that catalog; cancel leaves the switch on.
+
 Implementation:
 
 - `apps/web/app/settings/_components/settings-integrations-view.tsx`
+- `apps/web/app/settings/_helpers/workspace-integration-disconnect-copy.ts`
 - `apps/web/app/settings/_components/settings-integration-catalog.ts` — static catalog metadata
 - `settings-workspace.tsx` — conditional nav item
 - `settings-data.tsx` — admin gate + tab routing
@@ -462,17 +467,18 @@ Per-model API keys and optional `config.api_url` live in `integrations.config`. 
 
 ## Testing
 
-| Test                               | Location                                                       | Scope                                                 |
-| ---------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------- |
-| `parseSettingsTab('integrations')` | `apps/web/tests/lib/search-params-settings-tab.test.ts`        | Returns `integrations`                                |
-| `resolveSettingsTabForUser`        | `apps/web/tests/lib/search-params-settings-tab.test.ts`        | Non-admin + `integrations` → `general`                |
-| Catalog helpers                    | `apps/web/tests/settings/settings-integration-catalog.test.ts` | Filter/search, `isCatalogConnected`, configurable ids |
-| Settings API client                | `apps/web/tests/settings/integrations-api.shared.test.ts`      | List/create via `/api/integrations`                   |
-| Chat model helpers                 | `apps/web/tests/chat/chat-models-api.shared.test.ts`           | Default + selection resolution                        |
-| Integration config Zod             | `apps/web/tests/integrations/integrations-config.test.ts`      | Stored/public config, create/patch bodies             |
-| `integrations.service`             | `apps/api/tests/integrations/integrations.service.test.ts`     | Encrypt/strip, chat model pool, resolve for chat      |
-| `integrations` routes              | `apps/api/tests/integrations/integrations.route.test.ts`       | List, chat-models, create, admin RBAC 403             |
-| `resolveChatProvider`              | `apps/api/tests/integrations/resolve-chat-provider.test.ts`    | Provider registry                                     |
+| Test                               | Location                                                                | Scope                                                 |
+| ---------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------- |
+| `parseSettingsTab('integrations')` | `apps/web/tests/lib/search-params-settings-tab.test.ts`                 | Returns `integrations`                                |
+| `resolveSettingsTabForUser`        | `apps/web/tests/lib/search-params-settings-tab.test.ts`                 | Non-admin + `integrations` → `general`                |
+| Catalog helpers                    | `apps/web/tests/settings/settings-integration-catalog.test.ts`          | Filter/search, `isCatalogConnected`, configurable ids |
+| Disconnect confirm copy            | `apps/web/tests/settings/workspace-integration-disconnect-copy.test.ts` | Hard-disconnect warning strings                       |
+| Settings API client                | `apps/web/tests/settings/integrations-api.shared.test.ts`               | List/create via `/api/integrations`                   |
+| Chat model helpers                 | `apps/web/tests/chat/chat-models-api.shared.test.ts`                    | Default + selection resolution                        |
+| Integration config Zod             | `apps/web/tests/integrations/integrations-config.test.ts`               | Stored/public config, create/patch bodies             |
+| `integrations.service`             | `apps/api/tests/integrations/integrations.service.test.ts`              | Encrypt/strip, chat model pool, resolve for chat      |
+| `integrations` routes              | `apps/api/tests/integrations/integrations.route.test.ts`                | List, chat-models, create, admin RBAC 403             |
+| `resolveChatProvider`              | `apps/api/tests/integrations/resolve-chat-provider.test.ts`             | Provider registry                                     |
 
 ---
 

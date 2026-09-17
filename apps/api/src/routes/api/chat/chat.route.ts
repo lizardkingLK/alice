@@ -13,6 +13,7 @@ import {
   createChatAttachmentUploadSessionSchema,
   finalizeChatAttachmentUploadSchema,
   postChatMessageBodySchema,
+  renameChatConversationBodySchema,
 } from './chat.schemas';
 import type { StoredChatMessage } from './chat.route.types';
 
@@ -168,6 +169,41 @@ export function createChatRouter(deps: ChatRouterDeps): Router {
           error,
           'Failed to delete conversation',
           'error. delete conversation failed'
+        );
+      }
+    }
+  );
+
+  chatRouter.patch(
+    '/:conversationId',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const conversationId = await resolveOwnedConversationId(
+          chatService,
+          res,
+          req.userId!,
+          req.params.conversationId
+        );
+        if (!conversationId) {
+          return;
+        }
+        const parsed = renameChatConversationBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({ error: z.treeifyError(parsed.error) });
+        }
+        const renamed = await chatService.renameConversation(
+          req.userId!,
+          conversationId,
+          parsed.data.title
+        );
+        res.json(renamed);
+      } catch (error: unknown) {
+        sendChatError(
+          res,
+          error,
+          'Failed to rename conversation',
+          'error. rename conversation failed'
         );
       }
     }

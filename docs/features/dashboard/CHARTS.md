@@ -62,6 +62,10 @@ instance; default Status). Clicking a slice (any Labels field) opens Split and
 scopes the status-grouped table to that bucket (`focusedSliceKey`). Changing
 Labels clears the slice focus. The legend uses a fixed-height scroll area.
 
+Status-grouped table UI shares `GroupedItemsSection` /
+`GroupedItemsPaginatedTable` (`apps/web/components/grouped-items/`) with the
+Board **Grouped** layout (board groups by workflow column; Charts by status).
+
 No Boards section (use project filters).
 
 ## Persistence

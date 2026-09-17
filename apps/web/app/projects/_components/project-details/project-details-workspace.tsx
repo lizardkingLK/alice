@@ -7,6 +7,7 @@ import {
   Kanban,
   Network,
   Plug,
+  Settings,
   SlidersHorizontal,
   Timer,
   Users,
@@ -19,6 +20,7 @@ import { ProjectMembersTab } from '@/app/projects/_components/project-details/pr
 import { ProjectIntegrationsTab } from '@/app/projects/_components/project-details/project-integrations-tab';
 import { ProjectFieldsWorkspace } from '@/app/projects/_components/project-details/project-fields-workspace';
 import { BoardDesignerWorkspace } from '@/app/projects/_components/project-details/board-designer-workspace';
+import { ProjectSettingsTab } from '@/app/projects/_components/project-details/project-settings-tab';
 import type {
   Project,
   ProjectMemberWithUser,
@@ -138,6 +140,12 @@ const PROJECT_NAV_ITEMS: ReadonlyArray<{
     label: 'Board',
     Icon: Kanban,
   },
+  {
+    id: 'settings',
+    label: 'Settings',
+    Icon: Settings,
+    managerOrAdminOnly: true,
+  },
 ];
 
 export function ProjectDetailsWorkspace({
@@ -162,7 +170,10 @@ export function ProjectDetailsWorkspace({
   const canEditProject = isManagerOrAdmin(appRole);
 
   const activeTab =
-    requestedTab === 'sprints' && !canEditProject ? 'details' : requestedTab;
+    (requestedTab === 'sprints' || requestedTab === 'settings') &&
+    !canEditProject
+      ? 'details'
+      : requestedTab;
 
   const visibleNavItems = PROJECT_NAV_ITEMS.filter(
     (item) => !item.managerOrAdminOnly || canEditProject
@@ -374,6 +385,15 @@ export function ProjectDetailsWorkspace({
                   email: member.user?.email,
                   role: member.user?.role,
                 }))}
+            />
+          </div>
+        )}
+
+        {activeTab === 'settings' && canEditProject && (
+          <div className="p-6">
+            <ProjectSettingsTab
+              project={project}
+              isManagerOrAdmin={canEditProject}
             />
           </div>
         )}

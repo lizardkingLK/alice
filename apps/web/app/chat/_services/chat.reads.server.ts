@@ -8,6 +8,7 @@ import type {
   ChatConversation,
   ChatMessage,
 } from '../_components/chat-client.types';
+import { selectChatBootstrapConversation } from '../_helpers/select-chat-bootstrap-conversation';
 
 export type { ChatConversation } from '../_components/chat-client.types';
 
@@ -16,6 +17,9 @@ export type ChatPageBootstrap = {
   activeConversationId?: string;
   messages: ChatMessage[];
 };
+
+export type ChatPageBootstrapResult =
+  { ok: true; data: ChatPageBootstrap } | { ok: false; reason: 'not_found' };
 
 /**
  * Lists the current user's chat conversations via direct Supabase (RSC).
@@ -93,19 +97,24 @@ export async function getChatHistoryServer(
 
 /**
  * Prefetch conversations + selected thread for `/chat` in one RSC pass.
+ * When `activeId` is set but not owned/listed, returns `not_found` (caller
+ * should render the app not-found UI — e.g. stale favorites).
  */
 export async function getChatPageBootstrap(
   activeId?: string
-): Promise<ChatPageBootstrap> {
+): Promise<ChatPageBootstrapResult> {
   const conversations = await listChatConversations();
-  const selected = activeId
-    ? conversations.find((c) => c.id === activeId) || conversations[0]
-    : conversations[0];
+  const selection = selectChatBootstrapConversation(conversations, activeId);
 
-  if (!selected) {
-    return { conversations: [], messages: [] };
+  if (selection.kind === 'not_found') {
+    return { ok: false, reason: 'not_found' };
   }
 
+  if (selection.kind === 'empty') {
+    return { ok: true, data: { conversations: [], messages: [] } };
+  }
+
+  const selected = selection.conversation;
   let messages: ChatMessage[] = [];
   try {
     messages = await getChatHistoryServer(selected.id);
@@ -115,8 +124,11 @@ export async function getChatPageBootstrap(
   }
 
   return {
-    conversations,
-    activeConversationId: selected.id,
-    messages,
+    ok: true,
+    data: {
+      conversations,
+      activeConversationId: selected.id,
+      messages,
+    },
   };
 }

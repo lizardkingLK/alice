@@ -18,6 +18,7 @@ export {
   findBoardTransition,
   findStatusTransition,
   normalizeBoardConfig,
+  projectWorkflowConfigSchema,
   resolveBoardDestinationColumn,
   resolveBoardSourceColumn,
   workItemStatusTransitionSchema,
@@ -27,9 +28,11 @@ export {
   type BoardConfigV2,
   type BoardRuleMatcher,
   type BoardTransition,
+  type ProjectWorkflowConfig,
   type RuntimeBoardConfig,
   type WorkItemStatusTransition,
 } from './board-config.js';
+export * from './jira-import-types.js';
 export {
   createWorkItemBodySchema,
   isBlockedPastDueDateChange,
@@ -278,6 +281,8 @@ export {
   deleteChatAttachmentResponseSchema,
   finalizeChatAttachmentUploadSchema,
   postChatMessageBodySchema,
+  renameChatConversationBodySchema,
+  renameChatConversationResponseSchema,
   ChatTurnRoleEnum,
   postChatMessageSchema,
   uploadedChatAttachmentResultSchema,
@@ -297,6 +302,8 @@ export {
   type DeleteChatAttachmentResponse,
   type FinalizeChatAttachmentUploadBody,
   type PostChatMessageBody,
+  type RenameChatConversationBody,
+  type RenameChatConversationResponse,
   type UploadedChatAttachmentResult,
   type WorkItemDeduplicationItemResult,
   type WorkItemDeduplicationReport,

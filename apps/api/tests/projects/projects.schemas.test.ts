@@ -37,14 +37,18 @@ describe('projects schemas', () => {
       expect(parsed.success).toBe(true);
     });
 
-    it('does not include workflow config in the create contract', () => {
+    it('accepts workflow config in the create contract', () => {
       const parsed = createProjectSchema.safeParse({
         ...validCreateInput,
-        workflow_config: validBoardConfig,
+        workflow_config: {
+          work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+        },
       });
       expect(parsed.success).toBe(true);
       if (parsed.success) {
-        expect(parsed.data).not.toHaveProperty('workflow_config');
+        expect(parsed.data.workflow_config).toEqual({
+          work_item_types: ['Epic', 'Story', 'Task', 'Issue'],
+        });
       }
     });
 

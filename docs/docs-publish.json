@@ -165,6 +165,24 @@
           "title": "Technical spec: Dynamic fields & sidebar",
           "order": 9,
           "minimumRole": "member"
+        },
+        {
+          "path": "user-guide/projects/work-item-types-and-hierarchy.md",
+          "title": "Work-item types & hierarchy",
+          "order": 10,
+          "minimumRole": "manager"
+        },
+        {
+          "path": "user-guide/projects/work-item-types-testing.md",
+          "title": "Work-item types user testing",
+          "order": 11,
+          "minimumRole": "member"
+        },
+        {
+          "path": "features/projects/WORK_ITEM_TYPES_AND_HIERARCHY.md",
+          "title": "Technical spec: Work-item types & hierarchy",
+          "order": 12,
+          "minimumRole": "member"
         }
       ]
     },

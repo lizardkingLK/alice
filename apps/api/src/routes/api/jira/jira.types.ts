@@ -77,6 +77,7 @@ export interface ParsedJiraIssue {
   title: string;
   description: string;
   type: WorkItemType;
+  rawType?: string;
   parentKey?: string | null;
 }
 

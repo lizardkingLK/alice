@@ -7,6 +7,10 @@ import type { AppRole } from '@/lib/rbac/roles';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/dashboard',
+  useSearchParams: () => ({
+    get: () => null,
+    toString: () => '',
+  }),
 }));
 
 vi.mock('@/app/board/_hooks/use-workspace-defaults-nav-preference', () => ({
@@ -17,6 +21,7 @@ const useFavoritesMock = vi.fn(() => ({
   favorites: [] as Array<{
     id: string;
     pathname: string;
+    search: string;
     label: string;
     createdAt: string;
   }>,
@@ -50,10 +55,11 @@ describe('DashboardSidebar RBAC', () => {
     });
   });
 
-  it('shows System and Projects for admin', () => {
+  it('shows Users and Projects under Platform for admin', () => {
     renderSidebar('admin');
 
-    expect(screen.getByText('System')).toBeInTheDocument();
+    expect(screen.queryByText('System')).not.toBeInTheDocument();
+    expect(screen.getByText('Platform')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^Users$/i })).toHaveAttribute(
       'href',
       '/users'
@@ -67,7 +73,7 @@ describe('DashboardSidebar RBAC', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('hides System for manager but keeps Projects', () => {
+  it('hides Users for manager but keeps Projects under Platform', () => {
     renderSidebar('manager');
 
     expect(screen.queryByText('System')).not.toBeInTheDocument();
@@ -82,7 +88,7 @@ describe('DashboardSidebar RBAC', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('hides System for member but keeps Projects (not Sprints)', () => {
+  it('hides Users for member but keeps Projects under Platform (not Sprints)', () => {
     renderSidebar('member');
 
     expect(screen.queryByText('System')).not.toBeInTheDocument();
@@ -106,13 +112,14 @@ describe('DashboardSidebar RBAC', () => {
     );
   });
 
-  it('shows collapsible Favorites with path icons when favorites exist', () => {
+  it('shows Favorites above Platform with query href when favorites exist', () => {
     useFavoritesMock.mockReturnValue({
       favorites: [
         {
           id: '1',
-          pathname: '/projects',
-          label: 'Favorite Projects',
+          pathname: '/board',
+          search: 'project=abc',
+          label: 'Favorite Board',
           createdAt: '2026-01-01T00:00:00.000Z',
         },
       ],
@@ -125,8 +132,15 @@ describe('DashboardSidebar RBAC', () => {
 
     expect(screen.getByText('Favorites')).toBeInTheDocument();
     expect(
-      screen.getByRole('link', { name: /Favorite Projects/i })
-    ).toHaveAttribute('href', '/projects');
+      screen.getByRole('link', { name: /Favorite Board/i })
+    ).toHaveAttribute('href', '/board?project=abc');
+
+    const favoritesLabel = screen.getByText('Favorites');
+    const platformLabel = screen.getByText('Platform');
+    expect(
+      favoritesLabel.compareDocumentPosition(platformLabel) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
 
     fireEvent.click(
       screen.getByRole('button', { name: /Collapse Favorites/i })

@@ -34,6 +34,9 @@ import {
   Maximize2,
   Minimize2,
 } from '@repo/ui/lib/icons';
+import { CANONICAL_HIERARCHY_ORDER, type WorkItemType } from '@repo/types';
+import type { ProjectWorkflowConfig } from '@repo/types/api/v1';
+import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import type { User } from '@/app/users/_services/users.mutations.client';
 import {
   createProject,
@@ -125,6 +128,7 @@ function validateStep1({
   todayStr,
   originalStartDate,
   originalEndDate,
+  selectedWorkItemTypes,
 }: {
   name: string;
   key: string;
@@ -135,6 +139,7 @@ function validateStep1({
   todayStr: string;
   originalStartDate?: string;
   originalEndDate?: string;
+  selectedWorkItemTypes: WorkItemType[];
 }): string | null {
   const projectNameError = validateProjectName(name);
   if (projectNameError) return projectNameError;
@@ -162,6 +167,10 @@ function validateStep1({
     startDate
   );
   if (endDateError) return endDateError;
+
+  if (!selectedWorkItemTypes || selectedWorkItemTypes.length === 0) {
+    return 'At least one work-item type must be selected.';
+  }
 
   return null;
 }
@@ -211,6 +220,7 @@ function getStepError(
     todayStr: string;
     originalStartDate?: string;
     originalEndDate?: string;
+    selectedWorkItemTypes: WorkItemType[];
     importFromJira: boolean;
     jiraConnectionId: string;
     jiraProjectKey: string;
@@ -230,6 +240,7 @@ function getStepError(
       todayStr: fields.todayStr,
       originalStartDate: fields.originalStartDate,
       originalEndDate: fields.originalEndDate,
+      selectedWorkItemTypes: fields.selectedWorkItemTypes,
     });
   }
   if (currentStep === 2) {
@@ -265,6 +276,8 @@ interface Step1Props {
   setStartDate: (_date: string) => void;
   endDate: string;
   setEndDate: (_date: string) => void;
+  selectedWorkItemTypes: WorkItemType[];
+  setSelectedWorkItemTypes: (_types: WorkItemType[]) => void;
   users: User[];
   isEditMode: boolean;
   getTodayDateString: () => string;
@@ -286,6 +299,8 @@ function Step1BasicDetails({
   setStartDate,
   endDate,
   setEndDate,
+  selectedWorkItemTypes,
+  setSelectedWorkItemTypes,
   users,
   getTodayDateString,
 }: Readonly<Step1Props>) {
@@ -423,6 +438,49 @@ function Step1BasicDetails({
             }
             className="bg-background/80 focus-visible:ring-primary border-input focus:border-primary h-10 transition-colors"
           />
+        </div>
+      </div>
+
+      <div className="space-y-3 pt-2">
+        <div>
+          <Label className="text-sm font-medium">Allowed Work-Item Types</Label>
+          <p className="text-muted-foreground text-xs">
+            Select the work-item types available for use within this project.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          {CANONICAL_HIERARCHY_ORDER.map((t) => {
+            const isChecked = selectedWorkItemTypes.includes(t);
+            return (
+              <label
+                key={t}
+                className={cn(
+                  'flex cursor-pointer items-center space-x-2 rounded-md border p-2.5 text-sm transition-colors',
+                  isChecked
+                    ? 'border-primary/50 bg-primary/5 font-medium'
+                    : 'border-border text-muted-foreground hover:border-primary/20'
+                )}
+              >
+                <Checkbox
+                  checked={isChecked}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      const next = CANONICAL_HIERARCHY_ORDER.filter(
+                        (item) =>
+                          item === t || selectedWorkItemTypes.includes(item)
+                      );
+                      setSelectedWorkItemTypes(next);
+                    } else {
+                      setSelectedWorkItemTypes(
+                        selectedWorkItemTypes.filter((item) => item !== t)
+                      );
+                    }
+                  }}
+                />
+                <span>{t}</span>
+              </label>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -679,6 +737,11 @@ export function ProjectForm({
   const [endDate, setEndDate] = useState(
     formatDateForInput(projectToEdit?.end_date)
   );
+  const initialWorkflowConfig = projectToEdit?.workflow_config as
+    ProjectWorkflowConfig | null | undefined;
+  const [selectedWorkItemTypes, setSelectedWorkItemTypes] = useState<
+    WorkItemType[]
+  >(initialWorkflowConfig?.work_item_types ?? [...CANONICAL_HIERARCHY_ORDER]);
 
   // Stepper state
   const [step, setStep] = useState(1);
@@ -718,6 +781,7 @@ export function ProjectForm({
       originalEndDate: projectToEdit
         ? formatDateForInput(projectToEdit.end_date)
         : undefined,
+      selectedWorkItemTypes,
       importFromJira,
       jiraConnectionId,
       jiraProjectKey,
@@ -736,6 +800,7 @@ export function ProjectForm({
   useEffect(() => {
     if (!projectToEdit) {
       setStartDate(getTodayDateString());
+      setSelectedWorkItemTypes([...CANONICAL_HIERARCHY_ORDER]);
       return;
     }
 
@@ -746,6 +811,11 @@ export function ProjectForm({
     setStatus(projectToEdit.status);
     setStartDate(formatDateForInput(projectToEdit.start_date));
     setEndDate(formatDateForInput(projectToEdit.end_date));
+    const editWorkflowConfig = projectToEdit.workflow_config as
+      ProjectWorkflowConfig | null | undefined;
+    setSelectedWorkItemTypes(
+      editWorkflowConfig?.work_item_types ?? [...CANONICAL_HIERARCHY_ORDER]
+    );
 
     const hasJira = Boolean(
       projectToEdit.jira_connection_id && projectToEdit.jira_project_key
@@ -796,6 +866,7 @@ export function ProjectForm({
       end_date: projectData.end_date,
       status: projectData.status,
       attributes_config: projectData.attributes_config,
+      workflow_config: projectData.workflow_config,
       jira_connection_id: projectData.jira_connection_id,
       jira_project_key: projectData.jira_project_key,
       github_repo: projectData.github_repo,
@@ -842,6 +913,13 @@ export function ProjectForm({
     return null;
   };
 
+  const resolveSubmitError = (error: unknown, isEdit: boolean): string => {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return `Failed to ${isEdit ? 'update' : 'create'} project.`;
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -856,7 +934,8 @@ export function ProjectForm({
     setMessage(null);
     setIsError(false);
 
-    if (!name.trim() || !key.trim() || !selectedOwnerId) {
+    const hasRequiredFields = name.trim() && key.trim() && selectedOwnerId;
+    if (!hasRequiredFields) {
       setMessage('Project Name, Key, and Owner are required.');
       setIsError(true);
       setIsSubmitting(false);
@@ -864,7 +943,15 @@ export function ProjectForm({
     }
 
     try {
-      const linkedJira = importFromJira && jiraConnectionId && jiraProjectKey;
+      const linkedJira = Boolean(
+        importFromJira && jiraConnectionId && jiraProjectKey
+      );
+      const existingConfig =
+        typeof projectToEdit?.workflow_config === 'object' &&
+        projectToEdit?.workflow_config !== null
+          ? (projectToEdit.workflow_config as Record<string, unknown>)
+          : {};
+
       const projectData: CreateProjectInput = {
         name: name.trim(),
         key: key.toUpperCase().trim(),
@@ -874,6 +961,10 @@ export function ProjectForm({
         end_date: endDate || null,
         status: status,
         attributes_config: null,
+        workflow_config: {
+          ...existingConfig,
+          work_item_types: selectedWorkItemTypes,
+        },
         jira_connection_id: linkedJira ? jiraConnectionId : null,
         jira_project_key: linkedJira
           ? jiraProjectKey.toUpperCase().trim()
@@ -892,12 +983,7 @@ export function ProjectForm({
 
       setIsSuccess(true);
     } catch (error) {
-      const modeText = projectToEdit ? 'update' : 'create';
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : `Failed to ${modeText} project.`;
-      setMessage(errorMessage);
+      setMessage(resolveSubmitError(error, Boolean(projectToEdit)));
       setIsError(true);
     } finally {
       setIsSubmitting(false);
@@ -988,6 +1074,8 @@ export function ProjectForm({
                 setStartDate,
                 endDate,
                 setEndDate,
+                selectedWorkItemTypes,
+                setSelectedWorkItemTypes,
                 users,
                 isEditMode,
                 getTodayDateString,

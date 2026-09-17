@@ -1,26 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import {
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
-  type ColumnDef,
-  type PaginationState,
-} from '@tanstack/react-table';
+import { useMemo, useState } from 'react';
+import type { ColumnDef } from '@tanstack/react-table';
 import { BOARD_WORK_ITEM_STATUSES, type WorkItemStatus } from '@repo/types';
-import { Button } from '@repo/ui/components/ui/button';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@repo/ui/components/ui/collapsible';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@repo/ui/components/ui/tooltip';
-import { ChevronDown, ChevronRight, Plus } from '@repo/ui/lib/icons';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';
 import {
@@ -39,12 +21,11 @@ import { PriorityBadge } from '@/app/work-items/_components/work-item-badge/work
 import { WorkItemFormDialog } from '@/app/work-items/_components/work-item-form/work-item-form-dialog';
 import { STATUS_META } from '@/app/work-items/_helpers/work-item-status';
 import type { DbWorkItem } from '@/app/work-items/_services/work-items.reads.server';
-import { DataTable } from '@/components/data-table';
-import { Pagination } from '@/components/pagination';
+import { GroupedItemsPaginatedTable } from '@/components/grouped-items/grouped-items-paginated-table';
+import { GroupedItemsSection } from '@/components/grouped-items/grouped-items-section';
 import { RegistryRowActions } from '@/components/registry-row-actions';
 import { UserAvatar } from '@/components/user-avatar';
 
-const DEFAULT_PAGE_SIZE = 10;
 const DIALOG_CLOSE_MS = 200;
 
 const CHARTS_FORM_PROJECTS = chartsSampleProjectsForForm();
@@ -142,146 +123,6 @@ function buildColumns(
   ];
 }
 
-function StatusGroupTable({
-  items,
-  onEdit,
-}: Readonly<{
-  items: readonly ChartsSampleWorkItem[];
-  // eslint-disable-next-line no-unused-vars
-  onEdit: (item: ChartsSampleWorkItem) => void;
-}>) {
-  const data = useMemo(() => [...items], [items]);
-  const columns = useMemo(() => buildColumns(onEdit), [onEdit]);
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: DEFAULT_PAGE_SIZE,
-  });
-
-  useEffect(() => {
-    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-  }, [items]);
-
-  const table = useReactTable({
-    data,
-    columns,
-    state: { pagination },
-    onPaginationChange: setPagination,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getRowId: (row) => row.id,
-  });
-
-  const page = pagination.pageIndex + 1;
-  const limit = pagination.pageSize;
-  const totalCount = data.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / limit));
-
-  return (
-    <div className="flex min-w-0 flex-col gap-2">
-      <DataTable
-        table={table}
-        columnCount={columns.length}
-        emptyState="No sample tasks in this status"
-        rowClassName="hover:bg-muted/40"
-      />
-      {totalCount > 0 ? (
-        <div className="[&>div]:mt-2 [&>div]:border-t-0 [&>div]:pt-2">
-          <Pagination
-            totalCount={totalCount}
-            page={page}
-            limit={limit}
-            totalPages={totalPages}
-            onPageChange={(nextPage) => {
-              setPagination((prev) => ({
-                ...prev,
-                pageIndex: Math.max(0, nextPage - 1),
-              }));
-            }}
-            onLimitChange={(nextLimit) => {
-              setPagination({ pageIndex: 0, pageSize: nextLimit });
-            }}
-            label="tasks"
-          />
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function StatusGroupSection({
-  status,
-  items,
-  defaultOpen,
-  onCreate,
-  onEdit,
-}: Readonly<{
-  status: WorkItemStatus;
-  items: readonly ChartsSampleWorkItem[];
-  defaultOpen: boolean;
-  // eslint-disable-next-line no-unused-vars
-  onCreate: (status: WorkItemStatus) => void;
-  // eslint-disable-next-line no-unused-vars
-  onEdit: (item: ChartsSampleWorkItem) => void;
-}>) {
-  const [open, setOpen] = useState(defaultOpen);
-  const meta = STATUS_META[status];
-  const label = meta?.label ?? status;
-  const countLabel = items.length === 1 ? '1 item' : `${items.length} items`;
-
-  return (
-    <Collapsible open={open} onOpenChange={setOpen} className="min-w-0">
-      <div className="flex items-center gap-1">
-        <CollapsibleTrigger
-          type="button"
-          aria-label={`${label}, ${countLabel}`}
-          className={cn(
-            'group hover:bg-muted/50 flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md px-1 py-1.5 text-left text-sm font-semibold tracking-tight',
-            meta?.textClass
-          )}
-        >
-          {open ? (
-            <ChevronDown className="size-4 shrink-0" aria-hidden />
-          ) : (
-            <ChevronRight className="size-4 shrink-0" aria-hidden />
-          )}
-          <span className="flex min-w-0 items-baseline gap-1.5">
-            <span className="min-w-0">{label}</span>
-            <span
-              className="text-muted-foreground text-xs font-normal opacity-0 transition-opacity group-hover:opacity-100"
-              aria-hidden
-            >
-              {countLabel}
-            </span>
-          </span>
-        </CollapsibleTrigger>
-
-        <Tooltip delayDuration={400}>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label={`Add task in ${label}`}
-              className="text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
-              onClick={(event) => {
-                event.stopPropagation();
-                onCreate(status);
-              }}
-              onMouseDown={(event) => event.stopPropagation()}
-            >
-              <Plus className="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">Add task</TooltipContent>
-        </Tooltip>
-      </div>
-      <CollapsibleContent className="pt-1 pb-3">
-        <StatusGroupTable items={items} onEdit={onEdit} />
-      </CollapsibleContent>
-    </Collapsible>
-  );
-}
-
 export function ChartsStatusGroupedTable({
   workItems,
   sourceWorkItems,
@@ -319,6 +160,8 @@ export function ChartsStatusGroupedTable({
     setFormOpen(true);
   };
 
+  const columns = useMemo(() => buildColumns(openEdit), []);
+
   const handleFormOpenChange = (open: boolean) => {
     setFormOpen(open);
     if (!open) {
@@ -354,16 +197,30 @@ export function ChartsStatusGroupedTable({
           className
         )}
       >
-        {groups.map((group) => (
-          <StatusGroupSection
-            key={group.status}
-            status={group.status}
-            items={group.items}
-            defaultOpen
-            onCreate={openCreate}
-            onEdit={openEdit}
-          />
-        ))}
+        {groups.map((group) => {
+          const meta = STATUS_META[group.status];
+          const label = meta?.label ?? group.status;
+          return (
+            <GroupedItemsSection
+              key={group.status}
+              label={label}
+              labelClassName={meta?.textClass}
+              itemCount={group.items.length}
+              defaultOpen
+              addAriaLabel={`Add task in ${label}`}
+              onAdd={() => openCreate(group.status)}
+            >
+              <GroupedItemsPaginatedTable
+                data={group.items}
+                columns={columns}
+                getRowId={(row) => row.id}
+                emptyState="No sample tasks in this status"
+                itemLabel="tasks"
+                rowClassName="hover:bg-muted/40"
+              />
+            </GroupedItemsSection>
+          );
+        })}
       </div>
 
       <WorkItemFormDialog

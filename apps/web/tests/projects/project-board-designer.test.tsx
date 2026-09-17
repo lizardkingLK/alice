@@ -96,7 +96,7 @@ describe('BoardDesignerWorkspace', () => {
         ]),
       })
     );
-    expect(savedConfig?.columns.at(-2)?.id).toBe(
+    expect(savedConfig?.columns?.at(-2)?.id).toBe(
       '11111111-1111-4111-8111-111111111111'
     );
     expect(refresh).toHaveBeenCalled();
@@ -110,7 +110,12 @@ describe('BoardDesignerWorkspace', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
     await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
 
-    expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    // Wait for isSaving to clear — label is "Saving…" while the mutation settles.
+    const saveButton = await screen.findByRole('button', {
+      name: 'Save changes',
+    });
+    expect(saveButton).toBeDisabled();
+
     fireEvent.change(name, { target: { value: 'Inbox' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
     await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(2));
@@ -119,7 +124,7 @@ describe('BoardDesignerWorkspace', () => {
       '2026-09-11T01:00:00.000Z'
     );
     expect(
-      vi.mocked(updateProject).mock.calls[1]?.[1].workflow_config?.columns[0]
+      vi.mocked(updateProject).mock.calls[1]?.[1]?.workflow_config?.columns?.[0]
     ).toEqual({ id: 'backlog', name: 'Inbox', status: 'New' });
   });
 
