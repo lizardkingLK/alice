@@ -55,44 +55,46 @@ export type ResolvedProjectHierarchy = {
   childToParent: Partial<Record<WorkItemType, WorkItemType>>;
 };
 
-/**
- * Resolves the parent-child hierarchy for a project.
- * If customHierarchy is provided (strictly from Jira import), it takes precedence.
- * Otherwise, the hierarchy strictly follows the fixed system rules (Epic -> Story -> Task -> Issue).
- * Selecting work-item types during project creation/editing only controls which types are available,
- * and does not automatically customize or alter the fixed hierarchy.
- */
-export function resolveProjectHierarchy(
-  allowedTypes?: readonly WorkItemType[] | null,
-  customHierarchy?: Record<string, string | null> | null
+function isTypePermitted(
+  type: string,
+  allowedTypes?: readonly WorkItemType[] | null
+): boolean {
+  if (!WORK_ITEM_TYPES.includes(type as WorkItemType)) {
+    return false;
+  }
+  if (!allowedTypes || allowedTypes.length === 0) {
+    return true;
+  }
+  return allowedTypes.includes(type as WorkItemType);
+}
+
+function resolveCustomHierarchy(
+  customHierarchy: Record<string, string | null>,
+  allowedTypes?: readonly WorkItemType[] | null
 ): ResolvedProjectHierarchy {
   const parentToChild: Partial<Record<WorkItemType, WorkItemType>> = {};
   const childToParent: Partial<Record<WorkItemType, WorkItemType>> = {};
 
-  if (customHierarchy && Object.keys(customHierarchy).length > 0) {
-    for (const [parent, child] of Object.entries(customHierarchy)) {
-      if (
-        child &&
-        WORK_ITEM_TYPES.includes(parent as WorkItemType) &&
-        WORK_ITEM_TYPES.includes(child as WorkItemType)
-      ) {
-        if (
-          allowedTypes &&
-          allowedTypes.length > 0 &&
-          (!allowedTypes.includes(parent as WorkItemType) ||
-            !allowedTypes.includes(child as WorkItemType))
-        ) {
-          continue;
-        }
-        parentToChild[parent as WorkItemType] = child as WorkItemType;
-        childToParent[child as WorkItemType] = parent as WorkItemType;
-      }
+  for (const [parent, child] of Object.entries(customHierarchy)) {
+    if (
+      child &&
+      isTypePermitted(parent, allowedTypes) &&
+      isTypePermitted(child, allowedTypes)
+    ) {
+      parentToChild[parent as WorkItemType] = child as WorkItemType;
+      childToParent[child as WorkItemType] = parent as WorkItemType;
     }
-    return { parentToChild, childToParent };
   }
 
-  // Follow the fixed system rules: Epic -> Story -> Task -> Issue
-  // Allowed types restrict which levels are active, but do not customize the hierarchy.
+  return { parentToChild, childToParent };
+}
+
+function resolveDefaultHierarchy(
+  allowedTypes?: readonly WorkItemType[] | null
+): ResolvedProjectHierarchy {
+  const parentToChild: Partial<Record<WorkItemType, WorkItemType>> = {};
+  const childToParent: Partial<Record<WorkItemType, WorkItemType>> = {};
+
   const effectiveTypes =
     allowedTypes && allowedTypes.length > 0
       ? DEFAULT_SYSTEM_HIERARCHY.filter((type) => allowedTypes.includes(type))
@@ -106,6 +108,23 @@ export function resolveProjectHierarchy(
   }
 
   return { parentToChild, childToParent };
+}
+
+/**
+ * Resolves the parent-child hierarchy for a project.
+ * If customHierarchy is provided (strictly from Jira import), it takes precedence.
+ * Otherwise, the hierarchy strictly follows the fixed system rules (Epic -> Story -> Task -> Issue).
+ * Selecting work-item types during project creation/editing only controls which types are available,
+ * and does not automatically customize or alter the fixed hierarchy.
+ */
+export function resolveProjectHierarchy(
+  allowedTypes?: readonly WorkItemType[] | null,
+  customHierarchy?: Record<string, string | null> | null
+): ResolvedProjectHierarchy {
+  if (customHierarchy && Object.keys(customHierarchy).length > 0) {
+    return resolveCustomHierarchy(customHierarchy, allowedTypes);
+  }
+  return resolveDefaultHierarchy(allowedTypes);
 }
 
 export function getAllowedChildType(

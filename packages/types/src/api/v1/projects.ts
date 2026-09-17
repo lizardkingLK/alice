@@ -4,7 +4,6 @@ import type { project_membersGetPayload } from '../../generated/prisma/models/pr
 import { Constants } from '../../generated/supabase/database.types.js';
 import { ProjectStatus as ProjectStatusEnum } from '../../generated/prisma/enums.js';
 import {
-  boardConfigSchema,
   projectWorkflowConfigSchema,
   type ProjectWorkflowConfig,
 } from './board-config.js';
