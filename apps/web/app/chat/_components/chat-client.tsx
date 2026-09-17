@@ -518,7 +518,15 @@ function applySuccessfulChatResponse(params: {
     if (!response.is_processing) {
       hydratedRef.current = response.conversationId;
     }
-    router.replace(`/chat?conversationId=${response.conversationId}`);
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(
+        null,
+        '',
+        `/chat?conversationId=${response.conversationId}`
+      );
+    } else {
+      router.replace(`/chat?conversationId=${response.conversationId}`);
+    }
     setActiveConversationId(response.conversationId);
     setConversations((prev) => [
       {
@@ -869,6 +877,7 @@ export function ChatClient({
         hydratedRef,
         router,
       });
+      void revalidateChatConversations();
 
       if (response.actions && response.actions.length > 0) {
         const mutationActionTypes = response.actions
