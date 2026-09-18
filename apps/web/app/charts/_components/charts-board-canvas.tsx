@@ -34,6 +34,17 @@ import type {
 import 'react-grid-layout/css/styles.css';
 import '@/app/dashboard/_components/dashboard-grid.css';
 
+/**
+ * Older board JSON stored status focus as `focusedStatus`.
+ * Prefer `focusedSliceKey` everywhere going forward.
+ */
+function resolveFocusedSliceKey(source: {
+  readonly focusedSliceKey?: string;
+  readonly focusedStatus?: string;
+}): string | undefined {
+  return source.focusedSliceKey ?? source.focusedStatus;
+}
+
 const LAYOUT_STORAGE_KEY = 'alice.charts.board.layout.v1';
 const INSTANCES_STORAGE_KEY = 'alice.charts.board.instances.v1';
 
@@ -255,6 +266,11 @@ type ChartsBoardCanvasProps = {
   ) => void;
   readonly focusWidgetId?: string;
   readonly onFocusWidgetDismiss?: () => void;
+  /** Accessible projects for Chart widget filters / series. */
+  readonly accessibleProjects?: ReadonlyArray<{
+    readonly id: string;
+    readonly name: string;
+  }>;
   /** False until localStorage board JSON has been read on the client. */
   readonly hydrated?: boolean;
   readonly className?: string;
@@ -273,6 +289,7 @@ export function ChartsBoardCanvas({
   onLabelFieldChange,
   focusWidgetId,
   onFocusWidgetDismiss,
+  accessibleProjects = [],
   hydrated = true,
   className,
 }: Readonly<ChartsBoardCanvasProps>) {
@@ -337,6 +354,7 @@ export function ChartsBoardCanvas({
           onLabelFieldChange={onLabelFieldChange}
           focusWidgetId={focusWidgetId}
           onFocusWidgetDismiss={onFocusWidgetDismiss}
+          accessibleProjects={accessibleProjects}
         />
       </div>
     </div>
@@ -377,6 +395,7 @@ function BoardCanvasBody({
   onLabelFieldChange,
   focusWidgetId,
   onFocusWidgetDismiss,
+  accessibleProjects = [],
 }: Readonly<{
   isEmpty: boolean;
   mounted: boolean;
@@ -425,6 +444,10 @@ function BoardCanvasBody({
   ) => void;
   focusWidgetId?: string;
   onFocusWidgetDismiss?: () => void;
+  accessibleProjects?: ReadonlyArray<{
+    readonly id: string;
+    readonly name: string;
+  }>;
 }>) {
   const { dragSessionKey, onDragStart, onDragStop } =
     useCancelGridDragOnEscape(onLayoutChange);
@@ -476,9 +499,8 @@ function BoardCanvasBody({
               viewMode={entry?.instance.viewMode}
               pieVariant={entry?.instance.pieVariant}
               labelField={entry?.instance.labelField}
-              focusedSliceKey={
-                entry?.instance.focusedSliceKey ?? entry?.instance.focusedStatus
-              }
+              focusedSliceKey={resolveFocusedSliceKey(entry?.instance ?? {})}
+              accessibleProjects={accessibleProjects}
               onRemove={() => onRemoveWidget(item.i)}
               onDuplicate={() => onDuplicateWidget(item.i)}
               onRename={(nextTitle) => onRenameWidget(item.i, nextTitle)}
@@ -596,11 +618,12 @@ export function duplicateChartWidget(
       nextInstances
     );
   }
-  if (source.viewMode || source.focusedSliceKey || source.focusedStatus) {
+  const sourceFocus = resolveFocusedSliceKey(source);
+  if (source.viewMode || sourceFocus) {
     nextInstances = updateChartWidgetViewMode(
       copiedId,
       source.viewMode ?? 'chart',
-      source.focusedSliceKey ?? source.focusedStatus ?? null,
+      sourceFocus ?? null,
       nextInstances
     );
   }
@@ -703,7 +726,7 @@ function withInstanceFields(
     next,
     patch.clearFocusedSliceKey,
     'focusedSliceKey',
-    patch.focusedSliceKey ?? item.focusedSliceKey ?? item.focusedStatus
+    patch.focusedSliceKey ?? resolveFocusedSliceKey(item)
   );
 
   const pieVariant = patch.pieVariant ?? item.pieVariant;

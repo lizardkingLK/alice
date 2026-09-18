@@ -4,12 +4,8 @@ import { useMemo } from 'react';
 import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
 import { TruncatedText } from '@repo/ui/components/ui/truncated-text';
 import { cn } from '@repo/ui/lib/utils';
-import {
-  buildChartsPieFromSample,
-  DEFAULT_CHARTS_LABEL_FIELD,
-  type ChartsLabelFieldId,
-  type ChartsSampleWorkItem,
-} from '@/app/charts/_components/charts-sample.data';
+import type { ChartSeriesLabelField, ChartSeriesSlice } from '@repo/types';
+import { buildChartsPieFromSeries } from '@/app/charts/_helpers/charts-analytics.ui';
 import type { ChartPieVariant } from '@/app/charts/_components/charts.types';
 import {
   StatusDistributionWheel,
@@ -19,11 +15,14 @@ import {
 type ChartsStatusPiePreviewProps = {
   readonly className?: string;
   readonly size?: 'card' | 'dialog' | 'split';
-  readonly workItems?: readonly ChartsSampleWorkItem[];
+  /** Live series slices from the analytics API. */
+  readonly slices?: readonly ChartSeriesSlice[] | null;
+  readonly labelField?: ChartSeriesLabelField;
+  readonly loading?: boolean;
+  readonly emptyMessage?: string;
+  readonly totalLabel?: string;
   /** Pie (solid) vs donut; defaults to donut. */
   readonly pieVariant?: ChartPieVariant;
-  /** Labels → Columns group-by; defaults to status. */
-  readonly labelField?: ChartsLabelFieldId;
   /** When set, pie slices and legend rows are clickable. */
   // eslint-disable-next-line no-unused-vars -- slice click callback
   readonly onSliceClick?: (sliceKey: string) => void;
@@ -32,16 +31,19 @@ type ChartsStatusPiePreviewProps = {
 export function ChartsStatusPiePreview({
   className,
   size = 'card',
-  workItems,
+  slices = null,
+  labelField = 'status',
+  loading = false,
+  emptyMessage = 'No work items match',
+  totalLabel = 'work items',
   pieVariant = 'donut',
-  labelField = DEFAULT_CHARTS_LABEL_FIELD,
   onSliceClick,
 }: Readonly<ChartsStatusPiePreviewProps>) {
   const isDialog = size === 'dialog';
   const isSplit = size === 'split';
   const { data, config, total } = useMemo(
-    () => buildChartsPieFromSample(workItems, labelField),
-    [labelField, workItems]
+    () => buildChartsPieFromSeries(slices ?? [], labelField),
+    [labelField, slices]
   );
 
   const wheelData = data as StatusDistributionSlice[];
@@ -52,10 +54,22 @@ export function ChartsStatusPiePreview({
   const resolveSliceKey = (chartKey: string) =>
     data.find((entry) => entry.status === chartKey)?.key ?? chartKey;
 
-  // Fill the flex slot; ChartViewport (square) sizes the pie to min(width, height).
   const pieSlotClass = 'h-full min-h-0 w-full max-w-full self-stretch';
   const legendHeightClass = isRoomy ? 'h-56' : 'h-40';
   const legendWidthClass = isRoomy ? 'w-44' : 'w-36';
+
+  if (loading) {
+    return (
+      <div
+        className={cn(
+          'text-muted-foreground flex min-h-0 flex-1 items-center justify-center text-sm',
+          className
+        )}
+      >
+        Loading chart…
+      </div>
+    );
+  }
 
   return (
     <div
@@ -89,7 +103,7 @@ export function ChartsStatusPiePreview({
           )}
         >
           {data.length === 0 ? (
-            <li className="text-muted-foreground text-sm">No sample tasks</li>
+            <li className="text-muted-foreground text-sm">{emptyMessage}</li>
           ) : (
             data.map((entry) => {
               const legendRow = (
@@ -105,7 +119,10 @@ export function ChartsStatusPiePreview({
                 </>
               );
               return (
-                <li key={entry.status} className="min-w-0">
+                <li
+                  key={`${entry.key || 'null'}-${entry.status}`}
+                  className="min-w-0"
+                >
                   {sliceInteractive ? (
                     <button
                       type="button"
@@ -125,7 +142,7 @@ export function ChartsStatusPiePreview({
           )}
           {total > 0 ? (
             <li className="text-muted-foreground pt-1 text-xs">
-              {total} sample tasks
+              {total} {totalLabel}
             </li>
           ) : null}
         </ul>

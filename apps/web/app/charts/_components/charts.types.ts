@@ -1,5 +1,4 @@
 import type { LayoutItem } from 'react-grid-layout';
-import type { WorkItemStatus } from '@repo/types';
 import type {
   ChartsLabelFieldId,
   ChartsWidgetFilterDraft,
@@ -91,10 +90,6 @@ export type ChartBoardWidgetInstance = {
    * by status. Cleared when the user picks a layout without a slice focus.
    */
   readonly focusedSliceKey?: string;
-  /**
-   * @deprecated Prefer `focusedSliceKey`. Kept for reading older board JSON.
-   */
-  readonly focusedStatus?: WorkItemStatus;
   /** Pie vs donut for Chart widgets; defaults to donut when unset. */
   readonly pieVariant?: ChartPieVariant;
   /**

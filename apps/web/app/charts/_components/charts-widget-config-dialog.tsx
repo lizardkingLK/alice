@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { WorkItemStatus } from '@repo/types';
 import { Button } from '@repo/ui/components/ui/button';
 import { DropdownMenuItem } from '@repo/ui/components/ui/dropdown-menu';
@@ -26,14 +26,27 @@ import { ChartsWidgetActionsMenu } from '@/app/charts/_components/charts-widget-
 import { ChartsWidgetLayoutMenu } from '@/app/charts/_components/charts-widget-layout-menu';
 import { ChartsWidgetSettingsSidebar } from '@/app/charts/_components/charts-widget-settings-sidebar';
 import {
-  CHARTS_SAMPLE_WORK_ITEMS,
   DEFAULT_CHARTS_LABEL_FIELD,
-  filterChartsSampleByLabelSlice,
-  filterChartsSampleWorkItems,
   type ChartsExportFormatId,
-  type ChartsSampleWorkItem,
+  type ChartsProjectOption,
+  type ChartsSampleMember,
   type ChartsWidgetFilterDraft,
 } from '@/app/charts/_components/charts-sample.data';
+import {
+  filterChartDrilldownTableItems,
+  isChartSeriesLabelField,
+  resolveChartAnalyticsProjectId,
+  workItemListRowToChartTableItem,
+} from '@/app/charts/_helpers/charts-analytics.ui';
+import { useChartWidgetAnalytics } from '@/app/charts/_hooks/use-chart-widget-analytics';
+import { fetchProjectMembersForForm } from '@/lib/form-read-actions';
+
+const PROJECT_EMPTY_MESSAGE =
+  'Select a project in filters to load live chart data.';
+const UNSUPPORTED_LABEL_MESSAGE =
+  'This Labels column is not available for live charts yet. Choose Status, Owner, Project, Type, or Priority.';
+const SLICE_HINT_MESSAGE = 'Click a pie slice to load matching work items.';
+const NO_MATCH_MESSAGE = 'No work items match the current filters.';
 
 type ChartsWidgetConfigDialogProps = {
   readonly open: boolean;
@@ -46,11 +59,7 @@ type ChartsWidgetConfigDialogProps = {
   readonly pieVariant?: ChartPieVariant;
   readonly labelField?: ChartsLabelFieldId;
   readonly focusedSliceKey?: string;
-  readonly sessionWorkItems?: readonly ChartsSampleWorkItem[];
-  readonly onSessionWorkItemsChange?: (
-    // eslint-disable-next-line no-unused-vars
-    next: ChartsSampleWorkItem[]
-  ) => void;
+  readonly accessibleProjects?: readonly ChartsProjectOption[];
   readonly onFiltersChange?: ChartsWidgetFiltersChangeHandler;
   readonly onViewModeChange?: ChartsWidgetViewModeChangeHandler;
   readonly onPieVariantChange?: ChartsWidgetPieVariantChangeHandler;
@@ -62,6 +71,277 @@ type ChartsWidgetConfigDialogProps = {
   readonly onExport?: (format: ChartsExportFormatId) => void;
 };
 
+function pieEmptyMessage(params: {
+  readonly projectId: string | null;
+  readonly hasSeriesLabel: boolean;
+  readonly seriesError: string | null;
+}): string {
+  if (!params.projectId) {
+    return PROJECT_EMPTY_MESSAGE;
+  }
+  if (!params.hasSeriesLabel) {
+    return UNSUPPORTED_LABEL_MESSAGE;
+  }
+  return params.seriesError ?? 'No work items in this project';
+}
+
+function tableEmptyMessage(params: {
+  readonly projectId: string | null;
+  readonly hasSliceFocus: boolean;
+  readonly drilldownError: string | null;
+}): string {
+  if (!params.projectId) {
+    return PROJECT_EMPTY_MESSAGE;
+  }
+  if (!params.hasSliceFocus) {
+    return SLICE_HINT_MESSAGE;
+  }
+  return params.drilldownError ?? NO_MATCH_MESSAGE;
+}
+
+function useConfigDialogBootstrap(params: {
+  readonly open: boolean;
+  readonly initialFiltersOpen: boolean;
+  // eslint-disable-next-line no-unused-vars
+  readonly setFiltersOpen: (open: boolean) => void;
+  // eslint-disable-next-line no-unused-vars
+  readonly setSettingsOpen: (open: boolean) => void;
+  // eslint-disable-next-line no-unused-vars
+  readonly setSearchQuery: (value: string) => void;
+  // eslint-disable-next-line no-unused-vars
+  readonly setAssigneeFilter: (value: string | null) => void;
+}) {
+  const {
+    open,
+    initialFiltersOpen,
+    setFiltersOpen,
+    setSettingsOpen,
+    setSearchQuery,
+    setAssigneeFilter,
+  } = params;
+
+  useEffect(() => {
+    if (!open) {
+      setFiltersOpen(false);
+      setSettingsOpen(false);
+      return;
+    }
+
+    setSearchQuery('');
+    setAssigneeFilter(null);
+    if (!initialFiltersOpen) {
+      setFiltersOpen(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => setFiltersOpen(true), 80);
+    return () => window.clearTimeout(timer);
+  }, [
+    open,
+    initialFiltersOpen,
+    setAssigneeFilter,
+    setFiltersOpen,
+    setSearchQuery,
+    setSettingsOpen,
+  ]);
+}
+
+function useProjectMembersForChart(params: {
+  readonly open: boolean;
+  readonly projectId: string | null;
+}): readonly ChartsSampleMember[] {
+  const { open, projectId } = params;
+  const [members, setMembers] = useState<readonly ChartsSampleMember[]>([]);
+
+  useEffect(() => {
+    if (!open || !projectId) {
+      setMembers([]);
+      return;
+    }
+
+    let cancelled = false;
+    fetchProjectMembersForForm(projectId)
+      .then((rows) => {
+        if (cancelled) {
+          return;
+        }
+        setMembers(
+          rows.map((row) => ({
+            id: row.id,
+            name: row.name,
+            email: row.email,
+            profilePicture: row.profile_picture ?? null,
+          }))
+        );
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMembers([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, projectId]);
+
+  return members;
+}
+
+function ChartsWidgetConfigToolbar(props: {
+  readonly searchQuery: string;
+  // eslint-disable-next-line no-unused-vars
+  readonly onSearchQueryChange: (value: string) => void;
+  readonly filtersOpen: boolean;
+  // eslint-disable-next-line no-unused-vars
+  readonly onFiltersOpenChange: (open: boolean) => void;
+  readonly filters: ChartsWidgetFilterDraft | null;
+  readonly accessibleProjects: readonly ChartsProjectOption[];
+  readonly onFiltersChange?: ChartsWidgetFiltersChangeHandler;
+  readonly members: readonly ChartsSampleMember[];
+  readonly assigneeFilter: string | null;
+  // eslint-disable-next-line no-unused-vars
+  readonly onAssigneeFilterChange: (id: string | null) => void;
+  readonly viewMode: ChartWidgetViewMode;
+  // eslint-disable-next-line no-unused-vars
+  readonly onLayoutChange: (mode: ChartWidgetViewMode) => void;
+  readonly settingsOpen: boolean;
+  readonly onToggleSettings: () => void;
+  readonly onExport: ChartsWidgetConfigDialogProps['onExport'];
+  readonly onRename?: () => void;
+  readonly onDuplicate?: () => void;
+  readonly onDelete?: () => void;
+  readonly onExit: () => void;
+}) {
+  const filterActive = props.filtersOpen || Boolean(props.filters);
+
+  return (
+    <div className="border-border flex shrink-0 flex-wrap items-center gap-2 border-b px-4 py-2.5">
+      <SearchInput
+        value={props.searchQuery}
+        onValueChange={props.onSearchQueryChange}
+        onClear={() => props.onSearchQueryChange('')}
+        placeholder="Type to filter"
+        enableFocusShortcut={false}
+        className="w-full max-w-xs sm:w-56"
+      />
+
+      <ChartsAdvancedFiltersPopover
+        open={props.filtersOpen}
+        onOpenChange={props.onFiltersOpenChange}
+        appliedFilters={props.filters}
+        onApply={(draft) => props.onFiltersChange?.(draft)}
+        projects={props.accessibleProjects}
+        trigger={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Filter"
+            aria-expanded={props.filtersOpen}
+            title="Filter"
+            className={cn(
+              'text-muted-foreground hover:text-foreground shrink-0 cursor-pointer',
+              filterActive &&
+                'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary'
+            )}
+          >
+            <Filter className="size-4" />
+          </Button>
+        }
+      />
+
+      <ChartsAssigneeAvatarFilter
+        members={props.members}
+        selectedId={props.assigneeFilter}
+        onSelectedIdChange={props.onAssigneeFilterChange}
+      />
+
+      <div className="ml-auto flex items-center gap-1">
+        <ChartsWidgetLayoutMenu
+          viewMode={props.viewMode}
+          onViewModeChange={props.onLayoutChange}
+        />
+
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Widget settings"
+          aria-pressed={props.settingsOpen}
+          title="Widget settings"
+          onClick={props.onToggleSettings}
+          className={cn(
+            'text-muted-foreground hover:text-foreground shrink-0 cursor-pointer',
+            props.settingsOpen &&
+              'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary'
+          )}
+        >
+          <Settings className="size-4" />
+        </Button>
+
+        <ChartsWidgetActionsMenu
+          contentClassName="w-52"
+          showExport
+          onExport={props.onExport}
+          onRename={() => {
+            props.onExit();
+            props.onRename?.();
+          }}
+          onDuplicate={() => props.onDuplicate?.()}
+          onDelete={() => {
+            props.onExit();
+            props.onDelete?.();
+          }}
+          leadingItem={
+            <DropdownMenuItem
+              className="cursor-pointer gap-2"
+              onSelect={props.onExit}
+            >
+              <LogOut className="size-4" />
+              Exit full screen
+            </DropdownMenuItem>
+          }
+          trigger={
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="More options"
+              className="text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+            >
+              <MoreHorizontal className="size-4" />
+            </Button>
+          }
+        />
+      </div>
+    </div>
+  );
+}
+
+function ChartsWidgetConfigPreview(props: {
+  readonly viewMode: ChartWidgetViewMode;
+  readonly piePreview: ReactNode;
+  readonly tablePreview: ReactNode;
+}) {
+  if (props.viewMode === 'split') {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <div className="border-border flex min-h-0 flex-[1.2] flex-col overflow-hidden border-b pb-3">
+          {props.piePreview}
+        </div>
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {props.tablePreview}
+        </div>
+      </div>
+    );
+  }
+  if (props.viewMode === 'table') {
+    return props.tablePreview;
+  }
+  return props.piePreview;
+}
+
 export function ChartsWidgetConfigDialog({
   open,
   onOpenChange,
@@ -72,8 +352,7 @@ export function ChartsWidgetConfigDialog({
   pieVariant = 'donut',
   labelField = DEFAULT_CHARTS_LABEL_FIELD,
   focusedSliceKey,
-  sessionWorkItems = CHARTS_SAMPLE_WORK_ITEMS,
-  onSessionWorkItemsChange,
+  accessibleProjects = [],
   onFiltersChange,
   onViewModeChange,
   onPieVariantChange,
@@ -88,78 +367,80 @@ export function ChartsWidgetConfigDialog({
   const [searchQuery, setSearchQuery] = useState('');
   const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!open) {
-      setFiltersOpen(false);
-      setSettingsOpen(false);
-      return;
-    }
+  const projectId = resolveChartAnalyticsProjectId(filters);
+  const seriesLabelField = isChartSeriesLabelField(labelField)
+    ? labelField
+    : null;
+  const needsTable = viewMode === 'table' || viewMode === 'split';
+  const hasSliceFocus =
+    focusedSliceKey !== undefined && focusedSliceKey !== null;
 
-    setSearchQuery('');
-    setAssigneeFilter(null);
+  const analytics = useChartWidgetAnalytics({
+    projectId,
+    labelField: seriesLabelField,
+    focusedSliceKey: hasSliceFocus ? focusedSliceKey : null,
+    loadDrilldown: open && needsTable && hasSliceFocus,
+  });
 
-    if (!initialFiltersOpen) {
-      setFiltersOpen(false);
-      return;
-    }
+  useConfigDialogBootstrap({
+    open,
+    initialFiltersOpen,
+    setFiltersOpen,
+    setSettingsOpen,
+    setSearchQuery,
+    setAssigneeFilter,
+  });
 
-    // Wait until the dialog has mounted/focused so the popover can open.
-    const timer = window.setTimeout(() => {
-      setFiltersOpen(true);
-    }, 80);
+  const members = useProjectMembersForChart({ open, projectId });
 
-    return () => window.clearTimeout(timer);
-  }, [open, initialFiltersOpen]);
-
-  const filteredWorkItems = useMemo(
-    () =>
-      filterChartsSampleWorkItems(sessionWorkItems, filters, {
-        search: searchQuery,
-        assigneeId: assigneeFilter,
-      }),
-    [assigneeFilter, filters, searchQuery, sessionWorkItems]
-  );
-
-  const tableWorkItems = useMemo(() => {
-    if (!focusedSliceKey || labelField === 'status') {
-      return filteredWorkItems;
-    }
-    return filterChartsSampleByLabelSlice(
-      filteredWorkItems,
-      labelField,
-      focusedSliceKey
+  const tableItems = useMemo(() => {
+    const rows = (analytics.drilldown?.workItems ?? []).map(
+      workItemListRowToChartTableItem
     );
-  }, [filteredWorkItems, focusedSliceKey, labelField]);
+    return filterChartDrilldownTableItems(rows, {
+      search: searchQuery,
+      assigneeId: assigneeFilter,
+    });
+  }, [analytics.drilldown?.workItems, assigneeFilter, searchQuery]);
 
   const tableFocusedStatus =
     labelField === 'status' && focusedSliceKey
       ? (focusedSliceKey as WorkItemStatus)
       : null;
 
-  const handleLayoutChange = (mode: ChartWidgetViewMode) => {
-    onViewModeChange?.(mode, null);
-  };
-
-  const handleSliceClick = (sliceKey: string) => {
-    onViewModeChange?.('split', sliceKey);
-  };
-
   const piePreview = (
     <ChartsStatusPiePreview
       size="dialog"
-      workItems={filteredWorkItems}
+      slices={analytics.series?.slices ?? null}
+      labelField={seriesLabelField ?? 'status'}
+      loading={Boolean(
+        projectId && seriesLabelField && analytics.seriesLoading
+      )}
+      emptyMessage={pieEmptyMessage({
+        projectId,
+        hasSeriesLabel: Boolean(seriesLabelField),
+        seriesError: analytics.seriesError,
+      })}
       pieVariant={pieVariant}
-      labelField={labelField}
-      onSliceClick={handleSliceClick}
+      onSliceClick={(sliceKey) => onViewModeChange?.('split', sliceKey)}
     />
   );
 
   const tablePreview = (
     <ChartsStatusGroupedTable
-      workItems={tableWorkItems}
-      sourceWorkItems={sessionWorkItems}
-      onWorkItemsChange={onSessionWorkItemsChange}
+      workItems={tableItems}
       focusedStatus={tableFocusedStatus}
+      loading={Boolean(
+        projectId &&
+        seriesLabelField &&
+        hasSliceFocus &&
+        analytics.drilldownLoading
+      )}
+      emptyMessage={tableEmptyMessage({
+        projectId,
+        hasSliceFocus,
+        drilldownError: analytics.drilldownError,
+      })}
     />
   );
 
@@ -177,129 +458,43 @@ export function ChartsWidgetConfigDialog({
         onFocusOutside: (event) => event.preventDefault(),
       }}
     >
-      <div className="border-border flex shrink-0 flex-wrap items-center gap-2 border-b px-4 py-2.5">
-        <SearchInput
-          value={searchQuery}
-          onValueChange={setSearchQuery}
-          onClear={() => setSearchQuery('')}
-          placeholder="Type to filter"
-          enableFocusShortcut={false}
-          className="w-full max-w-xs sm:w-56"
-        />
-
-        <ChartsAdvancedFiltersPopover
-          open={filtersOpen}
-          onOpenChange={setFiltersOpen}
-          appliedFilters={filters}
-          onApply={(draft) => onFiltersChange?.(draft)}
-          searchQuery={searchQuery}
-          assigneeId={assigneeFilter}
-          trigger={
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Filter"
-              aria-expanded={filtersOpen}
-              title="Filter"
-              className={cn(
-                'text-muted-foreground hover:text-foreground shrink-0 cursor-pointer',
-                (filtersOpen || filters) &&
-                  'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary'
-              )}
-            >
-              <Filter className="size-4" />
-            </Button>
-          }
-        />
-
-        <ChartsAssigneeAvatarFilter
-          selectedId={assigneeFilter}
-          onSelectedIdChange={setAssigneeFilter}
-        />
-
-        <div className="ml-auto flex items-center gap-1">
-          <ChartsWidgetLayoutMenu
-            viewMode={viewMode}
-            onViewModeChange={handleLayoutChange}
-          />
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Widget settings"
-            aria-pressed={settingsOpen}
-            title="Widget settings"
-            onClick={() => setSettingsOpen((prev) => !prev)}
-            className={cn(
-              'text-muted-foreground hover:text-foreground shrink-0 cursor-pointer',
-              settingsOpen &&
-                'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary'
-            )}
-          >
-            <Settings className="size-4" />
-          </Button>
-
-          <ChartsWidgetActionsMenu
-            contentClassName="w-52"
-            showExport
-            onExport={onExport}
-            onRename={() => {
-              onOpenChange(false);
-              onRename?.();
-            }}
-            onDuplicate={() => onDuplicate?.()}
-            onDelete={() => {
-              onOpenChange(false);
-              onDelete?.();
-            }}
-            leadingItem={
-              <DropdownMenuItem
-                className="cursor-pointer gap-2"
-                onSelect={() => onOpenChange(false)}
-              >
-                <LogOut className="size-4" />
-                Exit full screen
-              </DropdownMenuItem>
-            }
-            trigger={
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label="More options"
-                className="text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
-              >
-                <MoreHorizontal className="size-4" />
-              </Button>
-            }
-          />
-        </div>
-      </div>
+      <ChartsWidgetConfigToolbar
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+        filtersOpen={filtersOpen}
+        onFiltersOpenChange={setFiltersOpen}
+        filters={filters}
+        accessibleProjects={accessibleProjects}
+        onFiltersChange={onFiltersChange}
+        members={members}
+        assigneeFilter={assigneeFilter}
+        onAssigneeFilterChange={setAssigneeFilter}
+        viewMode={viewMode}
+        onLayoutChange={(mode) => onViewModeChange?.(mode, null)}
+        settingsOpen={settingsOpen}
+        onToggleSettings={() => setSettingsOpen((prev) => !prev)}
+        onExport={onExport}
+        onRename={onRename}
+        onDuplicate={onDuplicate}
+        onDelete={onDelete}
+        onExit={() => onOpenChange(false)}
+      />
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <div className="bg-background flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-4 sm:p-6">
-          {viewMode === 'split' ? (
-            <div className="flex min-h-0 flex-1 flex-col gap-3">
-              <div className="border-border flex min-h-0 flex-[1.2] flex-col overflow-hidden border-b pb-3">
-                {piePreview}
-              </div>
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                {tablePreview}
-              </div>
-            </div>
-          ) : null}
-          {viewMode === 'chart' ? piePreview : null}
-          {viewMode === 'table' ? tablePreview : null}
+          <ChartsWidgetConfigPreview
+            viewMode={viewMode}
+            piePreview={piePreview}
+            tablePreview={tablePreview}
+          />
         </div>
 
-        {settingsOpen ? (
+        {settingsOpen && onPieVariantChange ? (
           <ChartsWidgetSettingsSidebar
             pieVariant={pieVariant}
-            onPieVariantChange={(variant) => onPieVariantChange?.(variant)}
             labelField={labelField}
-            onLabelFieldChange={(field) => onLabelFieldChange?.(field)}
+            onPieVariantChange={onPieVariantChange}
+            onLabelFieldChange={onLabelFieldChange}
           />
         ) : null}
       </div>

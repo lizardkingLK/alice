@@ -98,18 +98,19 @@ Notification type: `chart_shared` (inbox deep-link to `/charts/[id]`).
 ## Data strategy (widget payloads)
 
 **Tier 1 (in progress):** categorical pie series from table
-`work_item_chart_rollups` (trigger-maintained counts on Supabase), not
-in-memory mocks. Slice → table uses **paginated** live `work_items` queries.
-Measure for Tier 1: **`item_count` only**.
+`work_item_chart_rollups` (trigger-maintained counts on Supabase). Slice →
+table uses **paginated** live `work_items` via drilldown. Measure: **`item_count`
+only**.
 
-**API (Step 2):** `GET /api/v1/charts/analytics/series` and
-`…/analytics/drilldown` — see [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md#apis).
+**API:** `GET /api/v1/charts/analytics/series` and `…/analytics/drilldown` —
+see [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md#apis).
+
+**Web (Step 3):** Chart widgets load series/drilldown from that API when a
+**project** is selected in filters. Labels → Columns supports Project, Owner,
+Status, Type, and Priority (Group / Name / Due date are not on the rollup yet).
 
 Design, Tier 2/3 (Neon read model, apps rename), and step checklist:
 [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md).
-
-Until Step 3 of that checklist lands in the web app, the Chart widget may still
-render sample data from `charts-sample.data.ts`.
 
 ## Non-goals (near term)
 

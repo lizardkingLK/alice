@@ -166,14 +166,15 @@ Do in order. Each step should be reviewable on its own when practical.
 
 ### Step 3 — Web: replace mocks
 
-**Docs:** update [CHARTS.md](./CHARTS.md) widget section (mock → live); user guide if labels/filters change for end users.
+**Docs:** [CHARTS.md](./CHARTS.md) widget section (mock → live); user guide Labels/filters.
 
 **Code:**
 
-1. Client fetch series for pie/donut
-2. Slice click → drilldown fetch into existing grouped table
-3. Remove / stop using `charts-sample.data.ts` for the Chart widget
-4. Web tests for wiring helpers if any
+1. Client `fetchChartSeries` / `fetchChartDrilldown` + `useChartWidgetAnalytics`
+2. Chart widget pie from series; slice click → drilldown into grouped table
+3. Chart widget no longer uses `CHARTS_SAMPLE_WORK_ITEMS` (sample helpers remain for unit tests / stubs)
+4. Filters require a concrete project; Labels columns limited to API-backed fields
+5. Web tests: `apps/web/tests/charts/charts-analytics.ui.test.ts`
 
 **Verify:** `/charts/[id]` pie matches board/work-item reality for a project filter.
 
