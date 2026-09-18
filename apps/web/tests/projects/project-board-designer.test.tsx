@@ -59,6 +59,47 @@ function renderDesigner(
   );
 }
 
+async function pickSelectValue(
+  comboboxName: string | RegExp,
+  optionName: string | RegExp
+) {
+  fireEvent.click(screen.getByRole('combobox', { name: comboboxName }));
+  fireEvent.click(await screen.findByRole('option', { name: optionName }));
+}
+
+function createDataTransfer(): DataTransfer {
+  const values = new Map<string, string>();
+  return {
+    effectAllowed: 'none',
+    dropEffect: 'none',
+    getData: vi.fn((format: string) => values.get(format) ?? ''),
+    setData: vi.fn((format: string, value: string) => {
+      values.set(format, value);
+    }),
+  } as unknown as DataTransfer;
+}
+
+function dragColumn(sourceName: string, targetName: string) {
+  const sourceHandle = screen.getByRole('button', {
+    name: `Drag ${sourceName} to reorder`,
+  });
+  const targetHandle = screen.getByRole('button', {
+    name: `Drag ${targetName} to reorder`,
+  });
+  const dataTransfer = createDataTransfer();
+
+  fireEvent.dragStart(sourceHandle, { dataTransfer });
+  fireEvent.dragOver(targetHandle, { dataTransfer });
+  fireEvent.drop(targetHandle, { dataTransfer });
+  fireEvent.dragEnd(sourceHandle, { dataTransfer });
+}
+
+function columnNamesInOrder(): string[] {
+  return screen
+    .getAllByLabelText(/^Column name \d+$/)
+    .map((input) => (input as HTMLInputElement).value);
+}
+
 describe('BoardDesignerWorkspace', () => {
   beforeEach(() => {
     sessionStorage.clear();
@@ -77,29 +118,77 @@ describe('BoardDesignerWorkspace', () => {
       screen.getByRole('combobox', { name: 'Status for Review queue' })
     );
     fireEvent.click(await screen.findByRole('option', { name: 'InProgress' }));
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Move Review queue up' })
-    );
+    dragColumn('Review queue', 'Done');
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
     const savedConfig =
       vi.mocked(updateProject).mock.calls[0]?.[1].workflow_config;
-    expect(savedConfig).toEqual(
-      expect.objectContaining({
-        columns: expect.arrayContaining([
-          {
-            id: '11111111-1111-4111-8111-111111111111',
-            name: 'Review queue',
-            status: 'InProgress',
-          },
-        ]),
-      })
-    );
-    expect(savedConfig?.columns?.at(-2)?.id).toBe(
-      '11111111-1111-4111-8111-111111111111'
-    );
+    expect(savedConfig?.columns).toEqual([
+      ...customConfig.columns.slice(0, -1),
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        name: 'Review queue',
+        status: 'InProgress',
+      },
+      customConfig.columns.at(-1),
+    ]);
     expect(refresh).toHaveBeenCalled();
+  });
+
+  it('reorders only columns while preserving transition rules', async () => {
+    const transitions = [
+      {
+        fromColumnId: 'development',
+        toColumnId: 'code-review',
+        allowAnyOf: [{ scope: 'role' as const, role: 'manager' as const }],
+      },
+    ];
+    const statusTransitions = [
+      {
+        fromStatus: 'ToDo' as const,
+        toStatus: 'InProgress' as const,
+        allowAnyOf: [{ scope: 'role' as const, role: 'member' as const }],
+      },
+    ];
+    renderDesigner(true, {
+      version: '2',
+      columns: customConfig.columns,
+      transitions,
+      statusTransitions,
+    });
+
+    dragColumn('Backlog', 'Done');
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(updateProject).mock.calls[0]?.[1].workflow_config).toEqual(
+      {
+        version: '2',
+        columns: [...customConfig.columns.slice(1), customConfig.columns[0]],
+        transitions,
+        statusTransitions,
+      }
+    );
+  });
+
+  it('does not render the old column movement buttons', () => {
+    renderDesigner();
+
+    expect(
+      screen.queryAllByRole('button', { name: /^Move .+ (up|down)$/ })
+    ).toHaveLength(0);
+  });
+
+  it('treats dropping a column on itself as a no-op', () => {
+    renderDesigner();
+
+    dragColumn('Code Review', 'Code Review');
+
+    expect(columnNamesInOrder()).toEqual(
+      customConfig.columns.map((column) => column.name)
+    );
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
   });
 
   it('uses the returned lock timestamp and saved baseline for a second save', async () => {
@@ -178,6 +267,16 @@ describe('BoardDesignerWorkspace', () => {
     expect(
       screen.getByRole('button', { name: 'Movement rules for Code Review' })
     ).toBeDisabled();
+    const dragHandle = screen.getByRole('button', {
+      name: 'Drag Code Review to reorder',
+    });
+    expect(dragHandle).toBeDisabled();
+    expect(dragHandle).toHaveAttribute('draggable', 'false');
+
+    dragColumn('Code Review', 'Backlog');
+    expect(columnNamesInOrder()).toEqual(
+      customConfig.columns.map((column) => column.name)
+    );
   });
 
   it('loads and consumes a valid Alice session draft as dirty without saving it', async () => {
@@ -344,6 +443,67 @@ describe('BoardDesignerWorkspace', () => {
     );
   });
 
+  it('preserves status transition rules when editing a board movement rule', async () => {
+    const statusTransitions = [
+      {
+        fromStatus: 'ToDo' as const,
+        toStatus: 'InProgress' as const,
+        allowAnyOf: [{ scope: 'role' as const, role: 'member' as const }],
+      },
+    ];
+    const boardDraft = {
+      version: '2' as const,
+      columns: customConfig.columns,
+      transitions: [
+        {
+          fromColumnId: 'development',
+          toColumnId: 'code-review',
+          allowAnyOf: [{ scope: 'role' as const, role: 'manager' as const }],
+        },
+      ],
+      statusTransitions,
+    };
+    sessionStorage.setItem('board_draft_proj-1', JSON.stringify(boardDraft));
+    renderDesigner();
+
+    expect(
+      await screen.findByText(/Draft generated by Alice/i)
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Movement rules for Code Review' })
+    );
+    await pickComboboxOption('Source column', 'Development');
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', { name: 'Access mode' })
+      ).toHaveTextContent('Restricted')
+    );
+    fireEvent.click(screen.getByLabelText('QA Team'));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Apply movement rule' })
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(updateProject).mock.calls[0]?.[1].workflow_config).toEqual(
+      {
+        version: '2',
+        columns: customConfig.columns,
+        transitions: [
+          {
+            fromColumnId: 'development',
+            toColumnId: 'code-review',
+            allowAnyOf: [
+              { scope: 'role', role: 'manager' },
+              { scope: 'team', teamId: TEAM_ID },
+            ],
+          },
+        ],
+        statusTransitions,
+      }
+    );
+  });
+
   it('uses Everyone mode to remove an existing transition rule', async () => {
     renderDesigner(true, {
       version: '2',
@@ -423,6 +583,199 @@ describe('BoardDesignerWorkspace', () => {
         ],
       }
     );
+  });
+
+  it('adds a status transition with OR permissions and upgrades version 1 to version 2', async () => {
+    renderDesigner(true, {
+      ...customConfig,
+      work_item_types: ['Epic', 'Story', 'Task'],
+      hierarchy: { Epic: null, Story: 'Epic', Task: 'Story' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Add status transition rule' })
+    );
+
+    await pickSelectValue('Source status', 'To Do');
+    await pickSelectValue('Source status', 'Draft');
+    expect(
+      screen.getByRole('combobox', { name: 'Source status' })
+    ).toHaveTextContent('Draft');
+    await pickSelectValue('Source status', 'To Do');
+    await pickSelectValue('Destination status', 'In Progress');
+    fireEvent.click(screen.getByLabelText('Manager'));
+    fireEvent.click(screen.getByLabelText('QA Team'));
+    fireEvent.click(screen.getByLabelText(/Alice Reviewer/));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Apply status transition rule' })
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(updateProject).mock.calls[0]?.[1].workflow_config).toEqual(
+      {
+        work_item_types: ['Epic', 'Story', 'Task'],
+        hierarchy: { Epic: null, Story: 'Epic', Task: 'Story' },
+        version: '2',
+        columns: customConfig.columns,
+        transitions: [],
+        statusTransitions: [
+          {
+            fromStatus: 'ToDo',
+            toStatus: 'InProgress',
+            allowAnyOf: [
+              { scope: 'role', role: 'manager' },
+              { scope: 'team', teamId: TEAM_ID },
+              { scope: 'user', userId: USER_ID },
+            ],
+          },
+        ],
+      }
+    );
+  });
+
+  it('edits a status transition while preserving board movement rules', async () => {
+    const transitions = [
+      {
+        fromColumnId: 'development',
+        toColumnId: 'code-review',
+        allowAnyOf: [{ scope: 'role' as const, role: 'manager' as const }],
+      },
+    ];
+    renderDesigner(true, {
+      version: '2',
+      columns: customConfig.columns,
+      transitions,
+      statusTransitions: [
+        {
+          fromStatus: 'ToDo',
+          toStatus: 'InProgress',
+          allowAnyOf: [{ scope: 'role', role: 'member' }],
+        },
+      ],
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Edit status transition To Do to In Progress',
+      })
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', { name: 'Access mode' })
+      ).toHaveTextContent('Restricted')
+    );
+    await pickSelectValue('Destination status', 'Testing');
+    fireEvent.click(screen.getByLabelText('QA Team'));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Apply status transition rule' })
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(updateProject).mock.calls[0]?.[1].workflow_config).toEqual(
+      {
+        version: '2',
+        columns: customConfig.columns,
+        transitions,
+        statusTransitions: [
+          {
+            fromStatus: 'ToDo',
+            toStatus: 'Testing',
+            allowAnyOf: [
+              { scope: 'role', role: 'member' },
+              { scope: 'team', teamId: TEAM_ID },
+            ],
+          },
+        ],
+      }
+    );
+  });
+
+  it('removes a status transition rule', async () => {
+    const transitions = [
+      {
+        fromColumnId: 'development',
+        toColumnId: 'code-review',
+        allowAnyOf: [{ scope: 'role' as const, role: 'manager' as const }],
+      },
+    ];
+    renderDesigner(true, {
+      version: '2',
+      columns: customConfig.columns,
+      transitions,
+      statusTransitions: [
+        {
+          fromStatus: 'Testing',
+          toStatus: 'Done',
+          allowAnyOf: [{ scope: 'role', role: 'manager' }],
+        },
+      ],
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Remove status transition Testing to Done',
+      })
+    );
+    expect(
+      screen.getByText('No status transition rules are configured.')
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
+    expect(
+      vi.mocked(updateProject).mock.calls[0]?.[1].workflow_config
+    ).toMatchObject({
+      version: '2',
+      transitions,
+      statusTransitions: [],
+    });
+  });
+
+  it('prevents selecting the same source and destination status', async () => {
+    renderDesigner();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Add status transition rule' })
+    );
+
+    const destination = screen.getByRole('combobox', {
+      name: 'Destination status',
+    });
+    fireEvent.click(destination);
+    const draftOption = await screen.findByRole('option', { name: 'Draft' });
+    expect(draftOption).toHaveAttribute('data-disabled');
+    fireEvent.click(draftOption);
+    expect(destination).toHaveTextContent('New');
+  });
+
+  it('prevents selecting a duplicate status transition pair', async () => {
+    renderDesigner(true, {
+      version: '2',
+      columns: customConfig.columns,
+      transitions: [],
+      statusTransitions: [
+        {
+          fromStatus: 'ToDo',
+          toStatus: 'InProgress',
+          allowAnyOf: [{ scope: 'role', role: 'manager' }],
+        },
+      ],
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Add status transition rule' })
+    );
+    await pickSelectValue('Source status', 'To Do');
+
+    const destination = screen.getByRole('combobox', {
+      name: 'Destination status',
+    });
+    fireEvent.click(destination);
+    const duplicateOption = await screen.findByRole('option', {
+      name: 'In Progress',
+    });
+    expect(duplicateOption).toHaveAttribute('data-disabled');
+    fireEvent.click(duplicateOption);
+    expect(destination).toHaveTextContent('New');
   });
 
   it('resets a custom board by saving workflow_config null', async () => {
