@@ -59,6 +59,14 @@ function renderDesigner(
   );
 }
 
+async function pickSelectValue(
+  comboboxName: string | RegExp,
+  optionName: string | RegExp
+) {
+  fireEvent.click(screen.getByRole('combobox', { name: comboboxName }));
+  fireEvent.click(await screen.findByRole('option', { name: optionName }));
+}
+
 describe('BoardDesignerWorkspace', () => {
   beforeEach(() => {
     sessionStorage.clear();
@@ -484,6 +492,199 @@ describe('BoardDesignerWorkspace', () => {
         ],
       }
     );
+  });
+
+  it('adds a status transition with OR permissions and upgrades version 1 to version 2', async () => {
+    renderDesigner(true, {
+      ...customConfig,
+      work_item_types: ['Epic', 'Story', 'Task'],
+      hierarchy: { Epic: null, Story: 'Epic', Task: 'Story' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Add status transition rule' })
+    );
+
+    await pickSelectValue('Source status', 'To Do');
+    await pickSelectValue('Source status', 'Draft');
+    expect(
+      screen.getByRole('combobox', { name: 'Source status' })
+    ).toHaveTextContent('Draft');
+    await pickSelectValue('Source status', 'To Do');
+    await pickSelectValue('Destination status', 'In Progress');
+    fireEvent.click(screen.getByLabelText('Manager'));
+    fireEvent.click(screen.getByLabelText('QA Team'));
+    fireEvent.click(screen.getByLabelText(/Alice Reviewer/));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Apply status transition rule' })
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(updateProject).mock.calls[0]?.[1].workflow_config).toEqual(
+      {
+        work_item_types: ['Epic', 'Story', 'Task'],
+        hierarchy: { Epic: null, Story: 'Epic', Task: 'Story' },
+        version: '2',
+        columns: customConfig.columns,
+        transitions: [],
+        statusTransitions: [
+          {
+            fromStatus: 'ToDo',
+            toStatus: 'InProgress',
+            allowAnyOf: [
+              { scope: 'role', role: 'manager' },
+              { scope: 'team', teamId: TEAM_ID },
+              { scope: 'user', userId: USER_ID },
+            ],
+          },
+        ],
+      }
+    );
+  });
+
+  it('edits a status transition while preserving board movement rules', async () => {
+    const transitions = [
+      {
+        fromColumnId: 'development',
+        toColumnId: 'code-review',
+        allowAnyOf: [{ scope: 'role' as const, role: 'manager' as const }],
+      },
+    ];
+    renderDesigner(true, {
+      version: '2',
+      columns: customConfig.columns,
+      transitions,
+      statusTransitions: [
+        {
+          fromStatus: 'ToDo',
+          toStatus: 'InProgress',
+          allowAnyOf: [{ scope: 'role', role: 'member' }],
+        },
+      ],
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Edit status transition To Do to In Progress',
+      })
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', { name: 'Access mode' })
+      ).toHaveTextContent('Restricted')
+    );
+    await pickSelectValue('Destination status', 'Testing');
+    fireEvent.click(screen.getByLabelText('QA Team'));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Apply status transition rule' })
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(updateProject).mock.calls[0]?.[1].workflow_config).toEqual(
+      {
+        version: '2',
+        columns: customConfig.columns,
+        transitions,
+        statusTransitions: [
+          {
+            fromStatus: 'ToDo',
+            toStatus: 'Testing',
+            allowAnyOf: [
+              { scope: 'role', role: 'member' },
+              { scope: 'team', teamId: TEAM_ID },
+            ],
+          },
+        ],
+      }
+    );
+  });
+
+  it('removes a status transition rule', async () => {
+    const transitions = [
+      {
+        fromColumnId: 'development',
+        toColumnId: 'code-review',
+        allowAnyOf: [{ scope: 'role' as const, role: 'manager' as const }],
+      },
+    ];
+    renderDesigner(true, {
+      version: '2',
+      columns: customConfig.columns,
+      transitions,
+      statusTransitions: [
+        {
+          fromStatus: 'Testing',
+          toStatus: 'Done',
+          allowAnyOf: [{ scope: 'role', role: 'manager' }],
+        },
+      ],
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Remove status transition Testing to Done',
+      })
+    );
+    expect(
+      screen.getByText('No status transition rules are configured.')
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
+    expect(
+      vi.mocked(updateProject).mock.calls[0]?.[1].workflow_config
+    ).toMatchObject({
+      version: '2',
+      transitions,
+      statusTransitions: [],
+    });
+  });
+
+  it('prevents selecting the same source and destination status', async () => {
+    renderDesigner();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Add status transition rule' })
+    );
+
+    const destination = screen.getByRole('combobox', {
+      name: 'Destination status',
+    });
+    fireEvent.click(destination);
+    const draftOption = await screen.findByRole('option', { name: 'Draft' });
+    expect(draftOption).toHaveAttribute('data-disabled');
+    fireEvent.click(draftOption);
+    expect(destination).toHaveTextContent('New');
+  });
+
+  it('prevents selecting a duplicate status transition pair', async () => {
+    renderDesigner(true, {
+      version: '2',
+      columns: customConfig.columns,
+      transitions: [],
+      statusTransitions: [
+        {
+          fromStatus: 'ToDo',
+          toStatus: 'InProgress',
+          allowAnyOf: [{ scope: 'role', role: 'manager' }],
+        },
+      ],
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Add status transition rule' })
+    );
+    await pickSelectValue('Source status', 'To Do');
+
+    const destination = screen.getByRole('combobox', {
+      name: 'Destination status',
+    });
+    fireEvent.click(destination);
+    const duplicateOption = await screen.findByRole('option', {
+      name: 'In Progress',
+    });
+    expect(duplicateOption).toHaveAttribute('data-disabled');
+    fireEvent.click(duplicateOption);
+    expect(destination).toHaveTextContent('New');
   });
 
   it('resets a custom board by saving workflow_config null', async () => {

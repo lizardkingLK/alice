@@ -7,6 +7,7 @@ import {
   boardConfigSchema,
   type BoardColumn,
   type BoardConfig,
+  type WorkItemStatusTransition,
 } from '@repo/types/api/v1';
 import type { MemberCheckboxOption } from '@/components/member-checkbox-list';
 import { Button } from '@repo/ui/components/ui/button';
@@ -47,6 +48,7 @@ import {
   Undo2,
 } from '@repo/ui/lib/icons';
 import { DEFAULT_BOARD_COLUMNS } from '@/app/work-items/_helpers/work-item-status';
+import { formatLabelWithSpace } from '@/app/_shared/utility';
 import {
   updateProject,
   type Project,
@@ -58,6 +60,10 @@ import {
   BoardMovementRulesDialog,
   type BoardRuleTeamOption,
 } from '@/app/projects/_components/project-details/board-movement-rules-dialog';
+import {
+  StatusTransitionRulesDialog,
+  type StatusTransitionRuleKey,
+} from '@/app/projects/_components/project-details/status-transition-rules-dialog';
 
 type BoardDesignerWorkspaceProps = {
   readonly project: Project;
@@ -152,6 +158,9 @@ export function BoardDesignerWorkspace({
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [rulesTargetColumn, setRulesTargetColumn] =
     useState<BoardColumn | null>(null);
+  const [statusRuleDialogOpen, setStatusRuleDialogOpen] = useState(false);
+  const [statusRuleToEdit, setStatusRuleToEdit] =
+    useState<StatusTransitionRuleKey | null>(null);
   const [aliceDraftLoaded, setAliceDraftLoaded] = useState(false);
   const [aliceDeletionWarningOpen, setAliceDeletionWarningOpen] =
     useState(false);
@@ -173,6 +182,8 @@ export function BoardDesignerWorkspace({
       ) ?? [],
     [draft.columns, savedConfig]
   );
+  const statusTransitions =
+    draft.version === '2' ? (draft.statusTransitions ?? []) : [];
 
   useEffect(() => {
     const storageKey = `board_draft_${project.id}`;
@@ -250,6 +261,26 @@ export function BoardDesignerWorkspace({
   const requestDeleteColumn = (column: BoardColumn) => {
     if (persistedIds.has(column.id)) setDeleteColumn(column);
     else removeColumn(column);
+  };
+
+  const openStatusRuleDialog = (rule: StatusTransitionRuleKey | null) => {
+    setStatusRuleToEdit(rule);
+    setStatusRuleDialogOpen(true);
+  };
+
+  const removeStatusTransition = (rule: WorkItemStatusTransition) => {
+    setDraft((current) => {
+      if (current.version === '1') return current;
+      return {
+        ...current,
+        statusTransitions: (current.statusTransitions ?? []).filter(
+          (candidate) =>
+            candidate.fromStatus !== rule.fromStatus ||
+            candidate.toStatus !== rule.toStatus
+        ),
+      };
+    });
+    setMessage(null);
   };
 
   const saveWorkflowConfig = async (workflowConfig: BoardConfig | null) => {
@@ -514,6 +545,75 @@ export function BoardDesignerWorkspace({
           </Button>
         </CardContent>
       </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Status transition rules</CardTitle>
+          <CardDescription>
+            Restrict who may change a work item from one status to another.
+            These rules are separate from movement between board columns.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {statusTransitions.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              No status transition rules are configured.
+            </p>
+          ) : (
+            statusTransitions.map((rule) => {
+              const fromLabel = formatLabelWithSpace(rule.fromStatus);
+              const toLabel = formatLabelWithSpace(rule.toStatus);
+              return (
+                <div
+                  key={`${rule.fromStatus}:${rule.toStatus}`}
+                  className="border-border bg-muted/20 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
+                >
+                  <div>
+                    <p className="text-sm font-medium">
+                      {fromLabel} → {toLabel}
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      {rule.allowAnyOf.length} allowed role, team, or individual
+                      {rule.allowAnyOf.length === 1 ? '' : 's'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      aria-label={`Edit status transition ${fromLabel} to ${toLabel}`}
+                      onClick={() => openStatusRuleDialog(rule)}
+                      disabled={!canEdit || isSaving}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Remove status transition ${fromLabel} to ${toLabel}`}
+                      onClick={() => removeStatusTransition(rule)}
+                      disabled={!canEdit || isSaving}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => openStatusRuleDialog(null)}
+            disabled={!canEdit || isSaving}
+          >
+            <Plus className="mr-1.5 size-4" />
+            Add status transition rule
+          </Button>
+        </CardContent>
+      </Card>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Button
           type="button"
@@ -641,6 +741,22 @@ export function BoardDesignerWorkspace({
         open={Boolean(rulesTargetColumn)}
         disabled={!canEdit || isSaving}
         onOpenChange={(open) => !open && setRulesTargetColumn(null)}
+        onConfigChange={(config) => {
+          setDraft(config);
+          setMessage(null);
+        }}
+      />
+      <StatusTransitionRulesDialog
+        config={draft}
+        ruleToEdit={statusRuleToEdit}
+        teams={teams}
+        members={members}
+        open={statusRuleDialogOpen}
+        disabled={!canEdit || isSaving}
+        onOpenChange={(open) => {
+          setStatusRuleDialogOpen(open);
+          if (!open) setStatusRuleToEdit(null);
+        }}
         onConfigChange={(config) => {
           setDraft(config);
           setMessage(null);
