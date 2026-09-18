@@ -77,6 +77,16 @@ function cloneConfig(config: BoardConfig): BoardConfig {
       ...transition,
       allowAnyOf: transition.allowAnyOf.map((matcher) => ({ ...matcher })),
     })),
+    ...(config.statusTransitions
+      ? {
+          statusTransitions: config.statusTransitions.map((transition) => ({
+            ...transition,
+            allowAnyOf: transition.allowAnyOf.map((matcher) => ({
+              ...matcher,
+            })),
+          })),
+        }
+      : {}),
   };
 }
 

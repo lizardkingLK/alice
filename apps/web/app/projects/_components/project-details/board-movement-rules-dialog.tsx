@@ -165,8 +165,8 @@ export function BoardMovementRulesDialog({
     }
 
     onConfigChange({
+      ...config,
       version: '2',
-      columns: config.columns,
       transitions: [
         ...withoutPair,
         {
