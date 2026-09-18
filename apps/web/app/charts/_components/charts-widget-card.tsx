@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card, CardContent, CardHeader } from '@repo/ui/components/ui/card';
 import {
@@ -38,16 +38,19 @@ import type {
   ChartsWidgetViewModeChangeHandler,
 } from '@/app/charts/_components/charts.types';
 import {
-  CHARTS_SAMPLE_WORK_ITEMS,
   DEFAULT_CHARTS_LABEL_FIELD,
-  filterChartsSampleWorkItems,
-  type ChartsSampleWorkItem,
+  type ChartsProjectOption,
   type ChartsWidgetFilterDraft,
 } from '@/app/charts/_components/charts-sample.data';
 import { ChartsFullscreenDialogShell } from '@/app/charts/_components/charts-fullscreen-dialog-shell';
 import { ChartsStatusPiePreview } from '@/app/charts/_components/charts-status-pie-preview';
 import { ChartsWidgetActionsMenu } from '@/app/charts/_components/charts-widget-actions-menu';
 import { ChartsWidgetConfigDialog } from '@/app/charts/_components/charts-widget-config-dialog';
+import {
+  isChartSeriesLabelField,
+  resolveChartAnalyticsProjectId,
+} from '@/app/charts/_helpers/charts-analytics.ui';
+import { useChartWidgetAnalytics } from '@/app/charts/_hooks/use-chart-widget-analytics';
 
 type ChartsWidgetCardProps = {
   readonly title: string;
@@ -60,6 +63,7 @@ type ChartsWidgetCardProps = {
   readonly pieVariant?: ChartPieVariant;
   readonly labelField?: ChartsLabelFieldId;
   readonly focusedSliceKey?: string;
+  readonly accessibleProjects?: readonly ChartsProjectOption[];
   readonly onRemove: () => void;
   readonly onDuplicate: () => void;
   // eslint-disable-next-line no-unused-vars -- rename callback
@@ -87,6 +91,7 @@ export function ChartsWidgetCard({
   pieVariant,
   labelField = DEFAULT_CHARTS_LABEL_FIELD,
   focusedSliceKey,
+  accessibleProjects = [],
   onRemove,
   onDuplicate,
   onRename,
@@ -105,15 +110,15 @@ export function ChartsWidgetCard({
   const [configFiltersOpen, setConfigFiltersOpen] = useState(false);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const [renameDraft, setRenameDraft] = useState(title);
-  /** Session mock rows — resets to catalog sample on full page reload. */
-  const [sessionWorkItems, setSessionWorkItems] = useState<
-    ChartsSampleWorkItem[]
-  >(() => CHARTS_SAMPLE_WORK_ITEMS.map((item) => ({ ...item })));
 
-  const canvasWorkItems = useMemo(
-    () => filterChartsSampleWorkItems(sessionWorkItems, filters ?? null),
-    [filters, sessionWorkItems]
-  );
+  const projectId = resolveChartAnalyticsProjectId(filters ?? null);
+  const seriesLabelField = isChartSeriesLabelField(labelField)
+    ? labelField
+    : null;
+  const analytics = useChartWidgetAnalytics({
+    projectId: isChart ? projectId : null,
+    labelField: isChart ? seriesLabelField : null,
+  });
 
   const openRename = () => {
     setRenameDraft(title);
@@ -152,12 +157,25 @@ export function ChartsWidgetCard({
     </div>
   );
 
+  let pieEmptyMessage = 'No work items in this project';
+  if (!projectId) {
+    pieEmptyMessage = 'Select a project in filters to load chart data';
+  } else if (!seriesLabelField) {
+    pieEmptyMessage = 'Choose a supported Labels column in settings';
+  } else if (analytics.seriesError) {
+    pieEmptyMessage = analytics.seriesError;
+  }
+
   const body = isChart ? (
     <ChartsStatusPiePreview
       size="card"
-      workItems={canvasWorkItems}
+      slices={analytics.series?.slices ?? null}
+      labelField={seriesLabelField ?? 'status'}
+      loading={Boolean(
+        projectId && seriesLabelField && analytics.seriesLoading
+      )}
+      emptyMessage={pieEmptyMessage}
       pieVariant={pieVariant}
-      labelField={labelField}
     />
   ) : (
     placeholderBody
@@ -313,8 +331,7 @@ export function ChartsWidgetCard({
           pieVariant={pieVariant}
           labelField={labelField}
           focusedSliceKey={focusedSliceKey}
-          sessionWorkItems={sessionWorkItems}
-          onSessionWorkItemsChange={setSessionWorkItems}
+          accessibleProjects={accessibleProjects}
           onFiltersChange={onFiltersChange}
           onViewModeChange={onViewModeChange}
           onPieVariantChange={onPieVariantChange}
@@ -330,10 +347,10 @@ export function ChartsWidgetCard({
           open={fullscreenOpen}
           onOpenChange={setFullscreenOpen}
           title={title}
-          description={`Full screen view of the ${title} widget.`}
+          description={description ?? 'Widget preview'}
           sizeClassName="h-[min(90vh,800px)] w-[min(96vw,1100px)]"
         >
-          <div className="flex min-h-0 flex-1 flex-col p-6">{body}</div>
+          {placeholderBody}
         </ChartsFullscreenDialogShell>
       )}
     </>

@@ -24,6 +24,12 @@ export type ChartsSampleProject = {
   readonly name: string;
 };
 
+/** Lightweight project option for chart filters (id + display name). */
+export type ChartsProjectOption = {
+  readonly id: string;
+  readonly name: string;
+};
+
 export type ChartsSampleWorkItem = {
   readonly id: string;
   readonly title: string;
@@ -47,7 +53,14 @@ export type ChartsSampleWorkItem = {
 
 /** Monday-style Labels → Columns options (pie group-by). */
 export type ChartsLabelFieldId =
-  'board' | 'group' | 'name' | 'owner' | 'status' | 'dueDate';
+  | 'board'
+  | 'group'
+  | 'name'
+  | 'owner'
+  | 'status'
+  | 'dueDate'
+  | 'type'
+  | 'priority';
 
 export const CHARTS_LABEL_COLUMNS: readonly {
   readonly id: ChartsLabelFieldId;
@@ -59,6 +72,8 @@ export const CHARTS_LABEL_COLUMNS: readonly {
   { id: 'owner', label: 'Owner' },
   { id: 'status', label: 'Status' },
   { id: 'dueDate', label: 'Due date' },
+  { id: 'type', label: 'Type' },
+  { id: 'priority', label: 'Priority' },
 ] as const;
 
 export const DEFAULT_CHARTS_LABEL_FIELD: ChartsLabelFieldId = 'status';
@@ -246,6 +261,13 @@ function labelBucketForItem(
       const monthKey = item.dueDate.slice(0, 7);
       return { key: monthKey, label: monthKey };
     }
+    case 'type':
+      return { key: item.type, label: item.type };
+    case 'priority':
+      return {
+        key: item.priority,
+        label: PRIORITY_LABELS[item.priority] ?? item.priority,
+      };
     default:
       return { key: 'unknown', label: 'Unknown' };
   }
@@ -438,12 +460,13 @@ const QUICK_FIELD_ALL_LABELS: Record<
 
 /** Quick-filter option lists (includes an “all” sentinel). */
 export function chartsQuickFieldOptions(
-  field: ChartsQuickFieldId
+  field: ChartsQuickFieldId,
+  projects: readonly ChartsProjectOption[] = CHARTS_SAMPLE_PROJECTS
 ): readonly ChartsFilterOption[] {
   if (field === 'project') {
     return [
       { value: 'all', label: 'All projects' },
-      ...CHARTS_SAMPLE_PROJECTS.map((project) => ({
+      ...projects.map((project) => ({
         value: project.id,
         label: project.name,
       })),

@@ -28,15 +28,13 @@ import { FilterFieldNavItem } from '@/components/filter-field-nav-item';
 import { preventDismissForFloatingPortal } from '@/lib/dialog-outside-events';
 import {
   CHARTS_FILTER_COLUMNS,
-  CHARTS_SAMPLE_PROJECTS,
-  CHARTS_SAMPLE_WORK_ITEMS,
   chartsFilterValueOptions,
   chartsQuickFieldOptions,
-  countChartsSampleMatches,
   type ChartsAdvancedFilterRow,
   type ChartsFilterColumnId,
   type ChartsFilterCondition,
   type ChartsFilterOption,
+  type ChartsProjectOption,
   type ChartsQuickFieldId,
   type ChartsWidgetFilterDraft,
 } from '@/app/charts/_components/charts-sample.data';
@@ -50,9 +48,8 @@ type ChartsAdvancedFiltersPopoverProps = {
   // eslint-disable-next-line no-unused-vars -- apply draft filters
   readonly onApply: (draft: ChartsWidgetFilterDraft) => void;
   readonly appliedFilters?: ChartsWidgetFilterDraft | null;
+  readonly projects?: readonly ChartsProjectOption[];
   readonly trigger: ReactNode;
-  readonly searchQuery?: string;
-  readonly assigneeId?: string | null;
   readonly className?: string;
 };
 
@@ -161,9 +158,8 @@ export function ChartsAdvancedFiltersPopover({
   onOpenChange,
   onApply,
   appliedFilters = null,
+  projects = [],
   trigger,
-  searchQuery = '',
-  assigneeId = null,
   className,
 }: Readonly<ChartsAdvancedFiltersPopoverProps>) {
   const initial = hydrateFromApplied(appliedFilters);
@@ -200,13 +196,15 @@ export function ChartsAdvancedFiltersPopover({
     [mode, projectId, rows, quickSelections]
   );
 
-  const matchingCount = useMemo(
-    () =>
-      countChartsSampleMatches(draft, {
-        search: searchQuery,
-        assigneeId,
-      }),
-    [assigneeId, draft, searchQuery]
+  const projectOptions = useMemo(
+    () => [
+      { value: 'all', label: 'All projects' },
+      ...projects.map((project) => ({
+        value: project.id,
+        label: project.name,
+      })),
+    ],
+    [projects]
   );
 
   const clearAll = () => {
@@ -250,8 +248,8 @@ export function ChartsAdvancedFiltersPopover({
   };
 
   const quickOptions = useMemo(
-    () => chartsQuickFieldOptions(quickField),
-    [quickField]
+    () => chartsQuickFieldOptions(quickField, projects),
+    [projects, quickField]
   );
 
   const filteredQuickOptions = useMemo(() => {
@@ -285,20 +283,20 @@ export function ChartsAdvancedFiltersPopover({
               {mode === 'advanced' ? 'Advanced filters' : 'Quick filters'}
             </h3>
             <p className="text-muted-foreground flex items-center gap-1 text-xs">
-              Showing {matchingCount} of {CHARTS_SAMPLE_WORK_ITEMS.length} items
+              Live counts use the selected project’s work-item rollups
               <Tooltip delayDuration={400}>
                 <TooltipTrigger asChild>
                   <button
                     type="button"
                     className="text-muted-foreground hover:text-foreground inline-flex cursor-pointer"
-                    aria-label="About matching items"
+                    aria-label="About chart filters"
                   >
                     <CircleHelp className="size-3.5" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
-                  Live match count for the current draft, including toolbar
-                  search and assignee.
+                  Pick a project to load the pie. Slice clicks open the table
+                  for that group.
                 </TooltipContent>
               </Tooltip>
             </p>
@@ -337,13 +335,7 @@ export function ChartsAdvancedFiltersPopover({
                 ariaLabel="Project"
                 placeholder="All projects"
                 triggerClassName="min-w-0"
-                options={[
-                  { value: 'all', label: 'All projects' },
-                  ...CHARTS_SAMPLE_PROJECTS.map((project) => ({
-                    value: project.id,
-                    label: project.name,
-                  })),
-                ]}
+                options={projectOptions}
               />
             </div>
 

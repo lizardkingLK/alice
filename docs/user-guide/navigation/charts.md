@@ -83,11 +83,11 @@ edit a specific widget.
 Open a **Chart** widget in full screen (filter icon or **⋯ → Full screen**).
 Use the **split view** button in the toolbar to choose:
 
-| Layout     | What you see                                             |
-| ---------- | -------------------------------------------------------- |
-| Chart      | Full pie or donut chart (default)                        |
-| Table      | Collapsible groups of sample tasks by status (paginated) |
-| Split mode | Chart on top and the status table underneath             |
+| Layout     | What you see                                           |
+| ---------- | ------------------------------------------------------ |
+| Chart      | Full pie or donut chart (default)                      |
+| Table      | Collapsible groups of work items by status (paginated) |
+| Split mode | Chart on top and the status table underneath           |
 
 Click a pie slice (or legend row) to jump to **Split**. The table stays grouped
 by **status**, scoped to the selected Labels slice (for example, Owner → only
@@ -100,9 +100,9 @@ the slice focus.
 2. Under **Chart type**, choose **Pie** or **Donut**. Other chart types show
    **Coming soon**.
 3. Under **Labels** → **Columns**, choose how to group the chart: **Project**,
-   **Group**, **Name**, **Owner**, **Status**, or **Due date**. The pie and
-   legend update from the sample data right away. Selection is saved with the
-   widget on this device (and with the workspace when cloud save is enabled).
+   **Owner**, **Status**, **Type**, or **Priority**. The pie and legend update
+   from live work-item counts. Selection is saved with the widget on this device
+   (and with the workspace when cloud save is enabled).
 4. **Values**, **Customize**, **Groups**, and **Choose which columns to show**
    are preview UI only for now.
 
@@ -110,16 +110,17 @@ The legend scrolls when there are many slices. Pie vs donut and Labels are saved
 with the widget on this device (and with the workspace when cloud save is
 enabled).
 
-Chart values today may still use **sample data** while live work-item rollups
-roll out. When live, slices reflect **counts** of work items (not story points
-yet). Clicking a slice still opens the table scoped to that group.
+Chart slices reflect **counts** of work items (not story points yet). Choose a
+**project** in widget filters first — without a project the chart stays empty.
+Clicking a slice opens the table scoped to that group.
 
 ---
 
 ## Chart widget filters
 
 1. Select the **filter** icon on the widget header to open fullscreen config.
-2. Use **Advanced** or **Quick** filters, search, and assignee avatars.
+2. Pick a **project** (required for live data). Optional Advanced / Quick
+   filters, search, and assignee avatars refine the table after a slice click.
 3. Dismiss the filter popover by clicking outside it, or **Close** / **Apply**.
 4. Use layout, settings, and **⋯** as described above.
 

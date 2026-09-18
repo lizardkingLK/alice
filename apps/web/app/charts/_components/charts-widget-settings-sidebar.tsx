@@ -54,10 +54,8 @@ import type {
   ChartPieVariant,
   ChartsLabelFieldId,
 } from '@/app/charts/_components/charts.types';
-import {
-  CHARTS_LABEL_COLUMNS,
-  DEFAULT_CHARTS_LABEL_FIELD,
-} from '@/app/charts/_components/charts-sample.data';
+import { DEFAULT_CHARTS_LABEL_FIELD } from '@/app/charts/_components/charts-sample.data';
+import { CHARTS_LIVE_LABEL_COLUMNS } from '@/app/charts/_helpers/charts-analytics.ui';
 import { STATUS_META } from '@/app/work-items/_helpers/work-item-status';
 
 type ChartsWidgetSettingsSidebarProps = {
@@ -407,8 +405,8 @@ function LabelsColumnSelect({
 }>) {
   const [open, setOpen] = useState(false);
   const selected =
-    CHARTS_LABEL_COLUMNS.find((column) => column.id === labelField) ??
-    CHARTS_LABEL_COLUMNS.find(
+    CHARTS_LIVE_LABEL_COLUMNS.find((column) => column.id === labelField) ??
+    CHARTS_LIVE_LABEL_COLUMNS.find(
       (column) => column.id === DEFAULT_CHARTS_LABEL_FIELD
     );
 
@@ -441,7 +439,7 @@ function LabelsColumnSelect({
             <CommandList>
               <CommandEmpty>No column found.</CommandEmpty>
               <CommandGroup>
-                {CHARTS_LABEL_COLUMNS.map((column) => (
+                {CHARTS_LIVE_LABEL_COLUMNS.map((column) => (
                   <CommandItem
                     key={column.id}
                     value={column.label}
@@ -471,9 +469,7 @@ function LabelsColumnSelect({
   );
 }
 
-function LabelFieldIcon({
-  fieldId,
-}: Readonly<{ fieldId: ChartsLabelFieldId }>) {
+function LabelFieldIcon({ fieldId }: Readonly<{ fieldId: string }>) {
   const className = 'size-3.5 shrink-0 opacity-70';
   switch (fieldId) {
     case 'board':
@@ -492,6 +488,10 @@ function LabelFieldIcon({
           aria-hidden
         />
       );
+    case 'type':
+      return <TextCursorInput className={className} aria-hidden />;
+    case 'priority':
+      return <Rows3 className={className} aria-hidden />;
     case 'dueDate':
       return <Calendar className={className} aria-hidden />;
     default:

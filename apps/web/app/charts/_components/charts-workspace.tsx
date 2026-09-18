@@ -432,6 +432,7 @@ export function ChartsWorkspace({
             layout={layout}
             hydrated={hydrated}
             focusWidgetId={focusWidgetId}
+            accessibleProjects={shareProjects}
             onLayoutChange={handleLayoutChange}
             onRemoveWidget={handleRemoveWidget}
             onDuplicateWidget={handleDuplicateWidget}
