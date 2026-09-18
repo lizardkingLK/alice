@@ -23,7 +23,7 @@ import {
   PanelLeftClose,
   Paperclip,
 } from '@repo/ui/lib/icons';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ChatRoles,
   detectChatAttachmentFileType,
@@ -68,13 +68,27 @@ import { useWorkspaceChatModels } from '@/app/chat/_components/use-workspace-cha
 import { useDashboardTrailBreadcrumb } from '@/app/dashboard/_components/dashboard-breadcrumb-runtime';
 import type { DashboardBreadcrumbOverride } from '@/app/dashboard/_components/dashboard-breadcrumb';
 import { isAdmin, type AppRole } from '@/lib/rbac';
+import { isChatFavoritesReady } from '../_helpers/is-chat-favorites-ready';
 
 function ChatPageTrailBreadcrumb({
   trail,
+  isLoadingConversations,
+  isLoadingHistory,
+  activeConversationId,
 }: Readonly<{
   trail: readonly DashboardBreadcrumbOverride[] | null;
+  isLoadingConversations: boolean;
+  isLoadingHistory: boolean;
+  activeConversationId: string | undefined;
 }>) {
-  useDashboardTrailBreadcrumb(trail);
+  const searchParams = useSearchParams();
+  const favoritesReady = isChatFavoritesReady({
+    isLoadingConversations,
+    isLoadingHistory,
+    activeConversationId,
+    urlConversationId: searchParams.get('conversationId'),
+  });
+  useDashboardTrailBreadcrumb(trail, { favoritesReady });
   return null;
 }
 
@@ -518,15 +532,8 @@ function applySuccessfulChatResponse(params: {
     if (!response.is_processing) {
       hydratedRef.current = response.conversationId;
     }
-    if (typeof window !== 'undefined') {
-      window.history.replaceState(
-        null,
-        '',
-        `/chat?conversationId=${response.conversationId}`
-      );
-    } else {
-      router.replace(`/chat?conversationId=${response.conversationId}`);
-    }
+    // Keep Next searchParams in sync so favorites / breadcrumbs use the new id.
+    router.replace(`/chat?conversationId=${response.conversationId}`);
     setActiveConversationId(response.conversationId);
     setConversations((prev) => [
       {
@@ -955,7 +962,14 @@ export function ChatClient({
         isPage ? 'h-full min-h-0 flex-1' : 'h-full'
       )}
     >
-      {isPage && <ChatPageTrailBreadcrumb trail={chatBreadcrumbTrail} />}
+      {isPage && (
+        <ChatPageTrailBreadcrumb
+          trail={chatBreadcrumbTrail}
+          isLoadingConversations={isLoadingConversations}
+          isLoadingHistory={isLoadingHistory}
+          activeConversationId={activeConversationId}
+        />
+      )}
       {isPage && (
         <ChatClientSidebar
           showHistory={showHistory}

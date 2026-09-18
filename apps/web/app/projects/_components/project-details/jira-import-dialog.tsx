@@ -272,11 +272,11 @@ export function JiraImportDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="flex max-h-[90vh] w-full sm:max-w-4xl lg:max-w-5xl flex-col p-0 gap-0 overflow-hidden"
+        className="flex max-h-[90vh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl lg:max-w-5xl"
         dismissOnOutsideClick={false}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <DialogHeader className="p-6 pb-4 shrink-0 border-b">
+        <DialogHeader className="shrink-0 border-b p-6 pb-4">
           <DialogTitle className="flex items-center gap-2 text-xl font-bold">
             <RefreshCw className="text-primary h-5 w-5" />
             Jira Import & Hierarchy Mapping

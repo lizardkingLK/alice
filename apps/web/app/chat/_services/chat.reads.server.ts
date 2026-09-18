@@ -68,6 +68,35 @@ async function fetchChatConversationsForUser(
   return data ?? [];
 }
 
+/**
+ * Fetch one owned conversation by id (uncached). Used when the list cache
+ * has not yet caught up after creating a chat, so we do not 404 new threads.
+ */
+export async function getChatConversationById(
+  conversationId: string
+): Promise<ChatConversation | null> {
+  const user = await getUser();
+  if (!user) {
+    return null;
+  }
+
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from('chat_conversations')
+    .select('id, title, created_at, updated_at, is_processing')
+    .eq('user_id', user.id)
+    .eq('id', conversationId)
+    .maybeSingle();
+
+  throwIfError(
+    error,
+    'failed to load chat conversation',
+    'Failed to load conversation'
+  );
+
+  return data;
+}
+
 // Cache conversations list to reduce RSC latency.
 // Note: this is user-scoped (cache key includes `userId`).
 const getCachedChatConversationsForUser = unstable_cache(
@@ -97,14 +126,19 @@ export async function getChatHistoryServer(
 
 /**
  * Prefetch conversations + selected thread for `/chat` in one RSC pass.
- * When `activeId` is set but not owned/listed, returns `not_found` (caller
- * should render the app not-found UI — e.g. stale favorites).
+ * When `activeId` is set but not owned, returns `not_found` (caller should
+ * render the app not-found UI — e.g. stale favorites). A freshly created id
+ * missing from the cached list is resolved via live list + by-id lookup so
+ * new chats do not 404 during cache catch-up.
  */
 export async function getChatPageBootstrap(
   activeId?: string
 ): Promise<ChatPageBootstrapResult> {
   const cachedConversations = await listChatConversations();
-  let selection = selectChatBootstrapConversation(cachedConversations, activeId);
+  let selection = selectChatBootstrapConversation(
+    cachedConversations,
+    activeId
+  );
   let effectiveConversations = cachedConversations;
 
   if (selection.kind === 'not_found' && activeId) {
@@ -116,6 +150,16 @@ export async function getChatPageBootstrap(
     if (liveSelection.kind === 'selected') {
       selection = liveSelection;
       effectiveConversations = liveConversations;
+    } else {
+      // List cache/live can lag right after create — confirm ownership by id.
+      const owned = await getChatConversationById(activeId);
+      if (owned) {
+        selection = { kind: 'selected', conversation: owned };
+        effectiveConversations = [
+          owned,
+          ...liveConversations.filter((item) => item.id !== owned.id),
+        ];
+      }
     }
   }
 

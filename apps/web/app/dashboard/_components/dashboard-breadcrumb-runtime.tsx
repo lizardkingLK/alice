@@ -35,12 +35,19 @@ function trailsEqual(
 type DashboardBreadcrumbRuntimeContextValue = {
   readonly segmentLabelsByUrl: Readonly<Record<string, string>>;
   readonly favoriteLabel: string | null;
+  /**
+   * When false, the header favorite control stays disabled (e.g. chat still
+   * hydrating / URL not yet aligned with the active conversation).
+   */
+  readonly favoritesReady: boolean;
   /** When set, replaces path-derived crumbs (e.g. Chat + conversation title). */
   readonly trailOverride: readonly DashboardBreadcrumbOverride[] | null;
   // eslint-disable-next-line no-unused-vars -- context setter
   readonly setSegmentLabel: (url: string, label: string | null) => void;
   // eslint-disable-next-line no-unused-vars -- context setter
   readonly setFavoriteLabel: (label: string | null) => void;
+  // eslint-disable-next-line no-unused-vars -- context setter
+  readonly setFavoritesReady: (ready: boolean) => void;
   readonly setTrailOverride: (
     // eslint-disable-next-line no-unused-vars -- context setter
     trail: readonly DashboardBreadcrumbOverride[] | null
@@ -57,6 +64,7 @@ export function DashboardBreadcrumbRuntimeProvider({
     Record<string, string>
   >({});
   const [favoriteLabel, setFavoriteLabel] = useState<string | null>(null);
+  const [favoritesReady, setFavoritesReady] = useState(true);
   const [trailOverride, setTrailOverride] = useState<
     readonly DashboardBreadcrumbOverride[] | null
   >(null);
@@ -84,6 +92,10 @@ export function DashboardBreadcrumbRuntimeProvider({
     setFavoriteLabel((prev) => (prev === next ? prev : next));
   }, []);
 
+  const commitFavoritesReady = useCallback((ready: boolean) => {
+    setFavoritesReady((prev) => (prev === ready ? prev : ready));
+  }, []);
+
   const commitTrailOverride = useCallback(
     (trail: readonly DashboardBreadcrumbOverride[] | null) => {
       setTrailOverride((prev) => {
@@ -100,15 +112,19 @@ export function DashboardBreadcrumbRuntimeProvider({
     () => ({
       segmentLabelsByUrl,
       favoriteLabel,
+      favoritesReady,
       trailOverride,
       setSegmentLabel,
       setFavoriteLabel: commitFavoriteLabel,
+      setFavoritesReady: commitFavoritesReady,
       setTrailOverride: commitTrailOverride,
     }),
     [
       commitFavoriteLabel,
+      commitFavoritesReady,
       commitTrailOverride,
       favoriteLabel,
+      favoritesReady,
       segmentLabelsByUrl,
       setSegmentLabel,
       trailOverride,
@@ -166,11 +182,14 @@ export function useDashboardEntityBreadcrumb(params: {
  * replace the full header trail once the title is known.
  */
 export function useDashboardTrailBreadcrumb(
-  trail: readonly DashboardBreadcrumbOverride[] | null
+  trail: readonly DashboardBreadcrumbOverride[] | null,
+  options?: Readonly<{ favoritesReady?: boolean }>
 ) {
   const runtime = useDashboardBreadcrumbRuntime();
   const setTrailOverride = runtime?.setTrailOverride;
   const setFavoriteLabel = runtime?.setFavoriteLabel;
+  const setFavoritesReady = runtime?.setFavoritesReady;
+  const favoritesReady = options?.favoritesReady ?? true;
 
   useEffect(() => {
     if (!setTrailOverride) {
@@ -196,6 +215,16 @@ export function useDashboardTrailBreadcrumb(
       setFavoriteLabel(null);
     };
   }, [setFavoriteLabel, trail]);
+
+  useEffect(() => {
+    if (!setFavoritesReady) {
+      return;
+    }
+    setFavoritesReady(favoritesReady);
+    return () => {
+      setFavoritesReady(true);
+    };
+  }, [favoritesReady, setFavoritesReady]);
 }
 
 export function applyRuntimeBreadcrumbLabels<
