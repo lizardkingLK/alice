@@ -97,8 +97,16 @@ Notification type: `chart_shared` (inbox deep-link to `/charts/[id]`).
 
 ## Data strategy (widget payloads)
 
-Chart widgets still use in-memory sample rows. Production path: precomputed /
-materialized snapshot, cheap client filters — not heavy joins per slice.
+**Tier 1 (in progress):** categorical pie series from table
+`work_item_chart_rollups` (trigger-maintained counts on Supabase), not
+in-memory mocks. Slice → table uses **paginated** live `work_items` queries.
+Measure for Tier 1: **`item_count` only**.
+
+Design, Tier 2/3 (Neon read model, apps rename), and step checklist:
+[CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md).
+
+Until Step 3 of that checklist lands in the web app, the Chart widget may still
+render sample data from `charts-sample.data.ts`.
 
 ## Non-goals (near term)
 
@@ -106,8 +114,10 @@ materialized snapshot, cheap client filters — not heavy joins per slice.
 - Putting layout into `saved_views.search`
 - Nested widget route as the only configuration UI
 - Sharing Favorites
+- Neon / Render / Upstash wiring (Tier 2+)
 
 ## Related
 
+- Aggregation design: [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md)
 - User guide: `docs/user-guide/navigation/charts.md`
 - Views sharing model: `docs/features/views/FAVORITES_AND_VIEWS.md`
