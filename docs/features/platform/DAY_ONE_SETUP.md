@@ -85,8 +85,8 @@ Phases 1–4 are required for a usable empty project. Phase 5 is opt-in
 
 The script should:
 
-1. Require `DIRECT_URL` (migrations) and `DATABASE_URL` (session pooler `5432`
-   for later Prisma use). See [DATABASE.md](../../guides/DATABASE.md).
+1. Require `DIRECT_URL` (migrations / type generation). Pooled `DATABASE_URL`
+   belongs on `apps/api` for runtime Prisma. See [DATABASE.md](../../guides/DATABASE.md).
 2. Run `pnpm db migrate:deploy` (additive only).
 3. Treat **indexes** as already declared in `schema.prisma` / migration SQL —
    no second index pass.
@@ -226,7 +226,7 @@ Suggested env (never committed filled in):
 | -------------------------------------------------------------------------- | -------------------------------------- |
 | `SUPABASE_ACCESS_TOKEN`                                                    | Management API PAT (`sbp_…`)           |
 | `SUPABASE_PROJECT_REF`                                                     | Project ref in API URLs                |
-| `DIRECT_URL` / `DATABASE_URL`                                              | Migrate                                |
+| `DIRECT_URL`                                                               | Migrate / generate                     |
 | `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`                               | Optional seed + verify                 |
 | `GOOGLE_AUTH_CLIENT_ID` / `GOOGLE_AUTH_CLIENT_SECRET`                      | Auth provider PATCH                    |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_ADMIN_EMAIL` | Custom SMTP                            |

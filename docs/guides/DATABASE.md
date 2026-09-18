@@ -31,10 +31,14 @@ RSC runs on the server, but **`apps/web` and `apps/api` are separate deploy unit
 Copy `packages/db/sample.env` to `.env`:
 
 - `DIRECT_URL` — non-pooled Postgres URL (`db.<ref>.supabase.co:5432`) for migrations and type generation
-- `DATABASE_URL` — Supavisor **session** pooler for Prisma Client in `apps/api`. In the dashboard: **Connect** → **ORMs** / **Connection pooling** → **Session** (port **5432**). Docs: [Connect to Postgres](https://supabase.com/docs/guides/database/connecting-to-postgres#pooler-session-mode) and [Prisma](https://supabase.com/docs/guides/database/prisma) (step 3: string ending in `:5432`). Direct link: [Connect with session method](https://supabase.com/dashboard/project/_?showConnect=true&method=session). Do **not** use the Transaction string (`:6543?pgbouncer=true`); the client rewrites that host/port to session `5432` if pasted by mistake. The `pg` pool uses `uselibpqcompat=true&sslmode=require` (encrypt, do not verify-full) so current `pg` does not reject Supavisor's certificate chain.
 - `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` — required for `pnpm db seed`
 
-`apps/api` also requires `DATABASE_URL` (see `apps/api/sample.env`). Do not use `DIRECT_URL` in the API process.
+Pooled Supavisor **session** URL (`DATABASE_URL`, port **5432**) belongs on
+**`apps/api` only** — pass it into `getPrismaClient` at runtime. Do not require
+it in `packages/db`. In the dashboard: **Connect** → **ORMs** / **Connection
+pooling** → **Session**. Docs: [Connect to Postgres](https://supabase.com/docs/guides/database/connecting-to-postgres#pooler-session-mode) and [Prisma](https://supabase.com/docs/guides/database/prisma). Do **not** use the Transaction string (`:6543?pgbouncer=true`); the client rewrites that host/port to session `5432` if pasted by mistake. The `pg` pool uses `uselibpqcompat=true&sslmode=require` (encrypt, do not verify-full) so current `pg` does not reject Supavisor's certificate chain.
+
+`apps/api` requires `DATABASE_URL` (see `apps/api/sample.env`). Do not use `DIRECT_URL` in the API process.
 
 Env vars are validated via `packages/db/src/env.ts` on `pnpm db checktypes`, `pnpm db generate`, `pnpm db seed`, and `pnpm db validate` (via `prisma.config.ts`). CI skips validation when `GITHUB_ACTIONS=true`.
 

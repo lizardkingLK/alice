@@ -24,7 +24,7 @@ const SUPAVISOR_TRANSACTION_PORT = '6543';
 const SUPAVISOR_SESSION_PORT = '5432';
 
 /**
- * Make `DATABASE_URL` safe for `@prisma/adapter-pg`:
+ * Make a Postgres connection string safe for `@prisma/adapter-pg`:
  * strip Prisma-only params, force libpq-compat SSL (encrypt, don't verify-full),
  * and rewrite Supavisor **transaction** mode (`*.pooler.supabase.com:6543`) to
  * **session** mode (`:5432`).
@@ -63,7 +63,7 @@ function logPrismaPoolError(err: Error) {
  * Use `DIRECT_URL` only with Prisma CLI migrate — never here.
  *
  * `@prisma/adapter-pg` holds a real connection across `BEGIN`…`COMMIT`.
- * Point `DATABASE_URL` at Supavisor **session** mode (pooler host, port 5432),
+ * Pass apps/api's pooled `DATABASE_URL` (Supavisor **session** mode, port 5432),
  * not transaction mode (6543). `pg.Pool` defaults to an infinite connect wait;
  * we set a timeout so a bad URL fails the request instead of hanging the UI.
  */
