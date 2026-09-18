@@ -312,3 +312,18 @@ export {
   type WorkItemDeduplicationItemResult,
   type WorkItemDeduplicationReport,
 } from './chat.js';
+export {
+  CHART_SERIES_LABEL_FIELDS,
+  CHART_SERIES_NULL_SLICE_KEY,
+  chartDrilldownItemSelect,
+  chartDrilldownQuerySchema,
+  chartRollupGroupColumn,
+  chartSeriesQuerySchema,
+  type ChartDrilldownQuery,
+  type ChartDrilldownResponse,
+  type ChartRollupGroupColumn,
+  type ChartSeriesLabelField,
+  type ChartSeriesQuery,
+  type ChartSeriesResponse,
+  type ChartSeriesSlice,
+} from './charts-analytics.js';

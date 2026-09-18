@@ -1,4 +1,10 @@
 import { ChartSharedNotification, NotificationBuilder } from '@repo/types';
+import type {
+  ChartDrilldownQuery,
+  ChartDrilldownResponse,
+  ChartSeriesQuery,
+  ChartSeriesResponse,
+} from '@repo/types';
 import type { NotificationsRepository } from '../notifications/notifications.repository';
 import type { SavedViewsRepository } from '../savedViews/savedViews.repository';
 import { ChartsRepository, type ChartRow } from './charts.repository';
@@ -14,6 +20,37 @@ export class ChartsService {
     private readonly notificationsRepository: NotificationsRepository,
     private readonly savedViewsRepository: SavedViewsRepository
   ) {}
+
+  async getSeries(
+    actorId: string,
+    query: ChartSeriesQuery
+  ): Promise<ChartSeriesResponse> {
+    await this.assertProjectAccess(actorId, query.projectId);
+    const { slices, totalCount } = await this.chartsRepository.sumSeries(query);
+    return {
+      projectId: query.projectId,
+      labelField: query.labelField,
+      ...(query.from ? { from: query.from } : {}),
+      ...(query.to ? { to: query.to } : {}),
+      ...(query.sprintId ? { sprintId: query.sprintId } : {}),
+      slices,
+      totalCount,
+    };
+  }
+
+  async getDrilldown(
+    actorId: string,
+    query: ChartDrilldownQuery
+  ): Promise<ChartDrilldownResponse> {
+    await this.assertProjectAccess(actorId, query.projectId);
+    const page = await this.chartsRepository.listDrilldown(query);
+    return {
+      projectId: query.projectId,
+      labelField: query.labelField,
+      sliceKey: query.sliceKey,
+      ...page,
+    };
+  }
 
   create(ownerId: string, input: CreateChartBody) {
     return this.chartsRepository.create(ownerId, input);
@@ -112,6 +149,14 @@ export class ChartsService {
       chartId,
       userId: actorId,
     });
+  }
+
+  private async assertProjectAccess(actorId: string, projectId: string) {
+    const accessible =
+      await this.chartsRepository.listAccessibleProjectIds(actorId);
+    if (!accessible.includes(projectId)) {
+      throw new Error('Forbidden');
+    }
   }
 
   private async requireOwned(actorId: string, chartId: string) {

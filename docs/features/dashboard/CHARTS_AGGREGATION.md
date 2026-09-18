@@ -106,14 +106,29 @@ No HTTP or queues inside the trigger.
 - `(project_id, status)`
 - Time column as needed for drilldown date filters (`created_at`)
 
-### APIs (sketch)
+### APIs
 
-| Endpoint              | Source                                                                    |
-| --------------------- | ------------------------------------------------------------------------- |
-| `GET` chart series    | `SUM(item_count) … GROUP BY labelField` on rollups + optional `from`/`to` |
-| `GET` chart drilldown | Paginated `work_items` with same filters + slice key                      |
+| Method | Path                                 | Source                                                                                                 |
+| ------ | ------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| `GET`  | `/api/v1/charts/analytics/series`    | `SUM(item_count) … GROUP BY labelField` on `work_item_chart_rollups` + optional `from`/`to`/`sprintId` |
+| `GET`  | `/api/v1/charts/analytics/drilldown` | Paginated active `work_items` with the same filters + `sliceKey`                                       |
 
-Auth/RBAC: same project access as board / work items.
+**Query (series):**
+
+| Param         | Required | Notes                                                            |
+| ------------- | -------- | ---------------------------------------------------------------- |
+| `projectId`   | yes      | UUID; must be in the actor’s accessible projects                 |
+| `labelField`  | no       | `status` (default) \| `owner` \| `board` \| `type` \| `priority` |
+| `from` / `to` | no       | `YYYY-MM-DD` on rollup `bucket_date`                             |
+| `sprintId`    | no       | UUID                                                             |
+
+**Query (drilldown):** same filters plus `sliceKey` (empty string = NULL, e.g. unassigned), `page` (default 1), `limit` (default 20, max 100).
+
+`owner` → `assignee_id`, `board` → `project_id`. UI fields not on the rollup (`group`, `name`, `dueDate`) are rejected.
+
+Auth/RBAC: same project access as board / work items (`listAccessibleProjectIds`).
+
+Also mounted at `/api/charts/…` (legacy alias).
 
 ---
 
@@ -138,15 +153,16 @@ Do in order. Each step should be reviewable on its own when practical.
 
 ### Step 2 — API: series + drilldown
 
-**Docs:** document routes under API section in this file (fill exact paths when coded).
+**Docs:** routes documented under [APIs](#apis) above.
 
 **Code:**
 
-1. `apps/api` routes/service/repository for series + drilldown
-2. Wire types in `@repo/types`
-3. Unit/integration tests for grouping filters and pagination
+1. `GET /api/v1/charts/analytics/series` + `…/drilldown` (registered before `/:id`)
+2. Types/schemas in `@repo/types` (`charts-analytics.ts`)
+3. Repository groupBy on rollups + paginated WI drilldown; ACL via `listAccessibleProjectIds`
+4. Unit tests under `apps/api/tests/charts/`
 
-**Verify:** authenticated curl/HTTP against a project with known WI distribution.
+**Verify:** authenticated HTTP against a project with known WI distribution.
 
 ### Step 3 — Web: replace mocks
 
