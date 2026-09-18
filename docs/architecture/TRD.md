@@ -110,7 +110,7 @@ Both apps deploy to Vercel. The API runs as Vercel Serverless Functions. Protect
 - `src/env.ts` — Zod validation for db package env vars
 - `script_create_migrate.sh` — create migration from schema diff, deploy, regenerate types, seed
 - `script_generate_types.sh` — `supabase gen types` into `@repo/types`
-- `sample.env` — `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+- `sample.env` — `DIRECT_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
 
 **packages/types** (`@repo/types`)
 
@@ -267,10 +267,11 @@ Env vars for `@repo/db` are validated in `packages/db/src/env.ts` (Zod). CI skip
 
 ### Environment variables (`packages/db/sample.env`)
 
-- `DATABASE_URL` — pooled Postgres URL (runtime / future use)
 - `DIRECT_URL` — direct Postgres URL for migrations and type generation
 - `SUPABASE_URL` — Supabase project URL (seeding)
 - `SUPABASE_SERVICE_ROLE_KEY` — service role key (seeding only; never exposed to web client)
+
+Pooled `DATABASE_URL` (Supavisor session) is configured on **`apps/api`**, not `@repo/db`.
 
 Application-level Supabase vars remain in `apps/web/sample.env` and `apps/api/sample.env`.
 
