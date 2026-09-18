@@ -4,8 +4,8 @@ Authenticated workspace hub with a customizable overview (drag / resize widgets)
 
 | Document                                         | Description                                                                                                  | Status |
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ | ------ |
-| [CHARTS.md](./CHARTS.md)                         | Custom chart boards UI (`/charts`); JSON persistence + sharing next                                          | Living |
-| [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md) | Work-item rollups, series/drilldown APIs, Tier 1–3 scaling                                                   | Living |
+| [CHARTS.md](./CHARTS.md)                         | Custom chart boards UI (`/charts`); live Tier 1 series/drilldown + sharing                                   | Living |
+| [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md) | Work-item rollups, series/drilldown APIs, Tier 1 shipped / Tier 2–3 scaling                                  | Living |
 | —                                                | See [ARD](../../product/ARD.md) and [TRD](../../architecture/TRD.md); add widget/layout notes here as needed | Living |
 
 Quick links:

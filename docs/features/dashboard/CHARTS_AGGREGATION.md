@@ -1,6 +1,7 @@
 # Charts aggregation (work-item series)
 
-Status: **Tier 1 in progress** — design locked; implementation stepwise.
+Status: **Tier 1 shipped** — rollup + series/drilldown API + live Chart widget.
+Tier 2/3 remain design-only (see below).
 
 Replaces in-memory chart mocks with precomputed **rollup** statistics and
 paginated drilldown. Heavy joins per pie slice are out of scope.
@@ -26,11 +27,11 @@ Related:
 
 ## Tiers
 
-| Tier  | Scope                                                                                                                                            | Status            |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------- |
-| **1** | Same Supabase DB: rollup + indexes + series API + paginated drilldown; remove mocks                                                              | **Implement now** |
-| **2** | Lean `work_items` read model on **Neon**; **Render `reader`**; **Upstash** queue; Express **post-commit** publisher; **Pusher** auth as streamer | Later             |
-| **3** | Whole-app reads on Neon; **apps rename** first; separate architecture doc                                                                        | Later             |
+| Tier  | Scope                                                                                                                                            | Status      |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| **1** | Same Supabase DB: rollup + indexes + series API + paginated drilldown; Chart widget on live data                                                 | **Shipped** |
+| **2** | Lean `work_items` read model on **Neon**; **Render `reader`**; **Upstash** queue; Express **post-commit** publisher; **Pusher** auth as streamer | Later       |
+| **3** | Whole-app reads on Neon; **apps rename** first; separate architecture doc                                                                        | Later       |
 
 ### Tier 1 locks
 
@@ -134,9 +135,9 @@ Also mounted at `/api/charts/…` (legacy alias).
 
 ## Tier 1 implementation steps
 
-Do in order. Each step should be reviewable on its own when practical.
+All four steps are **done**. Kept here as a historical checklist.
 
-### Step 1 — Schema: indexes + rollup + backfill + triggers
+### Step 1 — Schema: indexes + rollup + backfill + triggers ✅
 
 **Migration:** `packages/db/prisma/migrations/add_work_item_chart_rollups/`
 
@@ -151,7 +152,7 @@ Do in order. Each step should be reviewable on its own when practical.
 
 **Verify:** insert/update/delete a work item in dev; rollup counts move correctly.
 
-### Step 2 — API: series + drilldown
+### Step 2 — API: series + drilldown ✅
 
 **Docs:** routes documented under [APIs](#apis) above.
 
@@ -164,7 +165,7 @@ Do in order. Each step should be reviewable on its own when practical.
 
 **Verify:** authenticated HTTP against a project with known WI distribution.
 
-### Step 3 — Web: replace mocks
+### Step 3 — Web: replace mocks ✅
 
 **Docs:** [CHARTS.md](./CHARTS.md) widget section (mock → live); user guide Labels/filters.
 
@@ -178,12 +179,24 @@ Do in order. Each step should be reviewable on its own when practical.
 
 **Verify:** `/charts/[id]` pie matches board/work-item reality for a project filter.
 
-### Step 4 — Docs polish + sync
+### Step 4 — Docs polish + sync ✅
 
-1. Finalize this file (status, exact paths, migration folder name)
+1. This file: status **Tier 1 shipped**, exact API paths, migration folder name
 2. [CHARTS.md](./CHARTS.md) + [README.md](./README.md) links
-3. User guide note if UX copy changes
+3. User guide: [charts.md](../../user-guide/navigation/charts.md) (project filter + live Labels)
 4. `pnpm --filter web docs:sync`
+
+### Code map (Tier 1)
+
+| Layer                  | Path                                                                                               |
+| ---------------------- | -------------------------------------------------------------------------------------------------- |
+| Migration              | `packages/db/prisma/migrations/add_work_item_chart_rollups/`                                       |
+| Prisma model           | `work_item_chart_rollups` in `packages/db/prisma/schema.prisma`                                    |
+| API types              | `packages/types/src/api/v1/charts-analytics.ts`                                                    |
+| API route/service/repo | `apps/api/src/routes/api/charts/`                                                                  |
+| API tests              | `apps/api/tests/charts/`                                                                           |
+| Web client + hook      | `apps/web/app/charts/_services/charts.analytics.client.ts`, `_hooks/use-chart-widget-analytics.ts` |
+| Web helpers / tests    | `apps/web/app/charts/_helpers/charts-analytics.ui.ts`, `apps/web/tests/charts/`                    |
 
 ---
 

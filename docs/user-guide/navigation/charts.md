@@ -126,7 +126,7 @@ Clicking a slice opens the table scoped to that group.
 
 ---
 
-## Sharing (planned / API)
+## Sharing
 
 Workspaces can be shared using the same model as **Views**: recipients get
 access to the chart board, and you can optionally bookmark `/charts/[id]` as a
