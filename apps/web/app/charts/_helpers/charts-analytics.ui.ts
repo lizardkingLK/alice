@@ -41,7 +41,7 @@ export const CHARTS_LIVE_LABEL_COLUMNS: readonly {
 ] as const;
 
 export function isChartSeriesLabelField(
-  value: ChartsLabelFieldId | string
+  value: ChartsLabelFieldId
 ): value is ChartSeriesLabelField {
   return LIVE_LABEL_FIELD_SET.has(value);
 }
