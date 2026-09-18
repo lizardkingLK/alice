@@ -1,11 +1,7 @@
 'use client';
 
 import { type Dispatch, useEffect, useMemo, useState } from 'react';
-import {
-  type BoardColumn,
-  type BoardConfig,
-  type BoardRuleMatcher,
-} from '@repo/types/api/v1';
+import { type BoardColumn, type BoardConfig } from '@repo/types/api/v1';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
@@ -16,26 +12,17 @@ import {
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
 import { Label } from '@repo/ui/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@repo/ui/components/ui/select';
-import { CheckboxOptionList } from '@/components/checkbox-option-list';
-import {
-  MemberCheckboxList,
-  type MemberCheckboxOption,
-} from '@/components/member-checkbox-list';
+import type { MemberCheckboxOption } from '@/components/member-checkbox-list';
 import { SearchableSelect } from '@/components/searchable-select';
+import {
+  createTransitionRulePermissionsValue,
+  TransitionRulePermissions,
+  type TransitionRulePermissionsValue,
+  type TransitionRuleTeamOption,
+  validateTransitionRulePermissions,
+} from '@/app/projects/_components/project-details/transition-rule-permissions';
 
-export type BoardRuleTeamOption = {
-  readonly id: string;
-  readonly name: string;
-};
-
-type AccessMode = 'everyone' | 'restricted';
+export type BoardRuleTeamOption = TransitionRuleTeamOption;
 
 type BoardMovementRulesDialogProps = {
   readonly config: BoardConfig;
@@ -47,26 +34,6 @@ type BoardMovementRulesDialogProps = {
   readonly onOpenChange: Dispatch<boolean>;
   readonly onConfigChange: Dispatch<BoardConfig>;
 };
-
-const ROLE_OPTIONS = [
-  { id: 'admin', label: 'Admin' },
-  { id: 'manager', label: 'Manager' },
-  { id: 'member', label: 'Member' },
-] as const;
-
-function matcherSelections(matchers: readonly BoardRuleMatcher[]) {
-  return {
-    roles: matchers
-      .filter((matcher) => matcher.scope === 'role')
-      .map((matcher) => matcher.role),
-    teamIds: matchers
-      .filter((matcher) => matcher.scope === 'team')
-      .map((matcher) => matcher.teamId),
-    userIds: matchers
-      .filter((matcher) => matcher.scope === 'user')
-      .map((matcher) => matcher.userId),
-  };
-}
 
 export function BoardMovementRulesDialog({
   config,
@@ -83,10 +50,11 @@ export function BoardMovementRulesDialog({
     [config.columns, targetColumn?.id]
   );
   const [sourceColumnId, setSourceColumnId] = useState('');
-  const [accessMode, setAccessMode] = useState<AccessMode>('everyone');
-  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
-  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
-  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [permissions, setPermissions] =
+    useState<TransitionRulePermissionsValue>({
+      accessMode: 'everyone',
+      allowAnyOf: [],
+    });
   const [error, setError] = useState<string | null>(null);
 
   const transition =
@@ -106,31 +74,18 @@ export function BoardMovementRulesDialog({
 
   useEffect(() => {
     if (!open) return;
-    const selections = matcherSelections(transition?.allowAnyOf ?? []);
-    setAccessMode(transition ? 'restricted' : 'everyone');
-    setSelectedRoles(selections.roles);
-    setSelectedTeamIds(
-      selections.teamIds.filter((teamId) =>
-        teams.some((team) => team.id === teamId)
-      )
-    );
-    setSelectedUserIds(
-      selections.userIds.filter((userId) =>
-        members.some((member) => member.userId === userId)
+    setPermissions(
+      createTransitionRulePermissionsValue(
+        Boolean(transition),
+        transition?.allowAnyOf ?? [],
+        teams,
+        members
       )
     );
     setError(null);
   }, [members, open, sourceColumnId, teams, transition]);
 
   if (!targetColumn) return null;
-
-  const knownTeamIds = new Set(teams.map((team) => team.id));
-  const knownUserIds = new Set(members.map((member) => member.userId));
-  const staleCount = (transition?.allowAnyOf ?? []).filter((matcher) => {
-    if (matcher.scope === 'team') return !knownTeamIds.has(matcher.teamId);
-    if (matcher.scope === 'user') return !knownUserIds.has(matcher.userId);
-    return false;
-  }).length;
 
   const applyRule = () => {
     if (!sourceColumnId || disabled) return;
@@ -144,7 +99,7 @@ export function BoardMovementRulesDialog({
           )
         : [];
 
-    if (accessMode === 'everyone') {
+    if (permissions.accessMode === 'everyone') {
       if (config.version === '2') {
         onConfigChange({ ...config, transitions: withoutPair });
       }
@@ -152,15 +107,9 @@ export function BoardMovementRulesDialog({
       return;
     }
 
-    const allowAnyOf: BoardRuleMatcher[] = [
-      ...selectedRoles.map(
-        (role) => ({ scope: 'role', role }) as BoardRuleMatcher
-      ),
-      ...selectedTeamIds.map((teamId) => ({ scope: 'team', teamId }) as const),
-      ...selectedUserIds.map((userId) => ({ scope: 'user', userId }) as const),
-    ];
-    if (allowAnyOf.length === 0) {
-      setError('Select at least one role, team, or individual.');
+    const permissionError = validateTransitionRulePermissions(permissions);
+    if (permissionError) {
+      setError(permissionError);
       return;
     }
 
@@ -172,7 +121,7 @@ export function BoardMovementRulesDialog({
         {
           fromColumnId: sourceColumnId,
           toColumnId: targetColumn.id,
-          allowAnyOf,
+          allowAnyOf: [...permissions.allowAnyOf],
         },
       ],
     });
@@ -208,80 +157,16 @@ export function BoardMovementRulesDialog({
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="board-rule-access">Access mode</Label>
-            <Select
-              value={accessMode}
-              onValueChange={(value) => setAccessMode(value as AccessMode)}
-              disabled={disabled}
-            >
-              <SelectTrigger id="board-rule-access" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="everyone">Everyone</SelectItem>
-                <SelectItem value="restricted">Restricted</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {accessMode === 'restricted' ? (
-            <div className="space-y-4">
-              <p className="text-muted-foreground text-xs">
-                Any selected role, team, or person may make this move.
-              </p>
-              <div className="space-y-1.5">
-                <Label>Roles</Label>
-                <CheckboxOptionList
-                  options={ROLE_OPTIONS}
-                  selectedIds={selectedRoles}
-                  onSelectedIdsChange={setSelectedRoles}
-                  checkboxIdPrefix="board-rule-role"
-                  disabled={disabled}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Teams</Label>
-                <CheckboxOptionList
-                  options={teams.map((team) => ({
-                    id: team.id,
-                    label: team.name,
-                  }))}
-                  selectedIds={selectedTeamIds}
-                  onSelectedIdsChange={setSelectedTeamIds}
-                  checkboxIdPrefix="board-rule-team"
-                  disabled={disabled}
-                  emptyText="No active teams are available for this project."
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Individuals</Label>
-                <MemberCheckboxList
-                  members={members}
-                  selectedUserIds={selectedUserIds}
-                  onSelectedUserIdsChange={setSelectedUserIds}
-                  checkboxIdPrefix="board-rule-user"
-                  disabled={disabled}
-                  emptyText="No active project members are available."
-                />
-              </div>
-            </div>
-          ) : null}
-
-          {staleCount > 0 ? (
-            <p
-              className="text-sm text-amber-700 dark:text-amber-400"
-              role="alert"
-            >
-              {staleCount} saved team or user reference is no longer active in
-              this project. It will be removed when you apply this rule.
-            </p>
-          ) : null}
-          {error ? (
-            <p className="text-destructive text-sm" role="alert">
-              {error}
-            </p>
-          ) : null}
+          <TransitionRulePermissions
+            value={permissions}
+            savedAllowAnyOf={transition?.allowAnyOf ?? []}
+            teams={teams}
+            members={members}
+            idPrefix="board-rule"
+            disabled={disabled}
+            error={error}
+            onChange={setPermissions}
+          />
         </div>
 
         <DialogFooter>
