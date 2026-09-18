@@ -72,6 +72,7 @@ export function DashboardPageMeta({
           userId={userId}
           favoriteLabel={resolvedFavoriteLabel}
           projectId={projectId}
+          favoritesReady={runtime?.favoritesReady ?? true}
           breadcrumbLabel={breadcrumbLabel}
         />
 

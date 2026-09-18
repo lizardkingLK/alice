@@ -75,7 +75,7 @@ Step-by-step instructions for testing role-based project access validation acros
      ```
    - **Verification**:
      - Alice states clearly:
-       > *"You do not currently have access to any projects. Please contact your workspace administrator to request access."*
+       > _"You do not currently have access to any projects. Please contact your workspace administrator to request access."_
      - No table is generated and no unauthorized projects appear.
 
 ---
@@ -99,7 +99,7 @@ Step-by-step instructions for testing role-based project access validation acros
      list all projects
      ```
    - **Verification**:
-     - Alice responds with: *"Here are all the projects that are available to you:"*
+     - Alice responds with: _"Here are all the projects that are available to you:"_
      - Table lists **Alpha** and **Beta** with Name, Key, and Description.
 
 ---
@@ -122,19 +122,19 @@ Step-by-step instructions for testing role-based project access validation acros
      show all projects
      ```
    - **Verification**:
-     - Alice introduces with: *"Here are all the projects that are available to you:"*
+     - Alice introduces with: _"Here are all the projects that are available to you:"_
      - Table contains all workspace projects.
 
 ---
 
 ## Summary Checklist
 
-| # | Test Scenario | Expected Outcome | Pass/Fail |
-|---|---|---|:---:|
-| 1 | Member Registry View | Shows only assigned projects; Add Project and row actions hidden | [ ] |
-| 2 | Member Alice Chat | Returns only assigned projects under *"Here are all the projects that are available to you:"* table | [ ] |
-| 3 | Member with 0 projects | Clean empty state in registry; informative no-access message in chat | [ ] |
-| 4 | Manager Registry View | Shows assigned/owned projects; Edit/Archive available; Add & Purge hidden | [ ] |
-| 5 | Manager Alice Chat | Lists assigned/owned projects in Markdown table | [ ] |
-| 6 | Admin Registry View | Shows all projects; Add Project and Purge available | [ ] |
-| 7 | Admin Alice Chat | Lists all workspace projects in Markdown table | [ ] |
+| #   | Test Scenario          | Expected Outcome                                                                                    | Pass/Fail |
+| --- | ---------------------- | --------------------------------------------------------------------------------------------------- | :-------: |
+| 1   | Member Registry View   | Shows only assigned projects; Add Project and row actions hidden                                    |    [ ]    |
+| 2   | Member Alice Chat      | Returns only assigned projects under _"Here are all the projects that are available to you:"_ table |    [ ]    |
+| 3   | Member with 0 projects | Clean empty state in registry; informative no-access message in chat                                |    [ ]    |
+| 4   | Manager Registry View  | Shows assigned/owned projects; Edit/Archive available; Add & Purge hidden                           |    [ ]    |
+| 5   | Manager Alice Chat     | Lists assigned/owned projects in Markdown table                                                     |    [ ]    |
+| 6   | Admin Registry View    | Shows all projects; Add Project and Purge available                                                 |    [ ]    |
+| 7   | Admin Alice Chat       | Lists all workspace projects in Markdown table                                                      |    [ ]    |

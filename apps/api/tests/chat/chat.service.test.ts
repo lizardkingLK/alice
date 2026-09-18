@@ -1041,9 +1041,20 @@ ALICE-2,Feature,Authentication Service,ALICE-1,high,Updated auth description,Sec
       expect(parts).toHaveLength(1);
       const result = parts[0]?.functionResponse?.response.result as {
         userRole: string;
-        permissions: { role: string; canCreate: boolean; canManage: boolean; canPurge: boolean };
+        permissions: {
+          role: string;
+          canCreate: boolean;
+          canManage: boolean;
+          canPurge: boolean;
+        };
         totalCount: number;
-        projects: Array<{ id: string; name: string; key: string; description: string; status: string }>;
+        projects: Array<{
+          id: string;
+          name: string;
+          key: string;
+          description: string;
+          status: string;
+        }>;
       };
       expect(result.userRole).toBe('member');
       expect(result.permissions).toEqual({
@@ -1121,7 +1132,12 @@ ALICE-2,Feature,Authentication Service,ALICE-1,high,Updated auth description,Sec
       expect(listProjectsForActorMock).toHaveBeenCalledWith('admin-user-1');
       const result = parts[0]?.functionResponse?.response.result as {
         userRole: string;
-        permissions: { role: string; canCreate: boolean; canManage: boolean; canPurge: boolean };
+        permissions: {
+          role: string;
+          canCreate: boolean;
+          canManage: boolean;
+          canPurge: boolean;
+        };
         totalCount: number;
         projects: Array<unknown>;
       };
@@ -1133,4 +1149,3 @@ ALICE-2,Feature,Authentication Service,ALICE-1,high,Updated auth description,Sec
     });
   });
 });
-

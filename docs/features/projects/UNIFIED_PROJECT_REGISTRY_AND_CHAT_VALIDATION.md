@@ -34,6 +34,7 @@ To eliminate duplicate access validation logic and prevent data leakage in AI co
 ## 2. Core Modules & Changes
 
 ### Shared Types (`packages/types`)
+
 - **`src/api/v1/projects.ts`**:
   - `ProjectRegistryPermissions`: `{ role: UserRole, canCreate: boolean, canManage: boolean, canPurge: boolean }`.
   - `getProjectRegistryPermissions(role: UserRole)`: Shared role permission resolver.
@@ -41,6 +42,7 @@ To eliminate duplicate access validation logic and prevent data leakage in AI co
   - `ListProjectsForActorResponse`: `{ projects, totalCount, userRole, permissions }`.
 
 ### Backend API Services (`apps/api`)
+
 - **`src/lib/auth-helpers.ts`**:
   - `getActorUser(actorId)`: Resolves user role and email from Supabase.
 - **`src/routes/api/projects/projects.repository.ts`**:
@@ -57,7 +59,7 @@ To eliminate duplicate access validation logic and prevent data leakage in AI co
   - `loadWorkspaceContext`: Turn preparation prompt context uses `listProjectsForActor(userId)` to guarantee zero unassigned project leakage.
 - **`src/routes/api/chat/chat.route.data.ts`**:
   - System prompt includes `PROJECT LISTING & ACCESS CONTROL PROTOCOL` enforcing:
-    - Introduction sentence: *"Here are all the projects that are available to you:"*.
+    - Introduction sentence: _"Here are all the projects that are available to you:"_.
     - Markdown table structure: `| Project Name | Key | Description |`.
     - No-access fallback message.
 

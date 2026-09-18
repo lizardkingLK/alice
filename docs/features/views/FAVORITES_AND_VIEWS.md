@@ -111,7 +111,11 @@ breadcrumb last segment is not a good label (e.g. work-item title).
   `TruncatedText`. Opening a favorite whose destination **404s** removes that
   favorite from localStorage (not-found page cleanup) and tells the user. For
   `/chat?conversationId=…`, a missing conversation renders **Page not found**
-  (bootstrap does not fall back to another thread). RBAC / access errors that
+  (bootstrap does not fall back to another thread). A freshly created id that is
+  briefly missing from the conversations list is resolved by live list / by-id
+  ownership lookup so new chats are not false-404ed. On `/chat`, the favorite
+  star stays disabled until conversations/history have loaded and the URL
+  `conversationId` matches the active thread. RBAC / access errors that
   do not 404 leave the favorite in place.
 - **Views** — always shown as a Platform item (`/views`, Layers icon). Click
   navigates to the Views workspace (same tab). No sidebar children.

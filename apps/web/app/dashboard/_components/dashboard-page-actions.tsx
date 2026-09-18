@@ -53,6 +53,8 @@ type DashboardPageActionsProps = {
   readonly userId: string | null;
   readonly favoriteLabel?: string;
   readonly projectId?: string | null;
+  /** When false, the star stays disabled (e.g. chat URL still hydrating). */
+  readonly favoritesReady?: boolean;
   /** Fallback label from breadcrumb last segment when favoriteLabel is omitted. */
   readonly breadcrumbLabel: string;
 };
@@ -61,6 +63,7 @@ export function DashboardPageActions({
   userId,
   favoriteLabel,
   projectId = null,
+  favoritesReady = true,
   breadcrumbLabel,
 }: Readonly<DashboardPageActionsProps>) {
   const pathname = usePathname();
@@ -84,13 +87,14 @@ export function DashboardPageActions({
   }, [pathname, projectId, searchParams]);
 
   const favoriteActionLabel = favorited ? 'Remove favorite' : 'Add favorite';
+  const favoriteDisabled = !userId || !favoritesReady;
 
   return (
     <div className="flex shrink-0 items-center gap-0.5">
       <HeaderIconAction
         label={favoriteActionLabel}
         pressed={favorited}
-        disabled={!userId}
+        disabled={favoriteDisabled}
         onClick={() => toggle(pathname, label, search)}
       >
         <Star

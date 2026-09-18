@@ -270,7 +270,8 @@ Verify that files upload directly to Supabase Storage via signed upload URLs:
    - Alice politely declines, clarifying its scope is project and sprint management in ALICE.
 2. Refresh your browser (`F5`).
 3. Re-select the conversation in the left history sidebar.
-   - Confirm that previous messages, attachment chips with auto-refreshing links, and action cards reload correctly. 
+   - Confirm that previous messages, attachment chips with auto-refreshing links, and action cards reload correctly.
+
 ---
 
 ### 11. Role-based project listing & table output

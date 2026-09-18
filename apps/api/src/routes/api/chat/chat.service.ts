@@ -1763,9 +1763,7 @@ export class ChatService {
     });
 
     const [actorProjectsSummary, workspace] = await Promise.all([
-      this.deps.projectsService
-        .listProjectsForActor(userId)
-        .catch(() => null),
+      this.deps.projectsService.listProjectsForActor(userId).catch(() => null),
       this.loadWorkspaceContext(),
     ]);
 

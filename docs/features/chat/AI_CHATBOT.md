@@ -88,7 +88,12 @@ shell streams first; the client receives bootstrap props and **does not**
 `useEffect`-fetch the same data again. The page keys `ChatClient` by
 `conversationId` so Favorites / query changes remount the correct thread. When
 `?conversationId=` is set but the conversation is missing (deleted or not
-owned), bootstrap returns `not_found` and the route calls `notFound()`.
+owned), bootstrap returns `not_found` and the route calls `notFound()`. After a
+new chat is created, the conversation list cache can lag; bootstrap then tries
+a live list and an owned **by-id** lookup before 404ing so the new thread stays
+reachable. The header favorite star stays disabled until the URL
+`conversationId` matches the active thread (avoids starring the wrong chat
+while create/select is still hydrating).
 
 ---
 

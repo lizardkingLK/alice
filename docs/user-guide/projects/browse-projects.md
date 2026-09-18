@@ -19,11 +19,11 @@ You'll land on the project list (`/projects`).
 
 The list shows projects you can access:
 
-| Your role   | Projects shown                                             |
-| ----------- | ---------------------------------------------------------- |
-| **Admin**   | All projects in the workspace                              |
-| **Manager** | Projects you **own** or are an active **member** of        |
-| **Member**  | Projects you are an active **member** of (or allowlisted)  |
+| Your role   | Projects shown                                            |
+| ----------- | --------------------------------------------------------- |
+| **Admin**   | All projects in the workspace                             |
+| **Manager** | Projects you **own** or are an active **member** of       |
+| **Member**  | Projects you are an active **member** of (or allowlisted) |
 
 Projects you can't access are **hidden** from the list (not shown as locked
 rows).
