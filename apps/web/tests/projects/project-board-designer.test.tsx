@@ -67,6 +67,39 @@ async function pickSelectValue(
   fireEvent.click(await screen.findByRole('option', { name: optionName }));
 }
 
+function createDataTransfer(): DataTransfer {
+  const values = new Map<string, string>();
+  return {
+    effectAllowed: 'none',
+    dropEffect: 'none',
+    getData: vi.fn((format: string) => values.get(format) ?? ''),
+    setData: vi.fn((format: string, value: string) => {
+      values.set(format, value);
+    }),
+  } as unknown as DataTransfer;
+}
+
+function dragColumn(sourceName: string, targetName: string) {
+  const sourceHandle = screen.getByRole('button', {
+    name: `Drag ${sourceName} to reorder`,
+  });
+  const targetHandle = screen.getByRole('button', {
+    name: `Drag ${targetName} to reorder`,
+  });
+  const dataTransfer = createDataTransfer();
+
+  fireEvent.dragStart(sourceHandle, { dataTransfer });
+  fireEvent.dragOver(targetHandle, { dataTransfer });
+  fireEvent.drop(targetHandle, { dataTransfer });
+  fireEvent.dragEnd(sourceHandle, { dataTransfer });
+}
+
+function columnNamesInOrder(): string[] {
+  return screen
+    .getAllByLabelText(/^Column name \d+$/)
+    .map((input) => (input as HTMLInputElement).value);
+}
+
 describe('BoardDesignerWorkspace', () => {
   beforeEach(() => {
     sessionStorage.clear();
@@ -85,29 +118,77 @@ describe('BoardDesignerWorkspace', () => {
       screen.getByRole('combobox', { name: 'Status for Review queue' })
     );
     fireEvent.click(await screen.findByRole('option', { name: 'InProgress' }));
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Move Review queue up' })
-    );
+    dragColumn('Review queue', 'Done');
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
     const savedConfig =
       vi.mocked(updateProject).mock.calls[0]?.[1].workflow_config;
-    expect(savedConfig).toEqual(
-      expect.objectContaining({
-        columns: expect.arrayContaining([
-          {
-            id: '11111111-1111-4111-8111-111111111111',
-            name: 'Review queue',
-            status: 'InProgress',
-          },
-        ]),
-      })
-    );
-    expect(savedConfig?.columns?.at(-2)?.id).toBe(
-      '11111111-1111-4111-8111-111111111111'
-    );
+    expect(savedConfig?.columns).toEqual([
+      ...customConfig.columns.slice(0, -1),
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        name: 'Review queue',
+        status: 'InProgress',
+      },
+      customConfig.columns.at(-1),
+    ]);
     expect(refresh).toHaveBeenCalled();
+  });
+
+  it('reorders only columns while preserving transition rules', async () => {
+    const transitions = [
+      {
+        fromColumnId: 'development',
+        toColumnId: 'code-review',
+        allowAnyOf: [{ scope: 'role' as const, role: 'manager' as const }],
+      },
+    ];
+    const statusTransitions = [
+      {
+        fromStatus: 'ToDo' as const,
+        toStatus: 'InProgress' as const,
+        allowAnyOf: [{ scope: 'role' as const, role: 'member' as const }],
+      },
+    ];
+    renderDesigner(true, {
+      version: '2',
+      columns: customConfig.columns,
+      transitions,
+      statusTransitions,
+    });
+
+    dragColumn('Backlog', 'Done');
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(updateProject).mock.calls[0]?.[1].workflow_config).toEqual(
+      {
+        version: '2',
+        columns: [...customConfig.columns.slice(1), customConfig.columns[0]],
+        transitions,
+        statusTransitions,
+      }
+    );
+  });
+
+  it('does not render the old column movement buttons', () => {
+    renderDesigner();
+
+    expect(
+      screen.queryAllByRole('button', { name: /^Move .+ (up|down)$/ })
+    ).toHaveLength(0);
+  });
+
+  it('treats dropping a column on itself as a no-op', () => {
+    renderDesigner();
+
+    dragColumn('Code Review', 'Code Review');
+
+    expect(columnNamesInOrder()).toEqual(
+      customConfig.columns.map((column) => column.name)
+    );
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
   });
 
   it('uses the returned lock timestamp and saved baseline for a second save', async () => {
@@ -186,6 +267,16 @@ describe('BoardDesignerWorkspace', () => {
     expect(
       screen.getByRole('button', { name: 'Movement rules for Code Review' })
     ).toBeDisabled();
+    const dragHandle = screen.getByRole('button', {
+      name: 'Drag Code Review to reorder',
+    });
+    expect(dragHandle).toBeDisabled();
+    expect(dragHandle).toHaveAttribute('draggable', 'false');
+
+    dragColumn('Code Review', 'Backlog');
+    expect(columnNamesInOrder()).toEqual(
+      customConfig.columns.map((column) => column.name)
+    );
   });
 
   it('loads and consumes a valid Alice session draft as dirty without saving it', async () => {
