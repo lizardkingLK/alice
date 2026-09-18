@@ -102,6 +102,9 @@ Notification type: `chart_shared` (inbox deep-link to `/charts/[id]`).
 in-memory mocks. Slice → table uses **paginated** live `work_items` queries.
 Measure for Tier 1: **`item_count` only**.
 
+**API (Step 2):** `GET /api/v1/charts/analytics/series` and
+`…/analytics/drilldown` — see [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md#apis).
+
 Design, Tier 2/3 (Neon read model, apps rename), and step checklist:
 [CHARTS_AGGREGATION.md](./CHARTS_AGGREGATION.md).
 

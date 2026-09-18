@@ -419,7 +419,7 @@ function createChartsConfig(
   notificationsRepository: NotificationsRepository,
   savedViewsRepository: SavedViewsRepository
 ) {
-  const chartsRepository = new ChartsRepository();
+  const chartsRepository = new ChartsRepository(supabase);
   const chartsService = new ChartsService(
     chartsRepository,
     notificationsRepository,

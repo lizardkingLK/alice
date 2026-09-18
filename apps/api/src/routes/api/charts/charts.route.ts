@@ -1,5 +1,6 @@
 import { Router, type Response } from 'express';
 import { z } from 'zod';
+import { chartDrilldownQuerySchema, chartSeriesQuerySchema } from '@repo/types';
 import {
   requireApiAuth,
   type AuthenticatedRequest,
@@ -54,6 +55,51 @@ export function createChartsRouter(deps: ChartsRouterDeps) {
         res.json({ data });
       } catch (error) {
         sendError(res, error, 'Failed to list charts');
+      }
+    }
+  );
+
+  // Static analytics paths must be registered before `/:id`.
+  chartsRouter.get(
+    '/analytics/series',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const validation = chartSeriesQuerySchema.safeParse(req.query);
+      if (!validation.success) {
+        return res
+          .status(400)
+          .json({ error: z.treeifyError(validation.error) });
+      }
+      try {
+        const data = await chartsService.getSeries(
+          req.userId!,
+          validation.data
+        );
+        res.json({ data });
+      } catch (error) {
+        sendError(res, error, 'Failed to load chart series');
+      }
+    }
+  );
+
+  chartsRouter.get(
+    '/analytics/drilldown',
+    requireApiAuth,
+    async (req: AuthenticatedRequest, res) => {
+      const validation = chartDrilldownQuerySchema.safeParse(req.query);
+      if (!validation.success) {
+        return res
+          .status(400)
+          .json({ error: z.treeifyError(validation.error) });
+      }
+      try {
+        const data = await chartsService.getDrilldown(
+          req.userId!,
+          validation.data
+        );
+        res.json({ data });
+      } catch (error) {
+        sendError(res, error, 'Failed to load chart drilldown');
       }
     }
   );
