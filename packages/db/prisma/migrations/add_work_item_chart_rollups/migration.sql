@@ -7,7 +7,7 @@ CREATE INDEX IF NOT EXISTS "work_items_project_id_status_idx" ON "work_items" ("
 CREATE INDEX IF NOT EXISTS "work_items_created_at_idx" ON "work_items" ("created_at");
 
 -- Rollup table (grain_key avoids NULL uniqueness issues for sprint/assignee)
-CREATE TABLE "work_item_chart_rollups" (
+CREATE TABLE IF NOT EXISTS "work_item_chart_rollups" (
     "grain_key" TEXT NOT NULL,
     "bucket_date" DATE NOT NULL,
     "project_id" UUID NOT NULL,
@@ -21,20 +21,33 @@ CREATE TABLE "work_item_chart_rollups" (
     CONSTRAINT "work_item_chart_rollups_pkey" PRIMARY KEY ("grain_key")
 );
 
-CREATE INDEX "work_item_chart_rollups_project_id_bucket_date_idx"
+CREATE INDEX IF NOT EXISTS "work_item_chart_rollups_project_id_bucket_date_idx"
   ON "work_item_chart_rollups" ("project_id", "bucket_date");
 
-ALTER TABLE "work_item_chart_rollups"
-  ADD CONSTRAINT "work_item_chart_rollups_project_id_fkey"
-  FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE "work_item_chart_rollups"
-  ADD CONSTRAINT "work_item_chart_rollups_sprint_id_fkey"
-  FOREIGN KEY ("sprint_id") REFERENCES "sprints"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
-ALTER TABLE "work_item_chart_rollups"
-  ADD CONSTRAINT "work_item_chart_rollups_assignee_id_fkey"
-  FOREIGN KEY ("assignee_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'work_item_chart_rollups_project_id_fkey'
+  ) THEN
+    ALTER TABLE "work_item_chart_rollups"
+      ADD CONSTRAINT "work_item_chart_rollups_project_id_fkey"
+      FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'work_item_chart_rollups_sprint_id_fkey'
+  ) THEN
+    ALTER TABLE "work_item_chart_rollups"
+      ADD CONSTRAINT "work_item_chart_rollups_sprint_id_fkey"
+      FOREIGN KEY ("sprint_id") REFERENCES "sprints"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'work_item_chart_rollups_assignee_id_fkey'
+  ) THEN
+    ALTER TABLE "work_item_chart_rollups"
+      ADD CONSTRAINT "work_item_chart_rollups_assignee_id_fkey"
+      FOREIGN KEY ("assignee_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
 
 -- Helpers + trigger: maintain item_count per grain for active work items only
 CREATE OR REPLACE FUNCTION public.work_item_chart_rollup_grain_key(
@@ -278,4 +291,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES 
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO anon, authenticated;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO postgres, anon, authenticated, service_role;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON ROUTINES TO postgres, service_role;
-ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT EXECUTE ON ALL ROUTINES TO anon, authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT EXECUTE ON ROUTINES TO anon, authenticated;

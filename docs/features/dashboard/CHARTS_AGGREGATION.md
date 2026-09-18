@@ -16,21 +16,21 @@ Related:
 
 ## Naming
 
-| Term | Meaning |
-| ---- | ------- |
-| Materialized statistics (product language) | Precomputed counts for cheap chart reads |
-| Postgres `MATERIALIZED VIEW` | **Not used** — cannot be incrementally updated by triggers |
-| **Rollup table** | Normal table maintained by `AFTER` triggers on `work_items` |
+| Term                                       | Meaning                                                     |
+| ------------------------------------------ | ----------------------------------------------------------- |
+| Materialized statistics (product language) | Precomputed counts for cheap chart reads                    |
+| Postgres `MATERIALIZED VIEW`               | **Not used** — cannot be incrementally updated by triggers  |
+| **Rollup table**                           | Normal table maintained by `AFTER` triggers on `work_items` |
 
 ---
 
 ## Tiers
 
-| Tier | Scope | Status |
-| ---- | ----- | ------ |
-| **1** | Same Supabase DB: rollup + indexes + series API + paginated drilldown; remove mocks | **Implement now** |
-| **2** | Lean `work_items` read model on **Neon**; **Render `reader`**; **Upstash** queue; Express **post-commit** publisher; **Pusher** auth as streamer | Later |
-| **3** | Whole-app reads on Neon; **apps rename** first; separate architecture doc | Later |
+| Tier  | Scope                                                                                                                                            | Status            |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------- |
+| **1** | Same Supabase DB: rollup + indexes + series API + paginated drilldown; remove mocks                                                              | **Implement now** |
+| **2** | Lean `work_items` read model on **Neon**; **Render `reader`**; **Upstash** queue; Express **post-commit** publisher; **Pusher** auth as streamer | Later             |
+| **3** | Whole-app reads on Neon; **apps rename** first; separate architecture doc                                                                        | Later             |
 
 ### Tier 1 locks
 
@@ -58,13 +58,13 @@ Related:
 
 ## Future apps rename (before Tier 3)
 
-| Today | Target | Role |
-| ----- | ------ | ---- |
-| `apps/web` | `client` | UI (Vercel) |
-| `apps/api` | `writer` | Mutations + post-commit publish (Vercel) |
-| — | `reader` | Neon-backed read HTTP API (Render) |
-| — | `streamer` | Realtime gateway (Pusher auth / façade) |
-| — | `worker` | Long-running jobs, queue consumers, heavy crons (Render or similar) |
+| Today      | Target     | Role                                                                |
+| ---------- | ---------- | ------------------------------------------------------------------- |
+| `apps/web` | `client`   | UI (Vercel)                                                         |
+| `apps/api` | `writer`   | Mutations + post-commit publish (Vercel)                            |
+| —          | `reader`   | Neon-backed read HTTP API (Render)                                  |
+| —          | `streamer` | Realtime gateway (Pusher auth / façade)                             |
+| —          | `worker`   | Long-running jobs, queue consumers, heavy crons (Render or similar) |
 
 Tier 2 may add `reader` / `worker` without renaming `web` / `api`. Rename
 `client` / `writer` just before Tier 3.
@@ -75,43 +75,43 @@ Tier 2 may add `reader` / `worker` without renaming `web` / `api`. Rename
 
 ### Table `work_item_chart_rollups`
 
-| Column | Role |
-| ------ | ---- |
+| Column        | Role                     |
+| ------------- | ------------------------ |
 | `bucket_date` | `date` from `created_at` |
-| `project_id` | uuid |
-| `sprint_id` | uuid nullable |
-| `status` | work item status |
-| `type` | work item type |
-| `priority` | work item priority |
-| `assignee_id` | uuid nullable |
-| `item_count` | int |
+| `project_id`  | uuid                     |
+| `sprint_id`   | uuid nullable            |
+| `status`      | work item status         |
+| `type`        | work item type           |
+| `priority`    | work item priority       |
+| `assignee_id` | uuid nullable            |
+| `item_count`  | int                      |
 
-- Unique / PK on full grain  
+- Unique / PK on full grain
 - Secondary index: `(project_id, bucket_date)`
 
 ### Triggers
 
 `AFTER INSERT OR UPDATE OR DELETE` on `work_items` (respect `record_status`):
 
-- INSERT → `+1`  
-- DELETE / leave active → `-1`  
+- INSERT → `+1`
+- DELETE / leave active → `-1`
 - Grain field change → `-old` + `+new`
 
 No HTTP or queues inside the trigger.
 
 ### Indexes on `work_items`
 
-- `(assignee_id)`  
-- `(sprint_id)`  
-- `(project_id, status)`  
+- `(assignee_id)`
+- `(sprint_id)`
+- `(project_id, status)`
 - Time column as needed for drilldown date filters (`created_at`)
 
 ### APIs (sketch)
 
-| Endpoint | Source |
-| -------- | ------ |
-| `GET` chart series | `SUM(item_count) … GROUP BY labelField` on rollups + optional `from`/`to` |
-| `GET` chart drilldown | Paginated `work_items` with same filters + slice key |
+| Endpoint              | Source                                                                    |
+| --------------------- | ------------------------------------------------------------------------- |
+| `GET` chart series    | `SUM(item_count) … GROUP BY labelField` on rollups + optional `from`/`to` |
+| `GET` chart drilldown | Paginated `work_items` with same filters + slice key                      |
 
 Auth/RBAC: same project access as board / work items.
 
@@ -142,9 +142,9 @@ Do in order. Each step should be reviewable on its own when practical.
 
 **Code:**
 
-1. `apps/api` routes/service/repository for series + drilldown  
-2. Wire types in `@repo/types`  
-3. Unit/integration tests for grouping filters and pagination  
+1. `apps/api` routes/service/repository for series + drilldown
+2. Wire types in `@repo/types`
+3. Unit/integration tests for grouping filters and pagination
 
 **Verify:** authenticated curl/HTTP against a project with known WI distribution.
 
@@ -154,19 +154,19 @@ Do in order. Each step should be reviewable on its own when practical.
 
 **Code:**
 
-1. Client fetch series for pie/donut  
-2. Slice click → drilldown fetch into existing grouped table  
-3. Remove / stop using `charts-sample.data.ts` for the Chart widget  
-4. Web tests for wiring helpers if any  
+1. Client fetch series for pie/donut
+2. Slice click → drilldown fetch into existing grouped table
+3. Remove / stop using `charts-sample.data.ts` for the Chart widget
+4. Web tests for wiring helpers if any
 
 **Verify:** `/charts/[id]` pie matches board/work-item reality for a project filter.
 
 ### Step 4 — Docs polish + sync
 
-1. Finalize this file (status, exact paths, migration folder name)  
-2. [CHARTS.md](./CHARTS.md) + [README.md](./README.md) links  
-3. User guide note if UX copy changes  
-4. `pnpm --filter web docs:sync`  
+1. Finalize this file (status, exact paths, migration folder name)
+2. [CHARTS.md](./CHARTS.md) + [README.md](./README.md) links
+3. User guide note if UX copy changes
+4. `pnpm --filter web docs:sync`
 
 ---
 
@@ -185,8 +185,8 @@ architecture doc when that program starts.
 
 ## Non-goals (Tier 1)
 
-- Neon / Render / Upstash / apps rename  
-- Story points on the rollup  
-- Postgres `REFRESH MATERIALIZED VIEW`  
-- Per-chart-type duplicate rollup tables  
-- Non-pie chart types in the UI (schema remains reusable)  
+- Neon / Render / Upstash / apps rename
+- Story points on the rollup
+- Postgres `REFRESH MATERIALIZED VIEW`
+- Per-chart-type duplicate rollup tables
+- Non-pie chart types in the UI (schema remains reusable)
