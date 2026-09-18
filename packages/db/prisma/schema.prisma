@@ -140,6 +140,7 @@ model users {
   team_memberships    team_members[]
   reporting_lines     team_members[]    @relation("ReportingLine")
   assigned_work_items work_items[]      @relation("WorkItemAssignee")
+  chart_rollup_assignments work_item_chart_rollups[] @relation("WorkItemChartRollupAssignee")
   reported_work_items work_items[]      @relation("WorkItemReporter")
   comments            comments[]        @relation("CommentAuthor")
   attachments         attachments[]     @relation("AttachmentUploader")
@@ -217,6 +218,7 @@ model projects {
   teams           teams[]
   sprints         sprints[]
   work_items      work_items[]
+  chart_rollups   work_item_chart_rollups[]
   saved_views     saved_views[]
 }
 
@@ -300,6 +302,7 @@ model sprints {
   created_by_user users?       @relation("SprintCreatedBy", fields: [created_by], references: [id], onDelete: SetNull)
   updated_by_user users?       @relation("SprintUpdatedBy", fields: [updated_by], references: [id], onDelete: SetNull)
   work_items      work_items[]
+  chart_rollups   work_item_chart_rollups[]
 
   @@unique([project_id, name])
 }
@@ -345,6 +348,30 @@ model work_items {
   @@unique([project_id, jira_issue_key])
   @@index([record_status])
   @@index([project_id, record_status])
+  @@index([assignee_id])
+  @@index([sprint_id])
+  @@index([project_id, status])
+  @@index([created_at])
+}
+
+/// Precomputed categorical counts for Charts Tier 1 (trigger-maintained).
+/// `grain_key` encodes bucket + dimensions so upserts ignore SQL NULL uniqueness quirks.
+model work_item_chart_rollups {
+  grain_key    String           @id
+  bucket_date  DateTime         @db.Date
+  project_id   String           @db.Uuid
+  sprint_id    String?          @db.Uuid
+  status       WorkItemStatus
+  type         WorkItemType
+  priority     WorkItemPriority
+  assignee_id  String?          @db.Uuid
+  item_count   Int              @default(0)
+
+  project  projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  sprint   sprints? @relation(fields: [sprint_id], references: [id], onDelete: SetNull)
+  assignee users?   @relation("WorkItemChartRollupAssignee", fields: [assignee_id], references: [id], onDelete: SetNull)
+
+  @@index([project_id, bucket_date])
 }
 
 model work_item_worklogs {

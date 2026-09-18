@@ -75,6 +75,12 @@ export type sprints = Prisma.sprintsModel
  */
 export type work_items = Prisma.work_itemsModel
 /**
+ * Model work_item_chart_rollups
+ * Precomputed categorical counts for Charts Tier 1 (trigger-maintained).
+ * `grain_key` encodes bucket + dimensions so upserts ignore SQL NULL uniqueness quirks.
+ */
+export type work_item_chart_rollups = Prisma.work_item_chart_rollupsModel
+/**
  * Model work_item_worklogs
  * 
  */

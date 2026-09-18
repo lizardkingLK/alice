@@ -110,6 +110,10 @@ The legend scrolls when there are many slices. Pie vs donut and Labels are saved
 with the widget on this device (and with the workspace when cloud save is
 enabled).
 
+Chart values today may still use **sample data** while live work-item rollups
+roll out. When live, slices reflect **counts** of work items (not story points
+yet). Clicking a slice still opens the table scoped to that group.
+
 ---
 
 ## Chart widget filters
@@ -118,9 +122,6 @@ enabled).
 2. Use **Advanced** or **Quick** filters, search, and assignee avatars.
 3. Dismiss the filter popover by clicking outside it, or **Close** / **Apply**.
 4. Use layout, settings, and **⋯** as described above.
-
-Sample data is local mock for UI work. Live charts will load from a
-precomputed snapshot later.
 
 ---
 
@@ -135,3 +136,4 @@ saved view. Board layout is **not** stored inside Views.
 ## Related
 
 - Feature notes: `docs/features/dashboard/CHARTS.md`
+- Aggregation design: `docs/features/dashboard/CHARTS_AGGREGATION.md`

@@ -404,6 +404,7 @@ export const ModelName = {
   team_members: 'team_members',
   sprints: 'sprints',
   work_items: 'work_items',
+  work_item_chart_rollups: 'work_item_chart_rollups',
   work_item_worklogs: 'work_item_worklogs',
   comments: 'comments',
   attachments: 'attachments',
@@ -434,7 +435,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "jira_connections" | "chat_conversations" | "chat_attachments" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "github_pull_requests" | "integrations"
+    modelProps: "users" | "projects" | "project_members" | "teams" | "team_members" | "sprints" | "work_items" | "work_item_chart_rollups" | "work_item_worklogs" | "comments" | "attachments" | "notifications" | "access_allowlist" | "access_requests" | "jira_connections" | "chat_conversations" | "chat_attachments" | "saved_views" | "saved_view_shares" | "charts" | "chart_shares" | "github_pull_requests" | "integrations"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -953,6 +954,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.work_itemsCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.Work_itemsCountAggregateOutputType> | number
+        }
+      }
+    }
+    work_item_chart_rollups: {
+      payload: Prisma.$work_item_chart_rollupsPayload<ExtArgs>
+      fields: Prisma.work_item_chart_rollupsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.work_item_chart_rollupsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_rollupsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.work_item_chart_rollupsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_rollupsPayload>
+        }
+        findFirst: {
+          args: Prisma.work_item_chart_rollupsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_rollupsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.work_item_chart_rollupsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_rollupsPayload>
+        }
+        findMany: {
+          args: Prisma.work_item_chart_rollupsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_rollupsPayload>[]
+        }
+        create: {
+          args: Prisma.work_item_chart_rollupsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_rollupsPayload>
+        }
+        createMany: {
+          args: Prisma.work_item_chart_rollupsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.work_item_chart_rollupsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_rollupsPayload>[]
+        }
+        delete: {
+          args: Prisma.work_item_chart_rollupsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_rollupsPayload>
+        }
+        update: {
+          args: Prisma.work_item_chart_rollupsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_rollupsPayload>
+        }
+        deleteMany: {
+          args: Prisma.work_item_chart_rollupsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.work_item_chart_rollupsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.work_item_chart_rollupsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_rollupsPayload>[]
+        }
+        upsert: {
+          args: Prisma.work_item_chart_rollupsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$work_item_chart_rollupsPayload>
+        }
+        aggregate: {
+          args: Prisma.Work_item_chart_rollupsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateWork_item_chart_rollups>
+        }
+        groupBy: {
+          args: Prisma.work_item_chart_rollupsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Work_item_chart_rollupsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.work_item_chart_rollupsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Work_item_chart_rollupsCountAggregateOutputType> | number
         }
       }
     }
@@ -2245,6 +2320,21 @@ export const Work_itemsScalarFieldEnum = {
 export type Work_itemsScalarFieldEnum = (typeof Work_itemsScalarFieldEnum)[keyof typeof Work_itemsScalarFieldEnum]
 
 
+export const Work_item_chart_rollupsScalarFieldEnum = {
+  grain_key: 'grain_key',
+  bucket_date: 'bucket_date',
+  project_id: 'project_id',
+  sprint_id: 'sprint_id',
+  status: 'status',
+  type: 'type',
+  priority: 'priority',
+  assignee_id: 'assignee_id',
+  item_count: 'item_count'
+} as const
+
+export type Work_item_chart_rollupsScalarFieldEnum = (typeof Work_item_chart_rollupsScalarFieldEnum)[keyof typeof Work_item_chart_rollupsScalarFieldEnum]
+
+
 export const Work_item_worklogsScalarFieldEnum = {
   id: 'id',
   work_item_id: 'work_item_id',
@@ -2994,6 +3084,7 @@ export type GlobalOmitConfig = {
   team_members?: Prisma.team_membersOmit
   sprints?: Prisma.sprintsOmit
   work_items?: Prisma.work_itemsOmit
+  work_item_chart_rollups?: Prisma.work_item_chart_rollupsOmit
   work_item_worklogs?: Prisma.work_item_worklogsOmit
   comments?: Prisma.commentsOmit
   attachments?: Prisma.attachmentsOmit
