@@ -123,15 +123,16 @@ Do in order. Each step should be reviewable on its own when practical.
 
 ### Step 1 — Schema: indexes + rollup + backfill + triggers
 
-**Docs:** this file (already); note migration name in [CHARTS.md](./CHARTS.md) data strategy when landed.
+**Migration:** `packages/db/prisma/migrations/add_work_item_chart_rollups/`
+
+**Docs:** this file; [CHARTS.md](./CHARTS.md) data strategy.
 
 **Code:**
 
-1. Prisma model `work_item_chart_rollups` + migration SQL  
-2. Indexes on `work_items` (assignee, sprint, project+status, created_at as needed)  
-3. Backfill `INSERT … SELECT … GROUP BY` from existing active work items  
-4. Trigger function + triggers on `work_items`  
-5. `pnpm db generate` / types as usual  
+1. Prisma model `work_item_chart_rollups` + migration SQL (indexes, table, helpers, trigger, backfill)
+2. Indexes on `work_items` (assignee, sprint, project+status, created_at)
+3. Apply with `pnpm db migrate:deploy` (requires `DIRECT_URL`)
+4. `pnpm db generate` / `generate:client` as usual
 
 **Verify:** insert/update/delete a work item in dev; rollup counts move correctly.
 

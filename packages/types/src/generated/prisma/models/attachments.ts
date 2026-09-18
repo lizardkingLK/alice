@@ -689,14 +689,6 @@ export type attachmentsUncheckedUpdateManyWithoutWork_itemNestedInput = {
   deleteMany?: Prisma.attachmentsScalarWhereInput | Prisma.attachmentsScalarWhereInput[]
 }
 
-export type IntFieldUpdateOperationsInput = {
-  set?: number
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type attachmentsCreateWithoutUploaderInput = {
   id?: string
   file_name: string

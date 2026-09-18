@@ -58,6 +58,7 @@ export const ModelName = {
   team_members: 'team_members',
   sprints: 'sprints',
   work_items: 'work_items',
+  work_item_chart_rollups: 'work_item_chart_rollups',
   work_item_worklogs: 'work_item_worklogs',
   comments: 'comments',
   attachments: 'attachments',
@@ -229,6 +230,21 @@ export const Work_itemsScalarFieldEnum = {
 } as const
 
 export type Work_itemsScalarFieldEnum = (typeof Work_itemsScalarFieldEnum)[keyof typeof Work_itemsScalarFieldEnum]
+
+
+export const Work_item_chart_rollupsScalarFieldEnum = {
+  grain_key: 'grain_key',
+  bucket_date: 'bucket_date',
+  project_id: 'project_id',
+  sprint_id: 'sprint_id',
+  status: 'status',
+  type: 'type',
+  priority: 'priority',
+  assignee_id: 'assignee_id',
+  item_count: 'item_count'
+} as const
+
+export type Work_item_chart_rollupsScalarFieldEnum = (typeof Work_item_chart_rollupsScalarFieldEnum)[keyof typeof Work_item_chart_rollupsScalarFieldEnum]
 
 
 export const Work_item_worklogsScalarFieldEnum = {
